@@ -12,10 +12,11 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
+import { useStore } from '../../src/store/useStore';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 48; // отступы по 24 с каждой стороны
+const CARD_WIDTH = SCREEN_WIDTH - 48;
 
 interface SetData {
   weight: string;
@@ -43,13 +44,13 @@ interface AlternativeExercise {
   technique: string;
   equipment: string[];
   settings: string;
-  alternatives: string[];
 }
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  
+  const { userId } = useStore();
+
   const [workoutName, setWorkoutName] = useState('');
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ export default function WorkoutSessionScreen() {
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Кэш альтернативных упражнений (чтобы не грузить каждый раз)
+  // Кэш альтернатив
   const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
 
   // Отслеживание замен: workout_exercise_id -> alternative_exercise_id
@@ -79,7 +80,7 @@ export default function WorkoutSessionScreen() {
 
   const loadWorkout = async () => {
     try {
-      console.log(' Запрос тренировки из Supabase');
+      console.log('🔵 Запрос тренировки из Supabase');
       const { data: workout, error } = await supabase
         .from('workouts')
         .select(`
@@ -139,22 +140,31 @@ export default function WorkoutSessionScreen() {
     }
   };
 
-  const loadAlternatives = async (exerciseId: string) => {
+  const loadAlternatives = async (exerciseId: string, primaryMuscles: string[]) => {
     if (alternativesCache[exerciseId]) {
       console.log('✅ Альтернативы из кэша для:', exerciseId);
       return alternativesCache[exerciseId];
     }
 
     try {
-      console.log('🔍 Загрузка альтернатив для упражнения:', exerciseId);
-      const { data, error } = await supabase
+      console.log('🔍 Загрузка альтернатив для:', exerciseId);
+      console.log('🔍 Мышцы для фильтрации:', primaryMuscles);
+      
+      let query = supabase
         .from('exercises')
         .select('*')
-        .neq('id', exerciseId)
-        .limit(10);
-
+        .neq('id', exerciseId);
+      
+      if (primaryMuscles.length > 0) {
+        query = query.overlaps('primary_muscles', primaryMuscles);
+      }
+      
+      const { data, error } = await query.limit(10);
+      
       if (error) throw error;
 
+      console.log('✅ Найдено альтернатив:', data?.length);
+      
       const alternatives: AlternativeExercise[] = (data || []).map((ex: any) => ({
         id: ex.id,
         name: ex.name,
@@ -162,11 +172,9 @@ export default function WorkoutSessionScreen() {
         technique: getString(ex, 'technique'),
         equipment: getList(ex, 'equipment'),
         settings: getString(ex, 'settings'),
-        alternatives: getList(ex, 'alternatives'),
       }));
 
       setAlternativesCache(prev => ({ ...prev, [exerciseId]: alternatives }));
-      console.log('✅ Найдено альтернатив:', alternatives.length);
       return alternatives;
     } catch (error: any) {
       console.error('🔴 Ошибка загрузки альтернатив:', error);
@@ -193,9 +201,9 @@ export default function WorkoutSessionScreen() {
 
   const replaceExercise = async (exerciseIndex: number, alternativeId: string) => {
     const exercise = exercises[exerciseIndex];
-    console.log(`🔄 Замена упражнения ${exercise.name} на альтернативу ${alternativeId}`);
+    console.log(`🔄 Замена упражнения ${exercise.name} на ${alternativeId}`);
     
-    const alternatives = await loadAlternatives(exercise.id);
+    const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
     const alt = alternatives.find(a => a.id === alternativeId);
     
     if (!alt) {
@@ -215,7 +223,6 @@ export default function WorkoutSessionScreen() {
         technique: alt.technique,
         equipment: alt.equipment,
         settings: alt.settings,
-        alternatives: alt.alternatives,
       };
       return updated;
     });
@@ -234,8 +241,6 @@ export default function WorkoutSessionScreen() {
     
     console.log(`↩️ Сброс к оригинальному упражнению для ${workoutExId}`);
     
-    // Нужно загрузить оригинальное упражнение из БД
-    // Для простоты - перезагружаем всю тренировку
     Alert.alert(
       'Вернуть оригинальное упражнение?',
       'Данные подходов сохранятся',
@@ -294,7 +299,7 @@ export default function WorkoutSessionScreen() {
   };
 
   const saveWorkout = async () => {
-    console.log(' Сохранение тренировки');
+    console.log('💾 Сохранение тренировки');
     
     Alert.alert(
       'Завершить тренировку?',
@@ -398,7 +403,6 @@ export default function WorkoutSessionScreen() {
             replaceExercise={replaceExercise}
             resetToOriginal={resetToOriginal}
             startRestTimer={startRestTimer}
-            onSetCompleted={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
           />
         ))}
       </ScrollView>
@@ -418,19 +422,17 @@ function ExerciseSlider({
   replaceExercise,
   resetToOriginal,
   startRestTimer,
-  onSetCompleted,
 }: {
   exercise: ExerciseData;
   exerciseIndex: number;
   isReplaced: boolean;
   alternativesCache: Record<string, AlternativeExercise[]>;
-  loadAlternatives: (id: string) => Promise<AlternativeExercise[]>;
+  loadAlternatives: (id: string, muscles: string[]) => Promise<AlternativeExercise[]>;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
   startRestTimer: (seconds: number) => void;
-  onSetCompleted: () => void;
 }) {
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
@@ -439,7 +441,7 @@ function ExerciseSlider({
     const load = async () => {
       if (exercise.alternatives.length > 0 || isReplaced) {
         setLoadingAlts(true);
-        const alts = await loadAlternatives(exercise.id);
+        const alts = await loadAlternatives(exercise.id, exercise.primary_muscles);
         setAlternatives(alts);
         setLoadingAlts(false);
       }
@@ -482,7 +484,6 @@ function ExerciseSlider({
             isSetCompleted={isSetCompleted}
             replaceExercise={replaceExercise}
             startRestTimer={startRestTimer}
-            onSetCompleted={onSetCompleted}
             loadingAlts={loadingAlts}
           />
         ))}
@@ -502,7 +503,6 @@ function ExerciseCard({
   isSetCompleted,
   replaceExercise,
   startRestTimer,
-  onSetCompleted,
   loadingAlts,
 }: {
   exercise: ExerciseData | AlternativeExercise;
@@ -514,7 +514,6 @@ function ExerciseCard({
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   startRestTimer: (seconds: number) => void;
-  onSetCompleted: () => void;
   loadingAlts: boolean;
 }) {
   const [expandedSections, setExpandedSections] = useState({
@@ -536,51 +535,51 @@ function ExerciseCard({
       {/* Заголовок */}
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle} numberOfLines={2}>{exercise.name}</Text>
-        {exercise.primary_muscles.length > 0 && (
+        {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
           <Text style={styles.musclesText}>
-            {exercise.primary_muscles.join(', ')}
+            {(exercise as ExerciseData).primary_muscles.join(', ')}
           </Text>
         )}
       </View>
 
       {/* Сворачиваемые секции */}
-      {exercise.technique ? (
+      {'technique' in exercise && (exercise as ExerciseData).technique ? (
         <CollapsibleSection
           title="Техника выполнения"
           expanded={expandedSections.technique}
           onToggle={() => toggleSection('technique')}
         >
-          <Text style={styles.sectionText}>{exercise.technique}</Text>
+          <Text style={styles.sectionText}>{(exercise as ExerciseData).technique}</Text>
         </CollapsibleSection>
       ) : null}
 
-      {exercise.equipment.length > 0 && (
+      {'equipment' in exercise && (exercise as ExerciseData).equipment.length > 0 && (
         <CollapsibleSection
           title="Оборудование"
           expanded={expandedSections.equipment}
           onToggle={() => toggleSection('equipment')}
         >
-          <Text style={styles.sectionText}>{exercise.equipment.join(', ')}</Text>
+          <Text style={styles.sectionText}>{(exercise as ExerciseData).equipment.join(', ')}</Text>
         </CollapsibleSection>
       )}
 
-{exercise.settings ? (
-  <CollapsibleSection
-    title="Настройки"
-    expanded={expandedSections.settings}
-    onToggle={() => toggleSection('settings')}
-  >
-    <Text style={styles.sectionText}>{exercise.settings}</Text>
-  </CollapsibleSection>
-) : null}
+      {'settings' in exercise && (exercise as ExerciseData).settings ? (
+        <CollapsibleSection
+          title="Настройки"
+          expanded={expandedSections.settings}
+          onToggle={() => toggleSection('settings')}
+        >
+          <Text style={styles.sectionText}>{(exercise as ExerciseData).settings}</Text>
+        </CollapsibleSection>
+      ) : null}
 
-      {/* Кнопка замены (только для альтернатив или если уже заменено) */}
+      {/* Кнопка замены (только для альтернатив) */}
       {!isMain && (
         <TouchableOpacity
           style={styles.replaceButton}
           onPress={() => replaceExercise(exerciseIndex, exercise.id)}
         >
-          <Text style={styles.replaceButtonText}> Заменить на это</Text>
+          <Text style={styles.replaceButtonText}>🔄 Заменить на это</Text>
         </TouchableOpacity>
       )}
 
@@ -615,10 +614,7 @@ function ExerciseCard({
                   style={styles.setInput}
                   placeholder="0"
                   value={set.weight}
-                  onChangeText={(val) => {
-                    updateSet(exerciseIndex, setIndex, 'weight', val);
-                    if (val) onSetCompleted();
-                  }}
+                  onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'weight', val)}
                   keyboardType="decimal-pad"
                   placeholderTextColor="#9ca3af"
                 />
@@ -643,10 +639,7 @@ function ExerciseCard({
                   style={styles.setInput}
                   placeholder="0"
                   value={set.reps}
-                  onChangeText={(val) => {
-                    updateSet(exerciseIndex, setIndex, 'reps', val);
-                    if (val) onSetCompleted();
-                  }}
+                  onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'reps', val)}
                   keyboardType="number-pad"
                   placeholderTextColor="#9ca3af"
                 />

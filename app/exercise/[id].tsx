@@ -4,20 +4,21 @@ import {
   Text, 
   ScrollView, 
   StyleSheet, 
-  ActivityIndicator,
+  TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
 import { Exercise } from '../../src/types';
+import * as Haptics from 'expo-haptics';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔵 ExerciseDetailScreen: Загрузка упражнения', id);
     loadExercise();
   }, [id]);
 
@@ -30,11 +31,9 @@ export default function ExerciseDetailScreen() {
         .single();
       
       if (error) throw error;
-      
-      console.log('✅ Упражнение загружено:', data.name);
       setExercise(data);
     } catch (error: any) {
-      console.error('🔴 Ошибка загрузки:', error);
+      console.error('Ошибка загрузки:', error);
       Alert.alert('Ошибка', error.message);
     } finally {
       setLoading(false);
@@ -43,17 +42,30 @@ export default function ExerciseDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#7c3aed" />
-        <Text style={styles.loadingText}>Загрузка...</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>← Назад</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.center}>
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
       </View>
     );
   }
 
   if (!exercise) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Упражнение не найдено</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>← Назад</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Упражнение не найдено</Text>
+        </View>
       </View>
     );
   }
@@ -66,6 +78,12 @@ export default function ExerciseDetailScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Назад</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.content}>
         <Text style={styles.icon}>🏋️</Text>
         <Text style={styles.title}>{exercise.name}</Text>
         
@@ -98,7 +116,7 @@ export default function ExerciseDetailScreen() {
 
       {exercise.technique ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Техника выполнения</Text>
+          <Text style={styles.sectionTitle}> Техника выполнения</Text>
           <Text style={styles.text}>{exercise.technique}</Text>
         </View>
       ) : null}
@@ -128,27 +146,43 @@ export default function ExerciseDetailScreen() {
 
       {equipment.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔧 Оборудование</Text>
+          <Text style={styles.sectionTitle}> Оборудование</Text>
           <Text style={styles.text}>{equipment.join(', ')}</Text>
         </View>
       )}
 
       {exercise.settings ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚙️ Настройка</Text>
+          <Text style={styles.sectionTitle}>️ Настройка</Text>
           <Text style={styles.text}>{exercise.settings}</Text>
         </View>
       ) : null}
+      
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#faf5ff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, color: '#6b7280' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText: { fontSize: 16, color: '#6b7280' },
   errorText: { color: '#ef4444', fontSize: 16 },
   header: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  backButton: {
+    padding: 8,
+  },
+  backText: {
+    color: '#7c3aed',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  content: {
     backgroundColor: 'white',
     padding: 24,
     borderBottomWidth: 1,
@@ -176,14 +210,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
-  secondaryTag: {
-    backgroundColor: '#f3f4f6',
-  },
-  tagText: {
-    color: '#7c3aed',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  secondaryTag: { backgroundColor: '#f3f4f6' },
+  tagText: { color: '#7c3aed', fontSize: 14, fontWeight: '500' },
   section: {
     backgroundColor: 'white',
     padding: 20,
@@ -191,15 +219,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 12,
   },
-  text: {
-    fontSize: 15,
-    color: '#374151',
-    lineHeight: 22,
-  },
-  listItem: {
-    fontSize: 15,
-    color: '#374151',
-    marginBottom: 6,
-    lineHeight: 22,
-  },
+  text: { fontSize: 15, color: '#374151', lineHeight: 22 },
+  listItem: { fontSize: 15, color: '#374151', marginBottom: 6, lineHeight: 22 },
 });

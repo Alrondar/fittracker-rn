@@ -5,73 +5,42 @@ import {
   FlatList, 
   StyleSheet, 
   RefreshControl,
-  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
-import { supabase, getList } from '../../src/lib/supabase';
-
-interface WorkoutHistory {
-  id: string;
-  name: string;
-  created_at: string;
-  workout_exercises: any[];
-}
+import { useRouter } from 'expo-router';
+import { supabase } from '../../src/lib/supabase';
+import { ListSkeleton } from '../../src/components/Skeleton';
+import * as Haptics from 'expo-haptics';
 
 export default function HistoryScreen() {
-  const [workouts, setWorkouts] = useState<WorkoutHistory[]>([]);
+  const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    console.log('🔵 HistoryScreen: Загрузка истории');
     loadHistory();
   }, []);
 
   const loadHistory = async () => {
     try {
-      console.log('🔵 Запрос к Supabase: workouts с логами');
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('workouts')
         .select(`
-          id,
-          name,
-          created_at,
+          id, name, created_at,
           workout_exercises (
-            id,
-            order_index,
-            exercises (
-              id,
-              name,
-              primary_muscles
-            ),
-            workout_logs (
-              set_number,
-              weight_kg,
-              reps,
-              completed_at
-            )
+            workout_logs (weight_kg, reps)
           )
         `)
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('🔴 Ошибка загрузки истории:', error);
-        return;
-      }
-
-      console.log('✅ Получено тренировок:', data?.length);
-      
-      // Фильтруем только завершенные тренировки (с логами)
-      const completed = (data || []).filter((workout: any) => {
-        const exercises = workout.workout_exercises || [];
-        return exercises.some((ex: any) => 
-          ex.workout_logs && ex.workout_logs.length > 0
-        );
-      });
-
-      console.log('✅ Завершенных тренировок:', completed.length);
+      // Фильтруем только завершенные
+      const completed = (data || []).filter((w: any) => 
+        w.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0)
+      );
       setWorkouts(completed);
-    } catch (error: any) {
-      console.error(' Исключение при загрузке:', error);
+    } catch (e) {
+      console.error('Ошибка истории:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -79,103 +48,64 @@ export default function HistoryScreen() {
   };
 
   const onRefresh = () => {
-    console.log('🔄 Обновление истории');
     setRefreshing(true);
     loadHistory();
   };
 
-  const calculateStats = (workout: WorkoutHistory) => {
-    let totalVolume = 0;
-    let totalSets = 0;
-    let totalExercises = 0;
-
-    workout.workout_exercises?.forEach((ex: any) => {
-      const logs = ex.workout_logs || [];
-      if (logs.length > 0) totalExercises++;
-      
-      logs.forEach((log: any) => {
-        const weight = parseFloat(log.weight_kg) || 0;
-        const reps = parseInt(log.reps) || 0;
-        totalVolume += weight * reps;
-        totalSets++;
-      });
-    });
-
-    return { totalVolume, totalSets, totalExercises };
-  };
-
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  };
 
-    if (days === 0) return 'Сегодня';
-    if (days === 1) return 'Вчера';
-    if (days < 7) return `${days} дн. назад`;
-
-    return date.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
-      month: 'long',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  const calculateVolume = (workout: any) => {
+    let volume = 0;
+    workout.workout_exercises?.forEach((ex: any) => {
+      ex.workout_logs?.forEach((log: any) => {
+        volume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
+      });
     });
+    return volume;
   };
 
   const renderEmpty = () => (
     <View style={styles.center}>
-      <Text style={styles.emptyIcon}>⏱️</Text>
-      <Text style={styles.emptyText}>Пока нет завершенных тренировок</Text>
-      <Text style={styles.emptySubtext}>Заверши первую тренировку, чтобы увидеть её здесь</Text>
+      <Text style={styles.emptyIcon}>📊</Text>
+      <Text style={styles.emptyText}>История пуста</Text>
+      <Text style={styles.emptySubtext}>Завершите первую тренировку</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#7c3aed" />
-          <Text style={styles.loadingText}>Загрузка...</Text>
-        </View>
+        <ListSkeleton count={4} />
       ) : (
         <FlatList
           data={workouts}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const stats = calculateStats(item);
-            return (
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-                </View>
-                
-                <View style={styles.stats}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{stats.totalExercises}</Text>
-                    <Text style={styles.statLabel}>упражнений</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{stats.totalSets}</Text>
-                    <Text style={styles.statLabel}>подходов</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{Math.round(stats.totalVolume)}</Text>
-                    <Text style={styles.statLabel}>кг</Text>
-                  </View>
-                </View>
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                // router.push(`/history/${item.id}`); // Пока заглушка
+              }}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{item.name}</Text>
+                <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
               </View>
-            );
-          }}
+              <View style={styles.statsRow}>
+                <Text style={styles.statText}>
+                  Объем: {Math.round(calculateVolume(item))} кг
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              colors={['#7c3aed']}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7c3aed']} />
           }
         />
       )}
@@ -185,65 +115,18 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#faf5ff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText: { marginTop: 12, color: '#6b7280' },
-  emptyIcon: { fontSize: 64, marginBottom: 16 },
-  emptyText: { fontSize: 16, color: '#6b7280', textAlign: 'center' },
-  emptySubtext: { fontSize: 14, color: '#9ca3af', textAlign: 'center', marginTop: 8 },
   list: { padding: 16 },
   card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: 'white', padding: 16, borderRadius: 12,
+    marginBottom: 12, elevation: 2,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    flex: 1,
-    marginRight: 12,
-  },
-  cardDate: {
-    fontSize: 13,
-    color: '#6b7280',
-  },
-  stats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#7c3aed',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#e5e7eb',
-    marginHorizontal: 8,
-  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#1f2937' },
+  cardDate: { color: '#9ca3af', fontSize: 12 },
+  statsRow: { paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
+  statText: { color: '#7c3aed', fontWeight: '600', fontSize: 14 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  emptyIcon: { fontSize: 64, marginBottom: 16 },
+  emptyText: { fontSize: 18, color: '#6b7280', marginBottom: 8 },
+  emptySubtext: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
 });

@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { Workout } from '../../src/types';
 import { useStore } from '../../src/store/useStore';
+import { ListSkeleton } from '../../src/components/Skeleton';
 
 export default function WorkoutsScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -70,30 +71,21 @@ export default function WorkoutsScreen() {
           onPress: async () => {
             console.log('🗑️ Удаление тренировки:', id);
             try {
-              // Сначала удаляем workout_exercises
               const { error: weError } = await supabase
                 .from('workout_exercises')
                 .delete()
                 .eq('workout_id', id);
               
-              if (weError) {
-                console.error('🔴 Ошибка удаления workout_exercises:', weError);
-                throw weError;
-              }
+              if (weError) throw weError;
 
-              // Потом удаляем саму тренировку
               const { error } = await supabase
                 .from('workouts')
                 .delete()
                 .eq('id', id);
               
-              if (error) {
-                console.error('🔴 Ошибка удаления тренировки:', error);
-                throw error;
-              }
+              if (error) throw error;
 
               console.log('✅ Тренировка удалена');
-              Alert.alert('Успех', 'Тренировка удалена');
               loadWorkouts();
             } catch (e: any) {
               console.error('🔴 Исключение при удалении:', e);
@@ -125,9 +117,7 @@ export default function WorkoutsScreen() {
   return (
     <View style={styles.container}>
       {loading ? (
-        <View style={styles.center}>
-          <Text style={styles.loadingText}>Загрузка...</Text>
-        </View>
+        <ListSkeleton count={4} />
       ) : (
         <FlatList
           data={workouts}
@@ -194,17 +184,6 @@ export default function WorkoutsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#faf5ff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { fontSize: 16, color: '#6b7280' },
-  empty: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    paddingVertical: 60 
-  },
-  emptyIcon: { fontSize: 64, marginBottom: 16 },
-  emptyText: { fontSize: 18, color: '#6b7280', marginBottom: 8 },
-  emptySubtext: { color: '#9ca3af', fontSize: 14 },
   list: { padding: 16 },
   card: {
     backgroundColor: 'white',
@@ -237,6 +216,15 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 14,
   },
+  empty: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingVertical: 60 
+  },
+  emptyIcon: { fontSize: 64, marginBottom: 16 },
+  emptyText: { fontSize: 18, color: '#6b7280', marginBottom: 8 },
+  emptySubtext: { color: '#9ca3af', fontSize: 14 },
   fab: {
     position: 'absolute',
     bottom: 24,

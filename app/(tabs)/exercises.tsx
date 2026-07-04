@@ -5,13 +5,13 @@ import {
   FlatList, 
   StyleSheet, 
   TouchableOpacity, 
-  ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase, getList } from '../../src/lib/supabase';
 import { Exercise } from '../../src/types';
+import { ListSkeleton } from '../../src/components/Skeleton';
+import * as Haptics from 'expo-haptics';
 
 export default function ExercisesScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -22,74 +22,37 @@ export default function ExercisesScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('🔵 ExercisesScreen: Инициализация');
     loadMuscles();
   }, []);
 
   useEffect(() => {
-    console.log(' Загрузка упражнений с фильтром:', selectedMuscles);
     loadExercises();
   }, [selectedMuscles]);
 
   const loadMuscles = async () => {
     try {
-      console.log('🔵 Загрузка списка мышц');
-      const { data, error } = await supabase
-        .from('exercises')
-        .select('primary_muscles');
-      
-      if (error) {
-        console.error('🔴 Ошибка загрузки мышц:', error);
-        Alert.alert('Ошибка', error.message);
-        return;
-      }
-
-      console.log('✅ Получено записей для мышц:', data?.length);
-      
+      const { data } = await supabase.from('exercises').select('primary_muscles');
       const musclesSet = new Set<string>();
       (data || []).forEach((ex: any) => {
-        const muscles = getList(ex, 'primary_muscles');
-        muscles.forEach(m => musclesSet.add(m));
+        getList(ex, 'primary_muscles').forEach(m => musclesSet.add(m));
       });
-      
-      const muscles = Array.from(musclesSet).sort();
-      console.log('✅ Уникальных мышц:', muscles.length, muscles);
-      setAllMuscles(muscles);
+      setAllMuscles(Array.from(musclesSet).sort());
     } catch (e) {
-      console.error('🔴 Исключение при загрузке мышц:', e);
+      console.error('Ошибка загрузки мышц:', e);
     }
   };
 
   const loadExercises = async () => {
     setLoading(true);
     try {
-      console.log('🔵 Запрос упражнений...');
-      
       let query = supabase.from('exercises').select('*');
-      
       if (selectedMuscles.length > 0) {
-        console.log('🔍 Применение фильтра:', selectedMuscles);
         query = query.overlaps('primary_muscles', selectedMuscles);
       }
-      
-      const { data, error } = await query.order('name');
-      
-      if (error) {
-        console.error('🔴 Ошибка загрузки упражнений:', error);
-        Alert.alert('Ошибка', error.message);
-        return;
-      }
-
-      console.log('✅ Загружено упражнений:', data?.length || 0);
-      if (data && data.length > 0) {
-        console.log('📋 Первое упражнение:', data[0].name);
-      }
-      
+      const { data } = await query.order('name');
       setExercises(data || []);
-    } catch (e: unknown) {
-      console.error('🔴 Исключение при загрузке упражнений:', e);
-      const message = e instanceof Error ? e.message : String(e);
-      Alert.alert('Ошибка', message);
+    } catch (e) {
+      console.error('Ошибка загрузки упражнений:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -97,23 +60,15 @@ export default function ExercisesScreen() {
   };
 
   const onRefresh = () => {
-    console.log('🔄 Обновление справочника');
     setRefreshing(true);
     loadExercises();
   };
 
   const toggleMuscle = (muscle: string) => {
-    console.log(' Переключение мышцы:', muscle);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedMuscles(prev =>
-      prev.includes(muscle) 
-        ? prev.filter(m => m !== muscle) 
-        : [...prev, muscle]
+      prev.includes(muscle) ? prev.filter(m => m !== muscle) : [...prev, muscle]
     );
-  };
-
-  const clearFilters = () => {
-    console.log('🧹 Очистка фильтров');
-    setSelectedMuscles([]);
   };
 
   const renderEmpty = () => (
@@ -144,32 +99,18 @@ export default function ExercisesScreen() {
                 styles.chipText,
                 selectedMuscles.includes(item) && styles.chipTextSelected,
               ]}>
-                {selectedMuscles.includes(item) ? '✓ ' : ''}{item}
+                {item}
               </Text>
             </TouchableOpacity>
           )}
           contentContainerStyle={styles.filtersList}
           showsHorizontalScrollIndicator={false}
         />
-        
-        {selectedMuscles.length > 0 && (
-          <TouchableOpacity 
-            style={styles.clearButton}
-            onPress={clearFilters}
-          >
-            <Text style={styles.clearText}>✕ Сбросить</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
-      {/* Список упражнений */}
+      {/* Список или Скелетон */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#7c3aed" />
-          <Text style={styles.loadingText}>Загрузка...</Text>
-        </View>
-      ) : exercises.length === 0 ? (
-        renderEmpty()
+        <ListSkeleton count={5} />
       ) : (
         <FlatList
           data={exercises}
@@ -178,28 +119,23 @@ export default function ExercisesScreen() {
             <TouchableOpacity
               style={styles.card}
               onPress={() => {
-                console.log('👆 Открытие упражнения:', item.id, item.name);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.push(`/exercise/${item.id}`);
               }}
             >
               <Text style={styles.icon}>🏋️</Text>
               <View style={styles.cardContent}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                  {item.name}
-                </Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.cardSubtitle} numberOfLines={1}>
-                  Основная: {getList(item, 'primary_muscles').join(', ')}
+                  {getList(item, 'primary_muscles').join(', ')}
                 </Text>
               </View>
             </TouchableOpacity>
           )}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={renderEmpty}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              colors={['#7c3aed']}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7c3aed']} />
           }
         />
       )}
@@ -209,100 +145,26 @@ export default function ExercisesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#faf5ff' },
-  filters: { 
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  filtersList: { 
-    paddingVertical: 12, 
-    paddingHorizontal: 8 
-  },
+  filters: { backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  filtersList: { paddingVertical: 12, paddingHorizontal: 16 },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    marginRight: 8,
-    backgroundColor: 'white',
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, backgroundColor: 'white',
   },
-  chipSelected: {
-    backgroundColor: '#ede9fe',
-    borderColor: '#7c3aed',
-  },
-  chipText: { 
-    color: '#374151',
-    fontSize: 14,
-  },
-  chipTextSelected: { 
-    color: '#7c3aed', 
-    fontWeight: 'bold' 
-  },
-  clearButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 12,
-    alignSelf: 'center',
-  },
-  clearText: {
-    color: '#ef4444',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  center: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    padding: 24,
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#6b7280',
-    fontSize: 16,
-  },
-  emptyIcon: { 
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: { 
-    fontSize: 18, 
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  emptySubtext: { 
-    color: '#9ca3af', 
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  chipSelected: { backgroundColor: '#ede9fe', borderColor: '#7c3aed' },
+  chipText: { color: '#374151', fontSize: 14 },
+  chipTextSelected: { color: '#7c3aed', fontWeight: 'bold' },
   list: { padding: 16 },
   card: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    flexDirection: 'row', backgroundColor: 'white', padding: 16, borderRadius: 12,
+    marginBottom: 12, elevation: 2,
   },
-  icon: { 
-    fontSize: 32, 
-    marginRight: 12 
-  },
-  cardContent: { 
-    flex: 1 
-  },
-  cardTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#1f2937' 
-  },
-  cardSubtitle: { 
-    fontSize: 14, 
-    color: '#6b7280', 
-    marginTop: 4 
-  },
+  icon: { fontSize: 32, marginRight: 12 },
+  cardContent: { flex: 1, justifyContent: 'center' },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
+  cardSubtitle: { fontSize: 14, color: '#6b7280', marginTop: 4 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  emptyIcon: { fontSize: 64, marginBottom: 16 },
+  emptyText: { fontSize: 18, color: '#6b7280', marginBottom: 8 },
+  emptySubtext: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
 });
