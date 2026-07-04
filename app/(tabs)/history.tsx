@@ -88,7 +88,7 @@ export default function HistoryScreen() {
               style={styles.card}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                // router.push(`/history/${item.id}`); // Пока заглушка
+                router.push(`/history/${item.id}`);
               }}
             >
               <View style={styles.cardHeader}>

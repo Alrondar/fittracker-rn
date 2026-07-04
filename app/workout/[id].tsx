@@ -362,20 +362,24 @@ export default function WorkoutSessionScreen() {
   return (
     <View style={styles.container}>
       {/* Шапка */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} numberOfLines={1}>{workoutName}</Text>
-        <TouchableOpacity 
-          style={[styles.finishButton, saving && styles.finishButtonDisabled]} 
-          onPress={saveWorkout}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.finishButtonText}>Завершить</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+{/* Шапка */}
+<View style={styles.header}>
+  <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+    <Text style={styles.backText}>← Назад</Text>
+  </TouchableOpacity>
+  <Text style={styles.headerTitle} numberOfLines={1}>{workoutName}</Text>
+  <TouchableOpacity 
+    style={[styles.finishButton, saving && styles.finishButtonDisabled]} 
+    onPress={saveWorkout}
+    disabled={saving}
+  >
+    {saving ? (
+      <ActivityIndicator color="white" size="small" />
+    ) : (
+      <Text style={styles.finishButtonText}>Завершить</Text>
+    )}
+  </TouchableOpacity>
+</View>
 
       {/* Таймер отдыха */}
       {restTimer !== null && (
@@ -701,13 +705,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    flex: 1,
-    marginRight: 12,
-  },
+headerTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#1f2937',
+  flex: 1,
+  marginRight: 12,
+},
+backButton: {
+  padding: 8,
+  marginRight: 8,
+},
+backText: {
+  color: '#7c3aed',
+  fontSize: 16,
+  fontWeight: '600',
+},
   finishButton: {
     backgroundColor: '#10b981',
     paddingHorizontal: 16,

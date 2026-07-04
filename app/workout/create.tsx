@@ -6,7 +6,6 @@ import {
   FlatList, 
   TouchableOpacity, 
   StyleSheet, 
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -14,7 +13,9 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
+import { useToast } from '../../src/components/ToastProvider';
 import { Exercise } from '../../src/types';
+import * as Haptics from 'expo-haptics';
 
 export default function CreateWorkoutScreen() {
   const { edit } = useLocalSearchParams();
@@ -27,6 +28,7 @@ export default function CreateWorkoutScreen() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const { userId } = useStore();
+  const { showToast } = useToast();
 
   useEffect(() => {
     console.log('🔵 CreateWorkoutScreen: Инициализация, edit:', edit);
@@ -35,11 +37,11 @@ export default function CreateWorkoutScreen() {
   }, [edit]);
 
   const loadExercises = async () => {
-    console.log(' Загрузка всех упражнений');
+    console.log('🔵 Загрузка всех упражнений');
     const { data, error } = await supabase.from('exercises').select('*').order('name');
     if (error) {
-      console.error('🔴 Ошибка загрузки упражнений:', error);
-      Alert.alert('Ошибка', error.message);
+      console.error(' Ошибка загрузки упражнений:', error);
+      showToast('Ошибка загрузки упражнений', 'error');
     } else {
       console.log('✅ Загружено упражнений:', data?.length);
       setExercises(data || []);
@@ -48,7 +50,7 @@ export default function CreateWorkoutScreen() {
   };
 
   const loadWorkout = async (id: string) => {
-    console.log('🔵 Загрузка тренировки для редактирования:', id);
+    console.log(' Загрузка тренировки для редактирования:', id);
     try {
       const { data: workout, error } = await supabase
         .from('workouts')
@@ -78,31 +80,35 @@ export default function CreateWorkoutScreen() {
       }
     } catch (error: any) {
       console.error('🔴 Ошибка загрузки тренировки:', error);
-      Alert.alert('Ошибка', error.message);
+      showToast('Ошибка загрузки тренировки', 'error');
     }
   };
 
   const addExercise = (ex: Exercise) => {
-    console.log(' Добавление упражнения:', ex.name);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    console.log('➕ Добавление упражнения:', ex.name);
     if (!selected.find(s => s.id === ex.id)) {
       setSelected([...selected, ex]);
+      showToast(`Добавлено: ${ex.name}`, 'success');
     } else {
-      Alert.alert('Внимание', 'Это упражнение уже добавлено');
+      showToast('Это упражнение уже добавлено', 'info');
     }
   };
 
   const removeExercise = (id: string) => {
-    console.log(' Удаление упражнения');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('🗑️ Удаление упражнения');
     setSelected(selected.filter(s => s.id !== id));
+    showToast('Упражнение удалено', 'info');
   };
 
   const save = async () => {
     if (!name.trim()) {
-      Alert.alert('Ошибка', 'Введите название тренировки');
+      showToast('Введите название тренировки', 'error');
       return;
     }
     if (selected.length === 0) {
-      Alert.alert('Ошибка', 'Добавьте хотя бы одно упражнение');
+      showToast('Добавьте хотя бы одно упражнение', 'error');
       return;
     }
 
@@ -134,7 +140,8 @@ export default function CreateWorkoutScreen() {
           if (weError) throw weError;
         }
         
-        Alert.alert('Успех', 'Тренировка обновлена!');
+        showToast('Тренировка обновлена!', 'success');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         console.log('➕ Создание новой тренировки');
         const { data: newWorkout, error } = await supabase
@@ -161,13 +168,14 @@ export default function CreateWorkoutScreen() {
           if (weError) throw weError;
         }
         
-        Alert.alert('Успех', 'Тренировка создана!');
+        showToast('Тренировка создана!', 'success');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       
-      router.back();
+      setTimeout(() => router.back(), 1000);
     } catch (error: any) {
       console.error('🔴 Ошибка сохранения:', error);
-      Alert.alert('Ошибка', error.message);
+      showToast('Ошибка сохранения: ' + error.message, 'error');
     } finally {
       setSaving(false);
     }
@@ -185,14 +193,17 @@ export default function CreateWorkoutScreen() {
       style={styles.container}
     >
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Назад</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {edit ? 'Редактировать' : 'Новая тренировка'}
         </Text>
-        <TouchableOpacity onPress={save} disabled={saving}>
+        <TouchableOpacity onPress={save} disabled={saving} style={styles.saveButton}>
           {saving ? (
             <ActivityIndicator color="#7c3aed" />
           ) : (
-            <Text style={styles.saveBtn}>💾</Text>
+            <Text style={styles.saveText}>💾</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -278,8 +289,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold' },
-  saveBtn: { fontSize: 24 },
+  backButton: {
+    padding: 8,
+  },
+  backText: {
+    color: '#7c3aed',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  saveButton: {
+    padding: 8,
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  saveText: { fontSize: 24 },
   list: { padding: 16 },
   form: { marginBottom: 16 },
   input: {
