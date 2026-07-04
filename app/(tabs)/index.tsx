@@ -7,10 +7,14 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   RefreshControl,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
+import { AnimatedButton } from '../../src/components/AnimatedButton';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import * as Haptics from 'expo-haptics';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -37,15 +41,11 @@ export default function DashboardScreen() {
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
 
   useEffect(() => {
-    console.log('🔵 Dashboard: Инициализация');
     loadDashboard();
   }, []);
 
   const loadDashboard = async () => {
     try {
-      console.log('🔵 Загрузка данных Dashboard');
-      
-      // Загружаем все тренировки
       const { data: workouts, error } = await supabase
         .from('workouts')
         .select(`
@@ -63,13 +63,10 @@ export default function DashboardScreen() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('🔴 Ошибка загрузки тренировок:', error);
+        console.error('🔴 Ошибка загрузки:', error);
         return;
       }
-
-      console.log('✅ Загружено тренировок:', workouts?.length);
       
-      // Считаем статистику
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -85,13 +82,10 @@ export default function DashboardScreen() {
         if (createdAt >= weekAgo) weekWorkouts++;
         if (createdAt >= monthAgo) monthWorkouts++;
 
-        // Считаем объём
         let workoutVolume = 0;
         workout.workout_exercises?.forEach((we: any) => {
           we.workout_logs?.forEach((log: any) => {
-            const weight = parseFloat(log.weight_kg) || 0;
-            const reps = parseInt(log.reps) || 0;
-            workoutVolume += weight * reps;
+            workoutVolume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
           });
         });
 
@@ -99,27 +93,20 @@ export default function DashboardScreen() {
         if (createdAt >= weekAgo) weekVolume += workoutVolume;
       });
 
-      const newStats: DashboardStats = {
+      setStats({
         totalWorkouts: workouts?.length || 0,
         weekWorkouts,
         monthWorkouts,
         totalVolume,
         weekVolume,
-      };
+      });
 
-      console.log('✅ Статистика:', newStats);
-      setStats(newStats);
-
-      // Последняя тренировка
       if (workouts && workouts.length > 0) {
         setLastWorkout(workouts[0]);
-        console.log('📋 Последняя тренировка:', workouts[0].name);
       }
-
-      // Последние 3 тренировки
       setRecentWorkouts(workouts?.slice(0, 3) || []);
     } catch (error: any) {
-      console.error('🔴 Исключение при загрузке Dashboard:', error);
+      console.error('🔴 Исключение:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -127,7 +114,7 @@ export default function DashboardScreen() {
   };
 
   const onRefresh = () => {
-    console.log('🔄 Обновление Dashboard');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     loadDashboard();
   };
@@ -147,199 +134,226 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#7c3aed" />
-        <Text style={styles.loadingText}>Загрузка...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh}
-          colors={['#7c3aed']}
-        />
-      }
-    >
-      {/* Приветствие */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Привет! 👋</Text>
-        <Text style={styles.subtitle}>Готов к тренировке?</Text>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
+        {/* Приветствие */}
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Привет! 👋</Text>
+          <Text style={styles.subtitle}>Готов к тренировке?</Text>
+        </View>
 
-      {/* Статистика */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.weekWorkouts}</Text>
-          <Text style={styles.statLabel}>На этой неделе</Text>
+        {/* Статистика */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.weekWorkouts}</Text>
+            <Text style={styles.statLabel}>На неделе</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.monthWorkouts}</Text>
+            <Text style={styles.statLabel}>В месяце</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{Math.round(stats.weekVolume)}</Text>
+            <Text style={styles.statLabel}>кг за неделю</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.monthWorkouts}</Text>
-          <Text style={styles.statLabel}>В этом месяце</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{Math.round(stats.weekVolume)}</Text>
-          <Text style={styles.statLabel}>кг за неделю</Text>
-        </View>
-      </View>
 
-      {/* Последняя тренировка */}
-      {lastWorkout ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Последняя тренировка</Text>
-          <TouchableOpacity 
-            style={styles.lastWorkoutCard}
-            onPress={() => router.push(`/workout/${lastWorkout.id}`)}
-          >
-            <View style={styles.lastWorkoutInfo}>
-              <Text style={styles.lastWorkoutName}>{lastWorkout.name}</Text>
-              <Text style={styles.lastWorkoutDate}>
-                {formatDate(lastWorkout.created_at)}
-              </Text>
-            </View>
-            <Text style={styles.arrow}>→</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Начни первую тренировку</Text>
-          <TouchableOpacity 
-            style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/workouts')}
-          >
-            <Text style={styles.emptyIcon}>🏋️</Text>
-            <Text style={styles.emptyText}>Создать тренировку</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Быстрый доступ */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Быстрый доступ</Text>
-        <View style={styles.quickActions}>
-          <TouchableOpacity 
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/workouts')}
-          >
-            <Text style={styles.quickActionIcon}></Text>
-            <Text style={styles.quickActionText}>Тренировки</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/exercises')}
-          >
-            <Text style={styles.quickActionIcon}>📚</Text>
-            <Text style={styles.quickActionText}>Справочник</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.quickAction}
-            onPress={() => router.push('/(tabs)/history')}
-          >
-            <Text style={styles.quickActionIcon}>📊</Text>
-            <Text style={styles.quickActionText}>История</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Недавние тренировки */}
-      {recentWorkouts.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Недавние тренировки</Text>
-          {recentWorkouts.map((workout) => (
-            <TouchableOpacity
-              key={workout.id}
-              style={styles.recentCard}
-              onPress={() => router.push(`/workout/${workout.id}`)}
+        {/* Последняя тренировка */}
+        {lastWorkout ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Последняя тренировка</Text>
+            <TouchableOpacity 
+              style={styles.lastWorkoutCard}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push(`/workout/${lastWorkout.id}`);
+              }}
+              activeOpacity={0.8}
             >
-              <View style={styles.recentInfo}>
-                <Text style={styles.recentName}>{workout.name}</Text>
-                <Text style={styles.recentDate}>
-                  {formatDate(workout.created_at)}
+              <View style={styles.lastWorkoutInfo}>
+                <Text style={styles.lastWorkoutName}>{lastWorkout.name}</Text>
+                <Text style={styles.lastWorkoutDate}>
+                  {formatDate(lastWorkout.created_at)}
                 </Text>
               </View>
               <Text style={styles.arrow}>→</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-      )}
+          </View>
+        ) : (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Начни первую тренировку</Text>
+            <AnimatedButton
+              title="Создать тренировку"
+              onPress={() => router.push('/(tabs)/workouts')}
+              icon="🏋️"
+              size="large"
+              style={styles.emptyCard}
+            />
+          </View>
+        )}
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        {/* Быстрый доступ */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Быстрый доступ</Text>
+          <View style={styles.quickActions}>
+            <TouchableOpacity 
+              style={styles.quickAction}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(tabs)/workouts');
+              }}
+            >
+              <Text style={styles.quickActionIcon}>💪</Text>
+              <Text style={styles.quickActionText}>Тренировки</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickAction}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(tabs)/exercises');
+              }}
+            >
+              <Text style={styles.quickActionIcon}>📚</Text>
+              <Text style={styles.quickActionText}>Справочник</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickAction}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(tabs)/history');
+              }}
+            >
+              <Text style={styles.quickActionIcon}>📊</Text>
+              <Text style={styles.quickActionText}>История</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Недавние тренировки */}
+        {recentWorkouts.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Недавние тренировки</Text>
+            {recentWorkouts.map((workout) => (
+              <TouchableOpacity
+                key={workout.id}
+                style={styles.recentCard}
+                onPress={() => router.push(`/history/${workout.id}`)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.recentInfo}>
+                  <Text style={styles.recentName}>{workout.name}</Text>
+                  <Text style={styles.recentDate}>
+                    {formatDate(workout.created_at)}
+                  </Text>
+                </View>
+                <Text style={styles.arrow}>→</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#faf5ff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, color: '#6b7280' },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
+  },
+  scrollView: { 
+    flex: 1 
+  },
+  center: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
   
   header: {
-    padding: 24,
-    paddingBottom: 16,
+    padding: SPACING.xl,
+    paddingBottom: SPACING.lg,
   },
   greeting: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.textPrimary,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
-    marginTop: 4,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
 
   statsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-    gap: 12,
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.xl,
+    gap: SPACING.md,
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 4,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#7c3aed',
-    marginBottom: 4,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: COLORS.textSecondary,
   },
 
   section: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 12,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.md,
   },
 
   lastWorkoutCard: {
-    backgroundColor: '#7c3aed',
-    padding: 20,
-    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    padding: SPACING.xl,
+    borderRadius: BORDER_RADIUS.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#7c3aed',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -348,8 +362,8 @@ const styles = StyleSheet.create({
   lastWorkoutName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 4,
+    color: COLORS.textInverse,
+    marginBottom: SPACING.xs,
   },
   lastWorkoutDate: {
     fontSize: 14,
@@ -357,54 +371,44 @@ const styles = StyleSheet.create({
   },
   arrow: {
     fontSize: 24,
-    color: 'white',
-    marginLeft: 12,
+    color: COLORS.textInverse,
+    marginLeft: SPACING.md,
   },
 
   emptyCard: {
-    backgroundColor: 'white',
-    padding: 32,
-    borderRadius: 16,
-    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    padding: SPACING.xl,
+    borderRadius: BORDER_RADIUS.xl,
     elevation: 2,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#7c3aed',
   },
 
   quickActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SPACING.md,
   },
   quickAction: {
     flex: 1,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     elevation: 2,
   },
   quickActionIcon: {
     fontSize: 32,
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   quickActionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.textPrimary,
   },
 
   recentCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -414,11 +418,11 @@ const styles = StyleSheet.create({
   recentName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.xs,
   },
   recentDate: {
     fontSize: 14,
-    color: '#6b7280',
+    color: COLORS.textSecondary,
   },
 });
