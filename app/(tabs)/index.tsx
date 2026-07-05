@@ -9,13 +9,14 @@ import {
   RefreshControl,
   SafeAreaView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { AnimatedButton } from '../../src/components/AnimatedButton';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import * as Haptics from 'expo-haptics';
+import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
+import * as Haptics from 'expo-haptics';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -28,7 +29,7 @@ interface DashboardStats {
 export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
-  const { colors } = useTheme(); // Используем хук темы
+  const { colors } = useTheme();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,15 +52,10 @@ export default function DashboardScreen() {
       const { data: workouts, error } = await supabase
         .from('workouts')
         .select(`
-          id,
-          name,
-          created_at,
+          id, name, created_at,
           workout_exercises (
             id,
-            workout_logs (
-              weight_kg,
-              reps
-            )
+            workout_logs (weight_kg, reps)
           )
         `)
         .order('created_at', { ascending: false });
@@ -162,42 +158,66 @@ export default function DashboardScreen() {
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Готов к тренировке?</Text>
         </View>
 
-        {/* Статистика */}
+        {/* Статистика с градиентами */}
         <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.weekWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>На неделе</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.monthWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>В месяце</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{Math.round(stats.weekVolume)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>кг за неделю</Text>
-          </View>
+          <LinearGradient
+            colors={GRADIENTS.primary}
+            style={styles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[styles.statValue, { color: colors.textInverse }]}>{stats.weekWorkouts}</Text>
+            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>На неделе</Text>
+          </LinearGradient>
+          
+          <LinearGradient
+            colors={GRADIENTS.success}
+            style={styles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[styles.statValue, { color: colors.textInverse }]}>{stats.monthWorkouts}</Text>
+            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>В месяце</Text>
+          </LinearGradient>
+          
+          <LinearGradient
+            colors={GRADIENTS.hero}
+            style={styles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[styles.statValue, { color: colors.textInverse }]}>{Math.round(stats.weekVolume)}</Text>
+            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>кг за неделю</Text>
+          </LinearGradient>
         </View>
 
-        {/* Последняя тренировка */}
+        {/* Последняя тренировка с градиентом */}
         {lastWorkout ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Последняя тренировка</Text>
-            <TouchableOpacity 
-              style={[styles.lastWorkoutCard, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push(`/workout/${lastWorkout.id}`);
-              }}
-              activeOpacity={0.8}
+            <LinearGradient
+              colors={GRADIENTS.hero}
+              style={styles.lastWorkoutCard}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
-              <View style={styles.lastWorkoutInfo}>
-                <Text style={[styles.lastWorkoutName, { color: colors.textInverse }]}>{lastWorkout.name}</Text>
-                <Text style={[styles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
-                  {formatDate(lastWorkout.created_at)}
-                </Text>
-              </View>
-              <Text style={[styles.arrow, { color: colors.textInverse }]}>→</Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push(`/history/${lastWorkout.id}`);
+                }}
+                activeOpacity={0.8}
+                style={styles.lastWorkoutContent}
+              >
+                <View style={styles.lastWorkoutInfo}>
+                  <Text style={[styles.lastWorkoutName, { color: colors.textInverse }]}>{lastWorkout.name}</Text>
+                  <Text style={[styles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
+                    {formatDate(lastWorkout.created_at)}
+                  </Text>
+                </View>
+                <Text style={[styles.arrow, { color: colors.textInverse }]}>→</Text>
+              </TouchableOpacity>
+            </LinearGradient>
           </View>
         ) : (
           <View style={styles.section}>
@@ -328,12 +348,14 @@ const styles = StyleSheet.create({
   },
 
   lastWorkoutCard: {
-    padding: SPACING.xl,
     borderRadius: BORDER_RADIUS.xl,
+    elevation: 4,
+  },
+  lastWorkoutContent: {
+    padding: SPACING.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    elevation: 4,
   },
   lastWorkoutInfo: { flex: 1 },
   lastWorkoutName: {

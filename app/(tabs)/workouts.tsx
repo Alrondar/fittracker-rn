@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -8,13 +8,15 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { Workout } from '../../src/types';
 import { useStore } from '../../src/store/useStore';
 import { ListSkeleton } from '../../src/components/Skeleton';
-import { FadeIn } from '../../src/components/FadeIn';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SwipeToDeleteCard } from '../../src/components/SwipeableCard';
+import { CustomBottomSheet } from '../../src/components/BottomSheet';
+import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
@@ -23,6 +25,11 @@ export default function WorkoutsScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Состояния для Bottom Sheet
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  
   const router = useRouter();
   const { setWorkouts: setStoreWorkouts } = useStore();
 
@@ -51,34 +58,51 @@ export default function WorkoutsScreen() {
   };
 
   const onRefresh = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync();
     setRefreshing(true);
     loadWorkouts();
   };
 
-  const deleteWorkout = async (id: string, name: string) => {
-    Alert.alert(
-      'Удалить тренировку?',
-      `"${name}" будет удалена навсегда`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            try {
-              await supabase.from('workout_exercises').delete().eq('workout_id', id);
-              await supabase.from('workouts').delete().eq('id', id);
-              loadWorkouts();
-            } catch (e: any) {
-              Alert.alert('Ошибка', e.message);
-            }
-          },
-        },
-      ]
-    );
+  // Обработчики для Bottom Sheet
+  const handleLongPress = (workout: Workout) => {
+      console.log('🎯 handleLongPress вызван для:', workout.name);
+    Haptics.impactAsync();
+    setSelectedWorkout(workout);
+    setSheetVisible(true);
   };
+
+  const handleEdit = () => {
+    if (selectedWorkout) {
+      router.push(`/workout/create?edit=${selectedWorkout.id}`);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (selectedWorkout) {
+      try {
+        await supabase.from('workout_exercises').delete().eq('workout_id', selectedWorkout.id);
+        await supabase.from('workouts').delete().eq('id', selectedWorkout.id);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        loadWorkouts();
+      } catch (e: any) {
+        Alert.alert('Ошибка', e.message);
+      }
+    }
+  };
+
+  const sheetItems = useMemo(() => [
+    { 
+      label: 'Редактировать', 
+      icon: '✏️', 
+      onPress: handleEdit 
+    },
+    { 
+      label: 'Удалить', 
+      icon: '🗑️', 
+      onPress: handleDelete,
+      destructive: true 
+    },
+  ], [selectedWorkout]);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -86,7 +110,7 @@ export default function WorkoutsScreen() {
   };
 
   const renderEmpty = () => (
-    <FadeIn delay={200} style={styles.emptyContainer}>
+    <View style={styles.emptyContainer}>
       <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>🏋️♂️</Text>
       <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Пока нет тренировок</Text>
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Создай свою первую программу, чтобы начать отслеживать прогресс!</Text>
@@ -96,7 +120,7 @@ export default function WorkoutsScreen() {
       >
         <Text style={[styles.emptyButtonText, { color: colors.textInverse }]}>+ Создать тренировку</Text>
       </TouchableOpacity>
-    </FadeIn>
+    </View>
   );
 
   return (
@@ -107,27 +131,28 @@ export default function WorkoutsScreen() {
         <FlatList
           data={workouts}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <FadeIn delay={index * 50}>
-              <TouchableOpacity
-                style={[styles.card, { backgroundColor: colors.surface }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/workout/${item.id}`);
-                }}
-                onLongPress={() => deleteWorkout(item.id, item.name)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
-                  <Text style={[styles.cardDate, { color: colors.textTertiary }]}>{formatDate(item.created_at)}</Text>
-                </View>
-                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
-                  {item.description || 'Нет описания'}
-                </Text>
-              </TouchableOpacity>
-            </FadeIn>
-          )}
+renderItem={({ item, index }) => (
+  <View style={{ opacity: 1 }}>
+    <SwipeToDeleteCard 
+      onDelete={() => handleDeleteFromSwipe(item)}
+      onLongPress={() => handleLongPress(item)}
+      onPress={() => {
+        console.log('👆 Короткое нажатие - открываем:', item.name);
+        router.push(`/workout/${item.id}`);
+      }}
+    >
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <View style={styles.cardHeader}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
+          <Text style={[styles.cardDate, { color: colors.textTertiary }]}>{formatDate(item.created_at)}</Text>
+        </View>
+        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+          {item.description || 'Нет описания'}
+        </Text>
+      </View>
+    </SwipeToDeleteCard>
+  </View>
+)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           refreshControl={
@@ -140,19 +165,49 @@ export default function WorkoutsScreen() {
         />
       )}
 
-      <FadeIn delay={300}>
+      <View style={styles.fabContainer}>
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            Haptics.impactAsync();
             router.push('/workout/create');
           }}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.fabText, { color: colors.textInverse }]}>+</Text>
+          <LinearGradient
+            colors={GRADIENTS.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fab}
+          >
+            <Text style={styles.fabText}>+</Text>
+          </LinearGradient>
         </TouchableOpacity>
-      </FadeIn>
+      </View>
+
+      {/* Bottom Sheet для действий с тренировкой */}
+      <CustomBottomSheet
+        visible={sheetVisible}
+        onClose={() => {
+          setSheetVisible(false);
+          setSelectedWorkout(null);
+        }}
+        title={selectedWorkout?.name || ''}
+        items={sheetItems}
+      />
     </View>
   );
+
+  // Отдельная функция для удаления через свайп
+  async function handleDeleteFromSwipe(item: Workout) {
+    try {
+      await supabase.from('workout_exercises').delete().eq('workout_id', item.id);
+      await supabase.from('workouts').delete().eq('id', item.id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      loadWorkouts();
+    } catch (e: any) {
+      Alert.alert('Ошибка', e.message);
+    }
+  }
 }
 
 const styles = StyleSheet.create({
@@ -214,18 +269,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  fab: {
+  fabContainer: {
     position: 'absolute',
     bottom: SPACING.xl,
     right: SPACING.xl,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
   },
   fabText: { 
+    color: '#ffffff', 
     fontWeight: 'bold', 
     fontSize: 28,
     marginTop: -2,

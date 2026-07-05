@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Switch } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 
 export default function ProfileScreen() {
@@ -42,8 +43,9 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Аватар */}
       <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-        <Text style={styles.avatarText}>👤</Text>
+        <Text style={styles.avatarText}></Text>
       </View>
       
       <Text style={[styles.title, { color: colors.textPrimary }]}>Профиль</Text>
@@ -55,7 +57,7 @@ export default function ProfileScreen() {
       <View style={[styles.section, { backgroundColor: colors.surface }]}>
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
-            <Text style={[styles.settingIcon, { fontSize: 24 }]}>🌙</Text>
+            <Text style={styles.settingIcon}>🌙</Text>
             <View style={styles.settingText}>
               <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Темная тема</Text>
               <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
@@ -72,9 +74,10 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* Меню настроек */}
       <View style={[styles.section, { backgroundColor: colors.surface }]}>
         <TouchableOpacity 
-          style={styles.menuItem}
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
           <Text style={styles.menuIcon}>⚙️</Text>
@@ -82,10 +85,10 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={styles.menuItem}
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
-          <Text style={styles.menuIcon}>🎯</Text>
+          <Text style={styles.menuIcon}></Text>
           <Text style={[styles.menuText, { color: colors.textPrimary }]}>Мои цели</Text>
         </TouchableOpacity>
         
@@ -98,12 +101,22 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Кнопка выхода с градиентом */}
       <TouchableOpacity 
-        style={[styles.logoutButton, { backgroundColor: colors.error }]} 
         onPress={handleLogout}
+        activeOpacity={0.8}
       >
-        <Text style={[styles.logoutText, { color: colors.textInverse }]}>Выйти из аккаунта</Text>
+        <LinearGradient
+          colors={GRADIENTS.danger}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoutButton}
+        >
+          <Text style={styles.logoutText}>Выйти из аккаунта</Text>
+        </LinearGradient>
       </TouchableOpacity>
+
+      <View style={{ height: 40 }} />
     </View>
   );
 }
@@ -151,6 +164,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingIcon: {
+    fontSize: 24,
     marginRight: SPACING.md,
   },
   settingText: {
@@ -185,5 +199,6 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#ffffff',
   },
 });

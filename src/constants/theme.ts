@@ -83,3 +83,12 @@ export const FONTS = {
   title: { fontSize: 20, fontWeight: 'bold' as const },
   subtitle: { fontSize: 16 },
 };
+
+export const GRADIENTS = {
+  primary: ['#7c3aed', '#5b21b6'] as const,      // Фиолетовый градиент
+  success: ['#10b981', '#059669'] as const,       // Зелёный
+  warning: ['#f59e0b', '#d97706'] as const,       // Оранжевый
+  danger: ['#ef4444', '#dc2626'] as const,        // Красный
+  hero: ['#8b5cf6', '#3b82f6'] as const,          // Фиолетово-синий для hero-карточек
+  dark: ['#1e293b', '#0f172a'] as const,          // Тёмный для тёмной темы
+};

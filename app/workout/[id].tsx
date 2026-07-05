@@ -16,6 +16,8 @@ import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import { GRADIENTS } from '../../src/constants/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -335,21 +337,26 @@ export default function WorkoutSessionScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Шапка */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>{workoutName}</Text>
         <TouchableOpacity 
-          style={[styles.finishButton, { backgroundColor: saving ? colors.textTertiary : colors.success }]} 
-          onPress={saveWorkout}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.finishButtonText}>Завершить</Text>
-          )}
-        </TouchableOpacity>
+  onPress={saveWorkout}
+  disabled={saving}
+  activeOpacity={0.8}
+>
+  {saving ? (
+    <View style={[styles.finishButton, { backgroundColor: colors.textTertiary }]}>
+      <ActivityIndicator color="white" size="small" />
+    </View>
+  ) : (
+    <LinearGradient
+      colors={GRADIENTS.success}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.finishButton}
+    >
+      <Text style={styles.finishButtonText}>Завершить</Text>
+    </LinearGradient>
+  )}
+</TouchableOpacity>
       </View>
 
       {/* Таймер отдыха */}

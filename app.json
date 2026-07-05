@@ -23,6 +23,8 @@
       "supabaseUrl": "https://trgiihqqcovidwcqwdkl.supabase.co",
       "supabaseAnonKey": "sb_publishable_urA0lde-UzaEHI6Et5wB2w_k5L308CK"
     },
-    "plugins": ["expo-router"]
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
