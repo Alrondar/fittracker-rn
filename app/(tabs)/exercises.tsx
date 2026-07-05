@@ -11,6 +11,8 @@ import { useRouter } from 'expo-router';
 import { supabase, getList } from '../../src/lib/supabase';
 import { Exercise } from '../../src/types';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { FadeIn } from '../../src/components/FadeIn';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 
 export default function ExercisesScreen() {
@@ -60,6 +62,7 @@ export default function ExercisesScreen() {
   };
 
   const onRefresh = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     loadExercises();
   };
@@ -72,17 +75,32 @@ export default function ExercisesScreen() {
   };
 
   const renderEmpty = () => (
-    <View style={styles.center}>
+    <FadeIn delay={200} style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>🔍</Text>
-      <Text style={styles.emptyText}>Упражнения не найдены</Text>
-      <Text style={styles.emptySubtext}>Попробуйте изменить фильтры</Text>
-    </View>
+      <Text style={styles.emptyTitle}>Упражнения не найдены</Text>
+      <Text style={styles.emptyText}>
+        {selectedMuscles.length > 0 
+          ? 'Попробуйте изменить фильтры или сбросить их'
+          : 'База упражнений пуста'}
+      </Text>
+      {selectedMuscles.length > 0 && (
+        <TouchableOpacity 
+          style={styles.resetButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setSelectedMuscles([]);
+          }}
+        >
+          <Text style={styles.resetButtonText}>Сбросить фильтры</Text>
+        </TouchableOpacity>
+      )}
+    </FadeIn>
   );
 
   return (
     <View style={styles.container}>
       {/* Фильтры */}
-      <View style={styles.filters}>
+      <FadeIn style={styles.filters}>
         <FlatList
           horizontal
           data={allMuscles}
@@ -94,19 +112,20 @@ export default function ExercisesScreen() {
                 selectedMuscles.includes(item) && styles.chipSelected,
               ]}
               onPress={() => toggleMuscle(item)}
+              activeOpacity={0.7}
             >
               <Text style={[
                 styles.chipText,
                 selectedMuscles.includes(item) && styles.chipTextSelected,
               ]}>
-                {item}
+                {selectedMuscles.includes(item) && '✓ '}{item}
               </Text>
             </TouchableOpacity>
           )}
           contentContainerStyle={styles.filtersList}
           showsHorizontalScrollIndicator={false}
         />
-      </View>
+      </FadeIn>
 
       {/* Список или Скелетон */}
       {loading ? (
@@ -115,27 +134,34 @@ export default function ExercisesScreen() {
         <FlatList
           data={exercises}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push(`/exercise/${item.id}`);
-              }}
-            >
-              <Text style={styles.icon}>🏋️</Text>
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.cardSubtitle} numberOfLines={1}>
-                  {getList(item, 'primary_muscles').join(', ')}
-                </Text>
-              </View>
-            </TouchableOpacity>
+          renderItem={({ item, index }) => (
+            <FadeIn delay={index * 40}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push(`/exercise/${item.id}`);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.icon}>🏋️</Text>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.cardSubtitle} numberOfLines={1}>
+                    {getList(item, 'primary_muscles').join(', ')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </FadeIn>
           )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7c3aed']} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              tintColor={COLORS.primary}
+            />
           }
         />
       )}
@@ -144,27 +170,101 @@ export default function ExercisesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#faf5ff' },
-  filters: { backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  filtersList: { paddingVertical: 12, paddingHorizontal: 16 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  filters: { 
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  filtersList: { 
+    paddingVertical: SPACING.md, 
+    paddingHorizontal: SPACING.lg 
+  },
   chip: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, backgroundColor: 'white',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: SPACING.sm,
+    backgroundColor: COLORS.surface,
   },
-  chipSelected: { backgroundColor: '#ede9fe', borderColor: '#7c3aed' },
-  chipText: { color: '#374151', fontSize: 14 },
-  chipTextSelected: { color: '#7c3aed', fontWeight: 'bold' },
-  list: { padding: 16 },
+  chipSelected: { 
+    backgroundColor: COLORS.primaryLight, 
+    borderColor: COLORS.primary 
+  },
+  chipText: { 
+    color: COLORS.textPrimary, 
+    fontSize: 14 
+  },
+  chipTextSelected: { 
+    color: COLORS.primary, 
+    fontWeight: 'bold' 
+  },
+  list: { padding: SPACING.lg },
   card: {
-    flexDirection: 'row', backgroundColor: 'white', padding: 16, borderRadius: 12,
-    marginBottom: 12, elevation: 2,
+    flexDirection: 'row',
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+    elevation: 2,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
   },
-  icon: { fontSize: 32, marginRight: 12 },
-  cardContent: { flex: 1, justifyContent: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
-  cardSubtitle: { fontSize: 14, color: '#6b7280', marginTop: 4 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  emptyIcon: { fontSize: 64, marginBottom: 16 },
-  emptyText: { fontSize: 18, color: '#6b7280', marginBottom: 8 },
-  emptySubtext: { color: '#9ca3af', fontSize: 14, textAlign: 'center' },
+  icon: { 
+    fontSize: 32, 
+    marginRight: SPACING.md 
+  },
+  cardContent: { 
+    flex: 1, 
+    justifyContent: 'center' 
+  },
+  cardTitle: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: COLORS.textPrimary 
+  },
+  cardSubtitle: { 
+    fontSize: 14, 
+    color: COLORS.textSecondary, 
+    marginTop: SPACING.xs 
+  },
+  
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xxl,
+    marginTop: 60,
+  },
+  emptyIcon: { fontSize: 64, marginBottom: SPACING.lg },
+  emptyTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: COLORS.textPrimary, 
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  emptyText: { 
+    color: COLORS.textSecondary, 
+    fontSize: 14, 
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
+    lineHeight: 20,
+  },
+  resetButton: {
+    backgroundColor: COLORS.primaryLight,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  resetButtonText: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 });

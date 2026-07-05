@@ -13,6 +13,9 @@ import { supabase } from '../../src/lib/supabase';
 import { Workout } from '../../src/types';
 import { useStore } from '../../src/store/useStore';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { FadeIn } from '../../src/components/FadeIn';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import * as Haptics from 'expo-haptics';
 
 export default function WorkoutsScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -22,30 +25,22 @@ export default function WorkoutsScreen() {
   const { setWorkouts: setStoreWorkouts } = useStore();
 
   useEffect(() => {
-    console.log('🔵 WorkoutsScreen: Загрузка тренировок');
     loadWorkouts();
   }, []);
 
   const loadWorkouts = async () => {
     try {
-      console.log('🔵 Запрос к Supabase: workouts');
       const { data, error } = await supabase
         .from('workouts')
         .select()
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('🔴 Ошибка загрузки тренировок:', error);
-        Alert.alert('Ошибка', error.message);
-        return;
-      }
+      if (error) throw error;
 
-      console.log('✅ Загружено тренировок:', data?.length || 0);
       const list = data || [];
       setWorkouts(list);
       setStoreWorkouts(list);
     } catch (e: any) {
-      console.error('🔴 Исключение при загрузке:', e);
       Alert.alert('Ошибка', e.message);
     } finally {
       setLoading(false);
@@ -54,7 +49,7 @@ export default function WorkoutsScreen() {
   };
 
   const onRefresh = () => {
-    console.log('🔄 Обновление списка тренировок');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     loadWorkouts();
   };
@@ -69,26 +64,12 @@ export default function WorkoutsScreen() {
           text: 'Удалить',
           style: 'destructive',
           onPress: async () => {
-            console.log('🗑️ Удаление тренировки:', id);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             try {
-              const { error: weError } = await supabase
-                .from('workout_exercises')
-                .delete()
-                .eq('workout_id', id);
-              
-              if (weError) throw weError;
-
-              const { error } = await supabase
-                .from('workouts')
-                .delete()
-                .eq('id', id);
-              
-              if (error) throw error;
-
-              console.log('✅ Тренировка удалена');
+              await supabase.from('workout_exercises').delete().eq('workout_id', id);
+              await supabase.from('workouts').delete().eq('id', id);
               loadWorkouts();
             } catch (e: any) {
-              console.error('🔴 Исключение при удалении:', e);
               Alert.alert('Ошибка', e.message);
             }
           },
@@ -99,19 +80,21 @@ export default function WorkoutsScreen() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { 
-      day: 'numeric', 
-      month: 'long',
-      year: 'numeric' 
-    });
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
   };
 
   const renderEmpty = () => (
-    <View style={styles.empty}>
-      <Text style={styles.emptyIcon}>🏋️</Text>
-      <Text style={styles.emptyText}>Нет тренировок</Text>
-      <Text style={styles.emptySubtext}>Создай свою первую тренировку!</Text>
-    </View>
+    <FadeIn delay={200} style={styles.emptyContainer}>
+      <Text style={styles.emptyIcon}>🏋️‍♂️</Text>
+      <Text style={styles.emptyTitle}>Пока нет тренировок</Text>
+      <Text style={styles.emptyText}>Создай свою первую программу, чтобы начать отслеживать прогресс!</Text>
+      <TouchableOpacity 
+        style={styles.emptyButton}
+        onPress={() => router.push('/workout/create')}
+      >
+        <Text style={styles.emptyButtonText}>+ Создать тренировку</Text>
+      </TouchableOpacity>
+    </FadeIn>
   );
 
   return (
@@ -122,40 +105,26 @@ export default function WorkoutsScreen() {
         <FlatList
           data={workouts}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => {
-                console.log('👆 Открытие тренировки:', item.id);
-                router.push(`/workout/${item.id}`);
-              }}
-              onLongPress={() => {
-                console.log('👆 Долгое нажатие на тренировку:', item.name);
-                Alert.alert('Действия', item.name, [
-                  { 
-                    text: 'Редактировать', 
-                    onPress: () => {
-                      console.log('✏️ Редактирование:', item.id);
-                      router.push(`/workout/create?edit=${item.id}`);
-                    }
-                  },
-                  { 
-                    text: 'Удалить', 
-                    style: 'destructive', 
-                    onPress: () => deleteWorkout(item.id, item.name) 
-                  },
-                  { text: 'Отмена', style: 'cancel' },
-                ]);
-              }}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.name}</Text>
-                <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-              </View>
-              <Text style={styles.cardSubtitle}>
-                {item.description || 'Нет описания'}
-              </Text>
-            </TouchableOpacity>
+          renderItem={({ item, index }) => (
+            <FadeIn delay={index * 50}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/workout/${item.id}`);
+                }}
+                onLongPress={() => deleteWorkout(item.id, item.name)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+                </View>
+                <Text style={styles.cardSubtitle} numberOfLines={2}>
+                  {item.description || 'Нет описания'}
+                </Text>
+              </TouchableOpacity>
+            </FadeIn>
           )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
@@ -163,85 +132,120 @@ export default function WorkoutsScreen() {
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh}
-              colors={['#7c3aed']}
+              tintColor={COLORS.primary}
             />
           }
         />
       )}
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => {
-          console.log('➕ Создание новой тренировки');
-          router.push('/workout/create');
-        }}
-      >
-        <Text style={styles.fabText}>+ Создать</Text>
-      </TouchableOpacity>
+      <FadeIn delay={300}>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/workout/create');
+          }}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      </FadeIn>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#faf5ff' },
-  list: { padding: 16 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  list: { padding: SPACING.lg, paddingBottom: 100 },
+  
   card: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 1,
     shadowRadius: 4,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
   cardTitle: { 
     fontSize: 18, 
     fontWeight: 'bold',
+    color: COLORS.textPrimary,
     flex: 1,
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   cardDate: { 
-    color: '#9ca3af', 
+    color: COLORS.textTertiary, 
     fontSize: 12 
   },
   cardSubtitle: { 
-    color: '#6b7280',
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
-  empty: { 
-    flex: 1, 
-    justifyContent: 'center', 
+
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60 
+    padding: SPACING.xxl,
+    marginTop: 60,
   },
-  emptyIcon: { fontSize: 64, marginBottom: 16 },
-  emptyText: { fontSize: 18, color: '#6b7280', marginBottom: 8 },
-  emptySubtext: { color: '#9ca3af', fontSize: 14 },
+  emptyIcon: { fontSize: 64, marginBottom: SPACING.lg },
+  emptyTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: COLORS.textPrimary, 
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  emptyText: { 
+    color: COLORS.textSecondary, 
+    fontSize: 14, 
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  emptyButtonText: {
+    color: COLORS.textInverse,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  // FAB
   fab: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
-    backgroundColor: '#7c3aed',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    bottom: SPACING.xl,
+    right: SPACING.xl,
+    width: 56,
+    height: 56,
     borderRadius: 28,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
   },
   fabText: { 
-    color: 'white', 
+    color: COLORS.textInverse, 
     fontWeight: 'bold', 
-    fontSize: 16 
+    fontSize: 28,
+    marginTop: -2, // Визуальная центровка плюса
   },
 });
