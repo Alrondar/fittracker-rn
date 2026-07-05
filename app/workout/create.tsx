@@ -14,11 +14,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { useToast } from '../../src/components/ToastProvider';
+import { useTheme } from '../../src/hooks/useTheme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { Exercise } from '../../src/types';
 import * as Haptics from 'expo-haptics';
 
 export default function CreateWorkoutScreen() {
   const { edit } = useLocalSearchParams();
+  const { colors } = useTheme();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -31,26 +34,21 @@ export default function CreateWorkoutScreen() {
   const { showToast } = useToast();
 
   useEffect(() => {
-    console.log('🔵 CreateWorkoutScreen: Инициализация, edit:', edit);
     loadExercises();
     if (edit) loadWorkout(edit as string);
   }, [edit]);
 
   const loadExercises = async () => {
-    console.log('🔵 Загрузка всех упражнений');
     const { data, error } = await supabase.from('exercises').select('*').order('name');
     if (error) {
-      console.error(' Ошибка загрузки упражнений:', error);
       showToast('Ошибка загрузки упражнений', 'error');
     } else {
-      console.log('✅ Загружено упражнений:', data?.length);
       setExercises(data || []);
     }
     setLoading(false);
   };
 
   const loadWorkout = async (id: string) => {
-    console.log(' Загрузка тренировки для редактирования:', id);
     try {
       const { data: workout, error } = await supabase
         .from('workouts')
@@ -75,18 +73,15 @@ export default function CreateWorkoutScreen() {
       
       if (we) {
         const selectedExercises = we.map((w: any) => w.exercises);
-        console.log('✅ Загружено упражнений в тренировке:', selectedExercises.length);
         setSelected(selectedExercises);
       }
     } catch (error: any) {
-      console.error('🔴 Ошибка загрузки тренировки:', error);
       showToast('Ошибка загрузки тренировки', 'error');
     }
   };
 
   const addExercise = (ex: Exercise) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log('➕ Добавление упражнения:', ex.name);
     if (!selected.find(s => s.id === ex.id)) {
       setSelected([...selected, ex]);
       showToast(`Добавлено: ${ex.name}`, 'success');
@@ -97,7 +92,6 @@ export default function CreateWorkoutScreen() {
 
   const removeExercise = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('🗑️ Удаление упражнения');
     setSelected(selected.filter(s => s.id !== id));
     showToast('Упражнение удалено', 'info');
   };
@@ -115,7 +109,6 @@ export default function CreateWorkoutScreen() {
     setSaving(true);
     try {
       if (edit) {
-        console.log('️ Обновление тренировки:', edit);
         const { error } = await supabase
           .from('workouts')
           .update({ name, description })
@@ -143,7 +136,6 @@ export default function CreateWorkoutScreen() {
         showToast('Тренировка обновлена!', 'success');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        console.log('➕ Создание новой тренировки');
         const { data: newWorkout, error } = await supabase
           .from('workouts')
           .insert({ 
@@ -174,7 +166,6 @@ export default function CreateWorkoutScreen() {
       
       setTimeout(() => router.back(), 1000);
     } catch (error: any) {
-      console.error('🔴 Ошибка сохранения:', error);
       showToast('Ошибка сохранения: ' + error.message, 'error');
     } finally {
       setSaving(false);
@@ -190,18 +181,18 @@ export default function CreateWorkoutScreen() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Назад</Text>
+          <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           {edit ? 'Редактировать' : 'Новая тренировка'}
         </Text>
         <TouchableOpacity onPress={save} disabled={saving} style={styles.saveButton}>
           {saving ? (
-            <ActivityIndicator color="#7c3aed" />
+            <ActivityIndicator color={colors.primary} />
           ) : (
             <Text style={styles.saveText}>💾</Text>
           )}
@@ -215,14 +206,16 @@ export default function CreateWorkoutScreen() {
           <>
             <View style={styles.form}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Название тренировки"
+                placeholderTextColor={colors.textTertiary}
                 value={name}
                 onChangeText={setName}
               />
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
                 placeholder="Описание (необязательно)"
+                placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -230,15 +223,15 @@ export default function CreateWorkoutScreen() {
             </View>
 
             <View style={styles.selectedSection}>
-              <Text style={styles.sectionTitle}>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
                 Выбранные упражнения ({selected.length})
               </Text>
               
               {selected.map(ex => (
-                <View key={ex.id} style={styles.selectedCard}>
+                <View key={ex.id} style={[styles.selectedCard, { backgroundColor: colors.surface }]}>
                   <View style={styles.selectedInfo}>
-                    <Text style={styles.selectedName}>{ex.name}</Text>
-                    <Text style={styles.selectedMuscles}>
+                    <Text style={[styles.selectedName, { color: colors.textPrimary }]}>{ex.name}</Text>
+                    <Text style={[styles.selectedMuscles, { color: colors.textSecondary }]}>
                       {(ex.primary_muscles || []).join(', ')}
                     </Text>
                   </View>
@@ -249,10 +242,11 @@ export default function CreateWorkoutScreen() {
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>Поиск упражнений</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Поиск упражнений</Text>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
               placeholder="🔍 Поиск..."
+              placeholderTextColor={colors.textTertiary}
               value={search}
               onChangeText={setSearch}
             />
@@ -260,13 +254,13 @@ export default function CreateWorkoutScreen() {
         }
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.exerciseItem}
+            style={[styles.exerciseItem, { backgroundColor: colors.surface }]}
             onPress={() => addExercise(item)}
           >
-            <Text style={styles.exerciseIcon}>🏋️</Text>
+            <Text style={styles.exerciseIcon}>️</Text>
             <View style={styles.exerciseInfo}>
-              <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseMuscles}>
+              <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>{item.name}</Text>
+              <Text style={[styles.exerciseMuscles, { color: colors.textSecondary }]}>
                 {(item.primary_muscles || []).join(', ')}
               </Text>
             </View>
@@ -279,79 +273,70 @@ export default function CreateWorkoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#faf5ff' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
+    padding: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   backButton: {
-    padding: 8,
+    padding: SPACING.sm,
   },
   backText: {
-    color: '#7c3aed',
     fontSize: 16,
     fontWeight: '600',
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
   saveButton: {
-    padding: 8,
+    padding: SPACING.sm,
     minWidth: 40,
     alignItems: 'center',
   },
   saveText: { fontSize: 24 },
-  list: { padding: 16 },
-  form: { marginBottom: 16 },
+  list: { padding: SPACING.lg },
+  form: { marginBottom: SPACING.lg },
   input: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   textArea: { height: 80, textAlignVertical: 'top' },
-  selectedSection: { marginBottom: 16 },
+  selectedSection: { marginBottom: SPACING.lg },
   sectionTitle: { 
     fontSize: 16, 
     fontWeight: 'bold', 
-    marginVertical: 12,
-    color: '#1f2937',
+    marginVertical: SPACING.md,
   },
   selectedCard: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   selectedInfo: { flex: 1 },
   selectedName: { fontWeight: 'bold', fontSize: 14 },
-  selectedMuscles: { color: '#6b7280', fontSize: 12 },
+  selectedMuscles: { fontSize: 12 },
   deleteBtn: { fontSize: 20, padding: 4 },
   searchInput: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
   },
   exerciseItem: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.sm,
     alignItems: 'center',
   },
-  exerciseIcon: { fontSize: 24, marginRight: 12 },
+  exerciseIcon: { fontSize: 24, marginRight: SPACING.md },
   exerciseInfo: { flex: 1 },
   exerciseName: { fontWeight: 'bold', fontSize: 14 },
-  exerciseMuscles: { color: '#6b7280', fontSize: 12 },
+  exerciseMuscles: { fontSize: 12 },
 });

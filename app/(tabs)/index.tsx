@@ -13,8 +13,9 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { AnimatedButton } from '../../src/components/AnimatedButton';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '../../src/hooks/useTheme';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -27,6 +28,7 @@ interface DashboardStats {
 export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
+  const { colors } = useTheme(); // Используем хук темы
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -106,7 +108,7 @@ export default function DashboardScreen() {
       }
       setRecentWorkouts(workouts?.slice(0, 3) || []);
     } catch (error: any) {
-      console.error('🔴 Исключение:', error);
+      console.error(' Исключение:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -134,55 +136,54 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
         style={styles.scrollView}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            colors={[COLORS.primary]}
-            tintColor={COLORS.primary}
+            tintColor={colors.primary}
           />
         }
       >
         {/* Приветствие */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Привет! 👋</Text>
-          <Text style={styles.subtitle}>Готов к тренировке?</Text>
+          <Text style={[styles.greeting, { color: colors.textPrimary }]}>Привет! 👋</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Готов к тренировке?</Text>
         </View>
 
         {/* Статистика */}
         <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.weekWorkouts}</Text>
-            <Text style={styles.statLabel}>На неделе</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.weekWorkouts}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>На неделе</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.monthWorkouts}</Text>
-            <Text style={styles.statLabel}>В месяце</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.monthWorkouts}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>В месяце</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{Math.round(stats.weekVolume)}</Text>
-            <Text style={styles.statLabel}>кг за неделю</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{Math.round(stats.weekVolume)}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>кг за неделю</Text>
           </View>
         </View>
 
         {/* Последняя тренировка */}
         {lastWorkout ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Последняя тренировка</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Последняя тренировка</Text>
             <TouchableOpacity 
-              style={styles.lastWorkoutCard}
+              style={[styles.lastWorkoutCard, { backgroundColor: colors.primary }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.push(`/workout/${lastWorkout.id}`);
@@ -190,17 +191,17 @@ export default function DashboardScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.lastWorkoutInfo}>
-                <Text style={styles.lastWorkoutName}>{lastWorkout.name}</Text>
-                <Text style={styles.lastWorkoutDate}>
+                <Text style={[styles.lastWorkoutName, { color: colors.textInverse }]}>{lastWorkout.name}</Text>
+                <Text style={[styles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
                   {formatDate(lastWorkout.created_at)}
                 </Text>
               </View>
-              <Text style={styles.arrow}>→</Text>
+              <Text style={[styles.arrow, { color: colors.textInverse }]}>→</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Начни первую тренировку</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Начни первую тренировку</Text>
             <AnimatedButton
               title="Создать тренировку"
               onPress={() => router.push('/(tabs)/workouts')}
@@ -213,37 +214,37 @@ export default function DashboardScreen() {
 
         {/* Быстрый доступ */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Быстрый доступ</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Быстрый доступ</Text>
           <View style={styles.quickActions}>
             <TouchableOpacity 
-              style={styles.quickAction}
+              style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push('/(tabs)/workouts');
               }}
             >
               <Text style={styles.quickActionIcon}>💪</Text>
-              <Text style={styles.quickActionText}>Тренировки</Text>
+              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Тренировки</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.quickAction}
+              style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push('/(tabs)/exercises');
               }}
             >
-              <Text style={styles.quickActionIcon}>📚</Text>
-              <Text style={styles.quickActionText}>Справочник</Text>
+              <Text style={styles.quickActionIcon}></Text>
+              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Справочник</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.quickAction}
+              style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push('/(tabs)/history');
               }}
             >
               <Text style={styles.quickActionIcon}>📊</Text>
-              <Text style={styles.quickActionText}>История</Text>
+              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>История</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -251,21 +252,21 @@ export default function DashboardScreen() {
         {/* Недавние тренировки */}
         {recentWorkouts.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Недавние тренировки</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Недавние тренировки</Text>
             {recentWorkouts.map((workout) => (
               <TouchableOpacity
                 key={workout.id}
-                style={styles.recentCard}
+                style={[styles.recentCard, { backgroundColor: colors.surface }]}
                 onPress={() => router.push(`/history/${workout.id}`)}
                 activeOpacity={0.7}
               >
                 <View style={styles.recentInfo}>
-                  <Text style={styles.recentName}>{workout.name}</Text>
-                  <Text style={styles.recentDate}>
+                  <Text style={[styles.recentName, { color: colors.textPrimary }]}>{workout.name}</Text>
+                  <Text style={[styles.recentDate, { color: colors.textSecondary }]}>
                     {formatDate(workout.created_at)}
                   </Text>
                 </View>
-                <Text style={styles.arrow}>→</Text>
+                <Text style={[styles.arrow, { color: colors.primary }]}>→</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -278,18 +279,9 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.background 
-  },
-  scrollView: { 
-    flex: 1 
-  },
-  center: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
   header: {
     padding: SPACING.xl,
@@ -298,11 +290,9 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     marginTop: SPACING.xs,
   },
 
@@ -314,24 +304,17 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     elevation: 2,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: COLORS.primary,
     marginBottom: SPACING.xs,
   },
   statLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
   },
 
   section: {
@@ -341,42 +324,32 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.md,
   },
 
   lastWorkoutCard: {
-    backgroundColor: COLORS.primary,
     padding: SPACING.xl,
     borderRadius: BORDER_RADIUS.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
   },
   lastWorkoutInfo: { flex: 1 },
   lastWorkoutName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.textInverse,
     marginBottom: SPACING.xs,
   },
   lastWorkoutDate: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
   },
   arrow: {
     fontSize: 24,
-    color: COLORS.textInverse,
     marginLeft: SPACING.md,
   },
 
   emptyCard: {
-    backgroundColor: COLORS.surface,
     padding: SPACING.xl,
     borderRadius: BORDER_RADIUS.xl,
     elevation: 2,
@@ -388,7 +361,6 @@ const styles = StyleSheet.create({
   },
   quickAction: {
     flex: 1,
-    backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
@@ -401,11 +373,9 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textPrimary,
   },
 
   recentCard: {
-    backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.sm,
@@ -418,11 +388,9 @@ const styles = StyleSheet.create({
   recentName: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
   },
   recentDate: {
     fontSize: 14,
-    color: COLORS.textSecondary,
   },
 });

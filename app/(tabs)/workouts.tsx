@@ -14,10 +14,12 @@ import { Workout } from '../../src/types';
 import { useStore } from '../../src/store/useStore';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
 export default function WorkoutsScreen() {
+  const { colors } = useTheme();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -85,20 +87,20 @@ export default function WorkoutsScreen() {
 
   const renderEmpty = () => (
     <FadeIn delay={200} style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>🏋️‍♂️</Text>
-      <Text style={styles.emptyTitle}>Пока нет тренировок</Text>
-      <Text style={styles.emptyText}>Создай свою первую программу, чтобы начать отслеживать прогресс!</Text>
+      <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>🏋️♂️</Text>
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Пока нет тренировок</Text>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Создай свою первую программу, чтобы начать отслеживать прогресс!</Text>
       <TouchableOpacity 
-        style={styles.emptyButton}
+        style={[styles.emptyButton, { backgroundColor: colors.primary }]}
         onPress={() => router.push('/workout/create')}
       >
-        <Text style={styles.emptyButtonText}>+ Создать тренировку</Text>
+        <Text style={[styles.emptyButtonText, { color: colors.textInverse }]}>+ Создать тренировку</Text>
       </TouchableOpacity>
     </FadeIn>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
@@ -108,7 +110,7 @@ export default function WorkoutsScreen() {
           renderItem={({ item, index }) => (
             <FadeIn delay={index * 50}>
               <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, { backgroundColor: colors.surface }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push(`/workout/${item.id}`);
@@ -117,10 +119,10 @@ export default function WorkoutsScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
+                  <Text style={[styles.cardDate, { color: colors.textTertiary }]}>{formatDate(item.created_at)}</Text>
                 </View>
-                <Text style={styles.cardSubtitle} numberOfLines={2}>
+                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
                   {item.description || 'Нет описания'}
                 </Text>
               </TouchableOpacity>
@@ -132,7 +134,7 @@ export default function WorkoutsScreen() {
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh}
-              tintColor={COLORS.primary}
+              tintColor={colors.primary}
             />
           }
         />
@@ -140,13 +142,13 @@ export default function WorkoutsScreen() {
 
       <FadeIn delay={300}>
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: colors.primary }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push('/workout/create');
           }}
         >
-          <Text style={styles.fabText}>+</Text>
+          <Text style={[styles.fabText, { color: colors.textInverse }]}>+</Text>
         </TouchableOpacity>
       </FadeIn>
     </View>
@@ -154,19 +156,14 @@ export default function WorkoutsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   list: { padding: SPACING.lg, paddingBottom: 100 },
   
   card: {
-    backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.md,
     elevation: 2,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -177,20 +174,16 @@ const styles = StyleSheet.create({
   cardTitle: { 
     fontSize: 18, 
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
     flex: 1,
     marginRight: SPACING.md,
   },
   cardDate: { 
-    color: COLORS.textTertiary, 
     fontSize: 12 
   },
   cardSubtitle: { 
-    color: COLORS.textSecondary,
     fontSize: 14,
   },
 
-  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -202,30 +195,25 @@ const styles = StyleSheet.create({
   emptyTitle: { 
     fontSize: 20, 
     fontWeight: 'bold', 
-    color: COLORS.textPrimary, 
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   emptyText: { 
-    color: COLORS.textSecondary, 
     fontSize: 14, 
     textAlign: 'center',
     marginBottom: SPACING.xl,
     lineHeight: 20,
   },
   emptyButton: {
-    backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,
     borderRadius: BORDER_RADIUS.full,
   },
   emptyButtonText: {
-    color: COLORS.textInverse,
     fontWeight: 'bold',
     fontSize: 16,
   },
 
-  // FAB
   fab: {
     position: 'absolute',
     bottom: SPACING.xl,
@@ -233,19 +221,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 6,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
   },
   fabText: { 
-    color: COLORS.textInverse, 
     fontWeight: 'bold', 
     fontSize: 28,
-    marginTop: -2, // Визуальная центровка плюса
+    marginTop: -2,
   },
 });

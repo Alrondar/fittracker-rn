@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { COLORS, SPACING, BORDER_RADIUS } from '../constants/theme';
+import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.container}>
-      <View style={styles.tabBar}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label = options.tabBarLabel || options.title || route.name;
@@ -47,12 +50,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               activeOpacity={0.7}
             >
               <View style={styles.iconContainer}>
-                {isFocused && <View style={styles.indicator} />}
-                <Text style={[styles.icon, isFocused && styles.iconFocused]}>
+                {isFocused && <View style={[styles.indicator, { backgroundColor: colors.primary }]} />}
+                <Text style={[styles.icon, { opacity: isFocused ? 1 : 0.6, color: isFocused ? colors.primary : colors.textSecondary }]}>
                   {getTabIcon(route.name)}
                 </Text>
               </View>
-              <Text style={[styles.label, isFocused && styles.labelFocused]}>
+              <Text style={[styles.label, { color: isFocused ? colors.primary : colors.textSecondary }]}>
                 {typeof label === 'string' ? label : route.name}
               </Text>
             </TouchableOpacity>
@@ -88,7 +91,6 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.xl,
     padding: SPACING.sm,
     elevation: 8,
@@ -115,23 +117,12 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.primary,
   },
   icon: {
     fontSize: 22,
-    opacity: 0.6,
-  },
-  iconFocused: {
-    opacity: 1,
-    transform: [{ scale: 1.1 }],
   },
   label: {
     fontSize: 10,
-    color: COLORS.textSecondary,
     fontWeight: '500',
-  },
-  labelFocused: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
   },
 });

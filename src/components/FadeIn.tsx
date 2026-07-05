@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, ViewStyle } from 'react-native';
+import { Animated, StyleProp, ViewStyle } from 'react-native';
 
 interface FadeInProps {
   children: React.ReactNode;
-  delay?: number; // Задержка в мс (для поочередного появления)
-  style?: ViewStyle;
+  delay?: number;
+  style?: StyleProp<ViewStyle>; // Изменили на StyleProp<ViewStyle>
 }
 
 export function FadeIn({ children, delay = 0, style }: FadeInProps) {

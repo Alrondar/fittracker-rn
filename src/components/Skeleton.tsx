@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
 
 interface SkeletonProps {
   width?: number | string;
@@ -14,6 +15,7 @@ export function Skeleton({
   borderRadius = 8,
   style 
 }: SkeletonProps) {
+  const { colors } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -44,7 +46,13 @@ export function Skeleton({
     <Animated.View
       style={[
         styles.skeleton,
-        { width, height, borderRadius, opacity },
+        { 
+          width, 
+          height, 
+          borderRadius, 
+          opacity,
+          backgroundColor: colors.surfaceSecondary 
+        },
         style,
       ]}
     />
@@ -52,8 +60,10 @@ export function Skeleton({
 }
 
 export function CardSkeleton() {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <Skeleton width="70%" height={20} borderRadius={4} />
       <View style={styles.row}>
         <Skeleton width={40} height={40} borderRadius={20} />
@@ -78,13 +88,12 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: '#e5e7eb',
+    // backgroundColor будет из темы
   },
   container: {
     padding: 16,
   },
   card: {
-    backgroundColor: 'white',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,

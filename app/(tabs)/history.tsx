@@ -11,10 +11,12 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
   const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,16 +89,16 @@ export default function HistoryScreen() {
 
   const renderEmpty = () => (
     <FadeIn delay={200} style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>📊</Text>
-      <Text style={styles.emptyTitle}>История пуста</Text>
-      <Text style={styles.emptyText}>
+      <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>📊</Text>
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>История пуста</Text>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         Завершите первую тренировку, чтобы увидеть её здесь
       </Text>
     </FadeIn>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
@@ -110,7 +112,7 @@ export default function HistoryScreen() {
             return (
               <FadeIn delay={index * 50}>
                 <TouchableOpacity
-                  style={styles.card}
+                  style={[styles.card, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     router.push(`/history/${item.id}`);
@@ -118,19 +120,19 @@ export default function HistoryScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+                    <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.cardDate, { color: colors.textTertiary }]}>{formatDate(item.created_at)}</Text>
                   </View>
                   
                   <View style={styles.statsRow}>
                     <View style={styles.statItem}>
-                      <Text style={styles.statValue}>{sets}</Text>
-                      <Text style={styles.statLabel}>подходов</Text>
+                      <Text style={[styles.statValue, { color: colors.primary }]}>{sets}</Text>
+                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>подходов</Text>
                     </View>
-                    <View style={styles.statDivider} />
+                    <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                     <View style={styles.statItem}>
-                      <Text style={styles.statValue}>{Math.round(volume)}</Text>
-                      <Text style={styles.statLabel}>кг</Text>
+                      <Text style={[styles.statValue, { color: colors.primary }]}>{Math.round(volume)}</Text>
+                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>кг</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -143,7 +145,7 @@ export default function HistoryScreen() {
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh} 
-              tintColor={COLORS.primary}
+              tintColor={colors.primary}
             />
           }
         />
@@ -153,19 +155,14 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   list: { padding: SPACING.lg },
   
   card: {
-    backgroundColor: COLORS.surface,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.md,
     elevation: 2,
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
   },
   cardHeader: { 
     flexDirection: 'row', 
@@ -175,13 +172,11 @@ const styles = StyleSheet.create({
   },
   cardTitle: { 
     fontSize: 18, 
-    fontWeight: 'bold', 
-    color: COLORS.textPrimary,
+    fontWeight: 'bold',
     flex: 1,
     marginRight: SPACING.md,
   },
   cardDate: { 
-    color: COLORS.textTertiary, 
     fontSize: 12 
   },
   
@@ -190,7 +185,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
   },
   statItem: {
     flex: 1,
@@ -199,21 +193,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.primary,
   },
   statLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginTop: 2,
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: COLORS.border,
     marginHorizontal: SPACING.sm,
   },
 
-  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -225,12 +215,10 @@ const styles = StyleSheet.create({
   emptyTitle: { 
     fontSize: 20, 
     fontWeight: 'bold', 
-    color: COLORS.textPrimary, 
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
   emptyText: { 
-    color: COLORS.textSecondary, 
     fontSize: 14, 
     textAlign: 'center',
     lineHeight: 20,

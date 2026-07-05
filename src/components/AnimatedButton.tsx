@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { TouchableOpacity, Animated, StyleSheet, Text, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
-import { COLORS, BORDER_RADIUS, SPACING } from '../constants/theme';
+import { BORDER_RADIUS, SPACING } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 interface AnimatedButtonProps {
   title: string;
@@ -25,6 +26,7 @@ export function AnimatedButton({
   style,
   textStyle,
 }: AnimatedButtonProps) {
+  const { colors } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
   const onPressIn = () => {
@@ -47,20 +49,20 @@ export function AnimatedButton({
 
   const variants = {
     primary: {
-      backgroundColor: COLORS.primary,
-      textColor: COLORS.textInverse,
+      backgroundColor: colors.primary,
+      textColor: colors.textInverse,
     },
     secondary: {
-      backgroundColor: COLORS.primaryLight,
-      textColor: COLORS.primary,
+      backgroundColor: colors.primaryLight,
+      textColor: colors.primary,
     },
     danger: {
-      backgroundColor: COLORS.error,
-      textColor: COLORS.textInverse,
+      backgroundColor: colors.error,
+      textColor: colors.textInverse,
     },
     ghost: {
       backgroundColor: 'transparent',
-      textColor: COLORS.primary,
+      textColor: colors.primary,
     },
   };
 
@@ -84,11 +86,11 @@ export function AnimatedButton({
         style={[
           styles.button,
           {
-            backgroundColor: disabled ? COLORS.border : currentVariant.backgroundColor,
+            backgroundColor: disabled ? colors.border : currentVariant.backgroundColor,
             paddingVertical: currentSize.paddingVertical,
             paddingHorizontal: currentSize.paddingHorizontal,
           },
-          variant === 'ghost' && styles.ghostBorder,
+          variant === 'ghost' && { borderWidth: 1, borderColor: colors.primary },
         ]}
       >
         {loading ? (
@@ -99,7 +101,7 @@ export function AnimatedButton({
             <Text
               style={[
                 styles.text,
-                { color: disabled ? COLORS.textTertiary : currentVariant.textColor, fontSize: currentSize.fontSize },
+                { color: disabled ? colors.textTertiary : currentVariant.textColor, fontSize: currentSize.fontSize },
                 textStyle,
               ]}
             >
@@ -118,10 +120,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  ghostBorder: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
   },
   icon: {
     fontSize: 18,
