@@ -19,7 +19,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const isFocused = state.index === index;
 
           const onPress = () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync();
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -73,7 +73,7 @@ function getTabIcon(routeName: string): string {
     case 'workouts':
       return '💪';
     case 'exercises':
-      return '📚';
+      return '📋';
     case 'history':
       return '📊';
     case 'profile':

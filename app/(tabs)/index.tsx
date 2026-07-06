@@ -27,6 +27,7 @@ interface DashboardStats {
 }
 
 export default function DashboardScreen() {
+  console.log('📱 [DASHBOARD] Рендер Dashboard');
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
@@ -104,7 +105,7 @@ export default function DashboardScreen() {
       }
       setRecentWorkouts(workouts?.slice(0, 3) || []);
     } catch (error: any) {
-      console.error(' Исключение:', error);
+      console.error('Исключение:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -112,7 +113,7 @@ export default function DashboardScreen() {
   };
 
   const onRefresh = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync();
     setRefreshing(true);
     loadDashboard();
   };
@@ -203,7 +204,7 @@ export default function DashboardScreen() {
             >
               <TouchableOpacity 
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  Haptics.impactAsync();
                   router.push(`/history/${lastWorkout.id}`);
                 }}
                 activeOpacity={0.8}
@@ -239,7 +240,7 @@ export default function DashboardScreen() {
             <TouchableOpacity 
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync();
                 router.push('/(tabs)/workouts');
               }}
             >
@@ -249,17 +250,17 @@ export default function DashboardScreen() {
             <TouchableOpacity 
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync();
                 router.push('/(tabs)/exercises');
               }}
             >
-              <Text style={styles.quickActionIcon}></Text>
+              <Text style={styles.quickActionIcon}>📋</Text>
               <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Справочник</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync();
                 router.push('/(tabs)/history');
               }}
             >

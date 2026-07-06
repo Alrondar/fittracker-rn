@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { supabase } from '../src/lib/supabase';
@@ -17,34 +17,98 @@ function RootLayoutContent() {
   const router = useRouter();
   const segments = useSegments();
   const { colors } = useTheme();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  console.log('🎨 [RENDER] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'segments:', segments);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuth(session?.user?.id ?? null);
-    });
+    console.log('🔐 [USEEFFECT 1] Запуск загрузки сессии...');
+    
+    const loadSession = async () => {
+      try {
+        console.log(' [LOAD] Вызываем getSession...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.log('🔐 [LOAD] Ошибка getSession:', error.message);
+          setError(error.message);
+        } else {
+          console.log('🔐 [LOAD] Сессия:', session ? `User ID: ${session.user.id}` : 'null');
+          setAuth(session?.user?.id ?? null);
+        }
+      } catch (e: any) {
+        console.log(' [LOAD] Исключение:', e.message);
+        setError(e.message);
+      } finally {
+        console.log('🔐 [LOAD] Устанавливаем isLoading = false');
+        setIsLoading(false);
+      }
+    };
+
+    loadSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('🔐 [AUTH CHANGE] event:', event, 'session:', session ? `User ID: ${session.user.id}` : 'null');
         setAuth(session?.user?.id ?? null);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🔐 [CLEANUP] Отписка от подписки');
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    if (!segments || !segments[0]) return;
+    console.log('🔀 [USEEFFECT 2] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'segments:', segments);
+    
+    if (isLoading) {
+      console.log('🔀 [REDIRECT] Пропуск - ещё загружается');
+      return;
+    }
+    if (!segments) {
+      console.log('🔀 [REDIRECT] Пропуск - segments null');
+      return;
+    }
 
     const inAuthGroup = segments[0] === '(auth)';
+    console.log('🔀 [REDIRECT] inAuthGroup:', inAuthGroup, 'currentPath:', segments.join('/'));
 
     if (!isAuthenticated && !inAuthGroup) {
+      console.log('🔀 [REDIRECT] ➡️ Редирект на логин');
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
+      console.log('🔀 [REDIRECT] ➡️ Редирект на вкладки');
       router.replace('/(tabs)');
+    } else {
+      console.log('🔀 [REDIRECT] ⏸️ Редирект не нужен');
     }
-  }, [isAuthenticated, segments, router]);
+  }, [isLoading, isAuthenticated, segments, router]);
 
+  if (isLoading) {
+    console.log('📱 [UI] Показываем loader');
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.textPrimary, marginTop: 16 }}>Загрузка...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    console.log(' [UI] Показываем ошибку:', error);
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.error, fontSize: 16 }}>Ошибка: {error}</Text>
+      </View>
+    );
+  }
+
+  console.log('📱 [UI] Рендерим основной экран');
   return (
+    // 👇 ИСПРАВЛЕНИЕ: styles.container БЕЗ alignItems: 'center'
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
@@ -60,6 +124,7 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
+  console.log('🎯 [ROOT] Рендер RootLayout');
   return (
     <ThemeProvider>
       <ToastProvider>
@@ -70,7 +135,14 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  // 👇 Основной контейнер — только flex: 1, БЕЗ центрирования!
   container: {
     flex: 1,
+  },
+  // 👇 Для loader и error — центрируем
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
