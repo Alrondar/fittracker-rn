@@ -120,7 +120,9 @@ export default function ProgramsScreen() {
                     },
                   ]}
                 >
+                  {/* Верхняя часть карточки */}
                   <View style={{ padding: SPACING.lg, paddingBottom: SPACING.md }}>
+                    {/* Бейджи уровня и длительности */}
                     <View style={cardStyles.header}>
                       <View style={[badgeStyles.programBadge, { backgroundColor: levelInfo.color + '15' }]}>
                         {levelInfo.icon}
@@ -140,6 +142,8 @@ export default function ProgramsScreen() {
                         </Text>
                       </View>
                     </View>
+
+                    {/* Название и описание */}
                     <Text style={cardStyles.title} numberOfLines={2}>
                       {item.name}
                     </Text>
@@ -147,6 +151,8 @@ export default function ProgramsScreen() {
                       {item.description}
                     </Text>
                   </View>
+
+                  {/* Расписание */}
                   <View
                     style={[
                       {
@@ -183,6 +189,8 @@ export default function ProgramsScreen() {
                       ))}
                     </View>
                   </View>
+
+                  {/* Футер с "Подробнее →" */}
                   <View
                     style={[
                       cardStyles.footer,

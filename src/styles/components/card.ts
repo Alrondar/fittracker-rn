@@ -52,7 +52,7 @@ export const createCardStyles = (colors: any) =>
 
     footer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       alignItems: 'center',
       marginTop: SPACING.sm,
     } as ViewStyle,

@@ -18,6 +18,9 @@ export const createBadgeStyles = (colors: any) =>
     } as TextStyle,
 
     programBadge: {
+        flexDirection: 'row',   
+        alignItems: 'center',   
+        gap: 4,    
       alignSelf: 'flex-start',
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
@@ -79,6 +82,8 @@ export const createBadgeStyles = (colors: any) =>
     } as TextStyle,
 
     dayChip: {
+    flexDirection: 'row',  
+     alignItems: 'center',        
       backgroundColor: 'white',
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
