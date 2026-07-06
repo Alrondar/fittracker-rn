@@ -24,6 +24,8 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Save } from 'lucide-react-native'; // Добавь этот импорт
 import { 
   Sprout, 
   Dumbbell, 
@@ -279,6 +281,7 @@ function DayCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
     <View style={[styles.dayCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <TouchableOpacity
         style={styles.dayHeader}
@@ -363,6 +366,7 @@ function DayCard({
         </View>
       )}
     </View>
+     </SafeAreaView>
   );
 }
 

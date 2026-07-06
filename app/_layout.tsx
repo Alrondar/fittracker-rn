@@ -6,6 +6,7 @@ import { supabase } from '../src/lib/supabase';
 import { useStore } from '../src/store/useStore';
 import { ToastProvider } from '../src/components/ToastProvider';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 function ThemedStatusBar() {
   const { isDark } = useTheme();
@@ -109,7 +110,7 @@ function RootLayoutContent() {
   console.log('📱 [UI] Рендерим основной экран');
   return (
     // 👇 ИСПРАВЛЕНИЕ: styles.container БЕЗ alignItems: 'center'
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -119,7 +120,7 @@ function RootLayoutContent() {
         <Stack.Screen name="history/[id]" />
       </Stack>
       <ThemedStatusBar />
-    </View>
+    </SafeAreaView>
   );
 }
 

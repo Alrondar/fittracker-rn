@@ -7,6 +7,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 import { Moon, Settings, Target, AlertTriangle } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Аватар */}
       <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
         <Text style={styles.avatarText}></Text>
@@ -117,7 +118,7 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />
-    </View>
+    </SafeAreaView>
   );
 }
 

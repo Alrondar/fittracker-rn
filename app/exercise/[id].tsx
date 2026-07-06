@@ -14,6 +14,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 import { Dumbbell, CheckCircle, AlertTriangle, AlertCircle, Wrench, Settings } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();

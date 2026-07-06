@@ -19,6 +19,8 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GRADIENTS } from '../../src/constants/theme';
 import { RotateCcw, Clock, ChevronDown, ChevronRight } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Save } from 'lucide-react-native'; // Добавь этот импорт
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -652,6 +654,7 @@ function CollapsibleSection({
 }) {
   const { colors } = useTheme();
   return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
     <View style={[styles.collapsibleSection, { borderColor: colors.border }]}>
       <TouchableOpacity
         style={[styles.collapsibleHeader, { backgroundColor: colors.surfaceSecondary }]}
@@ -670,6 +673,7 @@ function CollapsibleSection({
         </View>
       )}
     </View>
+    </SafeAreaView>
   );
 }
 

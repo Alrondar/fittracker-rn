@@ -17,6 +17,7 @@ import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { ClipboardList, Dumbbell, Plus } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
