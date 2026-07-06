@@ -178,14 +178,14 @@ export async function createWorkoutsFromProgram(
       for (const exercise of day.exercises) {
         // Ищем упражнение в справочнике по названию
         let exerciseId: string | null = null;
-        
+
         const { data: foundExercise } = await supabase
           .from('exercises')
           .select('id')
           .ilike('name', `%${exercise.exercise_name}%`)
           .limit(1)
           .single();
-        
+
         exerciseId = foundExercise?.id || null;
 
         const { error: exError } = await supabase
