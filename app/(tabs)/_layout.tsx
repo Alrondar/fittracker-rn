@@ -15,6 +15,15 @@ export default function TabsLayout() {
           title: 'Главная',
         }}
       />
+         <Tabs.Screen
+     name="programs"
+     options={{
+       title: 'Программы',
+       tabBarIcon: ({ color, size }) => (
+         <Icon name="trophy-outline" color={color} size={size} />
+       ),
+     }}
+      />
       <Tabs.Screen
         name="workouts"
         options={{

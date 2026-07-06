@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
@@ -29,22 +29,32 @@ export default function HistoryScreen() {
 
   const loadHistory = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('workouts')
         .select(`
-          id, name, created_at,
+          id, 
+          name, 
+          created_at,
           workout_exercises (
-            workout_logs (weight_kg, reps)
+            id,
+            workout_logs (
+              weight_kg, 
+              reps
+            )
           )
         `)
         .order('created_at', { ascending: false });
-      
+
+      if (error) throw error;
+
+      // Фильтруем только завершенные тренировки (с логами)
       const completed = (data || []).filter((w: any) => 
         w.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0)
       );
+
       setWorkouts(completed);
-    } catch (e) {
-      console.error('Ошибка истории:', e);
+    } catch (e: any) {
+      console.error('Ошибка истории:', e.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -62,11 +72,10 @@ export default function HistoryScreen() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
+    
     if (days === 0) return 'Сегодня';
     if (days === 1) return 'Вчера';
     if (days < 7) return `${days} дн. назад`;
-    
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
   };
 
@@ -109,7 +118,7 @@ export default function HistoryScreen() {
           renderItem={({ item, index }) => {
             const volume = calculateVolume(item);
             const sets = calculateSets(item);
-            
+
             return (
               <FadeIn delay={index * 50}>
                 <TouchableOpacity
@@ -126,10 +135,13 @@ export default function HistoryScreen() {
                     style={styles.card}
                   >
                     <View style={styles.cardHeader}>
-                      <Text style={[styles.cardTitle, { color: colors.textInverse }]} numberOfLines={1}>{item.name}</Text>
-                      <Text style={[styles.cardDate, { color: 'rgba(255,255,255,0.8)' }]}>{formatDate(item.created_at)}</Text>
+                      <Text style={[styles.cardTitle, { color: colors.textInverse }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.cardDate, { color: 'rgba(255,255,255,0.8)' }]}>
+                        {formatDate(item.created_at)}
+                      </Text>
                     </View>
-                    
                     <View style={[styles.statsRow, { borderTopColor: 'rgba(255,255,255,0.2)' }]}>
                       <View style={styles.statItem}>
                         <Text style={[styles.statValue, { color: colors.textInverse }]}>{sets}</Text>
@@ -137,7 +149,9 @@ export default function HistoryScreen() {
                       </View>
                       <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
                       <View style={styles.statItem}>
-                        <Text style={[styles.statValue, { color: colors.textInverse }]}>{Math.round(volume)}</Text>
+                        <Text style={[styles.statValue, { color: colors.textInverse }]}>
+                          {Math.round(volume)}
+                        </Text>
                         <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>кг</Text>
                       </View>
                     </View>
@@ -164,7 +178,6 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: SPACING.lg },
-  
   card: {
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
@@ -175,23 +188,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
-  cardHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: SPACING.md 
+    marginBottom: SPACING.md
   },
-  cardTitle: { 
-    fontSize: 18, 
+  cardTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     flex: 1,
     marginRight: SPACING.md,
   },
-  cardDate: { 
-    fontSize: 12 
+  cardDate: {
+    fontSize: 12
   },
-  
-  statsRow: { 
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: SPACING.md,
@@ -214,7 +226,6 @@ const styles = StyleSheet.create({
     height: 30,
     marginHorizontal: SPACING.sm,
   },
-
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -222,15 +233,18 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
     marginTop: 60,
   },
-  emptyIcon: { fontSize: 64, marginBottom: SPACING.lg },
-  emptyTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
+  emptyIcon: { 
+    fontSize: 64, 
+    marginBottom: SPACING.lg 
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
-  emptyText: { 
-    fontSize: 14, 
+  emptyText: {
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
