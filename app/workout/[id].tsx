@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -18,6 +18,7 @@ import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GRADIENTS } from '../../src/constants/theme';
+import { RotateCcw, Clock, ChevronDown, ChevronRight } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -60,11 +61,9 @@ export default function WorkoutSessionScreen() {
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
   const [replacements, setReplacements] = useState<Record<string, string>>({});
 
@@ -83,18 +82,18 @@ export default function WorkoutSessionScreen() {
       const { data: workout, error } = await supabase
         .from('workouts')
         .select(`
-          name,
+          name, 
           workout_exercises (
-            id,
-            target_sets,
-            rest_seconds,
+            id, 
+            target_sets, 
+            rest_seconds, 
             exercises (
-              id,
-              name,
-              primary_muscles,
-              technique,
-              equipment,
-              settings,
+              id, 
+              name, 
+              primary_muscles, 
+              technique, 
+              equipment, 
+              settings, 
               alternatives
             )
           )
@@ -112,7 +111,6 @@ export default function WorkoutSessionScreen() {
         for (let i = 0; i < we.target_sets; i++) {
           sets.push({ weight: '', reps: '' });
         }
-
         return {
           id: exercise.id,
           workout_exercise_id: we.id,
@@ -146,13 +144,12 @@ export default function WorkoutSessionScreen() {
         .from('exercises')
         .select('*')
         .neq('id', exerciseId);
-      
+
       if (primaryMuscles.length > 0) {
         query = query.overlaps('primary_muscles', primaryMuscles);
       }
-      
+
       const { data, error } = await query.limit(10);
-      
       if (error) throw error;
 
       const alternatives: AlternativeExercise[] = (data || []).map((ex: any) => ({
@@ -189,10 +186,8 @@ export default function WorkoutSessionScreen() {
 
   const replaceExercise = async (exerciseIndex: number, alternativeId: string) => {
     const exercise = exercises[exerciseIndex];
-    
     const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
     const alt = alternatives.find(a => a.id === alternativeId);
-    
     if (!alt) return;
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -216,13 +211,13 @@ export default function WorkoutSessionScreen() {
       [exercise.workout_exercise_id]: alternativeId,
     }));
 
-    Alert.alert('✅ Заменено', `${exercise.name} → ${alt.name}`);
+    Alert.alert('Заменено', `${exercise.name} → ${alt.name}`);
   };
 
   const resetToOriginal = (exerciseIndex: number) => {
     const exercise = exercises[exerciseIndex];
     const workoutExId = exercise.workout_exercise_id;
-    
+
     Alert.alert(
       'Вернуть оригинальное упражнение?',
       'Данные подходов сохранятся',
@@ -246,9 +241,7 @@ export default function WorkoutSessionScreen() {
 
   const startRestTimer = (restSeconds: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
     if (timerRef.current) clearInterval(timerRef.current);
-
     setRestTimeLeft(restSeconds);
     setRestTimer(restSeconds);
 
@@ -304,7 +297,6 @@ export default function WorkoutSessionScreen() {
                   const { error } = await supabase
                     .from('workout_logs')
                     .insert(logsToSave);
-                  
                   if (error) throw error;
                   totalLogs += logsToSave.length;
                 }
@@ -337,26 +329,26 @@ export default function WorkoutSessionScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Шапка */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity 
-  onPress={saveWorkout}
-  disabled={saving}
-  activeOpacity={0.8}
->
-  {saving ? (
-    <View style={[styles.finishButton, { backgroundColor: colors.textTertiary }]}>
-      <ActivityIndicator color="white" size="small" />
-    </View>
-  ) : (
-    <LinearGradient
-      colors={GRADIENTS.success}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.finishButton}
-    >
-      <Text style={styles.finishButtonText}>Завершить</Text>
-    </LinearGradient>
-  )}
-</TouchableOpacity>
+        <TouchableOpacity
+          onPress={saveWorkout}
+          disabled={saving}
+          activeOpacity={0.8}
+        >
+          {saving ? (
+            <View style={[styles.finishButton, { backgroundColor: colors.textTertiary }]}>
+              <ActivityIndicator color="white" size="small" />
+            </View>
+          ) : (
+            <LinearGradient
+              colors={GRADIENTS.success}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.finishButton}
+            >
+              <Text style={styles.finishButtonText}>Завершить</Text>
+            </LinearGradient>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Таймер отдыха */}
@@ -437,7 +429,7 @@ function ExerciseSlider({
     <View style={styles.exerciseSection}>
       {isReplaced && (
         <View style={[styles.replacedBadge, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.replacedText, { color: colors.primary }]}> Заменено</Text>
+          <Text style={[styles.replacedText, { color: colors.primary }]}>Заменено</Text>
           <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
             <Text style={[styles.resetText, { color: colors.primary }]}>Вернуть</Text>
           </TouchableOpacity>
@@ -513,7 +505,9 @@ function ExerciseCard({
   return (
     <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: colors.surface }]}>
       <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>{exercise.name}</Text>
+        <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+          {exercise.name}
+        </Text>
         {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
           <Text style={[styles.musclesText, { color: colors.textSecondary }]}>
             {(exercise as ExerciseData).primary_muscles.join(', ')}
@@ -527,7 +521,9 @@ function ExerciseCard({
           expanded={expandedSections.technique}
           onToggle={() => toggleSection('technique')}
         >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>{(exercise as ExerciseData).technique}</Text>
+          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>
+            {(exercise as ExerciseData).technique}
+          </Text>
         </CollapsibleSection>
       ) : null}
 
@@ -537,7 +533,9 @@ function ExerciseCard({
           expanded={expandedSections.equipment}
           onToggle={() => toggleSection('equipment')}
         >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>{(exercise as ExerciseData).equipment.join(', ')}</Text>
+          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>
+            {(exercise as ExerciseData).equipment.join(', ')}
+          </Text>
         </CollapsibleSection>
       )}
 
@@ -547,7 +545,9 @@ function ExerciseCard({
           expanded={expandedSections.settings}
           onToggle={() => toggleSection('settings')}
         >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>{(exercise as ExerciseData).settings}</Text>
+          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>
+            {(exercise as ExerciseData).settings}
+          </Text>
         </CollapsibleSection>
       ) : null}
 
@@ -556,7 +556,10 @@ function ExerciseCard({
           style={[styles.replaceButton, { backgroundColor: colors.primary }]}
           onPress={() => replaceExercise(exerciseIndex, exercise.id)}
         >
-          <Text style={styles.replaceButtonText}>🔄 Заменить на это</Text>
+          <View style={styles.replaceButtonContent}>
+            <RotateCcw size={16} color="white" strokeWidth={2} />
+            <Text style={styles.replaceButtonText}>Заменить на это</Text>
+          </View>
         </TouchableOpacity>
       )}
 
@@ -578,8 +581,8 @@ function ExerciseCard({
               <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Вес (кг)</Text>
             </View>
             {sets.map((set, setIndex) => (
-              <View 
-                key={setIndex} 
+              <View
+                key={setIndex}
                 style={[
                   styles.setDataCell,
                   { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary },
@@ -602,8 +605,8 @@ function ExerciseCard({
               <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Повт.</Text>
             </View>
             {sets.map((set, setIndex) => (
-              <View 
-                key={setIndex} 
+              <View
+                key={setIndex}
                 style={[
                   styles.setDataCell,
                   { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary },
@@ -625,7 +628,10 @@ function ExerciseCard({
             style={[styles.restButton, { backgroundColor: colors.primary }]}
             onPress={() => startRestTimer(restSeconds)}
           >
-            <Text style={styles.restButtonText}>⏱ Отдых {restSeconds}с</Text>
+            <View style={styles.replaceButtonContent}>
+              <Clock size={16} color="white" strokeWidth={2} />
+              <Text style={styles.restButtonText}>Отдых {restSeconds}с</Text>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -633,24 +639,30 @@ function ExerciseCard({
   );
 }
 
-function CollapsibleSection({ 
-  title, 
-  expanded, 
-  onToggle, 
-  children 
-}: { 
-  title: string; 
-  expanded: boolean; 
+function CollapsibleSection({
+  title,
+  expanded,
+  onToggle,
+  children
+}: {
+  title: string;
+  expanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
 }) {
   const { colors } = useTheme();
-  
   return (
     <View style={[styles.collapsibleSection, { borderColor: colors.border }]}>
-      <TouchableOpacity style={[styles.collapsibleHeader, { backgroundColor: colors.surfaceSecondary }]} onPress={onToggle}>
+      <TouchableOpacity
+        style={[styles.collapsibleHeader, { backgroundColor: colors.surfaceSecondary }]}
+        onPress={onToggle}
+      >
         <Text style={[styles.collapsibleTitle, { color: colors.textPrimary }]}>{title}</Text>
-        <Text style={[styles.collapsibleArrow, { color: colors.textSecondary }]}>{expanded ? '▼' : '▶'}</Text>
+        {expanded ? (
+          <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
+        ) : (
+          <ChevronRight size={16} color={colors.textSecondary} strokeWidth={2} />
+        )}
       </TouchableOpacity>
       {expanded && (
         <View style={[styles.collapsibleContent, { backgroundColor: colors.surface }]}>
@@ -665,7 +677,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12 },
-  
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -696,7 +707,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-
   restTimer: {
     padding: SPACING.lg,
     alignItems: 'center',
@@ -720,7 +730,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-
   scrollView: { flex: 1 },
   exerciseSection: {
     marginTop: SPACING.lg,
@@ -764,7 +773,6 @@ const styles = StyleSheet.create({
   musclesText: {
     fontSize: 14,
   },
-
   collapsibleSection: {
     marginBottom: SPACING.sm,
     borderWidth: 1,
@@ -791,7 +799,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-
   replaceButton: {
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
@@ -799,12 +806,16 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     marginBottom: SPACING.md,
   },
+  replaceButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
   replaceButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 14,
   },
-
   setsSection: {
     marginTop: SPACING.lg,
   },
@@ -841,7 +852,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
   },
-
   restButton: {
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,

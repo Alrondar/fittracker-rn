@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Home, Trophy, Dumbbell, BookOpen, Clock, User } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
@@ -9,9 +10,9 @@ const { width } = Dimensions.get('window');
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
-  
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
       <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -19,13 +20,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const isFocused = state.index === index;
 
           const onPress = () => {
-            Haptics.impactAsync();
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
               canPreventDefault: true,
             });
-
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
@@ -37,6 +37,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               target: route.key,
             });
           };
+
+          const iconColor = isFocused ? colors.primary : colors.textSecondary;
 
           return (
             <TouchableOpacity
@@ -51,9 +53,9 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             >
               <View style={styles.iconContainer}>
                 {isFocused && <View style={[styles.indicator, { backgroundColor: colors.primary }]} />}
-                <Text style={[styles.icon, { opacity: isFocused ? 1 : 0.6, color: isFocused ? colors.primary : colors.textSecondary }]}>
-                  {getTabIcon(route.name)}
-                </Text>
+                <View style={{ opacity: isFocused ? 1 : 0.6 }}>
+                  {getTabIcon(route.name, iconColor)}
+                </View>
               </View>
               <Text style={[styles.label, { color: isFocused ? colors.primary : colors.textSecondary }]}>
                 {typeof label === 'string' ? label : route.name}
@@ -66,20 +68,25 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   );
 }
 
-function getTabIcon(routeName: string): string {
+function getTabIcon(routeName: string, color: string) {
+  const size = 22;
+  const strokeWidth = 1.5; // Делаем линии тонкими для современного вида
+
   switch (routeName) {
     case 'index':
-      return '🏠';
+      return <Home size={size} color={color} strokeWidth={strokeWidth} />;
+    case 'programs':
+      return <Trophy size={size} color={color} strokeWidth={strokeWidth} />;
     case 'workouts':
-      return '💪';
+      return <Dumbbell size={size} color={color} strokeWidth={strokeWidth} />;
     case 'exercises':
-      return '📋';
+      return <BookOpen size={size} color={color} strokeWidth={strokeWidth} />;
     case 'history':
-      return '📊';
+      return <Clock size={size} color={color} strokeWidth={strokeWidth} />;
     case 'profile':
-      return '👤';
+      return <User size={size} color={color} strokeWidth={strokeWidth} />;
     default:
-      return '';
+      return <Home size={size} color={color} strokeWidth={strokeWidth} />;
   }
 }
 
@@ -110,6 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
+    height: 24, // Фиксированная высота, чтобы интерфейс не прыгал
   },
   indicator: {
     position: 'absolute',
@@ -117,9 +125,6 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-  },
-  icon: {
-    fontSize: 22,
   },
   label: {
     fontSize: 10,

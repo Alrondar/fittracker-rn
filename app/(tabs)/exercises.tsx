@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,7 +14,9 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { Search, Dumbbell, Check } from 'lucide-react-native';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
@@ -78,15 +80,17 @@ export default function ExercisesScreen() {
 
   const renderEmpty = () => (
     <FadeIn delay={200} style={styles.emptyContainer}>
-      <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>🔍</Text>
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Упражнения не найдены</Text>
+      <Search size={64} color={colors.textTertiary} strokeWidth={1.5} />
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+        Упражнения не найдены
+      </Text>
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-        {selectedMuscles.length > 0 
+        {selectedMuscles.length > 0
           ? 'Попробуйте изменить фильтры или сбросить их'
           : 'База упражнений пуста'}
       </Text>
       {selectedMuscles.length > 0 && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.resetButton, { backgroundColor: colors.primaryLight }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -100,7 +104,7 @@ export default function ExercisesScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <FadeIn style={[styles.filters, { backgroundColor: colors.surface }]}>
         <FlatList
           horizontal
@@ -110,7 +114,7 @@ export default function ExercisesScreen() {
             <TouchableOpacity
               style={[
                 styles.chip,
-                { 
+                {
                   backgroundColor: selectedMuscles.includes(item) ? colors.primaryLight : colors.surface,
                   borderColor: selectedMuscles.includes(item) ? colors.primary : colors.border
                 },
@@ -118,12 +122,15 @@ export default function ExercisesScreen() {
               onPress={() => toggleMuscle(item)}
               activeOpacity={0.7}
             >
+              {selectedMuscles.includes(item) && (
+                <Check size={14} color={colors.primary} strokeWidth={2} style={styles.chipIcon} />
+              )}
               <Text style={[
                 styles.chipText,
                 { color: selectedMuscles.includes(item) ? colors.primary : colors.textPrimary },
                 selectedMuscles.includes(item) && styles.chipTextSelected,
               ]}>
-                {selectedMuscles.includes(item) && '✓ '}{item}
+                {item}
               </Text>
             </TouchableOpacity>
           )}
@@ -148,9 +155,11 @@ export default function ExercisesScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.icon}>🏋️</Text>
+                <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
                 <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
+                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+                    {item.name}
+                  </Text>
                   <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
                     {getList(item, 'primary_muscles').join(', ')}
                   </Text>
@@ -161,15 +170,15 @@ export default function ExercisesScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh} 
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
               tintColor={colors.primary}
             />
           }
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -178,48 +187,49 @@ const styles = StyleSheet.create({
   filters: {
     borderBottomWidth: 1,
   },
-  filtersList: { 
-    paddingVertical: SPACING.md, 
-    paddingHorizontal: SPACING.lg 
+  filtersList: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.full,
     borderWidth: 1,
     marginRight: SPACING.sm,
   },
-  chipText: { 
-    fontSize: 14 
+  chipIcon: {
+    marginRight: 4,
   },
-  chipTextSelected: { 
-    fontWeight: 'bold' 
+  chipText: {
+    fontSize: 14
+  },
+  chipTextSelected: {
+    fontWeight: 'bold'
   },
   list: { padding: SPACING.lg },
   card: {
     flexDirection: 'row',
+    alignItems: 'center',
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.md,
     elevation: 2,
   },
-  icon: { 
-    fontSize: 32, 
-    marginRight: SPACING.md 
+  cardContent: {
+    flex: 1,
+    marginLeft: SPACING.md,
   },
-  cardContent: { 
-    flex: 1, 
-    justifyContent: 'center' 
-  },
-  cardTitle: { 
-    fontSize: 16, 
+  cardTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  cardSubtitle: { 
+  cardSubtitle: {
     fontSize: 14,
-    marginTop: SPACING.xs 
+    marginTop: SPACING.xs
   },
-  
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -227,15 +237,15 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
     marginTop: 60,
   },
-  emptyIcon: { fontSize: 64, marginBottom: SPACING.lg },
-  emptyTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: SPACING.sm,
+    marginTop: SPACING.lg,
     textAlign: 'center',
   },
-  emptyText: { 
-    fontSize: 14, 
+  emptyText: {
+    fontSize: 14,
     textAlign: 'center',
     marginBottom: SPACING.xl,
     lineHeight: 20,

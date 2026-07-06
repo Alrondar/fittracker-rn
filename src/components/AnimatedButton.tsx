@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, Animated, StyleSheet, Text, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Animated, StyleSheet, Text, View, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 import { BORDER_RADIUS, SPACING } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 
@@ -10,7 +10,7 @@ interface AnimatedButtonProps {
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   loading?: boolean;
-  icon?: string;
+  icon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
 }
@@ -97,7 +97,7 @@ export function AnimatedButton({
           <ActivityIndicator color={currentVariant.textColor} size="small" />
         ) : (
           <>
-            {icon && <Text style={[styles.icon, { color: currentVariant.textColor }]}>{icon}</Text>}
+            {icon && <View style={styles.iconContainer}>{icon}</View>}
             <Text
               style={[
                 styles.text,
@@ -121,8 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  icon: {
-    fontSize: 18,
+  iconContainer: {
     marginRight: SPACING.sm,
   },
   text: {

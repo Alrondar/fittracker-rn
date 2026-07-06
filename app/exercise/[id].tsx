@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -13,6 +13,7 @@ import { Exercise } from '../../src/types';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
+import { Dumbbell, CheckCircle, AlertTriangle, AlertCircle, Wrench, Settings } from 'lucide-react-native';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -32,7 +33,7 @@ export default function ExerciseDetailScreen() {
         .select()
         .eq('id', id)
         .single();
-      
+
       if (error) throw error;
       setExercise(data);
     } catch (error: any) {
@@ -86,9 +87,11 @@ export default function ExerciseDetailScreen() {
       </View>
 
       <View style={[styles.content, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={styles.icon}>🏋️</Text>
+        <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
+          <Dumbbell size={48} color={colors.primary} strokeWidth={1.5} />
+        </View>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{exercise.name}</Text>
-        
+
         {primaryMuscles.length > 0 && (
           <View style={styles.muscleSection}>
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Основные мышцы</Text>
@@ -118,28 +121,40 @@ export default function ExerciseDetailScreen() {
 
       {exercise.technique ? (
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}> Техника выполнения</Text>
+          <View style={styles.sectionHeader}>
+            <Settings size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Техника выполнения</Text>
+          </View>
           <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.technique}</Text>
         </View>
       ) : null}
 
       {exercise.benefits ? (
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>✅ Польза</Text>
+          <View style={styles.sectionHeader}>
+            <CheckCircle size={20} color="#4CAF50" strokeWidth={1.5} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Польза</Text>
+          </View>
           <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.benefits}</Text>
         </View>
       ) : null}
 
       {exercise.risks ? (
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>⚠️ Риски</Text>
+          <View style={styles.sectionHeader}>
+            <AlertTriangle size={20} color="#FF9800" strokeWidth={1.5} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Риски</Text>
+          </View>
           <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.risks}</Text>
         </View>
       ) : null}
 
       {injuries.length > 0 && (
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>🚨 Противопоказания</Text>
+          <View style={styles.sectionHeader}>
+            <AlertCircle size={20} color="#F44336" strokeWidth={1.5} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Противопоказания</Text>
+          </View>
           {injuries.map((injury, idx) => (
             <Text key={idx} style={[styles.listItem, { color: colors.textPrimary }]}>• {injury}</Text>
           ))}
@@ -148,18 +163,24 @@ export default function ExerciseDetailScreen() {
 
       {equipment.length > 0 && (
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>🔧 Оборудование</Text>
+          <View style={styles.sectionHeader}>
+            <Wrench size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Оборудование</Text>
+          </View>
           <Text style={[styles.text, { color: colors.textPrimary }]}>{equipment.join(', ')}</Text>
         </View>
       )}
 
       {exercise.settings ? (
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>️ Настройка</Text>
+          <View style={styles.sectionHeader}>
+            <Settings size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Настройка</Text>
+          </View>
           <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.settings}</Text>
         </View>
       ) : null}
-      
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -185,7 +206,15 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderBottomWidth: 1,
   },
-  icon: { fontSize: 64, textAlign: 'center', marginBottom: SPACING.lg },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: SPACING.lg,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -210,6 +239,12 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     marginHorizontal: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   text: { fontSize: 15, lineHeight: 22 },
   listItem: { fontSize: 15, marginBottom: SPACING.sm, lineHeight: 22 },

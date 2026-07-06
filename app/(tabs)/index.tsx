@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
@@ -17,6 +17,7 @@ import { AnimatedButton } from '../../src/components/AnimatedButton';
 import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
+import { Dumbbell, BookOpen, Clock, TrendingUp } from 'lucide-react-native';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -27,11 +28,9 @@ interface DashboardStats {
 }
 
 export default function DashboardScreen() {
-  console.log('📱 [DASHBOARD] Рендер Dashboard');
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
@@ -53,7 +52,9 @@ export default function DashboardScreen() {
       const { data: workouts, error } = await supabase
         .from('workouts')
         .select(`
-          id, name, created_at,
+          id, 
+          name, 
+          created_at,
           workout_exercises (
             id,
             workout_logs (weight_kg, reps)
@@ -62,10 +63,10 @@ export default function DashboardScreen() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('🔴 Ошибка загрузки:', error);
+        console.error('Ошибка загрузки:', error);
         return;
       }
-      
+
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -77,7 +78,6 @@ export default function DashboardScreen() {
 
       workouts?.forEach((workout: any) => {
         const createdAt = new Date(workout.created_at);
-        
         if (createdAt >= weekAgo) weekWorkouts++;
         if (createdAt >= monthAgo) monthWorkouts++;
 
@@ -103,6 +103,7 @@ export default function DashboardScreen() {
       if (workouts && workouts.length > 0) {
         setLastWorkout(workouts[0]);
       }
+
       setRecentWorkouts(workouts?.slice(0, 3) || []);
     } catch (error: any) {
       console.error('Исключение:', error);
@@ -123,11 +124,9 @@ export default function DashboardScreen() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
     if (days === 0) return 'Сегодня';
     if (days === 1) return 'Вчера';
     if (days < 7) return `${days} дн. назад`;
-    
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   };
 
@@ -143,11 +142,11 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={colors.primary}
           />
@@ -155,7 +154,7 @@ export default function DashboardScreen() {
       >
         {/* Приветствие */}
         <View style={styles.header}>
-          <Text style={[styles.greeting, { color: colors.textPrimary }]}>Привет! 👋</Text>
+          <Text style={[styles.greeting, { color: colors.textPrimary }]}>Привет!</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Готов к тренировке?</Text>
         </View>
 
@@ -170,7 +169,6 @@ export default function DashboardScreen() {
             <Text style={[styles.statValue, { color: colors.textInverse }]}>{stats.weekWorkouts}</Text>
             <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>На неделе</Text>
           </LinearGradient>
-          
           <LinearGradient
             colors={GRADIENTS.success}
             style={styles.statCard}
@@ -180,7 +178,6 @@ export default function DashboardScreen() {
             <Text style={[styles.statValue, { color: colors.textInverse }]}>{stats.monthWorkouts}</Text>
             <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>В месяце</Text>
           </LinearGradient>
-          
           <LinearGradient
             colors={GRADIENTS.hero}
             style={styles.statCard}
@@ -202,7 +199,7 @@ export default function DashboardScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   Haptics.impactAsync();
                   router.push(`/history/${lastWorkout.id}`);
@@ -216,7 +213,7 @@ export default function DashboardScreen() {
                     {formatDate(lastWorkout.created_at)}
                   </Text>
                 </View>
-                <Text style={[styles.arrow, { color: colors.textInverse }]}>→</Text>
+                <TrendingUp size={24} color="white" strokeWidth={1.5} />
               </TouchableOpacity>
             </LinearGradient>
           </View>
@@ -226,7 +223,7 @@ export default function DashboardScreen() {
             <AnimatedButton
               title="Создать тренировку"
               onPress={() => router.push('/(tabs)/workouts')}
-              icon="🏋️"
+              icon={<Dumbbell size={24} color="white" strokeWidth={1.5} />}
               size="large"
               style={styles.emptyCard}
             />
@@ -237,34 +234,34 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Быстрый доступ</Text>
           <View style={styles.quickActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
                 Haptics.impactAsync();
                 router.push('/(tabs)/workouts');
               }}
             >
-              <Text style={styles.quickActionIcon}>💪</Text>
+              <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
               <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Тренировки</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
                 Haptics.impactAsync();
                 router.push('/(tabs)/exercises');
               }}
             >
-              <Text style={styles.quickActionIcon}>📋</Text>
+              <BookOpen size={32} color={colors.primary} strokeWidth={1.5} />
               <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Справочник</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
               onPress={() => {
                 Haptics.impactAsync();
                 router.push('/(tabs)/history');
               }}
             >
-              <Text style={styles.quickActionIcon}>📊</Text>
+              <Clock size={32} color={colors.primary} strokeWidth={1.5} />
               <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>История</Text>
             </TouchableOpacity>
           </View>
@@ -287,7 +284,7 @@ export default function DashboardScreen() {
                     {formatDate(workout.created_at)}
                   </Text>
                 </View>
-                <Text style={[styles.arrow, { color: colors.primary }]}>→</Text>
+                <TrendingUp size={20} color={colors.primary} strokeWidth={1.5} />
               </TouchableOpacity>
             ))}
           </View>
@@ -303,7 +300,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  
   header: {
     padding: SPACING.xl,
     paddingBottom: SPACING.lg,
@@ -316,7 +312,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: SPACING.xs,
   },
-
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: SPACING.xl,
@@ -337,7 +332,6 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
   },
-
   section: {
     paddingHorizontal: SPACING.xl,
     marginBottom: SPACING.xl,
@@ -347,7 +341,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: SPACING.md,
   },
-
   lastWorkoutCard: {
     borderRadius: BORDER_RADIUS.xl,
     elevation: 4,
@@ -367,17 +360,11 @@ const styles = StyleSheet.create({
   lastWorkoutDate: {
     fontSize: 14,
   },
-  arrow: {
-    fontSize: 24,
-    marginLeft: SPACING.md,
-  },
-
   emptyCard: {
     padding: SPACING.xl,
     borderRadius: BORDER_RADIUS.xl,
     elevation: 2,
   },
-
   quickActions: {
     flexDirection: 'row',
     gap: SPACING.md,
@@ -389,15 +376,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 2,
   },
-  quickActionIcon: {
-    fontSize: 32,
-    marginBottom: SPACING.sm,
-  },
   quickActionText: {
     fontSize: 12,
     fontWeight: '600',
+    marginTop: SPACING.sm,
   },
-
   recentCard: {
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.lg,

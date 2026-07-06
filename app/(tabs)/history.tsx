@@ -15,6 +15,7 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
+import { Clock } from 'lucide-react-native';
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -47,8 +48,7 @@ export default function HistoryScreen() {
 
       if (error) throw error;
 
-      // Фильтруем только завершенные тренировки (с логами)
-      const completed = (data || []).filter((w: any) => 
+      const completed = (data || []).filter((w: any) =>
         w.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0)
       );
 
@@ -72,7 +72,6 @@ export default function HistoryScreen() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
     if (days === 0) return 'Сегодня';
     if (days === 1) return 'Вчера';
     if (days < 7) return `${days} дн. назад`;
@@ -99,8 +98,10 @@ export default function HistoryScreen() {
 
   const renderEmpty = () => (
     <FadeIn delay={200} style={styles.emptyContainer}>
-      <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>📊</Text>
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>История пуста</Text>
+      <Clock size={64} color={colors.textTertiary} strokeWidth={1.5} />
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+        История пуста
+      </Text>
       <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         Завершите первую тренировку, чтобы увидеть её здесь
       </Text>
@@ -163,9 +164,9 @@ export default function HistoryScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh} 
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
               tintColor={colors.primary}
             />
           }
@@ -233,14 +234,11 @@ const styles = StyleSheet.create({
     padding: SPACING.xxl,
     marginTop: 60,
   },
-  emptyIcon: { 
-    fontSize: 64, 
-    marginBottom: SPACING.lg 
-  },
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: SPACING.sm,
+    marginTop: SPACING.lg,
     textAlign: 'center',
   },
   emptyText: {

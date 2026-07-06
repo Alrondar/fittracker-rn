@@ -6,6 +6,7 @@ import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
+import { Moon, Settings, Target, AlertTriangle } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -47,17 +48,18 @@ export default function ProfileScreen() {
       <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
         <Text style={styles.avatarText}></Text>
       </View>
-      
+
       <Text style={[styles.title, { color: colors.textPrimary }]}>Профиль</Text>
+
       {userId && (
         <Text style={[styles.userId, { color: colors.textTertiary }]}>ID: {userId.slice(0, 8)}...</Text>
       )}
-      
+
       {/* Переключатель темы */}
       <View style={[styles.section, { backgroundColor: colors.surface }]}>
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
-            <Text style={styles.settingIcon}>🌙</Text>
+            <Moon size={24} color={colors.primary} strokeWidth={1.5} style={styles.settingIcon} />
             <View style={styles.settingText}>
               <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Темная тема</Text>
               <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
@@ -76,33 +78,31 @@ export default function ProfileScreen() {
 
       {/* Меню настроек */}
       <View style={[styles.section, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
-          <Text style={styles.menuIcon}>⚙️</Text>
+          <Settings size={24} color={colors.primary} strokeWidth={1.5} style={styles.menuIcon} />
           <Text style={[styles.menuText, { color: colors.textPrimary }]}>Настройки</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
-          <Text style={styles.menuIcon}></Text>
+          <Target size={24} color={colors.primary} strokeWidth={1.5} style={styles.menuIcon} />
           <Text style={[styles.menuText, { color: colors.textPrimary }]}>Мои цели</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuItem}
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         >
-          <Text style={styles.menuIcon}>🚨</Text>
+          <AlertTriangle size={24} color={colors.primary} strokeWidth={1.5} style={styles.menuIcon} />
           <Text style={[styles.menuText, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
         </TouchableOpacity>
       </View>
 
       {/* Кнопка выхода с градиентом */}
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={handleLogout}
         activeOpacity={0.8}
       >
@@ -122,8 +122,8 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     padding: SPACING.xl,
   },
   avatar: {
@@ -136,15 +136,15 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   avatarText: { fontSize: 48 },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    textAlign: 'center', 
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: SPACING.xs,
   },
-  userId: { 
-    fontSize: 12, 
-    textAlign: 'center', 
+  userId: {
+    fontSize: 12,
+    textAlign: 'center',
     marginBottom: SPACING.xxl,
   },
   section: {
@@ -164,7 +164,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingIcon: {
-    fontSize: 24,
     marginRight: SPACING.md,
   },
   settingText: {
@@ -184,11 +183,10 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderBottomWidth: 1,
   },
-  menuIcon: { 
-    fontSize: 24, 
+  menuIcon: {
     marginRight: SPACING.md,
   },
-  menuText: { 
+  menuText: {
     fontSize: 16,
   },
   logoutButton: {

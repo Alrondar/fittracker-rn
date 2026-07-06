@@ -1,56 +1,49 @@
-import { useState, useEffect, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert,
+import { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
   RefreshControl,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
-import { Workout } from '../../src/types';
 import { useStore } from '../../src/store/useStore';
 import { ListSkeleton } from '../../src/components/Skeleton';
-import { SwipeToDeleteCard } from '../../src/components/SwipeableCard';
-import { CustomBottomSheet } from '../../src/components/BottomSheet';
-import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
+import { FadeIn } from '../../src/components/FadeIn';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
+import { ClipboardList, Dumbbell, Plus } from 'lucide-react-native';
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const { userId } = useStore();
+  const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
-  // Состояния для Bottom Sheet
-  const [sheetVisible, setSheetVisible] = useState(false);
-  const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
-  
   const router = useRouter();
-  const { setWorkouts: setStoreWorkouts } = useStore();
 
   useEffect(() => {
     loadWorkouts();
-  }, []);
+  }, [userId]);
 
   const loadWorkouts = async () => {
+    if (!userId) return;
     try {
       const { data, error } = await supabase
         .from('workouts')
-        .select()
+        .select('id, name, description, program_id, week_number, day_index, created_at')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
-      if (error) throw error;
 
-      const list = data || [];
-      setWorkouts(list);
-      setStoreWorkouts(list);
+      if (error) throw error;
+      setWorkouts(data || []);
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
+      console.error('Ошибка загрузки тренировок:', e.message);
+      Alert.alert('Ошибка', 'Не удалось загрузить список тренировок');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -58,106 +51,108 @@ export default function WorkoutsScreen() {
   };
 
   const onRefresh = () => {
-    Haptics.impactAsync();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     loadWorkouts();
   };
 
-  // Обработчики для Bottom Sheet
-  const handleLongPress = (workout: Workout) => {
-      console.log('🎯 handleLongPress вызван для:', workout.name);
-    Haptics.impactAsync();
-    setSelectedWorkout(workout);
-    setSheetVisible(true);
+  const navigateToWorkout = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push(`/workout/${id}`);
   };
 
-  const handleEdit = () => {
-    if (selectedWorkout) {
-      router.push(`/workout/create?edit=${selectedWorkout.id}`);
-    }
+  const createNewWorkout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/workout/create');
   };
 
-  const handleDelete = async () => {
-    if (selectedWorkout) {
-      try {
-        await supabase.from('workout_exercises').delete().eq('workout_id', selectedWorkout.id);
-        await supabase.from('workouts').delete().eq('id', selectedWorkout.id);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        loadWorkouts();
-      } catch (e: any) {
-        Alert.alert('Ошибка', e.message);
-      }
-    }
-  };
+  const renderWorkoutItem = ({ item, index }: { item: any; index: number }) => {
+    const isProgramWorkout = !!item.program_id;
+    const programLabel = isProgramWorkout
+      ? `Неделя ${item.week_number || 1}, День ${item.day_index || 1}`
+      : null;
 
-  const sheetItems = useMemo(() => [
-    { 
-      label: 'Редактировать', 
-      icon: '✏️', 
-      onPress: handleEdit 
-    },
-    { 
-      label: 'Удалить', 
-      icon: '🗑️', 
-      onPress: handleDelete,
-      destructive: true 
-    },
-  ], [selectedWorkout]);
-
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    return (
+      <FadeIn delay={index * 60}>
+        <TouchableOpacity
+          onPress={() => navigateToWorkout(item.id)}
+          activeOpacity={0.85}
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.surface,
+              borderColor: isProgramWorkout ? colors.primary : colors.border,
+              borderWidth: isProgramWorkout ? 1.5 : 1,
+            },
+          ]}
+        >
+          {isProgramWorkout && (
+            <View style={[styles.programBadge, { backgroundColor: colors.primary + '15' }]}>
+              <View style={styles.badgeContent}>
+                <ClipboardList size={14} color={colors.primary} strokeWidth={2} />
+                <Text style={[styles.programBadgeText, { color: colors.primary }]}>
+                  {programLabel}
+                </Text>
+              </View>
+            </View>
+          )}
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+            {item.name}
+          </Text>
+          {item.description && !isProgramWorkout && (
+            <Text style={[styles.cardDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.description}
+            </Text>
+          )}
+          <View style={styles.cardFooter}>
+            <Text style={[styles.cardDate, { color: colors.textSecondary }]}>
+              {new Date(item.created_at).toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+              })}
+            </Text>
+            <Text style={[styles.openText, { color: colors.primary }]}>Начать →</Text>
+          </View>
+        </TouchableOpacity>
+      </FadeIn>
+    );
   };
 
   const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>🏋️♂️</Text>
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Пока нет тренировок</Text>
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Создай свою первую программу, чтобы начать отслеживать прогресс!</Text>
-      <TouchableOpacity 
-        style={[styles.emptyButton, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/workout/create')}
-      >
-        <Text style={[styles.emptyButtonText, { color: colors.textInverse }]}>+ Создать тренировку</Text>
-      </TouchableOpacity>
-    </View>
+    <FadeIn delay={200} style={styles.emptyContainer}>
+      <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+        Нет тренировок
+      </Text>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+        Создайте свою первую тренировку или выберите готовую программу
+      </Text>
+    </FadeIn>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+          Тренировки
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          Ваши планы и программы
+        </Text>
+      </View>
+
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
         <FlatList
           data={workouts}
           keyExtractor={(item) => item.id}
-renderItem={({ item, index }) => (
-  <View style={{ opacity: 1 }}>
-    <SwipeToDeleteCard 
-      onDelete={() => handleDeleteFromSwipe(item)}
-      onLongPress={() => handleLongPress(item)}
-      onPress={() => {
-        console.log('👆 Короткое нажатие - открываем:', item.name);
-        router.push(`/workout/${item.id}`);
-      }}
-    >
-      <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <View style={styles.cardHeader}>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
-          <Text style={[styles.cardDate, { color: colors.textTertiary }]}>{formatDate(item.created_at)}</Text>
-        </View>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
-          {item.description || 'Нет описания'}
-        </Text>
-      </View>
-    </SwipeToDeleteCard>
-  </View>
-)}
+          renderItem={renderWorkoutItem}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
+            <RefreshControl
+              refreshing={refreshing}
               onRefresh={onRefresh}
               tintColor={colors.primary}
             />
@@ -165,131 +160,116 @@ renderItem={({ item, index }) => (
         />
       )}
 
-      <View style={styles.fabContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync();
-            router.push('/workout/create');
-          }}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={GRADIENTS.primary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fab}
-          >
-            <Text style={styles.fabText}>+</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-
-      {/* Bottom Sheet для действий с тренировкой */}
-      <CustomBottomSheet
-        visible={sheetVisible}
-        onClose={() => {
-          setSheetVisible(false);
-          setSelectedWorkout(null);
-        }}
-        title={selectedWorkout?.name || ''}
-        items={sheetItems}
-      />
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.primary }]}
+        onPress={createNewWorkout}
+        activeOpacity={0.8}
+      >
+        <Plus size={28} color="white" strokeWidth={2.5} />
+      </TouchableOpacity>
     </View>
   );
-
-  // Отдельная функция для удаления через свайп
-  async function handleDeleteFromSwipe(item: Workout) {
-    try {
-      await supabase.from('workout_exercises').delete().eq('workout_id', item.id);
-      await supabase.from('workouts').delete().eq('id', item.id);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      loadWorkouts();
-    } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
-    }
-  }
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { padding: SPACING.lg, paddingBottom: 100 },
-  
-  card: {
+  header: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.md,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+  },
+  list: {
+    padding: SPACING.lg,
+    paddingTop: 0,
+    paddingBottom: 100,
+  },
+  card: {
     borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.md,
+    padding: SPACING.lg,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
-  cardHeader: {
+  programBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    marginBottom: SPACING.sm,
+  },
+  badgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  programBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    marginBottom: SPACING.xs,
+    lineHeight: 22,
+  },
+  cardDesc: {
+    fontSize: 14,
+    marginBottom: SPACING.md,
+  },
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginTop: SPACING.sm,
   },
-  cardTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: SPACING.md,
+  cardDate: {
+    fontSize: 13,
   },
-  cardDate: { 
-    fontSize: 12 
-  },
-  cardSubtitle: { 
+  openText: {
     fontSize: 14,
+    fontWeight: '600',
   },
-
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xxl,
-    marginTop: 60,
+    marginTop: 40,
   },
-  emptyIcon: { fontSize: 64, marginBottom: SPACING.lg },
-  emptyTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },
-  emptyText: { 
-    fontSize: 14, 
+  emptyText: {
+    fontSize: 14,
     textAlign: 'center',
-    marginBottom: SPACING.xl,
     lineHeight: 20,
   },
-  emptyButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: BORDER_RADIUS.full,
-  },
-  emptyButtonText: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-
-  fabContainer: {
+  fab: {
     position: 'absolute',
     bottom: SPACING.xl,
-    right: SPACING.xl,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  fab: {
+    right: SPACING.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  fabText: { 
-    color: '#ffffff', 
-    fontWeight: 'bold', 
-    fontSize: 28,
-    marginTop: -2,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
 });
