@@ -1,123 +1,301 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Switch } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { supabase } from '../../src/lib/supabase';
-import { useStore } from '../../src/store/useStore';
-import { useTheme } from '../../src/hooks/useTheme';
-import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
-import * as Haptics from 'expo-haptics';
-import { Moon, Settings, Target, AlertTriangle } from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  Modal,
+  FlatList,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../src/hooks/useTheme';
+import { ThemeAccent, ThemeKey, themes } from '../../src/constants/theme';
 
 export default function ProfileScreen() {
-  const router = useRouter();
-  const { setAuth, userId } = useStore();
-  const { colors, themeMode, setThemeMode, isDark } = useTheme();
+  const {
+    colors,
+    themeMode,
+    themeAccent,
+    setThemeMode,
+    setThemeAccent,
+    availableAccents,
+  } = useTheme();
 
-  const handleLogout = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+
+  const handleLogout = () => {
     Alert.alert(
-      'Выйти из аккаунта',
+      'Выход из аккаунта',
       'Вы уверены, что хотите выйти?',
       [
         { text: 'Отмена', style: 'cancel' },
         {
           text: 'Выйти',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await supabase.auth.signOut();
-              setAuth(null);
-              router.replace('/(auth)/login');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            }
+          onPress: () => {
+            // TODO: логика выхода
+            console.log('Logout');
           },
         },
       ]
     );
   };
 
-  const toggleTheme = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setThemeMode(isDark ? 'light' : 'dark');
+  const renderThemeOption = ({ item }: { item: { key: ThemeAccent; label: string; keys: ThemeKey[] } }) => {
+    const isSelected = themeAccent === item.key;
+    const currentTheme = themes[item.keys[0]]; // Берём light версию для превью
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.themeOption,
+          {
+            backgroundColor: colors.surface,
+            borderColor: isSelected ? colors.primary : colors.border,
+          },
+        ]}
+        onPress={() => {
+          setThemeAccent(item.key);
+          setShowThemeModal(false);
+        }}
+      >
+        <View style={styles.themeInfo}>
+          <View style={styles.themePreview}>
+            <View
+              style={[
+                styles.previewCircle,
+                { backgroundColor: currentTheme.colors.primary },
+              ]}
+            />
+            <View
+              style={[
+                styles.previewCircle,
+                { backgroundColor: currentTheme.colors.success },
+              ]}
+            />
+            <View
+              style={[
+                styles.previewCircle,
+                { backgroundColor: currentTheme.colors.warning },
+              ]}
+            />
+          </View>
+          <Text style={[styles.themeLabel, { color: colors.textPrimary }]}>
+            {item.label}
+          </Text>
+        </View>
+
+        {isSelected && (
+          <View style={[styles.checkmark, { backgroundColor: colors.primary }]}>
+            <Text style={styles.checkmarkText}>✓</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* Аватар */}
-      <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-        <Text style={styles.avatarText}></Text>
-      </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Заголовок */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
+            Профиль
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            ID: 6416429a...
+          </Text>
+        </View>
 
-      <Text style={[styles.title, { color: colors.textPrimary }]}>Профиль</Text>
+        {/* Настройки темы */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            Оформление
+          </Text>
 
-      {userId && (
-        <Text style={[styles.userId, { color: colors.textTertiary }]}>ID: {userId.slice(0, 8)}...</Text>
-      )}
-
-      {/* Переключатель темы */}
-      <View style={[styles.section, { backgroundColor: colors.surface }]}>
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Moon size={24} color={colors.primary} strokeWidth={1.5} style={styles.settingIcon} />
-            <View style={styles.settingText}>
-              <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Темная тема</Text>
-              <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
-                {isDark ? 'Включена' : 'Выключена'}
+          {/* Переключатель светлая/тёмная */}
+          <View
+            style={[
+              styles.settingRow,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>
+                Тёмная тема
+              </Text>
+              <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                {themeMode === 'dark' ? 'Включена' : 
+                 themeMode === 'light' ? 'Выключена' : 'Как в системе'}
               </Text>
             </View>
+            <View style={styles.modeButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  {
+                    backgroundColor: themeMode === 'light' ? colors.primaryLight : 'transparent',
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => setThemeMode('light')}
+              >
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    {
+                      color: themeMode === 'light' ? colors.primaryDark : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Светлая
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  {
+                    backgroundColor: themeMode === 'dark' ? colors.primaryLight : 'transparent',
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => setThemeMode('dark')}
+              >
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    {
+                      color: themeMode === 'dark' ? colors.primaryDark : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Тёмная
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  {
+                    backgroundColor: themeMode === 'system' ? colors.primaryLight : 'transparent',
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => setThemeMode('system')}
+              >
+                <Text
+                  style={[
+                    styles.modeButtonText,
+                    {
+                      color: themeMode === 'system' ? colors.primaryDark : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  Авто
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Switch
-            value={isDark}
-            onValueChange={toggleTheme}
-            trackColor={{ false: colors.border, true: colors.primaryLight }}
-            thumbColor={isDark ? colors.primary : '#f4f3f4'}
-          />
+
+          {/* Выбор цветовой схемы */}
+          <TouchableOpacity
+            style={[
+              styles.settingRow,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={() => setShowThemeModal(true)}
+          >
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>
+                Цветовая схема
+              </Text>
+              <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                {availableAccents.find(a => a.key === themeAccent)?.label}
+              </Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.textTertiary }]}>→</Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Меню настроек */}
-      <View style={[styles.section, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity
-          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <Settings size={24} color={colors.primary} strokeWidth={1.5} style={styles.menuIcon} />
-          <Text style={[styles.menuText, { color: colors.textPrimary }]}>Настройки</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <Target size={24} color={colors.primary} strokeWidth={1.5} style={styles.menuIcon} />
-          <Text style={[styles.menuText, { color: colors.textPrimary }]}>Мои цели</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <AlertTriangle size={24} color={colors.primary} strokeWidth={1.5} style={styles.menuIcon} />
-          <Text style={[styles.menuText, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Другие настройки */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[
+              styles.settingRow,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>
+              Настройки
+            </Text>
+            <Text style={[styles.chevron, { color: colors.textTertiary }]}>→</Text>
+          </TouchableOpacity>
 
-      {/* Кнопка выхода с градиентом */}
-      <TouchableOpacity
-        onPress={handleLogout}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={GRADIENTS.danger}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logoutButton}
+          <TouchableOpacity
+            style={[
+              styles.settingRow,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>
+              Мои цели
+            </Text>
+            <Text style={[styles.chevron, { color: colors.textTertiary }]}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.settingRow,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.settingLabel, { color: colors.textPrimary }]}>
+              Травмы и ограничения
+            </Text>
+            <Text style={[styles.chevron, { color: colors.textTertiary }]}>→</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Кнопка выхода */}
+        <TouchableOpacity
+          style={[styles.logoutButton, { backgroundColor: colors.error }]}
+          onPress={handleLogout}
         >
           <Text style={styles.logoutText}>Выйти из аккаунта</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </ScrollView>
 
-      <View style={{ height: 40 }} />
+      {/* Модальное окно выбора темы */}
+      <Modal
+        visible={showThemeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowThemeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                Выберите цветовую схему
+              </Text>
+              <TouchableOpacity onPress={() => setShowThemeModal(false)}>
+                <Text style={[styles.modalClose, { color: colors.primary }]}>
+                  Закрыть
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={availableAccents}
+              renderItem={renderThemeOption}
+              keyExtractor={(item) => item.key}
+              contentContainerStyle={styles.modalList}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -125,79 +303,146 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: SPACING.xl,
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: SPACING.md,
+  scrollContent: {
+    padding: 16,
   },
-  avatarText: { fontSize: 48 },
+  header: {
+    marginBottom: 24,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: 4,
   },
-  userId: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: SPACING.xxl,
+  subtitle: {
+    fontSize: 14,
   },
   section: {
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
-    marginBottom: SPACING.xl,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.lg,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
   },
   settingInfo: {
+    flex: 1,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  settingDescription: {
+    fontSize: 13,
+  },
+  modeButtons: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  modeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  modeButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  chevron: {
+    fontSize: 20,
+    marginLeft: 8,
+  },
+  logoutButton: {
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    flex: 1,
+    marginTop: 8,
   },
-  settingIcon: {
-    marginRight: SPACING.md,
-  },
-  settingText: {
-    flex: 1,
-  },
-  settingTitle: {
+  logoutText: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
-  settingSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
+  // Модальное окно
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
-  menuItem: {
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 32,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalClose: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalList: {
+    padding: 16,
+  },
+  themeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 12,
   },
-  menuIcon: {
-    marginRight: SPACING.md,
-  },
-  menuText: {
-    fontSize: 16,
-  },
-  logoutButton: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
+  themeInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
-  logoutText: {
+  themePreview: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  previewCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  themeLabel: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '500',
+  },
+  checkmark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmarkText: {
     color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
