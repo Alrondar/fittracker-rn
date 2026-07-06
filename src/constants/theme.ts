@@ -1,7 +1,6 @@
 // ============================================================
 // ТИПЫ
 // ============================================================
-
 export interface ThemeColors {
   primary: string;
   primaryLight: string;
@@ -26,17 +25,26 @@ export interface ThemeColors {
   overlay: string;
 }
 
+export interface ThemeGradients {
+  primary: readonly [string, string];
+  success: readonly [string, string];
+  warning: readonly [string, string];
+  danger: readonly [string, string];
+  hero: readonly [string, string];
+  dark: readonly [string, string];
+}
+
 export interface Theme {
   colors: ThemeColors;
+  gradients: ThemeGradients;
   name: string;
   mode: 'light' | 'dark';
-  accent: string; // для идентификации цветовой схемы
+  accent: string;
 }
 
 // ============================================================
-// ФИОЛЕТОВАЯ ТЕМА (оригинальная)
+// ФИОЛЕТОВАЯ ТЕМА
 // ============================================================
-
 export const purpleLightTheme: Theme = {
   name: 'Светлая',
   mode: 'light',
@@ -63,6 +71,14 @@ export const purpleLightTheme: Theme = {
     borderLight: '#f3f4f6',
     shadow: 'rgba(0, 0, 0, 0.1)',
     overlay: 'rgba(0, 0, 0, 0.5)',
+  },
+  gradients: {
+    primary: ['#7c3aed', '#5b21b6'],
+    success: ['#10b981', '#059669'],
+    warning: ['#f59e0b', '#d97706'],
+    danger: ['#ef4444', '#dc2626'],
+    hero: ['#8b5cf6', '#3b82f6'],
+    dark: ['#1e293b', '#0f172a'],
   },
 };
 
@@ -93,12 +109,19 @@ export const purpleDarkTheme: Theme = {
     shadow: 'rgba(0, 0, 0, 0.5)',
     overlay: 'rgba(0, 0, 0, 0.7)',
   },
+  gradients: {
+    primary: ['#8b5cf6', '#6d28d9'],
+    success: ['#34d399', '#10b981'],
+    warning: ['#fbbf24', '#f59e0b'],
+    danger: ['#f87171', '#ef4444'],
+    hero: ['#a78bfa', '#60a5fa'],
+    dark: ['#1e293b', '#0f172a'],
+  },
 };
 
 // ============================================================
-// ОРАНЖЕВАЯ ТЕМА (Энергия)
+// ОРАНЖЕВАЯ ТЕМА
 // ============================================================
-
 export const orangeLightTheme: Theme = {
   name: 'Энергия',
   mode: 'light',
@@ -125,6 +148,14 @@ export const orangeLightTheme: Theme = {
     borderLight: '#F5F0ED',
     shadow: 'rgba(232, 93, 42, 0.12)',
     overlay: 'rgba(0, 0, 0, 0.5)',
+  },
+  gradients: {
+    primary: ['#FF6B35', '#E85D2A'],
+    success: ['#2ECC71', '#27AE60'],
+    warning: ['#F9CA24', '#F39C12'],
+    danger: ['#EB4D4B', '#C0392B'],
+    hero: ['#FF8C5A', '#FF6B35'],
+    dark: ['#3D1F14', '#1A1412'],
   },
 };
 
@@ -155,12 +186,19 @@ export const orangeDarkTheme: Theme = {
     shadow: 'rgba(255, 107, 53, 0.2)',
     overlay: 'rgba(0, 0, 0, 0.7)',
   },
+  gradients: {
+    primary: ['#FF8C5A', '#FF6B35'],
+    success: ['#2ECC71', '#27AE60'],
+    warning: ['#F9CA24', '#F39C12'],
+    danger: ['#FF6B6B', '#EB4D4B'],
+    hero: ['#FFA07A', '#FF8C5A'],
+    dark: ['#2A211E', '#1A1412'],
+  },
 };
 
 // ============================================================
-// СИНЯЯ ТЕМА (Профи)
+// СИНЯЯ ТЕМА
 // ============================================================
-
 export const blueLightTheme: Theme = {
   name: 'Профи',
   mode: 'light',
@@ -187,6 +225,14 @@ export const blueLightTheme: Theme = {
     borderLight: '#F1F2F6',
     shadow: 'rgba(9, 132, 227, 0.1)',
     overlay: 'rgba(0, 0, 0, 0.5)',
+  },
+  gradients: {
+    primary: ['#0984E3', '#075985'],
+    success: ['#00CE7C', '#00B894'],
+    warning: ['#FFA502', '#E67E22'],
+    danger: ['#FF4757', '#C0392B'],
+    hero: ['#74B9FF', '#0984E3'],
+    dark: ['#0A2540', '#0A1628'],
   },
 };
 
@@ -217,12 +263,19 @@ export const blueDarkTheme: Theme = {
     shadow: 'rgba(116, 185, 255, 0.15)',
     overlay: 'rgba(0, 0, 0, 0.7)',
   },
+  gradients: {
+    primary: ['#74B9FF', '#0984E3'],
+    success: ['#55EFC4', '#00B894'],
+    warning: ['#FDCB6E', '#E67E22'],
+    danger: ['#FF7675', '#FF4757'],
+    hero: ['#A0D2FF', '#74B9FF'],
+    dark: ['#132238', '#0A1628'],
+  },
 };
 
 // ============================================================
-// НЕОНОВАЯ ТЕМА (Кибер)
+// НЕОНОВАЯ ТЕМА
 // ============================================================
-
 export const neonLightTheme: Theme = {
   name: 'Кибер',
   mode: 'light',
@@ -249,6 +302,14 @@ export const neonLightTheme: Theme = {
     borderLight: '#E6FFF2',
     shadow: 'rgba(0, 204, 106, 0.15)',
     overlay: 'rgba(0, 0, 0, 0.5)',
+  },
+  gradients: {
+    primary: ['#00CC6A', '#009E52'],
+    success: ['#00CC6A', '#009E52'],
+    warning: ['#FFAA00', '#E69500'],
+    danger: ['#FF3366', '#CC2952'],
+    hero: ['#00FF88', '#00CC6A'],
+    dark: ['#0F2419', '#0A1A12'],
   },
 };
 
@@ -279,12 +340,19 @@ export const neonDarkTheme: Theme = {
     shadow: 'rgba(0, 255, 136, 0.2)',
     overlay: 'rgba(0, 0, 0, 0.8)',
   },
+  gradients: {
+    primary: ['#00FF88', '#00CC6A'],
+    success: ['#00FF88', '#00CC6A'],
+    warning: ['#FFAA00', '#E69500'],
+    danger: ['#FF3366', '#CC2952'],
+    hero: ['#00FF88', '#00D9FF'],
+    dark: ['#141414', '#0A0A0A'],
+  },
 };
 
 // ============================================================
-// РОЗОВАЯ ТЕМА (Закат) — бонус
+// РОЗОВАЯ ТЕМА
 // ============================================================
-
 export const pinkLightTheme: Theme = {
   name: 'Закат',
   mode: 'light',
@@ -311,6 +379,14 @@ export const pinkLightTheme: Theme = {
     borderLight: '#FAE8EE',
     shadow: 'rgba(233, 30, 99, 0.12)',
     overlay: 'rgba(0, 0, 0, 0.5)',
+  },
+  gradients: {
+    primary: ['#E91E63', '#C2185B'],
+    success: ['#4CAF50', '#388E3C'],
+    warning: ['#FF9800', '#F57C00'],
+    danger: ['#F44336', '#D32F2F'],
+    hero: ['#FF5C8D', '#E91E63'],
+    dark: ['#2C1820', '#1A0F14'],
   },
 };
 
@@ -341,31 +417,32 @@ export const pinkDarkTheme: Theme = {
     shadow: 'rgba(255, 92, 141, 0.2)',
     overlay: 'rgba(0, 0, 0, 0.7)',
   },
+  gradients: {
+    primary: ['#FF5C8D', '#E91E63'],
+    success: ['#66BB6A', '#4CAF50'],
+    warning: ['#FFB74D', '#FF9800'],
+    danger: ['#EF5350', '#F44336'],
+    hero: ['#FF80AB', '#FF5C8D'],
+    dark: ['#2A1A22', '#1A0F14'],
+  },
 };
 
 // ============================================================
 // МАППИНГ ВСЕХ ТЕМ
 // ============================================================
-
 export const themes: Record<string, Theme> = {
-  // Фиолетовая
   'purple-light': purpleLightTheme,
   'purple-dark': purpleDarkTheme,
-  // Оранжевая
   'orange-light': orangeLightTheme,
   'orange-dark': orangeDarkTheme,
-  // Синяя
   'blue-light': blueLightTheme,
   'blue-dark': blueDarkTheme,
-  // Неоновая
   'neon-light': neonLightTheme,
   'neon-dark': neonDarkTheme,
-  // Розовая
   'pink-light': pinkLightTheme,
   'pink-dark': pinkDarkTheme,
 };
 
-// Группировка тем по акценту (для UI выбора)
 export const themeGroups: Record<string, { label: string; keys: string[] }> = {
   purple: {
     label: 'Фиолетовая',
@@ -392,14 +469,13 @@ export const themeGroups: Record<string, { label: string; keys: string[] }> = {
 export type ThemeKey = keyof typeof themes;
 export type ThemeAccent = keyof typeof themeGroups;
 
-// Алиасы для обратной совместимости (старый код продолжает работать)
+// Алиасы для обратной совместимости
 export const lightTheme = purpleLightTheme;
 export const darkTheme = purpleDarkTheme;
 
 // ============================================================
-// КОНСТАНТЫ (без изменений)
+// КОНСТАНТЫ
 // ============================================================
-
 export const SPACING = {
   xs: 4,
   sm: 8,
@@ -424,25 +500,12 @@ export const FONTS = {
   subtitle: { fontSize: 16 },
 };
 
+// Статические градиенты (для обратной совместимости)
 export const GRADIENTS = {
-  // Фиолетовые
   primary: ['#7c3aed', '#5b21b6'] as const,
-  hero: ['#8b5cf6', '#3b82f6'] as const,
-  // Оранжевые
-  orange: ['#FF6B35', '#E85D2A'] as const,
-  orangeDark: ['#FF8C5A', '#FF6B35'] as const,
-  // Синие
-  blue: ['#0984E3', '#075985'] as const,
-  blueDark: ['#74B9FF', '#0984E3'] as const,
-  // Неоновые
-  neon: ['#00FF88', '#00CC6A'] as const,
-  neonDark: ['#00FF88', '#00D9FF'] as const,
-  // Розовые
-  pink: ['#E91E63', '#C2185B'] as const,
-  pinkDark: ['#FF5C8D', '#E91E63'] as const,
-  // Общие
   success: ['#10b981', '#059669'] as const,
   warning: ['#f59e0b', '#d97706'] as const,
   danger: ['#ef4444', '#dc2626'] as const,
+  hero: ['#8b5cf6', '#3b82f6'] as const,
   dark: ['#1e293b', '#0f172a'] as const,
 };

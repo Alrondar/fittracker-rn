@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { AnimatedButton } from '../../src/components/AnimatedButton';
-import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
+import { SPACING } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { getActiveProgram } from '../../src/servises/programsService';
@@ -29,8 +29,6 @@ import {
 } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
-import { createListStyles } from '../../src/styles/components/list';
-import { typography } from '../../src/styles/typography';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -50,14 +48,18 @@ interface ActiveProgram {
     id: string;
     name: string;
     duration: number;
-    days: Array<{ id: string; day_number: number; name: string }>;
+    days: Array<{
+      id: string;
+      day_number: number;
+      name: string;
+    }>;
   };
 }
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme(); // ← Добавили gradients
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
@@ -71,8 +73,8 @@ export default function DashboardScreen() {
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
   const [activeProgram, setActiveProgram] = useState<ActiveProgram | null>(null);
 
+  // Создаём стили на основе темы
   const cardStyles = createCardStyles(colors);
-  const listStyles = createListStyles(colors);
 
   useEffect(() => {
     loadDashboard();
@@ -133,7 +135,9 @@ export default function DashboardScreen() {
         weekVolume,
       });
 
-      if (workouts && workouts.length > 0) setLastWorkout(workouts[0]);
+      if (workouts && workouts.length > 0) {
+        setLastWorkout(workouts[0]);
+      }
       setRecentWorkouts(workouts?.slice(0, 3) || []);
     } catch (error: any) {
       console.error('Исключение:', error);
@@ -190,7 +194,11 @@ export default function DashboardScreen() {
       <ScrollView
         style={commonStyles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
       >
         {/* Приветствие */}
@@ -201,7 +209,7 @@ export default function DashboardScreen() {
           </Text>
         </View>
 
-        {/* Активная программа */}
+        {/* Виджет активной программы */}
         {activeProgram && (
           <View style={commonStyles.section}>
             <TouchableOpacity
@@ -212,59 +220,54 @@ export default function DashboardScreen() {
               }}
             >
               <LinearGradient
-                colors={GRADIENTS.hero}
+                colors={gradients.hero} // ← Используем gradients из темы
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[cardStyles.large, { backgroundColor: 'transparent' }]}
+                style={cardStyles.activeProgramCard}
               >
-                <View style={cardStyles.header}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <View style={cardStyles.activeProgramHeader}>
+                  <View style={cardStyles.activeProgramTitleRow}>
                     <Trophy size={20} color="white" strokeWidth={1.5} />
-                    <Text style={[typography.overline, { color: 'rgba(255,255,255,0.9)' }]}>
+                    <Text style={[cardStyles.activeProgramLabel, { color: 'rgba(255,255,255,0.9)' }]}>
                       Активная программа
                     </Text>
                   </View>
                   <ChevronRight size={20} color="rgba(255,255,255,0.7)" strokeWidth={2} />
                 </View>
-                <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.md }]}>
+                <Text style={[cardStyles.activeProgramName, { color: 'white' }]}>
                   {activeProgram.programs.name}
                 </Text>
-                <View style={{ flexDirection: 'row', gap: SPACING.lg, marginBottom: SPACING.lg }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <View style={cardStyles.activeProgramInfo}>
+                  <View style={cardStyles.activeProgramInfoItem}>
                     <Calendar size={14} color="rgba(255,255,255,0.8)" strokeWidth={1.5} />
-                    <Text style={[typography.bodySmall, { color: 'rgba(255,255,255,0.9)' }]}>
+                    <Text style={[cardStyles.activeProgramInfoText, { color: 'rgba(255,255,255,0.9)' }]}>
                       Неделя {activeProgram.current_week}/{activeProgram.programs.duration}
                     </Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                  <View style={cardStyles.activeProgramInfoItem}>
                     <Dumbbell size={14} color="rgba(255,255,255,0.8)" strokeWidth={1.5} />
-                    <Text style={[typography.bodySmall, { color: 'rgba(255,255,255,0.9)' }]}>
+                    <Text style={[cardStyles.activeProgramInfoText, { color: 'rgba(255,255,255,0.9)' }]}>
                       {getCurrentDayName()}
                     </Text>
                   </View>
                 </View>
-
                 {/* Прогресс-бар */}
-                <View style={{ marginBottom: SPACING.lg }}>
-                  <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden', marginBottom: SPACING.xs }}>
-                    <View style={{ height: '100%', backgroundColor: 'white', borderRadius: 3, width: `${getProgressPercent()}%` }} />
+                <View style={commonStyles.progressBarContainer}>
+                  <View style={commonStyles.progressBarBackground}>
+                    <View 
+                      style={[
+                        commonStyles.progressBarFill, 
+                        { width: `${getProgressPercent()}%` }
+                      ]} 
+                    />
                   </View>
-                  <Text style={[typography.captionSmall, { color: 'rgba(255,255,255,0.8)', textAlign: 'right' }]}>
+                  <Text style={[commonStyles.progressText, { color: 'rgba(255,255,255,0.8)' }]}>
                     {Math.round(getProgressPercent())}% завершено
                   </Text>
                 </View>
-
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: SPACING.sm,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  paddingVertical: SPACING.md,
-                  borderRadius: BORDER_RADIUS.lg,
-                }}>
+                <View style={cardStyles.activeProgramButton}>
                   <Play size={16} color="white" strokeWidth={2} fill="white" />
-                  <Text style={[typography.buttonSmall, { color: 'white' }]}>
+                  <Text style={[cardStyles.activeProgramButtonText, { color: 'white' }]}>
                     Перейти к тренировкам
                   </Text>
                 </View>
@@ -274,18 +277,45 @@ export default function DashboardScreen() {
         )}
 
         {/* Статистика */}
-        <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl, gap: SPACING.md }}>
-          <LinearGradient colors={GRADIENTS.primary} style={cardStyles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={[cardStyles.statValue, { color: 'white' }]}>{stats.weekWorkouts}</Text>
-            <Text style={[cardStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>На неделе</Text>
+        <View style={commonStyles.statsContainer}>
+          <LinearGradient
+            colors={gradients.primary} // ← Используем gradients из темы
+            style={commonStyles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[commonStyles.statValue, { color: 'white' }]}>
+              {stats.weekWorkouts}
+            </Text>
+            <Text style={[commonStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+              На неделе
+            </Text>
           </LinearGradient>
-          <LinearGradient colors={GRADIENTS.success} style={cardStyles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={[cardStyles.statValue, { color: 'white' }]}>{stats.monthWorkouts}</Text>
-            <Text style={[cardStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>В месяце</Text>
+          <LinearGradient
+            colors={gradients.success} // ← Используем gradients из темы
+            style={commonStyles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[commonStyles.statValue, { color: 'white' }]}>
+              {stats.monthWorkouts}
+            </Text>
+            <Text style={[commonStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+              В месяце
+            </Text>
           </LinearGradient>
-          <LinearGradient colors={GRADIENTS.hero} style={cardStyles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={[cardStyles.statValue, { color: 'white' }]}>{Math.round(stats.weekVolume)}</Text>
-            <Text style={[cardStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>кг за неделю</Text>
+          <LinearGradient
+            colors={gradients.hero} // ← Используем gradients из темы
+            style={commonStyles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={[commonStyles.statValue, { color: 'white' }]}>
+              {Math.round(stats.weekVolume)}
+            </Text>
+            <Text style={[commonStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+              кг за неделю
+            </Text>
           </LinearGradient>
         </View>
 
@@ -296,8 +326,8 @@ export default function DashboardScreen() {
               Последняя тренировка
             </Text>
             <LinearGradient
-              colors={GRADIENTS.primary}
-              style={{ borderRadius: BORDER_RADIUS.xl, elevation: 4 }}
+              colors={gradients.primary} // ← Используем gradients из темы
+              style={cardStyles.lastWorkoutCard}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
@@ -307,13 +337,13 @@ export default function DashboardScreen() {
                   router.push(`/history/${lastWorkout.id}`);
                 }}
                 activeOpacity={0.8}
-                style={{ padding: SPACING.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+                style={cardStyles.lastWorkoutContent}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.h4, { color: 'white', marginBottom: SPACING.xs }]}>
+                <View style={cardStyles.lastWorkoutInfo}>
+                  <Text style={[cardStyles.lastWorkoutName, { color: 'white' }]}>
                     {lastWorkout.name}
                   </Text>
-                  <Text style={[typography.body, { color: 'rgba(255,255,255,0.8)' }]}>
+                  <Text style={[cardStyles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
                     {formatDate(lastWorkout.created_at)}
                   </Text>
                 </View>
@@ -331,7 +361,7 @@ export default function DashboardScreen() {
               onPress={() => router.push('/(tabs)/workouts')}
               icon={<Dumbbell size={24} color="white" strokeWidth={1.5} />}
               size="large"
-              style={{ padding: SPACING.xl, borderRadius: BORDER_RADIUS.xl, elevation: 2 }}
+              style={cardStyles.emptyCard}
             />
           </View>
         )}
@@ -341,27 +371,42 @@ export default function DashboardScreen() {
           <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
             Быстрый доступ
           </Text>
-          <View style={{ flexDirection: 'row', gap: SPACING.md }}>
+          <View style={commonStyles.quickActions}>
             <TouchableOpacity
-              style={listStyles.quickAction}
-              onPress={() => { Haptics.impactAsync(); router.push('/(tabs)/workouts'); }}
+              style={[commonStyles.quickAction, { backgroundColor: colors.surface }]}
+              onPress={() => {
+                Haptics.impactAsync();
+                router.push('/(tabs)/workouts');
+              }}
             >
               <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={listStyles.quickActionText}>Тренировки</Text>
+              <Text style={[commonStyles.quickActionText, { color: colors.textPrimary }]}>
+                Тренировки
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={listStyles.quickAction}
-              onPress={() => { Haptics.impactAsync(); router.push('/(tabs)/exercises'); }}
+              style={[commonStyles.quickAction, { backgroundColor: colors.surface }]}
+              onPress={() => {
+                Haptics.impactAsync();
+                router.push('/(tabs)/exercises');
+              }}
             >
               <BookOpen size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={listStyles.quickActionText}>Справочник</Text>
+              <Text style={[commonStyles.quickActionText, { color: colors.textPrimary }]}>
+                Справочник
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={listStyles.quickAction}
-              onPress={() => { Haptics.impactAsync(); router.push('/(tabs)/history'); }}
+              style={[commonStyles.quickAction, { backgroundColor: colors.surface }]}
+              onPress={() => {
+                Haptics.impactAsync();
+                router.push('/(tabs)/history');
+              }}
             >
               <Clock size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={listStyles.quickActionText}>История</Text>
+              <Text style={[commonStyles.quickActionText, { color: colors.textPrimary }]}>
+                История
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -375,13 +420,17 @@ export default function DashboardScreen() {
             {recentWorkouts.map((workout) => (
               <TouchableOpacity
                 key={workout.id}
-                style={listStyles.recentCard}
+                style={[commonStyles.recentCard, { backgroundColor: colors.surface }]}
                 onPress={() => router.push(`/history/${workout.id}`)}
                 activeOpacity={0.7}
               >
-                <View style={listStyles.recentInfo}>
-                  <Text style={listStyles.recentName}>{workout.name}</Text>
-                  <Text style={listStyles.recentDate}>{formatDate(workout.created_at)}</Text>
+                <View style={commonStyles.recentInfo}>
+                  <Text style={[commonStyles.recentName, { color: colors.textPrimary }]}>
+                    {workout.name}
+                  </Text>
+                  <Text style={[commonStyles.recentDate, { color: colors.textSecondary }]}>
+                    {formatDate(workout.created_at)}
+                  </Text>
                 </View>
                 <TrendingUp size={20} color={colors.primary} strokeWidth={1.5} />
               </TouchableOpacity>

@@ -134,6 +134,114 @@ export const commonStyles = StyleSheet.create({
     padding: SPACING.lg,
     borderBottomWidth: 1,
   } as ViewStyle,
+
+// Статистика
+statsContainer: {
+  flexDirection: 'row',
+  paddingHorizontal: SPACING.xl,
+  marginBottom: SPACING.xl,
+  gap: SPACING.md,
+} as ViewStyle,
+
+statCard: {
+  flex: 1,
+  padding: SPACING.lg,
+  borderRadius: BORDER_RADIUS.lg,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+} as ViewStyle,
+
+statValue: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  marginBottom: SPACING.xs,
+} as TextStyle,
+
+statLabel: {
+  fontSize: 12,
+} as TextStyle,
+
+// Прогресс-бар
+progressBarContainer: {
+  marginBottom: SPACING.lg,
+} as ViewStyle,
+
+progressBarBackground: {
+  height: 6,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  borderRadius: 3,
+  overflow: 'hidden',
+  marginBottom: SPACING.xs,
+} as ViewStyle,
+
+progressBarFill: {
+  height: '100%',
+  backgroundColor: 'white',
+  borderRadius: 3,
+} as ViewStyle,
+
+progressText: {
+  fontSize: 11,
+  textAlign: 'right',
+} as TextStyle,
+
+// Быстрые действия
+quickActions: {
+  flexDirection: 'row',
+  gap: SPACING.md,
+} as ViewStyle,
+
+quickAction: {
+  flex: 1,
+  padding: SPACING.lg,
+  borderRadius: BORDER_RADIUS.lg,
+  alignItems: 'center',
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+} as ViewStyle,
+
+quickActionText: {
+  fontSize: 12,
+  fontWeight: '600',
+  marginTop: SPACING.sm,
+} as TextStyle,
+
+// Недавние тренировки
+recentCard: {
+  padding: SPACING.lg,
+  borderRadius: BORDER_RADIUS.lg,
+  marginBottom: SPACING.sm,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+} as ViewStyle,
+
+recentInfo: {
+  flex: 1,
+} as ViewStyle,
+
+recentName: {
+  fontSize: 16,
+  fontWeight: '600',
+  marginBottom: SPACING.xs,
+} as TextStyle,
+
+recentDate: {
+  fontSize: 14,
+} as TextStyle,
+
+
 });
 
 export type CommonStyleKey = keyof typeof commonStyles;

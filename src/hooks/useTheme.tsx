@@ -3,11 +3,15 @@ import { useColorScheme } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
-  themes, 
+  lightTheme, 
+  darkTheme, 
+  themes,
   themeGroups,
+  Theme,
   ThemeKey,
   ThemeAccent,
-  Theme
+  ThemeColors,
+  ThemeGradients,  // ← ИМПОРТ
 } from '../constants/theme';
 
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -15,7 +19,8 @@ type ThemeMode = 'light' | 'dark' | 'system';
 interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
-  colors: Theme['colors'];
+  colors: ThemeColors;
+  gradients: ThemeGradients;  // ← ДОБАВИТЬ
   themeMode: ThemeMode;
   themeAccent: ThemeAccent;
   themeKey: ThemeKey;
@@ -35,7 +40,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeAccent, setThemeAccentState] = useState<ThemeAccent>('purple');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Загружаем сохранённые настройки
   useEffect(() => {
     loadSavedSettings();
   }, []);
@@ -77,7 +81,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Определяем текущую тему
   const getTheme = (): Theme => {
     const isDarkMode = themeMode === 'dark' || 
       (themeMode === 'system' && systemColorScheme === 'dark');
@@ -92,12 +95,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const isDark = theme.mode === 'dark';
   const themeKey = `${themeAccent}${isDark ? '-dark' : '-light'}` as ThemeKey;
 
-  // Синхронизируем системный UI
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(theme.colors.background);
   }, [theme.colors.background]);
 
-  // Debug логирование
   useEffect(() => {
     if (isLoaded) {
       console.log('🎨 Theme:', {
@@ -126,6 +127,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme,
         isDark,
         colors: theme.colors,
+        gradients: theme.gradients,  // ← ДОБАВИТЬ
         themeMode,
         themeAccent,
         themeKey,

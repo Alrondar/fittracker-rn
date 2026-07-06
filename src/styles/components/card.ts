@@ -141,6 +141,114 @@ export const createCardStyles = (colors: any) =>
       ...typography.labelBold,
       color: colors.textPrimary,
     } as TextStyle,
+
+    // Карточка активной программы
+activeProgramCard: {
+  borderRadius: BORDER_RADIUS.xl,
+  padding: SPACING.lg,
+  elevation: 4,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+} as ViewStyle,
+
+activeProgramHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: SPACING.md,
+} as ViewStyle,
+
+activeProgramTitleRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: SPACING.sm,
+} as ViewStyle,
+
+activeProgramLabel: {
+  fontSize: 12,
+  fontWeight: '600',
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+} as TextStyle,
+
+activeProgramName: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  marginBottom: SPACING.md,
+  lineHeight: 24,
+} as TextStyle,
+
+activeProgramInfo: {
+  flexDirection: 'row',
+  gap: SPACING.lg,
+  marginBottom: SPACING.lg,
+} as ViewStyle,
+
+activeProgramInfoItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: SPACING.sm,
+} as ViewStyle,
+
+activeProgramInfoText: {
+  fontSize: 13,
+  fontWeight: '500',
+} as TextStyle,
+
+activeProgramButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: SPACING.sm,
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  paddingVertical: SPACING.md,
+  borderRadius: BORDER_RADIUS.lg,
+} as ViewStyle,
+
+activeProgramButtonText: {
+  fontSize: 14,
+  fontWeight: '600',
+} as TextStyle,
+
+// Карточка последней тренировки
+lastWorkoutCard: {
+  borderRadius: BORDER_RADIUS.xl,
+  elevation: 4,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+} as ViewStyle,
+
+lastWorkoutContent: {
+  padding: SPACING.xl,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+} as ViewStyle,
+
+lastWorkoutInfo: {
+  flex: 1,
+} as ViewStyle,
+
+lastWorkoutName: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  marginBottom: SPACING.xs,
+} as TextStyle,
+
+lastWorkoutDate: {
+  fontSize: 14,
+} as TextStyle,
+
+// Пустая карточка
+emptyCard: {
+  padding: SPACING.xl,
+  borderRadius: BORDER_RADIUS.xl,
+  elevation: 2,
+} as ViewStyle,
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;
