@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -13,6 +12,9 @@ import { supabase, getList } from '../../src/lib/supabase';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { typography } from '../../src/styles/typography';
 
 interface LoggedSet {
   set_number: number;
@@ -36,6 +38,8 @@ export default function HistoryDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [totalVolume, setTotalVolume] = useState(0);
   const [totalSets, setTotalSets] = useState(0);
+
+  const cardStyles = createCardStyles(colors);
 
   useEffect(() => {
     loadHistoryDetail();
@@ -65,7 +69,9 @@ export default function HistoryDetailScreen() {
 
       if (exError) throw exError;
 
-      const loggedExercises = (exData || []).filter((ex: any) => ex.workout_logs && ex.workout_logs.length > 0);
+      const loggedExercises = (exData || []).filter(
+        (ex: any) => ex.workout_logs && ex.workout_logs.length > 0
+      );
       setExercises(loggedExercises);
 
       let volume = 0;
@@ -78,7 +84,6 @@ export default function HistoryDetailScreen() {
       });
       setTotalVolume(volume);
       setTotalSets(sets);
-
     } catch (error: any) {
       Alert.alert('Ошибка', error.message);
     } finally {
@@ -87,70 +92,117 @@ export default function HistoryDetailScreen() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ru-RU', { 
-      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+    return new Date(dateStr).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={commonStyles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+            Загрузка...
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
+    <ScrollView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+      {/* Шапка с кнопкой назад */}
+      <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+          <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.statsCard, { backgroundColor: colors.primary }]}>
-        <Text style={[styles.workoutName, { color: colors.textInverse }]}>{workout?.name}</Text>
-        <Text style={[styles.workoutDate, { color: 'rgba(255,255,255,0.8)' }]}>{formatDate(workout?.created_at)}</Text>
-        
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: colors.textInverse }]}>{totalSets}</Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Подходов</Text>
+      {/* Карточка статистики */}
+      <View
+        style={[
+          cardStyles.large,
+          {
+            backgroundColor: colors.primary,
+            marginHorizontal: SPACING.lg,
+            marginTop: SPACING.md,
+          },
+        ]}
+      >
+        <Text style={[typography.h3, { color: colors.textInverse, marginBottom: 4 }]}>
+          {workout?.name}
+        </Text>
+        <Text style={[typography.body, { color: 'rgba(255,255,255,0.8)', marginBottom: SPACING.xl }]}>
+          {formatDate(workout?.created_at)}
+        </Text>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={[typography.h2, { color: colors.textInverse }]}>{totalSets}</Text>
+            <Text style={[typography.caption, { color: 'rgba(255,255,255,0.8)', marginTop: 4 }]}>
+              Подходов
+            </Text>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-          <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: colors.textInverse }]}>{Math.round(totalVolume)}</Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Общий объем (кг)</Text>
+          <View
+            style={{
+              width: 1,
+              height: 50,
+              marginHorizontal: SPACING.sm,
+              backgroundColor: 'rgba(255,255,255,0.3)',
+            }}
+          />
+          <View style={{ alignItems: 'center' }}>
+            <Text style={[typography.h2, { color: colors.textInverse }]}>
+              {Math.round(totalVolume)}
+            </Text>
+            <Text style={[typography.caption, { color: 'rgba(255,255,255,0.8)', marginTop: 4 }]}>
+              Общий объем (кг)
+            </Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.exercisesContainer}>
-        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Выполненные упражнения</Text>
+      {/* Список упражнений */}
+      <View style={{ padding: SPACING.lg }}>
+        <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
+          Выполненные упражнения
+        </Text>
+
         {exercises.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Нет данных по подходам</Text>
+          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: SPACING.xl }]}>
+            Нет данных по подходам
+          </Text>
         ) : (
           exercises.map((ex, index) => (
-            <View key={ex.id} style={[styles.exerciseCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.exerciseHeader}>
-                <View style={[styles.exerciseNumber, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.exerciseNumberText, { color: colors.primary }]}>{index + 1}</Text>
+            <View key={ex.id} style={cardStyles.exerciseCard}>
+              <View style={cardStyles.exerciseHeader}>
+                <View style={[cardStyles.exerciseNumber, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[cardStyles.exerciseNumberText, { color: colors.primary }]}>
+                    {index + 1}
+                  </Text>
                 </View>
-                <View style={styles.exerciseInfo}>
-                  <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>{ex.exercises?.name}</Text>
+                <View style={cardStyles.exerciseInfo}>
+                  <Text style={cardStyles.exerciseName}>
+                    {ex.exercises?.name}
+                  </Text>
                   {ex.exercises?.primary_muscles?.length > 0 && (
-                    <Text style={[styles.exerciseMuscles, { color: colors.textSecondary }]}>
+                    <Text style={cardStyles.exerciseMuscles}>
                       {getList(ex.exercises, 'primary_muscles').join(', ')}
                     </Text>
                   )}
                 </View>
               </View>
 
-              <View style={[styles.logsList, { borderTopColor: colors.borderLight }]}>
+              <View style={[cardStyles.logsList, { borderTopColor: colors.borderLight }]}>
                 {ex.workout_logs.map((log, logIndex) => (
-                  <View key={logIndex} style={styles.logRow}>
-                    <Text style={[styles.logSet, { color: colors.textSecondary }]}>Подход {log.set_number}</Text>
-                    <Text style={[styles.logResult, { color: colors.textPrimary }]}>
+                  <View key={logIndex} style={cardStyles.logRow}>
+                    <Text style={cardStyles.logSet}>Подход {log.set_number}</Text>
+                    <Text style={cardStyles.logResult}>
                       {log.weight_kg} кг × {log.reps} раз
                     </Text>
                   </View>
@@ -160,58 +212,8 @@ export default function HistoryDetailScreen() {
           ))
         )}
       </View>
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  
-  header: {
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  backButton: { padding: SPACING.sm },
-  backText: { fontSize: 16, fontWeight: '600' },
-
-  statsCard: {
-    padding: SPACING.xl,
-    margin: SPACING.lg,
-    borderRadius: BORDER_RADIUS.xl,
-    elevation: 4,
-  },
-  workoutName: { fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
-  workoutDate: { fontSize: 14, marginBottom: SPACING.xl },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  statBox: { alignItems: 'center' },
-  statValue: { fontSize: 28, fontWeight: 'bold' },
-  statLabel: { fontSize: 12, marginTop: 4 },
-  statDivider: { width: 1, height: 50, marginHorizontal: SPACING.sm },
-
-  exercisesContainer: { padding: SPACING.lg },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: SPACING.lg },
-  emptyText: { textAlign: 'center', marginTop: SPACING.xl },
-
-  exerciseCard: {
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  exerciseHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
-  exerciseNumber: {
-    width: 28, height: 28, borderRadius: 14,
-    justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md,
-  },
-  exerciseNumberText: { fontWeight: 'bold', fontSize: 14 },
-  exerciseInfo: { flex: 1 },
-  exerciseName: { fontSize: 16, fontWeight: 'bold' },
-  exerciseMuscles: { fontSize: 12, marginTop: 2 },
-
-  logsList: { borderTopWidth: 1, paddingTop: SPACING.md },
-  logRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SPACING.sm },
-  logSet: { fontSize: 14 },
-  logResult: { fontSize: 14, fontWeight: '600' },
-});

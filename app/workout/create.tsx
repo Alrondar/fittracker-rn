@@ -5,7 +5,6 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -19,14 +18,19 @@ import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { Exercise } from '../../src/types';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  Save, 
-  ArrowLeft, 
-  Search, 
-  Trash2, 
-  Dumbbell, 
-  Plus 
+import {
+  Save,
+  ArrowLeft,
+  Search,
+  Trash2,
+  Dumbbell,
+  Plus
 } from 'lucide-react-native';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createInputStyles } from '../../src/styles/components/input';
+import { createListStyles } from '../../src/styles/components/list';
+import { typography } from '../../src/styles/typography';
 
 export default function CreateWorkoutScreen() {
   const { edit } = useLocalSearchParams();
@@ -41,6 +45,10 @@ export default function CreateWorkoutScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { showToast } = useToast();
+
+  const cardStyles = createCardStyles(colors);
+  const inputStyles = createInputStyles(colors);
+  const listStyles = createListStyles(colors);
 
   useEffect(() => {
     loadExercises();
@@ -66,7 +74,6 @@ export default function CreateWorkoutScreen() {
         .single();
 
       if (error) throw error;
-
       if (workout) {
         setName(workout.name);
         setDescription(workout.description || '');
@@ -79,7 +86,6 @@ export default function CreateWorkoutScreen() {
         .order('order_index');
 
       if (weError) throw weError;
-
       if (we) {
         const selectedExercises = we.map((w: any) => w.exercises);
         setSelected(selectedExercises);
@@ -110,7 +116,6 @@ export default function CreateWorkoutScreen() {
       showToast('Введите название тренировки', 'error');
       return;
     }
-
     if (selected.length === 0) {
       showToast('Добавьте хотя бы одно упражнение', 'error');
       return;
@@ -123,7 +128,6 @@ export default function CreateWorkoutScreen() {
           .from('workouts')
           .update({ name, description })
           .eq('id', edit);
-
         if (error) throw error;
 
         await supabase
@@ -189,20 +193,28 @@ export default function CreateWorkoutScreen() {
     : exercises;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        style={commonStyles.container}
       >
         {/* Шапка */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <View style={[{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: SPACING.lg,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          backgroundColor: colors.surface,
+        }]}>
+          <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
             <ArrowLeft size={24} color={colors.primary} strokeWidth={2} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+          <Text style={[typography.h5, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]}>
             {edit ? 'Редактировать' : 'Новая тренировка'}
           </Text>
-          <TouchableOpacity onPress={save} disabled={saving} style={styles.saveButton}>
+          <TouchableOpacity onPress={save} disabled={saving} style={{ padding: SPACING.sm, minWidth: 40, alignItems: 'center' }}>
             {saving ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
@@ -217,16 +229,16 @@ export default function CreateWorkoutScreen() {
           ListHeaderComponent={
             <>
               {/* Форма */}
-              <View style={styles.form}>
+              <View style={{ marginBottom: SPACING.lg }}>
                 <TextInput
-                  style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+                  style={[inputStyles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
                   placeholder="Название тренировки"
                   placeholderTextColor={colors.textTertiary}
                   value={name}
                   onChangeText={setName}
                 />
                 <TextInput
-                  style={[styles.input, styles.textArea, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+                  style={[inputStyles.input, inputStyles.textArea, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
                   placeholder="Описание (необязательно)"
                   placeholderTextColor={colors.textTertiary}
                   value={description}
@@ -236,20 +248,20 @@ export default function CreateWorkoutScreen() {
               </View>
 
               {/* Выбранные упражнения */}
-              <View style={styles.selectedSection}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              <View style={{ marginBottom: SPACING.lg }}>
+                <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
                   Выбранные упражнения ({selected.length})
                 </Text>
                 {selected.map(ex => (
-                  <View key={ex.id} style={[styles.selectedCard, { backgroundColor: colors.surface }]}>
+                  <View key={ex.id} style={[cardStyles.compact, { backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: SPACING.md }]}>
                     <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
-                    <View style={styles.selectedInfo}>
-                      <Text style={[styles.selectedName, { color: colors.textPrimary }]}>{ex.name}</Text>
-                      <Text style={[styles.selectedMuscles, { color: colors.textSecondary }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{ex.name}</Text>
+                      <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
                         {(ex.primary_muscles || []).join(', ')}
                       </Text>
                     </View>
-                    <TouchableOpacity onPress={() => removeExercise(ex.id)} style={styles.deleteBtn}>
+                    <TouchableOpacity onPress={() => removeExercise(ex.id)} style={{ padding: SPACING.sm }}>
                       <Trash2 size={18} color={colors.error} strokeWidth={2} />
                     </TouchableOpacity>
                   </View>
@@ -257,11 +269,11 @@ export default function CreateWorkoutScreen() {
               </View>
 
               {/* Поиск */}
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Поиск упражнений</Text>
-              <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>Поиск упражнений</Text>
+              <View style={[inputStyles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Search size={18} color={colors.textTertiary} strokeWidth={2} />
                 <TextInput
-                  style={[styles.searchInput, { color: colors.textPrimary }]}
+                  style={[inputStyles.searchInput, { color: colors.textPrimary }]}
                   placeholder="Поиск..."
                   placeholderTextColor={colors.textTertiary}
                   value={search}
@@ -272,103 +284,23 @@ export default function CreateWorkoutScreen() {
           }
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.exerciseItem, { backgroundColor: colors.surface }]}
+              style={[listStyles.item, { backgroundColor: colors.surface }]}
               onPress={() => addExercise(item)}
               activeOpacity={0.7}
             >
               <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
-              <View style={styles.exerciseInfo}>
-                <Text style={[styles.exerciseName, { color: colors.textPrimary }]}>{item.name}</Text>
-                <Text style={[styles.exerciseMuscles, { color: colors.textSecondary }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{item.name}</Text>
+                <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
                   {(item.primary_muscles || []).join(', ')}
                 </Text>
               </View>
               <Plus size={20} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           )}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={listStyles.container}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: SPACING.sm,
-  },
-  headerTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    flex: 1, 
-    textAlign: 'center' 
-  },
-  saveButton: {
-    padding: SPACING.sm,
-    minWidth: 40,
-    alignItems: 'center',
-  },
-  list: { padding: SPACING.lg },
-  form: { marginBottom: SPACING.lg },
-  input: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  selectedSection: { marginBottom: SPACING.lg },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginVertical: SPACING.md,
-  },
-  selectedCard: {
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  selectedInfo: { flex: 1 },
-  selectedName: { fontWeight: 'bold', fontSize: 14 },
-  selectedMuscles: { fontSize: 12, marginTop: 2 },
-  deleteBtn: { 
-    padding: SPACING.sm,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    gap: SPACING.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    padding: 0,
-  },
-  exerciseItem: {
-    flexDirection: 'row',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.sm,
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  exerciseInfo: { flex: 1 },
-  exerciseName: { fontWeight: 'bold', fontSize: 14 },
-  exerciseMuscles: { fontSize: 12, marginTop: 2 },
-});

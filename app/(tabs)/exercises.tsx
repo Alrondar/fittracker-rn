@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
@@ -17,6 +16,10 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Search, Dumbbell, Check } from 'lucide-react-native';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { typography } from '../../src/styles/typography';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
@@ -26,6 +29,9 @@ export default function ExercisesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  const cardStyles = createCardStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
 
   useEffect(() => {
     loadMuscles();
@@ -79,33 +85,35 @@ export default function ExercisesScreen() {
   };
 
   const renderEmpty = () => (
-    <FadeIn delay={200} style={styles.emptyContainer}>
+    <FadeIn delay={200} style={commonStyles.emptyContainer}>
       <Search size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
         Упражнения не найдены
       </Text>
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
         {selectedMuscles.length > 0
           ? 'Попробуйте изменить фильтры или сбросить их'
           : 'База упражнений пуста'}
       </Text>
       {selectedMuscles.length > 0 && (
         <TouchableOpacity
-          style={[styles.resetButton, { backgroundColor: colors.primaryLight }]}
+          style={[badgeStyles.container, { backgroundColor: colors.primaryLight }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setSelectedMuscles([]);
           }}
         >
-          <Text style={[styles.resetButtonText, { color: colors.primary }]}>Сбросить фильтры</Text>
+          <Text style={[badgeStyles.text, { color: colors.primary }]}>
+            Сбросить фильтры
+          </Text>
         </TouchableOpacity>
       )}
     </FadeIn>
   );
 
   return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <FadeIn style={[styles.filters, { backgroundColor: colors.surface }]}>
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <FadeIn style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
         <FlatList
           horizontal
           data={allMuscles}
@@ -113,28 +121,32 @@ export default function ExercisesScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
-                styles.chip,
+                badgeStyles.container,
                 {
                   backgroundColor: selectedMuscles.includes(item) ? colors.primaryLight : colors.surface,
-                  borderColor: selectedMuscles.includes(item) ? colors.primary : colors.border
+                  borderColor: selectedMuscles.includes(item) ? colors.primary : colors.border,
+                  marginRight: SPACING.sm,
+                  borderRadius: BORDER_RADIUS.full,
                 },
               ]}
               onPress={() => toggleMuscle(item)}
               activeOpacity={0.7}
             >
               {selectedMuscles.includes(item) && (
-                <Check size={14} color={colors.primary} strokeWidth={2} style={styles.chipIcon} />
+                <Check size={14} color={colors.primary} strokeWidth={2} style={{ marginRight: 4 }} />
               )}
               <Text style={[
-                styles.chipText,
-                { color: selectedMuscles.includes(item) ? colors.primary : colors.textPrimary },
-                selectedMuscles.includes(item) && styles.chipTextSelected,
+                badgeStyles.text,
+                { 
+                  color: selectedMuscles.includes(item) ? colors.primary : colors.textPrimary,
+                  fontWeight: selectedMuscles.includes(item) ? 'bold' : 'normal',
+                },
               ]}>
                 {item}
               </Text>
             </TouchableOpacity>
           )}
-          contentContainerStyle={styles.filtersList}
+          contentContainerStyle={{ paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg }}
           showsHorizontalScrollIndicator={false}
         />
       </FadeIn>
@@ -148,7 +160,7 @@ export default function ExercisesScreen() {
           renderItem={({ item, index }) => (
             <FadeIn delay={index * 40}>
               <TouchableOpacity
-                style={[styles.card, { backgroundColor: colors.surface }]}
+                style={[cardStyles.container, { flexDirection: 'row', alignItems: 'center' }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   router.push(`/exercise/${item.id}`);
@@ -156,18 +168,18 @@ export default function ExercisesScreen() {
                 activeOpacity={0.7}
               >
                 <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
-                <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+                <View style={{ flex: 1, marginLeft: SPACING.md }}>
+                  <Text style={[cardStyles.title, { color: colors.textPrimary }]} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                  <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.xs }]} numberOfLines={1}>
                     {getList(item, 'primary_muscles').join(', ')}
                   </Text>
                 </View>
               </TouchableOpacity>
             </FadeIn>
           )}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ padding: SPACING.lg }}
           ListEmptyComponent={renderEmpty}
           refreshControl={
             <RefreshControl
@@ -181,82 +193,3 @@ export default function ExercisesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  filters: {
-    borderBottomWidth: 1,
-  },
-  filtersList: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1,
-    marginRight: SPACING.sm,
-  },
-  chipIcon: {
-    marginRight: 4,
-  },
-  chipText: {
-    fontSize: 14
-  },
-  chipTextSelected: {
-    fontWeight: 'bold'
-  },
-  list: { padding: SPACING.lg },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  cardContent: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    marginTop: SPACING.xs
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xxl,
-    marginTop: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.lg,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-    lineHeight: 20,
-  },
-  resetButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: BORDER_RADIUS.full,
-  },
-  resetButtonText: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-});

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -25,30 +24,39 @@ import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Save } from 'lucide-react-native'; // Добавь этот импорт
-import { 
-  Sprout, 
-  Dumbbell, 
-  Flame, 
-  Clock, 
-  Calendar, 
-  ChevronRight, 
+import {
+  Sprout,
+  Dumbbell,
+  Flame,
+  Clock,
+  Calendar,
+  ChevronRight,
   ChevronDown,
   Play,
   TrendingUp,
   Minus,
-  TrendingDown
+  TrendingDown,
 } from 'lucide-react-native';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { createButtonStyles } from '../../src/styles/components/button';
+import { createListStyles } from '../../src/styles/components/list';
+import { typography } from '../../src/styles/typography';
 
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+
+  const cardStyles = createCardStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
+  const buttonStyles = createButtonStyles(colors);
+  const listStyles = createListStyles(colors);
 
   useEffect(() => {
     loadProgram();
@@ -71,7 +79,6 @@ export default function ProgramDetailScreen() {
       Alert.alert('Ошибка', 'Необходимо войти в аккаунт');
       return;
     }
-
     Alert.alert(
       'Начать программу?',
       `Будет создано ${program?.days?.length} тренировок на первую неделю программы "${program?.name}"`,
@@ -108,28 +115,28 @@ export default function ProgramDetailScreen() {
   const getLevelInfo = (level: string) => {
     switch (level) {
       case 'beginner':
-        return { 
-          label: 'Новичок', 
-          color: '#4CAF50', 
-          icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} /> 
+        return {
+          label: 'Новичок',
+          color: '#4CAF50',
+          icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} />,
         };
       case 'intermediate':
-        return { 
-          label: 'Средний', 
-          color: '#FF9800', 
-          icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} /> 
+        return {
+          label: 'Средний',
+          color: '#FF9800',
+          icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} />,
         };
       case 'advanced':
-        return { 
-          label: 'Продвинутый', 
-          color: '#F44336', 
-          icon: <Flame size={16} color="#F44336" strokeWidth={1.5} /> 
+        return {
+          label: 'Продвинутый',
+          color: '#F44336',
+          icon: <Flame size={16} color="#F44336" strokeWidth={1.5} />,
         };
       default:
-        return { 
-          label: level, 
-          color: colors.textSecondary, 
-          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> 
+        return {
+          label: level,
+          color: colors.textSecondary,
+          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
         };
     }
   };
@@ -137,35 +144,35 @@ export default function ProgramDetailScreen() {
   const getIntensityInfo = (intensity: string) => {
     switch (intensity) {
       case 'high':
-        return { 
-          label: 'Высокая', 
-          color: '#F44336', 
-          icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} /> 
+        return {
+          label: 'Высокая',
+          color: '#F44336',
+          icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} />,
         };
       case 'medium':
-        return { 
-          label: 'Средняя', 
-          color: '#FF9800', 
-          icon: <Minus size={12} color="#FF9800" strokeWidth={2} /> 
+        return {
+          label: 'Средняя',
+          color: '#FF9800',
+          icon: <Minus size={12} color="#FF9800" strokeWidth={2} />,
         };
       case 'low':
-        return { 
-          label: 'Низкая', 
-          color: '#4CAF50', 
-          icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} /> 
+        return {
+          label: 'Низкая',
+          color: '#4CAF50',
+          icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} />,
         };
       default:
-        return { 
-          label: intensity, 
-          color: colors.textSecondary, 
-          icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} /> 
+        return {
+          label: intensity,
+          color: colors.textSecondary,
+          icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} />,
         };
     }
   };
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <ListSkeleton count={3} />
       </View>
     );
@@ -173,8 +180,8 @@ export default function ProgramDetailScreen() {
 
   if (!program) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: 100 }]}>
           Программа не найдена
         </Text>
       </View>
@@ -184,41 +191,45 @@ export default function ProgramDetailScreen() {
   const levelInfo = getLevelInfo(program.level);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Шапка программы */}
         <LinearGradient
           colors={GRADIENTS.hero}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.header}
+          style={{ padding: SPACING.lg, paddingBottom: SPACING.xl }}
         >
           <FadeIn>
-            <Text style={styles.headerTitle}>{program.name}</Text>
-            <Text style={styles.headerDescription}>{program.description}</Text>
-
-            <View style={styles.headerMeta}>
-              <View style={styles.metaBadge}>
+            <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.sm }]}>
+              {program.name}
+            </Text>
+            <Text style={[typography.body, { color: 'rgba(255,255,255,0.9)', marginBottom: SPACING.lg }]}>
+              {program.description}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+              <View style={badgeStyles.metaBadge}>
                 {levelInfo.icon}
-                <Text style={styles.metaBadgeText}>{levelInfo.label}</Text>
+                <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
               </View>
-              <View style={styles.metaBadge}>
+              <View style={badgeStyles.metaBadge}>
                 <Clock size={14} color="white" strokeWidth={1.5} />
-                <Text style={styles.metaBadgeText}>{program.duration} недель</Text>
+                <Text style={badgeStyles.metaBadgeText}>{program.duration} недель</Text>
               </View>
-              <View style={styles.metaBadge}>
+              <View style={badgeStyles.metaBadge}>
                 <Calendar size={14} color="white" strokeWidth={1.5} />
-                <Text style={styles.metaBadgeText}>{program.schedule.length} дн/нед</Text>
+                <Text style={badgeStyles.metaBadgeText}>{program.schedule.length} дн/нед</Text>
               </View>
             </View>
-
             {/* Расписание */}
-            <View style={styles.scheduleSection}>
-              <Text style={styles.scheduleLabel}>Расписание:</Text>
-              <View style={styles.scheduleDays}>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: SPACING.md, borderRadius: BORDER_RADIUS.md }}>
+              <Text style={[typography.caption, { color: 'rgba(255,255,255,0.9)', marginBottom: SPACING.sm, fontWeight: '600' }]}>
+                Расписание:
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
                 {program.schedule.map((day, idx) => (
-                  <View key={idx} style={styles.dayChip}>
-                    <Text style={styles.dayChipText}>{day}</Text>
+                  <View key={idx} style={badgeStyles.dayChip}>
+                    <Text style={badgeStyles.dayChipText}>{day}</Text>
                   </View>
                 ))}
               </View>
@@ -227,29 +238,30 @@ export default function ProgramDetailScreen() {
         </LinearGradient>
 
         {/* Дни программы */}
-        <View style={styles.daysSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+        <View style={{ padding: SPACING.lg }}>
+          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
             Дни программы ({program.days?.length})
           </Text>
-
           {program.days?.map((day: ProgramDay, dayIndex: number) => (
             <FadeIn key={day.id} delay={dayIndex * 80}>
               <DayCard
                 day={day}
                 getIntensityInfo={getIntensityInfo}
                 colors={colors}
+                cardStyles={cardStyles}
+                badgeStyles={badgeStyles}
+                listStyles={listStyles}
               />
             </FadeIn>
           ))}
         </View>
-
         <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* Кнопка "Начать программу" */}
-      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+      <View style={[commonStyles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.startButton, { backgroundColor: colors.primary }]}
+          style={[buttonStyles.primary, buttonStyles.large, { backgroundColor: colors.primary }]}
           onPress={handleStartProgram}
           disabled={starting}
           activeOpacity={0.8}
@@ -257,9 +269,9 @@ export default function ProgramDetailScreen() {
           {starting ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <View style={styles.startButtonContent}>
+            <View style={buttonStyles.content}>
               <Play size={20} color="white" strokeWidth={2} fill="white" />
-              <Text style={styles.startButtonText}>Начать программу</Text>
+              <Text style={buttonStyles.textPrimary}>Начать программу</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -273,35 +285,45 @@ function DayCard({
   day,
   getIntensityInfo,
   colors,
+  cardStyles,
+  badgeStyles,
+  listStyles,
 }: {
   day: ProgramDay;
   getIntensityInfo: (intensity: string) => { label: string; color: string; icon: React.ReactNode };
   colors: any;
+  cardStyles: ReturnType<typeof createCardStyles>;
+  badgeStyles: ReturnType<typeof createBadgeStyles>;
+  listStyles: ReturnType<typeof createListStyles>;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-    <View style={[styles.dayCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[cardStyles.container, { borderColor: colors.border, borderWidth: 1, overflow: 'hidden' }]}>
       <TouchableOpacity
-        style={styles.dayHeader}
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: SPACING.md,
+        }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setExpanded(!expanded);
         }}
         activeOpacity={0.7}
       >
-        <View style={styles.dayHeaderLeft}>
-          <View style={[styles.dayNumber, { backgroundColor: colors.primary + '20' }]}>
-            <Text style={[styles.dayNumberText, { color: colors.primary }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <View style={[{ width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md, backgroundColor: colors.primary + '20' }]}>
+            <Text style={[typography.h5, { color: colors.primary }]}>
               {day.day_number}
             </Text>
           </View>
-          <View style={styles.dayInfo}>
-            <Text style={[styles.dayName, { color: colors.textPrimary }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 2 }]}>
               {day.name}
             </Text>
-            <Text style={[styles.dayExercisesCount, { color: colors.textSecondary }]}>
+            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
               {day.exercises?.length || 0} упражнений
             </Text>
           </View>
@@ -314,38 +336,35 @@ function DayCard({
       </TouchableOpacity>
 
       {expanded && day.exercises && (
-        <View style={styles.exercisesList}>
+        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
           {day.exercises.map((exercise: ProgramExercise, exIndex: number) => {
             const intensityInfo = getIntensityInfo(exercise.intensity);
             return (
               <View
                 key={exercise.id}
-                style={[
-                  styles.exerciseRow,
-                  { borderBottomColor: colors.border },
-                ]}
+                style={[listStyles.exerciseRow, { borderBottomColor: colors.border }]}
               >
-                <View style={styles.exerciseMain}>
+                <View style={{ flex: 1 }}>
                   <Text
-                    style={[styles.exerciseName, { color: colors.textPrimary }]}
+                    style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs, lineHeight: 18 }]}
                     numberOfLines={2}
                   >
                     {exercise.exercise_name}
                   </Text>
-                  <View style={styles.exerciseMeta}>
-                    <Text style={[styles.exerciseSets, { color: colors.textSecondary }]}>
+                  <View style={listStyles.exerciseMeta}>
+                    <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '500' }]}>
                       {exercise.sets} × {exercise.reps_range}
                     </Text>
                     <View
                       style={[
-                        styles.intensityBadge,
+                        badgeStyles.intensityBadge,
                         { backgroundColor: intensityInfo.color + '20' },
                       ]}
                     >
                       {intensityInfo.icon}
                       <Text
                         style={[
-                          styles.intensityText,
+                          badgeStyles.intensityText,
                           { color: intensityInfo.color },
                         ]}
                       >
@@ -353,9 +372,9 @@ function DayCard({
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.exerciseRest}>
+                  <View style={listStyles.exerciseRest}>
                     <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                    <Text style={[styles.exerciseRestText, { color: colors.textSecondary }]}>
+                    <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
                       Отдых: {exercise.rest_seconds} сек
                     </Text>
                   </View>
@@ -366,197 +385,5 @@ function DayCard({
         </View>
       )}
     </View>
-     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  header: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: SPACING.sm,
-    lineHeight: 30,
-  },
-  headerDescription: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    lineHeight: 20,
-    marginBottom: SPACING.lg,
-  },
-  headerMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-    marginBottom: SPACING.lg,
-  },
-  metaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  metaBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  scheduleSection: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  scheduleLabel: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 12,
-    marginBottom: SPACING.sm,
-    fontWeight: '600',
-  },
-  scheduleDays: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-  },
-  dayChip: {
-    backgroundColor: 'white',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  dayChipText: {
-    color: '#333',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  daysSection: {
-    padding: SPACING.lg,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.md,
-  },
-  dayCard: {
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    overflow: 'hidden',
-  },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.md,
-  },
-  dayHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  dayNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  dayNumberText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  dayInfo: {
-    flex: 1,
-  },
-  dayName: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  dayExercisesCount: {
-    fontSize: 12,
-  },
-  exercisesList: {
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-  },
-  exerciseRow: {
-    borderBottomWidth: 1,
-    paddingVertical: SPACING.md,
-  },
-  exerciseMain: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
-    lineHeight: 18,
-  },
-  exerciseMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.xs,
-  },
-  exerciseSets: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  intensityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  intensityText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  exerciseRest: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  exerciseRestText: {
-    fontSize: 12,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: SPACING.lg,
-    borderTopWidth: 1,
-  },
-  startButton: {
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-  },
-  startButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  startButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-});

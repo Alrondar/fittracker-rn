@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   TextInput,
   Alert,
@@ -20,8 +19,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { GRADIENTS } from '../../src/constants/theme';
 import { RotateCcw, Clock, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Save } from 'lucide-react-native';
 import { advanceProgramProgress } from '../../src/servises/programsService';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createButtonStyles } from '../../src/styles/components/button';
+import { createInputStyles } from '../../src/styles/components/input';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { typography } from '../../src/styles/typography';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -59,7 +63,6 @@ export default function WorkoutSessionScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-
   const [workoutName, setWorkoutName] = useState('');
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,11 @@ export default function WorkoutSessionScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
   const [replacements, setReplacements] = useState<Record<string, string>>({});
+
+  const cardStyles = createCardStyles(colors);
+  const buttonStyles = createButtonStyles(colors);
+  const inputStyles = createInputStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
 
   useEffect(() => {
     loadWorkout();
@@ -84,30 +92,12 @@ export default function WorkoutSessionScreen() {
     try {
       const { data: workout, error } = await supabase
         .from('workouts')
-        .select(`
-          name, 
-          workout_exercises (
-            id, 
-            target_sets, 
-            rest_seconds, 
-            exercises (
-              id, 
-              name, 
-              primary_muscles, 
-              technique, 
-              equipment, 
-              settings, 
-              alternatives
-            )
-          )
-        `)
+        .select(`name, workout_exercises ( id, target_sets, rest_seconds, exercises ( id, name, primary_muscles, technique, equipment, settings, alternatives ) )`)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-
       setWorkoutName(workout.name);
-
       const exercisesData: ExerciseData[] = workout.workout_exercises.map((we: any) => {
         const exercise = we.exercises;
         const sets: SetData[] = [];
@@ -128,7 +118,6 @@ export default function WorkoutSessionScreen() {
           sets,
         };
       });
-
       setExercises(exercisesData);
     } catch (error: any) {
       Alert.alert('Ошибка', error.message);
@@ -141,20 +130,16 @@ export default function WorkoutSessionScreen() {
     if (alternativesCache[exerciseId]) {
       return alternativesCache[exerciseId];
     }
-
     try {
       let query = supabase
         .from('exercises')
         .select('*')
         .neq('id', exerciseId);
-
       if (primaryMuscles.length > 0) {
         query = query.overlaps('primary_muscles', primaryMuscles);
       }
-
       const { data, error } = await query.limit(10);
       if (error) throw error;
-
       const alternatives: AlternativeExercise[] = (data || []).map((ex: any) => ({
         id: ex.id,
         name: ex.name,
@@ -163,7 +148,6 @@ export default function WorkoutSessionScreen() {
         equipment: getList(ex, 'equipment'),
         settings: getString(ex, 'settings'),
       }));
-
       setAlternativesCache(prev => ({ ...prev, [exerciseId]: alternatives }));
       return alternatives;
     } catch (error: any) {
@@ -192,9 +176,7 @@ export default function WorkoutSessionScreen() {
     const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
     const alt = alternatives.find(a => a.id === alternativeId);
     if (!alt) return;
-
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
     setExercises(prev => {
       const updated = [...prev];
       updated[exerciseIndex] = {
@@ -208,19 +190,16 @@ export default function WorkoutSessionScreen() {
       };
       return updated;
     });
-
     setReplacements(prev => ({
       ...prev,
       [exercise.workout_exercise_id]: alternativeId,
     }));
-
     Alert.alert('Заменено', `${exercise.name} → ${alt.name}`);
   };
 
   const resetToOriginal = (exerciseIndex: number) => {
     const exercise = exercises[exerciseIndex];
     const workoutExId = exercise.workout_exercise_id;
-
     Alert.alert(
       'Вернуть оригинальное упражнение?',
       'Данные подходов сохранятся',
@@ -247,7 +226,6 @@ export default function WorkoutSessionScreen() {
     if (timerRef.current) clearInterval(timerRef.current);
     setRestTimeLeft(restSeconds);
     setRestTimer(restSeconds);
-
     timerRef.current = setInterval(() => {
       setRestTimeLeft(prev => {
         if (prev <= 1) {
@@ -273,110 +251,104 @@ export default function WorkoutSessionScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
- const saveWorkout = async () => {
-  Alert.alert(
-    'Завершить тренировку?',
-    'Все данные будут сохранены',
-    [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Завершить',
-        onPress: async () => {
-          setSaving(true);
-          try {
-            let totalLogs = 0;
-
-            for (const exercise of exercises) {
-              const logsToSave = exercise.sets
-                .filter(set => isSetCompleted(set))
-                .map((set, index) => ({
-                  workout_exercise_id: exercise.workout_exercise_id,
-                  set_number: index + 1,
-                  weight_kg: parseFloat(set.weight) || 0,
-                  reps: parseInt(set.reps) || 0,
-                }));
-
-              if (logsToSave.length > 0) {
-                const { error } = await supabase
-                  .from('workout_logs')
-                  .insert(logsToSave);
-                if (error) throw error;
-                totalLogs += logsToSave.length;
-              }
-            }
-
-            // === НОВОЕ: Проверяем, является ли тренировка частью программы ===
-            const { data: workoutData } = await supabase
-              .from('workouts')
-              .select('program_id')
-              .eq('id', id)
-              .single();
-
-            if (workoutData?.program_id && userId) {
-              try {
-                const progress = await advanceProgramProgress(
-                  userId,
-                  workoutData.program_id
-                );
-
-                if (progress.isCompleted) {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert(
-                    ' Программа завершена!',
-                    'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".'
-                  );
-                  router.replace('/(tabs)/programs');
-                } else {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert(
-                    'Тренировка завершена!',
-                    `Следующий день: Неделя ${progress.week}, День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
-                  );
-                  router.replace('/(tabs)/workouts');
+  const saveWorkout = async () => {
+    Alert.alert(
+      'Завершить тренировку?',
+      'Все данные будут сохранены',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Завершить',
+          onPress: async () => {
+            setSaving(true);
+            try {
+              let totalLogs = 0;
+              for (const exercise of exercises) {
+                const logsToSave = exercise.sets
+                  .filter(set => isSetCompleted(set))
+                  .map((set, index) => ({
+                    workout_exercise_id: exercise.workout_exercise_id,
+                    set_number: index + 1,
+                    weight_kg: parseFloat(set.weight) || 0,
+                    reps: parseInt(set.reps) || 0,
+                  }));
+                if (logsToSave.length > 0) {
+                  const { error } = await supabase
+                    .from('workout_logs')
+                    .insert(logsToSave);
+                  if (error) throw error;
+                  totalLogs += logsToSave.length;
                 }
-              } catch (progressError: any) {
-                console.error('Ошибка обновления прогресса:', progressError);
-                // Не блокируем пользователя, если прогресс не обновился
+              }
+              const { data: workoutData } = await supabase
+                .from('workouts')
+                .select('program_id')
+                .eq('id', id)
+                .single();
+              if (workoutData?.program_id && userId) {
+                try {
+                  const progress = await advanceProgramProgress(
+                    userId,
+                    workoutData.program_id
+                  );
+                  if (progress.isCompleted) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Программа завершена!',
+                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".'
+                    );
+                    router.replace('/(tabs)/programs');
+                  } else {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Тренировка завершена!',
+                      `Следующий день: Неделя ${progress.week}, День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
+                    );
+                    router.replace('/(tabs)/workouts');
+                  }
+                } catch (progressError: any) {
+                  console.error('Ошибка обновления прогресса:', progressError);
+                  Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
+                  router.replace('/(tabs)/history');
+                }
+              } else {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
                 router.replace('/(tabs)/history');
               }
-            } else {
-              // Обычная тренировка (не из программы)
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
-              router.replace('/(tabs)/history');
+            } catch (error: any) {
+              Alert.alert('Ошибка', error.message);
+            } finally {
+              setSaving(false);
             }
-          } catch (error: any) {
-            Alert.alert('Ошибка', error.message);
-          } finally {
-            setSaving(false);
-          }
+          },
         },
-      },
-    ]
-  );
-};
+      ]
+    );
+  };
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <View style={[commonStyles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Загрузка...</Text>
+        <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+          Загрузка...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
       {/* Шапка */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={saveWorkout}
           disabled={saving}
           activeOpacity={0.8}
         >
           {saving ? (
-            <View style={[styles.finishButton, { backgroundColor: colors.textTertiary }]}>
+            <View style={[buttonStyles.finish, { backgroundColor: colors.textTertiary }]}>
               <ActivityIndicator color="white" size="small" />
             </View>
           ) : (
@@ -384,9 +356,9 @@ export default function WorkoutSessionScreen() {
               colors={GRADIENTS.success}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.finishButton}
+              style={buttonStyles.finish}
             >
-              <Text style={styles.finishButtonText}>Завершить</Text>
+              <Text style={buttonStyles.textFinish}>Завершить</Text>
             </LinearGradient>
           )}
         </TouchableOpacity>
@@ -394,17 +366,17 @@ export default function WorkoutSessionScreen() {
 
       {/* Таймер отдыха */}
       {restTimer !== null && (
-        <View style={[styles.restTimer, { backgroundColor: colors.warningLight, borderBottomColor: colors.warning }]}>
-          <Text style={[styles.restTimerLabel, { color: colors.warning }]}>Отдых</Text>
-          <Text style={[styles.restTimerTime, { color: colors.warning }]}>{formatTime(restTimeLeft)}</Text>
-          <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.warning }]} onPress={stopRestTimer}>
-            <Text style={styles.skipButtonText}>Пропустить</Text>
+        <View style={[{ padding: SPACING.lg, alignItems: 'center', borderBottomWidth: 1, backgroundColor: colors.warningLight, borderBottomColor: colors.warning }]}>
+          <Text style={[typography.label, { color: colors.warning, marginBottom: 4 }]}>Отдых</Text>
+          <Text style={[typography.h1, { color: colors.warning, marginBottom: SPACING.md }]}>{formatTime(restTimeLeft)}</Text>
+          <TouchableOpacity style={[{ paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm, borderRadius: 16, backgroundColor: colors.warning }]} onPress={stopRestTimer}>
+            <Text style={[typography.buttonSmall, { color: 'white' }]}>Пропустить</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Список упражнений */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={commonStyles.scrollView} showsVerticalScrollIndicator={false}>
         {exercises.map((exercise, exIndex) => (
           <ExerciseSlider
             key={exercise.workout_exercise_id}
@@ -452,6 +424,8 @@ function ExerciseSlider({
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
 
+  const badgeStyles = createBadgeStyles(colors);
+
   useEffect(() => {
     const load = async () => {
       if (exercise.alternatives.length > 0 || isReplaced) {
@@ -467,23 +441,22 @@ function ExerciseSlider({
   const allCards = [exercise, ...alternatives];
 
   return (
-    <View style={styles.exerciseSection}>
+    <View style={[commonStyles.section, { marginTop: SPACING.lg }]}>
       {isReplaced && (
-        <View style={[styles.replacedBadge, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.replacedText, { color: colors.primary }]}>Заменено</Text>
+        <View style={[badgeStyles.replacedBadge, { backgroundColor: colors.primaryLight }]}>
+          <Text style={[badgeStyles.replacedText, { color: colors.primary }]}>Заменено</Text>
           <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
-            <Text style={[styles.resetText, { color: colors.primary }]}>Вернуть</Text>
+            <Text style={[badgeStyles.resetText, { color: colors.primary }]}>Вернуть</Text>
           </TouchableOpacity>
         </View>
       )}
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         pagingEnabled
         snapToInterval={CARD_WIDTH + 16}
         decelerationRate="fast"
-        contentContainerStyle={styles.sliderContainer}
+        contentContainerStyle={[{ paddingHorizontal: SPACING.xl, gap: SPACING.md }]}
       >
         {allCards.map((card, cardIndex) => (
           <ExerciseCard
@@ -535,6 +508,10 @@ function ExerciseCard({
     settings: false,
   });
 
+  const cardStyles = createCardStyles(colors);
+  const buttonStyles = createButtonStyles(colors);
+  const inputStyles = createInputStyles(colors);
+
   const toggleSection = (section: 'technique' | 'equipment' | 'settings') => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -544,13 +521,13 @@ function ExerciseCard({
   const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
 
   return (
-    <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: colors.surface }]}>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+    <View style={[cardStyles.container, { width: CARD_WIDTH }]}>
+      <View style={cardStyles.header}>
+        <Text style={cardStyles.title} numberOfLines={2}>
           {exercise.name}
         </Text>
         {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
-          <Text style={[styles.musclesText, { color: colors.textSecondary }]}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
             {(exercise as ExerciseData).primary_muscles.join(', ')}
           </Text>
         )}
@@ -562,7 +539,7 @@ function ExerciseCard({
           expanded={expandedSections.technique}
           onToggle={() => toggleSection('technique')}
         >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>
+          <Text style={[typography.body, { color: colors.textPrimary }]}>
             {(exercise as ExerciseData).technique}
           </Text>
         </CollapsibleSection>
@@ -574,7 +551,7 @@ function ExerciseCard({
           expanded={expandedSections.equipment}
           onToggle={() => toggleSection('equipment')}
         >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>
+          <Text style={[typography.body, { color: colors.textPrimary }]}>
             {(exercise as ExerciseData).equipment.join(', ')}
           </Text>
         </CollapsibleSection>
@@ -586,7 +563,7 @@ function ExerciseCard({
           expanded={expandedSections.settings}
           onToggle={() => toggleSection('settings')}
         >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>
+          <Text style={[typography.body, { color: colors.textPrimary }]}>
             {(exercise as ExerciseData).settings}
           </Text>
         </CollapsibleSection>
@@ -594,43 +571,42 @@ function ExerciseCard({
 
       {!isMain && (
         <TouchableOpacity
-          style={[styles.replaceButton, { backgroundColor: colors.primary }]}
+          style={[buttonStyles.replace, { backgroundColor: colors.primary }]}
           onPress={() => replaceExercise(exerciseIndex, exercise.id)}
         >
-          <View style={styles.replaceButtonContent}>
+          <View style={buttonStyles.content}>
             <RotateCcw size={16} color="white" strokeWidth={2} />
-            <Text style={styles.replaceButtonText}>Заменить на это</Text>
+            <Text style={buttonStyles.replaceText}>Заменить на это</Text>
           </View>
         </TouchableOpacity>
       )}
 
       {hasSets && sets.length > 0 && (
-        <View style={styles.setsSection}>
-          <View style={styles.setsHeader}>
-            <View style={styles.setLabelCell}>
-              <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Подход</Text>
+        <View style={{ marginTop: SPACING.lg }}>
+          <View style={[{ flexDirection: 'row', marginBottom: SPACING.sm }]}>
+            <View style={[{ width: 70, justifyContent: 'center' }]}>
+              <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>Подход</Text>
             </View>
             {sets.map((_, setIndex) => (
-              <View key={setIndex} style={styles.setDataCell}>
-                <Text style={[styles.setDataText, { color: colors.textPrimary }]}>{setIndex + 1}</Text>
+              <View key={setIndex} style={inputStyles.dataCell}>
+                <Text style={inputStyles.dataText}>{setIndex + 1}</Text>
               </View>
             ))}
           </View>
-
-          <View style={styles.setsRow}>
-            <View style={styles.setLabelCell}>
-              <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Вес (кг)</Text>
+          <View style={[{ flexDirection: 'row', marginBottom: SPACING.sm }]}>
+            <View style={[{ width: 70, justifyContent: 'center' }]}>
+              <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>Вес (кг)</Text>
             </View>
             {sets.map((set, setIndex) => (
               <View
                 key={setIndex}
                 style={[
-                  styles.setDataCell,
+                  inputStyles.dataCell,
                   { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary },
                 ]}
               >
                 <TextInput
-                  style={[styles.setInput, { color: colors.textPrimary }]}
+                  style={inputStyles.setInput}
                   placeholder="0"
                   value={set.weight}
                   onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'weight', val)}
@@ -640,21 +616,20 @@ function ExerciseCard({
               </View>
             ))}
           </View>
-
-          <View style={styles.setsRow}>
-            <View style={styles.setLabelCell}>
-              <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Повт.</Text>
+          <View style={[{ flexDirection: 'row', marginBottom: SPACING.sm }]}>
+            <View style={[{ width: 70, justifyContent: 'center' }]}>
+              <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>Повт.</Text>
             </View>
             {sets.map((set, setIndex) => (
               <View
                 key={setIndex}
                 style={[
-                  styles.setDataCell,
+                  inputStyles.dataCell,
                   { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary },
                 ]}
               >
                 <TextInput
-                  style={[styles.setInput, { color: colors.textPrimary }]}
+                  style={inputStyles.setInput}
                   placeholder="0"
                   value={set.reps}
                   onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'reps', val)}
@@ -664,14 +639,13 @@ function ExerciseCard({
               </View>
             ))}
           </View>
-
           <TouchableOpacity
-            style={[styles.restButton, { backgroundColor: colors.primary }]}
+            style={[buttonStyles.rest, { backgroundColor: colors.primary }]}
             onPress={() => startRestTimer(restSeconds)}
           >
-            <View style={styles.replaceButtonContent}>
+            <View style={buttonStyles.content}>
               <Clock size={16} color="white" strokeWidth={2} />
-              <Text style={styles.restButtonText}>Отдых {restSeconds}с</Text>
+              <Text style={buttonStyles.restText}>Отдых {restSeconds}с</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -692,14 +666,14 @@ function CollapsibleSection({
   children: React.ReactNode;
 }) {
   const { colors } = useTheme();
+
   return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-    <View style={[styles.collapsibleSection, { borderColor: colors.border }]}>
+    <View style={[{ marginBottom: SPACING.sm, borderWidth: 1, borderColor: colors.border, borderRadius: BORDER_RADIUS.md, overflow: 'hidden' }]}>
       <TouchableOpacity
-        style={[styles.collapsibleHeader, { backgroundColor: colors.surfaceSecondary }]}
+        style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.md, backgroundColor: colors.surfaceSecondary }]}
         onPress={onToggle}
       >
-        <Text style={[styles.collapsibleTitle, { color: colors.textPrimary }]}>{title}</Text>
+        <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{title}</Text>
         {expanded ? (
           <ChevronDown size={16} color={colors.textSecondary} strokeWidth={2} />
         ) : (
@@ -707,203 +681,10 @@ function CollapsibleSection({
         )}
       </TouchableOpacity>
       {expanded && (
-        <View style={[styles.collapsibleContent, { backgroundColor: colors.surface }]}>
+        <View style={[{ padding: SPACING.md, backgroundColor: colors.surface }]}>
           {children}
         </View>
       )}
     </View>
-    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: SPACING.sm,
-  },
-  backText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  finishButton: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: 20,
-  },
-  finishButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  restTimer: {
-    padding: SPACING.lg,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-  },
-  restTimerLabel: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  restTimerTime: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  skipButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm,
-    borderRadius: 16,
-  },
-  skipButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  scrollView: { flex: 1 },
-  exerciseSection: {
-    marginTop: SPACING.lg,
-  },
-  replacedBadge: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    marginHorizontal: SPACING.xl,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.sm,
-  },
-  replacedText: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  resetText: {
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  sliderContainer: {
-    paddingHorizontal: SPACING.xl,
-    gap: SPACING.md,
-  },
-  card: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    elevation: 2,
-  },
-  cardHeader: {
-    marginBottom: SPACING.md,
-    minHeight: 50,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  musclesText: {
-    fontSize: 14,
-  },
-  collapsibleSection: {
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
-  },
-  collapsibleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.md,
-  },
-  collapsibleTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  collapsibleArrow: {
-    fontSize: 12,
-  },
-  collapsibleContent: {
-    padding: SPACING.md,
-  },
-  sectionText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  replaceButton: {
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginTop: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  replaceButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  replaceButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  setsSection: {
-    marginTop: SPACING.lg,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    marginBottom: SPACING.sm,
-  },
-  setsRow: {
-    flexDirection: 'row',
-    marginBottom: SPACING.sm,
-  },
-  setLabelCell: {
-    width: 70,
-    justifyContent: 'center',
-  },
-  setLabelText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  setDataCell: {
-    flex: 1,
-    marginHorizontal: 2,
-    padding: 4,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  setDataText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  setInput: {
-    fontSize: 16,
-    textAlign: 'center',
-    width: '100%',
-  },
-  restButton: {
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginTop: SPACING.md,
-  },
-  restButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-});

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Alert,
 } from 'react-native';
@@ -15,6 +14,10 @@ import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 import { Dumbbell, CheckCircle, AlertTriangle, AlertCircle, Wrench, Settings } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { typography } from '../../src/styles/typography';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -22,6 +25,9 @@ export default function ExerciseDetailScreen() {
   const { colors } = useTheme();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const cardStyles = createCardStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
 
   useEffect(() => {
     loadExercise();
@@ -46,31 +52,31 @@ export default function ExerciseDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+            <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.center}>
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Загрузка...</Text>
+        <View style={commonStyles.center}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!exercise) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+            <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.center}>
-          <Text style={[styles.errorText, { color: colors.error }]}>Упражнение не найдено</Text>
+        <View style={commonStyles.center}>
+          <Text style={[typography.body, { color: colors.error }]}>Упражнение не найдено</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -80,26 +86,40 @@ export default function ExerciseDetailScreen() {
   const equipment = getList(exercise, 'equipment');
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
+    <ScrollView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+      <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+          <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.content, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
+      <View style={[cardStyles.container, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+        <View style={[{
+          width: 96,
+          height: 96,
+          borderRadius: 48,
+          justifyContent: 'center',
+          alignItems: 'center',
+          alignSelf: 'center',
+          marginBottom: SPACING.lg,
+          backgroundColor: colors.primaryLight,
+        }]}>
           <Dumbbell size={48} color={colors.primary} strokeWidth={1.5} />
         </View>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>{exercise.name}</Text>
+
+        <Text style={[typography.h3, { color: colors.textPrimary, textAlign: 'center', marginBottom: SPACING.xl }]}>
+          {exercise.name}
+        </Text>
 
         {primaryMuscles.length > 0 && (
-          <View style={styles.muscleSection}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Основные мышцы</Text>
-            <View style={styles.tags}>
+          <View style={{ marginBottom: SPACING.lg }}>
+            <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+              Основные мышцы
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
               {primaryMuscles.map((muscle, idx) => (
-                <View key={idx} style={[styles.tag, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.tagText, { color: colors.primary }]}>{muscle}</Text>
+                <View key={idx} style={[badgeStyles.container, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[badgeStyles.text, { color: colors.primary }]}>{muscle}</Text>
                 </View>
               ))}
             </View>
@@ -107,12 +127,14 @@ export default function ExerciseDetailScreen() {
         )}
 
         {secondaryMuscles.length > 0 && (
-          <View style={styles.muscleSection}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Дополнительные мышцы</Text>
-            <View style={styles.tags}>
+          <View style={{ marginBottom: SPACING.lg }}>
+            <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+              Дополнительные мышцы
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
               {secondaryMuscles.map((muscle, idx) => (
-                <View key={idx} style={[styles.tag, { backgroundColor: colors.surfaceSecondary }]}>
-                  <Text style={[styles.tagText, { color: colors.textSecondary }]}>{muscle}</Text>
+                <View key={idx} style={[badgeStyles.container, { backgroundColor: colors.surfaceSecondary }]}>
+                  <Text style={[badgeStyles.text, { color: colors.textSecondary }]}>{muscle}</Text>
                 </View>
               ))}
             </View>
@@ -121,64 +143,76 @@ export default function ExerciseDetailScreen() {
       </View>
 
       {exercise.technique ? (
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
+        <View style={[cardStyles.container, { marginHorizontal: SPACING.lg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
             <Settings size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Техника выполнения</Text>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Техника выполнения</Text>
           </View>
-          <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.technique}</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, lineHeight: 22 }]}>
+            {exercise.technique}
+          </Text>
         </View>
       ) : null}
 
       {exercise.benefits ? (
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
+        <View style={[cardStyles.container, { marginHorizontal: SPACING.lg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
             <CheckCircle size={20} color="#4CAF50" strokeWidth={1.5} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Польза</Text>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Польза</Text>
           </View>
-          <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.benefits}</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, lineHeight: 22 }]}>
+            {exercise.benefits}
+          </Text>
         </View>
       ) : null}
 
       {exercise.risks ? (
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
+        <View style={[cardStyles.container, { marginHorizontal: SPACING.lg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
             <AlertTriangle size={20} color="#FF9800" strokeWidth={1.5} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Риски</Text>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Риски</Text>
           </View>
-          <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.risks}</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, lineHeight: 22 }]}>
+            {exercise.risks}
+          </Text>
         </View>
       ) : null}
 
       {injuries.length > 0 && (
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
+        <View style={[cardStyles.container, { marginHorizontal: SPACING.lg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
             <AlertCircle size={20} color="#F44336" strokeWidth={1.5} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Противопоказания</Text>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Противопоказания</Text>
           </View>
           {injuries.map((injury, idx) => (
-            <Text key={idx} style={[styles.listItem, { color: colors.textPrimary }]}>• {injury}</Text>
+            <Text key={idx} style={[typography.body, { color: colors.textPrimary, marginBottom: SPACING.sm, lineHeight: 22 }]}>
+              • {injury}
+            </Text>
           ))}
         </View>
       )}
 
       {equipment.length > 0 && (
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
+        <View style={[cardStyles.container, { marginHorizontal: SPACING.lg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
             <Wrench size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Оборудование</Text>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Оборудование</Text>
           </View>
-          <Text style={[styles.text, { color: colors.textPrimary }]}>{equipment.join(', ')}</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, lineHeight: 22 }]}>
+            {equipment.join(', ')}
+          </Text>
         </View>
       )}
 
       {exercise.settings ? (
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
+        <View style={[cardStyles.container, { marginHorizontal: SPACING.lg }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
             <Settings size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Настройка</Text>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Настройка</Text>
           </View>
-          <Text style={[styles.text, { color: colors.textPrimary }]}>{exercise.settings}</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, lineHeight: 22 }]}>
+            {exercise.settings}
+          </Text>
         </View>
       ) : null}
 
@@ -186,67 +220,3 @@ export default function ExerciseDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
-  loadingText: { fontSize: 16 },
-  errorText: { fontSize: 16 },
-  header: {
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: SPACING.sm,
-  },
-  backText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  content: {
-    padding: SPACING.xl,
-    borderBottomWidth: 1,
-  },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: SPACING.lg,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-  },
-  muscleSection: { marginBottom: SPACING.lg },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: SPACING.sm,
-  },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  tag: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-  },
-  tagText: { fontSize: 14, fontWeight: '500' },
-  section: {
-    padding: SPACING.xl,
-    marginTop: SPACING.md,
-    marginHorizontal: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.sm,
-  },
-  text: { fontSize: 15, lineHeight: 22 },
-  listItem: { fontSize: 15, marginBottom: SPACING.sm, lineHeight: 22 },
-});

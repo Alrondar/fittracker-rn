@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
@@ -17,6 +16,8 @@ import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { Clock } from 'lucide-react-native';
+import { commonStyles } from '../../src/styles/common';
+import { typography } from '../../src/styles/typography';
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -33,26 +34,12 @@ export default function HistoryScreen() {
     try {
       const { data, error } = await supabase
         .from('workouts')
-        .select(`
-          id, 
-          name, 
-          created_at,
-          workout_exercises (
-            id,
-            workout_logs (
-              weight_kg, 
-              reps
-            )
-          )
-        `)
+        .select(`id, name, created_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )`)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-
       const completed = (data || []).filter((w: any) =>
         w.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0)
       );
-
       setWorkouts(completed);
     } catch (e: any) {
       console.error('Ошибка истории:', e.message);
@@ -98,25 +85,24 @@ export default function HistoryScreen() {
   };
 
   const renderEmpty = () => (
-    <FadeIn delay={200} style={styles.emptyContainer}>
+    <FadeIn delay={200} style={commonStyles.emptyContainer}>
       <Clock size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
         История пуста
       </Text>
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
         Завершите первую тренировку, чтобы увидеть её здесь
       </Text>
     </FadeIn>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* Заголовок */}
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+      <View style={commonStyles.header}>
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
           История тренировок
         </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
           Твои достижения и прогресс
         </Text>
       </View>
@@ -130,7 +116,6 @@ export default function HistoryScreen() {
           renderItem={({ item, index }) => {
             const volume = calculateVolume(item);
             const sets = calculateSets(item);
-
             return (
               <FadeIn delay={index * 50}>
                 <TouchableOpacity
@@ -144,27 +129,30 @@ export default function HistoryScreen() {
                     colors={index % 2 === 0 ? GRADIENTS.hero : GRADIENTS.primary}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.card}
+                    style={{
+                      padding: SPACING.lg,
+                      borderRadius: BORDER_RADIUS.lg,
+                      marginBottom: SPACING.md,
+                      elevation: 4,
+                    }}
                   >
-                    <View style={styles.cardHeader}>
-                      <Text style={[styles.cardTitle, { color: colors.textInverse }]} numberOfLines={1}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md }}>
+                      <Text style={[typography.h4, { color: 'white', flex: 1, marginRight: SPACING.md }]} numberOfLines={1}>
                         {item.name}
                       </Text>
-                      <Text style={[styles.cardDate, { color: 'rgba(255,255,255,0.8)' }]}>
+                      <Text style={[typography.caption, { color: 'rgba(255,255,255,0.8)' }]}>
                         {formatDate(item.created_at)}
                       </Text>
                     </View>
-                    <View style={[styles.statsRow, { borderTopColor: 'rgba(255,255,255,0.2)' }]}>
-                      <View style={styles.statItem}>
-                        <Text style={[styles.statValue, { color: colors.textInverse }]}>{sets}</Text>
-                        <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>подходов</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' }}>
+                      <View style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={[typography.h3, { color: 'white' }]}>{sets}</Text>
+                        <Text style={[typography.caption, { color: 'rgba(255,255,255,0.9)', marginTop: 2 }]}>подходов</Text>
                       </View>
-                      <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-                      <View style={styles.statItem}>
-                        <Text style={[styles.statValue, { color: colors.textInverse }]}>
-                          {Math.round(volume)}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>кг</Text>
+                      <View style={{ width: 1, height: 30, marginHorizontal: SPACING.sm, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+                      <View style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={[typography.h3, { color: 'white' }]}>{Math.round(volume)}</Text>
+                        <Text style={[typography.caption, { color: 'rgba(255,255,255,0.9)', marginTop: 2 }]}>кг</Text>
                       </View>
                     </View>
                   </LinearGradient>
@@ -172,7 +160,7 @@ export default function HistoryScreen() {
               </FadeIn>
             );
           }}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ padding: SPACING.lg, paddingTop: 0 }}
           ListEmptyComponent={renderEmpty}
           refreshControl={
             <RefreshControl
@@ -186,87 +174,3 @@ export default function HistoryScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-  },
-  list: { padding: SPACING.lg, paddingTop: 0 },
-  card: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  cardDate: {
-    fontSize: 12
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    marginHorizontal: SPACING.sm,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xxl,
-    marginTop: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.lg,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});

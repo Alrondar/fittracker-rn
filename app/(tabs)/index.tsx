@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -18,16 +17,20 @@ import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { getActiveProgram } from '../../src/servises/programsService';
-import { 
-  Dumbbell, 
-  BookOpen, 
-  Clock, 
-  TrendingUp, 
-  Trophy, 
-  Calendar, 
+import {
+  Dumbbell,
+  BookOpen,
+  Clock,
+  TrendingUp,
+  Trophy,
+  Calendar,
   Play,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react-native';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createListStyles } from '../../src/styles/components/list';
+import { typography } from '../../src/styles/typography';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -47,11 +50,7 @@ interface ActiveProgram {
     id: string;
     name: string;
     duration: number;
-    days: Array<{
-      id: string;
-      day_number: number;
-      name: string;
-    }>;
+    days: Array<{ id: string; day_number: number; name: string }>;
   };
 }
 
@@ -72,19 +71,20 @@ export default function DashboardScreen() {
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
   const [activeProgram, setActiveProgram] = useState<ActiveProgram | null>(null);
 
+  const cardStyles = createCardStyles(colors);
+  const listStyles = createListStyles(colors);
+
   useEffect(() => {
     loadDashboard();
   }, []);
 
   const loadDashboard = async () => {
     try {
-      // Загружаем активную программу
       if (userId) {
         const program = await getActiveProgram(userId);
         setActiveProgram(program);
       }
 
-      // Загружаем статистику
       const { data: workouts, error } = await supabase
         .from('workouts')
         .select(`
@@ -106,7 +106,6 @@ export default function DashboardScreen() {
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
       let weekWorkouts = 0;
       let monthWorkouts = 0;
       let totalVolume = 0;
@@ -116,14 +115,12 @@ export default function DashboardScreen() {
         const createdAt = new Date(workout.created_at);
         if (createdAt >= weekAgo) weekWorkouts++;
         if (createdAt >= monthAgo) monthWorkouts++;
-
         let workoutVolume = 0;
         workout.workout_exercises?.forEach((we: any) => {
           we.workout_logs?.forEach((log: any) => {
             workoutVolume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
           });
         });
-
         totalVolume += workoutVolume;
         if (createdAt >= weekAgo) weekVolume += workoutVolume;
       });
@@ -136,10 +133,7 @@ export default function DashboardScreen() {
         weekVolume,
       });
 
-      if (workouts && workouts.length > 0) {
-        setLastWorkout(workouts[0]);
-      }
-
+      if (workouts && workouts.length > 0) setLastWorkout(workouts[0]);
       setRecentWorkouts(workouts?.slice(0, 3) || []);
     } catch (error: any) {
       console.error('Исключение:', error);
@@ -183,8 +177,8 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.center}>
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={commonStyles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
@@ -192,28 +186,24 @@ export default function DashboardScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={styles.scrollView}
+        style={commonStyles.scrollView}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         {/* Приветствие */}
-        <View style={styles.header}>
-          <Text style={[styles.greeting, { color: colors.textPrimary }]}>Привет!</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <View style={commonStyles.header}>
+          <Text style={[commonStyles.greeting, { color: colors.textPrimary }]}>Привет!</Text>
+          <Text style={[commonStyles.subtitle, { color: colors.textSecondary }]}>
             Готов к тренировке?
           </Text>
         </View>
 
-        {/* Виджет активной программы */}
+        {/* Активная программа */}
         {activeProgram && (
-          <View style={styles.section}>
+          <View style={commonStyles.section}>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => {
@@ -225,55 +215,56 @@ export default function DashboardScreen() {
                 colors={GRADIENTS.hero}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.activeProgramCard}
+                style={[cardStyles.large, { backgroundColor: 'transparent' }]}
               >
-                <View style={styles.activeProgramHeader}>
-                  <View style={styles.activeProgramTitleRow}>
+                <View style={cardStyles.header}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
                     <Trophy size={20} color="white" strokeWidth={1.5} />
-                    <Text style={[styles.activeProgramLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+                    <Text style={[typography.overline, { color: 'rgba(255,255,255,0.9)' }]}>
                       Активная программа
                     </Text>
                   </View>
                   <ChevronRight size={20} color="rgba(255,255,255,0.7)" strokeWidth={2} />
                 </View>
-
-                <Text style={[styles.activeProgramName, { color: 'white' }]}>
+                <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.md }]}>
                   {activeProgram.programs.name}
                 </Text>
-
-                <View style={styles.activeProgramInfo}>
-                  <View style={styles.activeProgramInfoItem}>
+                <View style={{ flexDirection: 'row', gap: SPACING.lg, marginBottom: SPACING.lg }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
                     <Calendar size={14} color="rgba(255,255,255,0.8)" strokeWidth={1.5} />
-                    <Text style={[styles.activeProgramInfoText, { color: 'rgba(255,255,255,0.9)' }]}>
+                    <Text style={[typography.bodySmall, { color: 'rgba(255,255,255,0.9)' }]}>
                       Неделя {activeProgram.current_week}/{activeProgram.programs.duration}
                     </Text>
                   </View>
-                  <View style={styles.activeProgramInfoItem}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
                     <Dumbbell size={14} color="rgba(255,255,255,0.8)" strokeWidth={1.5} />
-                    <Text style={[styles.activeProgramInfoText, { color: 'rgba(255,255,255,0.9)' }]}>
+                    <Text style={[typography.bodySmall, { color: 'rgba(255,255,255,0.9)' }]}>
                       {getCurrentDayName()}
                     </Text>
                   </View>
                 </View>
 
                 {/* Прогресс-бар */}
-                <View style={styles.progressBarContainer}>
-                  <View style={styles.progressBarBackground}>
-                    <View 
-                      style={[
-                        styles.progressBarFill, 
-                        { width: `${getProgressPercent()}%` }
-                      ]} 
-                    />
+                <View style={{ marginBottom: SPACING.lg }}>
+                  <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden', marginBottom: SPACING.xs }}>
+                    <View style={{ height: '100%', backgroundColor: 'white', borderRadius: 3, width: `${getProgressPercent()}%` }} />
                   </View>
-                  <Text style={[styles.progressText, { color: 'rgba(255,255,255,0.8)' }]}>
+                  <Text style={[typography.captionSmall, { color: 'rgba(255,255,255,0.8)', textAlign: 'right' }]}>
                     {Math.round(getProgressPercent())}% завершено
                   </Text>
                 </View>
 
-                <View style={styles.activeProgramButton}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.sm,
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  paddingVertical: SPACING.md,
+                  borderRadius: BORDER_RADIUS.lg,
+                }}>
                   <Play size={16} color="white" strokeWidth={2} fill="white" />
-                  <Text style={[styles.activeProgramButtonText, { color: 'white' }]}>
+                  <Text style={[typography.buttonSmall, { color: 'white' }]}>
                     Перейти к тренировкам
                   </Text>
                 </View>
@@ -283,57 +274,30 @@ export default function DashboardScreen() {
         )}
 
         {/* Статистика */}
-        <View style={styles.statsContainer}>
-          <LinearGradient
-            colors={GRADIENTS.primary}
-            style={styles.statCard}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={[styles.statValue, { color: 'white' }]}>
-              {stats.weekWorkouts}
-            </Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
-              На неделе
-            </Text>
+        <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl, gap: SPACING.md }}>
+          <LinearGradient colors={GRADIENTS.primary} style={cardStyles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <Text style={[cardStyles.statValue, { color: 'white' }]}>{stats.weekWorkouts}</Text>
+            <Text style={[cardStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>На неделе</Text>
           </LinearGradient>
-          <LinearGradient
-            colors={GRADIENTS.success}
-            style={styles.statCard}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={[styles.statValue, { color: 'white' }]}>
-              {stats.monthWorkouts}
-            </Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
-              В месяце
-            </Text>
+          <LinearGradient colors={GRADIENTS.success} style={cardStyles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <Text style={[cardStyles.statValue, { color: 'white' }]}>{stats.monthWorkouts}</Text>
+            <Text style={[cardStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>В месяце</Text>
           </LinearGradient>
-          <LinearGradient
-            colors={GRADIENTS.hero}
-            style={styles.statCard}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={[styles.statValue, { color: 'white' }]}>
-              {Math.round(stats.weekVolume)}
-            </Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
-              кг за неделю
-            </Text>
+          <LinearGradient colors={GRADIENTS.hero} style={cardStyles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <Text style={[cardStyles.statValue, { color: 'white' }]}>{Math.round(stats.weekVolume)}</Text>
+            <Text style={[cardStyles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>кг за неделю</Text>
           </LinearGradient>
         </View>
 
         {/* Последняя тренировка */}
         {lastWorkout ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          <View style={commonStyles.section}>
+            <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
               Последняя тренировка
             </Text>
             <LinearGradient
               colors={GRADIENTS.primary}
-              style={styles.lastWorkoutCard}
+              style={{ borderRadius: BORDER_RADIUS.xl, elevation: 4 }}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
@@ -343,13 +307,13 @@ export default function DashboardScreen() {
                   router.push(`/history/${lastWorkout.id}`);
                 }}
                 activeOpacity={0.8}
-                style={styles.lastWorkoutContent}
+                style={{ padding: SPACING.xl, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
               >
-                <View style={styles.lastWorkoutInfo}>
-                  <Text style={[styles.lastWorkoutName, { color: 'white' }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.h4, { color: 'white', marginBottom: SPACING.xs }]}>
                     {lastWorkout.name}
                   </Text>
-                  <Text style={[styles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
+                  <Text style={[typography.body, { color: 'rgba(255,255,255,0.8)' }]}>
                     {formatDate(lastWorkout.created_at)}
                   </Text>
                 </View>
@@ -358,8 +322,8 @@ export default function DashboardScreen() {
             </LinearGradient>
           </View>
         ) : (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          <View style={commonStyles.section}>
+            <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
               Начни первую тренировку
             </Text>
             <AnimatedButton
@@ -367,76 +331,57 @@ export default function DashboardScreen() {
               onPress={() => router.push('/(tabs)/workouts')}
               icon={<Dumbbell size={24} color="white" strokeWidth={1.5} />}
               size="large"
-              style={styles.emptyCard}
+              style={{ padding: SPACING.xl, borderRadius: BORDER_RADIUS.xl, elevation: 2 }}
             />
           </View>
         )}
 
         {/* Быстрый доступ */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+        <View style={commonStyles.section}>
+          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
             Быстрый доступ
           </Text>
-          <View style={styles.quickActions}>
+          <View style={{ flexDirection: 'row', gap: SPACING.md }}>
             <TouchableOpacity
-              style={[styles.quickAction, { backgroundColor: colors.surface }]}
-              onPress={() => {
-                Haptics.impactAsync();
-                router.push('/(tabs)/workouts');
-              }}
+              style={listStyles.quickAction}
+              onPress={() => { Haptics.impactAsync(); router.push('/(tabs)/workouts'); }}
             >
               <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>
-                Тренировки
-              </Text>
+              <Text style={listStyles.quickActionText}>Тренировки</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.quickAction, { backgroundColor: colors.surface }]}
-              onPress={() => {
-                Haptics.impactAsync();
-                router.push('/(tabs)/exercises');
-              }}
+              style={listStyles.quickAction}
+              onPress={() => { Haptics.impactAsync(); router.push('/(tabs)/exercises'); }}
             >
               <BookOpen size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>
-                Справочник
-              </Text>
+              <Text style={listStyles.quickActionText}>Справочник</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.quickAction, { backgroundColor: colors.surface }]}
-              onPress={() => {
-                Haptics.impactAsync();
-                router.push('/(tabs)/history');
-              }}
+              style={listStyles.quickAction}
+              onPress={() => { Haptics.impactAsync(); router.push('/(tabs)/history'); }}
             >
               <Clock size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>
-                История
-              </Text>
+              <Text style={listStyles.quickActionText}>История</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Недавние тренировки */}
         {recentWorkouts.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+          <View style={commonStyles.section}>
+            <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
               Недавние тренировки
             </Text>
             {recentWorkouts.map((workout) => (
               <TouchableOpacity
                 key={workout.id}
-                style={[styles.recentCard, { backgroundColor: colors.surface }]}
+                style={listStyles.recentCard}
                 onPress={() => router.push(`/history/${workout.id}`)}
                 activeOpacity={0.7}
               >
-                <View style={styles.recentInfo}>
-                  <Text style={[styles.recentName, { color: colors.textPrimary }]}>
-                    {workout.name}
-                  </Text>
-                  <Text style={[styles.recentDate, { color: colors.textSecondary }]}>
-                    {formatDate(workout.created_at)}
-                  </Text>
+                <View style={listStyles.recentInfo}>
+                  <Text style={listStyles.recentName}>{workout.name}</Text>
+                  <Text style={listStyles.recentDate}>{formatDate(workout.created_at)}</Text>
                 </View>
                 <TrendingUp size={20} color={colors.primary} strokeWidth={1.5} />
               </TouchableOpacity>
@@ -449,182 +394,3 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    padding: SPACING.xl,
-    paddingBottom: SPACING.lg,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: SPACING.xs,
-  },
-  section: {
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.md,
-  },
-  activeProgramCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    elevation: 4,
-  },
-  activeProgramHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  activeProgramTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  activeProgramLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  activeProgramName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: SPACING.md,
-    lineHeight: 24,
-  },
-  activeProgramInfo: {
-    flexDirection: 'row',
-    gap: SPACING.lg,
-    marginBottom: SPACING.lg,
-  },
-  activeProgramInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  activeProgramInfoText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  progressBarContainer: {
-    marginBottom: SPACING.lg,
-  },
-  progressBarBackground: {
-    height: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: SPACING.xs,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: 'white',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 11,
-    textAlign: 'right',
-  },
-  activeProgramButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  activeProgramButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
-    gap: SPACING.md,
-  },
-  statCard: {
-    flex: 1,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: SPACING.xs,
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-  lastWorkoutCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    elevation: 4,
-  },
-  lastWorkoutContent: {
-    padding: SPACING.xl,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  lastWorkoutInfo: { flex: 1 },
-  lastWorkoutName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.xs,
-  },
-  lastWorkoutDate: {
-    fontSize: 14,
-  },
-  emptyCard: {
-    padding: SPACING.xl,
-    borderRadius: BORDER_RADIUS.xl,
-    elevation: 2,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  quickAction: {
-    flex: 1,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-    elevation: 2,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: SPACING.sm,
-  },
-  recentCard: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 2,
-  },
-  recentInfo: { flex: 1 },
-  recentName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
-  },
-  recentDate: {
-    fontSize: 14,
-  },
-});

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   RefreshControl,
   TouchableOpacity,
   Alert,
@@ -13,11 +12,15 @@ import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { ClipboardList, Dumbbell, Plus } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { typography } from '../../src/styles/typography';
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
@@ -27,6 +30,9 @@ export default function WorkoutsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
+  const cardStyles = createCardStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
+
   useEffect(() => {
     loadWorkouts();
   }, [userId]);
@@ -34,13 +40,12 @@ export default function WorkoutsScreen() {
   const loadWorkouts = async () => {
     if (!userId) return;
     try {
-const { data, error } = await supabase
-  .from('workouts')
-  .select('id, name, description, program_id, week_number, day_index, created_at')
-  .eq('user_id', userId)
-  .order('week_number', { ascending: true })
-  .order('day_index', { ascending: true });
-
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('id, name, description, program_id, week_number, day_index, created_at')
+        .eq('user_id', userId)
+        .order('week_number', { ascending: true })
+        .order('day_index', { ascending: true });
       if (error) throw error;
       setWorkouts(data || []);
     } catch (e: any) {
@@ -80,40 +85,39 @@ const { data, error } = await supabase
           onPress={() => navigateToWorkout(item.id)}
           activeOpacity={0.85}
           style={[
-            styles.card,
+            cardStyles.container,
             {
-              backgroundColor: colors.surface,
               borderColor: isProgramWorkout ? colors.primary : colors.border,
               borderWidth: isProgramWorkout ? 1.5 : 1,
             },
           ]}
         >
           {isProgramWorkout && (
-            <View style={[styles.programBadge, { backgroundColor: colors.primary + '15' }]}>
-              <View style={styles.badgeContent}>
+            <View style={[badgeStyles.programBadge, { backgroundColor: colors.primary + '15' }]}>
+              <View style={badgeStyles.container}>
                 <ClipboardList size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={[styles.programBadgeText, { color: colors.primary }]}>
+                <Text style={[badgeStyles.programBadgeText, { color: colors.primary }]}>
                   {programLabel}
                 </Text>
               </View>
             </View>
           )}
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>
+          <Text style={cardStyles.title} numberOfLines={2}>
             {item.name}
           </Text>
           {item.description && !isProgramWorkout && (
-            <Text style={[styles.cardDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+            <Text style={cardStyles.description} numberOfLines={1}>
               {item.description}
             </Text>
           )}
-          <View style={styles.cardFooter}>
-            <Text style={[styles.cardDate, { color: colors.textSecondary }]}>
+          <View style={cardStyles.footer}>
+            <Text style={cardStyles.date}>
               {new Date(item.created_at).toLocaleDateString('ru-RU', {
                 day: 'numeric',
                 month: 'long',
               })}
             </Text>
-            <Text style={[styles.openText, { color: colors.primary }]}>Начать →</Text>
+            <Text style={[typography.buttonSmall, { color: colors.primary }]}>Начать →</Text>
           </View>
         </TouchableOpacity>
       </FadeIn>
@@ -121,24 +125,24 @@ const { data, error } = await supabase
   };
 
   const renderEmpty = () => (
-    <FadeIn delay={200} style={styles.emptyContainer}>
+    <FadeIn delay={200} style={commonStyles.emptyContainer}>
       <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
         Нет тренировок
       </Text>
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
         Создайте свою первую тренировку или выберите готовую программу
       </Text>
     </FadeIn>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+      <View style={commonStyles.header}>
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
           Тренировки
         </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
           Ваши планы и программы
         </Text>
       </View>
@@ -150,7 +154,7 @@ const { data, error } = await supabase
           data={workouts}
           keyExtractor={(item) => item.id}
           renderItem={renderWorkoutItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ padding: SPACING.lg, paddingTop: 0, paddingBottom: 100 }}
           ListEmptyComponent={renderEmpty}
           refreshControl={
             <RefreshControl
@@ -163,115 +167,12 @@ const { data, error } = await supabase
       )}
 
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
+        style={[commonStyles.fab, { backgroundColor: colors.primary }]}
         onPress={createNewWorkout}
         activeOpacity={0.8}
       >
         <Plus size={28} color="white" strokeWidth={2.5} />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-  },
-  list: {
-    padding: SPACING.lg,
-    paddingTop: 0,
-    paddingBottom: 100,
-  },
-  card: {
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    padding: SPACING.lg,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-  },
-  programBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-    marginBottom: SPACING.sm,
-  },
-  badgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  programBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    marginBottom: SPACING.xs,
-    lineHeight: 22,
-  },
-  cardDesc: {
-    fontSize: 14,
-    marginBottom: SPACING.md,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
-  cardDate: {
-    fontSize: 13,
-  },
-  openText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xxl,
-    marginTop: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: SPACING.sm,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: SPACING.xl,
-    right: SPACING.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-});
