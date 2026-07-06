@@ -249,6 +249,66 @@ emptyCard: {
   borderRadius: BORDER_RADIUS.xl,
   elevation: 2,
 } as ViewStyle,
+
+// Карточка тренировки
+workoutCard: {
+  borderRadius: BORDER_RADIUS.lg,
+  marginBottom: SPACING.md,
+  padding: SPACING.lg,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+} as ViewStyle,
+
+programBadge: {
+  alignSelf: 'flex-start',
+  paddingHorizontal: SPACING.md,
+  paddingVertical: SPACING.xs,
+  borderRadius: BORDER_RADIUS.sm,
+  marginBottom: SPACING.sm,
+} as ViewStyle,
+
+badgeContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+} as ViewStyle,
+
+programBadgeText: {
+  fontSize: 12,
+  fontWeight: '600',
+} as TextStyle,
+
+cardTitle: {
+  fontSize: 17,
+  fontWeight: 'bold',
+  marginBottom: SPACING.xs,
+  lineHeight: 22,
+} as TextStyle,
+
+cardDesc: {
+  fontSize: 14,
+  marginBottom: SPACING.md,
+} as TextStyle,
+
+cardFooter: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginTop: SPACING.sm,
+} as ViewStyle,
+
+cardDate: {
+  fontSize: 13,
+} as TextStyle,
+
+openText: {
+  fontSize: 14,
+  fontWeight: '600',
+} as TextStyle,
+
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;

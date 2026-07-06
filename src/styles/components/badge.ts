@@ -94,6 +94,13 @@ export const createBadgeStyles = (colors: any) =>
       color: '#333',
       ...typography.buttonTiny,
     } as TextStyle,
+
+badgeContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+} as ViewStyle,
+
   });
 
 export type BadgeStyleKey = keyof ReturnType<typeof createBadgeStyles>;

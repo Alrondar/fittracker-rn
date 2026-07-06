@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
+import { createListStyles } from '../../src/styles/components/list';
 import { typography } from '../../src/styles/typography';
 
 export default function WorkoutsScreen() {
@@ -32,6 +33,7 @@ export default function WorkoutsScreen() {
 
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
+  const listStyles = createListStyles(colors);
 
   useEffect(() => {
     loadWorkouts();
@@ -85,16 +87,17 @@ export default function WorkoutsScreen() {
           onPress={() => navigateToWorkout(item.id)}
           activeOpacity={0.85}
           style={[
-            cardStyles.container,
+            cardStyles.workoutCard,
             {
+              backgroundColor: colors.surface,
               borderColor: isProgramWorkout ? colors.primary : colors.border,
               borderWidth: isProgramWorkout ? 1.5 : 1,
             },
           ]}
         >
           {isProgramWorkout && (
-            <View style={[badgeStyles.programBadge, { backgroundColor: colors.primary + '15' }]}>
-              <View style={badgeStyles.container}>
+            <View style={[badgeStyles.programBadge, { backgroundColor: colors.primaryLight }]}>
+              <View style={badgeStyles.badgeContent}>
                 <ClipboardList size={14} color={colors.primary} strokeWidth={2} />
                 <Text style={[badgeStyles.programBadgeText, { color: colors.primary }]}>
                   {programLabel}
@@ -102,22 +105,22 @@ export default function WorkoutsScreen() {
               </View>
             </View>
           )}
-          <Text style={cardStyles.title} numberOfLines={2}>
+          <Text style={cardStyles.cardTitle} numberOfLines={2}>
             {item.name}
           </Text>
           {item.description && !isProgramWorkout && (
-            <Text style={cardStyles.description} numberOfLines={1}>
+            <Text style={cardStyles.cardDesc} numberOfLines={1}>
               {item.description}
             </Text>
           )}
-          <View style={cardStyles.footer}>
-            <Text style={cardStyles.date}>
+          <View style={cardStyles.cardFooter}>
+            <Text style={[cardStyles.cardDate, { color: colors.textSecondary }]}>
               {new Date(item.created_at).toLocaleDateString('ru-RU', {
                 day: 'numeric',
                 month: 'long',
               })}
             </Text>
-            <Text style={[typography.buttonSmall, { color: colors.primary }]}>Начать →</Text>
+            <Text style={[cardStyles.openText, { color: colors.primary }]}>Начать →</Text>
           </View>
         </TouchableOpacity>
       </FadeIn>
@@ -154,7 +157,7 @@ export default function WorkoutsScreen() {
           data={workouts}
           keyExtractor={(item) => item.id}
           renderItem={renderWorkoutItem}
-          contentContainerStyle={{ padding: SPACING.lg, paddingTop: 0, paddingBottom: 100 }}
+          contentContainerStyle={listStyles.workoutList}
           ListEmptyComponent={renderEmpty}
           refreshControl={
             <RefreshControl

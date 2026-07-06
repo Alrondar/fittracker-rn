@@ -241,7 +241,6 @@ recentDate: {
   fontSize: 14,
 } as TextStyle,
 
-
 });
 
 export type CommonStyleKey = keyof typeof commonStyles;

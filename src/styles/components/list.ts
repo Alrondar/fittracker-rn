@@ -115,6 +115,16 @@ export const createListStyles = (colors: any) =>
       ...typography.captionSmall,
       color: colors.textSecondary,
     } as TextStyle,
+
+// Контейнер списка тренировок
+workoutList: {
+  padding: SPACING.lg,
+  paddingTop: 0,
+  paddingBottom: 100,
+} as ViewStyle,
+
   });
+
+  
 
 export type ListStyleKey = keyof ReturnType<typeof createListStyles>;
