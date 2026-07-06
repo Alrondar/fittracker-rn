@@ -34,11 +34,12 @@ export default function WorkoutsScreen() {
   const loadWorkouts = async () => {
     if (!userId) return;
     try {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('id, name, description, program_id, week_number, day_index, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+const { data, error } = await supabase
+  .from('workouts')
+  .select('id, name, description, program_id, week_number, day_index, created_at')
+  .eq('user_id', userId)
+  .order('week_number', { ascending: true })
+  .order('day_index', { ascending: true });
 
       if (error) throw error;
       setWorkouts(data || []);

@@ -36,6 +36,7 @@ export interface UserProgram {
   current_week: number;
   current_day: number;
   started_at: string;
+  completed_at?: string;
   is_active: boolean;
 }
 
@@ -89,11 +90,28 @@ export async function getProgramWithDays(programId: string): Promise<Program | n
   };
 }
 
-export async function startProgram(programId: string): Promise<UserProgram> {
+export async function startProgram(programId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  // Деактивируем ВСЕ активные программы (не только одну)
+  const { error: deactivateError } = await supabase
+    .from('user_programs')
+    .update({ is_active: false })
+    .eq('user_id', user.id)
+    .eq('is_active', true);
+
+  if (deactivateError) console.warn('Ошибка деактивации:', deactivateError);
+
+  // Удаляем дубликаты для этой программы (если есть)
+  await supabase
+    .from('user_programs')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('program_id', programId);
+
+  // Создаём новую запись
+  const { error } = await supabase
     .from('user_programs')
     .insert({
       user_id: user.id,
@@ -101,12 +119,9 @@ export async function startProgram(programId: string): Promise<UserProgram> {
       current_week: 1,
       current_day: 1,
       is_active: true,
-    })
-    .select()
-    .single();
+    });
 
   if (error) throw error;
-  return data;
 }
 
 export async function getActiveUserProgram(): Promise<UserProgram | null> {
@@ -208,4 +223,118 @@ export async function createWorkoutsFromProgram(
   }
 
   return workoutIds;
+}
+
+// Получить активную программу пользователя
+export async function getActiveProgram(userId: string) {
+  const { data, error } = await supabase
+    .from('user_programs')
+    .select(`
+      *,
+      programs (
+        id,
+        name,
+        level,
+        duration,
+        description,
+        schedule,
+        program_days (
+          id,
+          day_number,
+          name,
+          program_exercises (
+            id,
+            exercise_name,
+            sets,
+            reps_range,
+            rest_seconds,
+            intensity,
+            position
+          )
+        )
+      )
+    `)
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null; // Нет активной программы
+    throw error;
+  }
+
+  return data;
+}
+
+// Продвинуть прогресс программы (следующий день)
+export async function advanceProgramProgress(
+  userId: string,
+  programId: string
+): Promise<{ week: number; day: number; isCompleted: boolean }> {
+  // Получаем текущий прогресс (с limit для защиты от дубликатов)
+  const { data: current, error: fetchError } = await supabase
+    .from('user_programs')
+    .select('id, current_week, current_day')
+    .eq('user_id', userId)
+    .eq('program_id', programId)
+    .eq('is_active', true)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (fetchError) {
+    if (fetchError.code === 'PGRST116') {
+      throw new Error('Найдено несколько активных записей. Обратитесь в поддержку.');
+    }
+    throw fetchError;
+  }
+
+  // Получаем количество дней в программе
+  const { count: daysCount } = await supabase
+    .from('program_days')
+    .select('*', { count: 'exact', head: true })
+    .eq('program_id', programId);
+
+  const totalDays = daysCount || 5;
+
+  // Получаем реальную длительность программы
+  const { data: program } = await supabase
+    .from('programs')
+    .select('duration')
+    .eq('id', programId)
+    .single();
+
+  const actualWeeks = program?.duration || 8;
+
+  let newWeek = current.current_week;
+  let newDay = current.current_day + 1;
+  let isCompleted = false;
+
+  // Если прошли все дни недели тренировки → следующая неделя
+  if (newDay > totalDays) {
+    newDay = 1;
+    newWeek += 1;
+
+    if (newWeek > actualWeeks) {
+      isCompleted = true;
+      await supabase
+        .from('user_programs')
+        .update({ is_active: false, completed_at: new Date().toISOString() })
+        .eq('id', current.id);
+
+      return { week: actualWeeks, day: totalDays, isCompleted: true };
+    }
+  }
+
+  // Обновляем прогресс
+  const { error: updateError } = await supabase
+    .from('user_programs')
+    .update({ current_week: newWeek, current_day: newDay })
+    .eq('id', current.id);
+
+  if (updateError) throw updateError;
+
+  return { week: newWeek, day: newDay, isCompleted: false };
 }

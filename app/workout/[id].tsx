@@ -20,7 +20,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { GRADIENTS } from '../../src/constants/theme';
 import { RotateCcw, Clock, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Save } from 'lucide-react-native'; // Добавь этот импорт
+import { Save } from 'lucide-react-native';
+import { advanceProgramProgress } from '../../src/servises/programsService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -272,51 +273,89 @@ export default function WorkoutSessionScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const saveWorkout = async () => {
-    Alert.alert(
-      'Завершить тренировку?',
-      'Все данные будут сохранены',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Завершить',
-          onPress: async () => {
-            setSaving(true);
-            try {
-              let totalLogs = 0;
+ const saveWorkout = async () => {
+  Alert.alert(
+    'Завершить тренировку?',
+    'Все данные будут сохранены',
+    [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Завершить',
+        onPress: async () => {
+          setSaving(true);
+          try {
+            let totalLogs = 0;
 
-              for (const exercise of exercises) {
-                const logsToSave = exercise.sets
-                  .filter(set => isSetCompleted(set))
-                  .map((set, index) => ({
-                    workout_exercise_id: exercise.workout_exercise_id,
-                    set_number: index + 1,
-                    weight_kg: parseFloat(set.weight) || 0,
-                    reps: parseInt(set.reps) || 0,
-                  }));
+            for (const exercise of exercises) {
+              const logsToSave = exercise.sets
+                .filter(set => isSetCompleted(set))
+                .map((set, index) => ({
+                  workout_exercise_id: exercise.workout_exercise_id,
+                  set_number: index + 1,
+                  weight_kg: parseFloat(set.weight) || 0,
+                  reps: parseInt(set.reps) || 0,
+                }));
 
-                if (logsToSave.length > 0) {
-                  const { error } = await supabase
-                    .from('workout_logs')
-                    .insert(logsToSave);
-                  if (error) throw error;
-                  totalLogs += logsToSave.length;
-                }
+              if (logsToSave.length > 0) {
+                const { error } = await supabase
+                  .from('workout_logs')
+                  .insert(logsToSave);
+                if (error) throw error;
+                totalLogs += logsToSave.length;
               }
+            }
 
+            // === НОВОЕ: Проверяем, является ли тренировка частью программы ===
+            const { data: workoutData } = await supabase
+              .from('workouts')
+              .select('program_id')
+              .eq('id', id)
+              .single();
+
+            if (workoutData?.program_id && userId) {
+              try {
+                const progress = await advanceProgramProgress(
+                  userId,
+                  workoutData.program_id
+                );
+
+                if (progress.isCompleted) {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  Alert.alert(
+                    ' Программа завершена!',
+                    'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".'
+                  );
+                  router.replace('/(tabs)/programs');
+                } else {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  Alert.alert(
+                    'Тренировка завершена!',
+                    `Следующий день: Неделя ${progress.week}, День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
+                  );
+                  router.replace('/(tabs)/workouts');
+                }
+              } catch (progressError: any) {
+                console.error('Ошибка обновления прогресса:', progressError);
+                // Не блокируем пользователя, если прогресс не обновился
+                Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
+                router.replace('/(tabs)/history');
+              }
+            } else {
+              // Обычная тренировка (не из программы)
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
               router.replace('/(tabs)/history');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            } finally {
-              setSaving(false);
             }
-          },
+          } catch (error: any) {
+            Alert.alert('Ошибка', error.message);
+          } finally {
+            setSaving(false);
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
 
   if (loading) {
     return (

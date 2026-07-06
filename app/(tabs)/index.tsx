@@ -17,7 +17,17 @@ import { AnimatedButton } from '../../src/components/AnimatedButton';
 import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
-import { Dumbbell, BookOpen, Clock, TrendingUp } from 'lucide-react-native';
+import { getActiveProgram } from '../../src/servises/programsService';
+import { 
+  Dumbbell, 
+  BookOpen, 
+  Clock, 
+  TrendingUp, 
+  Trophy, 
+  Calendar, 
+  Play,
+  ChevronRight
+} from 'lucide-react-native';
 
 interface DashboardStats {
   totalWorkouts: number;
@@ -25,6 +35,24 @@ interface DashboardStats {
   monthWorkouts: number;
   totalVolume: number;
   weekVolume: number;
+}
+
+interface ActiveProgram {
+  id: string;
+  program_id: string;
+  current_week: number;
+  current_day: number;
+  is_active: boolean;
+  programs: {
+    id: string;
+    name: string;
+    duration: number;
+    days: Array<{
+      id: string;
+      day_number: number;
+      name: string;
+    }>;
+  };
 }
 
 export default function DashboardScreen() {
@@ -42,6 +70,7 @@ export default function DashboardScreen() {
   });
   const [lastWorkout, setLastWorkout] = useState<any>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
+  const [activeProgram, setActiveProgram] = useState<ActiveProgram | null>(null);
 
   useEffect(() => {
     loadDashboard();
@@ -49,6 +78,13 @@ export default function DashboardScreen() {
 
   const loadDashboard = async () => {
     try {
+      // Загружаем активную программу
+      if (userId) {
+        const program = await getActiveProgram(userId);
+        setActiveProgram(program);
+      }
+
+      // Загружаем статистику
       const { data: workouts, error } = await supabase
         .from('workouts')
         .select(`
@@ -130,6 +166,21 @@ export default function DashboardScreen() {
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   };
 
+  const getCurrentDayName = () => {
+    if (!activeProgram?.programs?.days) return '';
+    const day = activeProgram.programs.days.find(
+      d => d.day_number === activeProgram.current_day
+    );
+    return day?.name || `День ${activeProgram.current_day}`;
+  };
+
+  const getProgressPercent = () => {
+    if (!activeProgram) return 0;
+    const totalDays = activeProgram.programs.duration * 7;
+    const currentDay = (activeProgram.current_week - 1) * 7 + activeProgram.current_day;
+    return Math.min((currentDay / totalDays) * 100, 100);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -155,10 +206,83 @@ export default function DashboardScreen() {
         {/* Приветствие */}
         <View style={styles.header}>
           <Text style={[styles.greeting, { color: colors.textPrimary }]}>Привет!</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Готов к тренировке?</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Готов к тренировке?
+          </Text>
         </View>
 
-        {/* Статистика с градиентами */}
+        {/* Виджет активной программы */}
+        {activeProgram && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/(tabs)/workouts');
+              }}
+            >
+              <LinearGradient
+                colors={GRADIENTS.hero}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.activeProgramCard}
+              >
+                <View style={styles.activeProgramHeader}>
+                  <View style={styles.activeProgramTitleRow}>
+                    <Trophy size={20} color="white" strokeWidth={1.5} />
+                    <Text style={[styles.activeProgramLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+                      Активная программа
+                    </Text>
+                  </View>
+                  <ChevronRight size={20} color="rgba(255,255,255,0.7)" strokeWidth={2} />
+                </View>
+
+                <Text style={[styles.activeProgramName, { color: 'white' }]}>
+                  {activeProgram.programs.name}
+                </Text>
+
+                <View style={styles.activeProgramInfo}>
+                  <View style={styles.activeProgramInfoItem}>
+                    <Calendar size={14} color="rgba(255,255,255,0.8)" strokeWidth={1.5} />
+                    <Text style={[styles.activeProgramInfoText, { color: 'rgba(255,255,255,0.9)' }]}>
+                      Неделя {activeProgram.current_week}/{activeProgram.programs.duration}
+                    </Text>
+                  </View>
+                  <View style={styles.activeProgramInfoItem}>
+                    <Dumbbell size={14} color="rgba(255,255,255,0.8)" strokeWidth={1.5} />
+                    <Text style={[styles.activeProgramInfoText, { color: 'rgba(255,255,255,0.9)' }]}>
+                      {getCurrentDayName()}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Прогресс-бар */}
+                <View style={styles.progressBarContainer}>
+                  <View style={styles.progressBarBackground}>
+                    <View 
+                      style={[
+                        styles.progressBarFill, 
+                        { width: `${getProgressPercent()}%` }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={[styles.progressText, { color: 'rgba(255,255,255,0.8)' }]}>
+                    {Math.round(getProgressPercent())}% завершено
+                  </Text>
+                </View>
+
+                <View style={styles.activeProgramButton}>
+                  <Play size={16} color="white" strokeWidth={2} fill="white" />
+                  <Text style={[styles.activeProgramButtonText, { color: 'white' }]}>
+                    Перейти к тренировкам
+                  </Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Статистика */}
         <View style={styles.statsContainer}>
           <LinearGradient
             colors={GRADIENTS.primary}
@@ -166,8 +290,12 @@ export default function DashboardScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={[styles.statValue, { color: colors.textInverse }]}>{stats.weekWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>На неделе</Text>
+            <Text style={[styles.statValue, { color: 'white' }]}>
+              {stats.weekWorkouts}
+            </Text>
+            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+              На неделе
+            </Text>
           </LinearGradient>
           <LinearGradient
             colors={GRADIENTS.success}
@@ -175,8 +303,12 @@ export default function DashboardScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={[styles.statValue, { color: colors.textInverse }]}>{stats.monthWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>В месяце</Text>
+            <Text style={[styles.statValue, { color: 'white' }]}>
+              {stats.monthWorkouts}
+            </Text>
+            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+              В месяце
+            </Text>
           </LinearGradient>
           <LinearGradient
             colors={GRADIENTS.hero}
@@ -184,17 +316,23 @@ export default function DashboardScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={[styles.statValue, { color: colors.textInverse }]}>{Math.round(stats.weekVolume)}</Text>
-            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>кг за неделю</Text>
+            <Text style={[styles.statValue, { color: 'white' }]}>
+              {Math.round(stats.weekVolume)}
+            </Text>
+            <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.9)' }]}>
+              кг за неделю
+            </Text>
           </LinearGradient>
         </View>
 
-        {/* Последняя тренировка с градиентом */}
+        {/* Последняя тренировка */}
         {lastWorkout ? (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Последняя тренировка</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              Последняя тренировка
+            </Text>
             <LinearGradient
-              colors={GRADIENTS.hero}
+              colors={GRADIENTS.primary}
               style={styles.lastWorkoutCard}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -208,7 +346,9 @@ export default function DashboardScreen() {
                 style={styles.lastWorkoutContent}
               >
                 <View style={styles.lastWorkoutInfo}>
-                  <Text style={[styles.lastWorkoutName, { color: colors.textInverse }]}>{lastWorkout.name}</Text>
+                  <Text style={[styles.lastWorkoutName, { color: 'white' }]}>
+                    {lastWorkout.name}
+                  </Text>
                   <Text style={[styles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
                     {formatDate(lastWorkout.created_at)}
                   </Text>
@@ -219,7 +359,9 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Начни первую тренировку</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              Начни первую тренировку
+            </Text>
             <AnimatedButton
               title="Создать тренировку"
               onPress={() => router.push('/(tabs)/workouts')}
@@ -232,7 +374,9 @@ export default function DashboardScreen() {
 
         {/* Быстрый доступ */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Быстрый доступ</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+            Быстрый доступ
+          </Text>
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
@@ -242,7 +386,9 @@ export default function DashboardScreen() {
               }}
             >
               <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Тренировки</Text>
+              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>
+                Тренировки
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
@@ -252,7 +398,9 @@ export default function DashboardScreen() {
               }}
             >
               <BookOpen size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Справочник</Text>
+              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>
+                Справочник
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: colors.surface }]}
@@ -262,7 +410,9 @@ export default function DashboardScreen() {
               }}
             >
               <Clock size={32} color={colors.primary} strokeWidth={1.5} />
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>История</Text>
+              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>
+                История
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -270,7 +420,9 @@ export default function DashboardScreen() {
         {/* Недавние тренировки */}
         {recentWorkouts.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Недавние тренировки</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              Недавние тренировки
+            </Text>
             {recentWorkouts.map((workout) => (
               <TouchableOpacity
                 key={workout.id}
@@ -279,7 +431,9 @@ export default function DashboardScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.recentInfo}>
-                  <Text style={[styles.recentName, { color: colors.textPrimary }]}>{workout.name}</Text>
+                  <Text style={[styles.recentName, { color: colors.textPrimary }]}>
+                    {workout.name}
+                  </Text>
                   <Text style={[styles.recentDate, { color: colors.textSecondary }]}>
                     {formatDate(workout.created_at)}
                   </Text>
@@ -312,6 +466,89 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: SPACING.xs,
   },
+  section: {
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.xl,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: SPACING.md,
+  },
+  activeProgramCard: {
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    elevation: 4,
+  },
+  activeProgramHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  activeProgramTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  activeProgramLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  activeProgramName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: SPACING.md,
+    lineHeight: 24,
+  },
+  activeProgramInfo: {
+    flexDirection: 'row',
+    gap: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  activeProgramInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  activeProgramInfoText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  progressBarContainer: {
+    marginBottom: SPACING.lg,
+  },
+  progressBarBackground: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: SPACING.xs,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: 'white',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 11,
+    textAlign: 'right',
+  },
+  activeProgramButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+  },
+  activeProgramButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: SPACING.xl,
@@ -331,15 +568,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-  },
-  section: {
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.md,
   },
   lastWorkoutCard: {
     borderRadius: BORDER_RADIUS.xl,
