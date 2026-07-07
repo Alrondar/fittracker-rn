@@ -12,26 +12,22 @@ export const createBadgeStyles = (colors: any) =>
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
     } as ViewStyle,
-
     text: {
       ...typography.buttonTiny,
     } as TextStyle,
-
     programBadge: {
-        flexDirection: 'row',   
-        alignItems: 'center',   
-        gap: 4,    
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
       alignSelf: 'flex-start',
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
       marginBottom: SPACING.sm,
     } as ViewStyle,
-    
     programBadgeText: {
       ...typography.buttonTiny,
     } as TextStyle,
-
     intensityBadge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -40,12 +36,10 @@ export const createBadgeStyles = (colors: any) =>
       paddingVertical: 2,
       borderRadius: BORDER_RADIUS.sm,
     } as ViewStyle,
-    
     intensityText: {
       ...typography.captionSmall,
       fontWeight: '600',
     } as TextStyle,
-
     metaBadge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -55,12 +49,10 @@ export const createBadgeStyles = (colors: any) =>
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
     } as ViewStyle,
-    
     metaBadgeText: {
       color: 'white',
       ...typography.buttonTiny,
     } as TextStyle,
-
     replacedBadge: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -71,36 +63,47 @@ export const createBadgeStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.md,
       marginBottom: SPACING.sm,
     } as ViewStyle,
-    
     replacedText: {
       ...typography.labelBold,
     } as TextStyle,
-    
     resetText: {
       ...typography.body,
       textDecorationLine: 'underline',
     } as TextStyle,
-
     dayChip: {
-    flexDirection: 'row',  
-     alignItems: 'center',        
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: 'white',
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
     } as ViewStyle,
-    
     dayChipText: {
       color: '#333',
       ...typography.buttonTiny,
     } as TextStyle,
-
-badgeContent: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-} as ViewStyle,
-
+    badgeContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    } as ViewStyle,
+    // Мышцы-теги (НОВОЕ - для workout/[id].tsx)
+    muscleTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.sm,
+      marginBottom: SPACING.md,
+    } as ViewStyle,
+    muscleTag: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+      borderRadius: BORDER_RADIUS.full,
+      borderWidth: 1,
+    } as ViewStyle,
+    muscleTagText: {
+      fontSize: 12,
+      fontWeight: '600',
+    } as TextStyle,
   });
 
 export type BadgeStyleKey = keyof ReturnType<typeof createBadgeStyles>;

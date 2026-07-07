@@ -110,8 +110,8 @@ function RootLayoutContent() {
   console.log('📱 [UI] Рендерим основной экран');
   return (
     // 👇 ИСПРАВЛЕНИЕ: styles.container БЕЗ alignItems: 'center'
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <Stack screenOptions={{ headerShown: false }}>
+  <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
@@ -120,7 +120,7 @@ function RootLayoutContent() {
         <Stack.Screen name="history/[id]" />
       </Stack>
       <ThemedStatusBar />
-    </SafeAreaView>
+    </View>
   );
 }
 
