@@ -8,6 +8,9 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  Pressable,
+  Animated,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
@@ -29,6 +32,8 @@ import {
   TrendingUp,
   Minus,
   TrendingDown,
+  X,
+  Plus,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { advanceProgramProgress } from '../../src/servises/programsService';
@@ -40,7 +45,7 @@ import { createBadgeStyles } from '../../src/styles/components/badge';
 import { typography } from '../../src/styles/typography';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 32; // 16px отступа с каждой стороны
+const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 interface SetData {
   weight: string;
@@ -143,7 +148,6 @@ export default function WorkoutSessionScreen() {
       setWorkoutName(workout.name);
       setProgramId(workout.program_id);
 
-      // Подтягиваем intensity из program_exercises
       let intensityMap: Record<string, string> = {};
       if (workout.program_id) {
         const { data: programExercises, error: peError } = await supabase
@@ -238,6 +242,29 @@ export default function WorkoutSessionScreen() {
 
   const isSetCompleted = (set: SetData): boolean => {
     return set.weight !== '' || set.reps !== '';
+  };
+
+  // Обновление количества подходов и времени отдыха
+  const updateExerciseSettings = (exerciseIndex: number, newSetsCount: number, newRestSeconds: number) => {
+    setExercises(prev => {
+      const updated = [...prev];
+      const exercise = { ...updated[exerciseIndex] };
+      const currentSets = exercise.sets;
+      const newSets: SetData[] = [];
+      
+      for (let i = 0; i < newSetsCount; i++) {
+        if (i < currentSets.length) {
+          newSets.push(currentSets[i]);
+        } else {
+          newSets.push({ weight: '', reps: '' });
+        }
+      }
+      
+      exercise.sets = newSets;
+      exercise.rest_seconds = newRestSeconds;
+      updated[exerciseIndex] = exercise;
+      return updated;
+    });
   };
 
   const replaceExercise = async (exerciseIndex: number, alternativeId: string) => {
@@ -467,6 +494,7 @@ export default function WorkoutSessionScreen() {
             resetToOriginal={resetToOriginal}
             startRestTimer={startRestTimer}
             getIntensityInfo={getIntensityInfo}
+            updateExerciseSettings={updateExerciseSettings}
           />
         ))}
       </ScrollView>
@@ -511,6 +539,7 @@ function ExerciseSlider({
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
+  updateExerciseSettings,
 }: {
   exercise: ExerciseData;
   exerciseIndex: number;
@@ -523,12 +552,11 @@ function ExerciseSlider({
   resetToOriginal: (exIndex: number) => void;
   startRestTimer: (seconds: number) => void;
   getIntensityInfo: (intensity: string) => { label: string; color: string; bgColor: string; icon: React.ReactNode };
+  updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
 }) {
   const { colors } = useTheme();
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
-
-  const badgeStyles = createBadgeStyles(colors);
 
   useEffect(() => {
     const load = async () => {
@@ -576,6 +604,7 @@ function ExerciseSlider({
             startRestTimer={startRestTimer}
             loadingAlts={loadingAlts}
             getIntensityInfo={getIntensityInfo}
+            updateExerciseSettings={updateExerciseSettings}
           />
         ))}
       </ScrollView>
@@ -595,6 +624,7 @@ function ExerciseCard({
   startRestTimer,
   loadingAlts,
   getIntensityInfo,
+  updateExerciseSettings,
 }: {
   exercise: ExerciseData | AlternativeExercise;
   isMain: boolean;
@@ -607,6 +637,7 @@ function ExerciseCard({
   startRestTimer: (seconds: number) => void;
   loadingAlts: boolean;
   getIntensityInfo: (intensity: string) => { label: string; color: string; bgColor: string; icon: React.ReactNode };
+  updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
 }) {
   const { colors } = useTheme();
   const [expandedSections, setExpandedSections] = useState({
@@ -617,10 +648,13 @@ function ExerciseCard({
     risks: false,
     injuries: false,
   });
+  
+  // Состояние для bottom sheet
+  const [showSettingsSheet, setShowSettingsSheet] = useState(false);
+  const [localSets, setLocalSets] = useState(0);
+  const [localRest, setLocalRest] = useState(0);
 
   const cardStyles = createCardStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
-  const inputStyles = createInputStyles(colors);
 
   const toggleSection = (section: 'technique' | 'equipment' | 'settings' | 'benefits' | 'risks' | 'injuries') => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -632,33 +666,116 @@ function ExerciseCard({
   const intensity = hasSets ? (exercise as ExerciseData).intensity : 'medium';
   const intensityInfo = getIntensityInfo(intensity);
 
-  // Разбить подходы на строки по 3
   const setsPerRow = 3;
   const setRows: SetData[][] = [];
   for (let i = 0; i < sets.length; i += setsPerRow) {
     setRows.push(sets.slice(i, i + setsPerRow));
   }
 
+  // Открытие bottom sheet с текущими значениями
+  const openSettingsSheet = () => {
+    setLocalSets(sets.length);
+    setLocalRest(restSeconds);
+    setShowSettingsSheet(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  // Сохранение настроек
+  const saveSettings = () => {
+    // Проверяем, не удаляем ли мы заполненные подходы
+    if (localSets < sets.length) {
+      const removedSets = sets.slice(localSets);
+      const hasData = removedSets.some(s => s.weight !== '' || s.reps !== '');
+      if (hasData) {
+        Alert.alert(
+          'Удалить подходы?',
+          `Будут удалены подходы ${localSets + 1}-${sets.length} с введёнными данными. Продолжить?`,
+          [
+            { text: 'Отмена', style: 'cancel' },
+            {
+              text: 'Удалить',
+              onPress: () => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                updateExerciseSettings(exerciseIndex, localSets, localRest);
+                setShowSettingsSheet(false);
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+    
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    updateExerciseSettings(exerciseIndex, localSets, localRest);
+    setShowSettingsSheet(false);
+  };
+
+  const changeSets = (delta: number) => {
+    const newValue = Math.max(1, Math.min(10, localSets + delta));
+    if (newValue !== localSets) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setLocalSets(newValue);
+    }
+  };
+
+  const changeRest = (delta: number) => {
+    const newValue = Math.max(30, Math.min(300, localRest + delta));
+    if (newValue !== localRest) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setLocalRest(newValue);
+    }
+  };
+
+// Функция для получения конфигурации строк подходов
+const getSetRowsConfig = (totalSets: number): number[] => {
+  if (totalSets <= 3) return [totalSets];
+  if (totalSets === 4) return [4];
+  if (totalSets === 5) return [3, 2];
+  if (totalSets === 6) return [3, 3];
+  if (totalSets === 7) return [4, 3];
+  if (totalSets === 8) return [4, 4];
+  if (totalSets === 9) return [3, 3, 3];
+  if (totalSets === 10) return [4, 3, 3];
+  if (totalSets === 11) return [4, 4, 3];
+  if (totalSets === 12) return [4, 4, 4];
+  return [3]; // fallback
+};
+
+const setRowsConfig = getSetRowsConfig(sets.length);
+
   return (
-    <View style={[
-  cardStyles.container,
-  {
-    width: CARD_WIDTH,
-    marginHorizontal: 0, // ← Добавлено
-  }
-]}>
-      {/* Шапка: название + интенсивность */}
-      <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md }]}>
-        <Text style={[{ fontSize: 18, fontWeight: 'bold', flex: 1, marginRight: SPACING.sm, lineHeight: 24, color: colors.textPrimary }]} numberOfLines={2}>
-          {exercise.name}
-        </Text>
-        <View style={[{ paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: BORDER_RADIUS.sm, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: intensityInfo.bgColor }]}>
-          {intensityInfo.icon}
-          <Text style={[{ fontSize: 11, fontWeight: '600', color: intensityInfo.color }]}>
-            {intensityInfo.label}
-          </Text>
-        </View>
+    <View style={[cardStyles.container, { width: CARD_WIDTH, marginHorizontal: 0 }]}>
+{/* Шапка: название + иконка свайпа + настройки + интенсивность */}
+<View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md }]}>
+  <Text style={[{ fontSize: 18, fontWeight: 'bold', flex: 1, marginRight: SPACING.sm, lineHeight: 24, color: colors.textPrimary }]} numberOfLines={2}>
+    {exercise.name}
+  </Text>
+  <View style={[{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }]}>
+    {/* Иконка свайпа (только для основной карточки с альтернативами) */}
+    {isMain && alternatives.length > 0 && (
+      <View style={[{ paddingHorizontal: 6, paddingVertical: 4, borderRadius: BORDER_RADIUS.sm, backgroundColor: colors.surfaceSecondary }]}>
+        <ChevronRight size={16} color={colors.textSecondary} strokeWidth={2} />
       </View>
+    )}
+    {/* Кнопка настроек (только для основных) */}
+    {isMain && (
+      <TouchableOpacity
+        onPress={openSettingsSheet}
+        style={[{ padding: 6, borderRadius: BORDER_RADIUS.sm, backgroundColor: colors.surfaceSecondary }]}
+      >
+        <Settings size={18} color={colors.textSecondary} strokeWidth={2} />
+      </TouchableOpacity>
+    )}
+    {/* Интенсивность */}
+    <View style={[{ paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: BORDER_RADIUS.sm, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: intensityInfo.bgColor }]}>
+      {intensityInfo.icon}
+      <Text style={[{ fontSize: 11, fontWeight: '600', color: intensityInfo.color }]}>
+        {intensityInfo.label}
+      </Text>
+    </View>
+  </View>
+</View>
 
       {/* Мышцы-теги: основные */}
       {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
@@ -790,88 +907,221 @@ function ExerciseCard({
       )}
 
       {/* Подходы (только для основных) */}
-      {hasSets && sets.length > 0 && (
-        <View style={[{ marginTop: SPACING.lg }]}>
-          {setRows.map((row, rowIndex) => (
-            <View key={rowIndex}>
-              {/* Заголовки подходов */}
-              <View style={[{ flexDirection: 'row', marginBottom: SPACING.sm, alignItems: 'center' }]}>
-                <View style={[{ width: 70 }]}>
-                  <Text style={[{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }]}>Подход</Text>
-                </View>
-                {row.map((_, setIndex) => {
-                  const globalIndex = rowIndex * setsPerRow + setIndex;
-                  return (
-                    <View key={setIndex} style={[{ flex: 1, marginHorizontal: 4, padding: 10, borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center', minWidth: 60, backgroundColor: colors.surfaceSecondary }]}>
-                      <Text style={[{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }]}>{globalIndex + 1}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-              {/* Вес */}
-              <View style={[{ flexDirection: 'row', marginBottom: SPACING.sm, alignItems: 'center' }]}>
-                <View style={[{ width: 70 }]}>
-                  <Text style={[{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }]}>Вес (кг)</Text>
-                </View>
-                {row.map((set, setIndex) => {
-                  const globalIndex = rowIndex * setsPerRow + setIndex;
-                  return (
-                    <View
-                      key={setIndex}
-                      style={[
-                        { flex: 1, marginHorizontal: 4, padding: 10, borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center', minWidth: 60 },
-                        isSetCompleted(set) ? { backgroundColor: colors.successLight } : { backgroundColor: colors.surfaceSecondary },
-                      ]}
-                    >
-                      <TextInput
-                        style={[{ fontSize: 16, textAlign: 'center', color: colors.textPrimary, width: '100%' }]}
-                        placeholder="0"
-                        value={set.weight}
-                        onChangeText={(val) => updateSet(exerciseIndex, globalIndex, 'weight', val)}
-                        keyboardType="decimal-pad"
-                        placeholderTextColor={colors.textTertiary}
-                      />
-                    </View>
-                  );
-                })}
-              </View>
-              {/* Повторения */}
-              <View style={[{ flexDirection: 'row', marginBottom: SPACING.sm, alignItems: 'center' }]}>
-                <View style={[{ width: 70 }]}>
-                  <Text style={[{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }]}>Повт.</Text>
-                </View>
-                {row.map((set, setIndex) => {
-                  const globalIndex = rowIndex * setsPerRow + setIndex;
-                  return (
-                    <View
-                      key={setIndex}
-                      style={[
-                        { flex: 1, marginHorizontal: 4, padding: 10, borderRadius: BORDER_RADIUS.md, alignItems: 'center', justifyContent: 'center', minWidth: 60 },
-                        isSetCompleted(set) ? { backgroundColor: colors.successLight } : { backgroundColor: colors.surfaceSecondary },
-                      ]}
-                    >
-                      <TextInput
-                        style={[{ fontSize: 16, textAlign: 'center', color: colors.textPrimary, width: '100%' }]}
-                        placeholder="0"
-                        value={set.reps}
-                        onChangeText={(val) => updateSet(exerciseIndex, globalIndex, 'reps', val)}
-                        keyboardType="number-pad"
-                        placeholderTextColor={colors.textTertiary}
-                      />
-                    </View>
-                  );
-                })}
-              </View>
+{hasSets && sets.length > 0 && (
+  <View style={[{ marginTop: SPACING.lg, borderWidth: 1.5, borderColor: colors.primary, borderRadius: BORDER_RADIUS.md, overflow: 'hidden' }]}>
+    {/* Заголовок секции */}
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, padding: SPACING.md, backgroundColor: colors.surfaceSecondary }]}>
+      <TrendingUp size={16} color={colors.primary} strokeWidth={2} />
+      <Text style={[{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }]}>Подходы</Text>
+    </View>
+    
+    {/* Содержимое */}
+    <View style={[{ padding: SPACING.md, backgroundColor: colors.surface }]}>
+      {setRowsConfig.map((rowSize, rowIndex) => {
+        const startIndex = setRowsConfig.slice(0, rowIndex).reduce((sum, size) => sum + size, 0);
+        const rowSets = sets.slice(startIndex, startIndex + rowSize);
+        
+        return (
+          <View key={rowIndex} style={{ marginBottom: SPACING.md }}>
+            {/* Номера подходов */}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {rowSets.map((_, setIndex) => {
+                const globalIndex = startIndex + setIndex;
+                return (
+                  <View key={setIndex} style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={[{ fontSize: 14, fontWeight: 'bold', color: colors.textPrimary }]}>
+                      {globalIndex + 1}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
-          ))}
-          <TouchableOpacity
-            style={[{ marginTop: SPACING.lg, paddingVertical: 14, borderRadius: BORDER_RADIUS.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.primary }]}
-            onPress={() => startRestTimer(restSeconds)}
+            {/* Вес */}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              {rowSets.map((set, setIndex) => {
+                const globalIndex = startIndex + setIndex;
+                return (
+                  <View
+                    key={setIndex}
+                    style={[
+                      { flex: 1, padding: 8, borderRadius: BORDER_RADIUS.md, alignItems: 'center' },
+                      isSetCompleted(set) ? { backgroundColor: colors.successLight } : { backgroundColor: colors.surfaceSecondary },
+                    ]}
+                  >
+                    <TextInput
+                      style={[{ fontSize: 12, textAlign: 'center', color: colors.textPrimary, width: '100%' }]}
+                      placeholder="вес (кг)"
+                      value={set.weight}
+                      onChangeText={(val) => updateSet(exerciseIndex, globalIndex, 'weight', val)}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+            {/* Повторения */}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              {rowSets.map((set, setIndex) => {
+                const globalIndex = startIndex + setIndex;
+                return (
+                  <View
+                    key={setIndex}
+                    style={[
+                      { flex: 1, padding: 8, borderRadius: BORDER_RADIUS.md, alignItems: 'center' },
+                      isSetCompleted(set) ? { backgroundColor: colors.successLight } : { backgroundColor: colors.surfaceSecondary },
+                    ]}
+                  >
+                    <TextInput
+                      style={[{ fontSize: 12, textAlign: 'center', color: colors.textPrimary, width: '100%' }]}
+                      placeholder="повт."
+                      value={set.reps}
+                      onChangeText={(val) => updateSet(exerciseIndex, globalIndex, 'reps', val)}
+                      keyboardType="number-pad"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })}
+      <TouchableOpacity
+        style={[{ marginTop: SPACING.md, paddingVertical: 14, borderRadius: BORDER_RADIUS.lg, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: SPACING.sm, backgroundColor: colors.primary }]}
+        onPress={() => startRestTimer(restSeconds)}
+      >
+        <Clock size={16} color="white" strokeWidth={2} />
+        <Text style={[{ color: 'white', fontWeight: 'bold', fontSize: 15 }]}>Отдых {restSeconds}с</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+      {/* Bottom Sheet для настроек */}
+      {isMain && (
+        <Modal
+          visible={showSettingsSheet}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowSettingsSheet(false)}
+        >
+          <Pressable
+            style={[{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }]}
+            onPress={() => setShowSettingsSheet(false)}
           >
-            <Clock size={16} color="white" strokeWidth={2} />
-            <Text style={[{ color: 'white', fontWeight: 'bold', fontSize: 15 }]}>Отдых {restSeconds}с</Text>
-          </TouchableOpacity>
-        </View>
+            <Pressable
+              style={[{ 
+                backgroundColor: colors.surface, 
+                borderTopLeftRadius: 20, 
+                borderTopRightRadius: 20, 
+                padding: SPACING.lg,
+                maxHeight: '70%',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 10,
+              }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              {/* Заголовок */}
+              <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg }]}>
+                <Text style={[{ fontSize: 18, fontWeight: 'bold', color: colors.textPrimary }]}>Настройки упражнения</Text>
+                <TouchableOpacity onPress={() => setShowSettingsSheet(false)}>
+                  <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Подходы */}
+              <View style={[{ marginBottom: SPACING.lg }]}>
+                <Text style={[{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: SPACING.md }]}>Количество подходов</Text>
+                <View style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg }]}>
+                  <TouchableOpacity
+                    onPress={() => changeSets(-1)}
+                    disabled={localSets <= 1}
+                    style={[{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 22, 
+                      backgroundColor: localSets <= 1 ? colors.surfaceSecondary : colors.primaryLight,
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      opacity: localSets <= 1 ? 0.5 : 1,
+                    }]}
+                  >
+                    <Minus size={20} color={localSets <= 1 ? colors.textTertiary : colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                  <Text style={[{ fontSize: 24, fontWeight: 'bold', color: colors.textPrimary, minWidth: 40, textAlign: 'center' }]}>
+                    {localSets}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => changeSets(1)}
+                    disabled={localSets >= 10}
+                    style={[{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 22, 
+                      backgroundColor: localSets >= 10 ? colors.surfaceSecondary : colors.primaryLight,
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      opacity: localSets >= 10 ? 0.5 : 1,
+                    }]}
+                  >
+                    <Plus size={20} color={localSets >= 10 ? colors.textTertiary : colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Отдых */}
+              <View style={[{ marginBottom: SPACING.lg }]}>
+                <Text style={[{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: SPACING.md }]}>Отдых между подходами</Text>
+                <View style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg }]}>
+                  <TouchableOpacity
+                    onPress={() => changeRest(-15)}
+                    disabled={localRest <= 30}
+                    style={[{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 22, 
+                      backgroundColor: localRest <= 30 ? colors.surfaceSecondary : colors.primaryLight,
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      opacity: localRest <= 30 ? 0.5 : 1,
+                    }]}
+                  >
+                    <Minus size={20} color={localRest <= 30 ? colors.textTertiary : colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                  <Text style={[{ fontSize: 24, fontWeight: 'bold', color: colors.textPrimary, minWidth: 80, textAlign: 'center' }]}>
+                    {localRest}с
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => changeRest(15)}
+                    disabled={localRest >= 300}
+                    style={[{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 22, 
+                      backgroundColor: localRest >= 300 ? colors.surfaceSecondary : colors.primaryLight,
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      opacity: localRest >= 300 ? 0.5 : 1,
+                    }]}
+                  >
+                    <Plus size={20} color={localRest >= 300 ? colors.textTertiary : colors.primary} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Кнопка сохранить */}
+              <TouchableOpacity
+                onPress={saveSettings}
+                style={[{ backgroundColor: colors.primary, paddingVertical: 14, borderRadius: BORDER_RADIUS.lg, alignItems: 'center' }]}
+              >
+                <Text style={[{ color: 'white', fontWeight: 'bold', fontSize: 16 }]}>Сохранить</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
     </View>
   );
