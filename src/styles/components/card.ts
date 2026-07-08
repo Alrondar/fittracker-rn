@@ -4,6 +4,7 @@ import { typography } from '../typography';
 
 export const createCardStyles = (colors: any) =>
   StyleSheet.create({
+    // ===== БАЗОВЫЕ СТИЛИ КАРТОЧЕК =====
     container: {
       backgroundColor: colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -120,7 +121,8 @@ export const createCardStyles = (colors: any) =>
       ...typography.labelBold,
       color: colors.textPrimary,
     } as TextStyle,
-    // Карточка активной программы
+
+    // ===== КАРТОЧКА АКТИВНОЙ ПРОГРАММЫ =====
     activeProgramCard: {
       borderRadius: BORDER_RADIUS.xl,
       padding: SPACING.lg,
@@ -180,7 +182,8 @@ export const createCardStyles = (colors: any) =>
       fontSize: 14,
       fontWeight: '600',
     } as TextStyle,
-    // Карточка последней тренировки
+
+    // ===== КАРТОЧКА ПОСЛЕДНЕЙ ТРЕНИРОВКИ =====
     lastWorkoutCard: {
       borderRadius: BORDER_RADIUS.xl,
       elevation: 4,
@@ -206,13 +209,15 @@ export const createCardStyles = (colors: any) =>
     lastWorkoutDate: {
       fontSize: 14,
     } as TextStyle,
-    // Пустая карточка
+
+    // ===== ПУСТАЯ КАРТОЧКА =====
     emptyCard: {
       padding: SPACING.xl,
       borderRadius: BORDER_RADIUS.xl,
       elevation: 2,
     } as ViewStyle,
-    // Карточка тренировки
+
+    // ===== КАРТОЧКА ТРЕНИРОВКИ =====
     workoutCard: {
       borderRadius: BORDER_RADIUS.lg,
       marginBottom: SPACING.md,
@@ -282,19 +287,291 @@ export const createCardStyles = (colors: any) =>
     collapsibleContent: {
       padding: SPACING.md,
     } as ViewStyle,
+
+    // ===== КАРТОЧКА ДНЯ ПРОГРАММЫ (для [id].tsx) =====
     programDayCard: {
-  backgroundColor: colors.surface,
-  borderRadius: BORDER_RADIUS.lg,
-  borderWidth: 2,
-  borderColor: colors.primary,
-  overflow: 'hidden',
-  marginBottom: SPACING.md,
-  elevation: 3,
-  shadowColor: colors.primary,
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.15,
-  shadowRadius: 4,
-} as ViewStyle,
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      overflow: 'hidden',
+      marginBottom: SPACING.md,
+      elevation: 3,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    } as ViewStyle,
+
+    // ===== КАРТОЧКА ПРОГРАММЫ (для programs.tsx) =====
+    programCard: {
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      overflow: 'hidden',
+      marginBottom: SPACING.md,
+      elevation: 3,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+    } as ViewStyle,
+
+    // Увеличенный отступ для футера карточки программы
+    programCardFooter: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md + 4,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    } as ViewStyle,
+
+    // Бейдж "Моя программа"
+    myProgramBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+      borderRadius: BORDER_RADIUS.sm,
+      backgroundColor: colors.primary + '20',
+    } as ViewStyle,
+    myProgramBadgeText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: colors.primary,
+    } as TextStyle,
+
+    // ===== ТАБЫ =====
+    tabContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: SPACING.lg,
+      marginBottom: SPACING.md,
+      gap: SPACING.sm,
+    } as ViewStyle,
+    tab: {
+      flex: 1,
+      paddingVertical: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+      alignItems: 'center',
+      backgroundColor: colors.surfaceSecondary,
+    } as ViewStyle,
+    tabActive: {
+      backgroundColor: colors.primary,
+    } as ViewStyle,
+    tabText: {
+      ...typography.labelBold,
+      color: colors.textSecondary,
+    } as TextStyle,
+    tabTextActive: {
+      color: colors.textInverse,
+    } as TextStyle,
+
+    // ===== ПАНЕЛЬ ФИЛЬТРОВ И ПОИСКА =====
+    filterBar: {
+      paddingHorizontal: SPACING.lg,
+      marginBottom: SPACING.md,
+    } as ViewStyle,
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginBottom: SPACING.sm,
+    } as ViewStyle,
+    searchButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surfaceSecondary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    } as ViewStyle,
+    searchContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.md,
+      paddingHorizontal: SPACING.md,
+      height: 40,
+    } as ViewStyle,
+    searchInput: {
+      flex: 1,
+      fontSize: 14,
+      color: colors.textPrimary,
+      padding: 0,
+    } as TextStyle,
+    sortButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.surfaceSecondary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    } as ViewStyle,
+
+    // ===== ЧИПЫ ФИЛЬТРОВ =====
+    filterChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.sm,
+    } as ViewStyle,
+    filterChip: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    } as ViewStyle,
+    filterChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    } as ViewStyle,
+    filterChipText: {
+      ...typography.buttonTiny,
+      color: colors.textSecondary,
+    } as TextStyle,
+    filterChipTextActive: {
+      color: colors.textInverse,
+    } as TextStyle,
+
+    // ===== ПУСТОЕ СОСТОЯНИЕ =====
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.xxl,
+      marginTop: 40,
+    } as ViewStyle,
+    emptyStateTitle: {
+      ...typography.h3,
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: SPACING.sm,
+    } as TextStyle,
+    emptyStateText: {
+      ...typography.body,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: SPACING.lg,
+    } as TextStyle,
+
+    // ===== FAB (кнопка создания) =====
+    fab: {
+      position: 'absolute',
+      bottom: SPACING.xl,
+      right: SPACING.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 6,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+    } as ViewStyle,
+
+    // ===== МЕНЮ ДЕЙСТВИЙ (долгое нажатие) =====
+    actionMenu: {
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      padding: SPACING.sm,
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+    } as ViewStyle,
+    actionMenuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.md,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+    } as ViewStyle,
+    actionMenuItemDanger: {
+      backgroundColor: colors.error + '10',
+    } as ViewStyle,
+    actionMenuText: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+    } as TextStyle,
+    actionMenuTextDanger: {
+      color: colors.error,
+    } as TextStyle,
+
+    // ===== BOTTOM SHEET (создание/редактирование) =====
+    sheetContainer: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: SPACING.lg,
+    } as ViewStyle,
+    sheetHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.lg,
+    } as ViewStyle,
+    sheetTitle: {
+      ...typography.h5,
+      color: colors.textPrimary,
+    } as TextStyle,
+    sheetField: {
+      marginBottom: SPACING.lg,
+    } as ViewStyle,
+    sheetLabel: {
+      ...typography.label,
+      color: colors.textSecondary,
+      marginBottom: SPACING.md,
+    } as TextStyle,
+    sheetInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BORDER_RADIUS.md,
+      padding: SPACING.md,
+      fontSize: 16,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface,
+    } as TextStyle,
+    sheetTextarea: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BORDER_RADIUS.md,
+      padding: SPACING.md,
+      fontSize: 16,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface,
+      minHeight: 100,
+      textAlignVertical: 'top',
+    } as TextStyle,
+    sheetRow: {
+      flexDirection: 'row',
+      gap: SPACING.md,
+    } as ViewStyle,
+    sheetSelect: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BORDER_RADIUS.md,
+      padding: SPACING.md,
+      backgroundColor: colors.surface,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    } as ViewStyle,
+    sheetSelectText: {
+      fontSize: 16,
+      color: colors.textPrimary,
+    } as TextStyle,
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;

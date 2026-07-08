@@ -7,6 +7,8 @@ export interface Program {
   duration: number;
   description: string;
   schedule: string[];
+  created_by?: string;
+  created_at?: string;
   days?: ProgramDay[];
 }
 
@@ -23,7 +25,7 @@ export interface ProgramDay {
 export interface ProgramExercise {
   id: string;
   program_day_id: string;
-  exercise_id?: string;  
+  exercise_id?: string;
   exercise_name: string;
   sets: number;
   reps_range: string;
@@ -44,14 +46,136 @@ export interface UserProgram {
   is_active: boolean;
 }
 
-export async function getPrograms(): Promise<Program[]> {
-  const { data, error } = await supabase
+export interface ProgramFilters {
+  level?: readonly ('beginner' | 'intermediate' | 'advanced')[];
+  search?: string;
+  sortBy?: 'date' | 'name' | 'level';
+  limit?: number;
+  offset?: number;
+}
+
+// Получить готовые программы (где created_by IS NULL)
+export async function getPrograms(filters?: ProgramFilters): Promise<Program[]> {
+  let query = supabase
     .from('programs')
     .select('*')
-    .order('created_at', { ascending: false });
+    .is('created_by', null);
 
+  if (filters?.level && filters.level.length > 0) {
+    query = query.in('level', filters.level as any);
+  }
+
+  if (filters?.search) {
+    query = query.ilike('name', `%${filters.search}%`);
+  }
+
+  const sortBy = filters?.sortBy || 'date';
+  if (sortBy === 'name') {
+    query = query.order('name', { ascending: true });
+  } else if (sortBy === 'level') {
+    query = query.order('level', { ascending: true });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const limit = filters?.limit || 10;
+  const offset = filters?.offset || 0;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+// Получить личные программы пользователя
+export async function getMyPrograms(
+  userId: string,
+  filters?: ProgramFilters
+): Promise<Program[]> {
+  let query = supabase
+    .from('programs')
+    .select('*')
+    .eq('created_by', userId);
+
+  if (filters?.level && filters.level.length > 0) {
+    query = query.in('level', filters.level as any);
+  }
+
+  if (filters?.search) {
+    query = query.ilike('name', `%${filters.search}%`);
+  }
+
+  const sortBy = filters?.sortBy || 'date';
+  if (sortBy === 'name') {
+    query = query.order('name', { ascending: true });
+  } else if (sortBy === 'level') {
+    query = query.order('level', { ascending: true });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const limit = filters?.limit || 10;
+  const offset = filters?.offset || 0;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+// Создать программу
+export async function createProgram(
+  program: Omit<Program, 'id' | 'created_at'>,
+  userId: string
+): Promise<Program> {
+  const { data, error } = await supabase
+    .from('programs')
+    .insert({
+      ...program,
+      created_by: userId,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Обновить программу
+export async function updateProgram(
+  programId: string,
+  updates: Partial<Program>
+): Promise<Program> {
+  const { data, error } = await supabase
+    .from('programs')
+    .update(updates)
+    .eq('id', programId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Удалить программу (каскадно)
+export async function deleteProgram(programId: string): Promise<void> {
+  const { data: days } = await supabase
+    .from('program_days')
+    .select('id')
+    .eq('program_id', programId);
+
+  if (days && days.length > 0) {
+    const dayIds = days.map(d => d.id);
+    await supabase.from('program_exercises').delete().in('program_day_id', [...dayIds] as any);
+    await supabase.from('program_days').delete().in('program_id', [programId] as any);
+  }
+
+  const { error } = await supabase
+    .from('programs')
+    .delete()
+    .eq('id', programId);
+
+  if (error) throw error;
 }
 
 export async function getProgramWithDays(programId: string): Promise<Program | null> {
@@ -98,7 +222,6 @@ export async function startProgram(programId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  // Деактивируем ВСЕ активные программы (не только одну)
   const { error: deactivateError } = await supabase
     .from('user_programs')
     .update({ is_active: false })
@@ -107,14 +230,12 @@ export async function startProgram(programId: string): Promise<void> {
 
   if (deactivateError) console.warn('Ошибка деактивации:', deactivateError);
 
-  // Удаляем дубликаты для этой программы (если есть)
   await supabase
     .from('user_programs')
     .delete()
     .eq('user_id', user.id)
     .eq('program_id', programId);
 
-  // Создаём новую запись
   const { error } = await supabase
     .from('user_programs')
     .insert({
@@ -165,7 +286,6 @@ export async function completeProgram(userProgramId: string): Promise<void> {
   if (error) throw error;
 }
 
-// Создать тренировки из программы
 export async function createWorkoutsFromProgram(
   programId: string,
   userId: string
@@ -176,7 +296,6 @@ export async function createWorkoutsFromProgram(
   const workoutIds: string[] = [];
 
   for (const day of program.days) {
-    // Создаем тренировку
     const { data: workout, error: workoutError } = await supabase
       .from('workouts')
       .insert({
@@ -192,12 +311,9 @@ export async function createWorkoutsFromProgram(
 
     if (workoutError) throw workoutError;
 
-    // Добавляем упражнения
     if (day.exercises) {
       for (const exercise of day.exercises) {
-        // Ищем упражнение в справочнике по названию
         let exerciseId: string | null = null;
-
         const { data: foundExercise } = await supabase
           .from('exercises')
           .select('id')
@@ -229,35 +345,10 @@ export async function createWorkoutsFromProgram(
   return workoutIds;
 }
 
-// Получить активную программу пользователя
 export async function getActiveProgram(userId: string) {
   const { data, error } = await supabase
     .from('user_programs')
-    .select(`
-      *,
-      programs (
-        id,
-        name,
-        level,
-        duration,
-        description,
-        schedule,
-        program_days (
-          id,
-          day_number,
-          name,
-          program_exercises (
-            id,
-            exercise_name,
-            sets,
-            reps_range,
-            rest_seconds,
-            intensity,
-            position
-          )
-        )
-      )
-    `)
+    .select(`*, programs ( id, name, level, duration, description, schedule, program_days ( id, day_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) )`)
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('started_at', { ascending: false })
@@ -265,19 +356,17 @@ export async function getActiveProgram(userId: string) {
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // Нет активной программы
+    if (error.code === 'PGRST116') return null;
     throw error;
   }
 
   return data;
 }
 
-// Продвинуть прогресс программы (следующий день)
 export async function advanceProgramProgress(
   userId: string,
   programId: string
 ): Promise<{ week: number; day: number; isCompleted: boolean }> {
-  // Получаем текущий прогресс (с limit для защиты от дубликатов)
   const { data: current, error: fetchError } = await supabase
     .from('user_programs')
     .select('id, current_week, current_day')
@@ -295,7 +384,6 @@ export async function advanceProgramProgress(
     throw fetchError;
   }
 
-  // Получаем количество дней в программе
   const { count: daysCount } = await supabase
     .from('program_days')
     .select('*', { count: 'exact', head: true })
@@ -303,7 +391,6 @@ export async function advanceProgramProgress(
 
   const totalDays = daysCount || 5;
 
-  // Получаем реальную длительность программы
   const { data: program } = await supabase
     .from('programs')
     .select('duration')
@@ -316,23 +403,19 @@ export async function advanceProgramProgress(
   let newDay = current.current_day + 1;
   let isCompleted = false;
 
-  // Если прошли все дни недели тренировки → следующая неделя
   if (newDay > totalDays) {
     newDay = 1;
     newWeek += 1;
-
     if (newWeek > actualWeeks) {
       isCompleted = true;
       await supabase
         .from('user_programs')
         .update({ is_active: false, completed_at: new Date().toISOString() })
         .eq('id', current.id);
-
       return { week: actualWeeks, day: totalDays, isCompleted: true };
     }
   }
 
-  // Обновляем прогресс
   const { error: updateError } = await supabase
     .from('user_programs')
     .update({ current_week: newWeek, current_day: newDay })
