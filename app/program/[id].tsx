@@ -56,6 +56,11 @@ import { createBadgeStyles } from '../../src/styles/components/badge';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'VirtualizedLists should never be nested',
+]);
 
 // Генерация UUID
 const genRandomUUID = () => {
@@ -177,115 +182,132 @@ export default function ProgramDetailScreen() {
   };
 
   const saveProgram = async () => {
-    setSaving(true);
-    try {
-      if (!editedProgram || !editedProgram.days) {
-        showToast('Нет данных для сохранения', 'error');
-        setSaving(false);
-        return;
-      }
+  setSaving(true);
+  try {
+    if (!editedProgram || !editedProgram.days) {
+      showToast('Нет данных для сохранения', 'error');
+      setSaving(false);
+      return;
+    }
 
-      console.log('💾 SAVING - Порядок дней:', editedProgram.days.map(d => d.name));
+    console.log('💾 SAVING - Порядок дней:', editedProgram.days.map(d => `${d.name} (pos: ${d.position}, day_num: ${d.day_number})`));
 
-      const updatePromises: Promise<any>[] = [];
-      const days = editedProgram.days || [];
+    const updatePromises: Promise<any>[] = [];
+    const days = editedProgram.days || [];
 
-      // 1. УДАЛЕНИЕ упражнений из БД
-      if (deletedExerciseIds.length > 0) {
-        deletedExerciseIds.forEach((exerciseId) => {
-          updatePromises.push(
-            Promise.resolve(
-              supabase.from('program_exercises').delete().eq('id', exerciseId)
-            )
-          );
-        });
-      }
-
-      // 2. Обновление дней и упражнений
-      for (let i = 0; i < days.length; i++) {
-        const day = days[i];
-        
-        // Прямой update вместо RPC (исправление сохранения порядка дней)
+    // 1. УДАЛЕНИЕ упражнений из БД
+    if (deletedExerciseIds.length > 0) {
+      deletedExerciseIds.forEach((exerciseId) => {
         updatePromises.push(
           Promise.resolve(
-            supabase
-              .from('program_days')
-              .update({
-                position: i + 1,
-                day_number: i + 1,
-              })
-              .eq('id', day.id)
+            supabase.from('program_exercises').delete().eq('id', exerciseId)
+          )
+        );
+      });
+    }
+
+    // 2. Обновление дней (последовательно, с логированием)
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
+      
+      const { data, error } = await supabase
+        .from('program_days')
+        .update({
+          position: i + 1,
+          day_number: i + 1,
+        })
+        .eq('id', day.id)
+        .select();
+
+      console.log(`🔄 Update дня "${day.name}" (id: ${day.id}):`, {
+        newPosition: i + 1,
+        data,
+        error,
+      });
+
+      if (error) {
+        console.error('❌ Ошибка update дня:', error);
+        throw error;
+      }
+    }
+
+    // 3. Обновление упражнений (параллельно)
+    const exercisePromises: Promise<any>[] = [];
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
+      const exercises = day.exercises || [];
+      for (let j = 0; j < exercises.length; j++) {
+        const exercise = exercises[j];
+        exercisePromises.push(
+          Promise.resolve(
+            supabase.rpc('update_exercise_position', {
+              p_exercise_id: exercise.id,
+              p_new_position: j + 1,
+            })
           )
         );
 
-        const exercises = day.exercises || [];
-        for (let j = 0; j < exercises.length; j++) {
-          const exercise = exercises[j];
-          updatePromises.push(
+        if ((exercise as any).isNew) {
+          exercisePromises.push(
             Promise.resolve(
-              supabase.rpc('update_exercise_position', {
-                p_exercise_id: exercise.id,
-                p_new_position: j + 1,
+              supabase.from('program_exercises').insert({
+                id: exercise.id,
+                program_day_id: exercise.program_day_id,
+                exercise_id: (exercise as any).exercise_id,
+                exercise_name: exercise.exercise_name,
+                sets: exercise.sets,
+                reps_range: exercise.reps_range,
+                rest_seconds: exercise.rest_seconds,
+                intensity: exercise.intensity,
+                position: j + 1,
               })
             )
           );
-
-          if ((exercise as any).isNew) {
-            updatePromises.push(
-              Promise.resolve(
-                supabase.from('program_exercises').insert({
-                  id: exercise.id,
-                  program_day_id: exercise.program_day_id,
-                  exercise_id: (exercise as any).exercise_id,
-                  exercise_name: exercise.exercise_name,
+        } else {
+          exercisePromises.push(
+            Promise.resolve(
+              supabase
+                .from('program_exercises')
+                .update({
                   sets: exercise.sets,
                   reps_range: exercise.reps_range,
                   rest_seconds: exercise.rest_seconds,
                   intensity: exercise.intensity,
-                  position: j + 1,
                 })
-              )
-            );
-          } else {
-            updatePromises.push(
-              Promise.resolve(
-                supabase
-                  .from('program_exercises')
-                  .update({
-                    sets: exercise.sets,
-                    reps_range: exercise.reps_range,
-                    rest_seconds: exercise.rest_seconds,
-                    intensity: exercise.intensity,
-                  })
-                  .eq('id', exercise.id)
-              )
-            );
-          }
+                .eq('id', exercise.id)
+            )
+          );
         }
       }
-
-      const results = await Promise.all(updatePromises);
-      const errors = results.filter((r: any) => r.error);
-      if (errors.length > 0) {
-        console.error('❌ Ошибки сохранения:', errors);
-        throw errors[0].error;
-      }
-      console.log('✅ Все обновления сохранены успешно');
-
-      const updatedProgram = await getProgramWithDays(editedProgram.id);
-      setProgram(updatedProgram);
-      setEditedProgram(updatedProgram);
-      setDeletedExerciseIds([]);
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Программа сохранена', 'success');
-      setEditMode(false);
-    } catch (error: any) {
-      showToast(error.message || 'Не удалось сохранить программу', 'error');
-    } finally {
-      setSaving(false);
     }
-  };
+
+    const results = await Promise.all(exercisePromises);
+    const errors = results.filter((r: any) => r.error);
+    if (errors.length > 0) {
+      console.error('❌ Ошибки сохранения упражнений:', errors);
+      throw errors[0].error;
+    }
+
+    console.log('✅ Все обновления сохранены успешно');
+
+    // Загружаем программу заново
+    const updatedProgram = await getProgramWithDays(editedProgram.id);
+    console.log('📥 Загруженная программа - порядок дней:', updatedProgram?.days?.map(d => `${d.name} (pos: ${d.position}, day_num: ${d.day_number})`));
+
+    setProgram(updatedProgram);
+    setEditedProgram(updatedProgram);
+    setDeletedExerciseIds([]);
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    showToast('Программа сохранена', 'success');
+    setEditMode(false);
+  } catch (error: any) {
+    console.error('💥 Ошибка сохранения:', error);
+    showToast(error.message || 'Не удалось сохранить программу', 'error');
+  } finally {
+    setSaving(false);
+  }
+};
 
   const updateExerciseParams = (
     dayIndex: number,

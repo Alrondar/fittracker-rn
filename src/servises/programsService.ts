@@ -15,6 +15,8 @@ export interface ProgramDay {
   program_id: string;
   day_number: number;
   name: string;
+  position?: number;
+  created_at?: string;
   exercises?: ProgramExercise[];
 }
 
