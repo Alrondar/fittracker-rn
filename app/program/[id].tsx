@@ -28,6 +28,7 @@ import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import {
   Sprout,
   Dumbbell,
@@ -71,7 +72,7 @@ export default function ProgramDetailScreen() {
   const { userId } = useStore();
   const { colors } = useTheme();
   const { toast, showToast, hideToast } = useToast();
-  
+
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -128,10 +129,7 @@ export default function ProgramDetailScreen() {
             setStarting(true);
             try {
               await startProgram(id as string);
-              const workoutIds = await createWorkoutsFromProgram(
-                id as string,
-                userId
-              );
+              const workoutIds = await createWorkoutsFromProgram(id as string, userId);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               showToast(`Программа начата! Создано тренировок: ${workoutIds.length}`, 'success');
               router.replace('/(tabs)/workouts');
@@ -166,15 +164,11 @@ export default function ProgramDetailScreen() {
         p_program_id: program?.id,
         p_user_id: userId,
       });
-
       if (error) throw error;
-
-      const newProgramId = data;
-      const newData = await getProgramWithDays(newProgramId);
+      const newData = await getProgramWithDays(data);
       setProgram(newData);
       setEditedProgram(newData);
       setEditMode(true);
-      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Программа скопирована в "Мои программы"', 'info');
     } catch (error: any) {
@@ -183,9 +177,7 @@ export default function ProgramDetailScreen() {
   };
 
   const saveProgram = async () => {
-    console.log('🔵 НАЧАЛО СОХРАНЕНИЯ (оптимизированное)');
     setSaving(true);
-    
     try {
       if (!editedProgram || !editedProgram.days) {
         showToast('Нет данных для сохранения', 'error');
@@ -193,19 +185,17 @@ export default function ProgramDetailScreen() {
         return;
       }
 
+      console.log('💾 SAVING - Порядок дней:', editedProgram.days.map(d => d.name));
+
       const updatePromises: Promise<any>[] = [];
       const days = editedProgram.days || [];
 
       // 1. УДАЛЕНИЕ упражнений из БД
       if (deletedExerciseIds.length > 0) {
-        console.log(`🗑️ Удаление ${deletedExerciseIds.length} упражнений из БД`);
         deletedExerciseIds.forEach((exerciseId) => {
           updatePromises.push(
             Promise.resolve(
-              supabase
-                .from('program_exercises')
-                .delete()
-                .eq('id', exerciseId)
+              supabase.from('program_exercises').delete().eq('id', exerciseId)
             )
           );
         });
@@ -215,19 +205,22 @@ export default function ProgramDetailScreen() {
       for (let i = 0; i < days.length; i++) {
         const day = days[i];
         
+        // Прямой update вместо RPC (исправление сохранения порядка дней)
         updatePromises.push(
           Promise.resolve(
-            supabase.rpc('update_day_position', {
-              p_day_id: day.id,
-              p_new_position: i + 1,
-            })
+            supabase
+              .from('program_days')
+              .update({
+                position: i + 1,
+                day_number: i + 1,
+              })
+              .eq('id', day.id)
           )
         );
 
         const exercises = day.exercises || [];
         for (let j = 0; j < exercises.length; j++) {
           const exercise = exercises[j];
-          
           updatePromises.push(
             Promise.resolve(
               supabase.rpc('update_exercise_position', {
@@ -240,19 +233,17 @@ export default function ProgramDetailScreen() {
           if ((exercise as any).isNew) {
             updatePromises.push(
               Promise.resolve(
-                supabase
-                  .from('program_exercises')
-                  .insert({
-                    id: exercise.id,
-                    program_day_id: exercise.program_day_id,
-                    exercise_id: (exercise as any).exercise_id,
-                    exercise_name: exercise.exercise_name,
-                    sets: exercise.sets,
-                    reps_range: exercise.reps_range,
-                    rest_seconds: exercise.rest_seconds,
-                    intensity: exercise.intensity,
-                    position: j + 1,
-                  })
+                supabase.from('program_exercises').insert({
+                  id: exercise.id,
+                  program_day_id: exercise.program_day_id,
+                  exercise_id: (exercise as any).exercise_id,
+                  exercise_name: exercise.exercise_name,
+                  sets: exercise.sets,
+                  reps_range: exercise.reps_range,
+                  rest_seconds: exercise.rest_seconds,
+                  intensity: exercise.intensity,
+                  position: j + 1,
+                })
               )
             );
           } else {
@@ -273,33 +264,23 @@ export default function ProgramDetailScreen() {
         }
       }
 
-      console.log(`📊 Всего операций: ${updatePromises.length}`);
-      console.log('⏳ Выполнение всех операций параллельно...');
-
       const results = await Promise.all(updatePromises);
-
-      const errors = results.filter(r => r.error);
+      const errors = results.filter((r: any) => r.error);
       if (errors.length > 0) {
-        console.error('❌ Ошибки при сохранении:', errors);
+        console.error('❌ Ошибки сохранения:', errors);
         throw errors[0].error;
       }
-
-      console.log('✅ Все операции выполнены успешно!');
+      console.log('✅ Все обновления сохранены успешно');
 
       const updatedProgram = await getProgramWithDays(editedProgram.id);
-      
       setProgram(updatedProgram);
       setEditedProgram(updatedProgram);
       setDeletedExerciseIds([]);
-      
-      console.log('✅ СОХРАНЕНИЕ ЗАВЕРШЕНО');
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Программа сохранена', 'success');
-      
       setEditMode(false);
-      
     } catch (error: any) {
-      console.error('❌ Ошибка сохранения:', error);
       showToast(error.message || 'Не удалось сохранить программу', 'error');
     } finally {
       setSaving(false);
@@ -312,40 +293,41 @@ export default function ProgramDetailScreen() {
     params: Partial<ProgramExercise>
   ) => {
     if (!editedProgram || !editedProgram.days) return;
-
     const newDays = [...editedProgram.days];
     const day = newDays[dayIndex];
     if (!day || !day.exercises) return;
-    
     const newExercises = [...day.exercises];
-    newExercises[exerciseIndex] = {
-      ...newExercises[exerciseIndex],
-      ...params,
-    };
-    newDays[dayIndex] = {
-      ...day,
-      exercises: newExercises,
-    };
-
-    setEditedProgram({
-      ...editedProgram,
-      days: newDays,
-    });
+    newExercises[exerciseIndex] = { ...newExercises[exerciseIndex], ...params };
+    newDays[dayIndex] = { ...day, exercises: newExercises };
+    setEditedProgram({ ...editedProgram, days: newDays });
   };
 
   const updateDaySettings = (dayIndex: number, settings: Partial<ProgramDay>) => {
     if (!editedProgram || !editedProgram.days) return;
-
     const newDays = [...editedProgram.days];
-    newDays[dayIndex] = {
-      ...newDays[dayIndex],
-      ...settings,
-    };
+    newDays[dayIndex] = { ...newDays[dayIndex], ...settings };
+    setEditedProgram({ ...editedProgram, days: newDays });
+  };
 
-    setEditedProgram({
-      ...editedProgram,
-      days: newDays,
-    });
+  // Обработчик перетаскивания упражнений
+  const onExerciseDragEnd = (dayIndex: number, data: ProgramExercise[]) => {
+    if (!editedProgram || !editedProgram.days) return;
+    const newDays = [...editedProgram.days];
+    newDays[dayIndex] = { ...newDays[dayIndex], exercises: data };
+    setEditedProgram({ ...editedProgram, days: newDays });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  // Обработчик перетаскивания дней
+  const onDayDragEnd = (data: ProgramDay[]) => {
+    if (!editedProgram) return;
+    console.log('🔥 DRAG END - Новый порядок:', data.map(d => d.name));
+    const updatedDays = data.map((day, index) => ({
+      ...day,
+      day_number: index + 1,
+    }));
+    setEditedProgram({ ...editedProgram, days: updatedDays });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const addExercise = (dayIndex: number) => {
@@ -356,13 +338,11 @@ export default function ProgramDetailScreen() {
 
   const removeExercise = (dayIndex: number, exerciseIndex: number) => {
     if (!editedProgram || !editedProgram.days) return;
-
     const day = editedProgram.days[dayIndex];
     if (!day || !day.exercises) return;
-    
     const exercise = day.exercises[exerciseIndex];
     if (!exercise) return;
-    
+
     Alert.alert(
       'Удалить упражнение?',
       `"${exercise.exercise_name}" будет удалено из программы`,
@@ -374,22 +354,12 @@ export default function ProgramDetailScreen() {
           onPress: () => {
             const newExercises = [...(day.exercises || [])];
             newExercises.splice(exerciseIndex, 1);
-            
             const newDays = [...(editedProgram?.days || [])];
-            newDays[dayIndex] = {
-              ...day,
-              exercises: newExercises,
-            };
-
-            setEditedProgram({
-              ...(editedProgram as Program),
-              days: newDays,
-            });
-
+            newDays[dayIndex] = { ...day, exercises: newExercises };
+            setEditedProgram({ ...(editedProgram as Program), days: newDays });
             if (!(exercise as any).isNew) {
-              setDeletedExerciseIds(prev => [...prev, exercise.id]);
+              setDeletedExerciseIds((prev) => [...prev, exercise.id]);
             }
-
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             showToast('Упражнение удалено', 'success');
           },
@@ -401,22 +371,14 @@ export default function ProgramDetailScreen() {
   const loadAvailableExercises = async (searchQuery: string = '') => {
     setLoadingExercises(true);
     try {
-      let query = supabase
-        .from('exercises')
-        .select('*')
-        .order('name');
-
+      let query = supabase.from('exercises').select('*').order('name');
       if (searchQuery.trim()) {
         query = query.filter('name', 'ilike', `%${searchQuery}%`);
       }
-
       const { data, error } = await query.limit(50);
-      
       if (error) throw error;
-      
       setAvailableExercises(data || []);
     } catch (error: any) {
-      console.error('Ошибка загрузки упражнений:', error);
       showToast('Не удалось загрузить список упражнений', 'error');
     } finally {
       setLoadingExercises(false);
@@ -425,10 +387,8 @@ export default function ProgramDetailScreen() {
 
   const handleAddExerciseFromPicker = async (exercise: any) => {
     if (selectedDayIndex < 0 || !editedProgram || !editedProgram.days) return;
-
     const day = editedProgram.days[selectedDayIndex];
     const currentExercises = day.exercises || [];
-
     const newExercise: any = {
       id: genRandomUUID(),
       program_day_id: day.id,
@@ -441,18 +401,9 @@ export default function ProgramDetailScreen() {
       position: currentExercises.length + 1,
       isNew: true,
     };
-
     const newDays = [...editedProgram.days];
-    newDays[selectedDayIndex] = {
-      ...day,
-      exercises: [...currentExercises, newExercise],
-    };
-
-    setEditedProgram({
-      ...editedProgram,
-      days: newDays,
-    });
-
+    newDays[selectedDayIndex] = { ...day, exercises: [...currentExercises, newExercise] };
+    setEditedProgram({ ...editedProgram, days: newDays });
     setShowExercisePicker(false);
     setExerciseSearch('');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -462,58 +413,26 @@ export default function ProgramDetailScreen() {
   const getLevelInfo = (level: string) => {
     switch (level) {
       case 'beginner':
-        return {
-          label: 'Новичок',
-          color: '#4CAF50',
-          icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} />,
-        };
+        return { label: 'Новичок', color: '#4CAF50', icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} /> };
       case 'intermediate':
-        return {
-          label: 'Средний',
-          color: '#FF9800',
-          icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} />,
-        };
+        return { label: 'Средний', color: '#FF9800', icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} /> };
       case 'advanced':
-        return {
-          label: 'Продвинутый',
-          color: '#F44336',
-          icon: <Flame size={16} color="#F44336" strokeWidth={1.5} />,
-        };
+        return { label: 'Продвинутый', color: '#F44336', icon: <Flame size={16} color="#F44336" strokeWidth={1.5} /> };
       default:
-        return {
-          label: level,
-          color: colors.textSecondary,
-          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
-        };
+        return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
     }
   };
 
   const getIntensityInfo = (intensity: string) => {
     switch (intensity) {
       case 'high':
-        return {
-          label: 'Высокая',
-          color: '#F44336',
-          icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} />,
-        };
+        return { label: 'Высокая', color: '#F44336', icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} /> };
       case 'medium':
-        return {
-          label: 'Средняя',
-          color: '#FFC107',
-          icon: <Minus size={12} color="#FFC107" strokeWidth={2} />,
-        };
+        return { label: 'Средняя', color: '#FFC107', icon: <Minus size={12} color="#FFC107" strokeWidth={2} /> };
       case 'low':
-        return {
-          label: 'Низкая',
-          color: '#4CAF50',
-          icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} />,
-        };
+        return { label: 'Низкая', color: '#4CAF50', icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} /> };
       default:
-        return {
-          label: intensity,
-          color: colors.textSecondary,
-          icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} />,
-        };
+        return { label: intensity, color: colors.textSecondary, icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} /> };
     }
   };
 
@@ -540,21 +459,16 @@ export default function ProgramDetailScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      {/* ИСПРАВЛЕНИЕ 1: добавлен nestedScrollEnabled={true} */}
+      <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         <LinearGradient
           colors={GRADIENTS.hero}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ 
-            paddingTop: SPACING.xl + 10,
-            paddingHorizontal: SPACING.lg,
-            paddingBottom: SPACING.xl 
-          }}
+          style={{ paddingTop: SPACING.xl + 10, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl }}
         >
           <FadeIn>
-            <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.sm }]}>
-              {displayProgram.name}
-            </Text>
+            <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.sm }]}>{displayProgram.name}</Text>
             <Text style={[typography.body, { color: 'rgba(255,255,255,0.9)', marginBottom: SPACING.lg }]}>
               {displayProgram.description}
             </Text>
@@ -594,43 +508,85 @@ export default function ProgramDetailScreen() {
             </Text>
             {editMode && (
               <TouchableOpacity
-                onPress={() => {
-                  Alert.alert('Настройки дней', 'Здесь будет редактирование дней программы');
-                }}
+                onPress={() => Alert.alert('Настройки дней', 'Здесь будет редактирование дней программы')}
                 style={[{ padding: SPACING.sm, borderRadius: BORDER_RADIUS.md, backgroundColor: colors.surfaceSecondary }]}
               >
                 <Settings size={18} color={colors.primary} strokeWidth={2} />
               </TouchableOpacity>
             )}
           </View>
-          {(displayProgram.days || []).map((day: ProgramDay, dayIndex: number) => (
-            <FadeIn key={day.id} delay={dayIndex * 80}>
-              <DayCard
-                day={day}
-                dayIndex={dayIndex}
-                getIntensityInfo={getIntensityInfo}
-                colors={colors}
-                cardStyles={cardStyles}
-                badgeStyles={badgeStyles}
-                editMode={editMode}
-                onEditSettings={() => {
-                  setSelectedDay(day);
-                  setSelectedDayIndex(dayIndex);
-                  setShowDaySettings(true);
-                }}
-                onExerciseSettings={(exerciseIndex: number) => {
-                  if (day.exercises) {
-                    setSelectedExercise(day.exercises[exerciseIndex]);
-                    setSelectedExerciseIndex(exerciseIndex);
-                    setShowExerciseSettings(true);
-                  }
-                }}
-                onAddExercise={() => addExercise(dayIndex)}
-                onRemoveExercise={(exerciseIndex: number) => removeExercise(dayIndex, exerciseIndex)}
-                updateExerciseParams={updateExerciseParams}
-              />
-            </FadeIn>
-          ))}
+
+          {/* Drag & Drop для дней в режиме редактирования */}
+          {editMode ? (
+            <DraggableFlatList
+              data={displayProgram.days || []}
+              onDragEnd={({ data }) => onDayDragEnd(data as ProgramDay[])}
+              keyExtractor={(item: ProgramDay) => item.id}
+              renderItem={({ item: day, drag, isActive }) => {
+                const dayIndex = (displayProgram.days || []).indexOf(day);
+                return (
+                  <ScaleDecorator>
+                    <DayCard
+                      day={day}
+                      dayIndex={dayIndex}
+                      getIntensityInfo={getIntensityInfo}
+                      colors={colors}
+                      cardStyles={cardStyles}
+                      badgeStyles={badgeStyles}
+                      editMode={editMode}
+                      isActive={isActive}
+                      onDrag={drag}
+                      onEditSettings={() => {
+                        setSelectedDay(day);
+                        setSelectedDayIndex(dayIndex);
+                        setShowDaySettings(true);
+                      }}
+                      onExerciseSettings={(exerciseIndex: number) => {
+                        if (day.exercises) {
+                          setSelectedExercise(day.exercises[exerciseIndex]);
+                          setSelectedExerciseIndex(exerciseIndex);
+                          setShowExerciseSettings(true);
+                        }
+                      }}
+                      onAddExercise={() => addExercise(dayIndex)}
+                      onRemoveExercise={(exerciseIndex: number) => removeExercise(dayIndex, exerciseIndex)}
+                      updateExerciseParams={updateExerciseParams}
+                      onExerciseDragEnd={(data) => onExerciseDragEnd(dayIndex, data)}
+                    />
+                  </ScaleDecorator>
+                );
+              }}
+            />
+          ) : (
+            (displayProgram.days || []).map((day: ProgramDay, dayIndex: number) => (
+              <FadeIn key={day.id} delay={dayIndex * 80}>
+                <DayCard
+                  day={day}
+                  dayIndex={dayIndex}
+                  getIntensityInfo={getIntensityInfo}
+                  colors={colors}
+                  cardStyles={cardStyles}
+                  badgeStyles={badgeStyles}
+                  editMode={editMode}
+                  onEditSettings={() => {
+                    setSelectedDay(day);
+                    setSelectedDayIndex(dayIndex);
+                    setShowDaySettings(true);
+                  }}
+                  onExerciseSettings={(exerciseIndex: number) => {
+                    if (day.exercises) {
+                      setSelectedExercise(day.exercises[exerciseIndex]);
+                      setSelectedExerciseIndex(exerciseIndex);
+                      setShowExerciseSettings(true);
+                    }
+                  }}
+                  onAddExercise={() => addExercise(dayIndex)}
+                  onRemoveExercise={(exerciseIndex: number) => removeExercise(dayIndex, exerciseIndex)}
+                  updateExerciseParams={updateExerciseParams}
+                />
+              </FadeIn>
+            ))
+          )}
         </View>
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -655,7 +611,7 @@ export default function ProgramDetailScreen() {
             disabled={saving || starting}
             activeOpacity={0.8}
           >
-            {(saving || starting) ? (
+            {saving || starting ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
               <View style={buttonStyles.content}>
@@ -678,24 +634,22 @@ export default function ProgramDetailScreen() {
 
       <TouchableOpacity
         onPress={toggleEditMode}
-        style={[
-          {
-            position: 'absolute',
-            top: SPACING.xl + 35,
-            right: SPACING.lg,
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: colors.surface,
-            justifyContent: 'center',
-            alignItems: 'center',
-            elevation: 4,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          top: SPACING.xl + 35,
+          right: SPACING.lg,
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: colors.surface,
+          justifyContent: 'center',
+          alignItems: 'center',
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        }}
       >
         {editMode ? (
           <X size={20} color={colors.error} strokeWidth={2} />
@@ -705,19 +659,9 @@ export default function ProgramDetailScreen() {
       </TouchableOpacity>
 
       {/* Toast уведомления */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onHide={hideToast}
-      />
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
-      <Modal
-        visible={showExerciseSettings}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowExerciseSettings(false)}
-      >
+      <Modal visible={showExerciseSettings} transparent animationType="slide" onRequestClose={() => setShowExerciseSettings(false)}>
         <ExerciseSettingsSheet
           exercise={selectedExercise}
           colors={colors}
@@ -733,12 +677,7 @@ export default function ProgramDetailScreen() {
         />
       </Modal>
 
-      <Modal
-        visible={showDaySettings}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowDaySettings(false)}
-      >
+      <Modal visible={showDaySettings} transparent animationType="slide" onRequestClose={() => setShowDaySettings(false)}>
         <DaySettingsSheet
           day={selectedDay}
           colors={colors}
@@ -754,15 +693,7 @@ export default function ProgramDetailScreen() {
         />
       </Modal>
 
-      <Modal
-        visible={showExercisePicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowExercisePicker(false);
-          setExerciseSearch('');
-        }}
-      >
+      <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}>
         <ExercisePickerSheet
           searchQuery={exerciseSearch}
           onSearchChange={setExerciseSearch}
@@ -770,10 +701,7 @@ export default function ProgramDetailScreen() {
           loading={loadingExercises}
           onLoadExercises={loadAvailableExercises}
           onSelectExercise={handleAddExerciseFromPicker}
-          onClose={() => {
-            setShowExercisePicker(false);
-            setExerciseSearch('');
-          }}
+          onClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}
           colors={colors}
           badgeStyles={badgeStyles}
         />
@@ -782,6 +710,7 @@ export default function ProgramDetailScreen() {
   );
 }
 
+// ИСПРАВЛЕНИЕ 3: полностью переписан DayCard
 function DayCard({
   day,
   dayIndex,
@@ -790,11 +719,14 @@ function DayCard({
   cardStyles,
   badgeStyles,
   editMode,
+  isActive,
+  onDrag,
   onEditSettings,
   onExerciseSettings,
   onAddExercise,
   onRemoveExercise,
   updateExerciseParams,
+  onExerciseDragEnd,
 }: {
   day: ProgramDay;
   dayIndex: number;
@@ -803,168 +735,203 @@ function DayCard({
   cardStyles: ReturnType<typeof createCardStyles>;
   badgeStyles: ReturnType<typeof createBadgeStyles>;
   editMode: boolean;
+  isActive?: boolean;
+  onDrag?: () => void;
   onEditSettings: () => void;
   onExerciseSettings: (index: number) => void;
   onAddExercise: () => void;
   onRemoveExercise: (index: number) => void;
   updateExerciseParams: (dayIndex: number, exerciseIndex: number, params: any) => void;
+  onExerciseDragEnd?: (data: ProgramExercise[]) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const exercises = day.exercises || [];
 
   return (
-    <View style={[
-      cardStyles.container, 
-      { 
-        borderColor: colors.border, 
-        borderWidth: 1.5,
-        borderRadius: BORDER_RADIUS.lg,
-        overflow: 'hidden',
-        backgroundColor: colors.surface,
-        marginBottom: SPACING.md,
-      }
-    ]}>
-      <TouchableOpacity
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: SPACING.md,
-        }}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setExpanded(!expanded);
-        }}
-        activeOpacity={0.7}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+    <View
+      style={[
+        cardStyles.container,
+        {
+          borderColor: colors.border,
+          borderWidth: 1.5,
+          borderRadius: BORDER_RADIUS.lg,
+          overflow: 'hidden',
+          backgroundColor: colors.surface,
+          marginBottom: SPACING.md,
+          opacity: isActive ? 0.5 : 1,
+        },
+      ]}
+    >
+      {/* --- ЗАГОЛОВОК ДНЯ --- */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.md }}>
+        {/* ЛЕВАЯ ЧАСТЬ: Номер, Текст, Шестеренка (Настройки) */}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+          onPress={() => {
+            // Раскрываем день даже в режиме редактирования, чтобы менять упражнения
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setExpanded(!expanded);
+          }}
+          activeOpacity={0.7}
+        >
+          {/* Иконка Grip (для перетаскивания) */}
           {editMode && (
-            <View style={{ marginRight: SPACING.sm }}>
+            <TouchableOpacity
+              onPressIn={onDrag} // Drag срабатывает при касании ручки
+              style={{ marginRight: SPACING.sm, padding: SPACING.xs, zIndex: 10 }}
+            >
               <GripVertical size={20} color={colors.textTertiary} strokeWidth={2} />
-            </View>
+            </TouchableOpacity>
           )}
-          <View style={[{ width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: SPACING.md, backgroundColor: colors.primary + '20' }]}>
-            <Text style={[typography.h5, { color: colors.primary }]}>
-              {day.day_number}
-            </Text>
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginRight: SPACING.md,
+              backgroundColor: colors.primary + '20',
+            }}
+          >
+            <Text style={[typography.h5, { color: colors.primary }]}>{day.day_number}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 2 }]}>
-              {day.name}
-            </Text>
-            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-              {exercises.length} упражнений
-            </Text>
+            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 2 }]}>{day.name}</Text>
+            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>{exercises.length} упражнений</Text>
           </View>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+          {/* Шестеренка настроек дня */}
           {editMode && (
-            <TouchableOpacity onPress={onEditSettings} style={{ padding: SPACING.sm }}>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                onEditSettings();
+              }}
+              style={{ padding: SPACING.sm, marginRight: SPACING.xs }}
+            >
               <Settings size={16} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           )}
-          {expanded ? (
-            <ChevronDown size={20} color={colors.textSecondary} strokeWidth={1.5} />
-          ) : (
-            <ChevronRight size={20} color={colors.textSecondary} strokeWidth={1.5} />
-          )}
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+        {/* ПРАВАЯ ЧАСТЬ: Шеврон (стрелочка) */}
+        {!editMode && (
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setExpanded(!expanded); }}>
+            {expanded ? <ChevronDown size={20} color={colors.textSecondary} strokeWidth={1.5} /> : <ChevronRight size={20} color={colors.textSecondary} strokeWidth={1.5} />}
+          </TouchableOpacity>
+        )}
+      </View>
 
+      {/* --- ТЕЛО ДНЯ (СПИСОК УПРАЖНЕНИЙ) --- */}
       {expanded && (
         <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
-          {exercises.map((exercise: ProgramExercise, exIndex: number) => {
-            const intensityInfo = getIntensityInfo(exercise.intensity);
-            return (
-              <View
-                key={exercise.id}
-                style={[
-                  { 
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    paddingVertical: SPACING.sm,
-                  },
-                ]}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm }}>
-                  {editMode && (
-                    <View style={{ paddingTop: SPACING.xs }}>
-                      <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    style={{ flex: 1 }}
-                    onPress={() => editMode && onExerciseSettings(exIndex)}
-                    activeOpacity={editMode ? 0.7 : 1}
-                  >
-                    <Text
-                      style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs, lineHeight: 18 }]}
-                      numberOfLines={2}
+          {/* Drag & Drop для упражнений в режиме редактирования */}
+          {editMode && onExerciseDragEnd ? (
+            <DraggableFlatList
+              data={exercises}
+              onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
+              keyExtractor={(item: ProgramExercise) => item.id}
+              renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
+                const exIndex = exercises.indexOf(exercise as ProgramExercise);
+                const intensityInfo = getIntensityInfo(exercise.intensity);
+                return (
+                  <ScaleDecorator>
+                    <View
+                      style={{
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                        paddingVertical: SPACING.sm,
+                        opacity: isExerciseActive ? 0.5 : 1,
+                      }}
                     >
-                      {exercise.exercise_name}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs }}>
-                      <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '500' }]}>
-                        {exercise.sets} × {exercise.reps_range}
-                      </Text>
-                      <View
-                        style={[
-                          badgeStyles.intensityBadge,
-                          { backgroundColor: intensityInfo.color + '20' },
-                        ]}
-                      >
-                        {intensityInfo.icon}
-                        <Text
-                          style={[
-                            badgeStyles.intensityText,
-                            { color: intensityInfo.color },
-                          ]}
-                        >
-                          {intensityInfo.label}
-                        </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm }}>
+                        {/* Ручка для перетаскивания упражнения */}
+                        <TouchableOpacity onPressIn={drag} style={{ paddingTop: SPACING.xs }}>
+                          <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ flex: 1 }} onPress={() => onExerciseSettings(exIndex)} activeOpacity={0.7}>
+                          <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs, lineHeight: 18 }]} numberOfLines={2}>
+                            {exercise.exercise_name}
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs }}>
+                            <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '500' }]}>
+                              {exercise.sets} × {exercise.reps_range}
+                            </Text>
+                            <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
+                              {intensityInfo.icon}
+                              <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>{intensityInfo.label}</Text>
+                            </View>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
+                            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>Отдых: {exercise.rest_seconds} сек</Text>
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => onRemoveExercise(exIndex)} style={{ padding: SPACING.sm }}>
+                          <Trash2 size={16} color={colors.error} strokeWidth={2} />
+                        </TouchableOpacity>
                       </View>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                      <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                        Отдых: {exercise.rest_seconds} сек
+                  </ScaleDecorator>
+                );
+              }}
+            />
+          ) : (
+            exercises.map((exercise: ProgramExercise, exIndex: number) => {
+              const intensityInfo = getIntensityInfo(exercise.intensity);
+              return (
+                <View key={exercise.id} style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: SPACING.sm }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm }}>
+                    {editMode && (
+                      <View style={{ paddingTop: SPACING.xs }}>
+                        <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
+                      </View>
+                    )}
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => editMode && onExerciseSettings(exIndex)} activeOpacity={editMode ? 0.7 : 1}>
+                      <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs, lineHeight: 18 }]} numberOfLines={2}>
+                        {exercise.exercise_name}
                       </Text>
-                    </View>
-                  </TouchableOpacity>
-                  {editMode && (
-                    <TouchableOpacity
-                      onPress={() => onRemoveExercise(exIndex)}
-                      style={{ padding: SPACING.sm }}
-                    >
-                      <Trash2 size={16} color={colors.error} strokeWidth={2} />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs }}>
+                        <Text style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '500' }]}>
+                          {exercise.sets} × {exercise.reps_range}
+                        </Text>
+                        <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
+                          {intensityInfo.icon}
+                          <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>{intensityInfo.label}</Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
+                        <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>Отдых: {exercise.rest_seconds} сек</Text>
+                      </View>
                     </TouchableOpacity>
-                  )}
+                    {editMode && (
+                      <TouchableOpacity onPress={() => onRemoveExercise(exIndex)} style={{ padding: SPACING.sm }}>
+                        <Trash2 size={16} color={colors.error} strokeWidth={2} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })
+          )}
           {editMode && (
             <TouchableOpacity
               onPress={onAddExercise}
-              style={[
-                {
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: SPACING.md,
-                  borderRadius: BORDER_RADIUS.md,
-                  borderWidth: 1,
-                  borderStyle: 'dashed',
-                  borderColor: colors.primary,
-                  backgroundColor: colors.primaryLight,
-                  marginTop: SPACING.sm,
-                },
-              ]}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                backgroundColor: colors.primaryLight,
+                marginTop: SPACING.sm,
+              }}
             >
               <Plus size={16} color={colors.primary} strokeWidth={2} />
-              <Text style={[typography.labelBold, { color: colors.primary, marginLeft: SPACING.sm }]}>
-                Добавить упражнение
-              </Text>
+              <Text style={[typography.labelBold, { color: colors.primary, marginLeft: SPACING.sm }]}>Добавить упражнение</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -973,25 +940,11 @@ function DayCard({
   );
 }
 
-function ExerciseSettingsSheet({
-  exercise,
-  colors,
-  buttonStyles,
-  onSave,
-  onClose,
-}: {
-  exercise: ProgramExercise | null;
-  colors: any;
-  buttonStyles: any;
-  onSave: (params: any) => void;
-  onClose: () => void;
-}) {
+function ExerciseSettingsSheet({ exercise, colors, buttonStyles, onSave, onClose }: { exercise: ProgramExercise | null; colors: any; buttonStyles: any; onSave: (params: any) => void; onClose: () => void }) {
   const [sets, setSets] = useState(exercise?.sets || 3);
   const [repsRange, setRepsRange] = useState(exercise?.reps_range || '8-12');
   const [restSeconds, setRestSeconds] = useState(exercise?.rest_seconds || 90);
-  const [intensity, setIntensity] = useState<'high' | 'medium' | 'low'>(
-    (exercise?.intensity as 'high' | 'medium' | 'low') || 'medium'
-  );
+  const [intensity, setIntensity] = useState<'high' | 'medium' | 'low'>((exercise?.intensity as 'high' | 'medium' | 'low') || 'medium');
 
   const intensities = [
     { value: 'low' as const, label: 'Низкая', color: '#4CAF50', icon: TrendingDown },
@@ -1013,17 +966,11 @@ function ExerciseSettingsSheet({
         <View style={{ marginBottom: SPACING.lg }}>
           <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Подходы</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg }}>
-            <TouchableOpacity
-              onPress={() => setSets(Math.max(1, sets - 1))}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}
-            >
+            <TouchableOpacity onPress={() => setSets(Math.max(1, sets - 1))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
             <Text style={[typography.h3, { color: colors.textPrimary, minWidth: 40, textAlign: 'center' }]}>{sets}</Text>
-            <TouchableOpacity
-              onPress={() => setSets(Math.min(10, sets + 1))}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}
-            >
+            <TouchableOpacity onPress={() => setSets(Math.min(10, sets + 1))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
@@ -1032,17 +979,7 @@ function ExerciseSettingsSheet({
         <View style={{ marginBottom: SPACING.lg }}>
           <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Повторения</Text>
           <TextInput
-            style={[
-              {
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: BORDER_RADIUS.md,
-                padding: SPACING.md,
-                fontSize: 16,
-                color: colors.textPrimary,
-                backgroundColor: colors.surface,
-              },
-            ]}
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, fontSize: 16, color: colors.textPrimary, backgroundColor: colors.surface }}
             value={repsRange}
             onChangeText={setRepsRange}
             placeholder="например: 8-12"
@@ -1053,17 +990,11 @@ function ExerciseSettingsSheet({
         <View style={{ marginBottom: SPACING.lg }}>
           <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Отдых (секунды)</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg }}>
-            <TouchableOpacity
-              onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}
-            >
+            <TouchableOpacity onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
             <Text style={[typography.h3, { color: colors.textPrimary, minWidth: 60, textAlign: 'center' }]}>{restSeconds}с</Text>
-            <TouchableOpacity
-              onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}
-            >
+            <TouchableOpacity onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
@@ -1076,39 +1007,16 @@ function ExerciseSettingsSheet({
               <TouchableOpacity
                 key={item.value}
                 onPress={() => setIntensity(item.value)}
-                style={[
-                  {
-                    flex: 1,
-                    padding: SPACING.md,
-                    borderRadius: BORDER_RADIUS.md,
-                    borderWidth: 2,
-                    borderColor: intensity === item.value ? item.color : colors.border,
-                    backgroundColor: intensity === item.value ? item.color + '15' : colors.surface,
-                    alignItems: 'center',
-                  },
-                ]}
+                style={{ flex: 1, padding: SPACING.md, borderRadius: BORDER_RADIUS.md, borderWidth: 2, borderColor: intensity === item.value ? item.color : colors.border, backgroundColor: intensity === item.value ? item.color + '15' : colors.surface, alignItems: 'center' }}
               >
                 <item.icon size={20} color={intensity === item.value ? item.color : colors.textSecondary} strokeWidth={2} />
-                <Text
-                  style={[
-                    typography.labelBold,
-                    {
-                      color: intensity === item.value ? item.color : colors.textSecondary,
-                      marginTop: SPACING.xs,
-                    },
-                  ]}
-                >
-                  {item.label}
-                </Text>
+                <Text style={[typography.labelBold, { color: intensity === item.value ? item.color : colors.textSecondary, marginTop: SPACING.xs }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        <TouchableOpacity
-          onPress={() => onSave({ sets, reps_range: repsRange, rest_seconds: restSeconds, intensity })}
-          style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
-        >
+        <TouchableOpacity onPress={() => onSave({ sets, reps_range: repsRange, rest_seconds: restSeconds, intensity })} style={[buttonStyles.primary, { backgroundColor: colors.primary }]}>
           <Text style={buttonStyles.textPrimary}>Сохранить</Text>
         </TouchableOpacity>
       </View>
@@ -1116,21 +1024,8 @@ function ExerciseSettingsSheet({
   );
 }
 
-function DaySettingsSheet({
-  day,
-  colors,
-  buttonStyles,
-  onSave,
-  onClose,
-}: {
-  day: ProgramDay | null;
-  colors: any;
-  buttonStyles: any;
-  onSave: (params: any) => void;
-  onClose: () => void;
-}) {
+function DaySettingsSheet({ day, colors, buttonStyles, onSave, onClose }: { day: ProgramDay | null; colors: any; buttonStyles: any; onSave: (params: any) => void; onClose: () => void }) {
   const [dayName, setDayName] = useState(day?.name || '');
-
   return (
     <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
@@ -1141,32 +1036,17 @@ function DaySettingsSheet({
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-
         <View style={{ marginBottom: SPACING.lg }}>
           <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Название дня</Text>
           <TextInput
-            style={[
-              {
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: BORDER_RADIUS.md,
-                padding: SPACING.md,
-                fontSize: 16,
-                color: colors.textPrimary,
-                backgroundColor: colors.surface,
-              },
-            ]}
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, fontSize: 16, color: colors.textPrimary, backgroundColor: colors.surface }}
             value={dayName}
             onChangeText={setDayName}
             placeholder="например: День 1: Push"
             placeholderTextColor={colors.textTertiary}
           />
         </View>
-
-        <TouchableOpacity
-          onPress={() => onSave({ name: dayName })}
-          style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
-        >
+        <TouchableOpacity onPress={() => onSave({ name: dayName })} style={[buttonStyles.primary, { backgroundColor: colors.primary }]}>
           <Text style={buttonStyles.textPrimary}>Сохранить</Text>
         </TouchableOpacity>
       </View>
@@ -1174,95 +1054,31 @@ function DaySettingsSheet({
   );
 }
 
-function ExercisePickerSheet({
-  searchQuery,
-  onSearchChange,
-  exercises,
-  loading,
-  onLoadExercises,
-  onSelectExercise,
-  onClose,
-  colors,
-  badgeStyles,
-}: {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  exercises: any[];
-  loading: boolean;
-  onLoadExercises: (query: string) => void;
-  onSelectExercise: (exercise: any) => void;
-  onClose: () => void;
-  colors: any;
-  badgeStyles: any;
-}) {
+function ExercisePickerSheet({ searchQuery, onSearchChange, exercises, loading, onLoadExercises, onSelectExercise, onClose, colors, badgeStyles }: { searchQuery: string; onSearchChange: (query: string) => void; exercises: any[]; loading: boolean; onLoadExercises: (query: string) => void; onSelectExercise: (exercise: any) => void; onClose: () => void; colors: any; badgeStyles: any }) {
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      onLoadExercises(searchQuery);
-    }, 300);
-
+    const timeoutId = setTimeout(() => { onLoadExercises(searchQuery); }, 300);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
   const getPrimaryMusclesColor = (muscle: string) => {
-    const colors_map: Record<string, string> = {
-      'грудь': '#F44336',
-      'спина': '#2196F3',
-      'ноги': '#4CAF50',
-      'плечи': '#FF9800',
-      'руки': '#9C27B0',
-      'пресс': '#FFC107',
-    };
+    const colors_map: Record<string, string> = { 'грудь': '#F44336', 'спина': '#2196F3', 'ноги': '#4CAF50', 'плечи': '#FF9800', 'руки': '#9C27B0', 'пресс': '#FFC107' };
     return colors_map[muscle.toLowerCase()] || colors.primary;
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View style={{ 
-        backgroundColor: colors.surface, 
-        borderTopLeftRadius: 20, 
-        borderTopRightRadius: 20, 
-        maxHeight: '80%',
-        paddingBottom: SPACING.lg,
-      }}>
-        <View style={{ 
-          flexDirection: 'row', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          padding: SPACING.lg,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}>
-          <Text style={[typography.h5, { color: colors.textPrimary }]}>
-            Добавить упражнение
-          </Text>
+      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: SPACING.lg }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <Text style={[typography.h5, { color: colors.textPrimary }]}>Добавить упражнение</Text>
           <TouchableOpacity onPress={onClose}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-
         <View style={{ padding: SPACING.lg, paddingBottom: SPACING.md }}>
-          <View style={{ 
-            flexDirection: 'row', 
-            alignItems: 'center', 
-            backgroundColor: colors.surfaceSecondary,
-            borderRadius: BORDER_RADIUS.md,
-            paddingHorizontal: SPACING.md,
-          }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.md, paddingHorizontal: SPACING.md }}>
             <Search size={18} color={colors.textTertiary} strokeWidth={2} />
-            <TextInput
-              style={{ 
-                flex: 1, 
-                padding: SPACING.md,
-                fontSize: 16,
-                color: colors.textPrimary,
-              }}
-              placeholder="Поиск по названию..."
-              placeholderTextColor={colors.textTertiary}
-              value={searchQuery}
-              onChangeText={onSearchChange}
-              autoFocus
-            />
+            <TextInput style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }} placeholder="Поиск по названию..." placeholderTextColor={colors.textTertiary} value={searchQuery} onChangeText={onSearchChange} autoFocus />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => onSearchChange('')}>
                 <X size={18} color={colors.textTertiary} strokeWidth={2} />
@@ -1270,13 +1086,10 @@ function ExercisePickerSheet({
             )}
           </View>
         </View>
-
         {loading ? (
           <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-              Загрузка...
-            </Text>
+            <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>Загрузка...</Text>
           </View>
         ) : exercises.length === 0 ? (
           <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
@@ -1290,82 +1103,30 @@ function ExercisePickerSheet({
             {exercises.map((exercise) => {
               const primaryMuscles = exercise.primary_muscles || [];
               return (
-                <TouchableOpacity
-                  key={exercise.id}
-                  onPress={() => onSelectExercise(exercise)}
-                  style={{
-                    padding: SPACING.md,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: SPACING.md,
-                  }}
-                >
-                  <View style={{ 
-                    width: 40, 
-                    height: 40, 
-                    borderRadius: 20, 
-                    backgroundColor: primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) + '20' : colors.primary + '20',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
+                <TouchableOpacity key={exercise.id} onPress={() => onSelectExercise(exercise)} style={{ padding: SPACING.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) + '20' : colors.primary + '20', justifyContent: 'center', alignItems: 'center' }}>
                     <Dumbbell size={20} color={primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) : colors.primary} strokeWidth={2} />
                   </View>
-
                   <View style={{ flex: 1 }}>
-                    <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 4 }]}>
-                      {exercise.name}
-                    </Text>
-                    
+                    <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 4 }]}>{exercise.name}</Text>
                     {primaryMuscles.length > 0 && (
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                         {primaryMuscles.slice(0, 3).map((muscle: string, idx: number) => (
-                          <View
-                            key={idx}
-                            style={[
-                              badgeStyles.intensityBadge,
-                              { 
-                                backgroundColor: getPrimaryMusclesColor(muscle) + '15',
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                badgeStyles.intensityText,
-                                { 
-                                  color: getPrimaryMusclesColor(muscle),
-                                  fontSize: 11,
-                                },
-                              ]}
-                            >
-                              {muscle}
-                            </Text>
+                          <View key={idx} style={[badgeStyles.intensityBadge, { backgroundColor: getPrimaryMusclesColor(muscle) + '15', paddingHorizontal: 8, paddingVertical: 2 }]}>
+                            <Text style={[badgeStyles.intensityText, { color: getPrimaryMusclesColor(muscle), fontSize: 11 }]}>{muscle}</Text>
                           </View>
                         ))}
                       </View>
                     )}
                   </View>
-
                   <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
         )}
-
-        <View style={{ 
-          marginTop: SPACING.md,
-          marginHorizontal: SPACING.lg,
-          padding: SPACING.md,
-          backgroundColor: colors.primaryLight,
-          borderRadius: BORDER_RADIUS.md,
-        }}>
-          <Text style={[typography.caption, { color: colors.primary }]}>
-            Параметры по умолчанию: 4 подхода × 8-12 повт., отдых 90с, средняя интенсивность
-          </Text>
+        <View style={{ marginTop: SPACING.md, marginHorizontal: SPACING.lg, padding: SPACING.md, backgroundColor: colors.primaryLight, borderRadius: BORDER_RADIUS.md }}>
+          <Text style={[typography.caption, { color: colors.primary }]}>Параметры по умолчанию: 4 подхода × 8-12 повт., отдых 90с, средняя интенсивность</Text>
         </View>
       </View>
     </View>

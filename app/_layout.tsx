@@ -1,7 +1,9 @@
+import 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { supabase } from '../src/lib/supabase';
 import { useStore } from '../src/store/useStore';
 import { ToastProvider } from '../src/components/ToastProvider';
@@ -21,16 +23,14 @@ function RootLayoutContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log('🎨 [RENDER] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'segments:', segments);
+  console.log(' [RENDER] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'segments:', segments);
 
   useEffect(() => {
-    console.log('🔐 [USEEFFECT 1] Запуск загрузки сессии...');
-    
+    console.log(' [USEEFFECT 1] Запуск загрузки сессии...');
     const loadSession = async () => {
       try {
-        console.log(' [LOAD] Вызываем getSession...');
+        console.log('🔐 [LOAD] Вызываем getSession...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        
         if (error) {
           console.log('🔐 [LOAD] Ошибка getSession:', error.message);
           setError(error.message);
@@ -39,7 +39,7 @@ function RootLayoutContent() {
           setAuth(session?.user?.id ?? null);
         }
       } catch (e: any) {
-        console.log(' [LOAD] Исключение:', e.message);
+        console.log('🔐 [LOAD] Исключение:', e.message);
         setError(e.message);
       } finally {
         console.log('🔐 [LOAD] Устанавливаем isLoading = false');
@@ -64,7 +64,6 @@ function RootLayoutContent() {
 
   useEffect(() => {
     console.log('🔀 [USEEFFECT 2] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'segments:', segments);
-    
     if (isLoading) {
       console.log('🔀 [REDIRECT] Пропуск - ещё загружается');
       return;
@@ -73,10 +72,8 @@ function RootLayoutContent() {
       console.log('🔀 [REDIRECT] Пропуск - segments null');
       return;
     }
-
     const inAuthGroup = segments[0] === '(auth)';
     console.log('🔀 [REDIRECT] inAuthGroup:', inAuthGroup, 'currentPath:', segments.join('/'));
-
     if (!isAuthenticated && !inAuthGroup) {
       console.log('🔀 [REDIRECT] ➡️ Редирект на логин');
       router.replace('/(auth)/login');
@@ -109,9 +106,8 @@ function RootLayoutContent() {
 
   console.log('📱 [UI] Рендерим основной экран');
   return (
-    // 👇 ИСПРАВЛЕНИЕ: styles.container БЕЗ alignItems: 'center'
-  <View style={[styles.container, { backgroundColor: colors.background }]}>
-    <Stack screenOptions={{ headerShown: false }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
@@ -127,11 +123,13 @@ function RootLayoutContent() {
 export default function RootLayout() {
   console.log('🎯 [ROOT] Рендер RootLayout');
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <RootLayoutContent />
-      </ToastProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.container}>
+      <ThemeProvider>
+        <ToastProvider>
+          <RootLayoutContent />
+        </ToastProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
