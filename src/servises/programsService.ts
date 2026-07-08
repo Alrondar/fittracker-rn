@@ -21,12 +21,14 @@ export interface ProgramDay {
 export interface ProgramExercise {
   id: string;
   program_day_id: string;
+  exercise_id?: string;  
   exercise_name: string;
   sets: number;
   reps_range: string;
   rest_seconds: number;
   intensity: 'low' | 'medium' | 'high';
   position: number;
+  isNew?: boolean;
 }
 
 export interface UserProgram {
