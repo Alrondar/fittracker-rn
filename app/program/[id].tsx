@@ -24,7 +24,7 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { Toast } from '../../src/components/Toast';
 import { useToast } from '../../src/hooks/useToast';
-import { SPACING, BORDER_RADIUS, GRADIENTS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -75,7 +75,7 @@ export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { userId } = useStore();
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
   const { toast, showToast, hideToast } = useToast();
 
   const [program, setProgram] = useState<Program | null>(null);
@@ -484,7 +484,7 @@ export default function ProgramDetailScreen() {
       {/* ИСПРАВЛЕНИЕ 1: добавлен nestedScrollEnabled={true} */}
       <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         <LinearGradient
-          colors={GRADIENTS.hero}
+          colors={gradients.hero}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ paddingTop: SPACING.xl + 10, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl }}
@@ -771,19 +771,13 @@ function DayCard({
 
   return (
     <View
-      style={[
-        cardStyles.container,
-        {
-          borderColor: colors.border,
-          borderWidth: 1.5,
-          borderRadius: BORDER_RADIUS.lg,
-          overflow: 'hidden',
-          backgroundColor: colors.surface,
-          marginBottom: SPACING.md,
-          opacity: isActive ? 0.5 : 1,
-        },
-      ]}
-    >
+  style={[
+    cardStyles.programDayCard,
+    {
+      opacity: isActive ? 0.5 : 1,
+    },
+  ]}
+>
       {/* --- ЗАГОЛОВОК ДНЯ --- */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.md }}>
         {/* ЛЕВАЯ ЧАСТЬ: Номер, Текст, Шестеренка (Настройки) */}

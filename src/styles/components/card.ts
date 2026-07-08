@@ -282,6 +282,19 @@ export const createCardStyles = (colors: any) =>
     collapsibleContent: {
       padding: SPACING.md,
     } as ViewStyle,
+    programDayCard: {
+  backgroundColor: colors.surface,
+  borderRadius: BORDER_RADIUS.lg,
+  borderWidth: 2,
+  borderColor: colors.primary,
+  overflow: 'hidden',
+  marginBottom: SPACING.md,
+  elevation: 3,
+  shadowColor: colors.primary,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+} as ViewStyle,
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;
