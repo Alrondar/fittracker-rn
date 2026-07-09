@@ -48,6 +48,7 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
+import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 
 type TabType = 'my' | 'ready';
@@ -123,7 +124,6 @@ export default function ProgramsScreen() {
 
       let data: Program[];
       if (activeTab === 'my') {
-        // ✅ ПРОВЕРКА userId на null
         if (!userId) {
           setPrograms([]);
           return;
@@ -211,7 +211,6 @@ export default function ProgramsScreen() {
   };
 
   const openCreateModal = () => {
-    // ✅ ПРОВЕРКА userId на null
     if (!userId) {
       showToast('Необходимо войти в аккаунт', 'error');
       return;
@@ -231,7 +230,6 @@ export default function ProgramsScreen() {
       return;
     }
 
-    // ✅ ПРОВЕРКА userId на null
     if (!userId) {
       showToast('Необходимо войти в аккаунт', 'error');
       return;
@@ -266,6 +264,100 @@ export default function ProgramsScreen() {
     }
   };
 
+  // ✅ ИСПРАВЛЕНИЕ БАГА: копирование готовой программы с переключением на вкладку "Мои"
+  const copyProgramToUser = async (program: Program) => {
+    if (!userId) {
+      showToast('Необходимо войти в аккаунт', 'error');
+      return;
+    }
+
+    try {
+      // Вызываем RPC функцию копирования
+     const { data, error } = await supabase.rpc('copy_program_for_user', {
+  p_program_id: program.id,
+  p_user_id: userId,
+});
+
+if (error) throw error;
+
+// RPC может возвращать массив или одну строку
+const newProgramId = Array.isArray(data) ? data[0]?.id || data[0] : data?.id || data;
+
+console.log('📋 Скопированная программа ID:', newProgramId);
+
+      if (error) throw error;
+
+      // ✅ Переключаемся на вкладку "Мои программы"
+      setActiveTab('my');
+      // ✅ Сбрасываем пагинацию
+      setPage(1);
+      // ✅ Сбрасываем фильтры
+      setSelectedLevels([]);
+      setSearchQuery('');
+      setSortBy('date');
+      // ✅ Загружаем обновлённый список
+      await loadPrograms();
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('Программа скопирована в "Мои программы"', 'success');
+
+      // ✅ Открываем модалку редактирования скопированной программы
+      // (опционально — можно убрать, если не нужно сразу редактировать)
+      const copiedProgram = await getProgramWithDaysForEdit(newProgramId);
+      if (copiedProgram) {
+        setEditingProgram(copiedProgram);
+        setFormName(copiedProgram.name);
+        setFormDescription(copiedProgram.description);
+        setFormDuration(copiedProgram.duration.toString());
+        setFormLevel(copiedProgram.level);
+        setShowCreateModal(true);
+      }
+    } catch (e: any) {
+      showToast(e.message || 'Не удалось скопировать программу', 'error');
+    }
+  };
+
+  // Вспомогательная функция для получения скопированной программы
+  const getProgramWithDaysForEdit = async (programId: string): Promise<Program | null> => {
+    try {
+      const { data } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single();
+      return data;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleProgramPress = (program: Program) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Если это готовая программа — копируем её перед открытием
+    if (activeTab === 'ready' && !program.id.startsWith('user_')) {
+      Alert.alert(
+        'Редактировать программу?',
+        `Программа "${program.name}" будет скопирована в "Мои программы" для редактирования`,
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Скопировать и редактировать',
+            onPress: () => copyProgramToUser(program),
+          },
+          {
+            text: 'Только посмотреть',
+            onPress: () => {
+              router.push(`/program/${program.id}`);
+            },
+          },
+        ]
+      );
+    } else {
+      router.push(`/program/${program.id}`);
+    }
+  };
+
   const getLevelInfo = (level: string) => {
     switch (level) {
       case 'beginner':
@@ -286,10 +378,7 @@ export default function ProgramsScreen() {
     return (
       <FadeIn delay={index * 80}>
         <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push(`/program/${item.id}`);
-          }}
+          onPress={() => handleProgramPress(item)}
           onLongPress={() => handleLongPress(item)}
           delayLongPress={500}
           activeOpacity={0.85}
@@ -523,44 +612,42 @@ export default function ProgramsScreen() {
           </View>
         )}
 
-        {/* Чипы фильтров по уровню (только для готовых) */}
-        {activeTab === 'ready' && (
-          <View style={cardStyles.filterChips}>
-            {LEVEL_OPTIONS.map((option) => {
-              const isActive = selectedLevels.includes(option.value);
-              return (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    cardStyles.filterChip,
-                    isActive && cardStyles.filterChipActive,
-                  ]}
-                  onPress={() => toggleLevel(option.value)}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <option.icon size={14} color={isActive ? 'white' : option.color} strokeWidth={2} />
-                    <Text
-                      style={[
-                        cardStyles.filterChipText,
-                        isActive && cardStyles.filterChipTextActive,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            {selectedLevels.length > 0 && (
-              <TouchableOpacity
-                style={cardStyles.filterChip}
-                onPress={() => { setSelectedLevels([]); setPage(1); }}
-              >
-                <Text style={cardStyles.filterChipText}>Сбросить</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+{/* Чипы фильтров по уровню (для всех вкладок) */}
+<View style={cardStyles.filterChips}>
+  {LEVEL_OPTIONS.map((option) => {
+    const isActive = selectedLevels.includes(option.value);
+    return (
+      <TouchableOpacity
+        key={option.value}
+        style={[
+          cardStyles.filterChip,
+          isActive && cardStyles.filterChipActive,
+        ]}
+        onPress={() => toggleLevel(option.value)}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <option.icon size={14} color={isActive ? 'white' : option.color} strokeWidth={2} />
+          <Text
+            style={[
+              cardStyles.filterChipText,
+              isActive && cardStyles.filterChipTextActive,
+            ]}
+          >
+            {option.label}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  })}
+  {selectedLevels.length > 0 && (
+    <TouchableOpacity
+      style={cardStyles.filterChip}
+      onPress={() => { setSelectedLevels([]); setPage(1); }}
+    >
+      <Text style={cardStyles.filterChipText}>Сбросить</Text>
+    </TouchableOpacity>
+  )}
+</View>
       </View>
     </View>
   );
@@ -583,7 +670,10 @@ export default function ProgramsScreen() {
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={!loading ? renderEmpty() : null}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{
+          paddingHorizontal: SPACING.lg,
+          paddingBottom: 100,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -608,17 +698,17 @@ export default function ProgramsScreen() {
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
-      {/* Модалка создания/редактирования */}
+      {/* Модалка создания/редактирования (bottom sheet) */}
       <Modal
         visible={showCreateModal}
         transparent
         animationType="slide"
         onRequestClose={() => setShowCreateModal(false)}
       >
-<TouchableWithoutFeedback onPress={() => setShowCreateModal(false)}>
-  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-    <TouchableWithoutFeedback onPress={() => {}}>
-      <View style={[cardStyles.sheetContainer, { maxHeight: '90%' }]}>
+        <TouchableWithoutFeedback onPress={() => setShowCreateModal(false)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[cardStyles.sheetContainer, { maxHeight: '90%' }]}>
                 <View style={cardStyles.sheetHeader}>
                   <Text style={cardStyles.sheetTitle}>
                     {editingProgram ? 'Редактировать программу' : 'Новая программа'}
@@ -665,7 +755,7 @@ export default function ProgramsScreen() {
                     />
                   </View>
 
-                  {/* СЕГМЕНТИРОВАННЫЙ КОНТРОЛ УРОВНЯ */}
+                  {/* Сегментированный контрол уровня */}
                   <View style={cardStyles.sheetField}>
                     <Text style={cardStyles.sheetLabel}>Уровень</Text>
                     <View style={{ flexDirection: 'row', gap: SPACING.sm }}>

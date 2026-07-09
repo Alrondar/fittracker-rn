@@ -572,6 +572,23 @@ export const createCardStyles = (colors: any) =>
       fontSize: 16,
       color: colors.textPrimary,
     } as TextStyle,
+    // ===== БЛОК РАСПИСАНИЯ В ШАПКЕ =====
+scheduleBlock: {
+  backgroundColor: colors.textInverse + '30',
+  borderWidth: 1, 
+  padding: SPACING.md,
+  borderColor: colors.textInverse + '40',
+  borderRadius: BORDER_RADIUS.md,
+} as ViewStyle,
+scheduleHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: SPACING.sm,
+} as ViewStyle,
+scheduleEditButton: {
+  padding: SPACING.xs,
+} as ViewStyle,
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;
