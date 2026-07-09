@@ -5,6 +5,8 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase, getList } from '../../src/lib/supabase';
@@ -20,38 +22,23 @@ import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
 import { typography } from '../../src/styles/typography';
+import { MUSCLE_GROUPS } from '../../src/constants/muscleGroups';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [allMuscles, setAllMuscles] = useState<string[]>([]);
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+
   const router = useRouter();
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
 
   useEffect(() => {
-    loadMuscles();
-  }, []);
-
-  useEffect(() => {
     loadExercises();
   }, [selectedMuscles]);
-
-  const loadMuscles = async () => {
-    try {
-      const { data } = await supabase.from('exercises').select('primary_muscles');
-      const musclesSet = new Set<string>();
-      (data || []).forEach((ex: any) => {
-        getList(ex, 'primary_muscles').forEach(m => musclesSet.add(m));
-      });
-      setAllMuscles(Array.from(musclesSet).sort());
-    } catch (e) {
-      console.error('Ошибка загрузки мышц:', e);
-    }
-  };
 
   const loadExercises = async () => {
     setLoading(true);
@@ -83,6 +70,17 @@ export default function ExercisesScreen() {
     );
   };
 
+  const toggleGroup = (groupName: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveGroup(prev => prev === groupName ? null : groupName);
+  };
+
+  const resetFilters = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedMuscles([]);
+    setActiveGroup(null);
+  };
+
   const renderEmpty = () => (
     <FadeIn delay={200} style={commonStyles.emptyContainer}>
       <Search size={64} color={colors.textTertiary} strokeWidth={1.5} />
@@ -96,11 +94,8 @@ export default function ExercisesScreen() {
       </Text>
       {selectedMuscles.length > 0 && (
         <TouchableOpacity
-          style={[badgeStyles.container, { backgroundColor: colors.primaryLight }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setSelectedMuscles([]);
-          }}
+          style={[badgeStyles.container, { backgroundColor: colors.primaryLight, marginTop: SPACING.md }]}
+          onPress={resetFilters}
         >
           <Text style={[badgeStyles.text, { color: colors.primary }]}>
             Сбросить фильтры
@@ -109,6 +104,8 @@ export default function ExercisesScreen() {
       )}
     </FadeIn>
   );
+
+  const groupNames = Object.keys(MUSCLE_GROUPS);
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -122,43 +119,118 @@ export default function ExercisesScreen() {
         </Text>
       </FadeIn>
 
-      {/* Фильтры по мышцам */}
+      {/* Фильтр мышц: горизонтальные чипы + аккордеон */}
       <FadeIn style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <FlatList
-          horizontal
-          data={allMuscles}
-          keyExtractor={(item) => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                badgeStyles.container,
-                {
-                  backgroundColor: selectedMuscles.includes(item) ? colors.primaryLight : colors.surface,
-                  borderColor: selectedMuscles.includes(item) ? colors.primary : colors.border,
-                  marginRight: SPACING.sm,
-                  borderRadius: BORDER_RADIUS.full,
-                },
-              ]}
-              onPress={() => toggleMuscle(item)}
-              activeOpacity={0.7}
-            >
-              {selectedMuscles.includes(item) && (
-                <Check size={14} color={colors.primary} strokeWidth={2} style={{ marginRight: 4 }} />
-              )}
-              <Text style={[
-                badgeStyles.text,
-                {
-                  color: selectedMuscles.includes(item) ? colors.primary : colors.textPrimary,
-                  fontWeight: selectedMuscles.includes(item) ? 'bold' : 'normal',
-                },
-              ]}>
-                {item}
+        {/* Шапка со счётчиком и сбросом */}
+        {selectedMuscles.length > 0 && (
+          <View style={cardStyles.muscleGroupSelectorHeader}>
+            <Text style={cardStyles.muscleGroupSelectorHeaderText}>
+              Выбрано: {selectedMuscles.length}
+            </Text>
+            <TouchableOpacity onPress={resetFilters}>
+              <Text style={cardStyles.muscleGroupSelectorResetText}>
+                Сбросить
               </Text>
             </TouchableOpacity>
-          )}
+          </View>
+        )}
+
+        {/* Горизонтальный скролл чипов групп */}
+        <FlatList
+          horizontal
+          data={groupNames}
+          keyExtractor={(item) => item}
+          renderItem={({ item: groupName }) => {
+            const muscles = MUSCLE_GROUPS[groupName];
+            const isActive = activeGroup === groupName;
+            const selectedInGroup = muscles.filter(m => selectedMuscles.includes(m)).length;
+            const hasSelected = selectedInGroup > 0;
+
+            // Определяем стиль чипа
+            let chipStyle = cardStyles.muscleGroupChipDefault;
+            let textStyle = cardStyles.muscleGroupChipTextDefault;
+            if (isActive) {
+              chipStyle = cardStyles.muscleGroupChipActive;
+              textStyle = cardStyles.muscleGroupChipTextActive;
+            } else if (hasSelected) {
+              chipStyle = cardStyles.muscleGroupChipSelected;
+              textStyle = cardStyles.muscleGroupChipTextSelected;
+            }
+
+            // Определяем стиль badge
+            let badgeStyle: ViewStyle | undefined;
+            let badgeTextStyle: TextStyle | undefined;
+            if (isActive) {
+              badgeStyle = cardStyles.muscleGroupBadgeActive;
+              badgeTextStyle = cardStyles.muscleGroupBadgeTextActive;
+            } else if (hasSelected) {
+              badgeStyle = cardStyles.muscleGroupBadgeSelected;
+              badgeTextStyle = cardStyles.muscleGroupBadgeTextSelected;
+            }
+
+            return (
+              <TouchableOpacity
+                style={[cardStyles.muscleGroupChip, chipStyle]}
+                onPress={() => toggleGroup(groupName)}
+                activeOpacity={0.7}
+              >
+                <Text style={[cardStyles.muscleGroupChipText, textStyle]}>
+                  {groupName}
+                </Text>
+                {selectedInGroup > 0 && (
+                  <View style={[cardStyles.muscleGroupBadge, badgeStyle]}>
+                    <Text style={[cardStyles.muscleGroupBadgeText, badgeTextStyle]}>
+                      {selectedInGroup}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
           contentContainerStyle={{ paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg }}
           showsHorizontalScrollIndicator={false}
         />
+
+        {/* Раскрывающийся список подмышц активной группы */}
+        {activeGroup && (
+          <View style={cardStyles.muscleSubgroupContainer}>
+            <View style={cardStyles.muscleSubgroupList}>
+              {MUSCLE_GROUPS[activeGroup].map(muscle => {
+                const isSelected = selectedMuscles.includes(muscle);
+                return (
+                  <TouchableOpacity
+                    key={muscle}
+                    style={[
+                      badgeStyles.container,
+                      {
+                        backgroundColor: isSelected ? colors.primaryLight : colors.surface,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                        borderRadius: BORDER_RADIUS.full,
+                      },
+                    ]}
+                    onPress={() => toggleMuscle(muscle)}
+                    activeOpacity={0.7}
+                  >
+                    {isSelected && (
+                      <Check size={12} color={colors.primary} strokeWidth={2.5} style={{ marginRight: 4 }} />
+                    )}
+                    <Text
+                      style={[
+                        badgeStyles.text,
+                        {
+                          color: isSelected ? colors.primary : colors.textSecondary,
+                          fontSize: 12,
+                        },
+                      ]}
+                    >
+                      {muscle}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
       </FadeIn>
 
       {/* Список упражнений */}
