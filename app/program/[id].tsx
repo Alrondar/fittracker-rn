@@ -330,7 +330,6 @@ export default function ProgramDetailScreen() {
     setEditedProgram({ ...editedProgram, schedule: newSchedule });
   };
 
-  // Обработчик перетаскивания упражнений
   const onExerciseDragEnd = (dayIndex: number, data: ProgramExercise[]) => {
     if (!editedProgram || !editedProgram.days) return;
     const newDays = [...editedProgram.days];
@@ -339,10 +338,9 @@ export default function ProgramDetailScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  // Обработчик перетаскивания дней
   const onDayDragEnd = (data: ProgramDay[]) => {
     if (!editedProgram) return;
-    console.log(' DRAG END - Новый порядок:', data.map((d) => d.name));
+    console.log('🔥 DRAG END - Новый порядок:', data.map((d) => d.name));
     const updatedDays = data.map((day, index) => ({
       ...day,
       day_number: index + 1,
@@ -434,58 +432,26 @@ export default function ProgramDetailScreen() {
   const getLevelInfo = (level: string) => {
     switch (level) {
       case 'beginner':
-        return {
-          label: 'Новичок',
-          color: '#4CAF50',
-          icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} />,
-        };
+        return { label: 'Новичок', color: '#4CAF50', icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} /> };
       case 'intermediate':
-        return {
-          label: 'Средний',
-          color: '#FF9800',
-          icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} />,
-        };
+        return { label: 'Средний', color: '#FF9800', icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} /> };
       case 'advanced':
-        return {
-          label: 'Продвинутый',
-          color: '#F44336',
-          icon: <Flame size={16} color="#F44336" strokeWidth={1.5} />,
-        };
+        return { label: 'Продвинутый', color: '#F44336', icon: <Flame size={16} color="#F44336" strokeWidth={1.5} /> };
       default:
-        return {
-          label: level,
-          color: colors.textSecondary,
-          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
-        };
+        return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
     }
   };
 
   const getIntensityInfo = (intensity: string) => {
     switch (intensity) {
       case 'high':
-        return {
-          label: 'Высокая',
-          color: '#F44336',
-          icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} />,
-        };
+        return { label: 'Высокая', color: '#F44336', icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} /> };
       case 'medium':
-        return {
-          label: 'Средняя',
-          color: '#FFC107',
-          icon: <Minus size={12} color="#FFC107" strokeWidth={2} />,
-        };
+        return { label: 'Средняя', color: '#FFC107', icon: <Minus size={12} color="#FFC107" strokeWidth={2} /> };
       case 'low':
-        return {
-          label: 'Низкая',
-          color: '#4CAF50',
-          icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} />,
-        };
+        return { label: 'Низкая', color: '#4CAF50', icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} /> };
       default:
-        return {
-          label: intensity,
-          color: colors.textSecondary,
-          icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} />,
-        };
+        return { label: intensity, color: colors.textSecondary, icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} /> };
     }
   };
 
@@ -500,12 +466,7 @@ export default function ProgramDetailScreen() {
   if (!program) {
     return (
       <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
-        <Text
-          style={[
-            typography.body,
-            { color: colors.textSecondary, textAlign: 'center', marginTop: 100 },
-          ]}
-        >
+        <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: 100 }]}>
           Программа не найдена
         </Text>
       </View>
@@ -517,6 +478,7 @@ export default function ProgramDetailScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      {/* ✅ Скролл работает свободно — нет блокировки через isDragging */}
       <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         <LinearGradient
           colors={GRADIENTS.hero}
@@ -549,12 +511,7 @@ export default function ProgramDetailScreen() {
             {/* Блок расписания с иконкой редактирования */}
             <View style={cardStyles.scheduleBlock}>
               <View style={cardStyles.scheduleHeader}>
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
-                  ]}
-                >
+                <Text style={[typography.caption, { color: 'rgba(255,255,255,0.9)', fontWeight: '600' }]}>
                   Расписание:
                 </Text>
                 {editMode && (
@@ -579,14 +536,7 @@ export default function ProgramDetailScreen() {
         </LinearGradient>
 
         <View style={{ padding: SPACING.lg }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: SPACING.md,
-            }}
-          >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
             <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
               Дни программы ({displayProgram.days?.length || 0})
             </Text>
@@ -682,11 +632,7 @@ export default function ProgramDetailScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[
-              buttonStyles.primary,
-              buttonStyles.large,
-              { flex: editMode ? 2 : 1, backgroundColor: editMode ? colors.success : colors.primary },
-            ]}
+            style={[buttonStyles.primary, buttonStyles.large, { flex: editMode ? 2 : 1, backgroundColor: editMode ? colors.success : colors.primary }]}
             onPress={editMode ? saveProgram : handleStartProgram}
             disabled={saving || starting}
             activeOpacity={0.8}
@@ -738,7 +684,6 @@ export default function ProgramDetailScreen() {
         )}
       </TouchableOpacity>
 
-      {/* Toast уведомления */}
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
       <Modal visible={showExerciseSettings} transparent animationType="slide" onRequestClose={() => setShowExerciseSettings(false)}>
@@ -773,15 +718,7 @@ export default function ProgramDetailScreen() {
         />
       </Modal>
 
-      <Modal
-        visible={showExercisePicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowExercisePicker(false);
-          setExerciseSearch('');
-        }}
-      >
+      <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}>
         <ExercisePickerSheet
           searchQuery={exerciseSearch}
           onSearchChange={setExerciseSearch}
@@ -789,10 +726,7 @@ export default function ProgramDetailScreen() {
           loading={loadingExercises}
           onLoadExercises={loadAvailableExercises}
           onSelectExercise={handleAddExerciseFromPicker}
-          onClose={() => {
-            setShowExercisePicker(false);
-            setExerciseSearch('');
-          }}
+          onClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}
           colors={colors}
           badgeStyles={badgeStyles}
         />
@@ -817,6 +751,7 @@ export default function ProgramDetailScreen() {
   );
 }
 
+// ===== DayCard со стилями из card.ts =====
 function DayCard({
   day,
   dayIndex,
@@ -854,81 +789,48 @@ function DayCard({
   const exercises = day.exercises || [];
 
   return (
-    <View
-      style={[
-        cardStyles.container,
-        {
-          borderColor: colors.border,
-          borderWidth: 1.5,
-          borderRadius: BORDER_RADIUS.lg,
-          overflow: 'hidden',
-          backgroundColor: colors.surface,
-          marginBottom: SPACING.md,
-          opacity: isActive ? 0.5 : 1,
-        },
-      ]}
-    >
-      {/* --- ЗАГОЛОВОК ДНЯ --- */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.md }}>
-        {/* ЛЕВАЯ ЧАСТЬ: Номер, Текст, Шестеренка (Настройки) */}
+    <View style={[cardStyles.dayCardContainer, { opacity: isActive ? 0.5 : 1 }]}>
+      {/* Заголовок дня */}
+      <View style={cardStyles.dayCardHeader}>
         <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+          style={cardStyles.dayCardLeftContent}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setExpanded(!expanded);
           }}
           activeOpacity={0.7}
         >
-          {/* Иконка Grip (для перетаскивания) */}
           {editMode && (
-            <TouchableOpacity
-              onPressIn={onDrag}
-              style={{ marginRight: SPACING.sm, padding: SPACING.xs, zIndex: 10 }}
-            >
+            <TouchableOpacity onPressIn={onDrag} style={cardStyles.dayCardGripButton}>
               <GripVertical size={20} color={colors.textTertiary} strokeWidth={2} />
             </TouchableOpacity>
           )}
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginRight: SPACING.md,
-              backgroundColor: colors.primary + '20',
-            }}
-          >
-            <Text style={[typography.h5, { color: colors.primary }]}>{day.day_number}</Text>
+          <View style={cardStyles.dayCardNumberCircle}>
+            <Text style={cardStyles.dayCardNumberText}>{day.day_number}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 2 }]}>
-              {day.name}
-            </Text>
-            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-              {exercises.length} упражнений
-            </Text>
+          <View style={cardStyles.dayCardInfo}>
+            <Text style={cardStyles.dayCardName}>{day.name}</Text>
+            <Text style={cardStyles.dayCardExerciseCount}>{exercises.length} упражнений</Text>
           </View>
-          {/* Шестеренка настроек дня */}
           {editMode && (
             <TouchableOpacity
               onPress={(e) => {
                 e.stopPropagation();
                 onEditSettings();
               }}
-              style={{ padding: SPACING.sm, marginRight: SPACING.xs }}
+              style={cardStyles.dayCardSettingsButton}
             >
               <Settings size={16} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           )}
         </TouchableOpacity>
-        {/* ПРАВАЯ ЧАСТЬ: Шеврон (стрелочка) */}
         {!editMode && (
           <TouchableOpacity
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setExpanded(!expanded);
             }}
+            style={cardStyles.dayCardChevronButton}
           >
             {expanded ? (
               <ChevronDown size={20} color={colors.textSecondary} strokeWidth={1.5} />
@@ -939,10 +841,9 @@ function DayCard({
         )}
       </View>
 
-      {/* --- ТЕЛО ДНЯ (СПИСОК УПРАЖНЕНИЙ) --- */}
+      {/* Тело дня (список упражнений) */}
       {expanded && (
-        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
-          {/* Drag & Drop для упражнений в режиме редактирования */}
+        <View style={cardStyles.dayCardExercisesContainer}>
           {editMode && onExerciseDragEnd ? (
             <DraggableFlatList
               data={exercises}
@@ -953,68 +854,40 @@ function DayCard({
                 const intensityInfo = getIntensityInfo(exercise.intensity);
                 return (
                   <ScaleDecorator>
-                    <View
-                      style={{
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.border,
-                        paddingVertical: SPACING.sm,
-                        opacity: isExerciseActive ? 0.5 : 1,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm }}>
-                        {/* Ручка для перетаскивания упражнения */}
-                        <TouchableOpacity onPressIn={drag} style={{ paddingTop: SPACING.xs }}>
+                    <View style={[cardStyles.dayCardExerciseRow, { opacity: isExerciseActive ? 0.5 : 1 }]}>
+                      <View style={cardStyles.dayCardExerciseContent}>
+                        <TouchableOpacity onPressIn={drag} style={cardStyles.dayCardExerciseGrip}>
                           <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={{ flex: 1 }}
+                          style={cardStyles.dayCardExerciseTouchable}
                           onPress={() => onExerciseSettings(exIndex)}
                           activeOpacity={0.7}
                         >
-                          <Text
-                            style={[
-                              typography.labelBold,
-                              { color: colors.textPrimary, marginBottom: SPACING.xs, lineHeight: 18 },
-                            ]}
-                            numberOfLines={2}
-                          >
+                          <Text style={cardStyles.dayCardExerciseName} numberOfLines={2}>
                             {exercise.exercise_name}
                           </Text>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: SPACING.sm,
-                              marginBottom: SPACING.xs,
-                            }}
-                          >
-                            <Text
-                              style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '500' }]}
-                            >
+                          <View style={cardStyles.dayCardExerciseMeta}>
+                            <Text style={cardStyles.dayCardExerciseMetaText}>
                               {exercise.sets} × {exercise.reps_range}
                             </Text>
-                            <View
-                              style={[
-                                badgeStyles.intensityBadge,
-                                { backgroundColor: intensityInfo.color + '20' },
-                              ]}
-                            >
+                            <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
                               {intensityInfo.icon}
                               <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>
                                 {intensityInfo.label}
                               </Text>
                             </View>
                           </View>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <View style={cardStyles.dayCardExerciseRest}>
                             <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                            <Text style={cardStyles.dayCardExerciseRestText}>
                               Отдых: {exercise.rest_seconds} сек
                             </Text>
                           </View>
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => onRemoveExercise(exIndex)}
-                          style={{ padding: SPACING.sm }}
+                          style={cardStyles.dayCardExerciseDelete}
                         >
                           <Trash2 size={16} color={colors.error} strokeWidth={2} />
                         </TouchableOpacity>
@@ -1028,62 +901,35 @@ function DayCard({
             exercises.map((exercise: ProgramExercise, exIndex: number) => {
               const intensityInfo = getIntensityInfo(exercise.intensity);
               return (
-                <View
-                  key={exercise.id}
-                  style={{
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    paddingVertical: SPACING.sm,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm }}>
+                <View key={exercise.id} style={cardStyles.dayCardExerciseRow}>
+                  <View style={cardStyles.dayCardExerciseContent}>
                     {editMode && (
-                      <View style={{ paddingTop: SPACING.xs }}>
+                      <View style={cardStyles.dayCardExerciseGrip}>
                         <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
                       </View>
                     )}
                     <TouchableOpacity
-                      style={{ flex: 1 }}
+                      style={cardStyles.dayCardExerciseTouchable}
                       onPress={() => editMode && onExerciseSettings(exIndex)}
                       activeOpacity={editMode ? 0.7 : 1}
                     >
-                      <Text
-                        style={[
-                          typography.labelBold,
-                          { color: colors.textPrimary, marginBottom: SPACING.xs, lineHeight: 18 },
-                        ]}
-                        numberOfLines={2}
-                      >
+                      <Text style={cardStyles.dayCardExerciseName} numberOfLines={2}>
                         {exercise.exercise_name}
                       </Text>
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: SPACING.sm,
-                          marginBottom: SPACING.xs,
-                        }}
-                      >
-                        <Text
-                          style={[typography.bodySmall, { color: colors.textSecondary, fontWeight: '500' }]}
-                        >
+                      <View style={cardStyles.dayCardExerciseMeta}>
+                        <Text style={cardStyles.dayCardExerciseMetaText}>
                           {exercise.sets} × {exercise.reps_range}
                         </Text>
-                        <View
-                          style={[
-                            badgeStyles.intensityBadge,
-                            { backgroundColor: intensityInfo.color + '20' },
-                          ]}
-                        >
+                        <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
                           {intensityInfo.icon}
                           <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>
                             {intensityInfo.label}
                           </Text>
                         </View>
                       </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View style={cardStyles.dayCardExerciseRest}>
                         <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                        <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                        <Text style={cardStyles.dayCardExerciseRestText}>
                           Отдых: {exercise.rest_seconds} сек
                         </Text>
                       </View>
@@ -1091,7 +937,7 @@ function DayCard({
                     {editMode && (
                       <TouchableOpacity
                         onPress={() => onRemoveExercise(exIndex)}
-                        style={{ padding: SPACING.sm }}
+                        style={cardStyles.dayCardExerciseDelete}
                       >
                         <Trash2 size={16} color={colors.error} strokeWidth={2} />
                       </TouchableOpacity>
@@ -1102,25 +948,9 @@ function DayCard({
             })
           )}
           {editMode && (
-            <TouchableOpacity
-              onPress={onAddExercise}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: SPACING.md,
-                borderRadius: BORDER_RADIUS.md,
-                borderWidth: 1,
-                borderStyle: 'dashed',
-                borderColor: colors.primary,
-                backgroundColor: colors.primaryLight,
-                marginTop: SPACING.sm,
-              }}
-            >
+            <TouchableOpacity onPress={onAddExercise} style={cardStyles.dayCardAddButton}>
               <Plus size={16} color={colors.primary} strokeWidth={2} />
-              <Text style={[typography.labelBold, { color: colors.primary, marginLeft: SPACING.sm }]}>
-                Добавить упражнение
-              </Text>
+              <Text style={cardStyles.dayCardAddButtonText}>Добавить упражнение</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1129,6 +959,7 @@ function DayCard({
   );
 }
 
+// ===== ExerciseSettingsSheet =====
 function ExerciseSettingsSheet({
   exercise,
   colors,
@@ -1158,22 +989,8 @@ function ExerciseSettingsSheet({
   return (
     <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          padding: SPACING.lg,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: SPACING.lg,
-          }}
-        >
+      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: SPACING.lg }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg }}>
           <Text style={[typography.h5, { color: colors.textPrimary }]}>Настройки упражнения</Text>
           <TouchableOpacity onPress={onClose}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
@@ -1181,63 +998,22 @@ function ExerciseSettingsSheet({
         </View>
 
         <View style={{ marginBottom: SPACING.lg }}>
-          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-            Подходы
-          </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.lg,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => setSets(Math.max(1, sets - 1))}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Подходы</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg }}>
+            <TouchableOpacity onPress={() => setSets(Math.max(1, sets - 1))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
-            <Text style={[typography.h3, { color: colors.textPrimary, minWidth: 40, textAlign: 'center' }]}>
-              {sets}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setSets(Math.min(10, sets + 1))}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Text style={[typography.h3, { color: colors.textPrimary, minWidth: 40, textAlign: 'center' }]}>{sets}</Text>
+            <TouchableOpacity onPress={() => setSets(Math.min(10, sets + 1))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={{ marginBottom: SPACING.lg }}>
-          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-            Повторения
-          </Text>
+          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Повторения</Text>
           <TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: BORDER_RADIUS.md,
-              padding: SPACING.md,
-              fontSize: 16,
-              color: colors.textPrimary,
-              backgroundColor: colors.surface,
-            }}
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, fontSize: 16, color: colors.textPrimary, backgroundColor: colors.surface }}
             value={repsRange}
             onChangeText={setRepsRange}
             placeholder="например: 8-12"
@@ -1246,55 +1022,20 @@ function ExerciseSettingsSheet({
         </View>
 
         <View style={{ marginBottom: SPACING.lg }}>
-          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-            Отдых (секунды)
-          </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.lg,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Отдых (секунды)</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.lg }}>
+            <TouchableOpacity onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
-            <Text
-              style={[typography.h3, { color: colors.textPrimary, minWidth: 60, textAlign: 'center' }]}
-            >
-              {restSeconds}с
-            </Text>
-            <TouchableOpacity
-              onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: colors.surfaceSecondary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Text style={[typography.h3, { color: colors.textPrimary, minWidth: 60, textAlign: 'center' }]}>{restSeconds}с</Text>
+            <TouchableOpacity onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
               <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={{ marginBottom: SPACING.lg }}>
-          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-            Интенсивность
-          </Text>
+          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Интенсивность</Text>
           <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
             {intensities.map((item) => (
               <TouchableOpacity
@@ -1306,25 +1047,12 @@ function ExerciseSettingsSheet({
                   borderRadius: BORDER_RADIUS.md,
                   borderWidth: 2,
                   borderColor: intensity === item.value ? item.color : colors.border,
-                  backgroundColor:
-                    intensity === item.value ? item.color + '15' : colors.surface,
+                  backgroundColor: intensity === item.value ? item.color + '15' : colors.surface,
                   alignItems: 'center',
                 }}
               >
-                <item.icon
-                  size={20}
-                  color={intensity === item.value ? item.color : colors.textSecondary}
-                  strokeWidth={2}
-                />
-                <Text
-                  style={[
-                    typography.labelBold,
-                    {
-                      color: intensity === item.value ? item.color : colors.textSecondary,
-                      marginTop: SPACING.xs,
-                    },
-                  ]}
-                >
+                <item.icon size={20} color={intensity === item.value ? item.color : colors.textSecondary} strokeWidth={2} />
+                <Text style={[typography.labelBold, { color: intensity === item.value ? item.color : colors.textSecondary, marginTop: SPACING.xs }]}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -1333,14 +1061,7 @@ function ExerciseSettingsSheet({
         </View>
 
         <TouchableOpacity
-          onPress={() =>
-            onSave({
-              sets,
-              reps_range: repsRange,
-              rest_seconds: restSeconds,
-              intensity,
-            })
-          }
+          onPress={() => onSave({ sets, reps_range: repsRange, rest_seconds: restSeconds, intensity })}
           style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
         >
           <Text style={buttonStyles.textPrimary}>Сохранить</Text>
@@ -1350,6 +1071,7 @@ function ExerciseSettingsSheet({
   );
 }
 
+// ===== DaySettingsSheet =====
 function DaySettingsSheet({
   day,
   colors,
@@ -1367,41 +1089,17 @@ function DaySettingsSheet({
   return (
     <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          padding: SPACING.lg,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: SPACING.lg,
-          }}
-        >
+      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: SPACING.lg }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg }}>
           <Text style={[typography.h5, { color: colors.textPrimary }]}>Настройки дня</Text>
           <TouchableOpacity onPress={onClose}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
         <View style={{ marginBottom: SPACING.lg }}>
-          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-            Название дня
-          </Text>
+          <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Название дня</Text>
           <TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: BORDER_RADIUS.md,
-              padding: SPACING.md,
-              fontSize: 16,
-              color: colors.textPrimary,
-              backgroundColor: colors.surface,
-            }}
+            style={{ borderWidth: 1, borderColor: colors.border, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, fontSize: 16, color: colors.textPrimary, backgroundColor: colors.surface }}
             value={dayName}
             onChangeText={setDayName}
             placeholder="например: День 1: Push"
@@ -1419,6 +1117,7 @@ function DaySettingsSheet({
   );
 }
 
+// ===== ExercisePickerSheet =====
 function ExercisePickerSheet({
   searchQuery,
   onSearchChange,
@@ -1462,40 +1161,15 @@ function ExercisePickerSheet({
   return (
     <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          maxHeight: '80%',
-          paddingBottom: SPACING.lg,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: SPACING.lg,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-          }}
-        >
+      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: SPACING.lg }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <Text style={[typography.h5, { color: colors.textPrimary }]}>Добавить упражнение</Text>
           <TouchableOpacity onPress={onClose}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
         <View style={{ padding: SPACING.lg, paddingBottom: SPACING.md }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: colors.surfaceSecondary,
-              borderRadius: BORDER_RADIUS.md,
-              paddingHorizontal: SPACING.md,
-            }}
-          >
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.md, paddingHorizontal: SPACING.md }}>
             <Search size={18} color={colors.textTertiary} strokeWidth={2} />
             <TextInput
               style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }}
@@ -1515,21 +1189,12 @@ function ExercisePickerSheet({
         {loading ? (
           <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text
-              style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}
-            >
-              Загрузка...
-            </Text>
+            <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>Загрузка...</Text>
           </View>
         ) : exercises.length === 0 ? (
           <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
             <Dumbbell size={48} color={colors.textTertiary} strokeWidth={1.5} />
-            <Text
-              style={[
-                typography.body,
-                { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' },
-              ]}
-            >
+            <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' }]}>
               {searchQuery ? 'Упражнения не найдены' : 'Начните вводить название упражнения'}
             </Text>
           </View>
@@ -1541,70 +1206,36 @@ function ExercisePickerSheet({
                 <TouchableOpacity
                   key={exercise.id}
                   onPress={() => onSelectExercise(exercise)}
-                  style={{
-                    padding: SPACING.md,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: SPACING.md,
-                  }}
+                  style={{ padding: SPACING.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}
                 >
                   <View
                     style={{
                       width: 40,
                       height: 40,
                       borderRadius: 20,
-                      backgroundColor: primaryMuscles[0]
-                        ? getPrimaryMusclesColor(primaryMuscles[0]) + '20'
-                        : colors.primary + '20',
+                      backgroundColor: primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) + '20' : colors.primary + '20',
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}
                   >
                     <Dumbbell
                       size={20}
-                      color={
-                        primaryMuscles[0]
-                          ? getPrimaryMusclesColor(primaryMuscles[0])
-                          : colors.primary
-                      }
+                      color={primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) : colors.primary}
                       strokeWidth={2}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text
-                      style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 4 }]}
-                    >
+                    <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 4 }]}>
                       {exercise.name}
                     </Text>
                     {primaryMuscles.length > 0 && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          flexWrap: 'wrap',
-                          gap: 4,
-                          marginTop: 4,
-                        }}
-                      >
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                         {primaryMuscles.slice(0, 3).map((muscle: string, idx: number) => (
                           <View
                             key={idx}
-                            style={[
-                              badgeStyles.intensityBadge,
-                              {
-                                backgroundColor: getPrimaryMusclesColor(muscle) + '15',
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                              },
-                            ]}
+                            style={[badgeStyles.intensityBadge, { backgroundColor: getPrimaryMusclesColor(muscle) + '15', paddingHorizontal: 8, paddingVertical: 2 }]}
                           >
-                            <Text
-                              style={[
-                                badgeStyles.intensityText,
-                                { color: getPrimaryMusclesColor(muscle), fontSize: 11 },
-                              ]}
-                            >
+                            <Text style={[badgeStyles.intensityText, { color: getPrimaryMusclesColor(muscle), fontSize: 11 }]}>
                               {muscle}
                             </Text>
                           </View>
@@ -1618,15 +1249,7 @@ function ExercisePickerSheet({
             })}
           </ScrollView>
         )}
-        <View
-          style={{
-            marginTop: SPACING.md,
-            marginHorizontal: SPACING.lg,
-            padding: SPACING.md,
-            backgroundColor: colors.primaryLight,
-            borderRadius: BORDER_RADIUS.md,
-          }}
-        >
+        <View style={{ marginTop: SPACING.md, marginHorizontal: SPACING.lg, padding: SPACING.md, backgroundColor: colors.primaryLight, borderRadius: BORDER_RADIUS.md }}>
           <Text style={[typography.caption, { color: colors.primary }]}>
             Параметры по умолчанию: 4 подхода × 8-12 повт., отдых 90с, средняя интенсивность
           </Text>
@@ -1636,7 +1259,7 @@ function ExercisePickerSheet({
   );
 }
 
-// ===== НОВЫЙ КОМПОНЕНТ: Редактор расписания =====
+// ===== ScheduleEditorSheet =====
 const WEEKDAYS = [
   { value: 'Пн', label: 'Понедельник', short: 'Пн' },
   { value: 'Вт', label: 'Вторник', short: 'Вт' },
@@ -1666,7 +1289,9 @@ function ScheduleEditorSheet({
 
   const toggleDay = (day: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
   };
 
   const selectAll = () => {
@@ -1682,44 +1307,17 @@ function ScheduleEditorSheet({
   return (
     <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          padding: SPACING.lg,
-        }}
-      >
-        {/* Заголовок */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: SPACING.lg,
-          }}
-        >
+      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: SPACING.lg }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg }}>
           <Text style={[typography.h5, { color: colors.textPrimary }]}>Расписание тренировок</Text>
           <TouchableOpacity onPress={onClose}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-
-        <Text
-          style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
-        >
+        <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
           Выберите дни недели, в которые будут проходить тренировки
         </Text>
-
-        {/* Сетка дней недели */}
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: SPACING.sm,
-            marginBottom: SPACING.lg,
-          }}
-        >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg }}>
           {WEEKDAYS.map((day) => {
             const isSelected = selectedDays.includes(day.value);
             return (
@@ -1737,92 +1335,38 @@ function ScheduleEditorSheet({
                   alignItems: 'center',
                 }}
               >
-                <Text
-                  style={[
-                    typography.h4,
-                    {
-                      color: isSelected ? colors.primary : colors.textSecondary,
-                      fontWeight: '700',
-                    },
-                  ]}
-                >
+                <Text style={[typography.h4, { color: isSelected ? colors.primary : colors.textSecondary, fontWeight: '700' }]}>
                   {day.short}
                 </Text>
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: isSelected ? colors.primary : colors.textTertiary,
-                      marginTop: 2,
-                    },
-                  ]}
-                >
+                <Text style={[typography.captionSmall, { color: isSelected ? colors.primary : colors.textTertiary, marginTop: 2 }]}>
                   {day.label}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
-
-        {/* Быстрые действия */}
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: SPACING.sm,
-            marginBottom: SPACING.lg,
-          }}
-        >
+        <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
           <TouchableOpacity
             onPress={selectAll}
-            style={{
-              flex: 1,
-              padding: SPACING.sm,
-              borderRadius: BORDER_RADIUS.md,
-              backgroundColor: colors.surfaceSecondary,
-              alignItems: 'center',
-            }}
+            style={{ flex: 1, padding: SPACING.sm, borderRadius: BORDER_RADIUS.md, backgroundColor: colors.surfaceSecondary, alignItems: 'center' }}
           >
             <Text style={[typography.labelBold, { color: colors.primary }]}>Выбрать все</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={clearAll}
-            style={{
-              flex: 1,
-              padding: SPACING.sm,
-              borderRadius: BORDER_RADIUS.md,
-              backgroundColor: colors.surfaceSecondary,
-              alignItems: 'center',
-            }}
+            style={{ flex: 1, padding: SPACING.sm, borderRadius: BORDER_RADIUS.md, backgroundColor: colors.surfaceSecondary, alignItems: 'center' }}
           >
             <Text style={[typography.labelBold, { color: colors.error }]}>Очистить</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Превью текущего выбора */}
         {selectedDays.length > 0 && (
-          <View
-            style={{
-              backgroundColor: colors.primaryLight,
-              padding: SPACING.md,
-              borderRadius: BORDER_RADIUS.md,
-              marginBottom: SPACING.lg,
-            }}
-          >
-            <Text
-              style={[
-                typography.caption,
-                { color: colors.primary, marginBottom: SPACING.sm, fontWeight: '600' },
-              ]}
-            >
+          <View style={{ backgroundColor: colors.primaryLight, padding: SPACING.md, borderRadius: BORDER_RADIUS.md, marginBottom: SPACING.lg }}>
+            <Text style={[typography.caption, { color: colors.primary, marginBottom: SPACING.sm, fontWeight: '600' }]}>
               Выбрано: {selectedDays.length} дн/нед
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
               {selectedDays
-                .sort(
-                  (a, b) =>
-                    WEEKDAYS.findIndex((d) => d.value === a) -
-                    WEEKDAYS.findIndex((d) => d.value === b)
-                )
+                .sort((a, b) => WEEKDAYS.findIndex((d) => d.value === a) - WEEKDAYS.findIndex((d) => d.value === b))
                 .map((day) => (
                   <View key={day} style={badgeStyles.dayChip}>
                     <Text style={badgeStyles.dayChipText}>{day}</Text>
@@ -1831,8 +1375,6 @@ function ScheduleEditorSheet({
             </View>
           </View>
         )}
-
-        {/* Кнопка сохранения */}
         <TouchableOpacity
           onPress={() => onSave(selectedDays)}
           disabled={selectedDays.length === 0}
