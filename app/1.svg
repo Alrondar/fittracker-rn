@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 135 135" fill="currentColor">
+  <!-- Опоры основания -->
+  <path fill-rule="evenodd" d="M 15 115 h 15 v 13 h -15 z M 19 118 h 7 v 7 h -7 z" />
+  <path fill-rule="evenodd" d="M 105 115 h 15 v 13 h -15 z M 109 118 h 7 v 7 h -7 z" />
+  
+  <!-- Центральная база -->
+  <path fill-rule="evenodd" d="M 25 113 h 85 v 10 h -85 z M 29 116 h 77 v 4 h -77 z" />
+  
+  <!-- Стек блинов (слева) -->
+  <path fill-rule="evenodd" d="M 35 40 h 13 v 75 h -13 z M 39 44 h 5 v 67 h -5 z" />
+  <path d="M 33 50 h 17 v 2 h -17 z M 33 60 h 17 v 2 h -17 z M 33 70 h 17 v 2 h -17 z M 33 80 h 17 v 2 h -17 z M 33 90 h 17 v 2 h -17 z" />
+  
+  <!-- Стек блинов (справа) -->
+  <path fill-rule="evenodd" d="M 87 40 h 13 v 75 h -13 z M 91 44 h 5 v 67 h -5 z" />
+  <path d="M 85 50 h 17 v 2 h -17 z M 85 60 h 17 v 2 h -17 z M 85 70 h 17 v 2 h -17 z M 85 80 h 17 v 2 h -17 z M 85 90 h 17 v 2 h -17 z" />
+  
+  <!-- Тросы и шкивы -->
+  <path fill-rule="evenodd" d="M 36 35 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0 M 39 35 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0" />
+  <path fill-rule="evenodd" d="M 89 35 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0 M 92 35 a 2 2 0 1 0 4 0 a 2 2 0 1 0 -4 0" />
+  <path d="M 39 40 h 2 v 75 h -2 z" />
+  <path d="M 94 40 h 2 v 75 h -2 z" />
+  <path d="M 41 35 L 60 30 L 62 32 L 41 37 Z" />
+  <path d="M 94 35 L 75 30 L 73 32 L 94 37 Z" />
+  
+  <!-- Регулировочные штыри стека (Selector Pins) -->
+  <path d="M 28 65 h 6 v 2 h -6 z M 30 63 h 2 v 4 h -2 z M 34 68 h 8 v 6 h -8 z" />
+  <path d="M 101 65 h 6 v 2 h -6 z M 103 63 h 2 v 4 h -2 z M 93 68 h 8 v 6 h -8 z" /> 
+  
+  <!-- Центральная рама -->
+  <path fill-rule="evenodd" d="M 55 30 h 25 v 85 h -25 z M 59 34 h 17 v 77 h -17 z" />
+  
+  <!-- Штырь регулировки сиденья -->
+  <path d="M 82 87 h 6 v 2 h -6 z M 84 85 h 2 v 6 h -2 z M 73 88 h 9 v 2 h -9 z" />
+  <path d="M 73 83 h 2 v 2 h -2 z M 73 88 h 2 v 2 h -2 z M 73 93 h 2 v 2 h -2 z" />
+  
+  <!-- Спинка -->
+  <path fill-rule="evenodd" d="M 52 35 Q 52 30 57 30 h 21 Q 83 30 83 35 v 40 h -31 z M 56 34 h 23 v 36 h -23 z" />
+  
+  <!-- Сиденье -->
+  <path fill-rule="evenodd" d="M 45 80 Q 45 75 50 75 h 35 Q 90 75 90 80 v 15 Q 90 100 85 100 h -35 Q 45 100 45 95 z M 49 81 h 37 v 13 h -37 z" />
+  
+  <!-- Рычаги (Левый и Правый) -->
+  <path fill-rule="evenodd" d="M 62 30 C 40 25, 15 45, 15 65 L 22 70 C 25 50, 45 35, 62 35 Z M 62 32 C 42 27, 19 47, 19 65 L 21 68 C 23 50, 45 37, 62 35 Z" />
+  <path fill-rule="evenodd" d="M 73 30 C 95 25, 120 45, 120 65 L 113 70 C 110 50, 90 35, 73 35 Z M 73 32 C 93 27, 116 47, 116 65 L 114 68 C 112 50, 90 37, 73 35 Z" />
+  
+  <!-- Мягкие подушки (Пады) -->
+  <path fill-rule="evenodd" d="M 5 55 C 5 45, 28 45, 30 52 L 25 85 C 23 95, 5 95, 5 85 Z M 9 57 C 9 50, 24 50, 26 55 L 21 83 C 19 90, 9 90, 9 83 Z" />
+  <path fill-rule="evenodd" d="M 130 55 C 130 45, 110 45, 105 52 L 100 85 C 102 95, 130 95, 130 85 Z M 126 57 C 126 50, 106 50, 101 55 L 96 83 C 98 90, 126 90, 126 83 Z" />
+  
+  <!-- Рукояти (Хромированные трубки) -->
+  <path fill-rule="evenodd" d="M 13 85 L 13 100 C 13 103, 21 103, 21 100 L 21 85 Z M 16 88 L 16 98 C 16 100, 18 100, 18 98 L 18 88 Z" />
+  <path fill-rule="evenodd" d="M 114 85 L 114 100 C 114 103, 122 103, 122 100 L 122 85 Z M 117 88 L 117 98 C 117 100, 119 100, 119 98 L 119 88 Z" />
+  
+  <!-- Мелкие детали: насечки на рукоятях и швы подушек -->
+  <path d="M 13 90 h 8 v 1 h -8 z M 13 92 h 8 v 1 h -8 z M 13 94 h 8 v 1 h -8 z M 13 96 h 8 v 1 h -8 z" />
+  <path d="M 114 90 h 8 v 1 h -8 z M 114 92 h 8 v 1 h -8 z M 114 94 h 8 v 1 h -8 z M 114 96 h 8 v 1 h -8 z" />
+  <path d="M 17 57 L 17 83 h 2 v -26 z" />
+  <path d="M 114 57 L 114 83 h 2 v -26 z" />
+  
+  <!-- Центральная ось и болты -->
+  <path fill-rule="evenodd" d="M 59.5 32.5 a 8 8 0 1 0 16 0 a 8 8 0 1 0 -16 0 M 63.5 32.5 a 4 4 0 1 0 8 0 a 4 4 0 1 0 -8 0" />
+  <circle cx="67.5" cy="32.5" r="1.5" />
+  <circle cx="60" cy="32" r="1.5" />
+  <circle cx="75" cy="32" r="1.5" />
+  <circle cx="25" cy="120" r="1.5" />
+  <circle cx="110" cy="120" r="1.5" />
+</svg>
