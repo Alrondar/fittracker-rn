@@ -347,6 +347,15 @@ export const createCardStyles = (colors: any) =>
       color: colors.primary,
       fontWeight: '600',
     } as TextStyle,
+    programCardLevelStripe: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      borderTopLeftRadius: BORDER_RADIUS.lg,
+      borderBottomLeftRadius: BORDER_RADIUS.lg,
+    } as ViewStyle,
     programCardEditButton: {
       padding: SPACING.sm,
       marginRight: SPACING.sm,
@@ -913,6 +922,8 @@ export const createCardStyles = (colors: any) =>
     } as TextStyle,
 
     // ===== ТРЕНИРОВКА (WORKOUT) =====
+
+    // --- Таймер отдыха (с прогресс-баром) ---
     workoutTimerContainer: {
       padding: SPACING.lg,
       borderBottomWidth: 1,
@@ -962,6 +973,7 @@ export const createCardStyles = (colors: any) =>
       fontWeight: '600',
     } as TextStyle,
 
+    // --- Карточка упражнения ---
     workoutExerciseCard: {
       width: CARD_WIDTH,
       marginHorizontal: 0,
@@ -1001,6 +1013,7 @@ export const createCardStyles = (colors: any) =>
       fontWeight: '600',
     } as TextStyle,
 
+    // --- Теги мышц ---
     muscleTagPrimary: {
       paddingHorizontal: SPACING.md,
       paddingVertical: 6,
@@ -1022,6 +1035,7 @@ export const createCardStyles = (colors: any) =>
       fontWeight: '600',
     } as TextStyle,
 
+    // --- Секция подходов ---
     setsContainer: {
       marginTop: SPACING.lg,
       borderWidth: 1.5,
@@ -1087,6 +1101,7 @@ export const createCardStyles = (colors: any) =>
       fontSize: 15,
     } as TextStyle,
 
+    // --- Кнопка замены ---
     replaceButton: {
       marginTop: SPACING.lg,
       paddingVertical: 12,
@@ -1102,6 +1117,7 @@ export const createCardStyles = (colors: any) =>
       fontSize: 14,
     } as TextStyle,
 
+    // --- Bottom Sheet настроек ---
     settingsSheetContainer: {
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
@@ -1161,6 +1177,7 @@ export const createCardStyles = (colors: any) =>
       fontSize: 16,
     } as TextStyle,
 
+    // --- Кнопка "Завершить тренировку" ---
     finishButtonContainer: {
       position: 'absolute',
       bottom: 0,
@@ -1187,6 +1204,7 @@ export const createCardStyles = (colors: any) =>
       fontSize: 16,
     } as TextStyle,
 
+    // --- Бейдж "Заменено" ---
     replacedBadgeContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -1205,6 +1223,7 @@ export const createCardStyles = (colors: any) =>
       textDecorationLine: 'underline',
     } as TextStyle,
 
+    // --- Collapsible секции (тренировка) ---
     collapsibleWorkoutSection: {
       marginBottom: SPACING.sm,
       borderWidth: 1.5,
@@ -1231,6 +1250,7 @@ export const createCardStyles = (colors: any) =>
       padding: SPACING.md,
     } as ViewStyle,
 
+    // --- Grouped секции (тренировка) ---
     groupedWorkoutSection: {
       marginBottom: SPACING.sm,
       borderWidth: 1.5,
@@ -1258,90 +1278,127 @@ export const createCardStyles = (colors: any) =>
     groupedWorkoutSubText: {
       fontSize: 14,
     } as TextStyle,
+
     // ===== ФИЛЬТР МЫШЦ (ГОРИЗОНТАЛЬНЫЕ ЧИПЫ + АККОРДЕОН) =====
-muscleGroupSelectorHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  paddingHorizontal: SPACING.lg,
-  paddingTop: SPACING.md,
-  paddingBottom: SPACING.sm,
+    muscleGroupSelectorHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.sm,
+    } as ViewStyle,
+    muscleGroupSelectorHeaderText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    } as TextStyle,
+    muscleGroupSelectorResetText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    } as TextStyle,
+    muscleGroupChip: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.full,
+      marginHorizontal: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      borderWidth: 1.5,
+    } as ViewStyle,
+    muscleGroupChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    } as ViewStyle,
+    muscleGroupChipSelected: {
+      backgroundColor: colors.primaryLight,
+      borderColor: colors.primary,
+    } as ViewStyle,
+    muscleGroupChipDefault: {
+      backgroundColor: colors.surfaceSecondary,
+      borderColor: colors.border,
+    } as ViewStyle,
+    muscleGroupChipText: {
+      ...typography.labelBold,
+      fontSize: 13,
+    } as TextStyle,
+    muscleGroupChipTextActive: {
+      color: 'white',
+    } as TextStyle,
+    muscleGroupChipTextSelected: {
+      color: colors.primary,
+    } as TextStyle,
+    muscleGroupChipTextDefault: {
+      color: colors.textPrimary,
+    } as TextStyle,
+    muscleGroupBadge: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      justifyContent: 'center',
+      alignItems: 'center',
+    } as ViewStyle,
+    muscleGroupBadgeActive: {
+      backgroundColor: 'white',
+    } as ViewStyle,
+    muscleGroupBadgeSelected: {
+      backgroundColor: colors.primary,
+    } as ViewStyle,
+    muscleGroupBadgeText: {
+      fontSize: 10,
+      fontWeight: 'bold',
+    } as TextStyle,
+    muscleGroupBadgeTextActive: {
+      color: colors.primary,
+    } as TextStyle,
+    muscleGroupBadgeTextSelected: {
+      color: 'white',
+    } as TextStyle,
+    muscleSubgroupContainer: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING.md,
+    } as ViewStyle,
+    muscleSubgroupList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.sm,
+    } as ViewStyle,
+    // ===== СОРТИРОВКА =====
+sortSheetContainer: {
+  backgroundColor: colors.surface,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  padding: SPACING.lg,
 } as ViewStyle,
-muscleGroupSelectorHeaderText: {
-  ...typography.caption,
-  color: colors.textSecondary,
+sortSheetTitle: {
+  ...typography.h5,
+  color: colors.textPrimary,
+  marginBottom: SPACING.lg,
 } as TextStyle,
-muscleGroupSelectorResetText: {
-  ...typography.caption,
+sortOption: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingVertical: SPACING.md,
+  borderBottomWidth: 1,
+  borderBottomColor: colors.border,
+} as ViewStyle,
+sortOptionText: {
+  ...typography.body,
+  color: colors.textPrimary,
+} as TextStyle,
+sortOptionTextActive: {
   color: colors.primary,
   fontWeight: '600',
 } as TextStyle,
-muscleGroupChip: {
-  paddingHorizontal: SPACING.md,
-  paddingVertical: SPACING.sm,
-  borderRadius: BORDER_RADIUS.full,
-  marginHorizontal: 4,
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  borderWidth: 1.5,
-} as ViewStyle,
-muscleGroupChipActive: {
-  backgroundColor: colors.primary,
-  borderColor: colors.primary,
-} as ViewStyle,
-muscleGroupChipSelected: {
-  backgroundColor: colors.primaryLight,
-  borderColor: colors.primary,
-} as ViewStyle,
-muscleGroupChipDefault: {
-  backgroundColor: colors.surfaceSecondary,
-  borderColor: colors.border,
-} as ViewStyle,
-muscleGroupChipText: {
-  ...typography.labelBold,
-  fontSize: 13,
-} as TextStyle,
-muscleGroupChipTextActive: {
-  color: 'white',
-} as TextStyle,
-muscleGroupChipTextSelected: {
-  color: colors.primary,
-} as TextStyle,
-muscleGroupChipTextDefault: {
-  color: colors.textPrimary,
-} as TextStyle,
-muscleGroupBadge: {
-  width: 18,
-  height: 18,
-  borderRadius: 9,
-  justifyContent: 'center',
-  alignItems: 'center',
-} as ViewStyle,
-muscleGroupBadgeActive: {
-  backgroundColor: 'white',
-} as ViewStyle,
-muscleGroupBadgeSelected: {
-  backgroundColor: colors.primary,
-} as ViewStyle,
-muscleGroupBadgeText: {
-  fontSize: 10,
-  fontWeight: 'bold',
-} as TextStyle,
-muscleGroupBadgeTextActive: {
-  color: colors.primary,
-} as TextStyle,
-muscleGroupBadgeTextSelected: {
-  color: 'white',
-} as TextStyle,
-muscleSubgroupContainer: {
-  paddingHorizontal: SPACING.lg,
-  paddingBottom: SPACING.md,
-} as ViewStyle,
-muscleSubgroupList: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  gap: SPACING.sm,
+sortOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0,0,0,0.5)',
 } as ViewStyle,
   });
 

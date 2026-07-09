@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  ViewStyle,
-  TextStyle,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase, getList } from '../../src/lib/supabase';
@@ -17,24 +17,31 @@ import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Search, Dumbbell, Check } from 'lucide-react-native';
+import { Search, Dumbbell, Check, X, ArrowUpDown } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
 import { typography } from '../../src/styles/typography';
 import { MUSCLE_GROUPS } from '../../src/constants/muscleGroups';
+import { getMuscleColor } from '../../src/constants/muscleColors';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
-
+  const searchInputRef = useRef<TextInput>(null);
   const router = useRouter();
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
+  
+  // Новые state для сортировки
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'popularity'>('name-asc');
+  const [showSortSheet, setShowSortSheet] = useState(false);
 
   useEffect(() => {
     loadExercises();
@@ -75,11 +82,42 @@ export default function ExercisesScreen() {
     setActiveGroup(prev => prev === groupName ? null : groupName);
   };
 
+  const toggleSearch = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newState = !showSearch;
+    setShowSearch(newState);
+    if (newState) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    } else {
+      setSearchQuery('');
+    }
+  };
+
   const resetFilters = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedMuscles([]);
+    setSearchQuery('');
     setActiveGroup(null);
   };
+
+  // Фильтрация по поиску
+  const filteredExercises = exercises.filter(ex => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const nameMatch = ex.name.toLowerCase().includes(query);
+    const muscleMatch = getList(ex, 'primary_muscles').some(m =>
+      m.toLowerCase().includes(query)
+    );
+    return nameMatch || muscleMatch;
+  });
+
+  // Сортировка упражнений
+  const sortedExercises = [...filteredExercises].sort((a, b) => {
+    if (sortBy === 'name-asc') return a.name.localeCompare(b.name, 'ru');
+    if (sortBy === 'name-desc') return b.name.localeCompare(a.name, 'ru');
+    // Для popularity можно добавить подсчёт использований в программах
+    return 0;
+  });
 
   const renderEmpty = () => (
     <FadeIn delay={200} style={commonStyles.emptyContainer}>
@@ -88,17 +126,17 @@ export default function ExercisesScreen() {
         Упражнения не найдены
       </Text>
       <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        {selectedMuscles.length > 0
-          ? 'Попробуйте изменить фильтры или сбросить их'
+        {selectedMuscles.length > 0 || searchQuery
+          ? 'Попробуйте изменить запрос или сбросить фильтры'
           : 'База упражнений пуста'}
       </Text>
-      {selectedMuscles.length > 0 && (
+      {(selectedMuscles.length > 0 || searchQuery) && (
         <TouchableOpacity
           style={[badgeStyles.container, { backgroundColor: colors.primaryLight, marginTop: SPACING.md }]}
           onPress={resetFilters}
         >
           <Text style={[badgeStyles.text, { color: colors.primary }]}>
-            Сбросить фильтры
+            Сбросить
           </Text>
         </TouchableOpacity>
       )}
@@ -109,33 +147,126 @@ export default function ExercisesScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* Заголовок */}
-      <FadeIn style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
-          Справочник упражнений
-        </Text>
-        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
-          База упражнений
-        </Text>
-      </FadeIn>
-
-      {/* Фильтр мышц: горизонтальные чипы + аккордеон */}
-      <FadeIn style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        {/* Шапка со счётчиком и сбросом */}
-        {selectedMuscles.length > 0 && (
-          <View style={cardStyles.muscleGroupSelectorHeader}>
-            <Text style={cardStyles.muscleGroupSelectorHeaderText}>
-              Выбрано: {selectedMuscles.length}
+      {/* ===== ЗАГОЛОВОК С ИКОНКАМИ ПОИСКА И СОРТИРОВКИ ===== */}
+      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: SPACING.lg,
+          paddingVertical: SPACING.md,
+        }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
+              Справочник упражнений
             </Text>
-            <TouchableOpacity onPress={resetFilters}>
-              <Text style={cardStyles.muscleGroupSelectorResetText}>
-                Сбросить
-              </Text>
-            </TouchableOpacity>
+            <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
+              База упражнений
+            </Text>
+          </View>
+          
+          {/* Кнопка сортировки */}
+          <TouchableOpacity
+            onPress={() => setShowSortSheet(true)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: sortBy !== 'name-asc' ? colors.primaryLight : colors.surfaceSecondary,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginLeft: SPACING.sm,
+            }}
+            activeOpacity={0.7}
+          >
+            <ArrowUpDown 
+              size={20} 
+              color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary} 
+              strokeWidth={2} 
+            />
+          </TouchableOpacity>
+
+          {/* Кнопка поиска */}
+          <TouchableOpacity
+            onPress={toggleSearch}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: showSearch ? colors.primaryLight : colors.surfaceSecondary,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginLeft: SPACING.md,
+            }}
+            activeOpacity={0.7}
+          >
+            {showSearch ? (
+              <X size={20} color={colors.primary} strokeWidth={2} />
+            ) : (
+              <Search size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* ===== ПОЛЕ ПОИСКА (раскрывается под заголовком) ===== */}
+        {showSearch && (
+          <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: BORDER_RADIUS.md,
+              paddingHorizontal: SPACING.md,
+              height: 44,
+              width: '100%',
+            }}>
+              <Search size={18} color={colors.textTertiary} strokeWidth={2} />
+              <TextInput
+                ref={searchInputRef}
+                style={{
+                  flex: 1,
+                  fontSize: 14,
+                  color: colors.textPrimary,
+                  marginLeft: SPACING.sm,
+                  paddingVertical: 0,
+                  height: '100%',
+                }}
+                placeholder="Поиск упражнения"
+                placeholderTextColor={colors.textTertiary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <X size={18} color={colors.textTertiary} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
+      </View>
 
-        {/* Горизонтальный скролл чипов групп */}
+      {/* ===== ШАПКА СО СЧЁТЧИКОМ И СБРОСОМ ===== */}
+      {selectedMuscles.length > 0 && (
+        <View style={[cardStyles.muscleGroupSelectorHeader, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+          <Text style={cardStyles.muscleGroupSelectorHeaderText}>
+            Выбрано: {selectedMuscles.length}
+          </Text>
+          <TouchableOpacity onPress={resetFilters}>
+            <Text style={cardStyles.muscleGroupSelectorResetText}>
+              Сбросить
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ===== ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ ЧИПОВ ГРУПП ===== */}
+      <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <FlatList
           horizontal
           data={groupNames}
@@ -146,7 +277,6 @@ export default function ExercisesScreen() {
             const selectedInGroup = muscles.filter(m => selectedMuscles.includes(m)).length;
             const hasSelected = selectedInGroup > 0;
 
-            // Определяем стиль чипа
             let chipStyle = cardStyles.muscleGroupChipDefault;
             let textStyle = cardStyles.muscleGroupChipTextDefault;
             if (isActive) {
@@ -157,9 +287,8 @@ export default function ExercisesScreen() {
               textStyle = cardStyles.muscleGroupChipTextSelected;
             }
 
-            // Определяем стиль badge
-            let badgeStyle: ViewStyle | undefined;
-            let badgeTextStyle: TextStyle | undefined;
+            let badgeStyle: any;
+            let badgeTextStyle: any;
             if (isActive) {
               badgeStyle = cardStyles.muscleGroupBadgeActive;
               badgeTextStyle = cardStyles.muscleGroupBadgeTextActive;
@@ -170,6 +299,7 @@ export default function ExercisesScreen() {
 
             return (
               <TouchableOpacity
+                key={groupName}
                 style={[cardStyles.muscleGroupChip, chipStyle]}
                 onPress={() => toggleGroup(groupName)}
                 activeOpacity={0.7}
@@ -191,7 +321,7 @@ export default function ExercisesScreen() {
           showsHorizontalScrollIndicator={false}
         />
 
-        {/* Раскрывающийся список подмышц активной группы */}
+        {/* ===== РАСКРЫВАЮЩИЙСЯ СПИСОК ПОДМЫШЦ ===== */}
         {activeGroup && (
           <View style={cardStyles.muscleSubgroupContainer}>
             <View style={cardStyles.muscleSubgroupList}>
@@ -231,14 +361,14 @@ export default function ExercisesScreen() {
             </View>
           </View>
         )}
-      </FadeIn>
+      </View>
 
-      {/* Список упражнений */}
+      {/* ===== СПИСОК УПРАЖНЕНИЙ ===== */}
       {loading ? (
         <ListSkeleton count={5} />
       ) : (
         <FlatList
-          data={exercises}
+          data={sortedExercises}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => (
             <FadeIn delay={index * 40}>
@@ -275,6 +405,49 @@ export default function ExercisesScreen() {
           }
         />
       )}
+
+      {/* ===== BOTTOM SHEET ДЛЯ СОРТИРОВКИ ===== */}
+      <Modal
+        visible={showSortSheet}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSortSheet(false)}
+      >
+        <TouchableOpacity
+          style={cardStyles.sortOverlay}
+          onPress={() => setShowSortSheet(false)}
+          activeOpacity={1}
+        />
+        <View style={cardStyles.sortSheetContainer}>
+          <Text style={cardStyles.sortSheetTitle}>Сортировка</Text>
+          
+          {[
+            { key: 'name-asc', label: 'По названию (А-Я)' },
+            { key: 'name-desc', label: 'По названию (Я-А)' },
+            { key: 'popularity', label: 'По популярности' },
+          ].map(option => (
+            <TouchableOpacity
+              key={option.key}
+              style={cardStyles.sortOption}
+              onPress={() => {
+                setSortBy(option.key as any);
+                setShowSortSheet(false);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+            >
+              <Text style={[
+                cardStyles.sortOptionText,
+                sortBy === option.key && cardStyles.sortOptionTextActive,
+              ]}>
+                {option.label}
+              </Text>
+              {sortBy === option.key && (
+                <Check size={20} color={colors.primary} strokeWidth={2} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
