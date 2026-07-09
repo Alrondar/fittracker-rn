@@ -713,15 +713,21 @@ dayCardAddButtonText: {
   color: colors.primary,
   marginLeft: SPACING.sm,
 } as TextStyle,
-// Pill-кнопка "Подробнее" (используется в ProgramCard)
+// Pill-кнопка "Подробнее" со стрелочкой
 programCardFooterPill: {
   flexDirection: 'row',
   alignItems: 'center',
+  gap: 4,
   paddingHorizontal: SPACING.md,
   paddingVertical: SPACING.sm,
   borderRadius: BORDER_RADIUS.full,
   backgroundColor: colors.primary + '15',
 } as ViewStyle,
+programCardFooterPillText: {
+  ...typography.buttonTiny,
+  color: colors.primary,
+  fontWeight: '600',
+} as TextStyle,
 
 // Цветная полоска слева по уровню сложности
 programCardLevelStripe: {
@@ -733,6 +739,12 @@ programCardLevelStripe: {
   borderTopLeftRadius: BORDER_RADIUS.lg,
   borderBottomLeftRadius: BORDER_RADIUS.lg,
 } as ViewStyle,
+// Кнопка редактирования в футере карточки программы
+programCardEditButton: {
+  padding: SPACING.sm,
+  marginRight: SPACING.sm,
+} as ViewStyle,
+
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;

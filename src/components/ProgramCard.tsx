@@ -1,10 +1,11 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Program } from '../servises/programsService';
-import { Sprout, Dumbbell, Flame, Calendar, Edit2 } from 'lucide-react-native';
+import { Sprout, Dumbbell, Flame, Calendar, Edit2, ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';
 import { createCardStyles } from '../styles/components/card';
 import { createBadgeStyles } from '../styles/components/badge';
+
 
 type LevelFilter = 'beginner' | 'intermediate' | 'advanced';
 
@@ -147,41 +148,23 @@ export function ProgramCard({
         )}
 
         {/* ✅ Футер с pill-кнопкой "Подробнее" */}
-        <View style={cardStyles.programCardFooter}>
-          {isMyProgram && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                onEditPress();
-              }}
-              style={{
-                padding: SPACING.sm,
-                marginRight: SPACING.sm,
-              }}
-            >
-              <Edit2 size={16} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
-          )}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: SPACING.md,
-              paddingVertical: SPACING.sm,
-              borderRadius: BORDER_RADIUS.full,
-              backgroundColor: colors.primary + '15',
-            }}
-          >
-            <Text
-              style={[
-                typography.buttonTiny,
-                { color: colors.primary, fontWeight: '600' },
-              ]}
-            >
-              Подробнее
-            </Text>
-          </View>
-        </View>
+<View style={cardStyles.programCardFooter}>
+  {isMyProgram && (
+    <TouchableOpacity
+      onPress={(e) => {
+        e.stopPropagation();
+        onEditPress();
+      }}
+      style={cardStyles.programCardEditButton}
+    >
+      <Edit2 size={16} color={colors.primary} strokeWidth={2} />
+    </TouchableOpacity>
+  )}
+  <View style={cardStyles.programCardFooterPill}>
+    <Text style={cardStyles.programCardFooterPillText}>Подробнее</Text>
+    <ChevronRight size={14} color={colors.primary} strokeWidth={2.5} />
+  </View>
+</View>
       </View>
     </TouchableOpacity>
   );
