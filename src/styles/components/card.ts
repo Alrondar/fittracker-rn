@@ -1,9 +1,9 @@
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { Dimensions } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, Dimensions } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../typography';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window'); const CARD_WIDTH = SCREEN_WIDTH - 32;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 export const createCardStyles = (colors: any) =>
   StyleSheet.create({
@@ -252,10 +252,12 @@ export const createCardStyles = (colors: any) =>
       fontWeight: 'bold',
       marginBottom: SPACING.xs,
       lineHeight: 22,
+      color: colors.textPrimary,
     } as TextStyle,
     cardDesc: {
       fontSize: 14,
       marginBottom: SPACING.md,
+      color: colors.textSecondary,
     } as TextStyle,
     cardFooter: {
       flexDirection: 'row',
@@ -265,10 +267,12 @@ export const createCardStyles = (colors: any) =>
     } as ViewStyle,
     cardDate: {
       fontSize: 13,
+      color: colors.textSecondary,
     } as TextStyle,
     openText: {
       fontSize: 14,
       fontWeight: '600',
+      color: colors.primary,
     } as TextStyle,
     collapsibleSection: {
       marginBottom: SPACING.sm,
@@ -291,7 +295,7 @@ export const createCardStyles = (colors: any) =>
       padding: SPACING.md,
     } as ViewStyle,
 
-    // ===== КАРТОЧКА ДНЯ ПРОГРАММЫ (для [id].tsx) =====
+    // ===== КАРТОЧКА ДНЯ ПРОГРАММЫ =====
     programDayCard: {
       backgroundColor: colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -306,7 +310,7 @@ export const createCardStyles = (colors: any) =>
       shadowRadius: 4,
     } as ViewStyle,
 
-    // ===== КАРТОЧКА ПРОГРАММЫ (для programs.tsx) =====
+    // ===== КАРТОЧКА ПРОГРАММЫ =====
     programCard: {
       backgroundColor: colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -320,8 +324,6 @@ export const createCardStyles = (colors: any) =>
       shadowOpacity: 0.15,
       shadowRadius: 4,
     } as ViewStyle,
-
-    // Увеличенный отступ для футера карточки программы
     programCardFooter: {
       flexDirection: 'row',
       justifyContent: 'flex-end',
@@ -331,8 +333,24 @@ export const createCardStyles = (colors: any) =>
       borderTopWidth: 1,
       borderTopColor: colors.border,
     } as ViewStyle,
-
-    // Бейдж "Моя программа"
+    programCardFooterPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.full,
+      backgroundColor: colors.primary + '15',
+    } as ViewStyle,
+    programCardFooterPillText: {
+      ...typography.buttonTiny,
+      color: colors.primary,
+      fontWeight: '600',
+    } as TextStyle,
+    programCardEditButton: {
+      padding: SPACING.sm,
+      marginRight: SPACING.sm,
+    } as ViewStyle,
     myProgramBadge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -463,7 +481,7 @@ export const createCardStyles = (colors: any) =>
       marginBottom: SPACING.lg,
     } as TextStyle,
 
-    // ===== FAB (кнопка создания) =====
+    // ===== FAB =====
     fab: {
       position: 'absolute',
       bottom: SPACING.xl,
@@ -481,7 +499,7 @@ export const createCardStyles = (colors: any) =>
       shadowRadius: 6,
     } as ViewStyle,
 
-    // ===== МЕНЮ ДЕЙСТВИЙ (долгое нажатие) =====
+    // ===== МЕНЮ ДЕЙСТВИЙ =====
     actionMenu: {
       backgroundColor: colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -511,7 +529,7 @@ export const createCardStyles = (colors: any) =>
       color: colors.error,
     } as TextStyle,
 
-    // ===== BOTTOM SHEET (создание/редактирование) =====
+    // ===== BOTTOM SHEET =====
     sheetContainer: {
       backgroundColor: colors.surface,
       borderTopLeftRadius: 20,
@@ -575,450 +593,671 @@ export const createCardStyles = (colors: any) =>
       fontSize: 16,
       color: colors.textPrimary,
     } as TextStyle,
-    // ===== БЛОК РАСПИСАНИЯ В ШАПКЕ =====
-scheduleBlock: {
-  backgroundColor: colors.textInverse + '30',
-  borderWidth: 1, 
-  padding: SPACING.md,
-  borderColor: colors.textInverse + '40',
-  borderRadius: BORDER_RADIUS.md,
-} as ViewStyle,
-scheduleHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: SPACING.sm,
-} as ViewStyle,
-scheduleEditButton: {
-  padding: SPACING.xs,
-} as ViewStyle,
 
-// ===== КАРТОЧКА ДНЯ ПРОГРАММЫ =====
-dayCardContainer: {
-  backgroundColor: colors.surface,
-  borderRadius: BORDER_RADIUS.lg,
-  borderWidth: 1.5,
-  borderColor: colors.border,
-  overflow: 'hidden',
-  marginBottom: SPACING.md,
-} as ViewStyle,
-dayCardHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: SPACING.md,
-} as ViewStyle,
-dayCardLeftContent: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  flex: 1,
-} as ViewStyle,
-dayCardGripButton: {
-  marginRight: SPACING.sm,
-  padding: SPACING.xs,
-  zIndex: 10,
-} as ViewStyle,
-dayCardNumberCircle: {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginRight: SPACING.md,
-  backgroundColor: colors.primary + '20',
-} as ViewStyle,
-dayCardNumberText: {
-  ...typography.h5,
-  color: colors.primary,
-} as TextStyle,
-dayCardInfo: {
-  flex: 1,
-} as ViewStyle,
-dayCardName: {
-  ...typography.labelBold,
-  color: colors.textPrimary,
-  marginBottom: 2,
-} as TextStyle,
-dayCardExerciseCount: {
-  ...typography.captionSmall,
-  color: colors.textSecondary,
-} as TextStyle,
-dayCardSettingsButton: {
-  padding: SPACING.sm,
-  marginRight: SPACING.xs,
-} as ViewStyle,
-dayCardChevronButton: {
-  padding: SPACING.xs,
-} as ViewStyle,
-dayCardExercisesContainer: {
-  paddingHorizontal: SPACING.md,
-  paddingBottom: SPACING.md,
-} as ViewStyle,
-dayCardExerciseRow: {
-  borderBottomWidth: 1,
-  borderBottomColor: colors.border,
-  paddingVertical: SPACING.sm,
-} as ViewStyle,
-dayCardExerciseContent: {
-  flexDirection: 'row',
-  alignItems: 'flex-start',
-  gap: SPACING.sm,
-} as ViewStyle,
-dayCardExerciseGrip: {
-  paddingTop: SPACING.xs,
-} as ViewStyle,
-dayCardExerciseTouchable: {
-  flex: 1,
-} as ViewStyle,
-dayCardExerciseName: {
-  ...typography.labelBold,
-  color: colors.textPrimary,
-  marginBottom: SPACING.xs,
-  lineHeight: 18,
-} as TextStyle,
-dayCardExerciseMeta: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: SPACING.sm,
-  marginBottom: SPACING.xs,
-} as ViewStyle,
-dayCardExerciseMetaText: {
-  ...typography.bodySmall,
-  color: colors.textSecondary,
-  fontWeight: '500',
-} as TextStyle,
-dayCardExerciseRest: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-} as ViewStyle,
-dayCardExerciseRestText: {
-  ...typography.captionSmall,
-  color: colors.textSecondary,
-} as TextStyle,
-dayCardExerciseDelete: {
-  padding: SPACING.sm,
-} as ViewStyle,
-dayCardAddButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: SPACING.md,
-  borderRadius: BORDER_RADIUS.md,
-  borderWidth: 1,
-  borderStyle: 'dashed',
-  borderColor: colors.primary,
-  backgroundColor: colors.primaryLight,
-  marginTop: SPACING.sm,
-} as ViewStyle,
-dayCardAddButtonText: {
-  ...typography.labelBold,
-  color: colors.primary,
-  marginLeft: SPACING.sm,
-} as TextStyle,
-// Pill-кнопка "Подробнее" со стрелочкой
-programCardFooterPill: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-  paddingHorizontal: SPACING.md,
-  paddingVertical: SPACING.sm,
-  borderRadius: BORDER_RADIUS.full,
-  backgroundColor: colors.primary + '15',
-} as ViewStyle,
-programCardFooterPillText: {
-  ...typography.buttonTiny,
-  color: colors.primary,
-  fontWeight: '600',
-} as TextStyle,
+    // ===== БЛОК РАСПИСАНИЯ =====
+    scheduleBlock: {
+      backgroundColor: colors.textInverse + '30',
+      borderWidth: 1,
+      padding: SPACING.md,
+      borderColor: colors.textInverse + '40',
+      borderRadius: BORDER_RADIUS.md,
+    } as ViewStyle,
+    scheduleHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    } as ViewStyle,
+    scheduleEditButton: {
+      padding: SPACING.xs,
+    } as ViewStyle,
 
-// Цветная полоска слева по уровню сложности
-programCardLevelStripe: {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  bottom: 0,
-  width: 4,
-  borderTopLeftRadius: BORDER_RADIUS.lg,
-  borderBottomLeftRadius: BORDER_RADIUS.lg,
-} as ViewStyle,
-// Кнопка редактирования в футере карточки программы
-programCardEditButton: {
-  padding: SPACING.sm,
-  marginRight: SPACING.sm,
-} as ViewStyle,
-  // ===== ТРЕНИРОВКА (WORKOUT) =====
-  
-  // Таймер отдыха
-  workoutTimerContainer: {
-    padding: SPACING.lg,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-  } as ViewStyle,
-  workoutTimerText: {
-    fontSize: 14,
-    marginBottom: 4,
-  } as TextStyle,
-  workoutTimerTime: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: SPACING.md,
-  } as TextStyle,
-  workoutTimerButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm,
-    borderRadius: 16,
-  } as ViewStyle,
-  workoutTimerButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  } as TextStyle,
+    // ===== КАРТОЧКА ДНЯ =====
+    dayCardContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      marginBottom: SPACING.md,
+    } as ViewStyle,
+    dayCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: SPACING.md,
+    } as ViewStyle,
+    dayCardLeftContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    } as ViewStyle,
+    dayCardGripButton: {
+      marginRight: SPACING.sm,
+      padding: SPACING.xs,
+      zIndex: 10,
+    } as ViewStyle,
+    dayCardNumberCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: SPACING.md,
+      backgroundColor: colors.primary + '20',
+    } as ViewStyle,
+    dayCardNumberText: {
+      ...typography.h5,
+      color: colors.primary,
+    } as TextStyle,
+    dayCardInfo: {
+      flex: 1,
+    } as ViewStyle,
+    dayCardName: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+      marginBottom: 2,
+    } as TextStyle,
+    dayCardExerciseCount: {
+      ...typography.captionSmall,
+      color: colors.textSecondary,
+    } as TextStyle,
+    dayCardSettingsButton: {
+      padding: SPACING.sm,
+      marginRight: SPACING.xs,
+    } as ViewStyle,
+    dayCardChevronButton: {
+      padding: SPACING.xs,
+    } as ViewStyle,
+    dayCardExercisesContainer: {
+      paddingHorizontal: SPACING.md,
+      paddingBottom: SPACING.md,
+    } as ViewStyle,
+    dayCardExerciseRow: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingVertical: SPACING.sm,
+    } as ViewStyle,
+    dayCardExerciseContent: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: SPACING.sm,
+    } as ViewStyle,
+    dayCardExerciseGrip: {
+      paddingTop: SPACING.xs,
+    } as ViewStyle,
+    dayCardExerciseTouchable: {
+      flex: 1,
+    } as ViewStyle,
+    dayCardExerciseName: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+      marginBottom: SPACING.xs,
+      lineHeight: 18,
+    } as TextStyle,
+    dayCardExerciseMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginBottom: SPACING.xs,
+    } as ViewStyle,
+    dayCardExerciseMetaText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    } as TextStyle,
+    dayCardExerciseRest: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    } as ViewStyle,
+    dayCardExerciseRestText: {
+      ...typography.captionSmall,
+      color: colors.textSecondary,
+    } as TextStyle,
+    dayCardExerciseDelete: {
+      padding: SPACING.sm,
+    } as ViewStyle,
+    dayCardAddButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.primary,
+      backgroundColor: colors.primaryLight,
+      marginTop: SPACING.sm,
+    } as ViewStyle,
+    dayCardAddButtonText: {
+      ...typography.labelBold,
+      color: colors.primary,
+      marginLeft: SPACING.sm,
+    } as TextStyle,
 
-  // Карточка упражнения
-  workoutExerciseCard: {
-    width: CARD_WIDTH, // Потребуется импорт Dimensions, см. ниже
-    marginHorizontal: 0,
-  } as ViewStyle,
-  workoutExerciseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  } as ViewStyle,
-  workoutExerciseName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: SPACING.sm,
-    lineHeight: 24,
-  } as TextStyle,
-  workoutSwipeIcon: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.sm,
-  } as ViewStyle,
-  workoutSettingsButton: {
-    padding: 6,
-    borderRadius: BORDER_RADIUS.sm,
-  } as ViewStyle,
-  workoutIntensityBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  } as ViewStyle,
-  workoutIntensityText: {
-    fontSize: 11,
-    fontWeight: '600',
-  } as TextStyle,
+    // ===== СПИСОК УПРАЖНЕНИЙ =====
+    exerciseListItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: SPACING.lg,
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      marginBottom: SPACING.md,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+    } as ViewStyle,
+    exerciseListItemIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: SPACING.md,
+      backgroundColor: colors.primaryLight,
+    } as ViewStyle,
+    exerciseListItemContent: {
+      flex: 1,
+    } as ViewStyle,
+    exerciseListItemName: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+    } as TextStyle,
+    exerciseListItemMuscles: {
+      ...typography.captionSmall,
+      color: colors.textSecondary,
+      marginTop: SPACING.xs,
+    } as TextStyle,
 
-  // Теги мышц
-  muscleTagPrimary: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1.5,
-  } as ViewStyle,
-  muscleTagSecondary: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1.5,
-  } as ViewStyle,
-  muscleTagText: {
-    fontSize: 12,
-    fontWeight: '600',
-  } as TextStyle,
+    // ===== ДЕТАЛЬНАЯ СТРАНИЦА УПРАЖНЕНИЯ =====
+    exerciseDetailHeader: {
+      alignItems: 'center',
+      padding: SPACING.xl,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    } as ViewStyle,
+    exerciseDetailIcon: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: SPACING.lg,
+      backgroundColor: colors.primaryLight,
+    } as ViewStyle,
+    exerciseDetailName: {
+      ...typography.h3,
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginBottom: SPACING.xl,
+    } as TextStyle,
+    exerciseDetailSection: {
+      padding: SPACING.lg,
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      marginBottom: SPACING.md,
+      marginHorizontal: SPACING.lg,
+    } as ViewStyle,
+    exerciseDetailSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginBottom: SPACING.sm,
+    } as ViewStyle,
+    exerciseDetailSectionTitle: {
+      ...typography.h5,
+      color: colors.textPrimary,
+    } as TextStyle,
+    exerciseDetailSectionText: {
+      ...typography.body,
+      color: colors.textPrimary,
+      lineHeight: 22,
+    } as TextStyle,
+    exerciseDetailMuscleSection: {
+      marginBottom: SPACING.lg,
+    } as ViewStyle,
+    exerciseDetailMuscleTitle: {
+      ...typography.h5,
+      color: colors.textPrimary,
+      marginBottom: SPACING.sm,
+    } as TextStyle,
+    exerciseDetailMuscleList: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.sm,
+    } as ViewStyle,
+    exerciseDetailInjuryText: {
+      ...typography.body,
+      color: colors.textPrimary,
+      marginBottom: SPACING.sm,
+      lineHeight: 22,
+    } as TextStyle,
 
-  // Сетка подходов
-  setsContainer: {
-    marginTop: SPACING.lg,
-    borderWidth: 1.5,
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
-  } as ViewStyle,
-  setsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    padding: SPACING.md,
-  } as ViewStyle,
-  setsHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
-  } as TextStyle,
-  setsContent: {
-    padding: SPACING.md,
-  } as ViewStyle,
-  setRow: {
-    marginBottom: SPACING.md,
-  } as ViewStyle,
-  setNumbersRow: {
-    flexDirection: 'row',
-    gap: 8,
-  } as ViewStyle,
-  setNumber: {
-    flex: 1,
-    alignItems: 'center',
-  } as ViewStyle,
-  setNumberText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  } as TextStyle,
-  setInputsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  } as ViewStyle,
-  setInputContainer: {
-    flex: 1,
-    padding: 8,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-  } as ViewStyle,
-  setInput: {
-    fontSize: 12,
-    textAlign: 'center',
-    width: '100%',
-  } as TextStyle,
-  restButton: {
-    marginTop: SPACING.md,
-    paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  } as ViewStyle,
-  restButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 15,
-  } as TextStyle,
+    // ===== СВЯЗАННЫЕ ПРОГРАММЫ / ПОХОЖИЕ УПРАЖНЕНИЯ =====
+    relatedItem: {
+      padding: SPACING.md,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.md,
+      marginBottom: SPACING.sm,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    } as ViewStyle,
+    relatedItemName: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+      flex: 1,
+    } as TextStyle,
+    relatedItemMeta: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      alignItems: 'center',
+    } as ViewStyle,
+    relatedItemMetaText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    } as TextStyle,
+    similarItem: {
+      padding: SPACING.md,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.md,
+      marginBottom: SPACING.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+    } as ViewStyle,
+    similarItemIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.primaryLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: SPACING.md,
+    } as ViewStyle,
+    similarItemContent: {
+      flex: 1,
+    } as ViewStyle,
+    similarItemName: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+    } as TextStyle,
+    similarItemMuscles: {
+      ...typography.captionSmall,
+      color: colors.textSecondary,
+    } as TextStyle,
 
-  // Кнопка замены
-  replaceButton: {
-    marginTop: SPACING.lg,
-    paddingVertical: 12,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    borderWidth: 1.5,
-  } as ViewStyle,
-  replaceButtonText: {
-    fontWeight: '600',
-    fontSize: 14,
-  } as TextStyle,
+    // ===== ЛИЧНЫЕ РЕКОРДЫ =====
+    recordsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      paddingVertical: SPACING.md,
+    } as ViewStyle,
+    recordItem: {
+      alignItems: 'center',
+    } as ViewStyle,
+    recordValue: {
+      ...typography.h3,
+      marginBottom: SPACING.xs,
+    } as TextStyle,
+    recordLabel: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    } as TextStyle,
 
-  // Bottom Sheet настроек
-  settingsSheetContainer: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: SPACING.lg,
-    maxHeight: '70%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 10,
-  } as ViewStyle,
-  settingsSheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  } as ViewStyle,
-  settingsSheetTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  } as TextStyle,
-  settingsSheetField: {
-    marginBottom: SPACING.lg,
-  } as ViewStyle,
-  settingsSheetLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: SPACING.md,
-  } as TextStyle,
-  settingsSheetCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.lg,
-  } as ViewStyle,
-  settingsSheetCounterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  settingsSheetCounterText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    minWidth: 40,
-    textAlign: 'center',
-  } as TextStyle,
-  settingsSheetSaveButton: {
-    paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-  } as ViewStyle,
-  settingsSheetSaveButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  } as TextStyle,
+    // ===== ТРЕНИРОВКА (WORKOUT) =====
+    workoutTimerContainer: {
+      padding: SPACING.lg,
+      borderBottomWidth: 1,
+    } as ViewStyle,
+    workoutTimerHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.md,
+    } as ViewStyle,
+    workoutTimerTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    } as TextStyle,
+    workoutTimerCloseButton: {
+      padding: 4,
+    } as ViewStyle,
+    workoutTimerTime: {
+      fontSize: 56,
+      fontWeight: '800',
+      textAlign: 'center',
+      lineHeight: 64,
+      fontVariant: ['tabular-nums'],
+    } as TextStyle,
+    workoutTimerProgressBg: {
+      height: 8,
+      borderRadius: 4,
+      overflow: 'hidden',
+      marginVertical: SPACING.lg,
+    } as ViewStyle,
+    workoutTimerProgressFill: {
+      height: '100%',
+      borderRadius: 4,
+    } as ViewStyle,
+    workoutTimerControls: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: SPACING.xl,
+    } as ViewStyle,
+    workoutTimerControlButton: {
+      padding: SPACING.sm,
+    } as ViewStyle,
+    workoutTimerControlText: {
+      fontSize: 16,
+      fontWeight: '600',
+    } as TextStyle,
 
-  // Завершение тренировки
-  finishButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: SPACING.lg,
-    borderTopWidth: 1,
-  } as ViewStyle,
-  finishButton: {
-    borderRadius: BORDER_RADIUS.xl,
-    overflow: 'hidden',
-  } as ViewStyle,
-  finishButtonLoading: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  } as ViewStyle,
-  finishButtonGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  } as ViewStyle,
-  finishButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  } as TextStyle,
+    workoutExerciseCard: {
+      width: CARD_WIDTH,
+      marginHorizontal: 0,
+    } as ViewStyle,
+    workoutExerciseHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: SPACING.md,
+    } as ViewStyle,
+    workoutExerciseName: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      flex: 1,
+      marginRight: SPACING.sm,
+      lineHeight: 24,
+    } as TextStyle,
+    workoutSwipeIcon: {
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: BORDER_RADIUS.sm,
+    } as ViewStyle,
+    workoutSettingsButton: {
+      padding: 6,
+      borderRadius: BORDER_RADIUS.sm,
+    } as ViewStyle,
+    workoutIntensityBadge: {
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 4,
+      borderRadius: BORDER_RADIUS.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    } as ViewStyle,
+    workoutIntensityText: {
+      fontSize: 11,
+      fontWeight: '600',
+    } as TextStyle,
 
-  // Бейдж "Заменено"
-  replacedBadgeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.sm,
-  } as ViewStyle,
-  replacedBadgeText: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  } as TextStyle,
-  replacedResetText: {
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  } as TextStyle,
+    muscleTagPrimary: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: 6,
+      borderRadius: BORDER_RADIUS.full,
+      borderWidth: 1.5,
+    } as ViewStyle,
+    muscleTagPrimaryText: {
+      fontSize: 12,
+      fontWeight: '600',
+    } as TextStyle,
+    muscleTagSecondary: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: 6,
+      borderRadius: BORDER_RADIUS.full,
+      borderWidth: 1.5,
+    } as ViewStyle,
+    muscleTagSecondaryText: {
+      fontSize: 12,
+      fontWeight: '600',
+    } as TextStyle,
+
+    setsContainer: {
+      marginTop: SPACING.lg,
+      borderWidth: 1.5,
+      borderRadius: BORDER_RADIUS.md,
+      overflow: 'hidden',
+    } as ViewStyle,
+    setsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      padding: SPACING.md,
+    } as ViewStyle,
+    setsHeaderText: {
+      fontSize: 14,
+      fontWeight: '600',
+    } as TextStyle,
+    setsContent: {
+      padding: SPACING.md,
+    } as ViewStyle,
+    setRow: {
+      marginBottom: SPACING.md,
+    } as ViewStyle,
+    setNumbersRow: {
+      flexDirection: 'row',
+      gap: 8,
+    } as ViewStyle,
+    setNumber: {
+      flex: 1,
+      alignItems: 'center',
+    } as ViewStyle,
+    setNumberText: {
+      fontSize: 14,
+      fontWeight: 'bold',
+    } as TextStyle,
+    setInputsRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 8,
+    } as ViewStyle,
+    setInputContainer: {
+      flex: 1,
+      padding: 8,
+      borderRadius: BORDER_RADIUS.md,
+      alignItems: 'center',
+    } as ViewStyle,
+    setInput: {
+      fontSize: 12,
+      textAlign: 'center',
+      width: '100%',
+    } as TextStyle,
+    restButton: {
+      marginTop: SPACING.md,
+      paddingVertical: 14,
+      borderRadius: BORDER_RADIUS.lg,
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: SPACING.sm,
+    } as ViewStyle,
+    restButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 15,
+    } as TextStyle,
+
+    replaceButton: {
+      marginTop: SPACING.lg,
+      paddingVertical: 12,
+      borderRadius: BORDER_RADIUS.lg,
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: SPACING.sm,
+      borderWidth: 1.5,
+    } as ViewStyle,
+    replaceButtonText: {
+      fontWeight: '600',
+      fontSize: 14,
+    } as TextStyle,
+
+    settingsSheetContainer: {
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: SPACING.lg,
+      maxHeight: '70%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 10,
+    } as ViewStyle,
+    settingsSheetHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.lg,
+    } as ViewStyle,
+    settingsSheetTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+    } as TextStyle,
+    settingsSheetField: {
+      marginBottom: SPACING.lg,
+    } as ViewStyle,
+    settingsSheetLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: SPACING.md,
+    } as TextStyle,
+    settingsSheetCounter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.lg,
+    } as ViewStyle,
+    settingsSheetCounterButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+    } as ViewStyle,
+    settingsSheetCounterText: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      minWidth: 40,
+      textAlign: 'center',
+    } as TextStyle,
+    settingsSheetSaveButton: {
+      paddingVertical: 14,
+      borderRadius: BORDER_RADIUS.lg,
+      alignItems: 'center',
+    } as ViewStyle,
+    settingsSheetSaveButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 16,
+    } as TextStyle,
+
+    finishButtonContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: SPACING.lg,
+      borderTopWidth: 1,
+    } as ViewStyle,
+    finishButton: {
+      borderRadius: BORDER_RADIUS.xl,
+      overflow: 'hidden',
+    } as ViewStyle,
+    finishButtonLoading: {
+      paddingVertical: 16,
+      alignItems: 'center',
+    } as ViewStyle,
+    finishButtonGradient: {
+      paddingVertical: 16,
+      alignItems: 'center',
+    } as ViewStyle,
+    finishButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 16,
+    } as TextStyle,
+
+    replacedBadgeContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.md,
+      marginBottom: SPACING.sm,
+    } as ViewStyle,
+    replacedBadgeText: {
+      fontWeight: 'bold',
+      fontSize: 14,
+    } as TextStyle,
+    replacedResetText: {
+      fontSize: 14,
+      textDecorationLine: 'underline',
+    } as TextStyle,
+
+    collapsibleWorkoutSection: {
+      marginBottom: SPACING.sm,
+      borderWidth: 1.5,
+      borderRadius: BORDER_RADIUS.md,
+      overflow: 'hidden',
+    } as ViewStyle,
+    collapsibleWorkoutHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: SPACING.md,
+    } as ViewStyle,
+    collapsibleWorkoutHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      flex: 1,
+    } as ViewStyle,
+    collapsibleWorkoutTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+    } as TextStyle,
+    collapsibleWorkoutContent: {
+      padding: SPACING.md,
+    } as ViewStyle,
+
+    groupedWorkoutSection: {
+      marginBottom: SPACING.sm,
+      borderWidth: 1.5,
+      borderRadius: BORDER_RADIUS.md,
+      overflow: 'hidden',
+    } as ViewStyle,
+    groupedWorkoutContent: {
+      padding: SPACING.md,
+    } as ViewStyle,
+    groupedWorkoutDivider: {
+      height: 1,
+      marginVertical: SPACING.md,
+    } as ViewStyle,
+    groupedWorkoutSubHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      marginBottom: SPACING.xs,
+    } as ViewStyle,
+    groupedWorkoutSubTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+    } as TextStyle,
+    groupedWorkoutSubText: {
+      fontSize: 14,
+    } as TextStyle,
   });
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;

@@ -29,7 +29,6 @@ export default function ExercisesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
 
@@ -113,7 +112,18 @@ export default function ExercisesScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      {/* Заголовок */}
       <FadeIn style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
+          Справочник упражнений
+        </Text>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
+          База упражнений
+        </Text>
+      </FadeIn>
+
+      {/* Фильтры по мышцам */}
+      <FadeIn style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <FlatList
           horizontal
           data={allMuscles}
@@ -137,7 +147,7 @@ export default function ExercisesScreen() {
               )}
               <Text style={[
                 badgeStyles.text,
-                { 
+                {
                   color: selectedMuscles.includes(item) ? colors.primary : colors.textPrimary,
                   fontWeight: selectedMuscles.includes(item) ? 'bold' : 'normal',
                 },
@@ -151,6 +161,7 @@ export default function ExercisesScreen() {
         />
       </FadeIn>
 
+      {/* Список упражнений */}
       {loading ? (
         <ListSkeleton count={5} />
       ) : (
@@ -160,19 +171,21 @@ export default function ExercisesScreen() {
           renderItem={({ item, index }) => (
             <FadeIn delay={index * 40}>
               <TouchableOpacity
-                style={[cardStyles.container, { flexDirection: 'row', alignItems: 'center' }]}
+                style={cardStyles.exerciseListItem}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   router.push(`/exercise/${item.id}`);
                 }}
                 activeOpacity={0.7}
               >
-                <Dumbbell size={32} color={colors.primary} strokeWidth={1.5} />
-                <View style={{ flex: 1, marginLeft: SPACING.md }}>
-                  <Text style={[cardStyles.title, { color: colors.textPrimary }]} numberOfLines={1}>
+                <View style={cardStyles.exerciseListItemIcon}>
+                  <Dumbbell size={24} color={colors.primary} strokeWidth={1.5} />
+                </View>
+                <View style={cardStyles.exerciseListItemContent}>
+                  <Text style={cardStyles.exerciseListItemName} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.xs }]} numberOfLines={1}>
+                  <Text style={cardStyles.exerciseListItemMuscles} numberOfLines={1}>
                     {getList(item, 'primary_muscles').join(', ')}
                   </Text>
                 </View>

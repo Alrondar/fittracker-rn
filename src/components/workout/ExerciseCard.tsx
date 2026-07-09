@@ -116,25 +116,27 @@ export function ExerciseCard({
         </View>
       </View>
 
-      {/* Мышцы */}
-      {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
-          {(exercise as ExerciseData).primary_muscles.map((muscle, idx) => (
-            <View key={idx} style={[cardStyles.muscleTagPrimary, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}>
-              <Text style={[cardStyles.muscleTagText, { color: colors.primary }]}>{muscle}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-      {'secondary_muscles' in exercise && (exercise as ExerciseData).secondary_muscles.length > 0 && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
-          {(exercise as ExerciseData).secondary_muscles.map((muscle, idx) => (
-            <View key={idx} style={[cardStyles.muscleTagSecondary, { borderColor: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>
-              <Text style={[cardStyles.muscleTagText, { color: colors.textSecondary }]}>{muscle}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+{/* Мышцы-теги: основные */}
+{'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
+    {(exercise as ExerciseData).primary_muscles.map((muscle, idx) => (
+      <View key={idx} style={[cardStyles.muscleTagPrimary, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}>
+        <Text style={[cardStyles.muscleTagPrimaryText, { color: colors.primary }]}>{muscle}</Text>
+      </View>
+    ))}
+  </View>
+)}
+
+{/* Мышцы-теги: вспомогательные */}
+{'secondary_muscles' in exercise && (exercise as ExerciseData).secondary_muscles.length > 0 && (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
+    {(exercise as ExerciseData).secondary_muscles.map((muscle, idx) => (
+      <View key={idx} style={[cardStyles.muscleTagSecondary, { borderColor: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>
+        <Text style={[cardStyles.muscleTagSecondaryText, { color: colors.textSecondary }]}>{muscle}</Text>
+      </View>
+    ))}
+  </View>
+)}
 
       {/* Секции */}
       {'technique' in exercise && (exercise as ExerciseData).technique ? (

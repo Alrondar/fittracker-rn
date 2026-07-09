@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
@@ -15,7 +8,7 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { SPACING } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
-import { ClipboardList, Dumbbell, Plus } from 'lucide-react-native';
+import { ClipboardList, Dumbbell } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
@@ -29,8 +22,9 @@ export default function WorkoutsScreen() {
   const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
+  const [activeProgramId, setActiveProgramId] = useState<string | null>(null);
   const router = useRouter();
-
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
   const listStyles = createListStyles(colors);
@@ -42,13 +36,50 @@ export default function WorkoutsScreen() {
   const loadWorkouts = async () => {
     if (!userId) return;
     try {
-      const { data, error } = await supabase
+      // 1. Получаем активную программу через is_active
+      const { data: userProgram, error: progError } = await supabase
+        .from('user_programs')
+        .select('program_id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (progError) throw progError;
+
+      if (!userProgram) {
+        setWorkouts([]);
+        setActiveProgramName(null);
+        setActiveProgramId(null);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      setActiveProgramId(userProgram.program_id);
+
+      // 2. Получаем название программы
+      const { data: programData, error: nameError } = await supabase
+        .from('programs')
+        .select('name')
+        .eq('id', userProgram.program_id)
+        .maybeSingle();
+
+      if (!nameError && programData) {
+        setActiveProgramName(programData.name);
+      } else {
+        setActiveProgramName('Активная программа');
+      }
+
+      // 3. Загружаем ТОЛЬКО тренировки этой программы
+      const { data, error: workError } = await supabase
         .from('workouts')
         .select('id, name, description, program_id, week_number, day_index, created_at')
         .eq('user_id', userId)
+        .eq('program_id', userProgram.program_id)
         .order('week_number', { ascending: true })
         .order('day_index', { ascending: true });
-      if (error) throw error;
+
+      if (workError) throw workError;
       setWorkouts(data || []);
     } catch (e: any) {
       console.error('Ошибка загрузки тренировок:', e.message);
@@ -68,11 +99,6 @@ export default function WorkoutsScreen() {
   const navigateToWorkout = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push(`/workout/${id}`);
-  };
-
-  const createNewWorkout = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/workout/create');
   };
 
   const renderWorkoutItem = ({ item, index }: { item: any; index: number }) => {
@@ -105,11 +131,11 @@ export default function WorkoutsScreen() {
               </View>
             </View>
           )}
-          <Text style={cardStyles.cardTitle} numberOfLines={2}>
+          <Text style={[cardStyles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>
             {item.name}
           </Text>
           {item.description && !isProgramWorkout && (
-            <Text style={cardStyles.cardDesc} numberOfLines={1}>
+            <Text style={[cardStyles.cardDesc, { color: colors.textSecondary }]} numberOfLines={1}>
               {item.description}
             </Text>
           )}
@@ -134,7 +160,9 @@ export default function WorkoutsScreen() {
         Нет тренировок
       </Text>
       <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        Создайте свою первую тренировку или выберите готовую программу
+        {activeProgramName
+          ? `Для программы "${activeProgramName}" ещё нет запланированных тренировок.`
+          : 'Активируйте программу, чтобы увидеть список тренировок.'}
       </Text>
     </FadeIn>
   );
@@ -146,7 +174,7 @@ export default function WorkoutsScreen() {
           Тренировки
         </Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
-          Ваши планы и программы
+          {activeProgramName || 'Нет активной программы'}
         </Text>
       </View>
 
@@ -168,14 +196,6 @@ export default function WorkoutsScreen() {
           }
         />
       )}
-
-      <TouchableOpacity
-        style={[commonStyles.fab, { backgroundColor: colors.primary }]}
-        onPress={createNewWorkout}
-        activeOpacity={0.8}
-      >
-        <Plus size={28} color="white" strokeWidth={2.5} />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }

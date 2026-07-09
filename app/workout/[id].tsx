@@ -1,5 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Dimensions,
+  Modal,
+  Pressable,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
@@ -7,16 +18,6 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { advanceProgramProgress } from '../../src/servises/programsService';
-import { commonStyles } from '../../src/styles/common';
-import { createCardStyles } from '../../src/styles/components/card';
-import { createButtonStyles } from '../../src/styles/components/button';
-import { typography } from '../../src/styles/typography';
-import { RestTimer } from '../../src/components/workout/RestTimer';
-import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
-import { ExerciseData, AlternativeExercise, SetData } from '../../src/types/workout';
-
 import {
   RotateCcw,
   Clock,
@@ -33,13 +34,28 @@ import {
   X,
   Plus,
 } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { advanceProgramProgress } from '../../src/servises/programsService';
+import { commonStyles } from '../../src/styles/common';
+import { createCardStyles } from '../../src/styles/components/card';
+
+import { createButtonStyles } from '../../src/styles/components/button';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { typography } from '../../src/styles/typography';
+import { createWorkoutStyles } from '../../src/styles/components/workout';
+import { RestTimer } from '../../src/components/workout/RestTimer';
+import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
+import { ExerciseData, AlternativeExercise, SetData } from '../../src/types/workout';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { userId } = useStore();
   const { colors, gradients } = useTheme();
-  
+
   const [workoutName, setWorkoutName] = useState('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -53,9 +69,18 @@ export default function WorkoutSessionScreen() {
 
   const cardStyles = createCardStyles(colors);
   const buttonStyles = createButtonStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
+   const workoutStyles = createWorkoutStyles(colors);
 
-  useEffect(() => { loadWorkout(); }, [id]);
-  useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
+  useEffect(() => {
+    loadWorkout();
+  }, [id]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   const loadWorkout = async () => {
     try {
@@ -76,44 +101,74 @@ export default function WorkoutSessionScreen() {
           .select('exercise_id, intensity')
           .eq('program_id', workout.program_id);
         if (!peError && programExercises) {
-          programExercises.forEach((pe: any) => { intensityMap[pe.exercise_id] = pe.intensity || 'medium'; });
+          programExercises.forEach((pe: any) => {
+            intensityMap[pe.exercise_id] = pe.intensity || 'medium';
+          });
         }
       }
 
       const exercisesData: ExerciseData[] = workout.workout_exercises.map((we: any) => {
         const exercise = we.exercises;
         const sets: SetData[] = [];
-        for (let i = 0; i < we.target_sets; i++) { sets.push({ weight: '', reps: '' }); }
+        for (let i = 0; i < we.target_sets; i++) {
+          sets.push({ weight: '', reps: '' });
+        }
         return {
-          id: exercise.id, workout_exercise_id: we.id, name: exercise.name,
-          primary_muscles: getList(exercise, 'primary_muscles'), secondary_muscles: getList(exercise, 'secondary_muscles'),
-          technique: getString(exercise, 'technique'), equipment: getList(exercise, 'equipment'),
-          settings: getString(exercise, 'settings'), benefits: getString(exercise, 'benefits'),
-          risks: getString(exercise, 'risks'), injuries: getList(exercise, 'injuries'),
-          alternatives: getList(exercise, 'alternatives'), target_sets: we.target_sets,
-          rest_seconds: we.rest_seconds, intensity: intensityMap[exercise.id] || 'medium', sets,
+          id: exercise.id,
+          workout_exercise_id: we.id,
+          name: exercise.name,
+          primary_muscles: getList(exercise, 'primary_muscles'),
+          secondary_muscles: getList(exercise, 'secondary_muscles'),
+          technique: getString(exercise, 'technique'),
+          equipment: getList(exercise, 'equipment'),
+          settings: getString(exercise, 'settings'),
+          benefits: getString(exercise, 'benefits'),
+          risks: getString(exercise, 'risks'),
+          injuries: getList(exercise, 'injuries'),
+          alternatives: getList(exercise, 'alternatives'),
+          target_sets: we.target_sets,
+          rest_seconds: we.rest_seconds,
+          intensity: intensityMap[exercise.id] || 'medium',
+          sets,
         };
       });
       setExercises(exercisesData);
-    } catch (error: any) { Alert.alert('Ошибка', error.message); } finally { setLoading(false); }
+    } catch (error: any) {
+      Alert.alert('Ошибка', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadAlternatives = async (exerciseId: string, primaryMuscles: string[]) => {
     if (alternativesCache[exerciseId]) return alternativesCache[exerciseId];
     try {
-      let query = supabase.from('exercises').select('*').neq('id', exerciseId);
-      if (primaryMuscles.length > 0) query = query.overlaps('primary_muscles', primaryMuscles);
+      let query = supabase
+        .from('exercises')
+        .select('*')
+        .neq('id', exerciseId);
+      if (primaryMuscles.length > 0) {
+        query = query.overlaps('primary_muscles', primaryMuscles);
+      }
       const { data, error } = await query.limit(10);
       if (error) throw error;
       const alternatives: AlternativeExercise[] = (data || []).map((ex: any) => ({
-        id: ex.id, name: ex.name, primary_muscles: getList(ex, 'primary_muscles'),
-        secondary_muscles: getList(ex, 'secondary_muscles'), technique: getString(ex, 'technique'),
-        equipment: getList(ex, 'equipment'), settings: getString(ex, 'settings'),
-        benefits: getString(ex, 'benefits'), risks: getString(ex, 'risks'), injuries: getList(ex, 'injuries'),
+        id: ex.id,
+        name: ex.name,
+        primary_muscles: getList(ex, 'primary_muscles'),
+        secondary_muscles: getList(ex, 'secondary_muscles'),
+        technique: getString(ex, 'technique'),
+        equipment: getList(ex, 'equipment'),
+        settings: getString(ex, 'settings'),
+        benefits: getString(ex, 'benefits'),
+        risks: getString(ex, 'risks'),
+        injuries: getList(ex, 'injuries'),
       }));
       setAlternativesCache(prev => ({ ...prev, [exerciseId]: alternatives }));
       return alternatives;
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   };
 
   const updateSet = (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
@@ -137,8 +192,11 @@ export default function WorkoutSessionScreen() {
       const currentSets = exercise.sets;
       const newSets: SetData[] = [];
       for (let i = 0; i < newSetsCount; i++) {
-        if (i < currentSets.length) newSets.push(currentSets[i]);
-        else newSets.push({ weight: '', reps: '' });
+        if (i < currentSets.length) {
+          newSets.push(currentSets[i]);
+        } else {
+          newSets.push({ weight: '', reps: '' });
+        }
       }
       exercise.sets = newSets;
       exercise.rest_seconds = newRestSeconds;
@@ -155,20 +213,50 @@ export default function WorkoutSessionScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setExercises(prev => {
       const updated = [...prev];
-      updated[exerciseIndex] = { ...updated[exerciseIndex], id: alt.id, name: alt.name, primary_muscles: alt.primary_muscles, secondary_muscles: alt.secondary_muscles, technique: alt.technique, equipment: alt.equipment, settings: alt.settings, benefits: alt.benefits, risks: alt.risks, injuries: alt.injuries };
+      updated[exerciseIndex] = {
+        ...updated[exerciseIndex],
+        id: alt.id,
+        name: alt.name,
+        primary_muscles: alt.primary_muscles,
+        secondary_muscles: alt.secondary_muscles,
+        technique: alt.technique,
+        equipment: alt.equipment,
+        settings: alt.settings,
+        benefits: alt.benefits,
+        risks: alt.risks,
+        injuries: alt.injuries,
+      };
       return updated;
     });
-    setReplacements(prev => ({ ...prev, [exercise.workout_exercise_id]: alternativeId }));
+    setReplacements(prev => ({
+      ...prev,
+      [exercise.workout_exercise_id]: alternativeId,
+    }));
     Alert.alert('Заменено', `${exercise.name} → ${alt.name}`);
   };
 
   const resetToOriginal = (exerciseIndex: number) => {
     const exercise = exercises[exerciseIndex];
     const workoutExId = exercise.workout_exercise_id;
-    Alert.alert('Вернуть оригинальное упражнение?', 'Данные подходов сохранятся', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Вернуть', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); loadWorkout(); setReplacements(prev => { const updated = { ...prev }; delete updated[workoutExId]; return updated; }); } },
-    ]);
+    Alert.alert(
+      'Вернуть оригинальное упражнение?',
+      'Данные подходов сохранятся',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Вернуть',
+          onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            loadWorkout();
+            setReplacements(prev => {
+              const updated = { ...prev };
+              delete updated[workoutExId];
+              return updated;
+            });
+          },
+        },
+      ]
+    );
   };
 
   const startRestTimer = (restSeconds: number) => {
@@ -195,60 +283,108 @@ export default function WorkoutSessionScreen() {
     setRestTimeLeft(0);
   };
 
+  const adjustRestTime = (delta: number) => {
+    setRestTimeLeft(prev => Math.max(0, prev + delta));
+  };
+
   const saveWorkout = async () => {
-    Alert.alert('Завершить тренировку?', 'Все данные будут сохранены', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Завершить',
-        onPress: async () => {
-          setSaving(true);
-          try {
-            let totalLogs = 0;
-            for (const exercise of exercises) {
-              const logsToSave = exercise.sets.filter(set => isSetCompleted(set)).map((set, index) => ({
-                workout_exercise_id: exercise.workout_exercise_id, set_number: index + 1,
-                weight_kg: parseFloat(set.weight) || 0, reps: parseInt(set.reps) || 0,
-              }));
-              if (logsToSave.length > 0) {
-                const { error } = await supabase.from('workout_logs').insert(logsToSave);
-                if (error) throw error;
-                totalLogs += logsToSave.length;
-              }
-            }
-            if (programId && userId) {
-              try {
-                const progress = await advanceProgramProgress(userId, programId);
-                if (progress.isCompleted) {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert('Программа завершена!', 'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".');
-                  router.replace('/(tabs)/programs');
-                } else {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert('Тренировка завершена!', `Следующий день: Неделя ${progress.week}, День ${progress.day}\n\nСохранено подходов: ${totalLogs}`);
-                  router.replace('/(tabs)/workouts');
+    Alert.alert(
+      'Завершить тренировку?',
+      'Все данные будут сохранены',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Завершить',
+          onPress: async () => {
+            setSaving(true);
+            try {
+              let totalLogs = 0;
+              for (const exercise of exercises) {
+                const logsToSave = exercise.sets
+                  .filter(set => isSetCompleted(set))
+                  .map((set, index) => ({
+                    workout_exercise_id: exercise.workout_exercise_id,
+                    set_number: index + 1,
+                    weight_kg: parseFloat(set.weight) || 0,
+                    reps: parseInt(set.reps) || 0,
+                  }));
+                if (logsToSave.length > 0) {
+                  const { error } = await supabase
+                    .from('workout_logs')
+                    .insert(logsToSave);
+                  if (error) throw error;
+                  totalLogs += logsToSave.length;
                 }
-              } catch (progressError: any) {
-                console.error('Ошибка обновления прогресса:', progressError);
+              }
+              if (programId && userId) {
+                try {
+                  const progress = await advanceProgramProgress(userId, programId);
+                  if (progress.isCompleted) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Программа завершена!',
+                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".'
+                    );
+                    router.replace('/(tabs)/programs');
+                  } else {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Тренировка завершена!',
+                      `Следующий день: Неделя ${progress.week}, День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
+                    );
+                    router.replace('/(tabs)/workouts');
+                  }
+                } catch (progressError: any) {
+                  console.error('Ошибка обновления прогресса:', progressError);
+                  Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
+                  router.replace('/(tabs)/history');
+                }
+              } else {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
                 router.replace('/(tabs)/history');
               }
-            } else {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
-              router.replace('/(tabs)/history');
+            } catch (error: any) {
+              Alert.alert('Ошибка', error.message);
+            } finally {
+              setSaving(false);
             }
-          } catch (error: any) { Alert.alert('Ошибка', error.message); } finally { setSaving(false); }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const getIntensityInfo = (intensity: string) => {
     switch (intensity) {
-      case 'high': return { label: 'Высокая', color: '#F44336', bgColor: '#F4433620', icon: <TrendingUp size={14} color="#F44336" strokeWidth={2} /> };
-      case 'medium': return { label: 'Средняя', color: '#FFC107', bgColor: '#FFC10720', icon: <Minus size={14} color="#FFC107" strokeWidth={2} /> };
-      case 'low': return { label: 'Низкая', color: '#4CAF50', bgColor: '#4CAF5020', icon: <TrendingDown size={14} color="#4CAF50" strokeWidth={2} /> };
-      default: return { label: intensity, color: colors.textSecondary, bgColor: colors.textSecondary + '20', icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} /> };
+      case 'high':
+        return {
+          label: 'Высокая',
+          color: '#F44336',
+          bgColor: '#F4433620',
+          icon: <TrendingUp size={14} color="#F44336" strokeWidth={2} />,
+        };
+      case 'medium':
+        return {
+          label: 'Средняя',
+          color: '#FFC107',
+          bgColor: '#FFC10720',
+          icon: <Minus size={14} color="#FFC107" strokeWidth={2} />,
+        };
+      case 'low':
+        return {
+          label: 'Низкая',
+          color: '#4CAF50',
+          bgColor: '#4CAF5020',
+          icon: <TrendingDown size={14} color="#4CAF50" strokeWidth={2} />,
+        };
+      default:
+        return {
+          label: intensity,
+          color: colors.textSecondary,
+          bgColor: colors.textSecondary + '20',
+          icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} />,
+        };
     }
   };
 
@@ -257,7 +393,9 @@ export default function WorkoutSessionScreen() {
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <View style={commonStyles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>Загрузка...</Text>
+          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+            Загрузка...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -265,39 +403,65 @@ export default function WorkoutSessionScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {restTimer !== null && <RestTimer timeLeft={restTimeLeft} onStop={stopRestTimer} colors={colors} cardStyles={cardStyles} />}
-      
-      <ScrollView style={commonStyles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* Таймер отдыха */}
+{restTimer !== null && (
+  <RestTimer
+    timeLeft={restTimeLeft}
+    total={restTimer}
+    onStop={stopRestTimer}
+    onAdjust={(delta) => setRestTimeLeft(prev => Math.max(0, prev + delta))}
+    colors={colors}
+    workoutStyles={workoutStyles}
+  />
+)}
+
+      {/* Список упражнений */}
+      <ScrollView
+        style={commonStyles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {exercises.map((exercise, exIndex) => (
-          <ExerciseSlider
-            key={exercise.workout_exercise_id}
-            exercise={exercise}
-            exerciseIndex={exIndex}
-            isReplaced={!!replacements[exercise.workout_exercise_id]}
-            alternativesCache={alternativesCache}
-            loadAlternatives={loadAlternatives}
-            updateSet={updateSet}
-            isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
-            resetToOriginal={resetToOriginal}
-            startRestTimer={startRestTimer}
-            getIntensityInfo={getIntensityInfo}
-            updateExerciseSettings={updateExerciseSettings}
-            colors={colors}
-            cardStyles={cardStyles}
-          />
+<ExerciseSlider
+  key={exercise.workout_exercise_id}
+  exercise={exercise}
+  exerciseIndex={exIndex}
+  isReplaced={!!replacements[exercise.workout_exercise_id]}
+  alternativesCache={alternativesCache}
+  loadAlternatives={loadAlternatives}
+  updateSet={updateSet}
+  isSetCompleted={isSetCompleted}
+  replaceExercise={replaceExercise}
+  resetToOriginal={resetToOriginal}
+  startRestTimer={startRestTimer}
+  getIntensityInfo={getIntensityInfo}
+  updateExerciseSettings={updateExerciseSettings}
+  colors={colors}
+  cardStyles={cardStyles}
+/>
         ))}
       </ScrollView>
 
-      <View style={[cardStyles.finishButtonContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-        <TouchableOpacity style={cardStyles.finishButton} onPress={saveWorkout} disabled={saving} activeOpacity={0.8}>
+      {/* Кнопка "Завершить" */}
+      <View style={[workoutStyles.finishButtonContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <TouchableOpacity
+          style={workoutStyles.finishButton}
+          onPress={saveWorkout}
+          disabled={saving}
+          activeOpacity={0.8}
+        >
           {saving ? (
-            <View style={[cardStyles.finishButtonLoading, { backgroundColor: colors.textTertiary }]}>
+            <View style={[workoutStyles.finishButtonLoading, { backgroundColor: colors.textTertiary }]}>
               <ActivityIndicator color="white" size="small" />
             </View>
           ) : (
-            <LinearGradient colors={gradients.success} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cardStyles.finishButtonGradient}>
-              <Text style={cardStyles.finishButtonText}>Завершить тренировку</Text>
+            <LinearGradient
+              colors={gradients.success}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={workoutStyles.finishButtonGradient}
+            >
+              <Text style={workoutStyles.finishButtonText}>Завершить тренировку</Text>
             </LinearGradient>
           )}
         </TouchableOpacity>
