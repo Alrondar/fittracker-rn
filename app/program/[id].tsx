@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   LogBox,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -50,6 +51,8 @@ import {
   Settings,
   Trash2,
   Search,
+  ArrowUpDown,
+  Check,
 } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
@@ -57,6 +60,8 @@ import { createBadgeStyles } from '../../src/styles/components/badge';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
+import { getMuscleColor } from '../../src/constants/muscleColors';
+import { getEquipmentIcon } from '../../src/constants/equipmentIcons';
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
@@ -94,6 +99,8 @@ export default function ProgramDetailScreen() {
   const [availableExercises, setAvailableExercises] = useState<any[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [deletedExerciseIds, setDeletedExerciseIds] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'popularity'>('name-asc');
+  const [showSortSheet, setShowSortSheet] = useState(false);
 
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
@@ -192,7 +199,6 @@ export default function ProgramDetailScreen() {
       }
 
       console.log('💾 SAVING - Порядок дней:', editedProgram.days.map((d) => d.name));
-
       const updatePromises: Promise<any>[] = [];
       const days = editedProgram.days || [];
 
@@ -202,7 +208,6 @@ export default function ProgramDetailScreen() {
           .from('programs')
           .update({ schedule: editedProgram.schedule })
           .eq('id', editedProgram.id);
-
         if (scheduleError) {
           console.error('❌ Ошибка сохранения расписания:', scheduleError);
           throw scheduleError;
@@ -233,7 +238,6 @@ export default function ProgramDetailScreen() {
               .eq('id', day.id)
           )
         );
-
         const exercises = day.exercises || [];
         for (let j = 0; j < exercises.length; j++) {
           const exercise = exercises[j];
@@ -245,7 +249,6 @@ export default function ProgramDetailScreen() {
               })
             )
           );
-
           if ((exercise as any).isNew) {
             updatePromises.push(
               Promise.resolve(
@@ -286,13 +289,12 @@ export default function ProgramDetailScreen() {
         console.error('❌ Ошибки сохранения:', errors);
         throw errors[0].error;
       }
-      console.log('✅ Все обновления сохранены успешно');
 
+      console.log('✅ Все обновления сохранены успешно');
       const updatedProgram = await getProgramWithDays(editedProgram.id);
       setProgram(updatedProgram);
       setEditedProgram(updatedProgram);
       setDeletedExerciseIds([]);
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Программа сохранена', 'success');
       setEditMode(false);
@@ -478,7 +480,6 @@ export default function ProgramDetailScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* ✅ Скролл работает свободно — нет блокировки через isDragging */}
       <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         <LinearGradient
           colors={GRADIENTS.hero}
@@ -507,7 +508,6 @@ export default function ProgramDetailScreen() {
                 <Text style={badgeStyles.metaBadgeText}>{displayProgram.schedule.length} дн/нед</Text>
               </View>
             </View>
-
             {/* Блок расписания с иконкой редактирования */}
             <View style={cardStyles.scheduleBlock}>
               <View style={cardStyles.scheduleHeader}>
@@ -729,6 +729,10 @@ export default function ProgramDetailScreen() {
           onClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}
           colors={colors}
           badgeStyles={badgeStyles}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          showSortSheet={showSortSheet}
+          setShowSortSheet={setShowSortSheet}
         />
       </Modal>
 
@@ -751,7 +755,7 @@ export default function ProgramDetailScreen() {
   );
 }
 
-// ===== DayCard со стилями из card.ts =====
+// ===== DayCard =====
 function DayCard({
   day,
   dayIndex,
@@ -1086,6 +1090,7 @@ function DaySettingsSheet({
   onClose: () => void;
 }) {
   const [dayName, setDayName] = useState(day?.name || '');
+
   return (
     <View style={{ flex: 1, justifyContent: 'flex-end' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
@@ -1128,6 +1133,10 @@ function ExercisePickerSheet({
   onClose,
   colors,
   badgeStyles,
+  sortBy,
+  setSortBy,
+  showSortSheet,
+  setShowSortSheet,
 }: {
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -1138,41 +1147,79 @@ function ExercisePickerSheet({
   onClose: () => void;
   colors: any;
   badgeStyles: any;
+  sortBy: string;
+  setSortBy: (value: any) => void;
+  showSortSheet: boolean;
+  setShowSortSheet: (value: boolean) => void;
 }) {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       onLoadExercises(searchQuery);
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+  }, [searchQuery, sortBy]);
 
   const getPrimaryMusclesColor = (muscle: string) => {
     const colors_map: Record<string, string> = {
-      грудь: '#F44336',
-      спина: '#2196F3',
-      ноги: '#4CAF50',
-      плечи: '#FF9800',
-      руки: '#9C27B0',
-      пресс: '#FFC107',
+      'грудь': '#F44336',
+      'спина': '#2196F3',
+      'ноги': '#4CAF50',
+      'плечи': '#FF9800',
+      'руки': '#9C27B0',
+      'пресс': '#FFC107',
     };
     return colors_map[muscle.toLowerCase()] || colors.primary;
   };
 
+  // Сортировка упражнений
+  const sortedExercises = [...exercises].sort((a, b) => {
+    if (sortBy === 'name-asc') return a.name.localeCompare(b.name, 'ru');
+    if (sortBy === 'name-desc') return b.name.localeCompare(a.name, 'ru');
+    return 0;
+  });
+
   return (
     <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: SPACING.lg }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.lg, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <Text style={[typography.h5, { color: colors.textPrimary }]}>Добавить упражнение</Text>
+      <View style={{
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        maxHeight: '80%',
+        paddingBottom: SPACING.lg,
+      }}>
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: SPACING.lg,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}>
+          <Text style={[typography.h5, { color: colors.textPrimary }]}>
+            Добавить упражнение
+          </Text>
           <TouchableOpacity onPress={onClose}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
+
         <View style={{ padding: SPACING.lg, paddingBottom: SPACING.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.md, paddingHorizontal: SPACING.md }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: BORDER_RADIUS.md,
+            paddingHorizontal: SPACING.md,
+          }}>
             <Search size={18} color={colors.textTertiary} strokeWidth={2} />
             <TextInput
-              style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }}
+              style={{
+                flex: 1,
+                padding: SPACING.md,
+                fontSize: 16,
+                color: colors.textPrimary,
+              }}
               placeholder="Поиск по названию..."
               placeholderTextColor={colors.textTertiary}
               value={searchQuery}
@@ -1184,14 +1231,36 @@ function ExercisePickerSheet({
                 <X size={18} color={colors.textTertiary} strokeWidth={2} />
               </TouchableOpacity>
             )}
+            {/* Кнопка сортировки */}
+            <TouchableOpacity
+              onPress={() => setShowSortSheet(true)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: sortBy !== 'name-asc' ? colors.primaryLight : 'transparent',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginLeft: SPACING.xs,
+              }}
+            >
+              <ArrowUpDown
+                size={18}
+                color={sortBy !== 'name-asc' ? colors.primary : colors.textTertiary}
+                strokeWidth={2}
+              />
+            </TouchableOpacity>
           </View>
         </View>
+
         {loading ? (
           <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>Загрузка...</Text>
+            <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+              Загрузка...
+            </Text>
           </View>
-        ) : exercises.length === 0 ? (
+        ) : sortedExercises.length === 0 ? (
           <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
             <Dumbbell size={48} color={colors.textTertiary} strokeWidth={1.5} />
             <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' }]}>
@@ -1200,29 +1269,35 @@ function ExercisePickerSheet({
           </View>
         ) : (
           <ScrollView style={{ paddingHorizontal: SPACING.lg }}>
-            {exercises.map((exercise) => {
+            {sortedExercises.map((exercise) => {
               const primaryMuscles = exercise.primary_muscles || [];
+              const borderColor = primaryMuscles.length > 0
+                ? getMuscleColor(primaryMuscles[0])
+                : colors.border;
               return (
                 <TouchableOpacity
                   key={exercise.id}
                   onPress={() => onSelectExercise(exercise)}
-                  style={{ padding: SPACING.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}
+                  style={{
+                    padding: SPACING.md,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: SPACING.md,
+                    borderLeftWidth: 4,
+                    borderLeftColor: borderColor,
+                  }}
                 >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) + '20' : colors.primary + '20',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Dumbbell
-                      size={20}
-                      color={primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) : colors.primary}
-                      strokeWidth={2}
-                    />
+                  <View style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) + '20' : colors.primary + '20',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    <Dumbbell size={20} color={primaryMuscles[0] ? getPrimaryMusclesColor(primaryMuscles[0]) : colors.primary} strokeWidth={2} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: 4 }]}>
@@ -1233,13 +1308,55 @@ function ExercisePickerSheet({
                         {primaryMuscles.slice(0, 3).map((muscle: string, idx: number) => (
                           <View
                             key={idx}
-                            style={[badgeStyles.intensityBadge, { backgroundColor: getPrimaryMusclesColor(muscle) + '15', paddingHorizontal: 8, paddingVertical: 2 }]}
+                            style={[
+                              badgeStyles.intensityBadge,
+                              {
+                                backgroundColor: getPrimaryMusclesColor(muscle) + '15',
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                              },
+                            ]}
                           >
-                            <Text style={[badgeStyles.intensityText, { color: getPrimaryMusclesColor(muscle), fontSize: 11 }]}>
+                            <Text
+                              style={[
+                                badgeStyles.intensityText,
+                                {
+                                  color: getPrimaryMusclesColor(muscle),
+                                  fontSize: 11,
+                                },
+                              ]}
+                            >
                               {muscle}
                             </Text>
                           </View>
                         ))}
+                      </View>
+                    )}
+                    {/* Оборудование с иконками */}
+                    {exercise.equipment && exercise.equipment.length > 0 && (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                        {exercise.equipment.slice(0, 3).map((eq: string, idx: number) => {
+                          const Icon = getEquipmentIcon(eq);
+                          return (
+                            <View
+                              key={idx}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                backgroundColor: colors.surfaceSecondary,
+                                borderRadius: 8,
+                              }}
+                            >
+                              <Icon size={12} color={colors.textSecondary} strokeWidth={2} />
+                              <Text style={{ fontSize: 10, color: colors.textSecondary }}>
+                                {eq}
+                              </Text>
+                            </View>
+                          );
+                        })}
                       </View>
                     )}
                   </View>
@@ -1249,11 +1366,85 @@ function ExercisePickerSheet({
             })}
           </ScrollView>
         )}
-        <View style={{ marginTop: SPACING.md, marginHorizontal: SPACING.lg, padding: SPACING.md, backgroundColor: colors.primaryLight, borderRadius: BORDER_RADIUS.md }}>
+
+        <View style={{
+          marginTop: SPACING.md,
+          marginHorizontal: SPACING.lg,
+          padding: SPACING.md,
+          backgroundColor: colors.primaryLight,
+          borderRadius: BORDER_RADIUS.md,
+        }}>
           <Text style={[typography.caption, { color: colors.primary }]}>
             Параметры по умолчанию: 4 подхода × 8-12 повт., отдых 90с, средняя интенсивность
           </Text>
         </View>
+
+        {/* Bottom sheet сортировки */}
+        {showSortSheet && (
+          <>
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+              }}
+              onPress={() => setShowSortSheet(false)}
+              activeOpacity={1}
+            />
+            <View style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: SPACING.lg,
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+            }}>
+              <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+                Сортировка
+              </Text>
+              {[
+                { key: 'name-asc', label: 'По названию (А-Я)' },
+                { key: 'name-desc', label: 'По названию (Я-А)' },
+                { key: 'popularity', label: 'По популярности' },
+              ].map(option => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingVertical: SPACING.md,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                  onPress={() => {
+                    setSortBy(option.key);
+                    setShowSortSheet(false);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                >
+                  <Text style={[
+                    typography.body,
+                    {
+                      color: sortBy === option.key ? colors.primary : colors.textPrimary,
+                      fontWeight: sortBy === option.key ? '600' : '400',
+                    }
+                  ]}>
+                    {option.label}
+                  </Text>
+                  {sortBy === option.key && (
+                    <Check size={20} color={colors.primary} strokeWidth={2} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
       </View>
     </View>
   );

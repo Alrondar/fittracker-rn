@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase, getList } from '../../src/lib/supabase';
@@ -19,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Search, Dumbbell, Check, X, ArrowUpDown } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
-import { createCardStyles } from '../../src/styles/components/card';
+import { createCardStyles, createExerciseCardBorderStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
 import { typography } from '../../src/styles/typography';
 import { MUSCLE_GROUPS } from '../../src/constants/muscleGroups';
@@ -38,8 +37,6 @@ export default function ExercisesScreen() {
   const router = useRouter();
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
-  
-  // Новые state для сортировки
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'popularity'>('name-asc');
   const [showSortSheet, setShowSortSheet] = useState(false);
 
@@ -79,7 +76,7 @@ export default function ExercisesScreen() {
 
   const toggleGroup = (groupName: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveGroup(prev => prev === groupName ? null : groupName);
+    setActiveGroup(prev => (prev === groupName ? null : groupName));
   };
 
   const toggleSearch = () => {
@@ -100,7 +97,6 @@ export default function ExercisesScreen() {
     setActiveGroup(null);
   };
 
-  // Фильтрация по поиску
   const filteredExercises = exercises.filter(ex => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -111,11 +107,9 @@ export default function ExercisesScreen() {
     return nameMatch || muscleMatch;
   });
 
-  // Сортировка упражнений
   const sortedExercises = [...filteredExercises].sort((a, b) => {
     if (sortBy === 'name-asc') return a.name.localeCompare(b.name, 'ru');
     if (sortBy === 'name-desc') return b.name.localeCompare(a.name, 'ru');
-    // Для popularity можно добавить подсчёт использований в программах
     return 0;
   });
 
@@ -147,7 +141,6 @@ export default function ExercisesScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* ===== ЗАГОЛОВОК С ИКОНКАМИ ПОИСКА И СОРТИРОВКИ ===== */}
       <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View style={{
           flexDirection: 'row',
@@ -164,8 +157,6 @@ export default function ExercisesScreen() {
               База упражнений
             </Text>
           </View>
-          
-          {/* Кнопка сортировки */}
           <TouchableOpacity
             onPress={() => setShowSortSheet(true)}
             style={{
@@ -179,14 +170,12 @@ export default function ExercisesScreen() {
             }}
             activeOpacity={0.7}
           >
-            <ArrowUpDown 
-              size={20} 
-              color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary} 
-              strokeWidth={2} 
+            <ArrowUpDown
+              size={20}
+              color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary}
+              strokeWidth={2}
             />
           </TouchableOpacity>
-
-          {/* Кнопка поиска */}
           <TouchableOpacity
             onPress={toggleSearch}
             style={{
@@ -208,7 +197,6 @@ export default function ExercisesScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ===== ПОЛЕ ПОИСКА (раскрывается под заголовком) ===== */}
         {showSearch && (
           <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
             <View style={{
@@ -251,7 +239,6 @@ export default function ExercisesScreen() {
         )}
       </View>
 
-      {/* ===== ШАПКА СО СЧЁТЧИКОМ И СБРОСОМ ===== */}
       {selectedMuscles.length > 0 && (
         <View style={[cardStyles.muscleGroupSelectorHeader, { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }]}>
           <Text style={cardStyles.muscleGroupSelectorHeaderText}>
@@ -265,7 +252,6 @@ export default function ExercisesScreen() {
         </View>
       )}
 
-      {/* ===== ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ ЧИПОВ ГРУПП ===== */}
       <View style={{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <FlatList
           horizontal
@@ -276,7 +262,6 @@ export default function ExercisesScreen() {
             const isActive = activeGroup === groupName;
             const selectedInGroup = muscles.filter(m => selectedMuscles.includes(m)).length;
             const hasSelected = selectedInGroup > 0;
-
             let chipStyle = cardStyles.muscleGroupChipDefault;
             let textStyle = cardStyles.muscleGroupChipTextDefault;
             if (isActive) {
@@ -286,7 +271,6 @@ export default function ExercisesScreen() {
               chipStyle = cardStyles.muscleGroupChipSelected;
               textStyle = cardStyles.muscleGroupChipTextSelected;
             }
-
             let badgeStyle: any;
             let badgeTextStyle: any;
             if (isActive) {
@@ -296,7 +280,6 @@ export default function ExercisesScreen() {
               badgeStyle = cardStyles.muscleGroupBadgeSelected;
               badgeTextStyle = cardStyles.muscleGroupBadgeTextSelected;
             }
-
             return (
               <TouchableOpacity
                 key={groupName}
@@ -320,8 +303,6 @@ export default function ExercisesScreen() {
           contentContainerStyle={{ paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg }}
           showsHorizontalScrollIndicator={false}
         />
-
-        {/* ===== РАСКРЫВАЮЩИЙСЯ СПИСОК ПОДМЫШЦ ===== */}
         {activeGroup && (
           <View style={cardStyles.muscleSubgroupContainer}>
             <View style={cardStyles.muscleSubgroupList}>
@@ -363,37 +344,47 @@ export default function ExercisesScreen() {
         )}
       </View>
 
-      {/* ===== СПИСОК УПРАЖНЕНИЙ ===== */}
       {loading ? (
         <ListSkeleton count={5} />
       ) : (
         <FlatList
           data={sortedExercises}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <FadeIn delay={index * 40}>
-              <TouchableOpacity
-                style={cardStyles.exerciseListItem}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  router.push(`/exercise/${item.id}`);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={cardStyles.exerciseListItemIcon}>
-                  <Dumbbell size={24} color={colors.primary} strokeWidth={1.5} />
-                </View>
-                <View style={cardStyles.exerciseListItemContent}>
-                  <Text style={cardStyles.exerciseListItemName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={cardStyles.exerciseListItemMuscles} numberOfLines={1}>
-                    {getList(item, 'primary_muscles').join(', ')}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </FadeIn>
-          )}
+          renderItem={({ item, index }) => {
+            const primaryMuscles = getList(item, 'primary_muscles');
+            const borderColor = primaryMuscles.length > 0
+              ? getMuscleColor(primaryMuscles[0])
+              : colors.border;
+            const borderStyles = createExerciseCardBorderStyles(colors, borderColor);
+
+            return (
+              <FadeIn delay={index * 40}>
+                <TouchableOpacity
+                  style={[
+                    cardStyles.exerciseListItem,
+                    borderStyles.exerciseCardWithBorder,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push(`/exercise/${item.id}`);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[cardStyles.exerciseListItemIcon, borderStyles.exerciseListItemIconColored]}>
+                    <Dumbbell size={24} color={borderColor} strokeWidth={1.5} />
+                  </View>
+                  <View style={cardStyles.exerciseListItemContent}>
+                    <Text style={cardStyles.exerciseListItemName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={cardStyles.exerciseListItemMuscles} numberOfLines={1}>
+                      {primaryMuscles.join(', ')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </FadeIn>
+            );
+          }}
           contentContainerStyle={{ padding: SPACING.lg }}
           ListEmptyComponent={renderEmpty}
           refreshControl={
@@ -406,48 +397,43 @@ export default function ExercisesScreen() {
         />
       )}
 
-      {/* ===== BOTTOM SHEET ДЛЯ СОРТИРОВКИ ===== */}
-      <Modal
-        visible={showSortSheet}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSortSheet(false)}
-      >
-        <TouchableOpacity
-          style={cardStyles.sortOverlay}
-          onPress={() => setShowSortSheet(false)}
-          activeOpacity={1}
-        />
-        <View style={cardStyles.sortSheetContainer}>
-          <Text style={cardStyles.sortSheetTitle}>Сортировка</Text>
-          
-          {[
-            { key: 'name-asc', label: 'По названию (А-Я)' },
-            { key: 'name-desc', label: 'По названию (Я-А)' },
-            { key: 'popularity', label: 'По популярности' },
-          ].map(option => (
-            <TouchableOpacity
-              key={option.key}
-              style={cardStyles.sortOption}
-              onPress={() => {
-                setSortBy(option.key as any);
-                setShowSortSheet(false);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-            >
-              <Text style={[
-                cardStyles.sortOptionText,
-                sortBy === option.key && cardStyles.sortOptionTextActive,
-              ]}>
-                {option.label}
-              </Text>
-              {sortBy === option.key && (
-                <Check size={20} color={colors.primary} strokeWidth={2} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
+      {showSortSheet && (
+        <>
+          <TouchableOpacity
+            style={cardStyles.sortOverlay}
+            onPress={() => setShowSortSheet(false)}
+            activeOpacity={1}
+          />
+          <View style={cardStyles.sortSheetContainer}>
+            <Text style={cardStyles.sortSheetTitle}>Сортировка</Text>
+            {[
+              { key: 'name-asc', label: 'По названию (А-Я)' },
+              { key: 'name-desc', label: 'По названию (Я-А)' },
+              { key: 'popularity', label: 'По популярности' },
+            ].map(option => (
+              <TouchableOpacity
+                key={option.key}
+                style={cardStyles.sortOption}
+                onPress={() => {
+                  setSortBy(option.key as any);
+                  setShowSortSheet(false);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                <Text style={[
+                  cardStyles.sortOptionText,
+                  sortBy === option.key && cardStyles.sortOptionTextActive,
+                ]}>
+                  {option.label}
+                </Text>
+                {sortBy === option.key && (
+                  <Check size={20} color={colors.primary} strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }

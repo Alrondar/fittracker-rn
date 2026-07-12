@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
@@ -26,8 +27,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
-import { createBadgeStyles } from '../../src/styles/components/badge';
+import { createBadgeStyles, createEquipmentBadgeStyles, createMuscleBadgeStyles } from '../../src/styles/components/badge';
 import { typography } from '../../src/styles/typography';
+import { getMuscleColor } from '../../src/constants/muscleColors';
+import { getEquipmentIcon } from '../../src/constants/equipmentIcons';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -45,6 +48,8 @@ export default function ExerciseDetailScreen() {
   });
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
+  const equipmentBadgeStyles = createEquipmentBadgeStyles(colors);
+  const muscleBadgeStyles = createMuscleBadgeStyles(colors);
 
   useEffect(() => {
     loadExercise();
@@ -82,7 +87,6 @@ export default function ExerciseDetailScreen() {
         .select('program_id, programs(id, name, level, duration)')
         .eq('exercise_id', exercise.id)
         .limit(5);
-
       if (data) {
         const programs = data
           .map((item: any) => item.programs)
@@ -98,7 +102,6 @@ export default function ExerciseDetailScreen() {
     if (!exercise) return;
     const primaryMuscles = getList(exercise, 'primary_muscles');
     if (primaryMuscles.length === 0) return;
-
     try {
       const { data } = await supabase
         .from('exercises')
@@ -106,45 +109,36 @@ export default function ExerciseDetailScreen() {
         .neq('id', exercise.id)
         .overlaps('primary_muscles', primaryMuscles)
         .limit(5);
-
       if (data) setSimilarExercises(data);
     } catch (e) {
       console.error('Ошибка загрузки похожих:', e);
     }
   };
 
-const loadPersonalRecords = async () => {
-  if (!userId || !exercise) return;
-  try {
-    const { data, error } = await supabase
-      .from('workout_logs')
-      .select(`
-        weight_kg, 
-        reps,
-        completed_at,
-        workout_exercises!inner(exercise_id, workouts!inner(user_id))
-      `)
-      .eq('workout_exercises.exercise_id', exercise.id)
-      .eq('workout_exercises.workouts.user_id', userId)
-      .not('weight_kg', 'is', null)
-      .not('reps', 'is', null);
-
-    if (error) throw error;
-
-    if (data && data.length > 0) {
-      const maxWeight = Math.max(...data.map((log: any) => log.weight_kg));
-      const maxReps = Math.max(...data.map((log: any) => log.reps));
-      const totalVolume = data.reduce(
-        (sum: number, log: any) => sum + (log.weight_kg * log.reps), 
-        0
-      );
-
-      setPersonalRecords({ maxWeight, maxReps, totalVolume });
+  const loadPersonalRecords = async () => {
+    if (!userId || !exercise) return;
+    try {
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('weight_kg, reps, completed_at, workout_exercises!inner(exercise_id, workouts!inner(user_id))')
+        .eq('workout_exercises.exercise_id', exercise.id)
+        .eq('workout_exercises.workouts.user_id', userId)
+        .not('weight_kg', 'is', null)
+        .not('reps', 'is', null);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const maxWeight = Math.max(...data.map((log: any) => log.weight_kg));
+        const maxReps = Math.max(...data.map((log: any) => log.reps));
+        const totalVolume = data.reduce(
+          (sum: number, log: any) => sum + log.weight_kg * log.reps,
+          0
+        );
+        setPersonalRecords({ maxWeight, maxReps, totalVolume });
+      }
+    } catch (e) {
+      console.error('Ошибка загрузки рекордов:', e);
     }
-  } catch (e) {
-    console.error('Ошибка загрузки рекордов:', e);
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -180,17 +174,16 @@ const loadPersonalRecords = async () => {
   const secondaryMuscles = getList(exercise, 'secondary_muscles');
   const injuries = getList(exercise, 'injuries');
   const equipment = getList(exercise, 'equipment');
+  const mediaUrl = getString(exercise, 'media_url');
 
   return (
     <ScrollView style={[commonStyles.container, { backgroundColor: colors.background }]}>
-      {/* Заголовок */}
       <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Основная информация */}
       <View style={[cardStyles.container, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
         <View style={cardStyles.exerciseDetailIcon}>
           <Dumbbell size={48} color={colors.primary} strokeWidth={1.5} />
@@ -199,23 +192,37 @@ const loadPersonalRecords = async () => {
           {exercise.name}
         </Text>
 
-        {/* Основные мышцы */}
         {primaryMuscles.length > 0 && (
           <View style={cardStyles.exerciseDetailMuscleSection}>
             <Text style={cardStyles.exerciseDetailMuscleTitle}>
               Основные мышцы
             </Text>
             <View style={cardStyles.exerciseDetailMuscleList}>
-              {primaryMuscles.map((muscle, idx) => (
-                <View key={idx} style={[badgeStyles.container, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[badgeStyles.text, { color: colors.primary }]}>{muscle}</Text>
-                </View>
-              ))}
+              {primaryMuscles.map((muscle, idx) => {
+                const muscleColor = getMuscleColor(muscle);
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      muscleBadgeStyles.muscleBadge,
+                      { backgroundColor: muscleColor + '20' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        muscleBadgeStyles.muscleBadgeText,
+                        { color: muscleColor },
+                      ]}
+                    >
+                      {muscle}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
 
-        {/* Дополнительные мышцы */}
         {secondaryMuscles.length > 0 && (
           <View style={cardStyles.exerciseDetailMuscleSection}>
             <Text style={cardStyles.exerciseDetailMuscleTitle}>
@@ -232,7 +239,26 @@ const loadPersonalRecords = async () => {
         )}
       </View>
 
-      {/* Личные рекорды */}
+      {mediaUrl ? (
+        <View style={cardStyles.exerciseDetailSection}>
+          <View style={cardStyles.exerciseDetailSectionHeader}>
+            <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={cardStyles.exerciseDetailSectionTitle}>Демонстрация</Text>
+          </View>
+          <Image
+            source={{ uri: mediaUrl }}
+            style={{
+              width: '100%',
+              height: 200,
+              borderRadius: BORDER_RADIUS.md,
+              marginTop: SPACING.sm,
+              backgroundColor: colors.surfaceSecondary,
+            }}
+            resizeMode="cover"
+          />
+        </View>
+      ) : null}
+
       {personalRecords.maxWeight > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -262,7 +288,6 @@ const loadPersonalRecords = async () => {
         </View>
       )}
 
-      {/* Техника выполнения */}
       {exercise.technique ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -275,7 +300,6 @@ const loadPersonalRecords = async () => {
         </View>
       ) : null}
 
-      {/* Польза */}
       {exercise.benefits ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -288,7 +312,6 @@ const loadPersonalRecords = async () => {
         </View>
       ) : null}
 
-      {/* Риски */}
       {exercise.risks ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -301,7 +324,6 @@ const loadPersonalRecords = async () => {
         </View>
       ) : null}
 
-      {/* Противопоказания */}
       {injuries.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -316,20 +338,28 @@ const loadPersonalRecords = async () => {
         </View>
       )}
 
-      {/* Оборудование */}
       {equipment.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <Wrench size={20} color={colors.primary} strokeWidth={1.5} />
             <Text style={cardStyles.exerciseDetailSectionTitle}>Оборудование</Text>
           </View>
-          <Text style={cardStyles.exerciseDetailSectionText}>
-            {equipment.join(', ')}
-          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm }}>
+            {equipment.map((eq, idx) => {
+              const Icon = getEquipmentIcon(eq);
+              return (
+                <View key={idx} style={equipmentBadgeStyles.equipmentBadge}>
+                  <Icon size={16} color={colors.textSecondary} strokeWidth={2} />
+                  <Text style={equipmentBadgeStyles.equipmentBadgeText}>
+                    {eq}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
       )}
 
-      {/* Настройка */}
       {exercise.settings ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -342,7 +372,6 @@ const loadPersonalRecords = async () => {
         </View>
       ) : null}
 
-      {/* Связанные программы */}
       {relatedPrograms.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -369,7 +398,6 @@ const loadPersonalRecords = async () => {
         </View>
       )}
 
-      {/* Похожие упражнения */}
       {similarExercises.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>

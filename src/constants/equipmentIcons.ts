@@ -1,100 +1,82 @@
-import {
-  Dumbbell,
-  Settings,
-  Circle,
-  CircleDot,
-  Square,
-  Triangle,
-  Users,
-  Plug,
-  RotateCcw,
-  ChevronDown,
-  Minus,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  ArrowLeftRight,
-  SquareStack,
-  Weight,
-  Target,
-} from 'lucide-react-native';
-import { ComponentType } from 'react';
+// src/constants/equipmentIcons.ts
 
-export const EQUIPMENT_ICONS: Record<string, ComponentType<any>> = {
+export const EQUIPMENT_SVG_MAP: Record<string, string> = {
   // === Свободные веса ===
-  'Штанга': Dumbbell,
-  'Гантели': Dumbbell,
-  'EZ-гриф': Dumbbell,
-  'Т-гриф': Dumbbell,
-  'Гири': Weight,
-  'Медбол': Target,
-  'Блин': CircleDot,
-  
-  // === Тренажёры ===
-  'Гакк-тренажер': Settings,
-  'Тренажер Смита': Settings,
-  'Тренажер для жима ногами': Settings,
-  'Тренажер для разгибаний ног': Settings,
-  'Тренажер для сгибаний ног лежа': Settings,
-  'Тренажер для сгибаний ног сидя': Settings,
-  'Тренажер для подъемов на носки сидя': Settings,
-  'Тренажер для разведений ног': Settings,
-  'Тренажер для тяги': Settings,
-  'Тренажер для сгибаний рук': Settings,
-  'Тренажер для жима на плечи': Settings,
-  'Тренажер для отжиманий на брусьях': Settings,
-  'Тренажер Hammer Strength (горизонтальный жим)': Settings,
-  'Тренажер Hammer Strength (жим на плечи)': Settings,
-  'Тренажер Pec Deck (обратные разведения)': Settings,
-  'Тренажер Chest Press': Settings,
-  'Тренажер для гиперэкстензии': Settings,
-  'Тренажер для скручиваний': Settings,
-  'Тренажер Nordic': Settings,
-  'Тренажер Sissy Squat': Settings,
-  'Ролик для запястий': RotateCcw,
-  'Ролик для пресса': RotateCcw,
-  'Тренажер': Settings,
-  
-  // === Блочные тренажёры ===
-  'Верхний блок': ArrowDownToLine,
-  'Нижний блок': ArrowUpFromLine,
-  'Кроссовер': ArrowLeftRight,
-  
-  // === Рукояти ===
-  'Канатная рукоять': Circle,
-  'Прямая рукоять': Minus,
-  'D-образная рукоять': Circle,
-  'V-образная рукоять': ChevronDown,
-  'Длинная рукоять': Minus,
-  'Петли для рук': Circle,
-  'Манжета': Circle,
+  'Штанга': 'barbell.svg',
+  'Гантели': 'dumbbell.svg',
+  'EZ-гриф': 'ez-bar.svg',
+  'Т-гриф': 'trap-bar.svg',
+  'Гири': 'kettlebell.svg',
+  'Блин': 'weight-plate.svg',
+  'Медбол': 'medicine-ball.svg',
   
   // === Скамьи ===
-  'Скамья': Square,
-  'Наклонная скамья': Triangle,
-  'Скамья Скотта': Square,
-  'Скамья со спинкой': Square,
-  'Горизонтальная скамья': Square,
-  'Регулируемая наклонная скамья': Triangle,
-  'Опора': Square,
+  'Скамья': 'flat-bench.svg',
+  'Наклонная скамья': 'incline-bench.svg',
+  'Скамья Скотта': 'preacher-bench.svg',
+  'Скамья со спинкой': 'flat-bench.svg',
   
-  // === Другое ===
-  'Брусья': Minus,
-  'Брусья с упорами для локтей': Minus,
-  'Турник': Minus,
-  'Стойки': SquareStack,
-  'Платформа': Square,
-  'Тумба': Square,
-  'Коврик': Square,
-  'Пол': Square,
-  'Партнер': Users,
-  'Адаптер': Plug,
-};
-
-export const DefaultEquipmentIcon = Dumbbell;
-
-export const getEquipmentIcon = (name: string): ComponentType<any> => {
-  if (EQUIPMENT_ICONS[name]) return EQUIPMENT_ICONS[name];
-  const lowerName = Object.keys(EQUIPMENT_ICONS).find(k => k.toLowerCase() === name.toLowerCase());
-  if (lowerName) return EQUIPMENT_ICONS[lowerName];
-  return DefaultEquipmentIcon;
+  // === Тренажёры для ног ===
+  'Гакк-тренажер': 'hack-squat.svg',
+  'Тренажер для жима ногами': 'leg-press.svg',
+  'Тренажер для разгибаний ног': 'leg-extension.svg',
+  'Тренажер для сгибаний ног лежа': 'leg-curl.svg',
+  'Тренажер для сгибаний ног сидя': 'leg-curl.svg',
+  'Тренажер для подъемов на носки сидя': 'calf-raise.svg',
+  'Тренажер для разведений ног': 'hip-abduction.svg',
+  
+  // === Тренажёры для верхней части ===
+  'Тренажер для жима на плечи': 'shoulder-press.svg',
+  'Тренажер Chest Press': 'chest-press.svg',
+  'Тренажер Pec Deck': 'pec-deck.svg',
+  'Тренажер Pec Deck (обратные разведения)': 'pec-deck.svg',
+  'Тренажер для гиперэкстензии': 'hyperextension.svg',
+  'Тренажер для тяги': 'rowing-machine.svg',
+  'Тренажер для сгибаний рук': 'preacher-curl.svg',
+  'Тренажер для отжиманий на брусьях': 'dip-station.svg',
+  'Тренажер для скручиваний': 'ab-crunch.svg',
+  'Тренажер Смита': 'smith-machine.svg',
+  'Тренажер Nordic': 'nordic-curl.svg',
+  'Тренажер Sissy Squat': 'sissy-squat.svg',
+  
+  // === Hammer Strength ===
+  'Тренажер Hammer Strength (горизонтальный жим)': 'bench-press.svg',
+  'Тренажер Hammer Strength (жим на плечи)': 'shoulder-press.svg',
+  
+  // === Блочные системы ===
+  'Верхний блок': 'lat-pulldown.svg',
+  'Нижний блок': 'cable-row.svg',
+  'Кроссовер': 'cable-crossover.svg',
+  'Кроссовер (верхний блок)': 'cable-crossover.svg',
+  'Кроссовер (нижний блок)': 'cable-crossover-down.svg',
+  'Кроссовер (верхний/средний блок)': 'cable-crossover.svg',
+  
+  // === Рукояти ===
+  'Канатная рукоять': 'face-pull.svg',
+  'Прямая рукоять': 'bar-handle.svg',
+  'D-образная рукоять': 'd-handle.svg',
+  'V-образная рукоять': 'v-handle.svg', // fallback, т.к. нет отдельной иконки
+  'Длинная рукоять': 'bar-handle.svg',
+  'Петли для рук': 'face-pull.svg',
+  'Манжета': 'd-handle.svg',
+  
+  // === Стойки и рамы ===
+  'Стойки': 'squat-rack.svg',
+  'Турник': 'pull-up-bar.svg',
+  'Брусья': 'dip-station.svg',
+  'Брусья с упорами для локтей': 'dip-station.svg',
+  'Опора': 'box.svg',
+  
+  // === Разное ===
+  'Платформа': 'platform.svg',
+  'Тумба 30–50 см': 'box.svg',
+  'Коврик': 'foam-roller.svg', // fallback, если нет mat.svg
+  'Пол': 'foam-roller.svg', // fallback
+  'Ролик для запястий': 'curl-bar.svg', // fallback, если нет wrist-roller.svg
+  'Ролик для пресса': 'ab-wheel.svg',
+  'Партнер': 'support.svg', // fallback, если нет partner.svg
+  'Адаптер': 'd-handle.svg', // fallback, если нет adapter.svg
+  
+  // === Универсальные fallback ===
+  'Тренажер': 'chest-press.svg',
 };

@@ -87,7 +87,6 @@ export const createBadgeStyles = (colors: any) =>
       alignItems: 'center',
       gap: 4,
     } as ViewStyle,
-    // Мышцы-теги (НОВОЕ - для workout/[id].tsx)
     muscleTags: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -105,5 +104,36 @@ export const createBadgeStyles = (colors: any) =>
       fontWeight: '600',
     } as TextStyle,
   });
+
+// ===== НОВОЕ: Стили для бейджей оборудования с иконками =====
+export const createEquipmentBadgeStyles = (colors: any) => ({
+  equipmentBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.surfaceSecondary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  equipmentBadgeText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500' as const,
+  },
+});
+
+// ===== НОВОЕ: Стили для цветных бейджей мышц =====
+export const createMuscleBadgeStyles = (colors: any) => ({
+  muscleBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  muscleBadgeText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+});
 
 export type BadgeStyleKey = keyof ReturnType<typeof createBadgeStyles>;
