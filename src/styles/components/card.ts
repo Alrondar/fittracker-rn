@@ -850,6 +850,44 @@ export const createCardStyles = (colors: any) =>
       lineHeight: 22,
     } as TextStyle,
 
+    // ===== НОВЫЕ СТИЛИ ДЛЯ ДЕМОСТРАЦИИ (MEDIA) =====
+exerciseDetailMediaContainer: {
+  width: '100%',
+  height: 200,
+  borderRadius: BORDER_RADIUS.md,
+  marginTop: SPACING.sm,
+  backgroundColor: colors.surfaceSecondary,
+  overflow: 'hidden',
+  position: 'relative',
+} as ViewStyle,
+
+exerciseDetailMediaLoader: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: colors.surfaceSecondary,
+  zIndex: 1,
+} as ViewStyle,
+exerciseDetailMediaError: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: colors.surfaceSecondary,
+} as ViewStyle,
+exerciseDetailMediaErrorText: {
+  fontSize: 14,
+  color: colors.textSecondary,
+  textAlign: 'center',
+} as TextStyle,
+    
     // ===== НОВЫЕ СТИЛИ ДЛЯ БЛОКА ОБОРУДОВАНИЯ =====
     exerciseDetailEquipmentContainer: {
       flexDirection: 'row',

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
@@ -46,6 +47,8 @@ export default function ExerciseDetailScreen() {
     maxReps: 0,
     totalVolume: 0,
   });
+  const [mediaLoading, setMediaLoading] = useState(true);
+  const [mediaError, setMediaError] = useState(false);
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
   const equipmentBadgeStyles = createEquipmentBadgeStyles(colors);
@@ -236,18 +239,55 @@ export default function ExerciseDetailScreen() {
           </View>
         )}
       </View>
-
+{/* ВРЕМЕННЫЙ БЛОК ДЛЯ ДИАГНОСТИКИ */}
+<View style={{ padding: 16, backgroundColor: 'yellow', marginBottom: 16 }}>
+  <Text>mediaUrl: {mediaUrl || 'ПУСТОЙ'}</Text>
+  <Text>mediaLoading: {String(mediaLoading)}</Text>
+  <Text>mediaError: {String(mediaError)}</Text>
+</View>
+      {/* === БЛОК С GIF/МЕДИА === */}
       {mediaUrl ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
             <Text style={cardStyles.exerciseDetailSectionTitle}>Демонстрация</Text>
           </View>
-          <Image
-            source={{ uri: mediaUrl }}
-            style={cardStyles.exerciseDetailMediaImage}
-            resizeMode="cover"
-          />
+          
+          <View style={cardStyles.exerciseDetailMediaContainer}>
+            {mediaLoading && !mediaError && (
+              <View style={cardStyles.exerciseDetailMediaLoader}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            )}
+            
+            {!mediaError && (
+              <Image
+                source={{ uri: mediaUrl }}
+                style={cardStyles.exerciseDetailMediaImage}
+                resizeMode="cover"
+                onLoadStart={() => setMediaLoading(true)}
+                onLoadEnd={() => setMediaLoading(false)}
+                onError={() => {
+                  setMediaLoading(false);
+                  setMediaError(true);
+                }}
+              />
+            )}
+            
+            {mediaError && (
+              <TouchableOpacity
+                onPress={() => {
+                  setMediaError(false);
+                  setMediaLoading(true);
+                }}
+                style={cardStyles.exerciseDetailMediaError}
+              >
+                <Text style={cardStyles.exerciseDetailMediaErrorText}>
+                  Не удалось загрузить GIF. Нажмите для повторной попытки
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       ) : null}
 
@@ -330,7 +370,6 @@ export default function ExerciseDetailScreen() {
         </View>
       )}
 
-      {/* === БЛОК ОБОРУДОВАНИЯ === */}
       {equipment.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
