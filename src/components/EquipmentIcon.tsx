@@ -58,6 +58,7 @@ import FoamRollerIcon from '../assets/equipment-icons/foam-roller.svg';
 import CurlBarIcon from '../assets/equipment-icons/curl-bar.svg';
 import AbWheelIcon from '../assets/equipment-icons/ab-wheel.svg';
 import SupportIcon from '../assets/equipment-icons/support.svg';
+import MatIcon from '../assets/equipment-icons/mat.svg';
 
 // Маппинг имён файлов к импортированным компонентам
 const ICON_MAP: Record<string, React.FC<SvgProps>> = {
@@ -104,6 +105,7 @@ const ICON_MAP: Record<string, React.FC<SvgProps>> = {
   'foam-roller.svg': FoamRollerIcon,
   'curl-bar.svg': CurlBarIcon,
   'ab-wheel.svg': AbWheelIcon,
+   'mat.svg': MatIcon,
   'support.svg': SupportIcon,
 };
 
@@ -135,20 +137,32 @@ export const EquipmentIcon: React.FC<EquipmentIconProps> = ({
     // Fallback на универсальную иконку
     return (
       <View style={[styles.container, { width: size, height: size }, style]}>
-        <DumbbellIcon width={size * 0.7} height={size * 0.7} fill={iconColor} />
+        <DumbbellIcon 
+          width={size * 0.7} 
+          height={size * 0.7} 
+          fill={iconColor}
+          stroke={iconColor}
+          strokeWidth={3}
+        />
       </View>
     );
   }
 
+  // ✅ УМНЫЙ КОМПОНЕНТ: передаём И fill, И stroke
+  // - Если иконка fill-based (hakk-squat, kettlebell) → окрасится через fill
+  // - Если иконка stroke-based (dumbbell, barbell, elliptical) → окрасится через stroke
+  // - stroke-width нужен только для stroke-based иконок
   return (
     <View style={[styles.container, { width: size, height: size }, style]}>
       <View style={{ transform: [{ scale }] }}>
-        <IconComponent
-          width={size}
-          height={size}
-          fill={iconColor}
-          viewBox="0 0 100 100"
-        />
+        {React.createElement(IconComponent, {
+          width: size,
+          height: size,
+          fill: iconColor,        // для fill-based иконок
+          stroke: iconColor,      // для stroke-based иконок
+          strokeWidth: 3,         // толщина контура (игнорируется fill-based)
+          viewBox: '0 0 100 100',
+        })}
       </View>
     </View>
   );
@@ -162,4 +176,4 @@ const styles = StyleSheet.create({
 });
 
 // Экспорт маппинга для использования в других местах
-export { EQUIPMENT_SVG_MAP };
+export { EQUIPMENT_SVG_MAP, ICON_MAP };

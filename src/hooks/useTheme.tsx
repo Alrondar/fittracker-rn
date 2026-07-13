@@ -2,16 +2,16 @@ import { useState, createContext, useContext, ReactNode, useEffect } from 'react
 import { useColorScheme } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  lightTheme, 
-  darkTheme, 
+import {
+  lightTheme,
+  darkTheme,
   themes,
   themeGroups,
   Theme,
   ThemeKey,
   ThemeAccent,
   ThemeColors,
-  ThemeGradients,  // ← ИМПОРТ
+  ThemeGradients,
 } from '../constants/theme';
 
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -20,7 +20,7 @@ interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
   colors: ThemeColors;
-  gradients: ThemeGradients;  // ← ДОБАВИТЬ
+  gradients: ThemeGradients;
   themeMode: ThemeMode;
   themeAccent: ThemeAccent;
   themeKey: ThemeKey;
@@ -48,11 +48,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       const savedMode = await AsyncStorage.getItem(THEME_MODE_KEY);
       const savedAccent = await AsyncStorage.getItem(THEME_ACCENT_KEY);
-      
+
       if (savedMode && ['light', 'dark', 'system'].includes(savedMode)) {
         setThemeModeState(savedMode as ThemeMode);
       }
-      
       if (savedAccent && themeGroups[savedAccent]) {
         setThemeAccentState(savedAccent as ThemeAccent);
       }
@@ -82,12 +81,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   const getTheme = (): Theme => {
-    const isDarkMode = themeMode === 'dark' || 
+    const isDarkMode = themeMode === 'dark' ||
       (themeMode === 'system' && systemColorScheme === 'dark');
-    
     const suffix = isDarkMode ? '-dark' : '-light';
     const themeKey = `${themeAccent}${suffix}` as ThemeKey;
-    
     return themes[themeKey] || themes['purple-light'];
   };
 
@@ -95,8 +92,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const isDark = theme.mode === 'dark';
   const themeKey = `${themeAccent}${isDark ? '-dark' : '-light'}` as ThemeKey;
 
+  // ✅ ИСПРАВЛЕНО: Добавлен try-catch и cleanup
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync(theme.colors.background);
+    let isMounted = true;
+
+    const setBackgroundColor = async () => {
+      try {
+        if (isMounted) {
+          await SystemUI.setBackgroundColorAsync(theme.colors.background);
+        }
+      } catch (error) {
+        // Игнорируем ошибку "activity no longer available"
+        // Она возникает при быстром переключении экранов или закрытии приложения
+        if (!(error as Error).message?.includes('no longer available')) {
+          console.warn('SystemUI setBackgroundColor error:', error);
+        }
+      }
+    };
+
+    setBackgroundColor();
+
+    return () => {
+      isMounted = false;
+    };
   }, [theme.colors.background]);
 
   useEffect(() => {
@@ -127,7 +145,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme,
         isDark,
         colors: theme.colors,
-        gradients: theme.gradients,  // ← ДОБАВИТЬ
+        gradients: theme.gradients,
         themeMode,
         themeAccent,
         themeKey,

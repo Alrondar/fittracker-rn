@@ -61,7 +61,7 @@ import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
 import { getMuscleColor } from '../../src/constants/muscleColors';
-import { getEquipmentIcon } from '../../src/constants/equipmentIcons';
+import { EquipmentIcon } from '../../src/components/EquipmentIcon';
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
@@ -1332,33 +1332,56 @@ function ExercisePickerSheet({
                         ))}
                       </View>
                     )}
-                    {/* Оборудование с иконками */}
-                    {exercise.equipment && exercise.equipment.length > 0 && (
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-                        {exercise.equipment.slice(0, 3).map((eq: string, idx: number) => {
-                          const Icon = getEquipmentIcon(eq);
-                          return (
-                            <View
-                              key={idx}
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: 4,
-                                paddingHorizontal: 6,
-                                paddingVertical: 2,
-                                backgroundColor: colors.surfaceSecondary,
-                                borderRadius: 8,
-                              }}
-                            >
-                              <Icon size={12} color={colors.textSecondary} strokeWidth={2} />
-                              <Text style={{ fontSize: 10, color: colors.textSecondary }}>
-                                {eq}
-                              </Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
+{/* Оборудование с иконками */}
+{exercise.equipment && exercise.equipment.length > 0 && (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+    {exercise.equipment.slice(0, 3).map((eq: string, idx: number) => (
+      <View
+        key={idx}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          backgroundColor: colors.surfaceSecondary,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+        }}
+      >
+        <EquipmentIcon
+          name={eq}
+          primaryMuscles={exercise.primaryMuscles || []}
+          size={16}
+          scale={0.9}
+        />
+        <Text style={{
+          fontSize: 12,
+          color: colors.textSecondary,
+          fontWeight: '500',
+        }}>
+          {eq}
+        </Text>
+      </View>
+    ))}
+    {exercise.equipment.length > 3 && (
+      <View style={{
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        justifyContent: 'center',
+      }}>
+        <Text style={{
+          fontSize: 12,
+          color: colors.textTertiary,
+          fontWeight: '500',
+        }}>
+          +{exercise.equipment.length - 3}
+        </Text>
+      </View>
+    )}
+  </View>
+)}
                   </View>
                   <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
                 </TouchableOpacity>

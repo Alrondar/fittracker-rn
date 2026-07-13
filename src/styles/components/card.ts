@@ -1,4 +1,4 @@
-import { StyleSheet, ViewStyle, TextStyle, Dimensions } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, Dimensions, ImageStyle } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../typography';
 
@@ -124,6 +124,7 @@ export const createCardStyles = (colors: any) =>
       ...typography.labelBold,
       color: colors.textPrimary,
     } as TextStyle,
+
     // ===== КАРТОЧКА АКТИВНОЙ ПРОГРАММЫ =====
     activeProgramCard: {
       borderRadius: BORDER_RADIUS.xl,
@@ -184,6 +185,7 @@ export const createCardStyles = (colors: any) =>
       fontSize: 14,
       fontWeight: '600',
     } as TextStyle,
+
     // ===== КАРТОЧКА ПОСЛЕДНЕЙ ТРЕНИРОВКИ =====
     lastWorkoutCard: {
       borderRadius: BORDER_RADIUS.xl,
@@ -210,12 +212,14 @@ export const createCardStyles = (colors: any) =>
     lastWorkoutDate: {
       fontSize: 14,
     } as TextStyle,
+
     // ===== ПУСТАЯ КАРТОЧКА =====
     emptyCard: {
       padding: SPACING.xl,
       borderRadius: BORDER_RADIUS.xl,
       elevation: 2,
     } as ViewStyle,
+
     // ===== КАРТОЧКА ТРЕНИРОВКИ =====
     workoutCard: {
       borderRadius: BORDER_RADIUS.lg,
@@ -290,6 +294,7 @@ export const createCardStyles = (colors: any) =>
     collapsibleContent: {
       padding: SPACING.md,
     } as ViewStyle,
+
     // ===== КАРТОЧКА ДНЯ ПРОГРАММЫ =====
     programDayCard: {
       backgroundColor: colors.surface,
@@ -304,6 +309,7 @@ export const createCardStyles = (colors: any) =>
       shadowOpacity: 0.15,
       shadowRadius: 4,
     } as ViewStyle,
+
     // ===== КАРТОЧКА ПРОГРАММЫ =====
     programCard: {
       backgroundColor: colors.surface,
@@ -368,6 +374,7 @@ export const createCardStyles = (colors: any) =>
       fontWeight: '600',
       color: colors.primary,
     } as TextStyle,
+
     // ===== ТАБЫ =====
     tabContainer: {
       flexDirection: 'row',
@@ -392,6 +399,7 @@ export const createCardStyles = (colors: any) =>
     tabTextActive: {
       color: colors.textInverse,
     } as TextStyle,
+
     // ===== ПАНЕЛЬ ФИЛЬТРОВ И ПОИСКА =====
     filterBar: {
       paddingHorizontal: SPACING.lg,
@@ -434,6 +442,7 @@ export const createCardStyles = (colors: any) =>
       justifyContent: 'center',
       alignItems: 'center',
     } as ViewStyle,
+
     // ===== ЧИПЫ ФИЛЬТРОВ =====
     filterChips: {
       flexDirection: 'row',
@@ -459,6 +468,7 @@ export const createCardStyles = (colors: any) =>
     filterChipTextActive: {
       color: colors.textInverse,
     } as TextStyle,
+
     // ===== ПУСТОЕ СОСТОЯНИЕ =====
     emptyState: {
       flex: 1,
@@ -479,6 +489,7 @@ export const createCardStyles = (colors: any) =>
       textAlign: 'center',
       marginBottom: SPACING.lg,
     } as TextStyle,
+
     // ===== FAB =====
     fab: {
       position: 'absolute',
@@ -496,6 +507,7 @@ export const createCardStyles = (colors: any) =>
       shadowOpacity: 0.3,
       shadowRadius: 6,
     } as ViewStyle,
+
     // ===== МЕНЮ ДЕЙСТВИЙ =====
     actionMenu: {
       backgroundColor: colors.surface,
@@ -525,6 +537,7 @@ export const createCardStyles = (colors: any) =>
     actionMenuTextDanger: {
       color: colors.error,
     } as TextStyle,
+
     // ===== BOTTOM SHEET =====
     sheetContainer: {
       backgroundColor: colors.surface,
@@ -589,6 +602,7 @@ export const createCardStyles = (colors: any) =>
       fontSize: 16,
       color: colors.textPrimary,
     } as TextStyle,
+
     // ===== БЛОК РАСПИСАНИЯ =====
     scheduleBlock: {
       backgroundColor: colors.textInverse + '30',
@@ -606,6 +620,7 @@ export const createCardStyles = (colors: any) =>
     scheduleEditButton: {
       padding: SPACING.xs,
     } as ViewStyle,
+
     // ===== КАРТОЧКА ДНЯ =====
     dayCardContainer: {
       backgroundColor: colors.surface,
@@ -729,6 +744,7 @@ export const createCardStyles = (colors: any) =>
       color: colors.primary,
       marginLeft: SPACING.sm,
     } as TextStyle,
+
     // ===== СПИСОК УПРАЖНЕНИЙ =====
     exerciseListItem: {
       flexDirection: 'row',
@@ -746,12 +762,12 @@ export const createCardStyles = (colors: any) =>
       shadowRadius: 4,
     } as ViewStyle,
     exerciseListItemIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+      width: 50,
+      height: 50,
+      borderRadius: 21,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: SPACING.md,
+      marginRight: 50,
       backgroundColor: colors.primaryLight,
     } as ViewStyle,
     exerciseListItemContent: {
@@ -766,6 +782,7 @@ export const createCardStyles = (colors: any) =>
       color: colors.textSecondary,
       marginTop: SPACING.xs,
     } as TextStyle,
+
     // ===== ДЕТАЛЬНАЯ СТРАНИЦА УПРАЖНЕНИЯ =====
     exerciseDetailHeader: {
       alignItems: 'center',
@@ -832,6 +849,61 @@ export const createCardStyles = (colors: any) =>
       marginBottom: SPACING.sm,
       lineHeight: 22,
     } as TextStyle,
+
+    // ===== НОВЫЕ СТИЛИ ДЛЯ БЛОКА ОБОРУДОВАНИЯ =====
+    exerciseDetailEquipmentContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.md,
+      marginTop: SPACING.md,
+    } as ViewStyle,
+    exerciseDetailEquipmentCard: {
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.lg,
+      padding: SPACING.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.md,
+      minWidth: 140,
+      borderWidth: 1,
+      borderColor: colors.border,
+    } as ViewStyle,
+    exerciseDetailEquipmentIconContainer: {
+      width: 48,
+      height: 48,
+      backgroundColor: colors.surface,
+      borderRadius: BORDER_RADIUS.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    } as ViewStyle,
+    exerciseDetailEquipmentText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    } as TextStyle,
+
+    // ===== НОВЫЕ СТИЛИ ДЛЯ ДЕМОНСТРАЦИИ (MEDIA) =====
+exerciseDetailMediaImage: {
+  width: '100%',
+  height: 200,
+  borderRadius: BORDER_RADIUS.md,
+  marginTop: SPACING.sm,
+  backgroundColor: colors.surfaceSecondary,
+} as ImageStyle,
+
+    // ===== НОВЫЕ СТИЛИ ДЛЯ ЦВЕТНЫХ РЕКОРДОВ =====
+    recordValuePrimary: {
+      color: colors.primary,
+    } as TextStyle,
+    recordValueSuccess: {
+      color: colors.success,
+    } as TextStyle,
+    recordValueWarning: {
+      color: colors.warning,
+    } as TextStyle,
+
     // ===== СВЯЗАННЫЕ ПРОГРАММЫ / ПОХОЖИЕ УПРАЖНЕНИЯ =====
     relatedItem: {
       padding: SPACING.md,
@@ -884,6 +956,7 @@ export const createCardStyles = (colors: any) =>
       ...typography.captionSmall,
       color: colors.textSecondary,
     } as TextStyle,
+
     // ===== ЛИЧНЫЕ РЕКОРДЫ =====
     recordsContainer: {
       flexDirection: 'row',
@@ -901,6 +974,7 @@ export const createCardStyles = (colors: any) =>
       ...typography.caption,
       color: colors.textSecondary,
     } as TextStyle,
+
     // ===== ТРЕНИРОВКА (WORKOUT) =====
     workoutTimerContainer: {
       padding: SPACING.lg,
@@ -1238,6 +1312,7 @@ export const createCardStyles = (colors: any) =>
     groupedWorkoutSubText: {
       fontSize: 14,
     } as TextStyle,
+
     // ===== ФИЛЬТР МЫШЦ =====
     muscleGroupSelectorHeader: {
       flexDirection: 'row',
@@ -1323,6 +1398,7 @@ export const createCardStyles = (colors: any) =>
       flexWrap: 'wrap',
       gap: SPACING.sm,
     } as ViewStyle,
+
     // ===== СОРТИРОВКА =====
     sortSheetContainer: {
       backgroundColor: colors.surface,
@@ -1359,9 +1435,118 @@ export const createCardStyles = (colors: any) =>
       bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
     } as ViewStyle,
+
+    // ===== НОВЫЕ СТИЛИ ДЛЯ СПРАВОЧНИКА УПРАЖНЕНИЙ =====
+    screenHeader: {
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    } as ViewStyle,
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+    } as ViewStyle,
+    headerTitleWrapper: {
+      flex: 1,
+    } as ViewStyle,
+    searchWrapper: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING.md,
+    } as ViewStyle,
+    searchInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.md,
+      paddingHorizontal: SPACING.md,
+      height: 44,
+      width: '100%',
+    } as ViewStyle,
+    searchInputStyle: {
+      flex: 1,
+      fontSize: 14,
+      color: colors.textPrimary,
+      marginLeft: SPACING.sm,
+      paddingVertical: 0,
+      height: '100%',
+    } as TextStyle,
+    iconButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: SPACING.sm,
+    } as ViewStyle,
+    iconButtonPrimary: {
+      backgroundColor: colors.primaryLight,
+    } as ViewStyle,
+    iconButtonDefault: {
+      backgroundColor: colors.surfaceSecondary,
+    } as ViewStyle,
+    exerciseIconContainer: {
+      width: 70,
+      height: 70,
+      marginRight: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    } as ViewStyle,
+    exerciseIconMain: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+    } as ViewStyle,
+    exerciseIconExtra: {
+      position: 'absolute',
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+    } as ViewStyle,
+    exerciseNameLarge: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      lineHeight: 22,
+    } as TextStyle,
+    muscleBubblesContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 6,
+    } as ViewStyle,
+    muscleBubble: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      borderWidth: 1,
+    } as ViewStyle,
+    muscleBubbleText: {
+      fontSize: 11,
+      fontWeight: '600',
+    } as TextStyle,
+    muscleSubgroupItem: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: BORDER_RADIUS.full,
+      borderWidth: 1.5,
+      flexDirection: 'row',
+      alignItems: 'center',
+    } as ViewStyle,
+    muscleSubgroupItemText: {
+      fontSize: 12,
+    } as TextStyle,
   });
 
-// ===== НОВОЕ: Стили для цветной обводки карточек упражнений =====
+// ===== Стили для цветной обводки карточек упражнений =====
 export const createExerciseCardBorderStyles = (colors: any, borderColor: string) => ({
   exerciseCardWithBorder: {
     borderLeftWidth: 4,
@@ -1371,5 +1556,98 @@ export const createExerciseCardBorderStyles = (colors: any, borderColor: string)
     backgroundColor: borderColor + '15',
   },
 });
+
+// ===== ДИНАМИЧЕСКИЕ ГЕНЕРАТОРЫ СТИЛЕЙ =====
+export const getMuscleGroupChipStyle = (groupColor: string, isActive: boolean) => ({
+  paddingHorizontal: SPACING.md,
+  paddingVertical: SPACING.xs,
+  borderRadius: BORDER_RADIUS.full,
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  backgroundColor: isActive ? `${groupColor}40` : `${groupColor}15`,
+  borderColor: isActive ? groupColor : `${groupColor}50`,
+  borderWidth: isActive ? 2 : 1,
+  marginHorizontal: 4,
+} as ViewStyle);
+
+export const getMuscleGroupChipTextStyle = (groupColor: string, isActive: boolean) => ({
+  fontSize: 13,
+  fontWeight: isActive ? '700' : '600',
+  color: groupColor,
+} as TextStyle);
+
+export const getMuscleGroupBadgeStyle = (groupColor: string, isActive: boolean) => ({
+  minWidth: 18,
+  height: 18,
+  borderRadius: 9,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 4,
+  backgroundColor: isActive ? groupColor : `${groupColor}50`,
+} as ViewStyle);
+
+export const getMuscleGroupBadgeTextStyle = (groupColor: string, isActive: boolean) => ({
+  fontSize: 10,
+  fontWeight: '700',
+  color: isActive ? '#fff' : groupColor,
+} as TextStyle);
+
+export const getMuscleSubgroupItemStyle = (muscleColor: string, isSelected: boolean, surfaceColor: string, borderColor: string) => ({
+  paddingHorizontal: 10,
+  paddingVertical: 5,
+  borderRadius: BORDER_RADIUS.full,
+  borderWidth: 1.5,
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: isSelected ? `${muscleColor}25` : surfaceColor,
+  borderColor: isSelected ? muscleColor : borderColor,
+} as ViewStyle);
+
+export const getMuscleSubgroupItemTextStyle = (muscleColor: string, isSelected: boolean, textSecondaryColor: string) => ({
+  fontSize: 12,
+  fontWeight: isSelected ? '600' : '400',
+  color: isSelected ? muscleColor : textSecondaryColor,
+} as TextStyle);
+
+export const getExerciseIconMainStyle = (borderColor: string, surfaceColor: string) => ({
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderWidth: 2,
+  borderColor: borderColor,
+  backgroundColor: surfaceColor,
+} as ViewStyle);
+
+export const getExerciseIconExtraStyle = (right: number, top: number, backgroundColor: string, borderColor: string) => ({
+  position: 'absolute',
+  right: right,
+  top: top,
+  width: 20,
+  height: 20,
+  backgroundColor: backgroundColor,
+  borderRadius: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderWidth: 2,
+  borderColor: borderColor,
+} as ViewStyle);
+
+export const getMuscleBubbleStyle = (muscleColor: string) => ({
+  backgroundColor: `${muscleColor}20`,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: `${muscleColor}40`,
+} as ViewStyle);
+
+export const getMuscleBubbleTextStyle = (muscleColor: string) => ({
+  fontSize: 11,
+  fontWeight: '600',
+  color: muscleColor,
+} as TextStyle);
 
 export type CardStyleKey = keyof ReturnType<typeof createCardStyles>;

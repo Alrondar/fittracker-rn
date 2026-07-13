@@ -30,7 +30,7 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles, createEquipmentBadgeStyles, createMuscleBadgeStyles } from '../../src/styles/components/badge';
 import { typography } from '../../src/styles/typography';
 import { getMuscleColor } from '../../src/constants/muscleColors';
-import { getEquipmentIcon } from '../../src/constants/equipmentIcons';
+import { EquipmentIcon } from '../../src/components/EquipmentIcon';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -191,7 +191,6 @@ export default function ExerciseDetailScreen() {
         <Text style={cardStyles.exerciseDetailName}>
           {exercise.name}
         </Text>
-
         {primaryMuscles.length > 0 && (
           <View style={cardStyles.exerciseDetailMuscleSection}>
             <Text style={cardStyles.exerciseDetailMuscleTitle}>
@@ -222,7 +221,6 @@ export default function ExerciseDetailScreen() {
             </View>
           </View>
         )}
-
         {secondaryMuscles.length > 0 && (
           <View style={cardStyles.exerciseDetailMuscleSection}>
             <Text style={cardStyles.exerciseDetailMuscleTitle}>
@@ -247,13 +245,7 @@ export default function ExerciseDetailScreen() {
           </View>
           <Image
             source={{ uri: mediaUrl }}
-            style={{
-              width: '100%',
-              height: 200,
-              borderRadius: BORDER_RADIUS.md,
-              marginTop: SPACING.sm,
-              backgroundColor: colors.surfaceSecondary,
-            }}
+            style={cardStyles.exerciseDetailMediaImage}
             resizeMode="cover"
           />
         </View>
@@ -267,19 +259,19 @@ export default function ExerciseDetailScreen() {
           </View>
           <View style={cardStyles.recordsContainer}>
             <View style={cardStyles.recordItem}>
-              <Text style={[cardStyles.recordValue, { color: colors.primary }]}>
+              <Text style={[cardStyles.recordValue, cardStyles.recordValuePrimary]}>
                 {personalRecords.maxWeight}кг
               </Text>
               <Text style={cardStyles.recordLabel}>Макс. вес</Text>
             </View>
             <View style={cardStyles.recordItem}>
-              <Text style={[cardStyles.recordValue, { color: colors.success }]}>
+              <Text style={[cardStyles.recordValue, cardStyles.recordValueSuccess]}>
                 {personalRecords.maxReps}
               </Text>
               <Text style={cardStyles.recordLabel}>Макс. повторы</Text>
             </View>
             <View style={cardStyles.recordItem}>
-              <Text style={[cardStyles.recordValue, { color: colors.warning }]}>
+              <Text style={[cardStyles.recordValue, cardStyles.recordValueWarning]}>
                 {(personalRecords.totalVolume / 1000).toFixed(1)}т
               </Text>
               <Text style={cardStyles.recordLabel}>Общий тоннаж</Text>
@@ -338,24 +330,29 @@ export default function ExerciseDetailScreen() {
         </View>
       )}
 
+      {/* === БЛОК ОБОРУДОВАНИЯ === */}
       {equipment.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <Wrench size={20} color={colors.primary} strokeWidth={1.5} />
             <Text style={cardStyles.exerciseDetailSectionTitle}>Оборудование</Text>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.sm }}>
-            {equipment.map((eq, idx) => {
-              const Icon = getEquipmentIcon(eq);
-              return (
-                <View key={idx} style={equipmentBadgeStyles.equipmentBadge}>
-                  <Icon size={16} color={colors.textSecondary} strokeWidth={2} />
-                  <Text style={equipmentBadgeStyles.equipmentBadgeText}>
-                    {eq}
-                  </Text>
+          <View style={cardStyles.exerciseDetailEquipmentContainer}>
+            {equipment.map((eq, idx) => (
+              <View key={idx} style={cardStyles.exerciseDetailEquipmentCard}>
+                <View style={cardStyles.exerciseDetailEquipmentIconContainer}>
+                  <EquipmentIcon
+                    name={eq}
+                    primaryMuscles={primaryMuscles}
+                    size={32}
+                    scale={0.9}
+                  />
                 </View>
-              );
-            })}
+                <Text style={cardStyles.exerciseDetailEquipmentText}>
+                  {eq}
+                </Text>
+              </View>
+            ))}
           </View>
         </View>
       )}

@@ -70,11 +70,11 @@ export const EQUIPMENT_SVG_MAP: Record<string, string> = {
   // === Разное ===
   'Платформа': 'platform.svg',
   'Тумба 30–50 см': 'box.svg',
-  'Коврик': 'foam-roller.svg', // fallback, если нет mat.svg
-  'Пол': 'foam-roller.svg', // fallback
+  'Коврик': 'mat.svg', // fallback, если нет mat.svg
+  'Пол': 'mat.svg', // fallback
   'Ролик для запястий': 'curl-bar.svg', // fallback, если нет wrist-roller.svg
   'Ролик для пресса': 'ab-wheel.svg',
-  'Партнер': 'support.svg', // fallback, если нет partner.svg
+  'Партнер': 'partner.svg', // fallback, если нет partner.svg
   'Адаптер': 'd-handle.svg', // fallback, если нет adapter.svg
   
   // === Универсальные fallback ===
