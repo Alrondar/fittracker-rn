@@ -851,42 +851,41 @@ export const createCardStyles = (colors: any) =>
     } as TextStyle,
 
     // ===== НОВЫЕ СТИЛИ ДЛЯ ДЕМОСТРАЦИИ (MEDIA) =====
+// Карусель изображений
 exerciseDetailMediaContainer: {
   width: '100%',
-  height: 200,
-  borderRadius: BORDER_RADIUS.md,
-  marginTop: SPACING.sm,
-  backgroundColor: colors.surfaceSecondary,
+  height: 220,
+  borderRadius: 16,
   overflow: 'hidden',
+  backgroundColor: colors.surfaceSecondary,
   position: 'relative',
-} as ViewStyle,
-
-exerciseDetailMediaLoader: {
+  marginTop: SPACING.md,
+},
+exerciseDetailMediaImage: {
+  width: '100%',
+  height: '100%',
   position: 'absolute',
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: colors.surfaceSecondary,
-  zIndex: 1,
-} as ViewStyle,
-exerciseDetailMediaError: {
+},
+exerciseDetailMediaIndicators: {
   position: 'absolute',
-  top: 0,
+  bottom: 12,
   left: 0,
   right: 0,
-  bottom: 0,
+  flexDirection: 'row',
   justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: colors.surfaceSecondary,
-} as ViewStyle,
-exerciseDetailMediaErrorText: {
-  fontSize: 14,
-  color: colors.textSecondary,
-  textAlign: 'center',
-} as TextStyle,
+  gap: 6,
+  zIndex: 2,
+},
+exerciseDetailMediaDot: {
+  width: 6,
+  height: 6,
+  borderRadius: 3,
+  backgroundColor: colors.textTertiary + '60',
+},
     
     // ===== НОВЫЕ СТИЛИ ДЛЯ БЛОКА ОБОРУДОВАНИЯ =====
     exerciseDetailEquipmentContainer: {
@@ -921,15 +920,6 @@ exerciseDetailMediaErrorText: {
       color: colors.textSecondary,
       fontWeight: '500',
     } as TextStyle,
-
-    // ===== НОВЫЕ СТИЛИ ДЛЯ ДЕМОНСТРАЦИИ (MEDIA) =====
-exerciseDetailMediaImage: {
-  width: '100%',
-  height: 200,
-  borderRadius: BORDER_RADIUS.md,
-  marginTop: SPACING.sm,
-  backgroundColor: colors.surfaceSecondary,
-} as ImageStyle,
 
     // ===== НОВЫЕ СТИЛИ ДЛЯ ЦВЕТНЫХ РЕКОРДОВ =====
     recordValuePrimary: {
@@ -1582,6 +1572,7 @@ exerciseDetailMediaImage: {
     muscleSubgroupItemText: {
       fontSize: 12,
     } as TextStyle,
+    
   });
 
 // ===== Стили для цветной обводки карточек упражнений =====

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase, getList, getString } from '../../src/lib/supabase';
@@ -16,7 +17,6 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import * as Haptics from 'expo-haptics';
 import {
-  Dumbbell,
   CheckCircle,
   AlertTriangle,
   AlertCircle,
@@ -47,8 +47,11 @@ export default function ExerciseDetailScreen() {
     maxReps: 0,
     totalVolume: 0,
   });
-  const [mediaLoading, setMediaLoading] = useState(true);
-  const [mediaError, setMediaError] = useState(false);
+
+  // Состояния для карусели изображений
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const cycleAnim = useRef(new Animated.Value(0)).current;
+
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
   const equipmentBadgeStyles = createEquipmentBadgeStyles(colors);
@@ -63,7 +66,11 @@ export default function ExerciseDetailScreen() {
       loadRelatedPrograms();
       loadSimilarExercises();
       loadPersonalRecords();
+      setupImageCarousel();
     }
+    return () => {
+      cycleAnim.stopAnimation();
+    };
   }, [exercise]);
 
   const loadExercise = async () => {
@@ -81,6 +88,51 @@ export default function ExerciseDetailScreen() {
       setLoading(false);
     }
   };
+
+  const setupImageCarousel = () => {
+    const mediaUrl = getString(exercise!, 'media_url');
+    if (!mediaUrl) {
+      setImageUrls([]);
+      return;
+    }
+
+    const url0 = mediaUrl;
+    const url1 = mediaUrl.replace(/\/\d+\.jpg$/, '/1.jpg');
+    const urls = [url0, url1];
+
+    setImageUrls(urls);
+
+    // Предзагрузка
+    urls.forEach((url) => Image.prefetch(url).catch(() => {}));
+
+    // Сброс анимации
+    cycleAnim.setValue(0);
+
+    // Один бесконечный цикл: 4 секунды = по 2 сек на каждое фото
+    Animated.loop(
+      Animated.timing(cycleAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      })
+    ).start();
+  };
+
+  // Вычисляем opacity на основе позиции цикла
+  // 0-0.2: первое изображение полностью видно
+  // 0.2-0.3: плавный crossfade (первое исчезает, второе появляется)
+  // 0.3-0.7: второе изображение полностью видно
+  // 0.7-0.8: плавный crossfade обратно
+  // 0.8-1.0: первое изображение снова видно
+  const opacity1 = cycleAnim.interpolate({
+    inputRange: [0, 0.2, 0.3, 0.7, 0.8, 1],
+    outputRange: [1, 1, 0, 0, 1, 1],
+  });
+
+  const opacity2 = cycleAnim.interpolate({
+    inputRange: [0, 0.2, 0.3, 0.7, 0.8, 1],
+    outputRange: [0, 0, 1, 1, 0, 0],
+  });
 
   const loadRelatedPrograms = async () => {
     if (!exercise) return;
@@ -123,7 +175,9 @@ export default function ExerciseDetailScreen() {
     try {
       const { data, error } = await supabase
         .from('workout_logs')
-        .select('weight_kg, reps, completed_at, workout_exercises!inner(exercise_id, workouts!inner(user_id))')
+        .select(
+          'weight_kg, reps, completed_at, workout_exercises!inner(exercise_id, workouts!inner(user_id))'
+        )
         .eq('workout_exercises.exercise_id', exercise.id)
         .eq('workout_exercises.workouts.user_id', userId)
         .not('weight_kg', 'is', null)
@@ -145,14 +199,34 @@ export default function ExerciseDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
-        <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
-            <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+      >
+        <View
+          style={[
+            commonStyles.header,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={commonStyles.backButton}
+          >
+            <Text style={[commonStyles.backText, { color: colors.primary }]}>
+              ← Назад
+            </Text>
           </TouchableOpacity>
         </View>
         <View style={commonStyles.center}>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, marginTop: SPACING.md },
+            ]}
+          >
+            Загрузка...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -160,14 +234,28 @@ export default function ExerciseDetailScreen() {
 
   if (!exercise) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
-        <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
-            <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+      >
+        <View
+          style={[
+            commonStyles.header,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={commonStyles.backButton}
+          >
+            <Text style={[commonStyles.backText, { color: colors.primary }]}>
+              ← Назад
+            </Text>
           </TouchableOpacity>
         </View>
         <View style={commonStyles.center}>
-          <Text style={[typography.body, { color: colors.error }]}>Упражнение не найдено</Text>
+          <Text style={[typography.body, { color: colors.error }]}>
+            Упражнение не найдено
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -177,23 +265,37 @@ export default function ExerciseDetailScreen() {
   const secondaryMuscles = getList(exercise, 'secondary_muscles');
   const injuries = getList(exercise, 'injuries');
   const equipment = getList(exercise, 'equipment');
-  const mediaUrl = getString(exercise, 'media_url');
 
   return (
-    <ScrollView style={[commonStyles.container, { backgroundColor: colors.background }]}>
-      <View style={[commonStyles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
-          <Text style={[commonStyles.backText, { color: colors.primary }]}>← Назад</Text>
+    <ScrollView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+    >
+      <View
+        style={[
+          commonStyles.header,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={commonStyles.backButton}
+        >
+          <Text style={[commonStyles.backText, { color: colors.primary }]}>
+            ← Назад
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={[cardStyles.container, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-        <View style={cardStyles.exerciseDetailIcon}>
-          <Dumbbell size={48} color={colors.primary} strokeWidth={1.5} />
-        </View>
-        <Text style={cardStyles.exerciseDetailName}>
-          {exercise.name}
-        </Text>
+      {/* Заголовок БЕЗ иконки */}
+      <View
+        style={[
+          cardStyles.container,
+          { borderBottomWidth: 1, borderBottomColor: colors.border },
+        ]}
+      >
+        <Text style={cardStyles.exerciseDetailName}>{exercise.name}</Text>
+
+        {/* Основные мышцы */}
         {primaryMuscles.length > 0 && (
           <View style={cardStyles.exerciseDetailMuscleSection}>
             <Text style={cardStyles.exerciseDetailMuscleTitle}>
@@ -224,94 +326,133 @@ export default function ExerciseDetailScreen() {
             </View>
           </View>
         )}
+
+        {/* Дополнительные мышцы - ТЕПЕРЬ ЦВЕТНЫЕ */}
         {secondaryMuscles.length > 0 && (
           <View style={cardStyles.exerciseDetailMuscleSection}>
             <Text style={cardStyles.exerciseDetailMuscleTitle}>
               Дополнительные мышцы
             </Text>
             <View style={cardStyles.exerciseDetailMuscleList}>
-              {secondaryMuscles.map((muscle, idx) => (
-                <View key={idx} style={[badgeStyles.container, { backgroundColor: colors.surfaceSecondary }]}>
-                  <Text style={[badgeStyles.text, { color: colors.textSecondary }]}>{muscle}</Text>
-                </View>
-              ))}
+              {secondaryMuscles.map((muscle, idx) => {
+                const muscleColor = getMuscleColor(muscle);
+                return (
+                  <View
+                    key={idx}
+                    style={[
+                      muscleBadgeStyles.muscleBadge,
+                      { backgroundColor: muscleColor + '20' },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        muscleBadgeStyles.muscleBadgeText,
+                        { color: muscleColor },
+                      ]}
+                    >
+                      {muscle}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
       </View>
-{/* ВРЕМЕННЫЙ БЛОК ДЛЯ ДИАГНОСТИКИ */}
-<View style={{ padding: 16, backgroundColor: 'yellow', marginBottom: 16 }}>
-  <Text>mediaUrl: {mediaUrl || 'ПУСТОЙ'}</Text>
-  <Text>mediaLoading: {String(mediaLoading)}</Text>
-  <Text>mediaError: {String(mediaError)}</Text>
-</View>
-      {/* === БЛОК С GIF/МЕДИА === */}
-      {mediaUrl ? (
+
+      {/* БЛОК С КАРУСЕЛЬЮ ИЗОБРАЖЕНИЙ */}
+      {imageUrls.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
-            <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Демонстрация</Text>
+            <Settings size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Демонстрация
+            </Text>
           </View>
-          
+
           <View style={cardStyles.exerciseDetailMediaContainer}>
-            {mediaLoading && !mediaError && (
-              <View style={cardStyles.exerciseDetailMediaLoader}>
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            )}
-            
-            {!mediaError && (
-              <Image
-                source={{ uri: mediaUrl }}
-                style={cardStyles.exerciseDetailMediaImage}
+            {/* Первое изображение */}
+            <Animated.Image
+              source={{ uri: imageUrls[0] }}
+              style={[
+                cardStyles.exerciseDetailMediaImage,
+                { opacity: opacity1 },
+              ]}
+              resizeMode="cover"
+            />
+
+            {/* Второе изображение */}
+            {imageUrls[1] && (
+              <Animated.Image
+                source={{ uri: imageUrls[1] }}
+                style={[
+                  cardStyles.exerciseDetailMediaImage,
+                  { opacity: opacity2 },
+                ]}
                 resizeMode="cover"
-                onLoadStart={() => setMediaLoading(true)}
-                onLoadEnd={() => setMediaLoading(false)}
-                onError={() => {
-                  setMediaLoading(false);
-                  setMediaError(true);
-                }}
               />
             )}
-            
-            {mediaError && (
-              <TouchableOpacity
-                onPress={() => {
-                  setMediaError(false);
-                  setMediaLoading(true);
-                }}
-                style={cardStyles.exerciseDetailMediaError}
-              >
-                <Text style={cardStyles.exerciseDetailMediaErrorText}>
-                  Не удалось загрузить GIF. Нажмите для повторной попытки
-                </Text>
-              </TouchableOpacity>
+
+            {/* Индикаторы */}
+            {imageUrls.length > 1 && (
+              <View style={cardStyles.exerciseDetailMediaIndicators}>
+                <View
+                  style={[
+                    cardStyles.exerciseDetailMediaDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+                <View
+                  style={[
+                    cardStyles.exerciseDetailMediaDot,
+                    { backgroundColor: colors.textTertiary + '60' },
+                  ]}
+                />
+              </View>
             )}
           </View>
         </View>
-      ) : null}
+      )}
 
+      {/* Личные рекорды */}
       {personalRecords.maxWeight > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <TrendingUp size={20} color="#4CAF50" strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Личные рекорды</Text>
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Личные рекорды
+            </Text>
           </View>
           <View style={cardStyles.recordsContainer}>
             <View style={cardStyles.recordItem}>
-              <Text style={[cardStyles.recordValue, cardStyles.recordValuePrimary]}>
+              <Text
+                style={[
+                  cardStyles.recordValue,
+                  cardStyles.recordValuePrimary,
+                ]}
+              >
                 {personalRecords.maxWeight}кг
               </Text>
               <Text style={cardStyles.recordLabel}>Макс. вес</Text>
             </View>
             <View style={cardStyles.recordItem}>
-              <Text style={[cardStyles.recordValue, cardStyles.recordValueSuccess]}>
+              <Text
+                style={[
+                  cardStyles.recordValue,
+                  cardStyles.recordValueSuccess,
+                ]}
+              >
                 {personalRecords.maxReps}
               </Text>
               <Text style={cardStyles.recordLabel}>Макс. повторы</Text>
             </View>
             <View style={cardStyles.recordItem}>
-              <Text style={[cardStyles.recordValue, cardStyles.recordValueWarning]}>
+              <Text
+                style={[
+                  cardStyles.recordValue,
+                  cardStyles.recordValueWarning,
+                ]}
+              >
                 {(personalRecords.totalVolume / 1000).toFixed(1)}т
               </Text>
               <Text style={cardStyles.recordLabel}>Общий тоннаж</Text>
@@ -320,11 +461,14 @@ export default function ExerciseDetailScreen() {
         </View>
       )}
 
+      {/* Техника выполнения */}
       {exercise.technique ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <Settings size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Техника выполнения</Text>
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Техника выполнения
+            </Text>
           </View>
           <Text style={cardStyles.exerciseDetailSectionText}>
             {exercise.technique}
@@ -332,6 +476,7 @@ export default function ExerciseDetailScreen() {
         </View>
       ) : null}
 
+      {/* Польза */}
       {exercise.benefits ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -344,6 +489,7 @@ export default function ExerciseDetailScreen() {
         </View>
       ) : null}
 
+      {/* Риски */}
       {exercise.risks ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
@@ -356,11 +502,14 @@ export default function ExerciseDetailScreen() {
         </View>
       ) : null}
 
+      {/* Противопоказания */}
       {injuries.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <AlertCircle size={20} color="#F44336" strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Противопоказания</Text>
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Противопоказания
+            </Text>
           </View>
           {injuries.map((injury, idx) => (
             <Text key={idx} style={cardStyles.exerciseDetailInjuryText}>
@@ -370,11 +519,14 @@ export default function ExerciseDetailScreen() {
         </View>
       )}
 
+      {/* Оборудование */}
       {equipment.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <Wrench size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Оборудование</Text>
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Оборудование
+            </Text>
           </View>
           <View style={cardStyles.exerciseDetailEquipmentContainer}>
             {equipment.map((eq, idx) => (
@@ -396,11 +548,14 @@ export default function ExerciseDetailScreen() {
         </View>
       )}
 
+      {/* Настройка */}
       {exercise.settings ? (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
             <Settings size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Настройка</Text>
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Настройка
+            </Text>
           </View>
           <Text style={cardStyles.exerciseDetailSectionText}>
             {exercise.settings}
@@ -408,11 +563,14 @@ export default function ExerciseDetailScreen() {
         </View>
       ) : null}
 
+      {/* Используемые в программах */}
       {relatedPrograms.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
-            <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Используется в программах</Text>
+            <TrendingUp size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Используется в программах
+            </Text>
           </View>
           {relatedPrograms.map((program, idx) => (
             <TouchableOpacity
@@ -427,18 +585,25 @@ export default function ExerciseDetailScreen() {
                 <Text style={cardStyles.relatedItemMetaText}>
                   {program.duration} нед
                 </Text>
-                <ChevronRight size={16} color={colors.textSecondary} strokeWidth={2} />
+                <ChevronRight
+                  size={16}
+                  color={colors.textSecondary}
+                  strokeWidth={2}
+                />
               </View>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
+      {/* Похожие упражнения */}
       {similarExercises.length > 0 && (
         <View style={cardStyles.exerciseDetailSection}>
           <View style={cardStyles.exerciseDetailSectionHeader}>
-            <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={cardStyles.exerciseDetailSectionTitle}>Похожие упражнения</Text>
+            <Settings size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={cardStyles.exerciseDetailSectionTitle}>
+              Похожие упражнения
+            </Text>
           </View>
           {similarExercises.map((ex, idx) => (
             <TouchableOpacity
@@ -450,7 +615,7 @@ export default function ExerciseDetailScreen() {
               }}
             >
               <View style={cardStyles.similarItemIcon}>
-                <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
+                <Settings size={20} color={colors.primary} strokeWidth={1.5} />
               </View>
               <View style={cardStyles.similarItemContent}>
                 <Text style={cardStyles.similarItemName} numberOfLines={1}>
@@ -460,7 +625,11 @@ export default function ExerciseDetailScreen() {
                   {getList(ex, 'primary_muscles').join(', ')}
                 </Text>
               </View>
-              <ChevronRight size={16} color={colors.textSecondary} strokeWidth={2} />
+              <ChevronRight
+                size={16}
+                color={colors.textSecondary}
+                strokeWidth={2}
+              />
             </TouchableOpacity>
           ))}
         </View>

@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Игнорируем всё в папке data
+data/*
+
+# Разрешаем папку exercises и её содержимое
+!data/exercises/
+!data/exercises/**/*
