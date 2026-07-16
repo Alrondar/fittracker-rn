@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Alert, Modal, Pressable } from 'react-native';
-import { Settings, ChevronRight, TrendingUp, Clock, RotateCcw, CheckCircle, AlertTriangle, AlertCircle, Wrench, X, Minus, Plus } from 'lucide-react-native';
+import { Settings, ChevronRight, TrendingUp, Clock, RotateCcw, CheckCircle, AlertTriangle, AlertCircle, Wrench, X, Minus, Plus, ShieldAlert } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { createCardStyles } from '../../styles/components/card';
@@ -23,12 +23,15 @@ interface ExerciseCardProps {
   updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
+  // НОВОЕ: предупреждение о травме
+  warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
 export function ExerciseCard({
   exercise, isMain, isReplaced, exerciseIndex, alternatives,
   updateSet, isSetCompleted, replaceExercise, startRestTimer,
-  getIntensityInfo, updateExerciseSettings, colors, cardStyles
+  getIntensityInfo, updateExerciseSettings, colors, cardStyles,
+  warning = null,
 }: ExerciseCardProps) {
   const [expandedSections, setExpandedSections] = useState({ technique: false, equipment: false, settings: false, benefits: false, risks: false, injuries: false });
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
@@ -116,27 +119,57 @@ export function ExerciseCard({
         </View>
       </View>
 
-{/* Мышцы-теги: основные */}
-{'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
-  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
-    {(exercise as ExerciseData).primary_muscles.map((muscle, idx) => (
-      <View key={idx} style={[cardStyles.muscleTagPrimary, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}>
-        <Text style={[cardStyles.muscleTagPrimaryText, { color: colors.primary }]}>{muscle}</Text>
-      </View>
-    ))}
-  </View>
-)}
+      {/* НОВОЕ: Баннер предупреждения о травме внутри карточки */}
+      {warning && isMain && (
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          backgroundColor: warning.level === 'avoid' ? '#F4433615' : '#FFC10715',
+          borderColor: warning.level === 'avoid' ? '#F44336' : '#FFC107',
+          borderWidth: 1,
+          borderRadius: BORDER_RADIUS.sm,
+          padding: SPACING.sm,
+          marginBottom: SPACING.md,
+        }}>
+          <ShieldAlert
+            size={16}
+            color={warning.level === 'avoid' ? '#F44336' : '#FFC107'}
+            strokeWidth={2}
+            style={{ marginRight: SPACING.xs, marginTop: 1 }}
+          />
+          <Text style={{
+            color: warning.level === 'avoid' ? '#F44336' : '#FFC107',
+            flex: 1,
+            fontSize: 12,
+            fontWeight: '600',
+            lineHeight: 16,
+          }}>
+            {warning.message}
+          </Text>
+        </View>
+      )}
 
-{/* Мышцы-теги: вспомогательные */}
-{'secondary_muscles' in exercise && (exercise as ExerciseData).secondary_muscles.length > 0 && (
-  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
-    {(exercise as ExerciseData).secondary_muscles.map((muscle, idx) => (
-      <View key={idx} style={[cardStyles.muscleTagSecondary, { borderColor: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>
-        <Text style={[cardStyles.muscleTagSecondaryText, { color: colors.textSecondary }]}>{muscle}</Text>
-      </View>
-    ))}
-  </View>
-)}
+      {/* Мышцы-теги: основные */}
+      {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
+          {(exercise as ExerciseData).primary_muscles.map((muscle, idx) => (
+            <View key={idx} style={[cardStyles.muscleTagPrimary, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}>
+              <Text style={[cardStyles.muscleTagPrimaryText, { color: colors.primary }]}>{muscle}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Мышцы-теги: вспомогательные */}
+      {'secondary_muscles' in exercise && (exercise as ExerciseData).secondary_muscles.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
+          {(exercise as ExerciseData).secondary_muscles.map((muscle, idx) => (
+            <View key={idx} style={[cardStyles.muscleTagSecondary, { borderColor: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>
+              <Text style={[cardStyles.muscleTagSecondaryText, { color: colors.textSecondary }]}>{muscle}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Секции */}
       {'technique' in exercise && (exercise as ExerciseData).technique ? (

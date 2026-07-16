@@ -37,8 +37,11 @@ import {
   Wheat,
   Plus,
   X,
+  Zap,
+  Award,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import Svg, { Path, G, Circle } from 'react-native-svg';
 
 export default function ProfileScreen() {
   const {
@@ -72,9 +75,12 @@ export default function ProfileScreen() {
     carbs: 0,
     water_ml: 0,
   });
+
+  const [burnedCalories, setBurnedCalories] = useState(0);
+  const [userWeight, setUserWeight] = useState(70);
+  const [personalRecords, setPersonalRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Поля ввода для bottom sheet
   const [inputCalories, setInputCalories] = useState('');
   const [inputProteins, setInputProteins] = useState('');
   const [inputFats, setInputFats] = useState('');
@@ -89,6 +95,8 @@ export default function ProfileScreen() {
     loadStats();
     loadTargets();
     loadTodayNutrition();
+    loadBurnedCalories();
+    loadPersonalRecords();
   }, [userId]);
 
   const loadUserData = async () => {
@@ -97,9 +105,13 @@ export default function ProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, full_name, avatar_url')
+        .select('username, full_name, avatar_url, current_weight_kg')
         .eq('id', userId)
         .single();
+
+      if (profileData?.current_weight_kg) {
+        setUserWeight(parseFloat(profileData.current_weight_kg));
+      }
 
       setUserData({
         email: user?.email || '',
@@ -183,7 +195,8 @@ export default function ProfileScreen() {
         .from('nutrition_logs')
         .select('calories, proteins, fats, carbs, water_ml')
         .eq('user_id', userId)
-        .eq('date', today);
+        .eq('log_date', today)
+        .neq('meal_type', 'workout');
 
       if (data && data.length > 0) {
         const totals = data.reduce(
@@ -205,13 +218,148 @@ export default function ProfileScreen() {
     }
   };
 
+  const loadBurnedCalories = async () => {
+    if (!userId) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const startOfDay = `${today}T00:00:00+00:00`;
+      const endOfDay = `${today}T23:59:59+00:00`;
+
+      const { data: todayWorkouts, error: workoutError } = await supabase
+        .from('workouts')
+        .select('id, name, created_at')
+        .eq('user_id', userId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay);
+
+      if (workoutError) {
+        console.error('Ошибка загрузки тренировок:', workoutError);
+        return;
+      }
+
+      if (!todayWorkouts || todayWorkouts.length === 0) {
+        setBurnedCalories(0);
+        return;
+      }
+
+      let totalDurationSeconds = 0;
+      let totalBurned = 0;
+
+      for (const workout of todayWorkouts) {
+        const { data: logs } = await supabase
+          .from('workout_logs')
+          .select('completed_at, workout_exercises!inner(workout_id)')
+          .eq('workout_exercises.workout_id', workout.id)
+          .order('completed_at', { ascending: true });
+
+        if (logs && logs.length > 0) {
+          const firstLog = new Date(logs[0].completed_at).getTime();
+          const lastLog = new Date(logs[logs.length - 1].completed_at).getTime();
+          const durationSec = Math.max(0, (lastLog - firstLog) / 1000);
+          totalDurationSeconds += durationSec;
+
+          const durationHours = durationSec / 3600;
+          const MET = 5.0;
+          const burned = MET * userWeight * durationHours;
+          totalBurned += burned;
+        } else {
+          const durationHours = 45 / 60;
+          const MET = 5.0;
+          const burned = MET * userWeight * durationHours;
+          totalBurned += burned;
+          totalDurationSeconds += 45 * 60;
+        }
+      }
+
+      setBurnedCalories(Math.round(totalBurned));
+    } catch (e) {
+      console.error('Ошибка расчёта сожжённых калорий:', e);
+    }
+  };
+
+  const loadPersonalRecords = async () => {
+    if (!userId) return;
+    try {
+      const { data: userWorkouts } = await supabase
+        .from('workouts')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (!userWorkouts || userWorkouts.length === 0) {
+        setPersonalRecords([]);
+        return;
+      }
+
+      const workoutIds = userWorkouts.map(w => w.id);
+
+      const { data: workoutExercises } = await supabase
+        .from('workout_exercises')
+        .select('id, exercise_id')
+        .in('workout_id', workoutIds);
+
+      if (!workoutExercises || workoutExercises.length === 0) {
+        setPersonalRecords([]);
+        return;
+      }
+
+      const exerciseIds = [...new Set(workoutExercises.map(we => we.exercise_id))];
+      const workoutExerciseIds = workoutExercises.map(we => we.id);
+
+      const { data: exercises } = await supabase
+        .from('exercises')
+        .select('id, name')
+        .in('id', exerciseIds);
+
+      const exerciseNameMap = new Map(exercises?.map(e => [e.id, e.name]) || []);
+
+      const { data: logs, error } = await supabase
+        .from('workout_logs')
+        .select('workout_exercise_id, weight_kg, reps')
+        .in('workout_exercise_id', workoutExerciseIds)
+        .order('weight_kg', { ascending: false });
+
+      if (error) throw error;
+
+      const exerciseRecords: Record<string, { name: string; maxWeight: number; reps: number }> = {};
+
+      logs?.forEach((log: any) => {
+        const workoutExercise = workoutExercises.find(we => we.id === log.workout_exercise_id);
+        if (!workoutExercise) return;
+
+        const exerciseId = workoutExercise.exercise_id;
+        const exerciseName = exerciseNameMap.get(exerciseId);
+        if (!exerciseName) return;
+
+        const weight = parseFloat(log.weight_kg) || 0;
+        const reps = parseInt(log.reps) || 0;
+
+        if (!exerciseRecords[exerciseId] || weight > exerciseRecords[exerciseId].maxWeight) {
+          exerciseRecords[exerciseId] = {
+            name: exerciseName,
+            maxWeight: weight,
+            reps: reps,
+          };
+        }
+      });
+
+      const recordsArray = Object.values(exerciseRecords)
+        .filter(record => record.maxWeight > 0)
+        .sort((a, b) => b.maxWeight - a.maxWeight)
+        .slice(0, 5);
+
+      setPersonalRecords(recordsArray);
+    } catch (e) {
+      console.error('Ошибка загрузки личных рекордов:', e);
+    }
+  };
+
   const handleSaveNutrition = async () => {
     if (!userId) return;
     try {
       const today = new Date().toISOString().split('T')[0];
       const { error } = await supabase.from('nutrition_logs').insert({
         user_id: userId,
-        date: today,
+        log_date: today,
         meal_type: 'manual',
         calories: parseInt(inputCalories) || 0,
         proteins: parseInt(inputProteins) || 0,
@@ -253,6 +401,67 @@ export default function ProfileScreen() {
           },
         },
       ]
+    );
+  };
+
+  const MacroPieChart = ({ proteins, fats, carbs }: { proteins: number; fats: number; carbs: number }) => {
+    const total = proteins + fats + carbs;
+    if (total === 0) return null;
+
+    const proteinPercent = (proteins / total) * 100;
+    const fatPercent = (fats / total) * 100;
+    const carbPercent = (carbs / total) * 100;
+
+    const proteinColor = '#4CAF50';
+    const fatColor = '#FFC107';
+    const carbColor = '#2196F3';
+
+    const createArc = (startAngle: number, endAngle: number, radius: number) => {
+      const start = {
+        x: 50 + radius * Math.cos((startAngle - 90) * Math.PI / 180),
+        y: 50 + radius * Math.sin((startAngle - 90) * Math.PI / 180),
+      };
+      const end = {
+        x: 50 + radius * Math.cos((endAngle - 90) * Math.PI / 180),
+        y: 50 + radius * Math.sin((endAngle - 90) * Math.PI / 180),
+      };
+      const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+      return `M 50 50 L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+    };
+
+    let currentAngle = 0;
+    const proteinAngle = (proteinPercent / 100) * 360;
+    const fatAngle = (fatPercent / 100) * 360;
+    const carbAngle = (carbPercent / 100) * 360;
+
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg }}>
+        <Svg width={120} height={120} viewBox="0 0 100 100">
+          <G>
+            <Path d={createArc(currentAngle, currentAngle + proteinAngle, 40)} fill={proteinColor} />
+            <Path d={createArc(currentAngle + proteinAngle, currentAngle + proteinAngle + fatAngle, 40)} fill={fatColor} />
+            <Path d={createArc(currentAngle + proteinAngle + fatAngle, currentAngle + proteinAngle + fatAngle + carbAngle, 40)} fill={carbColor} />
+          </G>
+          <Circle cx="50" cy="50" r="25" fill={colors.background} />
+        </Svg>
+        <View style={{ marginLeft: SPACING.lg, flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: proteinColor, marginRight: SPACING.sm }} />
+            <Text style={[typography.caption, { color: colors.textPrimary, flex: 1 }]}>Белки</Text>
+            <Text style={[typography.caption, { color: proteinColor, fontWeight: '600' }]}>{Math.round(proteinPercent)}%</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: fatColor, marginRight: SPACING.sm }} />
+            <Text style={[typography.caption, { color: colors.textPrimary, flex: 1 }]}>Жиры</Text>
+            <Text style={[typography.caption, { color: fatColor, fontWeight: '600' }]}>{Math.round(fatPercent)}%</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: carbColor, marginRight: SPACING.sm }} />
+            <Text style={[typography.caption, { color: colors.textPrimary, flex: 1 }]}>Углеводы</Text>
+            <Text style={[typography.caption, { color: carbColor, fontWeight: '600' }]}>{Math.round(carbPercent)}%</Text>
+          </View>
+        </View>
+      </View>
     );
   };
 
@@ -358,19 +567,47 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: SPACING.xl }}>
-        {/* Шапка профиля */}
-        <View style={cardStyles.profileHeader}>
-          <View style={[cardStyles.profileAvatar, { backgroundColor: colors.primaryLight }]}>
-            <Text style={[typography.h2, { color: colors.primary }]}>{initials}</Text>
-          </View>
-          <Text style={[cardStyles.profileName, { color: colors.textPrimary }]}>
-            {displayName}
-          </Text>
-          {displayEmail && (
-            <Text style={[cardStyles.profileEmail, { color: colors.textSecondary }]}>
-              {displayEmail}
+        {/* Шапка профиля с кнопкой настроек */}
+        <View style={{ position: 'relative' }}>
+          <View style={cardStyles.profileHeader}>
+            <View style={[cardStyles.profileAvatar, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[typography.h2, { color: colors.primary }]}>{initials}</Text>
+            </View>
+            <Text style={[cardStyles.profileName, { color: colors.textPrimary }]}>
+              {displayName}
             </Text>
-          )}
+            {displayEmail && (
+              <Text style={[cardStyles.profileEmail, { color: colors.textSecondary }]}>
+                {displayEmail}
+              </Text>
+            )}
+          </View>
+          
+          {/* Кнопка настроек в правом верхнем углу */}
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/profile/settings');
+            }}
+            style={{
+              position: 'absolute',
+              top: SPACING.lg,
+              right: SPACING.lg,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: colors.surface,
+              justifyContent: 'center',
+              alignItems: 'center',
+              elevation: 4,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+            }}
+          >
+            <Settings size={22} color={colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
 
         {/* Статистика */}
@@ -395,6 +632,26 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Карточка сожжённых калорий */}
+        {burnedCalories > 0 && (
+          <View style={commonStyles.section}>
+            <View style={[cardStyles.compact, { borderColor: '#FF5722', borderWidth: 1, backgroundColor: '#FF572210' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+                <Zap size={20} color="#FF5722" />
+                <Text style={[typography.labelBold, { color: colors.textPrimary, marginLeft: SPACING.sm }]}>
+                  Сожжено на тренировке
+                </Text>
+              </View>
+              <Text style={[typography.h2, { color: '#FF5722', marginBottom: SPACING.xs }]}>
+                {burnedCalories} <Text style={[typography.body, { color: colors.textSecondary }]}>ккал</Text>
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Рассчитано автоматически по длительности и весу
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Трекер КБЖУ */}
         {targets.calories > 0 && (
           <View style={commonStyles.section}>
@@ -413,6 +670,14 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+              {(todayNutrition.proteins > 0 || todayNutrition.fats > 0 || todayNutrition.carbs > 0) && (
+                <MacroPieChart
+                  proteins={todayNutrition.proteins}
+                  fats={todayNutrition.fats}
+                  carbs={todayNutrition.carbs}
+                />
+              )}
+
               {renderProgressBar(
                 <Flame size={18} color="#F44336" />,
                 'Калории',
@@ -457,122 +722,66 @@ export default function ProfileScreen() {
           </View>
         )}
 
-{/* Настройки темы */}
-<View style={commonStyles.section}>
-  <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
-    Оформление
-  </Text>
-  <View
-    style={[
-      cardStyles.compact,
-      {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderColor: colors.border,
-        borderWidth: 1,
-      },
-    ]}
-  >
-    <View style={{ flex: 1 }}>
-      <Text style={[typography.h5, { color: colors.textPrimary }]}>
-        Тёмная тема
-      </Text>
-      <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-        {themeMode === 'dark' ? 'Включена' :
-          themeMode === 'light' ? 'Выключена' : 'Как в системе'}
-      </Text>
-    </View>
-    
-    {/* Кнопки в одну строку */}
-    <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-      {(['light', 'dark', 'system'] as const).map((mode) => (
-        <TouchableOpacity
-          key={mode}
-          style={[
-            {
-              paddingHorizontal: SPACING.md,
-              paddingVertical: SPACING.sm,
-              borderRadius: BORDER_RADIUS.md,
-              borderWidth: 1,
-              borderColor: themeMode === mode ? colors.primary : colors.border,
-              backgroundColor: themeMode === mode ? colors.primaryLight : colors.surface,
-            },
-          ]}
-          onPress={() => {
-            setThemeMode(mode);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }}
-        >
-          <Text
-            style={[
-              typography.buttonSmall,
-              {
-                color: themeMode === mode ? colors.primary : colors.textSecondary,
-                fontWeight: themeMode === mode ? '600' : '400',
-              },
-            ]}
-          >
-            {mode === 'light' ? 'Светлая' : mode === 'dark' ? 'Тёмная' : 'Авто'}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </View>
-          <TouchableOpacity
-            style={[
-              cardStyles.compact,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderColor: colors.border,
-                borderWidth: 1,
-              },
-            ]}
-            onPress={() => {
-              setShowThemeModal(true);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-          >
-            <View style={cardStyles.settingsRowLeft}>
-              <Palette size={20} color={colors.primary} strokeWidth={1.5} style={cardStyles.settingsIcon} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typography.h5, { color: colors.textPrimary }]}>
-                  Цветовая схема
-                </Text>
-                <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-                  {availableAccents.find(a => a.key === themeAccent)?.label || 'Синяя'}
-                </Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Другие настройки */}
-        <View style={commonStyles.section}>
-          <TouchableOpacity
-            style={[
-              cardStyles.compact,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderColor: colors.border,
-                borderWidth: 1,
-              },
-            ]}
-            onPress={() => Alert.alert('В разработке', 'Раздел настроек скоро будет доступен')}
-          >
-            <View style={cardStyles.settingsRowLeft}>
-              <Settings size={20} color={colors.primary} strokeWidth={1.5} style={cardStyles.settingsIcon} />
-              <Text style={[typography.h5, { color: colors.textPrimary }]}>
-                Настройки
+        {/* Личные рекорды */}
+        {personalRecords.length > 0 && (
+          <View style={commonStyles.section}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+              <Award size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+              <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
+                Личные рекорды
               </Text>
             </View>
-            <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
+            <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+              {personalRecords.map((record, index) => (
+                <View
+                  key={index}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: SPACING.sm,
+                    borderBottomWidth: index < personalRecords.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : colors.surfaceSecondary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: SPACING.md,
+                    }}
+                  >
+                    <Text style={[typography.caption, { color: index < 3 ? '#fff' : colors.textSecondary, fontWeight: '700' }]}>
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={1}>
+                      {record.name}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[typography.h5, { color: colors.primary }]}>
+                      {record.maxWeight} кг
+                    </Text>
+                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                      × {record.reps}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Быстрые действия */}
+        <View style={commonStyles.section}>
+          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
+            Быстрые действия
+          </Text>
           <TouchableOpacity
             style={[
               cardStyles.compact,
@@ -582,6 +791,7 @@ export default function ProfileScreen() {
                 justifyContent: 'space-between',
                 borderColor: colors.border,
                 borderWidth: 1,
+                marginBottom: SPACING.sm,
               },
             ]}
             onPress={() => {
@@ -597,27 +807,30 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              cardStyles.compact,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderColor: colors.border,
-                borderWidth: 1,
-              },
-            ]}
-            onPress={() => Alert.alert('В разработке', 'Раздел травм скоро будет доступен')}
-          >
-            <View style={cardStyles.settingsRowLeft}>
-              <Activity size={20} color={colors.error} strokeWidth={1.5} style={cardStyles.settingsIcon} />
-              <Text style={[typography.h5, { color: colors.textPrimary }]}>
-                Травмы и ограничения
-              </Text>
-            </View>
-            <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
+<TouchableOpacity
+  style={[
+    cardStyles.compact,
+    {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderColor: colors.border,
+      borderWidth: 1,
+    },
+  ]}
+  onPress={() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/profile/injuries'); // ← Изменено
+  }}
+>
+  <View style={cardStyles.settingsRowLeft}>
+    <Activity size={20} color={colors.error} strokeWidth={1.5} style={cardStyles.settingsIcon} />
+    <Text style={[typography.h5, { color: colors.textPrimary }]}>
+      Травмы и ограничения
+    </Text>
+  </View>
+  <ChevronRight size={20} color={colors.textTertiary} />
+</TouchableOpacity>
         </View>
 
         {/* Кнопка выхода */}

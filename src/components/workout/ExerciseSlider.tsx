@@ -23,6 +23,8 @@ interface ExerciseSliderProps {
   updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
+  // НОВОЕ: предупреждение о травме
+  warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
 export function ExerciseSlider({
@@ -40,6 +42,7 @@ export function ExerciseSlider({
   updateExerciseSettings,
   colors,
   cardStyles,
+  warning = null,
 }: ExerciseSliderProps) {
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
@@ -93,6 +96,8 @@ export function ExerciseSlider({
             updateExerciseSettings={updateExerciseSettings}
             colors={colors}
             cardStyles={cardStyles}
+            // НОВОЕ: передаём warning только в главную карточку
+            warning={cardIndex === 0 ? warning : null}
           />
         ))}
       </ScrollView>
