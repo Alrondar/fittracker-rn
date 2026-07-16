@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Program } from '../servises/programsService';
+import { Program } from '../services/programsService';
 import { Sprout, Dumbbell, Flame, Calendar, Edit2, ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';

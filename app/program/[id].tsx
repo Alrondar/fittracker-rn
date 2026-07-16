@@ -20,7 +20,7 @@ import {
   Program,
   ProgramDay,
   ProgramExercise,
-} from '../../src/servises/programsService';
+} from '../../src/services/programsService';
 import { useStore } from '../../src/store/useStore';
 import { FadeIn } from '../../src/components/FadeIn';
 import { ListSkeleton } from '../../src/components/Skeleton';

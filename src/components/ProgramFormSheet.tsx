@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Program } from '../servises/programsService';
+import { Program } from '../services/programsService';
 import { Sprout, Dumbbell, Flame, X, ChevronDown } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';

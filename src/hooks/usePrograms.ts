@@ -10,7 +10,7 @@ import {
   deleteProgram,
   Program,
   ProgramFilters,
-} from '../servises/programsService';
+} from '../services/programsService';
 import { supabase } from '../lib/supabase';
 
 // Включить LayoutAnimation на Android

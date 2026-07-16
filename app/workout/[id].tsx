@@ -39,7 +39,7 @@ import {
   ShieldAlert,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { advanceProgramProgress } from '../../src/servises/programsService';
+import { advanceProgramProgress } from '../../src/services/programsService';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createButtonStyles } from '../../src/styles/components/button';
