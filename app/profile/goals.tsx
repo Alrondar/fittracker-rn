@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -16,9 +15,10 @@ import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
-import { createCardStyles } from '../../src/styles/components/card';
-import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppInput } from '../../src/components/ui/AppInput';
+import { AppCard } from '../../src/components/ui/AppCard';
 import {
   ChevronLeft,
   User,
@@ -46,24 +46,9 @@ type ActivityLevel = 1.2 | 1.375 | 1.55 | 1.725 | 1.9;
 type PharmaType = 'steroids' | 'gh' | 'combo' | null;
 
 const GOALS = [
-  { 
-    value: 'lose' as GoalType, 
-    label: 'Похудение', 
-    icon: TrendingDown,
-    desc: 'Дефицит калорий' 
-  },
-  { 
-    value: 'maintain' as GoalType, 
-    label: 'Поддержание', 
-    icon: Minus,
-    desc: 'Баланс калорий' 
-  },
-  { 
-    value: 'gain' as GoalType, 
-    label: 'Набор массы', 
-    icon: TrendingUp,
-    desc: 'Профицит калорий' 
-  },
+  { value: 'lose' as GoalType, label: 'Похудение', icon: TrendingDown, desc: 'Дефицит калорий' },
+  { value: 'maintain' as GoalType, label: 'Поддержание', icon: Minus, desc: 'Баланс калорий' },
+  { value: 'gain' as GoalType, label: 'Набор массы', icon: TrendingUp, desc: 'Профицит калорий' },
 ];
 
 const ACTIVITY_LEVELS = [
@@ -75,32 +60,15 @@ const ACTIVITY_LEVELS = [
 ];
 
 const PHARMA_TYPES = [
-  {
-    value: 'steroids' as PharmaType,
-    label: 'Анаболические стероиды',
-    desc: 'Белок ×1.5, калории +10%',
-    color: '#EF4444',
-  },
-  {
-    value: 'gh' as PharmaType,
-    label: 'Гормон роста',
-    desc: 'Жиры -20%',
-    color: '#3B82F6',
-  },
-  {
-    value: 'combo' as PharmaType,
-    label: 'Комбо (АС + ГР)',
-    desc: 'Белок ×1.5, жиры -20%',
-    color: '#8B5CF6',
-  },
+  { value: 'steroids' as PharmaType, label: 'Анаболические стероиды', desc: 'Белок ×1.5, калории +10%', color: '#EF4444' },
+  { value: 'gh' as PharmaType, label: 'Гормон роста', desc: 'Жиры -20%', color: '#3B82F6' },
+  { value: 'combo' as PharmaType, label: 'Комбо (АС + ГР)', desc: 'Белок ×1.5, жиры -20%', color: '#8B5CF6' },
 ];
 
 export default function GoalsScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-  const cardStyles = createCardStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -157,7 +125,6 @@ export default function GoalsScreen() {
     }
   };
 
-  // Расчет возраста
   const calculateAge = (birthDateStr: string): number => {
     if (!birthDateStr) return 25;
     const birth = new Date(birthDateStr);
@@ -168,7 +135,6 @@ export default function GoalsScreen() {
     return age;
   };
 
-  // Формула Миффлина-Сан Жеора с учетом фармакологии
   const calculateMacros = () => {
     const age = calculateAge(birthDate);
     const h = parseFloat(height) || 175;
@@ -176,7 +142,6 @@ export default function GoalsScreen() {
     const g = gender || 'male';
     const activity = activityLevel || 1.55;
 
-    // BMR (базовый метаболизм)
     let bmr: number;
     if (g === 'male') {
       bmr = 10 * w + 6.25 * h - 5 * age + 5;
@@ -184,29 +149,22 @@ export default function GoalsScreen() {
       bmr = 10 * w + 6.25 * h - 5 * age - 161;
     }
 
-    // TDEE (суточная норма с учетом активности)
     let tdee = bmr * activity;
-
-    // Корректировка по цели
     let targetCalories = tdee;
-    if (goal === 'lose') targetCalories = tdee * 0.85; // -15%
-    if (goal === 'gain') targetCalories = tdee * 1.15; // +15%
 
-    // Расчет макросов (стандартное соотношение)
+    if (goal === 'lose') targetCalories = tdee * 0.85;
+    if (goal === 'gain') targetCalories = tdee * 1.15;
+
     let targetProteins = Math.round(w * 2);
     let targetFats = Math.round(w * 1);
 
-    // === КОРРЕКТИРОВКА ПО ФАРМАКОЛОГИИ ===
     if (usePharma && pharmaType) {
       if (pharmaType === 'steroids') {
-        // АС: белок ×1.5 (до 3г/кг), калории +10%
         targetProteins = Math.min(Math.round(w * 3), 3 * w);
         targetCalories = targetCalories * 1.10;
       } else if (pharmaType === 'gh') {
-        // ГР: жиры -20%
         targetFats = Math.round(targetFats * 0.8);
       } else if (pharmaType === 'combo') {
-        // Комбо: белок ×1.5, жиры -20%
         targetProteins = Math.min(Math.round(w * 3), 3 * w);
         targetFats = Math.round(targetFats * 0.8);
       }
@@ -287,10 +245,7 @@ export default function GoalsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
           {/* Индикатор шагов */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: SPACING.xl, gap: SPACING.sm }}>
@@ -310,23 +265,18 @@ export default function GoalsScreen() {
           {/* ШАГ 1: Антропометрия */}
           {step === 1 && (
             <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
-                О тебе
-              </Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>О тебе</Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Эти данные нужны для расчета нормы калорий
               </Text>
 
               {/* Пол */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                Пол
-              </Text>
+              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>Пол</Text>
               <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xl }}>
                 {(['male', 'female'] as GenderType[]).map((g) => (
                   <TouchableOpacity
                     key={g}
                     style={[
-                      cardStyles.compact,
                       {
                         flex: 1,
                         alignItems: 'center',
@@ -334,6 +284,7 @@ export default function GoalsScreen() {
                         borderColor: gender === g ? colors.primary : colors.border,
                         borderWidth: 2,
                         backgroundColor: gender === g ? colors.primaryLight : colors.surface,
+                        borderRadius: BORDER_RADIUS.lg,
                       },
                     ]}
                     onPress={() => {
@@ -350,54 +301,38 @@ export default function GoalsScreen() {
               </View>
 
               {/* Дата рождения */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                Дата рождения
-              </Text>
-              <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.xl }]}>
-                <TextInput
-                  style={[typography.body, { color: colors.textPrimary, padding: 0 }]}
-                  placeholder="ГГГГ-ММ-ДД"
-                  placeholderTextColor={colors.textTertiary}
-                  value={birthDate}
-                  onChangeText={setBirthDate}
-                  keyboardType="default"
-                />
-              </View>
+              <AppInput
+                label="Дата рождения"
+                placeholder="ГГГГ-ММ-ДД"
+                value={birthDate}
+                onChangeText={setBirthDate}
+              />
 
               {/* Рост */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                Рост (см)
-              </Text>
-              <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.xl, flexDirection: 'row', alignItems: 'center' }]}>
-                <Ruler size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-                <TextInput
-                  style={[typography.body, { color: colors.textPrimary, padding: 0, flex: 1 }]}
-                  placeholder="175"
-                  placeholderTextColor={colors.textTertiary}
-                  value={height}
-                  onChangeText={setHeight}
-                  keyboardType="numeric"
-                />
-              </View>
+              <AppInput
+                label="Рост (см)"
+                placeholder="175"
+                value={height}
+                onChangeText={setHeight}
+                keyboardType="numeric"
+                icon={<Ruler size={20} color={colors.primary} />}
+              />
 
               {/* Вес */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                Текущий вес (кг)
-              </Text>
-              <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.xl, flexDirection: 'row', alignItems: 'center' }]}>
-                <Weight size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-                <TextInput
-                  style={[typography.body, { color: colors.textPrimary, padding: 0, flex: 1 }]}
-                  placeholder="70"
-                  placeholderTextColor={colors.textTertiary}
-                  value={weight}
-                  onChangeText={setWeight}
-                  keyboardType="numeric"
-                />
-              </View>
+              <AppInput
+                label="Текущий вес (кг)"
+                placeholder="70"
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="numeric"
+                icon={<Weight size={20} color={colors.primary} />}
+              />
 
-              <TouchableOpacity
-                style={[buttonStyles.primary, { marginTop: SPACING.md }]}
+              {/* Кнопка Далее */}
+              <AppButton
+                title="Далее"
+                variant="primary"
+                size="large"
                 onPress={() => {
                   if (!gender || !height || !weight) {
                     Alert.alert('Заполни данные', 'Укажи пол, рост и вес');
@@ -406,18 +341,15 @@ export default function GoalsScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setStep(2);
                 }}
-              >
-                <Text style={buttonStyles.textPrimary}>Далее</Text>
-              </TouchableOpacity>
+                style={{ marginTop: SPACING.md }}
+              />
             </>
           )}
 
           {/* ШАГ 2: Цель и активность */}
           {step === 2 && (
             <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
-                Твоя цель
-              </Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Твоя цель</Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Выбери, чего хочешь достичь
               </Text>
@@ -430,7 +362,6 @@ export default function GoalsScreen() {
                     <TouchableOpacity
                       key={g.value}
                       style={[
-                        cardStyles.compact,
                         {
                           flexDirection: 'row',
                           alignItems: 'center',
@@ -438,6 +369,8 @@ export default function GoalsScreen() {
                           borderWidth: 2,
                           backgroundColor: goal === g.value ? colors.primaryLight : colors.surface,
                           marginBottom: SPACING.sm,
+                          padding: SPACING.lg,
+                          borderRadius: BORDER_RADIUS.lg,
                         },
                       ]}
                       onPress={() => {
@@ -464,9 +397,7 @@ export default function GoalsScreen() {
                 })}
               </View>
 
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
-                Уровень активности
-              </Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Уровень активности</Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Сколько тренировок в неделю?
               </Text>
@@ -477,7 +408,6 @@ export default function GoalsScreen() {
                   <TouchableOpacity
                     key={level.value}
                     style={[
-                      cardStyles.compact,
                       {
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -485,6 +415,8 @@ export default function GoalsScreen() {
                         borderWidth: 2,
                         backgroundColor: activityLevel === level.value ? colors.primaryLight : colors.surface,
                         marginBottom: SPACING.sm,
+                        padding: SPACING.lg,
+                        borderRadius: BORDER_RADIUS.lg,
                       },
                     ]}
                     onPress={() => {
@@ -511,17 +443,13 @@ export default function GoalsScreen() {
               </View>
 
               {/* Переключатель фармакологии */}
-              <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.xl }]}>
+              <AppCard variant="compact">
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <Pill size={20} color={usePharma ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.sm }} />
                     <View style={{ flex: 1 }}>
-                      <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-                        Использую фармакологию
-                      </Text>
-                      <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                        АС, ГР или комбо
-                      </Text>
+                      <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Использую фармакологию</Text>
+                      <Text style={[typography.caption, { color: colors.textSecondary }]}>АС, ГР или комбо</Text>
                     </View>
                   </View>
                   <TouchableOpacity
@@ -553,25 +481,23 @@ export default function GoalsScreen() {
                     />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </AppCard>
 
-              {/* Блок фармакологии (показывается только если usePharma = true) */}
+              {/* Блок фармакологии */}
               {usePharma && (
                 <>
-                  <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                  <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs, marginTop: SPACING.lg }]}>
                     Тип фармакологии
                   </Text>
                   <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                     Выбери, что используешь
                   </Text>
 
-                  {/* Выбор типа фармакологии */}
                   <View style={{ marginBottom: SPACING.xl }}>
                     {PHARMA_TYPES.map((p) => (
                       <TouchableOpacity
                         key={p.value}
                         style={[
-                          cardStyles.compact,
                           {
                             flexDirection: 'row',
                             alignItems: 'center',
@@ -579,6 +505,8 @@ export default function GoalsScreen() {
                             borderWidth: 2,
                             backgroundColor: pharmaType === p.value ? p.color + '20' : colors.surface,
                             marginBottom: SPACING.sm,
+                            padding: SPACING.lg,
+                            borderRadius: BORDER_RADIUS.lg,
                           },
                         ]}
                         onPress={() => {
@@ -603,8 +531,7 @@ export default function GoalsScreen() {
                     ))}
                   </View>
 
-                  {/* Дисклеймер */}
-                  <View style={[cardStyles.compact, { borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10', marginBottom: SPACING.xl }]}>
+                  <AppCard variant="compact" style={{ borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                       <AlertTriangle size={20} color={colors.warning} style={{ marginRight: SPACING.sm, marginTop: 2 }} />
                       <View style={{ flex: 1 }}>
@@ -612,26 +539,28 @@ export default function GoalsScreen() {
                           Важное предупреждение
                         </Text>
                         <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
-                          Использование фармакологических препаратов может нанести серьёзный вред здоровью. 
-                          Расчет КБЖУ с учетом фармакологии является приблизительным. 
-                          Настоятельно рекомендуем проконсультироваться с врачом перед началом курса.
+                          Использование фармакологических препаратов может нанести серьёзный вред здоровью. Расчет КБЖУ с учетом фармакологии является приблизительным. Настоятельно рекомендуем проконсультироваться с врачом перед началом курса.
                         </Text>
                       </View>
                     </View>
-                  </View>
+                  </AppCard>
                 </>
               )}
 
-              {/* Кнопки навигации - ВСЕГДА внизу шага 2 */}
-              <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                <TouchableOpacity
-                  style={[buttonStyles.secondary, { flex: 1 }]}
+              {/* Кнопки навигации */}
+              <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg }}>
+                <AppButton
+                  title="Назад"
+                  variant="secondary"
+                  size="large"
                   onPress={() => setStep(1)}
-                >
-                  <Text style={buttonStyles.textSecondary}>Назад</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[buttonStyles.primary, { flex: 2 }]}
+                  style={{ flex: 1 }}
+                />
+                <AppButton
+                  title="Рассчитать"
+                  variant="primary"
+                  size="large"
+                  icon={<Calculator size={20} color="#fff" />}
                   onPress={() => {
                     if (usePharma && !pharmaType) {
                       Alert.alert('Выбери тип', 'Укажи тип фармакологии или отключи переключатель');
@@ -639,10 +568,8 @@ export default function GoalsScreen() {
                     }
                     handleCalculate();
                   }}
-                >
-                  <Calculator size={20} color="#fff" style={{ marginRight: SPACING.sm }} />
-                  <Text style={buttonStyles.textPrimary}>Рассчитать</Text>
-                </TouchableOpacity>
+                  style={{ flex: 2 }}
+                />
               </View>
             </>
           )}
@@ -650,27 +577,24 @@ export default function GoalsScreen() {
           {/* ШАГ 3: Результаты КБЖУ */}
           {step === 3 && (
             <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
-                Твоя норма
-              </Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Твоя норма</Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Рекомендуемые значения на день
               </Text>
 
-              {/* Индикатор фармакологии */}
               {usePharma && pharmaType && (
-                <View style={[cardStyles.compact, { borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10', marginBottom: SPACING.lg }]}>
+                <AppCard variant="compact" style={{ borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10', marginBottom: SPACING.lg }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Pill size={16} color={colors.warning} style={{ marginRight: SPACING.sm }} />
                     <Text style={[typography.caption, { color: colors.textSecondary }]}>
                       Расчет с учетом фармакологии: {PHARMA_TYPES.find(p => p.value === pharmaType)?.label}
                     </Text>
                   </View>
-                </View>
+                </AppCard>
               )}
 
               {/* Калории */}
-              <View style={[cardStyles.large, { backgroundColor: colors.primary, marginBottom: SPACING.lg }]}>
+              <AppCard variant="highlighted" style={{ backgroundColor: colors.primary, marginBottom: SPACING.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
                   <Flame size={24} color="#fff" />
                   <Text style={[typography.h5, { color: 'rgba(255,255,255,0.9)', marginLeft: SPACING.sm }]}>
@@ -683,44 +607,29 @@ export default function GoalsScreen() {
                 <Text style={[typography.body, { color: 'rgba(255,255,255,0.8)' }]}>
                   ккал / день
                 </Text>
-              </View>
+              </AppCard>
 
               {/* Макросы */}
               <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-                {/* Белки */}
-                <View style={[cardStyles.compact, { flex: 1, alignItems: 'center', borderColor: '#F44336', borderWidth: 2 }]}>
+                <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: '#F44336', borderWidth: 2 }}>
                   <Beef size={24} color="#F44336" />
-                  <Text style={[typography.h3, { color: '#F44336', marginTop: SPACING.sm }]}>
-                    {proteins}г
-                  </Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    Белки
-                  </Text>
-                </View>
-                {/* Жиры */}
-                <View style={[cardStyles.compact, { flex: 1, alignItems: 'center', borderColor: '#FFC107', borderWidth: 2 }]}>
+                  <Text style={[typography.h3, { color: '#F44336', marginTop: SPACING.sm }]}>{proteins}г</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>Белки</Text>
+                </AppCard>
+                <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: '#FFC107', borderWidth: 2 }}>
                   <Droplet size={24} color="#FFC107" />
-                  <Text style={[typography.h3, { color: '#FFC107', marginTop: SPACING.sm }]}>
-                    {fats}г
-                  </Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    Жиры
-                  </Text>
-                </View>
-                {/* Углеводы */}
-                <View style={[cardStyles.compact, { flex: 1, alignItems: 'center', borderColor: '#4CAF50', borderWidth: 2 }]}>
+                  <Text style={[typography.h3, { color: '#FFC107', marginTop: SPACING.sm }]}>{fats}г</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>Жиры</Text>
+                </AppCard>
+                <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: '#4CAF50', borderWidth: 2 }}>
                   <Wheat size={24} color="#4CAF50" />
-                  <Text style={[typography.h3, { color: '#4CAF50', marginTop: SPACING.sm }]}>
-                    {carbs}г
-                  </Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    Углеводы
-                  </Text>
-                </View>
+                  <Text style={[typography.h3, { color: '#4CAF50', marginTop: SPACING.sm }]}>{carbs}г</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>Углеводы</Text>
+                </AppCard>
               </View>
 
               {/* Процентное соотношение */}
-              <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.lg }]}>
+              <AppCard variant="compact">
                 <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
                   Соотношение макросов
                 </Text>
@@ -730,20 +639,14 @@ export default function GoalsScreen() {
                   <View style={{ flex: 1, backgroundColor: '#4CAF50' }} />
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={[typography.caption, { color: '#F44336' }]}>
-                    Б: {Math.round((proteins * 4 / calories) * 100)}%
-                  </Text>
-                  <Text style={[typography.caption, { color: '#FFC107' }]}>
-                    Ж: {Math.round((fats * 9 / calories) * 100)}%
-                  </Text>
-                  <Text style={[typography.caption, { color: '#4CAF50' }]}>
-                    У: {Math.round((carbs * 4 / calories) * 100)}%
-                  </Text>
+                  <Text style={[typography.caption, { color: '#F44336' }]}>Б: {Math.round((proteins * 4 / calories) * 100)}%</Text>
+                  <Text style={[typography.caption, { color: '#FFC107' }]}>Ж: {Math.round((fats * 9 / calories) * 100)}%</Text>
+                  <Text style={[typography.caption, { color: '#4CAF50' }]}>У: {Math.round((carbs * 4 / calories) * 100)}%</Text>
                 </View>
-              </View>
+              </AppCard>
 
               {/* Формула */}
-              <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.xl }]}>
+              <AppCard variant="compact" style={{ marginBottom: SPACING.xl }}>
                 <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
                   ℹ️ Как рассчитано
                 </Text>
@@ -756,25 +659,27 @@ export default function GoalsScreen() {
                   {usePharma && pharmaType === 'gh' && ' С учетом ГР: жиры снижены на 20%.'}
                   {usePharma && pharmaType === 'combo' && ' С учетом комбо: белок 3г/кг, жиры -20%.'}
                 </Text>
-              </View>
+              </AppCard>
 
+              {/* Кнопки */}
               <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                <TouchableOpacity
-                  style={[buttonStyles.secondary, { flex: 1 }]}
+                <AppButton
+                  title="Изменить"
+                  variant="secondary"
+                  size="large"
                   onPress={() => setStep(2)}
-                >
-                  <Text style={buttonStyles.textSecondary}>Изменить</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[buttonStyles.primary, { flex: 2 }]}
-                  onPress={handleSave}
+                  style={{ flex: 1 }}
+                />
+                <AppButton
+                  title={saving ? 'Сохранение...' : 'Сохранить цели'}
+                  variant="primary"
+                  size="large"
+                  loading={saving}
                   disabled={saving}
-                >
-                  <Save size={20} color="#fff" style={{ marginRight: SPACING.sm }} />
-                  <Text style={buttonStyles.textPrimary}>
-                    {saving ? 'Сохранение...' : 'Сохранить цели'}
-                  </Text>
-                </TouchableOpacity>
+                  icon={!saving ? <Save size={20} color="#fff" /> : undefined}
+                  onPress={handleSave}
+                  style={{ flex: 2 }}
+                />
               </View>
             </>
           )}

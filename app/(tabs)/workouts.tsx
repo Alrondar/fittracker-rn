@@ -11,10 +11,9 @@ import * as Haptics from 'expo-haptics';
 import { ClipboardList, Dumbbell } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles } from '../../src/styles/common';
-import { createCardStyles } from '../../src/styles/components/card';
-import { createBadgeStyles } from '../../src/styles/components/badge';
-import { createListStyles } from '../../src/styles/components/list';
 import { typography } from '../../src/styles/typography';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppBadge } from '../../src/components/ui/AppBadge';
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
@@ -25,9 +24,6 @@ export default function WorkoutsScreen() {
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
   const [activeProgramId, setActiveProgramId] = useState<string | null>(null);
   const router = useRouter();
-  const cardStyles = createCardStyles(colors);
-  const badgeStyles = createBadgeStyles(colors);
-  const listStyles = createListStyles(colors);
 
   useEffect(() => {
     loadWorkouts();
@@ -112,42 +108,33 @@ export default function WorkoutsScreen() {
         <TouchableOpacity
           onPress={() => navigateToWorkout(item.id)}
           activeOpacity={0.85}
-          style={[
-            cardStyles.workoutCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: isProgramWorkout ? colors.primary : colors.border,
-              borderWidth: isProgramWorkout ? 1.5 : 1,
-            },
-          ]}
         >
-          {isProgramWorkout && (
-            <View style={[badgeStyles.programBadge, { backgroundColor: colors.primaryLight }]}>
-              <View style={badgeStyles.badgeContent}>
-                <ClipboardList size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={[badgeStyles.programBadgeText, { color: colors.primary }]}>
-                  {programLabel}
-                </Text>
-              </View>
+          <AppCard variant="compact" style={{ borderColor: isProgramWorkout ? colors.primary : colors.border, borderWidth: isProgramWorkout ? 1.5 : 1 }}>
+            {isProgramWorkout && (
+              <AppBadge variant="primary" size="small" icon={<ClipboardList size={14} color={colors.primary} strokeWidth={2} />}>
+                {programLabel}
+              </AppBadge>
+            )}
+            <Text style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]} numberOfLines={2}>
+              {item.name}
+            </Text>
+            {item.description && !isProgramWorkout && (
+              <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.xs }]} numberOfLines={1}>
+                {item.description}
+              </Text>
+            )}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md }}>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                {new Date(item.created_at).toLocaleDateString('ru-RU', {
+                  day: 'numeric',
+                  month: 'long',
+                })}
+              </Text>
+              <Text style={[typography.labelBold, { color: colors.primary }]}>
+                Начать →
+              </Text>
             </View>
-          )}
-          <Text style={[cardStyles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>
-            {item.name}
-          </Text>
-          {item.description && !isProgramWorkout && (
-            <Text style={[cardStyles.cardDesc, { color: colors.textSecondary }]} numberOfLines={1}>
-              {item.description}
-            </Text>
-          )}
-          <View style={cardStyles.cardFooter}>
-            <Text style={[cardStyles.cardDate, { color: colors.textSecondary }]}>
-              {new Date(item.created_at).toLocaleDateString('ru-RU', {
-                day: 'numeric',
-                month: 'long',
-              })}
-            </Text>
-            <Text style={[cardStyles.openText, { color: colors.primary }]}>Начать →</Text>
-          </View>
+          </AppCard>
         </TouchableOpacity>
       </FadeIn>
     );
@@ -185,7 +172,7 @@ export default function WorkoutsScreen() {
           data={workouts}
           keyExtractor={(item) => item.id}
           renderItem={renderWorkoutItem}
-          contentContainerStyle={listStyles.workoutList}
+          contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}
           ListEmptyComponent={renderEmpty}
           refreshControl={
             <RefreshControl

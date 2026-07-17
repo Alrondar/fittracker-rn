@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  SectionList,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, SectionList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -19,6 +12,8 @@ import * as Haptics from 'expo-haptics';
 import { Clock, Calendar, Trophy } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppBadge } from '../../src/components/ui/AppBadge';
 
 interface WorkoutSection {
   title: string;
@@ -118,6 +113,7 @@ export default function HistoryScreen() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
     if (days === 0) return 'Сегодня';
     if (days === 1) return 'Вчера';
     if (days < 7) return `${days} дн. назад`;
@@ -150,6 +146,7 @@ export default function HistoryScreen() {
       ['#22C55E', '#14B8A6'], ['#6366F1', '#A855F7'], ['#14B8A6', '#10B981'],
       ['#F43F5E', '#F97316'], ['#0EA5E9', '#06B6D4'], ['#84CC16', '#22C55E'],
     ];
+
     let hash = 0;
     for (let i = 0; i < workoutName.length; i++) {
       const char = workoutName.charCodeAt(i);
@@ -193,19 +190,19 @@ export default function HistoryScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, alignItems: 'center', padding: SPACING.md, backgroundColor: colors.surface, borderRadius: BORDER_RADIUS.md, marginHorizontal: 4 }}>
+            <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
               <Text style={[typography.h3, { color: colors.primary }]}>{monthlyStats.totalWorkouts}</Text>
               <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 4 }]}>тренировок</Text>
-            </View>
-            <View style={{ flex: 1, alignItems: 'center', padding: SPACING.md, backgroundColor: colors.surface, borderRadius: BORDER_RADIUS.md, marginHorizontal: 4 }}>
+            </AppCard>
+            <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
               <Text style={[typography.h3, { color: colors.success }]}>{monthlyStats.totalVolume}</Text>
               <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 4 }]}>кг объем</Text>
-            </View>
-            <View style={{ flex: 1, alignItems: 'center', padding: SPACING.md, backgroundColor: colors.surface, borderRadius: BORDER_RADIUS.md, marginHorizontal: 4 }}>
+            </AppCard>
+            <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
               <Trophy size={20} color={colors.warning} />
               <Text style={[typography.h3, { color: colors.warning, marginTop: 4 }]}>{monthlyStats.bestWorkout}</Text>
               <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>кг рекорд</Text>
-            </View>
+            </AppCard>
           </View>
         </View>
       )}

@@ -179,43 +179,73 @@ export async function deleteProgram(programId: string): Promise<void> {
 }
 
 export async function getProgramWithDays(programId: string): Promise<Program | null> {
-  const { data: program, error: programError } = await supabase
+  
+  // 🚀 ИСПРАВЛЕНО: выбираем ВСЕ поля (*) из program_exercises
+  const { data: program, error } = await supabase
     .from('programs')
-    .select('*')
+    .select(`
+      *,
+      program_days (
+        *,
+        program_exercises (*)
+      )
+    `)
     .eq('id', programId)
     .single();
 
-  if (programError) throw programError;
+  if (error) {
+    console.error('❌ [getProgramWithDays] Ошибка запроса:', error);
+    if (error.code === 'PGRST116') return null; // Не найдено
+    throw error;
+  }
 
-  const { data: days, error: daysError } = await supabase
-    .from('program_days')
-    .select('*')
-    .eq('program_id', programId)
-    .order('day_number');
+  if (!program) {
+    return null;
+  }
 
-  if (daysError) throw daysError;
-
-  const daysWithExercises = await Promise.all(
-    (days || []).map(async (day) => {
-      const { data: exercises, error: exError } = await supabase
-        .from('program_exercises')
-        .select('*')
-        .eq('program_day_id', day.id)
-        .order('position');
-
-      if (exError) throw exError;
+  // 🚀 ИСПРАВЛЕНО: сортируем дни и упражнения на клиенте (это мгновенно)
+  // и явно маппим в наш интерфейс, чтобы гарантировать наличие всех полей
+  const mappedDays = (program.program_days || [])
+    .sort((a: any, b: any) => a.day_number - b.day_number)
+    .map((day: any) => {
+      const sortedExercises = (day.program_exercises || [])
+        .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+        .map((ex: any) => ({
+          id: ex.id,
+          program_day_id: ex.program_day_id,
+          exercise_id: ex.exercise_id,
+          exercise_name: ex.exercise_name,
+          sets: ex.sets,
+          reps_range: ex.reps_range,
+          rest_seconds: ex.rest_seconds,
+          intensity: ex.intensity,
+          position: ex.position,
+        }));
 
       return {
-        ...day,
-        exercises: exercises || [],
+        id: day.id,
+        program_id: day.program_id,
+        day_number: day.day_number,
+        name: day.name,
+        position: day.position,
+        created_at: day.created_at,
+        exercises: sortedExercises,
       };
-    })
-  );
+    });
 
-  return {
-    ...program,
-    days: daysWithExercises,
+  const result: Program = {
+    id: program.id,
+    name: program.name,
+    level: program.level,
+    duration: program.duration,
+    description: program.description,
+    schedule: program.schedule || [],
+    created_by: program.created_by,
+    created_at: program.created_at,
+    days: mappedDays,
   };
+
+  return result;
 }
 
 export async function startProgram(programId: string): Promise<void> {

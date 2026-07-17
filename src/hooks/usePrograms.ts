@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import {
   getPrograms,
@@ -31,14 +32,12 @@ export interface UseProgramsReturn {
   // Табы
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
-
   // Данные
   programs: Program[];
   loading: boolean;
   refreshing: boolean;
   hasMore: boolean;
   loadingMore: boolean;
-
   // Фильтры и поиск
   searchQuery: string;
   setSearchQuery: (q: string) => void;
@@ -51,13 +50,11 @@ export interface UseProgramsReturn {
   setSortBy: (s: SortType) => void;
   showSortMenu: boolean;
   setShowSortMenu: (v: boolean) => void;
-
   // Модалка формы
   showCreateModal: boolean;
   setShowCreateModal: (v: boolean) => void;
   editingProgram: Program | null;
   setEditingProgram: (p: Program | null) => void;
-
   // Форма
   formName: string;
   setFormName: (v: string) => void;
@@ -68,7 +65,6 @@ export interface UseProgramsReturn {
   formLevel: LevelFilter;
   setFormLevel: (v: LevelFilter) => void;
   saving: boolean;
-
   // Действия
   onRefresh: () => void;
   loadMore: () => void;
@@ -81,96 +77,105 @@ export interface UseProgramsReturn {
 export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
   const { userId, showToast } = options;
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  // ===== ВНУТРЕННИЕ STATE =====
+  // ===== UI STATE =====
   const [activeTabState, setActiveTabState] = useState<TabType>('my');
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-
   const [searchQueryState, setSearchQueryState] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<LevelFilter[]>([]);
   const [sortBy, setSortBy] = useState<SortType>('date');
   const [showSortMenu, setShowSortMenu] = useState(false);
-
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
-
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formDuration, setFormDuration] = useState('8');
   const [formLevel, setFormLevel] = useState<LevelFilter>('beginner');
-  const [saving, setSaving] = useState(false);
 
-  // ===== ЗАГРУЗКА ПРОГРАММ =====
-  const loadPrograms = async (
-    tab: TabType,
-    currentPage: number,
-    levels: LevelFilter[],
-    search: string,
-    sort: SortType
-  ) => {
-    try {
-      if (currentPage === 1) {
-        setLoading(true);
-      }
-
+  // ===== REACT QUERY: Загрузка программ =====
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery<Program[], Error>({
+    queryKey: ['programs', activeTabState, userId, selectedLevels, searchQueryState, sortBy],
+    queryFn: async ({ pageParam }): Promise<Program[]> => {
+      const currentPage = pageParam as number;
       const filters: ProgramFilters = {
-        level: levels.length > 0 ? (levels as any) : undefined,
-        search: search || undefined,
-        sortBy: sort,
+        level: selectedLevels.length > 0 ? (selectedLevels as any) : undefined,
+        search: searchQueryState || undefined,
+        sortBy: sortBy,
         limit: 10,
         offset: (currentPage - 1) * 10,
       };
 
-      let data: Program[];
-      if (tab === 'my') {
-        if (!userId) {
-          setPrograms([]);
-          return;
-        }
-        data = await getMyPrograms(userId, filters);
+      if (activeTabState === 'my') {
+        if (!userId) return [];
+        return await getMyPrograms(userId, filters);
       } else {
-        data = await getPrograms(filters);
+        return await getPrograms(filters);
       }
+    },
+    initialPageParam: 1, // ✅ ИСПРАВЛЕНО: обязательный параметр в v5
+    getNextPageParam: (lastPage: Program[], allPages: Program[][]) => {
+      if (lastPage.length < 10) return undefined;
+      return allPages.length + 1;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 2,
+  });
 
-      if (currentPage === 1) {
-        setPrograms(data);
+  // ✅ ИСПРАВЛЕНО: Явная типизация
+  const programs: Program[] = data?.pages.flat() || [];
+
+  // ===== МУТАЦИИ =====
+  const saveMutation = useMutation({
+    mutationFn: async (programData: any) => {
+      if (editingProgram) {
+        return await updateProgram(editingProgram.id, programData);
       } else {
-        setPrograms(prev => [...prev, ...data]);
+        return await createProgram(programData, userId!);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast(editingProgram ? 'Программа обновлена' : 'Программа создана', 'success');
+      setShowCreateModal(false);
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Не удалось сохранить', 'error');
+    },
+  });
 
-      setHasMore(data.length === 10);
-    } catch (e: any) {
-      console.error('Ошибка загрузки программ:', e);
-      showToast('Не удалось загрузить программы', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  };
-
-  useEffect(() => {
-    loadPrograms(activeTabState, page, selectedLevels, searchQueryState, sortBy);
-  }, [activeTabState, page, selectedLevels, searchQueryState, sortBy, userId]);
+  const deleteMutation = useMutation({
+    mutationFn: async (programId: string) => {
+      await deleteProgram(programId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('Программа удалена', 'success');
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Не удалось удалить', 'error');
+    },
+  });
 
   // ===== ОБЁРТКИ С АНИМАЦИЕЙ =====
   const setActiveTab = (tab: TabType) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveTabState(tab);
-    setPage(1);
-    setPrograms([]);
   };
 
   const setSearchQuery = (q: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSearchQueryState(q);
-    setPage(1);
   };
 
   const toggleLevel = (level: LevelFilter) => {
@@ -179,27 +184,24 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     setSelectedLevels(prev =>
       prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
     );
-    setPage(1);
   };
 
   const resetLevels = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSelectedLevels([]);
-    setPage(1);
   };
 
   // ===== ДЕЙСТВИЯ =====
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPage(1);
-    setRefreshing(true);
-  };
+    refetch();
+  }, [refetch]);
 
-  const loadMore = () => {
-    if (!hasMore || loadingMore) return;
-    setLoadingMore(true);
-    setPage(prev => prev + 1);
-  };
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const openCreateModal = () => {
     if (!userId) {
@@ -225,38 +227,21 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
       return;
     }
 
-    setSaving(true);
-    try {
-      const programData = {
-        name: formName.trim(),
-        description: formDescription.trim(),
-        duration: parseInt(formDuration) || 8,
-        level: formLevel,
-        schedule: [],
-      };
+    const programData = {
+      name: formName.trim(),
+      description: formDescription.trim(),
+      duration: parseInt(formDuration) || 8,
+      level: formLevel,
+      schedule: [],
+    };
 
-      if (editingProgram) {
-        await updateProgram(editingProgram.id, programData);
-        showToast('Программа обновлена', 'success');
-      } else {
-        await createProgram(programData, userId);
-        showToast('Программа создана', 'success');
-      }
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowCreateModal(false);
-      setPage(1);
-    } catch (e: any) {
-      showToast(e.message || 'Не удалось сохранить', 'error');
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate(programData);
   };
 
   const handleLongPress = (program: Program) => {
     if (activeTabState !== 'my') return;
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     Alert.alert(
       'Действия с программой',
       `"${program.name}"`,
@@ -276,16 +261,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
         {
           text: 'Удалить',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteProgram(program.id);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              showToast('Программа удалена', 'success');
-              setPage(1);
-            } catch (e: any) {
-              showToast(e.message || 'Не удалось удалить', 'error');
-            }
-          },
+          onPress: () => deleteMutation.mutate(program.id),
         },
       ]
     );
@@ -293,7 +269,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
 
   const handleProgramPress = (program: Program) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
+    
     if (activeTabState === 'ready' && !program.id.startsWith('user_')) {
       Alert.alert(
         'Редактировать программу?',
@@ -329,22 +305,14 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
 
       if (error) throw error;
 
-      // RPC может возвращать массив или одну строку
-      const newProgramId = Array.isArray(data)
-        ? data[0]?.id || data[0]
-        : data?.id || data;
+      const newProgramId = Array.isArray(data) ? data[0]?.id || data[0] : data?.id || data;
 
-      // Переключаемся на вкладку "Мои программы"
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      
       setActiveTabState('my');
-      setPage(1);
-      setSelectedLevels([]);
-      setSearchQueryState('');
-      setSortBy('date');
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Программа скопирована в "Мои программы"', 'success');
 
-      // Открываем модалку редактирования скопированной программы
       if (newProgramId) {
         const { data: copiedData } = await supabase
           .from('programs')
@@ -370,10 +338,10 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     activeTab: activeTabState,
     setActiveTab,
     programs,
-    loading,
-    refreshing,
-    hasMore,
-    loadingMore,
+    loading: isLoading,
+    refreshing: isRefetching,
+    hasMore: hasNextPage ?? false,
+    loadingMore: isFetchingNextPage,
     searchQuery: searchQueryState,
     setSearchQuery,
     showSearch,
@@ -397,7 +365,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     setFormDuration,
     formLevel,
     setFormLevel,
-    saving,
+    saving: saveMutation.isPending,
     onRefresh,
     loadMore,
     openCreateModal,

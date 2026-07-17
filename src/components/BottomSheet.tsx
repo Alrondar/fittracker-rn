@@ -44,34 +44,31 @@ export function CustomBottomSheet({
   const [mounted, setMounted] = useState(false);
 
   // Используем CAPTURE версию для перехвата жестов до того, как их получит Modal
-  const panResponder = useRef(
-    PanResponder.create({
-      // ВАЖНО: используем capture версию
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
-      
-      onPanResponderMove: (_, gestureState) => {
-        console.log(' PanResponder Move:', gestureState.dy);
-        if (gestureState.dy > 0) {
-          slideAnim.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        console.log('👆 PanResponder Release:', gestureState.dy, 'velocity:', gestureState.vy);
-        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onClose();
-        } else {
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 11,
-          }).start();
-        }
-      },
-    })
-  ).current;
+const panResponder = useRef(
+  PanResponder.create({
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      if (gestureState.dy > 0) {
+        slideAnim.setValue(gestureState.dy);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+
+      if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onClose();
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start();
+      }
+    },
+  })
+).current;
 
   useEffect(() => {
     if (visible) {

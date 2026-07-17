@@ -2,22 +2,24 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import { createInputStyles } from '../../src/styles/components/input';
-import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppInput } from '../../src/components/ui/AppInput';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { Mail, Lock, UserPlus, LogIn, Dumbbell } from 'lucide-react-native';
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -28,11 +30,7 @@ export default function LoginScreen() {
   const { setAuth } = useStore();
   const { colors } = useTheme();
 
-  const inputStyles = createInputStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
-
   const handleAuth = async () => {
-    console.log('🔵 Попытка:', { email, isLogin });
     if (!email || !password) {
       Alert.alert('Ошибка', 'Заполните все поля');
       return;
@@ -41,24 +39,23 @@ export default function LoginScreen() {
       Alert.alert('Ошибка', 'Пароль должен быть минимум 6 символов');
       return;
     }
+
     setLoading(true);
     try {
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({ 
-          email: email.trim(), 
-          password 
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
         });
         if (error) throw error;
-        console.log('✅ Успешный вход! User ID:', data.user?.id);
         if (data.user) setAuth(data.user.id);
         router.replace('/(tabs)');
       } else {
-        const { data, error } = await supabase.auth.signUp({ 
-          email: email.trim(), 
-          password 
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
         });
         if (error) throw error;
-        console.log('🟡 Результат регистрации:', { hasUser: !!data.user, hasSession: !!data.session });
         if (data.user && !data.session) {
           Alert.alert('Подтверждение', 'Проверьте почту для подтверждения аккаунта');
         } else if (data.user) {
@@ -68,7 +65,6 @@ export default function LoginScreen() {
         }
       }
     } catch (error: any) {
-      console.log('🔴 Ошибка:', error);
       let message = error.message || 'Произошла ошибка';
       if (message.includes('Invalid login credentials')) {
         message = 'Неверный email или пароль';
@@ -92,82 +88,80 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ flex: 1, justifyContent: 'center', padding: SPACING.xxl }}>
-          <Text style={{ fontSize: 72, textAlign: 'center', marginBottom: SPACING.sm }}>🏋️</Text>
-          <Text style={[typography.h1, { textAlign: 'center', color: colors.primaryDark, marginBottom: SPACING.sm }]}>
-            FitTracker
-          </Text>
-          <Text style={[typography.body, { textAlign: 'center', color: colors.textSecondary, marginBottom: SPACING.xxl }]}>
+       <View style={{ flex: 1, justifyContent: 'center', padding: SPACING.xxl }}>
+  {/* Логотип */}
+  <View style={{ alignItems: 'center', marginBottom: SPACING.sm }}>
+    <Dumbbell size={72} color={colors.primary} strokeWidth={1.5} />
+  </View>
+  <Text
+    style={[
+      typography.h1,
+      { textAlign: 'center', color: colors.primary, marginBottom: SPACING.sm },
+    ]}
+  >
+    FitTracker
+  </Text>
+          <Text
+            style={[
+              typography.body,
+              { textAlign: 'center', color: colors.textSecondary, marginBottom: SPACING.xxl },
+            ]}
+          >
             {isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
           </Text>
 
-          <View style={{
-            backgroundColor: colors.surface,
-            padding: SPACING.xxl,
-            borderRadius: BORDER_RADIUS.xl,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 3,
-          }}>
-            <View style={{ marginBottom: SPACING.lg }}>
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Email
-              </Text>
-              <TextInput
-                style={inputStyles.input}
-                placeholder="your@email.com"
-                placeholderTextColor={colors.textTertiary}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!loading}
-              />
-            </View>
+          {/* Форма */}
+              <AppCard variant="highlighted">            <AppInput
+              label="Email"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              icon={<Mail size={20} color={colors.primary} />}
+              editable={!loading}
+            />
 
-            <View style={{ marginBottom: SPACING.lg }}>
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Пароль
-              </Text>
-              <TextInput
-                style={inputStyles.input}
-                placeholder="Минимум 6 символов"
-                placeholderTextColor={colors.textTertiary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!loading}
-              />
-            </View>
+            <AppInput
+              label="Пароль"
+              placeholder="Минимум 6 символов"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              icon={<Lock size={20} color={colors.primary} />}
+              editable={!loading}
+            />
 
-            <TouchableOpacity
-              style={[buttonStyles.primary, buttonStyles.large, loading && buttonStyles.disabled]}
-              onPress={handleAuth}
+            <AppButton
+              title={isLogin ? 'Войти' : 'Зарегистрироваться'}
+              variant="primary"
+              size="large"
+              loading={loading}
               disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={buttonStyles.textPrimary}>
-                  {isLogin ? 'Войти' : 'Зарегистрироваться'}
-                </Text>
-              )}
-            </TouchableOpacity>
+              icon={
+                isLogin ? (
+                  <LogIn size={20} color="#fff" />
+                ) : (
+                  <UserPlus size={20} color="#fff" />
+                )
+              }
+              onPress={handleAuth}
+              style={{ marginTop: SPACING.md }}
+            />
 
             <TouchableOpacity
               onPress={() => setIsLogin(!isLogin)}
               disabled={loading}
-              style={{ padding: SPACING.sm, alignItems: 'center' }}
+              style={{ padding: SPACING.sm, alignItems: 'center', marginTop: SPACING.sm }}
             >
               <Text style={[typography.label, { color: colors.primary }]}>
-                {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
+                {isLogin
+                  ? 'Нет аккаунта? Зарегистрироваться'
+                  : 'Уже есть аккаунт? Войти'}
               </Text>
             </TouchableOpacity>
-          </View>
+          </AppCard>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

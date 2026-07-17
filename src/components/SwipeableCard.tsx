@@ -31,105 +31,89 @@ export function SwipeToDeleteCard({ children, onDelete, onLongPress, onPress, di
   const isLongPress = useRef(false);
   const hasMoved = useRef(false);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      // ВАЖНО: захватываем жест сразу при касании
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      
-      onPanResponderGrant: () => {
-        console.log('🔵 onPanResponderGrant - запускаем таймер');
-        isLongPress.current = false;
-        hasMoved.current = false;
+const panResponder = useRef(
+  PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
 
-        longPressTimer.current = setTimeout(() => {
-          console.log('⏰ ТАЙМЕР СРАБОТАЛ - долгое нажатие!');
-          isLongPress.current = true;
-          Haptics.impactAsync();
-          if (onLongPress) {
-            console.log('🔥 Вызываем onLongPress!');
-            onLongPress();
-          }
-        }, LONG_PRESS_DURATION);
-      },
-      
-      onPanResponderMove: (_, gestureState) => {
-        // Если движение больше порога — это свайп
-        if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD) {
-          if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-            console.log('❌ Таймер отменён - это свайп');
-          }
-          hasMoved.current = true;
+      isLongPress.current = false;
+      hasMoved.current = false;
+      longPressTimer.current = setTimeout(() => {
+
+        isLongPress.current = true;
+        Haptics.impactAsync();
+        if (onLongPress) {
+
+          onLongPress();
         }
-
-        // Двигаем карточку только при свайпе влево
-        if (gestureState.dx < 0 && !isLongPress.current) {
-          translateX.setValue(gestureState.dx);
-        }
-      },
-      
-      onPanResponderRelease: (_, gestureState) => {
-        console.log('🔴 onPanResponderRelease, dx:', gestureState.dx, 'dy:', gestureState.dy, 'isLongPress:', isLongPress.current, 'hasMoved:', hasMoved.current);
-
+      }, LONG_PRESS_DURATION);
+    },
+    onPanResponderMove: (_, gestureState) => {
+      if (Math.abs(gestureState.dx) > SWIPE_THRESHOLD) {
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
           longPressTimer.current = null;
-        }
 
-        // Если сработало долгое нажатие
-        if (isLongPress.current) {
-          console.log('✅ Долгое нажатие');
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 11,
-          }).start();
-          return;
         }
+        hasMoved.current = true;
+      }
+      if (gestureState.dx < 0 && !isLongPress.current) {
+        translateX.setValue(gestureState.dx);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
 
-        // Если свайп для удаления
-        if (gestureState.dx < -DELETE_THRESHOLD || gestureState.vx < -0.5) {
-          console.log('🗑️ Свайп для удаления');
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          Animated.timing(translateX, {
-            toValue: -SCREEN_WIDTH,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => {
-            onDelete();
-            translateX.setValue(0);
-          });
-        } 
-        // Если не было движения — это короткое нажатие
-        else if (!hasMoved.current && Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10) {
-          console.log('👆 Короткое нажатие');
-          Haptics.impactAsync();
-          if (onPress) {
-            onPress();
-          }
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 11,
-          }).start();
-        } 
-        // Возврат карточки
-        else {
-          console.log('↩️ Возврат карточки');
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 11,
-          }).start();
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      if (isLongPress.current) {
+
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start();
+        return;
+      }
+      if (gestureState.dx < -DELETE_THRESHOLD || gestureState.vx < -0.5) {
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        Animated.timing(translateX, {
+          toValue: -SCREEN_WIDTH,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          onDelete();
+          translateX.setValue(0);
+        });
+      } 
+      else if (!hasMoved.current && Math.abs(gestureState.dx) < 10 && Math.abs(gestureState.dy) < 10) {
+
+        Haptics.impactAsync();
+        if (onPress) {
+          onPress();
         }
-      },
-    })
-  ).current;
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start();
+      } 
+      else {
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start();
+      }
+    },
+  })
+).current;
 
   if (disabled) {
     return <>{children}</>;

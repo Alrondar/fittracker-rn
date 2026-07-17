@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
-  TextInput,
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,11 +13,13 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
-import { createCardStyles } from '../../src/styles/components/card';
-import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppInput } from '../../src/components/ui/AppInput';
+import { AppBadge } from '../../src/components/ui/AppBadge';
 import {
   ChevronLeft,
   Plus,
@@ -45,7 +46,6 @@ interface Injury {
   notes: string;
 }
 
-// Единый стиль иконок с цветовой кодировкой по зонам тела
 const BODY_PARTS = [
   { value: 'shoulder', label: 'Плечо', color: '#2196F3' },
   { value: 'elbow', label: 'Локоть', color: '#2196F3' },
@@ -70,20 +70,15 @@ export default function InjuriesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { userId } = useStore();
-  
   const [injuries, setInjuries] = useState<Injury[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingInjury, setEditingInjury] = useState<Injury | null>(null);
-  
   const [bodyPart, setBodyPart] = useState('');
   const [injuryType, setInjuryType] = useState('');
   const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
-  
-  const cardStyles = createCardStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
 
   useEffect(() => {
     loadInjuries();
@@ -112,7 +107,6 @@ export default function InjuriesScreen() {
       Alert.alert('Ошибка', 'Заполните обязательные поля');
       return;
     }
-
     try {
       const injuryData = {
         user_id: userId,
@@ -123,24 +117,20 @@ export default function InjuriesScreen() {
         notes,
         status: 'active' as const,
       };
-
       if (editingInjury) {
         const { error } = await supabase
           .from('user_injuries')
           .update(injuryData)
           .eq('id', editingInjury.id);
-        
         if (error) throw error;
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         const { error } = await supabase
           .from('user_injuries')
           .insert(injuryData);
-        
         if (error) throw error;
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-
       setShowAddModal(false);
       resetForm();
       loadInjuries();
@@ -166,7 +156,6 @@ export default function InjuriesScreen() {
                   recovered_at: new Date().toISOString(),
                 })
                 .eq('id', injuryId);
-
               if (error) throw error;
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               loadInjuries();
@@ -194,7 +183,6 @@ export default function InjuriesScreen() {
                 .from('user_injuries')
                 .delete()
                 .eq('id', injuryId);
-
               if (error) throw error;
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               loadInjuries();
@@ -261,25 +249,13 @@ export default function InjuriesScreen() {
 
   const renderInjuryCard = (injury: Injury) => {
     const bodyPartColor = getBodyPartColor(injury.body_part);
-    
     return (
-      <View
-        key={injury.id}
-        style={[
-          cardStyles.compact,
-          {
-            borderColor: getSeverityColor(injury.severity),
-            borderWidth: 1,
-            marginBottom: SPACING.md,
-          },
-        ]}
-      >
+      <AppCard key={injury.id} variant="compact" style={{ borderColor: getSeverityColor(injury.severity), borderWidth: 1 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            {/* Единая иконка Circle с цветом зоны тела */}
-            <Circle 
-              size={20} 
-              color={bodyPartColor} 
+            <Circle
+              size={20}
+              color={bodyPartColor}
               fill={bodyPartColor + '20'}
               strokeWidth={2}
               style={{ marginRight: SPACING.sm }}
@@ -293,26 +269,20 @@ export default function InjuriesScreen() {
               </Text>
             </View>
           </View>
-          <View
-            style={{
-              paddingHorizontal: SPACING.sm,
-              paddingVertical: SPACING.xs,
-              borderRadius: BORDER_RADIUS.sm,
-              backgroundColor: getSeverityColor(injury.severity) + '20',
-            }}
+          <AppBadge
+            variant="default"
+            size="small"
+            style={{ backgroundColor: getSeverityColor(injury.severity) + '20' }}
+            textStyle={{ color: getSeverityColor(injury.severity) }}
           >
-            <Text style={[typography.caption, { color: getSeverityColor(injury.severity), fontWeight: '600' }]}>
-              {getSeverityLabel(injury.severity)}
-            </Text>
-          </View>
+            {getSeverityLabel(injury.severity)}
+          </AppBadge>
         </View>
-
         {injury.description && (
           <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>
             {injury.description}
           </Text>
         )}
-
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
             С {new Date(injury.created_at).toLocaleDateString('ru-RU')}
@@ -359,9 +329,19 @@ export default function InjuriesScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </AppCard>
     );
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={commonStyles.center}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
@@ -377,7 +357,7 @@ export default function InjuriesScreen() {
       <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
         {/* Статистика */}
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg }}>
-          <View style={[cardStyles.compact, { flex: 1, alignItems: 'center' }]}>
+          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center' }}>
             <AlertCircle size={24} color={colors.error} />
             <Text style={[typography.h3, { color: colors.textPrimary, marginTop: SPACING.xs }]}>
               {activeInjuries.length}
@@ -385,8 +365,8 @@ export default function InjuriesScreen() {
             <Text style={[typography.caption, { color: colors.textSecondary }]}>
               Активных
             </Text>
-          </View>
-          <View style={[cardStyles.compact, { flex: 1, alignItems: 'center' }]}>
+          </AppCard>
+          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center' }}>
             <CheckCircle size={24} color={colors.success} />
             <Text style={[typography.h3, { color: colors.textPrimary, marginTop: SPACING.xs }]}>
               {recoveredInjuries.length}
@@ -394,11 +374,11 @@ export default function InjuriesScreen() {
             <Text style={[typography.caption, { color: colors.textSecondary }]}>
               Восстановлено
             </Text>
-          </View>
+          </AppCard>
         </View>
 
         {/* Легенда зон тела */}
-        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.lg }]}>
+        <AppCard variant="compact">
           <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
             Зоны тела
           </Text>
@@ -422,19 +402,19 @@ export default function InjuriesScreen() {
               </Text>
             </View>
           </View>
-        </View>
+        </AppCard>
 
         {/* Активные травмы */}
-        <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+        <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md, marginTop: SPACING.lg }]}>
           Активные травмы
         </Text>
         {activeInjuries.length === 0 ? (
-          <View style={[cardStyles.compact, { alignItems: 'center', paddingVertical: SPACING.xl }]}>
+          <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
             <Activity size={48} color={colors.textTertiary} />
             <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' }]}>
               У вас нет активных травм
             </Text>
-          </View>
+          </AppCard>
         ) : (
           activeInjuries.map((injury) => renderInjuryCard(injury))
         )}
@@ -506,7 +486,6 @@ export default function InjuriesScreen() {
                 <X size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-
             <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
               {/* Часть тела */}
               <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
@@ -530,9 +509,9 @@ export default function InjuriesScreen() {
                       },
                     ]}
                   >
-                    <Circle 
-                      size={14} 
-                      color={bp.color} 
+                    <Circle
+                      size={14}
+                      color={bp.color}
                       fill={bodyPart === bp.value ? bp.color : 'transparent'}
                       strokeWidth={2}
                       style={{ marginRight: SPACING.xs }}
@@ -609,54 +588,42 @@ export default function InjuriesScreen() {
               </View>
 
               {/* Описание */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Описание
-              </Text>
-              <TextInput
-                style={[
-                  cardStyles.sheetInput,
-                  { marginBottom: SPACING.lg, minHeight: 80, textAlignVertical: 'top' },
-                ]}
+              <AppInput
+                label="Описание"
                 placeholder="Опишите травму..."
-                placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
+                style={{ minHeight: 80, textAlignVertical: 'top', marginBottom: SPACING.lg }}
               />
 
               {/* Заметки */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Заметки
-              </Text>
-              <TextInput
-                style={[
-                  cardStyles.sheetInput,
-                  { marginBottom: SPACING.xl, minHeight: 80, textAlignVertical: 'top' },
-                ]}
+              <AppInput
+                label="Заметки"
                 placeholder="Дополнительная информация..."
-                placeholderTextColor={colors.textTertiary}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
+                style={{ minHeight: 80, textAlignVertical: 'top', marginBottom: SPACING.xl }}
               />
 
               {/* Кнопки */}
               <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                <TouchableOpacity
-                  style={[buttonStyles.secondary, { flex: 1 }]}
+                <AppButton
+                  title="Отмена"
+                  variant="secondary"
+                  size="medium"
                   onPress={() => setShowAddModal(false)}
-                >
-                  <Text style={buttonStyles.textSecondary}>Отмена</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[buttonStyles.primary, { flex: 2 }]}
+                  style={{ flex: 1 }}
+                />
+                <AppButton
+                  title={editingInjury ? 'Сохранить' : 'Добавить'}
+                  variant="primary"
+                  size="medium"
+                  icon={<Save size={20} color="#fff" />}
                   onPress={handleSaveInjury}
-                >
-                  <Save size={20} color="#fff" style={{ marginRight: SPACING.sm }} />
-                  <Text style={buttonStyles.textPrimary}>
-                    {editingInjury ? 'Сохранить' : 'Добавить'}
-                  </Text>
-                </TouchableOpacity>
+                  style={{ flex: 2 }}
+                />
               </View>
             </ScrollView>
           </View>

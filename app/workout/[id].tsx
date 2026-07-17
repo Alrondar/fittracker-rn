@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList, 
   TouchableOpacity,
   TextInput,
   Alert,
@@ -149,7 +150,6 @@ export default function WorkoutSessionScreen() {
 
       // Если тренировка активна и мы не завершаем её штатно — сохраняем прогресс
       if (isWorkoutActive && !isFinishing && currentTimeRef.current > 0) {
-        console.log('🚪 [CLEANUP] Сохраняем прогресс при выходе:', currentTimeRef.current, 'сек');
         supabase
           .from('workouts')
           .update({ duration_seconds: currentTimeRef.current })
@@ -211,7 +211,6 @@ export default function WorkoutSessionScreen() {
         .select('*');
 
       if (warnError) {
-        console.log('💡 Таблица injury_exercise_warnings не найдена');
         return;
       }
 
@@ -293,13 +292,10 @@ export default function WorkoutSessionScreen() {
         const savedDuration = workout.duration_seconds || 0;
 
         if (savedDuration > 0) {
-          // Был сохранён прогресс при выходе — восстанавливаем с него
-          console.log('🔄 Восстанавливаем тренировку с', savedDuration, 'сек');
           setInitialTime(savedDuration);
           currentTimeRef.current = savedDuration;
           setIsWorkoutActive(true);
         } else {
-          // Старая логика: считаем от started_at
           const startTime = new Date(workout.started_at);
           const now = new Date();
           const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
@@ -768,33 +764,34 @@ export default function WorkoutSessionScreen() {
         </View>
       )}
 
-      {/* Список упражнений */}
-      <ScrollView
-        style={commonStyles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {exercises.map((exercise, exIndex) => (
-          <ExerciseSlider
-            key={exercise.workout_exercise_id}
-            exercise={exercise}
-            exerciseIndex={exIndex}
-            isReplaced={!!replacements[exercise.workout_exercise_id]}
-            alternativesCache={alternativesCache}
-            loadAlternatives={loadAlternatives}
-            updateSet={updateSet}
-            isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
-            resetToOriginal={resetToOriginal}
-            startRestTimer={startRestTimer}
-            getIntensityInfo={getIntensityInfo}
-            updateExerciseSettings={updateExerciseSettings}
-            colors={colors}
-            cardStyles={cardStyles}
-            warning={exerciseWarnings[exercise.id] || null}
-          />
-        ))}
-      </ScrollView>
+{/* Список упражнений (Виртуализированный) */}
+<FlatList
+  data={exercises}
+  keyExtractor={(item) => item.workout_exercise_id}
+  renderItem={({ item: exercise, index: exIndex }: { item: ExerciseData; index: number }) => (
+    <ExerciseSlider
+      exercise={exercise}
+      exerciseIndex={exIndex}
+      isReplaced={!!replacements[exercise.workout_exercise_id]}
+      alternativesCache={alternativesCache}
+      loadAlternatives={loadAlternatives}
+      updateSet={updateSet}
+      isSetCompleted={isSetCompleted}
+      replaceExercise={replaceExercise}
+      resetToOriginal={resetToOriginal}
+      startRestTimer={startRestTimer}
+      getIntensityInfo={getIntensityInfo}
+      updateExerciseSettings={updateExerciseSettings}
+      colors={colors}
+      cardStyles={cardStyles}
+      warning={exerciseWarnings[exercise.id] || null}
+    />
+  )}
+  contentContainerStyle={{ paddingBottom: 100 }}
+  showsVerticalScrollIndicator={false}
+  windowSize={5}
+  removeClippedSubviews={true}
+/>
 
       {/* Кнопки управления тренировкой */}
       <View style={[workoutStyles.finishButtonContainer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>

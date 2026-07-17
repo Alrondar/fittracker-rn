@@ -117,18 +117,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
   }, [theme.colors.background]);
 
-  useEffect(() => {
-    if (isLoaded) {
-      console.log('🎨 Theme:', {
-        mode: themeMode,
-        accent: themeAccent,
-        themeKey,
-        theme: theme.name,
-        isDark,
-      });
-    }
-  }, [themeMode, themeAccent, theme, isDark, isLoaded]);
-
   const availableAccents = Object.entries(themeGroups).map(([key, group]) => ({
     key: key as ThemeAccent,
     label: group.label,

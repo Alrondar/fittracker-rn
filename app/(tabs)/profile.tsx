@@ -7,7 +7,6 @@ import {
   Alert,
   Modal,
   FlatList,
-  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,17 +15,18 @@ import { ThemeAccent, ThemeKey, themes } from '../../src/constants/theme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
-import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppInput } from '../../src/components/ui/AppInput';
 import {
   User,
   Settings,
   Target,
   Activity,
   LogOut,
-  Palette,
   ChevronRight,
   Trophy,
   Dumbbell,
@@ -75,20 +75,16 @@ export default function ProfileScreen() {
     carbs: 0,
     water_ml: 0,
   });
-
   const [burnedCalories, setBurnedCalories] = useState(0);
   const [userWeight, setUserWeight] = useState(70);
   const [personalRecords, setPersonalRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [inputCalories, setInputCalories] = useState('');
   const [inputProteins, setInputProteins] = useState('');
   const [inputFats, setInputFats] = useState('');
   const [inputCarbs, setInputCarbs] = useState('');
   const [inputWater, setInputWater] = useState('');
-
   const cardStyles = createCardStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
 
   useEffect(() => {
     loadUserData();
@@ -112,7 +108,6 @@ export default function ProfileScreen() {
       if (profileData?.current_weight_kg) {
         setUserWeight(parseFloat(profileData.current_weight_kg));
       }
-
       setUserData({
         email: user?.email || '',
         username: profileData?.username || user?.email?.split('@')[0] || 'Пользователь',
@@ -140,7 +135,6 @@ export default function ProfileScreen() {
 
       let totalVolume = 0;
       let totalWorkouts = 0;
-
       workouts?.forEach((workout: any) => {
         const hasLogs = workout.workout_exercises?.some((ex: any) =>
           ex.workout_logs?.length > 0
@@ -154,7 +148,6 @@ export default function ProfileScreen() {
           });
         }
       });
-
       setStats({
         totalWorkouts,
         totalPrograms: programs?.length || 0,
@@ -244,7 +237,6 @@ export default function ProfileScreen() {
 
       let totalDurationSeconds = 0;
       let totalBurned = 0;
-
       for (const workout of todayWorkouts) {
         const { data: logs } = await supabase
           .from('workout_logs')
@@ -257,7 +249,6 @@ export default function ProfileScreen() {
           const lastLog = new Date(logs[logs.length - 1].completed_at).getTime();
           const durationSec = Math.max(0, (lastLog - firstLog) / 1000);
           totalDurationSeconds += durationSec;
-
           const durationHours = durationSec / 3600;
           const MET = 5.0;
           const burned = MET * userWeight * durationHours;
@@ -270,7 +261,6 @@ export default function ProfileScreen() {
           totalDurationSeconds += 45 * 60;
         }
       }
-
       setBurnedCalories(Math.round(totalBurned));
     } catch (e) {
       console.error('Ошибка расчёта сожжённых калорий:', e);
@@ -291,7 +281,6 @@ export default function ProfileScreen() {
       }
 
       const workoutIds = userWorkouts.map(w => w.id);
-
       const { data: workoutExercises } = await supabase
         .from('workout_exercises')
         .select('id, exercise_id')
@@ -321,11 +310,9 @@ export default function ProfileScreen() {
       if (error) throw error;
 
       const exerciseRecords: Record<string, { name: string; maxWeight: number; reps: number }> = {};
-
       logs?.forEach((log: any) => {
         const workoutExercise = workoutExercises.find(we => we.id === log.workout_exercise_id);
         if (!workoutExercise) return;
-
         const exerciseId = workoutExercise.exercise_id;
         const exerciseName = exerciseNameMap.get(exerciseId);
         if (!exerciseName) return;
@@ -502,13 +489,13 @@ export default function ProfileScreen() {
   };
 
   const renderStatCard = (icon: any, label: string, value: string, color: string) => (
-    <View style={[cardStyles.statCardSmall, { backgroundColor: colors.surface }]}>
+    <AppCard variant="compact" style={{ flex: 1, alignItems: 'center' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
         {icon}
-        <Text style={[cardStyles.statValue, { color }]}>{value}</Text>
+        <Text style={[typography.h3, { color, marginLeft: SPACING.sm }]}>{value}</Text>
       </View>
-      <Text style={[cardStyles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
-    </View>
+      <Text style={[typography.caption, { color: colors.textSecondary }]}>{label}</Text>
+    </AppCard>
   );
 
   const renderThemeOption = ({ item }: { item: { key: ThemeAccent; label: string; keys: ThemeKey[] } }) => {
@@ -518,8 +505,11 @@ export default function ProfileScreen() {
     return (
       <TouchableOpacity
         style={[
-          cardStyles.container,
           {
+            backgroundColor: colors.surface,
+            borderRadius: BORDER_RADIUS.lg,
+            padding: SPACING.lg,
+            marginBottom: SPACING.md,
             borderColor: isSelected ? colors.primary : colors.border,
             borderWidth: 2,
             flexDirection: 'row',
@@ -567,23 +557,23 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: SPACING.xl }}>
-        {/* Шапка профиля с кнопкой настроек */}
+        {/* Шапка профиля */}
         <View style={{ position: 'relative' }}>
-          <View style={cardStyles.profileHeader}>
-            <View style={[cardStyles.profileAvatar, { backgroundColor: colors.primaryLight }]}>
+          <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center', marginBottom: SPACING.md }}>
               <Text style={[typography.h2, { color: colors.primary }]}>{initials}</Text>
             </View>
-            <Text style={[cardStyles.profileName, { color: colors.textPrimary }]}>
+            <Text style={[typography.h3, { color: colors.textPrimary, textAlign: 'center' }]}>
               {displayName}
             </Text>
             {displayEmail && (
-              <Text style={[cardStyles.profileEmail, { color: colors.textSecondary }]}>
+              <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: 4 }]}>
                 {displayEmail}
               </Text>
             )}
-          </View>
-          
-          {/* Кнопка настроек в правом верхнем углу */}
+          </AppCard>
+
+          {/* Кнопка настроек */}
           <TouchableOpacity
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -611,7 +601,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Статистика */}
-        <View style={cardStyles.statsRow}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.xl, paddingHorizontal: SPACING.lg }}>
           {renderStatCard(
             <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />,
             'Тренировки',
@@ -632,10 +622,10 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Карточка сожжённых калорий */}
+        {/* Сожжённые калории */}
         {burnedCalories > 0 && (
-          <View style={commonStyles.section}>
-            <View style={[cardStyles.compact, { borderColor: '#FF5722', borderWidth: 1, backgroundColor: '#FF572210' }]}>
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+            <AppCard variant="compact" style={{ borderColor: '#FF5722', borderWidth: 1, backgroundColor: '#FF572210' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
                 <Zap size={20} color="#FF5722" />
                 <Text style={[typography.labelBold, { color: colors.textPrimary, marginLeft: SPACING.sm }]}>
@@ -648,15 +638,15 @@ export default function ProfileScreen() {
               <Text style={[typography.caption, { color: colors.textSecondary }]}>
                 Рассчитано автоматически по длительности и весу
               </Text>
-            </View>
+            </AppCard>
           </View>
         )}
 
         {/* Трекер КБЖУ */}
         {targets.calories > 0 && (
-          <View style={commonStyles.section}>
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-              <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
+              <Text style={[typography.h4, { color: colors.textPrimary }]}>
                 Питание сегодня
               </Text>
               <TouchableOpacity
@@ -669,7 +659,7 @@ export default function ProfileScreen() {
                 <Plus size={20} color={colors.primary} strokeWidth={2} />
               </TouchableOpacity>
             </View>
-            <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+            <AppCard variant="compact">
               {(todayNutrition.proteins > 0 || todayNutrition.fats > 0 || todayNutrition.carbs > 0) && (
                 <MacroPieChart
                   proteins={todayNutrition.proteins}
@@ -677,7 +667,6 @@ export default function ProfileScreen() {
                   carbs={todayNutrition.carbs}
                 />
               )}
-
               {renderProgressBar(
                 <Flame size={18} color="#F44336" />,
                 'Калории',
@@ -718,20 +707,20 @@ export default function ProfileScreen() {
                 'мл',
                 '#00BCD4'
               )}
-            </View>
+            </AppCard>
           </View>
         )}
 
         {/* Личные рекорды */}
         {personalRecords.length > 0 && (
-          <View style={commonStyles.section}>
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
               <Award size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
-              <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
+              <Text style={[typography.h4, { color: colors.textPrimary }]}>
                 Личные рекорды
               </Text>
             </View>
-            <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+            <AppCard variant="compact">
               {personalRecords.map((record, index) => (
                 <View
                   key={index}
@@ -773,79 +762,82 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               ))}
-            </View>
+            </AppCard>
           </View>
         )}
 
         {/* Быстрые действия */}
-        <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary }]}>
+        <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+          <Text style={[typography.h4, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
             Быстрые действия
           </Text>
           <TouchableOpacity
-            style={[
-              cardStyles.compact,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderColor: colors.border,
-                borderWidth: 1,
-                marginBottom: SPACING.sm,
-              },
-            ]}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.md,
+              padding: SPACING.md,
+              marginBottom: SPACING.sm,
+              borderColor: colors.border,
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               router.push('/profile/goals');
             }}
           >
-            <View style={cardStyles.settingsRowLeft}>
-              <Target size={20} color={colors.success} strokeWidth={1.5} style={cardStyles.settingsIcon} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Target size={20} color={colors.success} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
               <Text style={[typography.h5, { color: colors.textPrimary }]}>
                 Мои цели
               </Text>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
           </TouchableOpacity>
-<TouchableOpacity
-  style={[
-    cardStyles.compact,
-    {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      borderColor: colors.border,
-      borderWidth: 1,
-    },
-  ]}
-  onPress={() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/profile/injuries'); // ← Изменено
-  }}
->
-  <View style={cardStyles.settingsRowLeft}>
-    <Activity size={20} color={colors.error} strokeWidth={1.5} style={cardStyles.settingsIcon} />
-    <Text style={[typography.h5, { color: colors.textPrimary }]}>
-      Травмы и ограничения
-    </Text>
-  </View>
-  <ChevronRight size={20} color={colors.textTertiary} />
-</TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.md,
+              padding: SPACING.md,
+              borderColor: colors.border,
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/profile/injuries');
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Activity size={20} color={colors.error} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <Text style={[typography.h5, { color: colors.textPrimary }]}>
+                Травмы и ограничения
+              </Text>
+            </View>
+            <ChevronRight size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
         </View>
 
         {/* Кнопка выхода */}
-        <TouchableOpacity
-          style={[buttonStyles.danger, cardStyles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <LogOut size={20} color="#ffffff" strokeWidth={2} />
-          <Text style={buttonStyles.textDanger}>Выйти из аккаунта</Text>
-        </TouchableOpacity>
+        <View style={{ paddingHorizontal: SPACING.lg }}>
+          <AppButton
+            title="Выйти из аккаунта"
+            variant="danger"
+            size="large"
+            icon={<LogOut size={20} color="#fff" />}
+            onPress={handleLogout}
+          />
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Bottom Sheet для ввода питания */}
+      {/* Модалка питания */}
       <Modal
         visible={showNutritionSheet}
         animationType="slide"
@@ -863,73 +855,54 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Калории (ккал)
-              </Text>
-              <TextInput
-                style={[cardStyles.sheetInput, { marginBottom: SPACING.md }]}
+              <AppInput
+                label="Калории (ккал)"
                 placeholder="0"
-                placeholderTextColor={colors.textTertiary}
                 value={inputCalories}
                 onChangeText={setInputCalories}
                 keyboardType="numeric"
               />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Белки (г)
-              </Text>
-              <TextInput
-                style={[cardStyles.sheetInput, { marginBottom: SPACING.md }]}
+              <AppInput
+                label="Белки (г)"
                 placeholder="0"
-                placeholderTextColor={colors.textTertiary}
                 value={inputProteins}
                 onChangeText={setInputProteins}
                 keyboardType="numeric"
               />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Жиры (г)
-              </Text>
-              <TextInput
-                style={[cardStyles.sheetInput, { marginBottom: SPACING.md }]}
+              <AppInput
+                label="Жиры (г)"
                 placeholder="0"
-                placeholderTextColor={colors.textTertiary}
                 value={inputFats}
                 onChangeText={setInputFats}
                 keyboardType="numeric"
               />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Углеводы (г)
-              </Text>
-              <TextInput
-                style={[cardStyles.sheetInput, { marginBottom: SPACING.md }]}
+              <AppInput
+                label="Углеводы (г)"
                 placeholder="0"
-                placeholderTextColor={colors.textTertiary}
                 value={inputCarbs}
                 onChangeText={setInputCarbs}
                 keyboardType="numeric"
               />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                Вода (мл)
-              </Text>
-              <TextInput
-                style={[cardStyles.sheetInput, { marginBottom: SPACING.xl }]}
+              <AppInput
+                label="Вода (мл)"
                 placeholder="0"
-                placeholderTextColor={colors.textTertiary}
                 value={inputWater}
                 onChangeText={setInputWater}
                 keyboardType="numeric"
               />
-              <TouchableOpacity
-                style={[buttonStyles.primary]}
+              <AppButton
+                title="Сохранить"
+                variant="primary"
+                size="large"
                 onPress={handleSaveNutrition}
-              >
-                <Text style={buttonStyles.textPrimary}>Сохранить</Text>
-              </TouchableOpacity>
+                style={{ marginTop: SPACING.md }}
+              />
             </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Модальное окно выбора темы */}
+      {/* Модалка темы */}
       <Modal
         visible={showThemeModal}
         animationType="slide"
