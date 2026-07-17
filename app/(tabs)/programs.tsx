@@ -94,7 +94,7 @@ export default function ProgramsScreen() {
         item={item}
         index={index}
         isMyProgram={activeTab === 'my'}
-        onPress={() => handleProgramPress(item, router)}
+        onPress={() => handleProgramPress(item)}
         onLongPress={() => handleLongPress(item)}
         onEditPress={() => {
           setEditingProgram(item);
