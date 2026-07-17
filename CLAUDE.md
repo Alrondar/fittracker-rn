@@ -180,6 +180,8 @@ assets/ # SVG иконки оборудования (44 файла)
 | `src/components/SwipeableCard.tsx` | ~120 | console.log в PanResponder | P1 |
 | `app/_layout.tsx` | ~100 | 20+ console.log, мертвый роут | P1 |
 
+## 📝 Ответы на запросы
+
 ### 💡 Основное решение / Код
 [Здесь сам код, архитектура или объяснение]
 
