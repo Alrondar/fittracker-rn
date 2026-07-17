@@ -85,38 +85,38 @@ const {
   const cautionCount = Object.values(exerciseWarnings).filter(w => w.level === 'caution').length;
   const hasWarnings = avoidCount > 0 || cautionCount > 0;
 
-  const getIntensityInfo = (intensity: string) => {
-    switch (intensity) {
-      case 'high':
-        return {
-          label: 'Высокая',
-          color: '#F44336',
-          bgColor: '#F4433620',
-          icon: <TrendingUp size={14} color="#F44336" strokeWidth={2} />,
-        };
-      case 'medium':
-        return {
-          label: 'Средняя',
-          color: '#FFC107',
-          bgColor: '#FFC10720',
-          icon: <Minus size={14} color="#FFC107" strokeWidth={2} />,
-        };
-      case 'low':
-        return {
-          label: 'Низкая',
-          color: '#4CAF50',
-          bgColor: '#4CAF5020',
-          icon: <TrendingDown size={14} color="#4CAF50" strokeWidth={2} />,
-        };
-      default:
-        return {
-          label: intensity,
-          color: colors.textSecondary,
-          bgColor: colors.textSecondary + '20',
-          icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} />,
-        };
-    }
-  };
+const getIntensityInfo = (intensity: string) => {
+  switch (intensity) {
+    case 'high':
+      return {
+        label: 'Высокая',
+        color: colors.error,
+        bgColor: colors.error + '20',
+        icon: <TrendingUp size={14} color={colors.error} strokeWidth={2} />,
+      };
+    case 'medium':
+      return {
+        label: 'Средняя',
+        color: colors.warning,
+        bgColor: colors.warning + '20',
+        icon: <Minus size={14} color={colors.warning} strokeWidth={2} />,
+      };
+    case 'low':
+      return {
+        label: 'Низкая',
+        color: colors.success,
+        bgColor: colors.success + '20',
+        icon: <TrendingDown size={14} color={colors.success} strokeWidth={2} />,
+      };
+    default:
+      return {
+        label: intensity,
+        color: colors.textSecondary,
+        bgColor: colors.textSecondary + '20',
+        icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} />,
+      };
+  }
+};
 
   if (loading) {
     return (
@@ -159,76 +159,76 @@ const {
 
       {/* Компактная кнопка предупреждений о травмах */}
       {hasWarnings && !showInjuryBanner && (
-        <TouchableOpacity
-          onPress={() => {
-            setShowInjuryBanner(true);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: avoidCount > 0 ? '#F44336' : '#FFC107',
-            paddingHorizontal: SPACING.md,
-            paddingVertical: SPACING.sm,
-            borderRadius: 20,
-            margin: SPACING.md,
-            alignSelf: 'flex-end',
-            elevation: 4,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-          }}
-        >
-          <ShieldAlert size={18} color="white" strokeWidth={2} />
-          <Text style={{ color: 'white', fontWeight: '700', marginLeft: SPACING.xs, fontSize: 13 }}>
-            {avoidCount > 0 ? `${avoidCount}⛔` : ''}{avoidCount > 0 && cautionCount > 0 ? ' ' : ''}{cautionCount > 0 ? `${cautionCount}⚠️` : ''}
-          </Text>
-        </TouchableOpacity>
+<TouchableOpacity
+  onPress={() => {
+    setShowInjuryBanner(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }}
+  style={{
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: avoidCount > 0 ? colors.error : colors.warning,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    margin: SPACING.md,
+    alignSelf: 'flex-end',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  }}
+>
+  <ShieldAlert size={18} color={colors.textInverse} strokeWidth={2} />
+  <Text style={{ color: colors.textInverse, fontWeight: '700', marginLeft: SPACING.xs, fontSize: 13 }}>
+    {avoidCount > 0 ? `${avoidCount}⛔` : ''}{avoidCount > 0 && cautionCount > 0 ? ' ' : ''}{cautionCount > 0 ? `${cautionCount}⚠️` : ''}
+  </Text>
+</TouchableOpacity>
       )}
 
       {/* Раскрывающийся баннер с деталями травм */}
       {showInjuryBanner && (
-        <View style={{
-          backgroundColor: avoidCount > 0 ? '#F4433615' : '#FFC10715',
-          borderColor: avoidCount > 0 ? '#F44336' : '#FFC107',
-          borderWidth: 1,
-          margin: SPACING.md,
-          borderRadius: BORDER_RADIUS.md,
-          padding: SPACING.md,
-        }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <ShieldAlert size={20} color={avoidCount > 0 ? '#F44336' : '#FFC107'} style={{ marginRight: SPACING.sm }} />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, flex: 1 }]}>
-                Внимание: активные травмы
-              </Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowInjuryBanner(false)}>
-              <X size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-          {activeInjuries.map((injury, index) => {
-            const bodyPartLabel = injury.body_part;
-            const injuryTypeLabel = injury.injury_type;
-            const severityLabel = injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
-            return (
-              <Text key={index} style={[typography.caption, { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.xs }]}>
-                • {bodyPartLabel} ({injuryTypeLabel}) — {severityLabel} тяжесть
-              </Text>
-            );
-          })}
-          {avoidCount > 0 && (
-            <Text style={[typography.captionSmall, { color: '#F44336', marginTop: SPACING.sm, fontWeight: '600' }]}>
-              🚫 {avoidCount} упражнений противопоказаны
-            </Text>
-          )}
-          {cautionCount > 0 && (
-            <Text style={[typography.captionSmall, { color: '#FFC107', marginTop: SPACING.xs, fontWeight: '600' }]}>
-              ⚠️ {cautionCount} упражнений требуют осторожности
-            </Text>
-          )}
-        </View>
+<View style={{
+  backgroundColor: avoidCount > 0 ? colors.error + '15' : colors.warning + '15',
+  borderColor: avoidCount > 0 ? colors.error : colors.warning,
+  borderWidth: 1,
+  margin: SPACING.md,
+  borderRadius: BORDER_RADIUS.md,
+  padding: SPACING.md,
+}}>
+  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <ShieldAlert size={20} color={avoidCount > 0 ? colors.error : colors.warning} style={{ marginRight: SPACING.sm }} />
+      <Text style={[typography.labelBold, { color: colors.textPrimary, flex: 1 }]}>
+        Внимание: активные травмы
+      </Text>
+    </View>
+    <TouchableOpacity onPress={() => setShowInjuryBanner(false)}>
+      <X size={20} color={colors.textSecondary} />
+    </TouchableOpacity>
+  </View>
+  {activeInjuries.map((injury, index) => {
+    const bodyPartLabel = injury.body_part;
+    const injuryTypeLabel = injury.injury_type;
+    const severityLabel = injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
+    return (
+      <Text key={index} style={[typography.caption, { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.xs }]}>
+        • {bodyPartLabel} ({injuryTypeLabel}) — {severityLabel} тяжесть
+      </Text>
+    );
+  })}
+  {avoidCount > 0 && (
+    <Text style={[typography.captionSmall, { color: colors.error, marginTop: SPACING.sm, fontWeight: '600' }]}>
+       {avoidCount} упражнений противопоказаны
+    </Text>
+  )}
+  {cautionCount > 0 && (
+    <Text style={[typography.captionSmall, { color: colors.warning, marginTop: SPACING.xs, fontWeight: '600' }]}>
+      ⚠️ {cautionCount} упражнений требуют осторожности
+    </Text>
+  )}
+</View>
       )}
 
       {/* Список упражнений (Виртуализированный) */}
@@ -314,25 +314,25 @@ const {
             disabled={saving}
             activeOpacity={0.8}
           >
-            {saving ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <LinearGradient
-                colors={gradients.success}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: SPACING.md,
-                  paddingHorizontal: SPACING.xl,
-                  borderRadius: BORDER_RADIUS.lg,
-                }}
-              >
-                <Square size={20} color="white" strokeWidth={2} fill="white" style={{ marginRight: SPACING.sm }} />
-                <Text style={[typography.button, { color: 'white' }]}>Завершить</Text>
-              </LinearGradient>
-            )}
+{saving ? (
+  <ActivityIndicator color={colors.textInverse} size="small" />
+) : (
+  <LinearGradient
+    colors={gradients.success}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.xl,
+      borderRadius: BORDER_RADIUS.lg,
+    }}
+  >
+    <Square size={20} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} style={{ marginRight: SPACING.sm }} />
+    <Text style={[typography.button, { color: colors.textInverse }]}>Завершить</Text>
+  </LinearGradient>
+)}
           </TouchableOpacity>
         )}
       </View>

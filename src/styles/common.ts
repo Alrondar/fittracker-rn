@@ -139,13 +139,13 @@ export const commonStyles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
   } as TextStyle,
-  // Прогресс-бар
+  // Прогресс-бар (оставляем статичным — используется только на светлом фоне)
   progressBarContainer: {
     marginBottom: SPACING.lg,
   } as ViewStyle,
   progressBarBackground: {
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.1)',
     borderRadius: 3,
     overflow: 'hidden',
     marginBottom: SPACING.xs,

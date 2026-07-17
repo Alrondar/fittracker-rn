@@ -44,13 +44,13 @@ export const createBadgeStyles = (colors: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+      backgroundColor: colors.textInverse + '30', // ✅ ИСПРАВЛЕНО
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
     } as ViewStyle,
     metaBadgeText: {
-      color: 'white',
+      color: colors.textInverse, // ✅ ИСПРАВЛЕНО
       ...typography.buttonTiny,
     } as TextStyle,
     replacedBadge: {
@@ -73,13 +73,13 @@ export const createBadgeStyles = (colors: any) =>
     dayChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'white',
+      backgroundColor: colors.surface, // ✅ ИСПРАВЛЕНО (было 'white')
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
     } as ViewStyle,
     dayChipText: {
-      color: '#333',
+      color: colors.textPrimary, // ✅ ИСПРАВЛЕНО (было '#333')
       ...typography.buttonTiny,
     } as TextStyle,
     badgeContent: {
@@ -105,7 +105,6 @@ export const createBadgeStyles = (colors: any) =>
     } as TextStyle,
   });
 
-// ===== НОВОЕ: Стили для бейджей оборудования с иконками =====
 export const createEquipmentBadgeStyles = (colors: any) => ({
   equipmentBadge: {
     flexDirection: 'row' as const,
@@ -123,7 +122,6 @@ export const createEquipmentBadgeStyles = (colors: any) => ({
   },
 });
 
-// ===== НОВОЕ: Стили для цветных бейджей мышц =====
 export const createMuscleBadgeStyles = (colors: any) => ({
   muscleBadge: {
     paddingHorizontal: 10,

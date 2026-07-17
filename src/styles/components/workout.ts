@@ -179,11 +179,12 @@ export const createWorkoutStyles = (colors: any) =>
       justifyContent: 'center',
       gap: SPACING.sm,
     } as ViewStyle,
-    restButtonText: {
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: 15,
-    } as TextStyle,
+ restButtonText: {
+  color: colors.textInverse, // ✅ ИСПРАВЛЕНО (было 'white')
+  fontWeight: 'bold',
+  fontSize: 15,
+} as TextStyle,
+
 
     // ===== КНОПКА ЗАМЕНЫ =====
     replaceButton: {
@@ -255,11 +256,11 @@ export const createWorkoutStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.lg,
       alignItems: 'center',
     } as ViewStyle,
-    settingsSheetSaveButtonText: {
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: 16,
-    } as TextStyle,
+settingsSheetSaveButtonText: {
+  color: colors.textInverse, // ✅ ИСПРАВЛЕНО (было 'white')
+  fontWeight: 'bold',
+  fontSize: 16,
+} as TextStyle,
 
     // ===== КНОПКА "ЗАВЕРШИТЬ ТРЕНИРОВКУ" =====
     finishButtonContainer: {
@@ -282,11 +283,11 @@ export const createWorkoutStyles = (colors: any) =>
       paddingVertical: 16,
       alignItems: 'center',
     } as ViewStyle,
-    finishButtonText: {
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: 16,
-    } as TextStyle,
+ finishButtonText: {
+  color: colors.textInverse, // ✅ ИСПРАВЛЕНО (было 'white')
+  fontWeight: 'bold',
+  fontSize: 16,
+} as TextStyle,
 
     // ===== БЕЙДЖ "ЗАМЕНЕНО" =====
     replacedBadgeContainer: {

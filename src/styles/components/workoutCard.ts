@@ -176,11 +176,11 @@ export const createWorkoutCardStyles = (colors: any) =>
       justifyContent: 'center',
       gap: SPACING.sm,
     } as ViewStyle,
-    restButtonText: {
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: 15,
-    } as TextStyle,
+restButtonText: {
+  color: colors.textInverse, // ✅ ИСПРАВЛЕНО (было 'white')
+  fontWeight: 'bold',
+  fontSize: 15,
+} as TextStyle,
 
     // Кнопка замены
     replaceButton: {

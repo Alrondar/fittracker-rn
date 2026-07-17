@@ -45,17 +45,17 @@ export const createDashboardStyles = (colors: any) => ({
     color: 'rgba(255,255,255,0.9)',
     marginBottom: SPACING.lg,
   },
-  programProgress: {
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: SPACING.md,
+programProgress: {
+  height: 8,
+  backgroundColor: colors.textInverse + '30', // ✅ ИСПРАВЛЕНО (было 'rgba(255,255,255,0.2)')
+  borderRadius: 4,
+  overflow: 'hidden',
+  marginBottom: SPACING.md,
   },
-  programProgressBar: {
-    height: '100%',
-    backgroundColor: colors.textInverse,
-    borderRadius: 4,
+programProgressBar: {
+  height: '100%',
+  backgroundColor: colors.textInverse, // ✅ ИСПРАВЛЕНО
+  borderRadius: 4,
   },
   programButtonText: {
     fontSize: 16,

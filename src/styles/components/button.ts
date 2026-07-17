@@ -49,11 +49,11 @@ export const createButtonStyles = (colors: any) =>
     } as TextStyle,
     textDanger: {
       ...typography.button,
-      color: '#ffffff',
+      color: colors.textInverse, // ✅ ИСПРАВЛЕНО
     } as TextStyle,
     textFinish: {
       ...typography.buttonSmall,
-      color: 'white',
+      color: colors.textInverse, // ✅ ИСПРАВЛЕНО
     } as TextStyle,
     disabled: {
       opacity: 0.5,
@@ -70,7 +70,7 @@ export const createButtonStyles = (colors: any) =>
       marginTop: SPACING.md,
     } as ViewStyle,
     restText: {
-      color: 'white',
+      color: colors.textInverse, // ✅ ИСПРАВЛЕНО
       fontWeight: 'bold',
       fontSize: 14,
     } as TextStyle,
@@ -82,7 +82,7 @@ export const createButtonStyles = (colors: any) =>
       marginBottom: SPACING.md,
     } as ViewStyle,
     replaceText: {
-      color: 'white',
+      color: colors.textInverse, // ✅ ИСПРАВЛЕНО
       fontWeight: 'bold',
       fontSize: 14,
     } as TextStyle,
