@@ -19,6 +19,7 @@ import { typography } from '../../src/styles/typography';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppCard } from '../../src/components/ui/AppCard';
+import { metricsService } from '../../src/services/metricsService';
 import {
   ChevronLeft,
   User,
@@ -213,6 +214,19 @@ export default function GoalsScreen() {
         .eq('id', userId);
 
       if (error) throw error;
+
+      // ✅ НОВОЕ: Если вес изменился — создаём новый замер
+      if (weight) {
+        const weightNum = parseFloat(weight);
+        const latestMetric = await metricsService.getLatestMetric(userId);
+        if (!latestMetric || latestMetric.weight_kg !== weightNum) {
+          await metricsService.createMetric(userId, {
+            metric_date: new Date().toISOString().split('T')[0],
+            weight_kg: weightNum,
+          });
+        }
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Сохранено', 'Твои цели успешно обновлены!', [
         { text: 'Отлично', onPress: () => router.back() },
@@ -389,7 +403,7 @@ export default function GoalsScreen() {
                       </View>
                       {goal === g.value && (
                         <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>✓</Text>
+                          <Text style={{ color: colors.textInverse, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -435,7 +449,7 @@ export default function GoalsScreen() {
                     </View>
                     {activityLevel === level.value && (
                       <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>✓</Text>
+                        <Text style={{ color: colors.textInverse, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -475,7 +489,7 @@ export default function GoalsScreen() {
                         width: 24,
                         height: 24,
                         borderRadius: 12,
-                        backgroundColor: '#fff',
+                        backgroundColor: colors.textInverse,
                         transform: [{ translateX: usePharma ? 12 : -12 }],
                       }}
                     />
@@ -524,7 +538,7 @@ export default function GoalsScreen() {
                         </View>
                         {pharmaType === p.value && (
                           <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: p.color, alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>✓</Text>
+                            <Text style={{ color: colors.textInverse, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
                           </View>
                         )}
                       </TouchableOpacity>
@@ -560,7 +574,7 @@ export default function GoalsScreen() {
                   title="Рассчитать"
                   variant="primary"
                   size="large"
-                  icon={<Calculator size={20} color="#fff" />}
+                  icon={<Calculator size={20} color={colors.textInverse} />}
                   onPress={() => {
                     if (usePharma && !pharmaType) {
                       Alert.alert('Выбери тип', 'Укажи тип фармакологии или отключи переключатель');
@@ -596,15 +610,15 @@ export default function GoalsScreen() {
               {/* Калории */}
               <AppCard variant="highlighted" style={{ backgroundColor: colors.primary, marginBottom: SPACING.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
-                  <Flame size={24} color="#fff" />
-                  <Text style={[typography.h5, { color: 'rgba(255,255,255,0.9)', marginLeft: SPACING.sm }]}>
+                  <Flame size={24} color={colors.textInverse} />
+                  <Text style={[typography.h5, { color: colors.textInverse, marginLeft: SPACING.sm }]}>
                     Калории
                   </Text>
                 </View>
-                <Text style={[typography.h1, { color: '#fff', marginBottom: SPACING.xs }]}>
+                <Text style={[typography.h1, { color: colors.textInverse, marginBottom: SPACING.xs }]}>
                   {calories}
                 </Text>
-                <Text style={[typography.body, { color: 'rgba(255,255,255,0.8)' }]}>
+                <Text style={[typography.body, { color: colors.textInverse }]}>
                   ккал / день
                 </Text>
               </AppCard>
@@ -676,7 +690,7 @@ export default function GoalsScreen() {
                   size="large"
                   loading={saving}
                   disabled={saving}
-                  icon={!saving ? <Save size={20} color="#fff" /> : undefined}
+                  icon={!saving ? <Save size={20} color={colors.textInverse} /> : undefined}
                   onPress={handleSave}
                   style={{ flex: 2 }}
                 />
