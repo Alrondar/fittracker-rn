@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, DimensionValue } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,17 +25,20 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
+import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useExerciseDetail } from '../../src/hooks/useExerciseDetail';
 import { TechniqueMediaSlider } from '../../src/components/workout/TechniqueMediaSlider';
 import { MuscleBubbles } from '../../src/components/workout/MuscleBubbles';
 import { EquipmentBubbles } from '../../src/components/workout/EquipmentBubbles';
 import { ExerciseInfoAccordion } from '../../src/components/workout/ExerciseInfoAccordion';
+import { RecordsCard } from '../../src/components/exercises/RecordsCard';
 import { EXERCISE_CATEGORIES } from '../../src/constants/exerciseCategories';
 import { getMuscleColor } from '../../src/constants/muscleColors';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
+import { createCardStyles } from '../../src/styles/components/card';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { EquipmentIcon } from '../../src/components/EquipmentIcon';
 import { FadeIn } from '../../src/components/FadeIn';
@@ -144,9 +147,21 @@ function NotFoundState({ onBack }: { onBack: () => void }) {
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { userId } = useStore();
   const { colors } = useTheme();
-  const { exercise, alternatives, loading, isError, errorMessage, refetch } =
-    useExerciseDetail(id as string);
+  // Стили создаются один раз на смену темы (паттерн CLAUDE.md)
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const {
+    exercise,
+    alternatives,
+    loading,
+    isError,
+    errorMessage,
+    refetch,
+    records,
+    recordsLoading,
+    recordsError,
+  } = useExerciseDetail(id as string, userId);
   const [openSection, setOpenSection] = useState<SectionKey | null>(null);
 
   const toggleSection = (key: SectionKey) =>
@@ -294,9 +309,22 @@ export default function ExerciseDetailScreen() {
             </FadeIn>
           ) : null}
 
+          {/* ✅ НОВОЕ: Личные рекорды */}
+          {userId ? (
+            <FadeIn delay={240}>
+              <RecordsCard
+                records={records}
+                loading={recordsLoading}
+                error={recordsError}
+                accentColor={accentColor}
+                cardStyles={cardStyles}
+              />
+            </FadeIn>
+          ) : null}
+
           {/* Техника выполнения — основной контент, видна сразу */}
           {exercise.technique ? (
-            <FadeIn delay={240}>
+            <FadeIn delay={300}>
               <View
                 style={{
                   backgroundColor: colors.surface,
@@ -332,7 +360,7 @@ export default function ExerciseDetailScreen() {
           ) : null}
 
           {/* Вторичные секции — аккордеоны без контурных обводок */}
-          <FadeIn delay={300}>
+          <FadeIn delay={360}>
             <View style={{ marginTop: SPACING.lg }}>
               {exercise.benefits ? (
                 <ExerciseInfoAccordion
@@ -399,7 +427,7 @@ export default function ExerciseDetailScreen() {
 
           {/* Альтернативные упражнения */}
           {alternatives.length > 0 && (
-            <FadeIn delay={360}>
+            <FadeIn delay={420}>
               <View style={{ marginTop: SPACING.xl }}>
                 <Text
                   style={[

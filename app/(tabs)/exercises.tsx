@@ -11,11 +11,11 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Search, Check, X, ArrowUpDown, AlertTriangle } from 'lucide-react-native';
+import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame } from 'lucide-react-native';
 
 import { useTheme } from '../../src/hooks/useTheme';
 import { useExercises } from '../../src/hooks/useExercises';
-import { ExerciseListItem } from '../../src/services/exercisesService';
+import { ExerciseListItem, ExerciseSortBy } from '../../src/services/exercisesService';
 import { MUSCLE_GROUPS } from '../../src/constants/muscleGroups';
 import { getMuscleColor, MUSCLE_COLORS } from '../../src/constants/muscleColors';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
@@ -27,13 +27,13 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
-import type { ExerciseSortBy } from '../../src/services/exercisesService';
 
 // Цвет группы мышц — из единых констант (дублирующий GROUP_COLORS удалён)
 const getGroupColor = (groupName: string): string =>
   MUSCLE_COLORS[groupName.toLowerCase()] || '#6B7280';
 
 // ===== Мемоизированная строка списка =====
+// Перерисовывается только при смене темы; onPress — стабильный useCallback.
 interface ExerciseRowProps {
   item: ExerciseListItem;
   onPress: (id: string) => void;
@@ -62,6 +62,7 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
       onPress={() => onPress(item.id)}
       activeOpacity={0.7}
     >
+      {/* Иконка оборудования */}
       <View
         style={{
           width: 50,
@@ -80,6 +81,8 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
           scale={0.9}
         />
       </View>
+
+      {/* Контент */}
       <View style={{ flex: 1 }}>
         <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
           {item.name}
@@ -99,6 +102,15 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
             ))}
           </View>
         )}
+        {/* ✅ НОВОЕ: индикатор популярности (число использований в тренировках) */}
+        {(item.popularity ?? 0) > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+            <Flame size={11} color={colors.warning} />
+            <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+              {item.popularity}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -114,11 +126,13 @@ export default function ExercisesScreen() {
     exercises,
     loading,
     refreshing,
+    isSearching,
     isError,
     hasMore,
     loadingMore,
     searchInput,
     setSearchInput,
+    searchTooShort,
     showSearch,
     toggleSearch,
     closeSearch,
@@ -268,6 +282,7 @@ export default function ExercisesScreen() {
           </View>
         </View>
 
+        {/* ✅ Поиск: живой спиннер + подсветка рамки + подсказка */}
         {showSearch && (
           <View style={{ marginTop: SPACING.md }}>
             <View
@@ -278,10 +293,14 @@ export default function ExercisesScreen() {
                 borderRadius: BORDER_RADIUS.lg,
                 paddingHorizontal: SPACING.md,
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: searchTooShort ? colors.warning : colors.border,
               }}
             >
-              <Search size={18} color={colors.textTertiary} strokeWidth={2} />
+              {isSearching ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Search size={18} color={colors.textTertiary} strokeWidth={2} />
+              )}
               <TextInput
                 ref={searchInputRef}
                 style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }}
@@ -301,6 +320,16 @@ export default function ExercisesScreen() {
                 </TouchableOpacity>
               )}
             </View>
+            {searchTooShort && (
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.warning, marginTop: SPACING.xs, paddingHorizontal: SPACING.xs },
+                ]}
+              >
+                Введите минимум 2 символа
+              </Text>
+            )}
           </View>
         )}
       </View>
@@ -328,7 +357,7 @@ export default function ExercisesScreen() {
         </View>
       )}
 
-      {/* Фильтр по группам мышц (✅ ПРАВКА 1: gap вместо тройных margin) */}
+      {/* Фильтр по группам мышц (промежутки через gap) */}
       <View style={{ backgroundColor: colors.background }}>
         <FlatList
           horizontal
@@ -414,7 +443,7 @@ export default function ExercisesScreen() {
           </View>
         )}
 
-        {/* ✅ ПРАВКА 2: Лента категорий + триггер оборудования */}
+        {/* Лента категорий + триггер оборудования */}
         <CategoryStrip
           selectedCategories={selectedCategories}
           categoryCounts={categoryCounts}
@@ -450,7 +479,7 @@ export default function ExercisesScreen() {
         />
       )}
 
-      {/* ✅ ПРАВКА 3: Шкаф оборудования */}
+      {/* Шкаф оборудования */}
       {showEquipmentSheet && (
         <EquipmentSheet
           options={equipmentOptions}

@@ -1,12 +1,22 @@
 import { supabase, getList, getString } from '../lib/supabase';
 
+/**
+ * Сервис упражнений.
+ * Все запросы к БД для справочника, детального экрана и рекордов.
+ * В UI-компонентах supabase.from() не используется (правило CLAUDE.md).
+ */
 
-/** Лёгкая модель для списка — тяжёлые поля грузит детальный экран */
+// ============================================================================
+// СПРАВОЧНИК: постраничный список + поиск + сортировка
+// ============================================================================
+
+/** Лёгкая модель для списка (тяжёлые поля грузятся на детальном экране) */
 export interface ExerciseListItem {
   id: string;
   name: string;
   primary_muscles: string[];
   equipment: string[];
+  popularity?: number; // количество использований в тренировках (есть только у getExercises)
 }
 
 export type ExerciseSortBy = 'name-asc' | 'name-desc' | 'popularity';
@@ -14,52 +24,36 @@ export type ExerciseSortBy = 'name-asc' | 'name-desc' | 'popularity';
 export interface ExerciseFilters {
   search?: string;
   muscles?: string[];
-  categories?: string[]; // ✅ НОВОЕ
-  equipment?: string[];  // ✅ НОВОЕ
+  categories?: string[];
+  equipment?: string[];
   sortBy: ExerciseSortBy;
   limit: number;
   offset: number;
 }
 
-// Только поля карточки списка: ~95% payload'а меньше, чем select('*')
+// Поля для лёгких запросов (список, альтернативы)
 const LIST_FIELDS = 'id, name, primary_muscles, equipment';
 
 /**
- * Постраничная загрузка упражнений с серверной фильтрацией и сортировкой.
+ * Защита от LIKE-инъекций: пользовательские % _ \ не должны ломать шаблон поиска.
+ */
+const sanitizeSearch = (s: string): string =>
+  s.replace(/[%_\\]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * Постраничный поиск + фильтрация + сортировка через RPC `search_exercises`.
+ * «ё» нормализуется в SQL с обеих сторон, популярность считается по workout_exercises.
  */
 export async function getExercises(filters: ExerciseFilters): Promise<ExerciseListItem[]> {
-  let query = supabase.from('exercises').select(LIST_FIELDS);
-
-  // Фильтр по мышцам (массивная колонка → overlaps)
-  if (filters.muscles && filters.muscles.length > 0) {
-    query = query.overlaps('primary_muscles', filters.muscles);
-  }
-
-  // ✅ НОВОЕ: Фильтр по категориям (скалярная колонка → in)
-  if (filters.categories && filters.categories.length > 0) {
-    query = query.in('category', filters.categories);
-  }
-
-  // ✅ НОВОЕ: Фильтр по оборудованию (массивная колонка → overlaps)
-  if (filters.equipment && filters.equipment.length > 0) {
-    query = query.overlaps('equipment', filters.equipment);
-  }
-
-  // Поиск: по названию ИЛИ упоминанию мышцы
-  if (filters.search) {
-    // Запятые и скобки ломают синтаксис .or() в PostgREST — вычищаем
-    const q = filters.search.replace(/[,%()]/g, ' ').trim();
-    if (q) {
-      // Если сервер отклонит каст ::text — замените на query.ilike('name', `%${q}%`)
-      query = query.or(`name.ilike.%${q}%,primary_muscles::text.ilike.%${q}%`);
-    }
-  }
-
-  // Сортировка ('popularity' пока эквивалентен name-asc — данных о популярности нет)
-  const ascending = filters.sortBy !== 'name-desc';
-  query = query.order('name', { ascending, nullsFirst: false });
-
-  const { data, error } = await query.range(filters.offset, filters.offset + filters.limit - 1);
+  const { data, error } = await supabase.rpc('search_exercises', {
+    q: filters.search ? sanitizeSearch(filters.search) : null,
+    muscle_filter: filters.muscles?.length ? filters.muscles : null,
+    category_filter: filters.categories?.length ? filters.categories : null,
+    equipment_filter: filters.equipment?.length ? filters.equipment : null,
+    sort_by: filters.sortBy,
+    page_limit: filters.limit,
+    page_offset: filters.offset,
+  });
   if (error) throw error;
 
   return (data || []).map((row: any) => ({
@@ -67,10 +61,13 @@ export async function getExercises(filters: ExerciseFilters): Promise<ExerciseLi
     name: row.name,
     primary_muscles: getList(row, 'primary_muscles'),
     equipment: getList(row, 'equipment'),
+    popularity: Number(row.popularity) || 0,
   }));
 }
 
-// ===== Словари фильтров =====
+// ============================================================================
+// СЛОВАРИ ФИЛЬТРОВ (категории + оборудование со счётчиками)
+// ============================================================================
 
 export interface FilterOption {
   value: string;
@@ -84,8 +81,7 @@ export interface ExerciseFilterOptions {
 
 /**
  * Категории и оборудование со счётчиками использования.
- * Один лёгкий запрос (2 колонки, без тяжёлых полей), кэшируется навечно —
- * справочник статичен.
+ * Один лёгкий запрос (2 колонки), кэшируется на клиенте (staleTime: Infinity).
  */
 export async function getFilterOptions(): Promise<ExerciseFilterOptions> {
   const { data, error } = await supabase
@@ -116,7 +112,10 @@ export async function getFilterOptions(): Promise<ExerciseFilterOptions> {
     equipment: toOptions(equipmentCounts),
   };
 }
-// ===== Детальный экран упражнения =====
+
+// ============================================================================
+// ДЕТАЛЬНЫЙ ЭКРАН: одно упражнение со всеми полями
+// ============================================================================
 
 /** Полная модель упражнения для детального экрана */
 export interface ExerciseDetail {
@@ -135,14 +134,12 @@ export interface ExerciseDetail {
   media_url: string | null;
 }
 
-// Строго по колонкам таблицы exercises (сверено с types/index.ts).
-// Колонки description в БД нет — явный select несуществующей колонки
-// ронял запрос с ошибкой 42703.
+// ⚠️ Без description — этой колонки в таблице exercises НЕТ (ошибка 42703).
 const DETAIL_FIELDS =
   'id, name, technique, primary_muscles, secondary_muscles, equipment, benefits, risks, injuries, alternatives, settings, category, media_url';
 
 /**
- * Загрузка одного упражнения со всеми полями.
+ * Загрузка одного упражнения.
  * maybeSingle() вернёт null вместо ошибки PGRST116, если строки нет.
  */
 export async function getExerciseById(id: string): Promise<ExerciseDetail | null> {
@@ -173,7 +170,7 @@ export async function getExerciseById(id: string): Promise<ExerciseDetail | null
 
 /**
  * Загрузка списка упражнений по ID (для блока альтернатив).
- * Возвращает лёгкую модель — тяжёлые поля не нужны.
+ * Возвращает лёгкую модель без popularity.
  */
 export async function getExercisesByIds(ids: string[]): Promise<ExerciseListItem[]> {
   if (ids.length === 0) return [];
@@ -189,4 +186,90 @@ export async function getExercisesByIds(ids: string[]): Promise<ExerciseListItem
     primary_muscles: getList(row, 'primary_muscles'),
     equipment: getList(row, 'equipment'),
   }));
+}
+
+// ============================================================================
+// ЛИЧНЫЕ РЕКОРДЫ: максимумы из workout_logs
+// ============================================================================
+
+export interface ExerciseRecords {
+  maxWeight: number | null;
+  repsAtMaxWeight: number;
+  maxReps: number | null;
+  estimatedOneRM: number | null; // расчётный разовый максимум (формула Эпли)
+  totalVolume: number;           // суммарный тоннаж, кг
+  totalSets: number;
+  workoutCount: number;
+  lastPerformedAt: string | null;
+}
+
+/**
+ * Личные рекорды пользователя по упражнению.
+ * Один запрос: workout_exercises → workouts + workout_logs.
+ * `workouts!inner` — корректный inner join: возвращаются только те
+ * workout_exercises, чья тренировка принадлежит пользователю.
+ */
+export async function getExerciseRecords(
+  exerciseId: string,
+  userId: string
+): Promise<ExerciseRecords> {
+  const { data, error } = await supabase
+    .from('workout_exercises')
+    .select('id, workouts!inner ( id, finished_at, started_at ), workout_logs ( weight_kg, reps )')
+    .eq('exercise_id', exerciseId)
+    .eq('workouts.user_id', userId);
+  if (error) throw error;
+
+  let maxWeight: number | null = null;
+  let repsAtMaxWeight = 0;
+  let maxReps: number | null = null;
+  let bestE1RM: number | null = null;
+  let totalVolume = 0;
+  let totalSets = 0;
+  let workoutCount = 0;
+  let lastPerformedAt: string | null = null;
+
+  (data || []).forEach((we: any) => {
+    const logs: any[] = we.workout_logs || [];
+    if (logs.length === 0) return;
+
+    // Тренировка считается «выполненной», если есть хоть один записанный подход
+    workoutCount += 1;
+    const performedAt = we.workouts?.finished_at || we.workouts?.started_at || null;
+    if (performedAt && (!lastPerformedAt || performedAt > lastPerformedAt)) {
+      lastPerformedAt = performedAt;
+    }
+
+    logs.forEach(log => {
+      const weight = Number(log.weight_kg) || 0;
+      const reps = Number(log.reps) || 0;
+      if (weight <= 0 && reps <= 0) return;
+
+      totalSets += 1;
+      totalVolume += weight * reps;
+
+      if (weight > 0 && (maxWeight === null || weight > maxWeight)) {
+        maxWeight = weight;
+        repsAtMaxWeight = reps;
+      }
+      if (reps > 0 && (maxReps === null || reps > maxReps)) {
+        maxReps = reps;
+      }
+      if (weight > 0 && reps > 0) {
+        const e1rm = weight * (1 + reps / 30); // формула Эпли
+        if (bestE1RM === null || e1rm > bestE1RM) bestE1RM = e1rm;
+      }
+    });
+  });
+
+  return {
+    maxWeight,
+    repsAtMaxWeight,
+    maxReps,
+    estimatedOneRM: bestE1RM,
+    totalVolume,
+    totalSets,
+    workoutCount,
+    lastPerformedAt,
+  };
 }

@@ -11,6 +11,14 @@ import {
 
 const PAGE_SIZE = 40;
 const SEARCH_DEBOUNCE_MS = 300;
+const MIN_SEARCH_LENGTH = 2; // поиск срабатывает от 2 символов
+
+/**
+ * Нормализация поискового ввода: trim + «ё» → «е».
+ * Дублирует нормализацию в SQL (search_exercises), чтобы queryKey
+ * и сервер видели одинаковую строку.
+ */
+const normalizeSearch = (s: string): string => s.trim().replace(/ё/gi, 'е');
 
 export function useExercises() {
   // ===== UI STATE =====
@@ -18,16 +26,26 @@ export function useExercises() {
   const [searchQuery, setSearchQuery] = useState('');   // debounce-значение для запроса
   const [showSearch, setShowSearch] = useState(false);
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // ✅ НОВОЕ
-  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);   // ✅ НОВОЕ
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<ExerciseSortBy>('name-asc');
   const [showSortSheet, setShowSortSheet] = useState(false);
-  const [showEquipmentSheet, setShowEquipmentSheet] = useState(false);        // ✅ НОВОЕ
+  const [showEquipmentSheet, setShowEquipmentSheet] = useState(false);
 
-  // Debounce поиска
+  // Debounce + порог в 2 символа + нормализация «ё» → «е».
+  // Одиночный символ не фильтрует список (показываем всё), но подсказка видна.
   useEffect(() => {
-    const timer = setTimeout(() => setSearchQuery(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    const timer = setTimeout(() => {
+      const normalized = normalizeSearch(searchInput);
+      setSearchQuery(normalized.length >= MIN_SEARCH_LENGTH ? normalized : '');
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Подсказка «введите минимум 2 символа» (мгновенная, без debounce)
+  const searchTooShort = useMemo(() => {
+    const len = searchInput.trim().length;
+    return len > 0 && len < MIN_SEARCH_LENGTH;
   }, [searchInput]);
 
   // ===== СЛОВАРИ ФИЛЬТРОВ (один раз, кэш навсегда) =====
@@ -47,11 +65,12 @@ export function useExercises() {
     return map;
   }, [filterOptions]);
 
-  // ===== REACT QUERY =====
+  // ===== REACT QUERY: поиск + фильтры + сортировка через RPC search_exercises =====
   const {
     data,
     isLoading,
     isRefetching,
+    isFetching,
     isError,
     fetchNextPage,
     hasNextPage,
@@ -80,6 +99,10 @@ export function useExercises() {
   });
 
   const exercises: ExerciseListItem[] = data?.pages.flat() ?? [];
+
+  // Индикатор «идёт поиск» для поля ввода
+  // (фоновые подгрузки следующих страниц не в счёт)
+  const isSearching = isFetching && !isFetchingNextPage;
 
   // Суммарный счётчик активных фильтров (мышцы + категории + оборудование)
   const activeFiltersCount =
@@ -140,11 +163,13 @@ export function useExercises() {
     exercises,
     loading: isLoading,
     refreshing: isRefetching,
+    isSearching,        // ✅ для спиннера в поле поиска
     isError,
     hasMore: hasNextPage ?? false,
     loadingMore: isFetchingNextPage,
     searchInput,
     setSearchInput,
+    searchTooShort,     // ✅ для подсказки «минимум 2 символа»
     showSearch,
     toggleSearch,
     closeSearch,
