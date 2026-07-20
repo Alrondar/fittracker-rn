@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -18,6 +17,8 @@ import {
   Play,
   Square,
   ShieldAlert,
+  Flame,
+  ChevronDown,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -43,7 +44,6 @@ export default function WorkoutSessionScreen() {
 
   // Хук сессии тренировки
   const {
-    workoutName,
     exercises,
     loading,
     saving,
@@ -55,7 +55,6 @@ export default function WorkoutSessionScreen() {
     setRestTimeLeft,
     alternativesCache,
     replacements,
-    currentTimeRef,
     handleTimerTick,
     handleTimerStart,
     handleTimerStop,
@@ -73,20 +72,20 @@ export default function WorkoutSessionScreen() {
   // Хук предупреждений о травмах
   const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
 
-  // Хук разминки
-const {
-  warmupExercises,
-  isLoading: isWarmupLoading,
-  activeTimerId,
-  timeLeft,
-  isAllCompleted: isWarmupCompleted,
-  totalDuration: warmupTotalDuration,
-  generateWarmup,
-  startExerciseTimer,
-  stopTimer: stopWarmupTimer,
-  markAsCompleted: markWarmupCompleted,
-  isCompleted: isWarmupExerciseCompleted,
-} = useWarmup(exercises);
+  // Хук разминки (передаём объекты упражнений — сервис подбирает по целевым мышцам)
+  const {
+    warmupExercises,
+    isLoading: isWarmupLoading,
+    activeTimerId,
+    timeLeft,
+    isAllCompleted: isWarmupCompleted,
+    totalDuration: warmupTotalDuration,
+    generateWarmup,
+    startExerciseTimer,
+    stopTimer: stopWarmupTimer,
+    markAsCompleted: markWarmupCompleted,
+    isCompleted: isWarmupExerciseCompleted,
+  } = useWarmup(exercises);
 
   const [showInjuryBanner, setShowInjuryBanner] = useState(false);
   const [showWarmup, setShowWarmup] = useState(true);
@@ -96,7 +95,6 @@ const {
   const cautionCount = Object.values(exerciseWarnings).filter(w => w.level === 'caution').length;
   const hasWarnings = avoidCount > 0 || cautionCount > 0;
 
-  // ✅ ИСПРАВЛЕНО: все цвета через colors.*
   const getIntensityInfo = (intensity: string) => {
     switch (intensity) {
       case 'high':
@@ -143,9 +141,6 @@ const {
     );
   }
 
-  const cardStyles = createCardStyles(colors);
-  const workoutStyles = createWorkoutStyles(colors);
-
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Таймер отдыха */}
@@ -156,7 +151,7 @@ const {
           onStop={stopRestTimer}
           onAdjust={(delta) => setRestTimeLeft((prev: number) => Math.max(0, prev + delta))}
           colors={colors}
-          workoutStyles={workoutStyles}
+          workoutStyles={createWorkoutStyles(colors)}
         />
       )}
 
@@ -170,39 +165,6 @@ const {
           onStop={handleTimerStop}
           colors={colors}
         />
-      )}
-
-      {/* ✅ НОВОЕ: Блок разминки (показывается до старта тренировки) */}
-      {showWarmup && !isWorkoutActive && warmupExercises.length > 0 && (
-        <WarmupBlock
-          warmupExercises={warmupExercises}
-          isLoading={isWarmupLoading}
-          activeTimerId={activeTimerId}
-          timeLeft={timeLeft}
-          isAllCompleted={isWarmupCompleted}
-          totalDuration={warmupTotalDuration}
-          isCompleted={isWarmupExerciseCompleted}
-          onGenerateWarmup={generateWarmup}
-          onStartTimer={startExerciseTimer}
-          onStopTimer={stopWarmupTimer}
-          onMarkCompleted={markWarmupCompleted}
-          onSkip={() => setShowWarmup(false)}
-        />
-      )}
-
-      {/* Индикатор завершённой разминки */}
-      {!showWarmup && !isWorkoutActive && (
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: SPACING.lg,
-          paddingVertical: SPACING.sm,
-          backgroundColor: colors.success + '15',
-        }}>
-          <Text style={[typography.caption, { color: colors.success, fontWeight: '600' }]}>
-            ✓ Разминка завершена
-          </Text>
-        </View>
       )}
 
       {/* Компактная кнопка предупреждений о травмах */}
@@ -279,10 +241,61 @@ const {
         </View>
       )}
 
-      {/* Список упражнений (Виртуализированный) */}
+      {/* Список упражнений (виртуализированный) */}
       <FlatList
         data={exercises}
         keyExtractor={(item) => item.workout_exercise_id}
+        ListHeaderComponent={
+          <>
+            {/* Блок разминки — внутри списка, скроллится вместе с контентом */}
+            {showWarmup && !isWorkoutActive && (warmupExercises.length > 0 || isWarmupLoading) && (
+              <WarmupBlock
+                warmupExercises={warmupExercises}
+                isLoading={isWarmupLoading}
+                activeTimerId={activeTimerId}
+                timeLeft={timeLeft}
+                isAllCompleted={isWarmupCompleted}
+                totalDuration={warmupTotalDuration}
+                isCompleted={isWarmupExerciseCompleted}
+                onGenerateWarmup={generateWarmup}
+                onStartTimer={startExerciseTimer}
+                onStopTimer={stopWarmupTimer}
+                onMarkCompleted={markWarmupCompleted}
+                onSkip={() => setShowWarmup(false)}
+              />
+            )}
+
+            {/* Пилюля повторного открытия разминки */}
+            {!showWarmup && !isWorkoutActive && warmupExercises.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowWarmup(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  gap: SPACING.sm,
+                  marginHorizontal: SPACING.lg,
+                  marginTop: SPACING.md,
+                  paddingHorizontal: SPACING.md,
+                  paddingVertical: SPACING.sm,
+                  backgroundColor: colors.warning + '12',
+                  borderRadius: BORDER_RADIUS.full,
+                  borderWidth: 1,
+                  borderColor: colors.warning + '40',
+                }}
+              >
+                <Flame size={14} color={colors.warning} />
+                <Text style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '600' }]}>
+                  {isWarmupCompleted ? 'Разминка завершена · Показать снова' : 'Показать разминку'}
+                </Text>
+                <ChevronDown size={14} color={colors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+              </TouchableOpacity>
+            )}
+          </>
+        }
         renderItem={({ item: exercise, index: exIndex }) => (
           <ExerciseSlider
             exercise={exercise}
@@ -298,7 +311,7 @@ const {
             getIntensityInfo={getIntensityInfo}
             updateExerciseSettings={updateExerciseSettings}
             colors={colors}
-            cardStyles={cardStyles}
+            cardStyles={createCardStyles(colors)}
             warning={exerciseWarnings[exercise.id] || null}
           />
         )}
@@ -348,8 +361,8 @@ const {
             activeOpacity={0.8}
           >
             {saving ? (
-              <View style={{ paddingVertical: SPACING.lg, alignItems: 'center' }}>
-                <ActivityIndicator color={colors.textInverse} size="small" />
+              <View style={{ paddingVertical: SPACING.lg, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={colors.primary} size="small" />
               </View>
             ) : (
               <LinearGradient

@@ -6,11 +6,13 @@ export interface WarmupExercise {
   technique: string;
   benefits: string;
   risks: string;
+  injuries: string[];          // ✅ НОВОЕ: противопоказания из БД
   equipment: string[];
+  media_url: string | null; 
   primary_muscles: string[];
   secondary_muscles: string[];
   duration_seconds: number;
-  relevance_score: number; // насколько релевантно для тренировки
+  relevance_score: number;
 }
 
 export const warmupService = {
@@ -43,7 +45,7 @@ export const warmupService = {
       // 2. Ищем stretching-упражнения с совпадением мышц
       const { data: stretchingExercises, error } = await supabase
         .from('exercises')
-        .select('id, name, technique, benefits, risks, equipment, primary_muscles, secondary_muscles, settings, category')
+        .select('id, name, technique, benefits, risks, injuries, equipment, media_url, primary_muscles, secondary_muscles, settings, category')
         .eq('category', 'stretching')
         .limit(50);
 
@@ -71,7 +73,9 @@ export const warmupService = {
           technique: ex.technique || '',
           benefits: ex.benefits || '',
           risks: ex.risks || '',
+            injuries: ex.injuries || [], 
           equipment: ex.equipment || [],
+          media_url: ex.media_url || null,
           primary_muscles: ex.primary_muscles || [],
           secondary_muscles: ex.secondary_muscles || [],
           duration_seconds: duration,
