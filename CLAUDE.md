@@ -234,31 +234,23 @@ UI-кит (AppButton, AppCard, AppBadge, AppInput) внедрён. `card.ts` р�
 - **Общие компоненты:** `TechniqueMediaSlider` (parseMediaUrls: 0.jpg→1.jpg, автоплей), `MuscleBubbles`, `EquipmentBubbles`, `ExerciseInfoAccordion`.
 - **Производительность тренировки и справочника:** `useMemo`-стили, `useCallback` + ref-зеркала, `memo`-карточки, ленивые слайдеры, лёгкий select.
 
-### 🚀 ЭТАП 6: Дальнейшие улучшения (В ПЛАНАХ)
-- Сортировка «По популярности»: сейчас заглушка (эквивалент А-Я) — реализовать через count по `workout_exercises` или убрать опцию.
+### 🚀 ЭТАП 6: Улучшения и полировка (В ПЛАНАХ)
+- Разминка + травмы: исключение противопоказанных упражнений из авторазминки.
+- Личные рекорды: максимумы из workout_logs на детальном экране упражнения.
+- Таймер отдыха: звуковое уведомление + автозапуск следующего подхода.
+- Калькулятор блинов: раскладка блинов по весу штанги.
+- Тип активности «Активация»: тег для упражнений с резинками/мобилизацией.
+- Сортировка «По популярности»: count по workout_exercises (сейчас заглушка).
 - Фото прогресса: привязка фото к замерам тела (Supabase Storage).
+- Полнотекстовый поиск: pg_trgm + GIN-индекс.
+- Аудит тёмной темы: контраст и читаемость во всех 10 комбинациях.
+- Чистка мёртвого кода: стилевые ключи, кодировки, database.types.ts.
 - Подготовка к релизу: EAS Build, иконки, сплэш-скрин.
-- Дочистка остаточного хардкода цветов в `badge.ts`, `button.ts`, `common.ts`, `dashboard.ts`.
 
----
-
-## 🔧 Генерация типов Supabase
-
-При обновлении схемы БД (PowerShell — обход проблемы UTF-16):
-
-```powershell
-npx supabase gen types typescript --project-id trgiihqqcovidwcqwdkl --schema public | Out-File -Encoding utf8 src/types/database.types.ts
-
----
-
-## 🗑️ 2. Удаление мёртвых файлов
-
-Сначала **верификация** — убедись, что импортов не осталось (в PowerShell из корня проекта):
-
-```powershell
-Get-ChildItem -Recurse -Include *.tsx,*.ts src,app | Select-String -Pattern "CollapsibleSection" | Select-Object Path, LineNumber
-Get-ChildItem -Recurse -Include *.tsx,*.ts src,app | Select-String -Pattern "GroupedSection" | Select-Object Path, LineNumber
-Get-ChildItem -Recurse -Include *.tsx,*.ts src,app | Select-String -Pattern "workoutCard" | Select-Object Path, LineNumber
-Remove-Item src/components/workout/CollapsibleSection.tsx
-Remove-Item src/components/workout/GroupedSection.tsx
-Remove-Item src/styles/components/workoutCard.ts
+### 🔮 ЭТАП 7: Дальнейшее развитие (ИДЕИ)
+- Видео техники (mp4 в media_url).
+- Избранные упражнения.
+- Офлайн-режим (локальный кэш каталога).
+- Онбординг первого запуска.
+- Аналитика и краш-репортинг (Sentry).
+- Экспорт истории тренировок.
