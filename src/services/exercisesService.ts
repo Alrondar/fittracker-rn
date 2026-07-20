@@ -1,4 +1,5 @@
-import { supabase, getList } from '../lib/supabase';
+import { supabase, getList, getString } from '../lib/supabase';
+
 
 /** Лёгкая модель для списка — тяжёлые поля грузит детальный экран */
 export interface ExerciseListItem {
@@ -114,4 +115,78 @@ export async function getFilterOptions(): Promise<ExerciseFilterOptions> {
     categories: toOptions(categoryCounts),
     equipment: toOptions(equipmentCounts),
   };
+}
+// ===== Детальный экран упражнения =====
+
+/** Полная модель упражнения для детального экрана */
+export interface ExerciseDetail {
+  id: string;
+  name: string;
+  technique: string;
+  primary_muscles: string[];
+  secondary_muscles: string[];
+  equipment: string[];
+  benefits: string;
+  risks: string;
+  injuries: string[];
+  alternatives: string[];
+  settings: string;
+  category: string | null;
+  media_url: string | null;
+}
+
+// Строго по колонкам таблицы exercises (сверено с types/index.ts).
+// Колонки description в БД нет — явный select несуществующей колонки
+// ронял запрос с ошибкой 42703.
+const DETAIL_FIELDS =
+  'id, name, technique, primary_muscles, secondary_muscles, equipment, benefits, risks, injuries, alternatives, settings, category, media_url';
+
+/**
+ * Загрузка одного упражнения со всеми полями.
+ * maybeSingle() вернёт null вместо ошибки PGRST116, если строки нет.
+ */
+export async function getExerciseById(id: string): Promise<ExerciseDetail | null> {
+  const { data, error } = await supabase
+    .from('exercises')
+    .select(DETAIL_FIELDS)
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    technique: getString(data, 'technique'),
+    primary_muscles: getList(data, 'primary_muscles'),
+    secondary_muscles: getList(data, 'secondary_muscles'),
+    equipment: getList(data, 'equipment'),
+    benefits: getString(data, 'benefits'),
+    risks: getString(data, 'risks'),
+    injuries: getList(data, 'injuries'),
+    alternatives: getList(data, 'alternatives'),
+    settings: getString(data, 'settings'),
+    category: data.category ?? null,
+    media_url: data.media_url ?? null,
+  };
+}
+
+/**
+ * Загрузка списка упражнений по ID (для блока альтернатив).
+ * Возвращает лёгкую модель — тяжёлые поля не нужны.
+ */
+export async function getExercisesByIds(ids: string[]): Promise<ExerciseListItem[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('exercises')
+    .select(LIST_FIELDS)
+    .in('id', ids);
+  if (error) throw error;
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    primary_muscles: getList(row, 'primary_muscles'),
+    equipment: getList(row, 'equipment'),
+  }));
 }

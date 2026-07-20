@@ -7,7 +7,7 @@ import { typography } from '../../styles/typography';
 import { getMuscleColor } from '../../constants/muscleColors';
 
 interface MuscleBubblesProps {
-  primaryMuscles: string[];
+  primaryMuscles?: string[];
   secondaryMuscles?: string[];
   style?: ViewStyle;
 }
@@ -17,7 +17,7 @@ interface MuscleBubblesProps {
  * secondary — нейтральный фон с цветной обводкой.
  * Цвета берутся из constants/muscleColors.ts («Грудь» → #EF4444 и т.д.)
  */
-export function MuscleBubbles({ primaryMuscles, secondaryMuscles = [], style }: MuscleBubblesProps) {
+export function MuscleBubbles({ primaryMuscles = [], secondaryMuscles = [], style }: MuscleBubblesProps) {
   const { colors } = useTheme();
 
   if (primaryMuscles.length === 0 && secondaryMuscles.length === 0) return null;
