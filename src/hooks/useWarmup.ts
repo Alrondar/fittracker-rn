@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { warmupService, WarmupExercise } from '../services/warmupService';
 import * as Haptics from 'expo-haptics';
 
-export function useWarmup(mainExerciseIds: string[]) {
+export interface WarmupSourceExercise {
+  id: string;
+  primary_muscles: string[];
+  secondary_muscles: string[];
+}
+
+export function useWarmup(exercises: WarmupSourceExercise[]) {
   const [warmupExercises, setWarmupExercises] = useState<WarmupExercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -10,28 +16,43 @@ export function useWarmup(mainExerciseIds: string[]) {
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Генерация разминки при загрузке
-  useEffect(() => {
-    if (mainExerciseIds.length > 0) {
-      generateWarmup();
-    }
-  }, [mainExerciseIds.join(',')]);
+  const exerciseKey = exercises.map(e => e.id).join(',');
 
-  // Cleanup таймера
+  // Генерация разминки при изменении состава тренировки
+  useEffect(() => {
+    if (exercises.length > 0) {
+      generateWarmup();
+    } else {
+      setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseKey]);
+
+  // Cleanup таймера при размонтировании
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
+  // Автозавершение упражнения при нулевом таймере
+  useEffect(() => {
+    if (activeTimerId && timeLeft === 0) {
+      completeExercise(activeTimerId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, activeTimerId]);
+
   const generateWarmup = async () => {
     setIsLoading(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setActiveTimerId(null);
+    setTimeLeft(0);
     try {
-      const warmup = await warmupService.generateWarmup(mainExerciseIds);
+      // ✅ Передаём объекты с мышцами, а не ID
+      const warmup = await warmupService.generateWarmup(exercises);
       setWarmupExercises(warmup);
       setCompletedIds(new Set());
-      setActiveTimerId(null);
-      setTimeLeft(0);
     } catch (e) {
       console.error('Ошибка генерации разминки:', e);
     } finally {
@@ -48,30 +69,25 @@ export function useWarmup(mainExerciseIds: string[]) {
     setTimeLeft(exercise.duration_seconds);
 
     if (timerRef.current) clearInterval(timerRef.current);
-
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          completeExercise(exerciseId);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => Math.max(0, prev - 1));
     }, 1000);
   };
 
   const stopTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
     setActiveTimerId(null);
     setTimeLeft(0);
   };
 
   const completeExercise = (exerciseId: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setCompletedIds(prev => new Set(prev).add(exerciseId));
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
     setActiveTimerId(null);
     setTimeLeft(0);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCompletedIds(prev => new Set(prev).add(exerciseId));
   };
 
   const markAsCompleted = (exerciseId: string) => {
@@ -80,8 +96,21 @@ export function useWarmup(mainExerciseIds: string[]) {
   };
 
   const isCompleted = (exerciseId: string) => completedIds.has(exerciseId);
-  const isAllCompleted = warmupExercises.length > 0 && completedIds.size === warmupExercises.length;
-  const totalDuration = warmupExercises.reduce((sum, ex) => sum + ex.duration_seconds, 0);
+
+  const isAllCompleted =
+    warmupExercises.length > 0 && completedIds.size >= warmupExercises.length;
+
+  const totalDuration = useMemo(
+    () => warmupExercises.reduce((sum, ex) => sum + ex.duration_seconds, 0),
+    [warmupExercises]
+  );
+
+  // Целевые мышцы разминки (для заголовка)
+  const targetMuscles = useMemo(() => {
+    const set = new Set<string>();
+    warmupExercises.forEach(ex => ex.primary_muscles.forEach(m => set.add(m)));
+    return Array.from(set).slice(0, 4);
+  }, [warmupExercises]);
 
   return {
     warmupExercises,
@@ -91,6 +120,7 @@ export function useWarmup(mainExerciseIds: string[]) {
     timeLeft,
     isAllCompleted,
     totalDuration,
+    targetMuscles,
     generateWarmup,
     startExerciseTimer,
     stopTimer,

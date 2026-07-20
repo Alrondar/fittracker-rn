@@ -74,20 +74,19 @@ export default function WorkoutSessionScreen() {
   const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
 
   // Хук разминки
-  const mainExerciseIds = exercises.map(ex => ex.id);
-  const {
-    warmupExercises,
-    isLoading: isWarmupLoading,
-    activeTimerId,
-    timeLeft,
-    isAllCompleted: isWarmupCompleted,
-    totalDuration: warmupTotalDuration,
-    generateWarmup,
-    startExerciseTimer,
-    stopTimer: stopWarmupTimer,
-    markAsCompleted: markWarmupCompleted,
-    isCompleted: isWarmupExerciseCompleted,
-  } = useWarmup(mainExerciseIds);
+const {
+  warmupExercises,
+  isLoading: isWarmupLoading,
+  activeTimerId,
+  timeLeft,
+  isAllCompleted: isWarmupCompleted,
+  totalDuration: warmupTotalDuration,
+  generateWarmup,
+  startExerciseTimer,
+  stopTimer: stopWarmupTimer,
+  markAsCompleted: markWarmupCompleted,
+  isCompleted: isWarmupExerciseCompleted,
+} = useWarmup(exercises);
 
   const [showInjuryBanner, setShowInjuryBanner] = useState(false);
   const [showWarmup, setShowWarmup] = useState(true);
