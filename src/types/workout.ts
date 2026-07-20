@@ -16,6 +16,7 @@ export interface ExerciseData {
   risks: string;
   injuries: string[];
   alternatives: string[];
+  media_url: string | null; // ✅ НОВОЕ
   target_sets: number;
   rest_seconds: number;
   intensity: string;
@@ -33,4 +34,5 @@ export interface AlternativeExercise {
   benefits: string;
   risks: string;
   injuries: string[];
+  media_url: string | null; // ✅ НОВОЕ
 }

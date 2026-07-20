@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
+
   const [workoutName, setWorkoutName] = useState('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -29,57 +30,23 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
   const [replacements, setReplacements] = useState<Record<string, string>>({});
 
+  // Ref-зеркала для стабильных колбэков (без них React.memo на карточках бесполезен)
+  const exercisesRef = useRef<ExerciseData[]>([]);
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
+
+  const alternativesCacheRef = useRef<Record<string, AlternativeExercise[]>>({});
+  useEffect(() => {
+    alternativesCacheRef.current = alternativesCache;
+  }, [alternativesCache]);
+
   // Загрузка тренировки
-  useEffect(() => {
-    loadWorkout();
-  }, [workoutId]);
-
-  // Cleanup при размонтировании
-  useEffect(() => {
-    return () => {
-      if (restTimerRef.current) clearInterval(restTimerRef.current);
-      
-      if (isWorkoutActive && !isFinishing && currentTimeRef.current > 0) {
-        supabase
-          .from('workouts')
-          .update({ duration_seconds: currentTimeRef.current })
-          .eq('id', workoutId)
-          .then(({ error }) => {
-            if (error) console.error('Ошибка сохранения прогресса:', error);
-          });
-      }
-    };
-  }, [isWorkoutActive, isFinishing]);
-
-  const loadWorkout = async () => {
+  const loadWorkout = useCallback(async () => {
     try {
       const { data: workout, error } = await supabase
         .from('workouts')
-        .select(`
-          name,
-          program_id,
-          started_at,
-          finished_at,
-          duration_seconds,
-          workout_exercises (
-            id,
-            target_sets,
-            rest_seconds,
-            exercises (
-              id,
-              name,
-              primary_muscles,
-              secondary_muscles,
-              technique,
-              equipment,
-              settings,
-              benefits,
-              risks,
-              injuries,
-              alternatives
-            )
-          )
-        `)
+        .select(`name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, exercises ( id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, alternatives, media_url ) )`)
         .eq('id', workoutId)
         .single();
 
@@ -108,7 +75,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       }
 
       // Загрузка интенсивности из программы
-      let intensityMap: Record<string, string> = {};
+      const intensityMap: Record<string, string> = {};
       if (workout.program_id) {
         const { data: programExercises, error: peError } = await supabase
           .from('program_exercises')
@@ -142,6 +109,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           risks: exercise.risks || '',
           injuries: exercise.injuries || [],
           alternatives: exercise.alternatives || [],
+          media_url: exercise.media_url || null, // ✅ НОВОЕ
           target_sets: we.target_sets,
           rest_seconds: we.rest_seconds,
           intensity: intensityMap[exercise.id] || 'medium',
@@ -155,14 +123,34 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [workoutId]);
+
+  useEffect(() => {
+    loadWorkout();
+  }, [loadWorkout]);
+
+  // Cleanup при размонтировании
+  useEffect(() => {
+    return () => {
+      if (restTimerRef.current) clearInterval(restTimerRef.current);
+      if (isWorkoutActive && !isFinishing && currentTimeRef.current > 0) {
+        supabase
+          .from('workouts')
+          .update({ duration_seconds: currentTimeRef.current })
+          .eq('id', workoutId)
+          .then(({ error }) => {
+            if (error) console.error('Ошибка сохранения прогресса:', error);
+          });
+      }
+    };
+  }, [isWorkoutActive, isFinishing, workoutId]);
 
   // Колбэки для WorkoutTimer
-  const handleTimerTick = (seconds: number) => {
+  const handleTimerTick = useCallback((seconds: number) => {
     currentTimeRef.current = seconds;
-  };
+  }, []);
 
-  const handleTimerStart = () => {
+  const handleTimerStart = useCallback(() => {
     setIsWorkoutActive(true);
     supabase
       .from('workouts')
@@ -171,15 +159,17 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       .then(({ error }) => {
         if (error) console.error('Ошибка сохранения started_at:', error);
       });
-  };
+  }, [workoutId]);
 
-  const handleTimerStop = () => {
+  const handleTimerStop = useCallback(() => {
     // Не меняем isWorkoutActive — тренировка всё ещё идёт, просто пауза
-  };
+  }, []);
 
   // Управление упражнениями
-  const loadAlternatives = async (exerciseId: string, primaryMuscles: string[]) => {
-    if (alternativesCache[exerciseId]) return alternativesCache[exerciseId];
+  const loadAlternatives = useCallback(async (exerciseId: string, primaryMuscles: string[]) => {
+    if (alternativesCacheRef.current[exerciseId]) {
+      return alternativesCacheRef.current[exerciseId];
+    }
 
     try {
       let query = supabase
@@ -205,6 +195,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         benefits: ex.benefits || '',
         risks: ex.risks || '',
         injuries: ex.injuries || [],
+        media_url: ex.media_url || null, // ✅ НОВОЕ
       }));
 
       setAlternativesCache(prev => ({ ...prev, [exerciseId]: alternatives }));
@@ -212,9 +203,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     } catch {
       return [];
     }
-  };
+  }, []);
 
-  const updateSet = (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
+  const updateSet = useCallback((exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
     setExercises(prev => {
       const updated = [...prev];
       const exercise = { ...updated[exerciseIndex] };
@@ -224,11 +215,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       updated[exerciseIndex] = exercise;
       return updated;
     });
-  };
+  }, []);
 
-  const isSetCompleted = (set: SetData): boolean => set.weight !== '' || set.reps !== '';
+  const isSetCompleted = useCallback((set: SetData): boolean => set.weight !== '' || set.reps !== '', []);
 
-  const updateExerciseSettings = (exerciseIndex: number, newSetsCount: number, newRestSeconds: number) => {
+  const updateExerciseSettings = useCallback((exerciseIndex: number, newSetsCount: number, newRestSeconds: number) => {
     setExercises(prev => {
       const updated = [...prev];
       const exercise = { ...updated[exerciseIndex] };
@@ -248,10 +239,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       updated[exerciseIndex] = exercise;
       return updated;
     });
-  };
+  }, []);
 
-  const replaceExercise = async (exerciseIndex: number, alternativeId: string) => {
-    const exercise = exercises[exerciseIndex];
+  const replaceExercise = useCallback(async (exerciseIndex: number, alternativeId: string) => {
+    const exercise = exercisesRef.current[exerciseIndex]; // ✅ через ref — стабильная ссылка
+    if (!exercise) return;
+
     const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
     const alt = alternatives.find(a => a.id === alternativeId);
     if (!alt) return;
@@ -272,6 +265,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         benefits: alt.benefits,
         risks: alt.risks,
         injuries: alt.injuries,
+        media_url: alt.media_url, // ✅ НОВОЕ — без этого слайдер терял картинки после замены
       };
       return updated;
     });
@@ -282,10 +276,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     }));
 
     Alert.alert('Заменено', `${exercise.name} → ${alt.name}`);
-  };
+  }, [loadAlternatives]);
 
-  const resetToOriginal = (exerciseIndex: number) => {
-    const exercise = exercises[exerciseIndex];
+  const resetToOriginal = useCallback((exerciseIndex: number) => {
+    const exercise = exercisesRef.current[exerciseIndex]; // ✅ через ref
+    if (!exercise) return;
     const workoutExId = exercise.workout_exercise_id;
 
     Alert.alert(
@@ -307,12 +302,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         },
       ]
     );
-  };
+  }, [loadWorkout]);
 
   // Таймер отдыха
-  const startRestTimer = (restSeconds: number) => {
+  const startRestTimer = useCallback((restSeconds: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (restTimerRef.current) clearInterval(restTimerRef.current);
+
     setRestTimeLeft(restSeconds);
     setRestTimer(restSeconds);
 
@@ -327,16 +323,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return prev - 1;
       });
     }, 1000);
-  };
+  }, []);
 
-  const stopRestTimer = () => {
+  const stopRestTimer = useCallback(() => {
     if (restTimerRef.current) clearInterval(restTimerRef.current);
     setRestTimer(null);
     setRestTimeLeft(0);
-  };
+  }, []);
 
   // Сохранение тренировки
-  const saveWorkout = async () => {
+  const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
       Alert.alert('Тренировка не начата', 'Нажмите "Начать тренировку" перед завершением');
       return;
@@ -357,7 +353,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           onPress: async () => {
             setSaving(true);
             setIsFinishing(true);
-
             try {
               const now = new Date();
               const { error: updateError } = await supabase
@@ -373,7 +368,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               }
 
               let totalLogs = 0;
-              for (const exercise of exercises) {
+              for (const exercise of exercisesRef.current) { // ✅ через ref — актуальные данные на момент сохранения
                 const logsToSave = exercise.sets
                   .filter(set => isSetCompleted(set))
                   .map((set, index) => ({
@@ -429,35 +424,35 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         },
       ]
     );
-  };
+  }, [isWorkoutActive, workoutId, programId, userId, router, isSetCompleted]);
 
-return {
-  workoutName,
-  programId,
-  exercises,
-  loading,
-  saving,
-  isWorkoutActive,
-  setIsWorkoutActive, // ✅ ДОБАВЛЕНО
-  initialTime,
-  restTimer,
-  restTimeLeft,
-  setRestTimeLeft, // ✅ ДОБАВЛЕНО
-  alternativesCache,
-  replacements,
-  currentTimeRef,
-  loadWorkout,
-  handleTimerTick,
-  handleTimerStart,
-  handleTimerStop,
-  loadAlternatives,
-  updateSet,
-  isSetCompleted,
-  updateExerciseSettings,
-  replaceExercise,
-  resetToOriginal,
-  startRestTimer,
-  stopRestTimer,
-  saveWorkout,
-};
+  return {
+    workoutName,
+    programId,
+    exercises,
+    loading,
+    saving,
+    isWorkoutActive,
+    setIsWorkoutActive,
+    initialTime,
+    restTimer,
+    restTimeLeft,
+    setRestTimeLeft,
+    alternativesCache,
+    replacements,
+    currentTimeRef,
+    loadWorkout,
+    handleTimerTick,
+    handleTimerStart,
+    handleTimerStop,
+    loadAlternatives,
+    updateSet,
+    isSetCompleted,
+    updateExerciseSettings,
+    replaceExercise,
+    resetToOriginal,
+    startRestTimer,
+    stopRestTimer,
+    saveWorkout,
+  };
 }

@@ -1,12 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Alert, Modal, Pressable } from 'react-native';
-import { Settings, ChevronRight, TrendingUp, Clock, RotateCcw, CheckCircle, AlertTriangle, AlertCircle, Wrench, X, Minus, Plus, ShieldAlert } from 'lucide-react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import {
+  Settings, ChevronRight, ChevronDown, TrendingUp, Clock, RotateCcw,
+  AlertTriangle, ShieldAlert, X, Minus, Plus, BookOpen, Dumbbell, Sparkles,
+} from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { typography } from '../../styles/typography';
 import * as Haptics from 'expo-haptics';
 import { createCardStyles } from '../../styles/components/card';
-import { CollapsibleSection } from './CollapsibleSection';
-import { GroupedSection } from './GroupedSection';
+import { getMuscleColor } from '../../constants/muscleColors';
+import { EquipmentIcon } from '../EquipmentIcon';
+import { TechniqueMediaSlider } from './TechniqueMediaSlider';
 import { ExerciseData, AlternativeExercise, SetData } from '../../types/workout';
+
+// ===== Внутренние компоненты =====
+
+type SectionKey = 'technique' | 'equipmentSettings' | 'benefits' | 'risks' | 'injuries';
+
+function ExpandableBody({ expanded, maxHeight, children }: {
+  expanded: boolean; maxHeight: number; children: React.ReactNode;
+}) {
+  const progress = useSharedValue(expanded ? 1 : 0);
+  useEffect(() => {
+    progress.value = withTiming(expanded ? 1 : 0, { duration: 280, easing: Easing.out(Easing.cubic) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded]);
+  const style = useAnimatedStyle(() => ({
+    maxHeight: progress.value * maxHeight,
+    opacity: 0.1 + progress.value * 0.9,
+    transform: [{ translateY: (1 - progress.value) * -6 }],
+  }));
+  return (
+    <Animated.View pointerEvents={expanded ? 'auto' : 'none'} style={[{ overflow: 'hidden' }, style]}>
+      <View style={{ paddingTop: SPACING.sm, paddingBottom: SPACING.xs, paddingHorizontal: 2 }}>{children}</View>
+    </Animated.View>
+  );
+}
+
+function InfoAccordion({ icon, title, titleColor, expanded, onToggle, maxHeight = 400, children }: {
+  icon: React.ReactNode; title: string; titleColor: string;
+  expanded: boolean; onToggle: () => void; maxHeight?: number; children: React.ReactNode;
+}) {
+  const { colors } = useThemeLocal();
+  return (
+    <View style={{ marginTop: SPACING.sm }}>
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: 'row', alignItems: 'center',
+          paddingVertical: SPACING.xs + 2, paddingHorizontal: SPACING.sm,
+          borderRadius: BORDER_RADIUS.md, backgroundColor: colors.surfaceSecondary,
+        }}
+      >
+        {icon}
+        <Text style={[typography.captionSmall, {
+          color: titleColor, fontWeight: '700', marginLeft: 6, flex: 1,
+          textTransform: 'uppercase', letterSpacing: 0.5,
+        }]}>
+          {title}
+        </Text>
+        <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
+          <ChevronDown size={14} color={colors.textTertiary} />
+        </View>
+      </TouchableOpacity>
+      <ExpandableBody expanded={expanded} maxHeight={maxHeight}>{children}</ExpandableBody>
+    </View>
+  );
+}
+
+// Мини-хук для цветов (чтобы InfoAccordion не принимал colors как проп)
+import { useTheme } from '../../hooks/useTheme';
+function useThemeLocal() { return useTheme(); }
+
+const formatEquipmentName = (name: string) =>
+  name.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+// ===== Основной компонент =====
 
 interface ExerciseCardProps {
   exercise: ExerciseData | AlternativeExercise;
@@ -23,43 +94,59 @@ interface ExerciseCardProps {
   updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
-  // НОВОЕ: предупреждение о травме
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
-export function ExerciseCard({
+export const ExerciseCard = memo(function ExerciseCard({
   exercise, isMain, isReplaced, exerciseIndex, alternatives,
   updateSet, isSetCompleted, replaceExercise, startRestTimer,
   getIntensityInfo, updateExerciseSettings, colors, cardStyles,
   warning = null,
 }: ExerciseCardProps) {
-  const [expandedSections, setExpandedSections] = useState({ technique: false, equipment: false, settings: false, benefits: false, risks: false, injuries: false });
+  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
+  const [everOpened, setEverOpened] = useState<Set<SectionKey>>(new Set());
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
   const [localSets, setLocalSets] = useState(0);
   const [localRest, setLocalRest] = useState(0);
 
-  const toggleSection = (section: keyof typeof expandedSections) => setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  const toggleSection = (key: SectionKey) => {
+    setEverOpened(prev => (prev.has(key) ? prev : new Set(prev).add(key)));
+    setOpenSection(prev => (prev === key ? null : key));
+  };
 
   const hasSets = 'sets' in exercise;
   const sets = hasSets ? (exercise as ExerciseData).sets : [];
   const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
   const intensity = hasSets ? (exercise as ExerciseData).intensity : 'medium';
   const intensityInfo = getIntensityInfo(intensity);
+  const mediaUrl = (exercise as any).media_url as string | null ?? null;
 
-  const getSetRowsConfig = (totalSets: number): number[] => {
-    if (totalSets <= 3) return [totalSets];
-    if (totalSets === 4) return [4];
-    if (totalSets === 5) return [3, 2];
-    if (totalSets === 6) return [3, 3];
-    if (totalSets === 7) return [4, 3];
-    if (totalSets === 8) return [4, 4];
-    if (totalSets === 9) return [3, 3, 3];
-    if (totalSets === 10) return [4, 3, 3];
-    if (totalSets === 11) return [4, 4, 3];
-    if (totalSets === 12) return [4, 4, 4];
+  const completedSets = sets.filter(s => isSetCompleted(s)).length;
+  const allSetsDone = hasSets && sets.length > 0 && completedSets === sets.length;
+
+  // Обводка карточки как у разминки
+  const borderColor = warning?.level === 'avoid'
+    ? colors.error
+    : warning?.level === 'caution'
+      ? colors.warning
+      : isReplaced
+        ? colors.primary
+        : allSetsDone
+          ? colors.success + '60'
+          : colors.border;
+
+  const getSetRowsConfig = (total: number): number[] => {
+    if (total <= 4) return [total];
+    if (total === 5) return [3, 2];
+    if (total === 6) return [3, 3];
+    if (total === 7) return [4, 3];
+    if (total === 8) return [4, 4];
+    if (total === 9) return [3, 3, 3];
+    if (total === 10) return [4, 3, 3];
+    if (total === 11) return [4, 4, 3];
+    if (total === 12) return [4, 4, 4];
     return [3];
   };
-
   const setRowsConfig = getSetRowsConfig(sets.length);
 
   const openSettingsSheet = () => {
@@ -71,10 +158,9 @@ export function ExerciseCard({
 
   const saveSettings = () => {
     if (localSets < sets.length) {
-      const removedSets = sets.slice(localSets);
-      const hasData = removedSets.some(s => s.weight !== '' || s.reps !== '');
-      if (hasData) {
-        Alert.alert('Удалить подходы?', `Будут удалены подходы ${localSets + 1}-${sets.length} с введёнными данными. Продолжить?`, [
+      const removed = sets.slice(localSets);
+      if (removed.some(s => s.weight !== '' || s.reps !== '')) {
+        Alert.alert('Удалить подходы?', `Будут удалены подходы ${localSets + 1}-${sets.length} с данными.`, [
           { text: 'Отмена', style: 'cancel' },
           { text: 'Удалить', onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); updateExerciseSettings(exerciseIndex, localSets, localRest); setShowSettingsSheet(false); } },
         ]);
@@ -86,21 +172,24 @@ export function ExerciseCard({
     setShowSettingsSheet(false);
   };
 
-  const changeSets = (delta: number) => {
-    const newValue = Math.max(1, Math.min(10, localSets + delta));
-    if (newValue !== localSets) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalSets(newValue); }
+  const changeSets = (d: number) => {
+    const v = Math.max(1, Math.min(10, localSets + d));
+    if (v !== localSets) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalSets(v); }
+  };
+  const changeRest = (d: number) => {
+    const v = Math.max(30, Math.min(300, localRest + d));
+    if (v !== localRest) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalRest(v); }
   };
 
-  const changeRest = (delta: number) => {
-    const newValue = Math.max(30, Math.min(300, localRest + delta));
-    if (newValue !== localRest) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalRest(newValue); }
-  };
+  const warningColor = warning?.level === 'avoid' ? colors.error : colors.warning;
 
   return (
-    <View style={[cardStyles.container, cardStyles.workoutExerciseCard]}>
-      {/* Шапка */}
+    <View style={[cardStyles.container, cardStyles.workoutExerciseCard, { borderWidth: 1, borderColor }]}>
+      {/* Шапка: полное название + управление */}
       <View style={cardStyles.workoutExerciseHeader}>
-        <Text style={[cardStyles.workoutExerciseName, { color: colors.textPrimary }]} numberOfLines={2}>{exercise.name}</Text>
+        <Text style={[cardStyles.workoutExerciseName, { color: colors.textPrimary }]}>
+          {exercise.name}
+        </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
           {isMain && alternatives.length > 0 && (
             <View style={[cardStyles.workoutSwipeIcon, { backgroundColor: colors.surfaceSecondary }]}>
@@ -119,182 +208,216 @@ export function ExerciseCard({
         </View>
       </View>
 
-      {/* НОВОЕ: Баннер предупреждения о травме внутри карточки */}
+      {/* Баннер предупреждения о травме (темизованный) */}
       {warning && isMain && (
         <View style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          backgroundColor: warning.level === 'avoid' ? '#F4433615' : '#FFC10715',
-          borderColor: warning.level === 'avoid' ? '#F44336' : '#FFC107',
-          borderWidth: 1,
-          borderRadius: BORDER_RADIUS.sm,
-          padding: SPACING.sm,
-          marginBottom: SPACING.md,
+          flexDirection: 'row', alignItems: 'flex-start',
+          backgroundColor: warningColor + '15', borderColor: warningColor,
+          borderWidth: 1, borderRadius: BORDER_RADIUS.sm, padding: SPACING.sm, marginBottom: SPACING.md,
         }}>
-          <ShieldAlert
-            size={16}
-            color={warning.level === 'avoid' ? '#F44336' : '#FFC107'}
-            strokeWidth={2}
-            style={{ marginRight: SPACING.xs, marginTop: 1 }}
-          />
-          <Text style={{
-            color: warning.level === 'avoid' ? '#F44336' : '#FFC107',
-            flex: 1,
-            fontSize: 12,
-            fontWeight: '600',
-            lineHeight: 16,
-          }}>
+          <ShieldAlert size={16} color={warningColor} strokeWidth={2} style={{ marginRight: SPACING.xs, marginTop: 1 }} />
+          <Text style={{ color: warningColor, flex: 1, fontSize: 12, fontWeight: '600', lineHeight: 16 }}>
             {warning.message}
           </Text>
         </View>
       )}
 
-      {/* Мышцы-теги: основные */}
-      {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
-          {(exercise as ExerciseData).primary_muscles.map((muscle, idx) => (
-            <View key={idx} style={[cardStyles.muscleTagPrimary, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}>
-              <Text style={[cardStyles.muscleTagPrimaryText, { color: colors.primary }]}>{muscle}</Text>
-            </View>
-          ))}
+      {/* Баблы мышц с цветами групп */}
+      {exercise.primary_muscles.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: exercise.secondary_muscles.length > 0 ? 6 : SPACING.md }}>
+          {exercise.primary_muscles.map((m, i) => {
+            const c = getMuscleColor(m);
+            return (
+              <View key={`p-${i}`} style={{
+                flexDirection: 'row', alignItems: 'center',
+                backgroundColor: c + '1A', borderWidth: 1, borderColor: c + '55',
+                paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full,
+              }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c, marginRight: 5 }} />
+                <Text style={[typography.captionSmall, { color: c, fontWeight: '700' }]}>{m}</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+      {exercise.secondary_muscles.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.md }}>
+          {exercise.secondary_muscles.map((m, i) => {
+            const c = getMuscleColor(m);
+            return (
+              <View key={`s-${i}`} style={{
+                backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: c + '40',
+                paddingHorizontal: SPACING.sm, paddingVertical: 3, borderRadius: BORDER_RADIUS.full,
+              }}>
+                <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>{m}</Text>
+              </View>
+            );
+          })}
         </View>
       )}
 
-      {/* Мышцы-теги: вспомогательные */}
-      {'secondary_muscles' in exercise && (exercise as ExerciseData).secondary_muscles.length > 0 && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.md }}>
-          {(exercise as ExerciseData).secondary_muscles.map((muscle, idx) => (
-            <View key={idx} style={[cardStyles.muscleTagSecondary, { borderColor: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>
-              <Text style={[cardStyles.muscleTagSecondaryText, { color: colors.textSecondary }]}>{muscle}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Секции */}
-      {'technique' in exercise && (exercise as ExerciseData).technique ? (
-        <CollapsibleSection title="Техника выполнения" icon={<Settings size={16} color={colors.primary} strokeWidth={2} />} expanded={expandedSections.technique} onToggle={() => toggleSection('technique')} borderColor={colors.primary} colors={colors}>
-          <Text style={{ color: colors.textPrimary }}>{(exercise as ExerciseData).technique}</Text>
-        </CollapsibleSection>
+      {/* Техника выполнения: слайдер + текст */}
+      {(exercise.technique || mediaUrl) ? (
+        <InfoAccordion
+          icon={<BookOpen size={14} color={colors.primary} />}
+          title="Техника выполнения"
+          titleColor={colors.primary}
+          expanded={openSection === 'technique'}
+          onToggle={() => toggleSection('technique')}
+          maxHeight={640}
+        >
+          {everOpened.has('technique') && (
+            <TechniqueMediaSlider mediaUrl={mediaUrl} autoPlay={openSection === 'technique'} />
+          )}
+          {exercise.technique ? (
+            <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, marginTop: SPACING.sm }]}>
+              {exercise.technique}
+            </Text>
+          ) : null}
+        </InfoAccordion>
       ) : null}
 
-      {('equipment' in exercise && (exercise as ExerciseData).equipment.length > 0) || ('settings' in exercise && (exercise as ExerciseData).settings) ? (
-        <GroupedSection borderColor={colors.primary} colors={colors}>
-          {'equipment' in exercise && (exercise as ExerciseData).equipment.length > 0 && (
-            <View style={{ marginBottom: SPACING.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs }}>
-                <Wrench size={16} color={colors.primary} strokeWidth={2} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase' }}>Оборудование</Text>
-              </View>
-              <Text style={{ fontSize: 14, color: colors.textPrimary }}>{(exercise as ExerciseData).equipment.join(', ')}</Text>
+      {/* Оборудование и настройки */}
+      {(exercise.equipment.length > 0 || ('settings' in exercise && (exercise as ExerciseData).settings)) ? (
+        <InfoAccordion
+          icon={<Dumbbell size={14} color={colors.primary} />}
+          title="Оборудование и настройки"
+          titleColor={colors.primary}
+          expanded={openSection === 'equipmentSettings'}
+          onToggle={() => toggleSection('equipmentSettings')}
+        >
+          {exercise.equipment.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {exercise.equipment.map((eq, i) => (
+                <View key={`eq-${i}`} style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 5,
+                  backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
+                  paddingHorizontal: SPACING.sm, paddingVertical: 4, borderRadius: BORDER_RADIUS.full,
+                }}>
+                  <EquipmentIcon name={eq} size={16} primaryMuscles={exercise.primary_muscles} />
+                  <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>
+                    {formatEquipmentName(eq)}
+                  </Text>
+                </View>
+              ))}
             </View>
-          )}
-          {'equipment' in exercise && (exercise as ExerciseData).equipment.length > 0 && 'settings' in exercise && (exercise as ExerciseData).settings && (
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: SPACING.md }} />
           )}
           {'settings' in exercise && (exercise as ExerciseData).settings ? (
-            <View style={{ marginBottom: SPACING.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs }}>
-                <Settings size={16} color={colors.primary} strokeWidth={2} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase' }}>Настройки</Text>
-              </View>
-              <Text style={{ fontSize: 14, color: colors.textPrimary }}>{(exercise as ExerciseData).settings}</Text>
-            </View>
+            <>
+              {exercise.equipment.length > 0 && (
+                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: SPACING.sm }} />
+              )}
+              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
+                {(exercise as ExerciseData).settings}
+              </Text>
+            </>
           ) : null}
-        </GroupedSection>
+        </InfoAccordion>
       ) : null}
 
+      {/* Секции альтернативного упражнения */}
       {!isMain && (
         <>
-          {'benefits' in exercise && (exercise as ExerciseData).benefits ? (
-            <CollapsibleSection title="Польза" icon={<CheckCircle size={16} color="#4CAF50" strokeWidth={2} />} expanded={expandedSections.benefits} onToggle={() => toggleSection('benefits')} borderColor="#4CAF50" colors={colors}>
-              <Text style={{ color: colors.textPrimary }}>{(exercise as ExerciseData).benefits}</Text>
-            </CollapsibleSection>
+          {exercise.benefits ? (
+            <InfoAccordion
+              icon={<Sparkles size={14} color={colors.success} />}
+              title="Польза" titleColor={colors.success}
+              expanded={openSection === 'benefits'} onToggle={() => toggleSection('benefits')}
+            >
+              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>{exercise.benefits}</Text>
+            </InfoAccordion>
           ) : null}
-          {'risks' in exercise && (exercise as ExerciseData).risks ? (
-            <CollapsibleSection title="Риски" icon={<AlertTriangle size={16} color="#FF9800" strokeWidth={2} />} expanded={expandedSections.risks} onToggle={() => toggleSection('risks')} borderColor="#FF9800" colors={colors}>
-              <Text style={{ color: colors.textPrimary }}>{(exercise as ExerciseData).risks}</Text>
-            </CollapsibleSection>
+          {exercise.risks ? (
+            <InfoAccordion
+              icon={<AlertTriangle size={14} color={colors.warning} />}
+              title="Риски" titleColor={colors.warning}
+              expanded={openSection === 'risks'} onToggle={() => toggleSection('risks')}
+            >
+              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>{exercise.risks}</Text>
+            </InfoAccordion>
           ) : null}
-          {'injuries' in exercise && (exercise as ExerciseData).injuries.length > 0 && (
-            <CollapsibleSection title="Противопоказания" icon={<AlertCircle size={16} color="#F44336" strokeWidth={2} />} expanded={expandedSections.injuries} onToggle={() => toggleSection('injuries')} borderColor="#F44336" colors={colors}>
-              {(exercise as ExerciseData).injuries.map((injury, idx) => (
-                <Text key={idx} style={{ color: colors.textPrimary, marginBottom: SPACING.sm }}>• {injury}</Text>
+          {exercise.injuries.length > 0 ? (
+            <InfoAccordion
+              icon={<ShieldAlert size={14} color={colors.error} />}
+              title="Противопоказания" titleColor={colors.error}
+              expanded={openSection === 'injuries'} onToggle={() => toggleSection('injuries')}
+            >
+              {exercise.injuries.map((inj, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
+                  <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
+                  <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, flex: 1 }]}>{inj}</Text>
+                </View>
               ))}
-            </CollapsibleSection>
-          )}
+            </InfoAccordion>
+          ) : null}
+          <TouchableOpacity
+            style={[cardStyles.replaceButton, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]}
+            onPress={() => replaceExercise(exerciseIndex, exercise.id)}
+          >
+            <RotateCcw size={16} color={colors.primary} strokeWidth={2} />
+            <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>Заменить на это</Text>
+          </TouchableOpacity>
         </>
       )}
 
-      {!isMain && (
-        <TouchableOpacity style={[cardStyles.replaceButton, { borderColor: colors.primary, backgroundColor: colors.primaryLight }]} onPress={() => replaceExercise(exerciseIndex, exercise.id)}>
-          <RotateCcw size={16} color={colors.primary} strokeWidth={2} />
-          <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>Заменить на это</Text>
-        </TouchableOpacity>
-      )}
-
+      {/* Подходы (только основная карточка) */}
       {hasSets && sets.length > 0 && (
-        <View style={[cardStyles.setsContainer, { borderColor: colors.primary }]}>
-          <View style={[cardStyles.setsHeader, { backgroundColor: colors.surfaceSecondary }]}>
+        <View style={[cardStyles.setsContainer, { backgroundColor: colors.surfaceSecondary, borderWidth: 0 }]}>
+          <View style={[cardStyles.setsHeader, { backgroundColor: 'transparent' }]}>
             <TrendingUp size={16} color={colors.primary} strokeWidth={2} />
             <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>Подходы</Text>
+            <Text style={[typography.captionSmall, {
+              color: allSetsDone ? colors.success : colors.textTertiary, fontWeight: '700', marginLeft: 'auto',
+            }]}>
+              {allSetsDone ? '✓ ' : ''}{completedSets}/{sets.length}
+            </Text>
           </View>
           <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
             {setRowsConfig.map((rowSize, rowIndex) => {
-              const startIndex = setRowsConfig.slice(0, rowIndex).reduce((sum, size) => sum + size, 0);
+              const startIndex = setRowsConfig.slice(0, rowIndex).reduce((s, n) => s + n, 0);
               const rowSets = sets.slice(startIndex, startIndex + rowSize);
               return (
                 <View key={rowIndex} style={cardStyles.setRow}>
                   <View style={cardStyles.setNumbersRow}>
-                    {rowSets.map((_, setIndex) => {
-                      const globalIndex = startIndex + setIndex;
-                      return (
-                        <View key={setIndex} style={cardStyles.setNumber}>
-                          <Text style={[cardStyles.setNumberText, { color: colors.textPrimary }]}>{globalIndex + 1}</Text>
-                        </View>
-                      );
-                    })}
+                    {rowSets.map((_, si) => (
+                      <View key={si} style={cardStyles.setNumber}>
+                        <Text style={[cardStyles.setNumberText, { color: colors.textPrimary }]}>{startIndex + si + 1}</Text>
+                      </View>
+                    ))}
                   </View>
                   <View style={cardStyles.setInputsRow}>
-                    {rowSets.map((set, setIndex) => {
-                      const globalIndex = startIndex + setIndex;
-                      return (
-                        <View key={setIndex} style={[cardStyles.setInputContainer, { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary }]}>
-                          <TextInput style={[cardStyles.setInput, { color: colors.textPrimary }]} placeholder="вес (кг)" value={set.weight} onChangeText={(val) => updateSet(exerciseIndex, globalIndex, 'weight', val)} keyboardType="decimal-pad" placeholderTextColor={colors.textTertiary} />
-                        </View>
-                      );
-                    })}
+                    {rowSets.map((set, si) => (
+                      <View key={si} style={[cardStyles.setInputContainer, { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary }]}>
+                        <TextInput style={[cardStyles.setInput, { color: colors.textPrimary }]} placeholder="вес (кг)" value={set.weight} onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'weight', v)} keyboardType="decimal-pad" placeholderTextColor={colors.textTertiary} />
+                      </View>
+                    ))}
                   </View>
                   <View style={cardStyles.setInputsRow}>
-                    {rowSets.map((set, setIndex) => {
-                      const globalIndex = startIndex + setIndex;
-                      return (
-                        <View key={setIndex} style={[cardStyles.setInputContainer, { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary }]}>
-                          <TextInput style={[cardStyles.setInput, { color: colors.textPrimary }]} placeholder="повт." value={set.reps} onChangeText={(val) => updateSet(exerciseIndex, globalIndex, 'reps', val)} keyboardType="number-pad" placeholderTextColor={colors.textTertiary} />
-                        </View>
-                      );
-                    })}
+                    {rowSets.map((set, si) => (
+                      <View key={si} style={[cardStyles.setInputContainer, { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary }]}>
+                        <TextInput style={[cardStyles.setInput, { color: colors.textPrimary }]} placeholder="повт." value={set.reps} onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)} keyboardType="number-pad" placeholderTextColor={colors.textTertiary} />
+                      </View>
+                    ))}
                   </View>
                 </View>
               );
             })}
             <TouchableOpacity style={[cardStyles.restButton, { backgroundColor: colors.primary }]} onPress={() => startRestTimer(restSeconds)}>
-              <Clock size={16} color="white" strokeWidth={2} />
+              <Clock size={16} color={colors.textInverse} strokeWidth={2} />
               <Text style={cardStyles.restButtonText}>Отдых {restSeconds}с</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
+      {/* Модалка настроек (только основная карточка) */}
       {isMain && (
         <Modal visible={showSettingsSheet} transparent animationType="fade" onRequestClose={() => setShowSettingsSheet(false)}>
           <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setShowSettingsSheet(false)}>
             <Pressable style={[cardStyles.settingsSheetContainer, { backgroundColor: colors.surface }]} onPress={(e) => e.stopPropagation()}>
               <View style={cardStyles.settingsSheetHeader}>
                 <Text style={[cardStyles.settingsSheetTitle, { color: colors.textPrimary }]}>Настройки упражнения</Text>
-                <TouchableOpacity onPress={() => setShowSettingsSheet(false)}>
-                  <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowSettingsSheet(false)}><X size={20} color={colors.textSecondary} strokeWidth={2} /></TouchableOpacity>
               </View>
               <View style={cardStyles.settingsSheetField}>
                 <Text style={[cardStyles.settingsSheetLabel, { color: colors.textSecondary }]}>Количество подходов</Text>
@@ -329,4 +452,4 @@ export function ExerciseCard({
       )}
     </View>
   );
-}
+});

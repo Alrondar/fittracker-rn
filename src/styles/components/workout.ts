@@ -97,35 +97,12 @@ export const createWorkoutStyles = (colors: any) =>
       fontWeight: '600',
     } as TextStyle,
 
-    // ===== ТЕГИ МЫШЦ =====
-    muscleTagPrimary: {
-      paddingHorizontal: SPACING.md,
-      paddingVertical: 6,
-      borderRadius: BORDER_RADIUS.full,
-      borderWidth: 1.5,
-    } as ViewStyle,
-    muscleTagPrimaryText: {
-      fontSize: 12,
-      fontWeight: '600',
-    } as TextStyle,
-    muscleTagSecondary: {
-      paddingHorizontal: SPACING.md,
-      paddingVertical: 6,
-      borderRadius: BORDER_RADIUS.full,
-      borderWidth: 1.5,
-    } as ViewStyle,
-    muscleTagSecondaryText: {
-      fontSize: 12,
-      fontWeight: '600',
-    } as TextStyle,
 
     // ===== СЕКЦИЯ ПОДХОДОВ =====
     setsContainer: {
-      marginTop: SPACING.lg,
-      borderWidth: 1.5,
       borderRadius: BORDER_RADIUS.md,
       overflow: 'hidden',
-    } as ViewStyle,
+      } as ViewStyle,
     setsHeader: {
       flexDirection: 'row',
       alignItems: 'center',

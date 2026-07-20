@@ -49,8 +49,9 @@ interface WarmupBlockProps {
   onSkip: () => void;
 }
 
-// Предел высоты раскрытой секции (контент обычно 40–220px)
-const SECTION_MAX_HEIGHT = 260;
+// Лимиты высоты раскрытого контента
+const DEFAULT_MAX_HEIGHT = 300;   // польза / риски / противопоказания
+const TECHNIQUE_MAX_HEIGHT = 640; // техника со слайдером (190px) + текст
 
 const formatTime = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
@@ -58,30 +59,44 @@ const formatTime = (seconds: number) =>
 const formatEquipmentName = (name: string) =>
   name.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-// ===== Раскрывающаяся секция БЕЗ измерения высоты =====
-// Анимация maxHeight не зависит от onLayout — работает на Fabric всегда.
-function ExpandableSection({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
+// ===== Раскрывающаяся секция (тот же механизм, что в ExerciseCard) =====
+function ExpandableSection({
+  expanded,
+  maxHeight,
+  children,
+}: {
+  expanded: boolean;
+  maxHeight: number;
+  children: React.ReactNode;
+}) {
   const progress = useSharedValue(expanded ? 1 : 0);
 
   useEffect(() => {
     progress.value = withTiming(expanded ? 1 : 0, {
-      duration: 300,
+      duration: 280,
       easing: Easing.out(Easing.cubic),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded]);
 
   const style = useAnimatedStyle(() => ({
-    maxHeight: progress.value * SECTION_MAX_HEIGHT,
+    maxHeight: progress.value * maxHeight,
     opacity: 0.1 + progress.value * 0.9,
     transform: [{ translateY: (1 - progress.value) * -6 }],
   }));
 
-  return <Animated.View style={[{ overflow: 'hidden' }, style]}>{children}</Animated.View>;
+  return (
+    // Свёрнутая секция не перехватывает касания (слайдер внутри не блокирует соседей)
+    <Animated.View pointerEvents={expanded ? 'auto' : 'none'} style={[{ overflow: 'hidden' }, style]}>
+      <View style={{ paddingTop: SPACING.sm, paddingBottom: SPACING.xs, paddingHorizontal: 2 }}>
+        {children}
+      </View>
+    </Animated.View>
+  );
 }
 
-// ===== Свёрнутый аккордеон (польза / риски / противопоказания) =====
-type SectionKey = 'benefits' | 'risks' | 'injuries';
+// ===== Аккордеон без обводки: цветной значок + заголовок + шеврон =====
+type SectionKey = 'technique' | 'benefits' | 'risks' | 'injuries';
 
 function CollapsibleInfo({
   icon,
@@ -89,6 +104,7 @@ function CollapsibleInfo({
   titleColor,
   expanded,
   onToggle,
+  maxHeight = DEFAULT_MAX_HEIGHT,
   children,
 }: {
   icon: React.ReactNode;
@@ -96,6 +112,7 @@ function CollapsibleInfo({
   titleColor: string;
   expanded: boolean;
   onToggle: () => void;
+  maxHeight?: number;
   children: React.ReactNode;
 }) {
   const { colors } = useTheme();
@@ -107,7 +124,7 @@ function CollapsibleInfo({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: SPACING.xs,
+          paddingVertical: SPACING.xs + 2,
           paddingHorizontal: SPACING.sm,
           borderRadius: BORDER_RADIUS.md,
           backgroundColor: colors.surfaceSecondary,
@@ -133,8 +150,8 @@ function CollapsibleInfo({
           <ChevronDown size={14} color={colors.textTertiary} />
         </View>
       </TouchableOpacity>
-      <ExpandableSection expanded={expanded}>
-        <View style={{ paddingTop: SPACING.sm, paddingHorizontal: SPACING.xs }}>{children}</View>
+      <ExpandableSection expanded={expanded} maxHeight={maxHeight}>
+        {children}
       </ExpandableSection>
     </View>
   );
@@ -165,6 +182,13 @@ function WarmupExerciseCard({
   const { colors } = useTheme();
   const progress = useSharedValue(0);
   const [openSection, setOpenSection] = useState<SectionKey | null>(null);
+  // ✅ Ленивый монтаж: слайдер создаётся только после первого открытия техники
+  const [everOpened, setEverOpened] = useState<Set<SectionKey>>(new Set());
+
+  const toggleSection = (key: SectionKey) => {
+    setEverOpened(prev => (prev.has(key) ? prev : new Set(prev).add(key)));
+    setOpenSection(prev => (prev === key ? null : key));
+  };
 
   // Плавный прогресс-бар таймера (синхронизирован с тиком раз в секунду)
   useEffect(() => {
@@ -179,9 +203,6 @@ function WarmupExerciseCard({
   }, [isActive, timeLeft, exercise.duration_seconds]);
 
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
-
-  const toggleSection = (key: SectionKey) =>
-    setOpenSection(prev => (prev === key ? null : key));
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 70).duration(300)}>
@@ -294,9 +315,6 @@ function WarmupExerciseCard({
           </View>
         )}
 
-        {/* Слайдер картинок техники (media_url) с автоплеем */}
-        <TechniqueMediaSlider mediaUrl={exercise.media_url} />
-
         {/* Бейджи мышц */}
         {(exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0) && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
@@ -377,31 +395,28 @@ function WarmupExerciseCard({
           )}
         </View>
 
-        {/* Техника — видна сразу */}
-        {exercise.technique ? (
-          <View
-            style={{
-              marginTop: SPACING.md,
-              padding: SPACING.sm,
-              backgroundColor: colors.surfaceSecondary,
-              borderRadius: BORDER_RADIUS.md,
-            }}
+        {/* ✅ Техника — аккордеон со слайдером внутри (ленивый монтаж) */}
+        {(exercise.technique || exercise.media_url) ? (
+          <CollapsibleInfo
+            icon={<BookOpen size={13} color={colors.primary} />}
+            title="Техника"
+            titleColor={colors.primary}
+            expanded={openSection === 'technique'}
+            onToggle={() => toggleSection('technique')}
+            maxHeight={TECHNIQUE_MAX_HEIGHT}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <BookOpen size={12} color={colors.primary} />
-              <Text
-                style={[
-                  typography.captionSmall,
-                  { color: colors.primary, fontWeight: '700', marginLeft: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-                ]}
-              >
-                Техника
+            {everOpened.has('technique') && (
+              <TechniqueMediaSlider
+                mediaUrl={exercise.media_url}
+                autoPlay={openSection === 'technique'} // автоплей только в открытом виде
+              />
+            )}
+            {exercise.technique ? (
+              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, marginTop: SPACING.sm }]}>
+                {exercise.technique}
               </Text>
-            </View>
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-              {exercise.technique}
-            </Text>
-          </View>
+            ) : null}
+          </CollapsibleInfo>
         ) : null}
 
         {/* Польза — свёрнута */}

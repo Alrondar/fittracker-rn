@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
@@ -27,7 +27,7 @@ interface ExerciseSliderProps {
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
-export function ExerciseSlider({
+export const ExerciseSlider = memo(function ExerciseSlider({
   exercise,
   exerciseIndex,
   isReplaced,
@@ -103,4 +103,4 @@ export function ExerciseSlider({
       </ScrollView>
     </View>
   );
-}
+})

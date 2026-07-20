@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -41,6 +41,10 @@ export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors, gradients } = useTheme();
+
+  // ✅ ФИКС: стили создаются ОДИН раз на смену темы, а не на каждую карточку на каждый рендер
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
 
   // Хук сессии тренировки
   const {
@@ -95,7 +99,8 @@ export default function WorkoutSessionScreen() {
   const cautionCount = Object.values(exerciseWarnings).filter(w => w.level === 'caution').length;
   const hasWarnings = avoidCount > 0 || cautionCount > 0;
 
-  const getIntensityInfo = (intensity: string) => {
+  // ✅ ФИКС: стабильная ссылка — не пересоздаётся на каждый рендер
+  const getIntensityInfo = useCallback((intensity: string) => {
     switch (intensity) {
       case 'high':
         return {
@@ -126,7 +131,7 @@ export default function WorkoutSessionScreen() {
           icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} />,
         };
     }
-  };
+  }, [colors]);
 
   if (loading) {
     return (
@@ -151,7 +156,7 @@ export default function WorkoutSessionScreen() {
           onStop={stopRestTimer}
           onAdjust={(delta) => setRestTimeLeft((prev: number) => Math.max(0, prev + delta))}
           colors={colors}
-          workoutStyles={createWorkoutStyles(colors)}
+          workoutStyles={workoutStyles} // ✅ мемоизированные стили
         />
       )}
 
@@ -264,7 +269,6 @@ export default function WorkoutSessionScreen() {
                 onSkip={() => setShowWarmup(false)}
               />
             )}
-
             {/* Пилюля повторного открытия разминки */}
             {!showWarmup && !isWorkoutActive && warmupExercises.length > 0 && (
               <TouchableOpacity
@@ -311,7 +315,7 @@ export default function WorkoutSessionScreen() {
             getIntensityInfo={getIntensityInfo}
             updateExerciseSettings={updateExerciseSettings}
             colors={colors}
-            cardStyles={createCardStyles(colors)}
+            cardStyles={cardStyles} // ✅ мемоизированные стили
             warning={exerciseWarnings[exercise.id] || null}
           />
         )}
