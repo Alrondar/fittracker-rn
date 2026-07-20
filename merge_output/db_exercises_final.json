@@ -1,0 +1,3285 @@
+[
+  {
+    "id": "ef37f62c-ddee-4a76-976b-03d1299cd42c",
+    "name": "Жим Свенда (Svend Press)",
+    "primary_muscles": [
+      "внутренняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта"
+    ],
+    "technique": "Зажмите блин между ладонями у груди. Медленно выжимайте его вперед, сохраняя максимальное сжатие, затем верните к груди.",
+    "benefits": "Максимальное статическое напряжение внутренней части груди",
+    "risks": "Минимальные",
+    "equipment": [
+      "Блин"
+    ],
+    "settings": "Фокус на сдавливании, а не на весе",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Svend_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (минимальный риск)",
+      "запястье (растяжение при большом весе)"
+    ],
+    "alternatives": [
+      "Сведение рук в Pec Deck",
+      "Разводка в кроссовере",
+      "Жим штанги лежа узким хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Svend Press"
+  },
+  {
+    "id": "79584d7c-5bda-4d3f-9cf7-ad6e8ae1e0b4",
+    "name": "Жим в тренажере Смита (горизонтальный)",
+    "primary_muscles": [
+      "большая грудная"
+    ],
+    "secondary_muscles": [
+      "дельтовидные",
+      "трицепс"
+    ],
+    "technique": "Лягте на скамью в Смите. Снимите штангу и опускайте ее к середине груди, затем выжимайте вверх.",
+    "benefits": "Безопасность, работа без страховки",
+    "risks": "Ограниченная траектория может не подходить анатомически",
+    "equipment": [
+      "Скамья",
+      "Тренажер Смита"
+    ],
+    "settings": "Ограничители на уровне груди",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bench_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (импиджмент)",
+      "запястье (растяжение)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим штанги лежа",
+      "Жим гантелей лежа",
+      "Жим в тренажере Chest Press"
+    ],
+    "reps_range": "8-12",
+    "category": "strength",
+    "name_eng": "Smith Machine Bench Press"
+  },
+  {
+    "id": "a4b05d2e-6249-40b5-9947-fb6fbce69041",
+    "name": "Жим гантелей на наклонной скамье",
+    "primary_muscles": [
+      "верхняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "трицепс"
+    ],
+    "technique": "Лягте на наклонную скамью. Выжимайте гантели вверх и опускайте до уровня груди.",
+    "benefits": "Большая амплитуда, вариативность хвата",
+    "risks": "Сложнее контролировать вес",
+    "equipment": [
+      "Гантели",
+      "Наклонная скамья"
+    ],
+    "settings": "Угол 30–45°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение)",
+      "запястье (растяжение)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим штанги на наклонной скамье",
+      "Жим в Смите на наклонной скамье",
+      "Сведение рук в кроссовере снизу вверх"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Incline Dumbbell Press"
+  },
+  {
+    "id": "033d05e1-473e-49e9-8cfe-bce82239e883",
+    "name": "Приседания со штангой на плечах",
+    "primary_muscles": [
+      "большая ягодичная",
+      "квадрицепс"
+    ],
+    "secondary_muscles": [
+      "бицепс бедра",
+      "разгибатели спины"
+    ],
+    "technique": "Штанга на плечах. Сядьте вниз, отводя таз назад, до параллели бедер с полом или ниже. Встаньте за счет давления пятками.",
+    "benefits": "База для массы и силы ног",
+    "risks": "Травма коленей, поясницы",
+    "equipment": [
+      "Стойки",
+      "Штанга"
+    ],
+    "settings": "Ноги на ширине плеч, носки наружу 15–30°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение связок, мениск)",
+      "поясница (грыжа, растяжение)",
+      "голеностоп (растяжение)"
+    ],
+    "alternatives": [
+      "Фронтальные приседания",
+      "Жим ногами",
+      "Гакк-приседания",
+      "Приседания в Смите"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Barbell Squat"
+  },
+  {
+    "id": "3f168d4a-5b8c-46c2-8692-cfb32f86ecd3",
+    "name": "Скандинавские сгибания (Nordic Hamstring Curl)",
+    "primary_muscles": [
+      "бицепс бедра"
+    ],
+    "secondary_muscles": [
+      "икроножная",
+      "разгибатели спины"
+    ],
+    "technique": "На коленях, стопы зафиксированы, медленно опускать корпус вперед",
+    "benefits": "Золотой стандарт профилактики травм, эксцентрическая сила",
+    "risks": "Очень высокая сложность",
+    "equipment": [
+      "Коврик",
+      "Партнер",
+      "Тренажер Nordic"
+    ],
+    "settings": "Стопы надежно зафиксированы",
+    "media_url": null,
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "бицепс бедра (высокий риск надрыва)",
+      "колено (растяжение связок)"
+    ],
+    "alternatives": [
+      "Сгибание ног лежа",
+      "Румынская тяга",
+      "Сгибание ног в кроссовере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "add5483d-7840-4053-bc2b-409b4f83f9aa",
+    "name": "Мертвая тяга",
+    "primary_muscles": [
+      "бицепс бедра",
+      "ягодичные мышцы",
+      "разгибатели спины"
+    ],
+    "secondary_muscles": [
+      "квадрицепс"
+    ],
+    "technique": "Наклон вперед, штанга вдоль ног, спина прямая",
+    "benefits": "База для задней поверхности бедра",
+    "risks": "Высокий риск травмы поясницы",
+    "equipment": [
+      "Штанга"
+    ],
+    "settings": "Спина прямая, колени слегка согнуты",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Barbell_Deadlift/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (высокий риск грыжи)",
+      "бицепс бедра (надрыв)",
+      "колено (растяжение)"
+    ],
+    "alternatives": [
+      "Румынская тяга",
+      "Хорошее утро",
+      "Сгибание ног лежа"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "1581d922-f176-46a6-bb44-e6c05004b98e",
+    "name": "Тяга в наклоне в Смите",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция",
+      "бицепс"
+    ],
+    "technique": "Встаньте в Смите, возьмите штангу и наклонитесь вперед. Тяните штангу к поясу, сводя лопатки.",
+    "benefits": "Безопасность, фиксированная траектория",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Тренажер Смита"
+    ],
+    "settings": "Наклон 45°, спина прямая",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bent_Over_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение мышц, грыжа при округлении)",
+      "бицепс (тендинит)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга штанги в наклоне",
+      "Тяга гантели одной рукой",
+      "Тяга нижнего блока к поясу",
+      "Тяга Т-грифа"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Smith Machine Bent Over Row"
+  },
+  {
+    "id": "bb1fbbb4-36df-4bff-b800-d82be5e1cda9",
+    "name": "Разгибание рук на верхнем блоке (прямая рукоять)",
+    "primary_muscles": [
+      "трицепс"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Локти прижаты, разогнуть руки вниз",
+    "benefits": "Базовое упражнение в блоке",
+    "risks": "Минимальные",
+    "equipment": [
+      "V-образная рукоять",
+      "Верхний блок",
+      "Прямая рукоять"
+    ],
+    "settings": "Локти прижаты",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_V-Bar_Attachment/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит трицепса)",
+      "запястье (растяжение)"
+    ],
+    "alternatives": [
+      "Разгибание рук на верхнем блоке (канат)",
+      "Французский жим лежа",
+      "Жим штанги узким хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "15754cec-44e1-4977-9935-75e5a5224d72",
+    "name": "Отжимания на брусьях (акцент грудь)",
+    "primary_muscles": [
+      "нижняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "трицепс",
+      "передняя дельта"
+    ],
+    "technique": "На брусьях наклоните корпус вперед на 30 градусов, разведите локти в стороны. Опускайтесь до легкого растяжения в груди, затем выжмите себя вверх.",
+    "benefits": "Базовое упражнение с собственным весом, возможность отягощения",
+    "risks": "Травма плеч при слишком глубоком опускании",
+    "equipment": [
+      "Брусья"
+    ],
+    "settings": "Ширина брусьев на уровне плеч, наклон корпуса 30°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (вывих, растяжение)",
+      "локтевой сустав (тендинит)",
+      "грудная клетка (растяжение)"
+    ],
+    "alternatives": [
+      "Жим штанги лежа",
+      "Жим гантелей лежа",
+      "Отжимания от пола",
+      "Жим в тренажере Chest Press"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Dips - Chest Version"
+  },
+  {
+    "id": "ba855ec2-64c3-4280-bef6-2158a7e01006",
+    "name": "Подъем ног в упорах на брусьях",
+    "primary_muscles": [
+      "нижняя часть прямой мышцы живота"
+    ],
+    "secondary_muscles": [
+      "косые мышцы живота"
+    ],
+    "technique": "Встаньте в упор на брусьях. Поднимайте колени к груди, скручивая таз.",
+    "benefits": "Снимает нагрузку с хвата и плеч по сравнению с турником",
+    "risks": "Нагрузка на поясницу при рывках",
+    "equipment": [
+      "Брусья с упорами для локтей"
+    ],
+    "settings": "Спина прямая, подъем за счет скручивания таза",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Knee_Hip_Raise_On_Parallel_Bars/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение)",
+      "локоть (давление подушек)"
+    ],
+    "alternatives": [
+      "Подъем ног в висе на турнике",
+      "Обратные скручивания",
+      "Молитва в блоке"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Knee/Hip Raise On Parallel Bars"
+  },
+  {
+    "id": "37d6ecbf-28db-459a-bb58-0a5d4f221f13",
+    "name": "Жим штанги на наклонной скамье (30–45°)",
+    "primary_muscles": [
+      "верхняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "трицепс"
+    ],
+    "technique": "Лягте на наклонную скамью. Снимите штангу и опускайте её на верх груди, затем выжимайте вверх.",
+    "benefits": "Акцент на верх груди",
+    "risks": "Повышенная нагрузка на переднюю дельту",
+    "equipment": [
+      "Наклонная скамья",
+      "Стойки",
+      "Штанга"
+    ],
+    "settings": "Угол 30–45°, хват на уровне плеч или чуть шире",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (перегрузка передней дельты)",
+      "запястье (растяжение)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим гантелей на наклонной скамье",
+      "Жим в Смите на наклонной скамье",
+      "Сведение рук в кроссовере снизу вверх",
+      "Жим обратным хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Barbell Incline Bench Press - Medium Grip"
+  },
+  {
+    "id": "6dc3d454-45ba-4a2e-a69d-f712625e08b5",
+    "name": "Прогулка фермера (Farmer's Walk)",
+    "primary_muscles": [
+      "мышцы предплечья",
+      "трапеция"
+    ],
+    "secondary_muscles": [
+      "поперечная мышца живота",
+      "ноги (стабилизаторы)"
+    ],
+    "technique": "Взять в руки тяжелые гантели или гири, держать спину прямой и ходить ровным шагом, не раскачиваясь",
+    "benefits": "Функциональная сила хвата, укрепление кора и трапеции",
+    "risks": "Минимальные (важно не круглить спину)",
+    "equipment": [
+      "Гантели",
+      "Гири"
+    ],
+    "settings": "Вес максимальный, но позволяющий держать спину прямой 30-60 секунд",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (растяжение)",
+      "поясница (растяжение при круглой спине)",
+      "плечо (растяжение)"
+    ],
+    "alternatives": [
+      "Удержание штанги",
+      "Шраги с гантелями",
+      "Становая тяга"
+    ],
+    "reps_range": null,
+    "category": "strongman",
+    "name_eng": null
+  },
+  {
+    "id": "210a2218-46ab-42a3-adc9-255040200d3f",
+    "name": "Гиперэкстензия",
+    "primary_muscles": [
+      "разгибатели спины"
+    ],
+    "secondary_muscles": [
+      "ягодичные мышцы",
+      "бицепс бедра"
+    ],
+    "technique": "Лягте в тренажер лицом вниз. Поднимайте корпус до прямой линии с ногами и опускайте.",
+    "benefits": "Укрепление поясницы, профилактика травм",
+    "risks": "Переразгибание",
+    "equipment": [
+      "Тренажер для гиперэкстензии"
+    ],
+    "settings": "Валики на уровне тазовых костей",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_Back_Extensions/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (переразгибание, растяжение мышц)",
+      "тазобедренный сустав (растяжение при слишком глубоком опускании)"
+    ],
+    "alternatives": [
+      "Становая тяга",
+      "Румынская тяга",
+      "Хорошее утро",
+      "Обратная гиперэкстензия"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Hyperextensions (Back Extensions)"
+  },
+  {
+    "id": "7700bf50-ff3c-44ea-98d3-5b56fab80d99",
+    "name": "Подъем штанги на бицепс стоя",
+    "primary_muscles": [
+      "бицепс"
+    ],
+    "secondary_muscles": [
+      "брахиалис",
+      "брахиорадиалис"
+    ],
+    "technique": "Возьмите штангу узким хватом. Сгибайте руки, поднимая штангу к плечам, сохраняя локти неподвижными.",
+    "benefits": "База для массы бицепса",
+    "risks": "Читинг, нагрузка на локти",
+    "equipment": [
+      "EZ-гриф",
+      "Штанга"
+    ],
+    "settings": "Хват на ширине плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Standing_Barbell_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит бицепса, растяжение связок)",
+      "запястье (растяжение)",
+      "поясница (читинг)"
+    ],
+    "alternatives": [
+      "Подъем гантелей на бицепс стоя",
+      "Подъем штанги на бицепс с EZ-грифом",
+      "Подъем на бицепс в кроссовере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Close-Grip Standing Barbell Curl"
+  },
+  {
+    "id": "faecbdb7-b89c-41d3-816c-b7c7df073e4f",
+    "name": "Подъем на бицепс на скамье Скотта",
+    "primary_muscles": [
+      "бицепс"
+    ],
+    "secondary_muscles": [
+      "брахиалис"
+    ],
+    "technique": "Сядь на скамью Скотта, прижми трицепсы к подушке. Возьми EZ-гриф и сгибай руки, поднимая вес к плечам, затем медленно опускай.",
+    "benefits": "Изоляция, исключен читинг",
+    "risks": "Нагрузка на локти в нижней точке",
+    "equipment": [
+      "EZ-гриф",
+      "Скамья Скотта",
+      "Штанга"
+    ],
+    "settings": "Локти на краю подушки",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Preacher_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (высокий риск растяжения сухожилия в нижней точке)",
+      "запястье (растяжение)"
+    ],
+    "alternatives": [
+      "Подъем на бицепс в тренажере",
+      "Концентрированный подъем на бицепс",
+      "Паучьи сгибания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Preacher Curl"
+  },
+  {
+    "id": "22f71247-6070-4141-81a4-bdba9a445e79",
+    "name": "Тяга к подбородку в Смите (широкий хват)",
+    "primary_muscles": [
+      "задняя дельта",
+      "трапеция"
+    ],
+    "secondary_muscles": [
+      "бицепс"
+    ],
+    "technique": "Возьмитесь за гриф на ширине плеч. Поднимите гриф к подбородку, отводя локти в стороны.",
+    "benefits": "Безопасность",
+    "risks": "Импиджмент при узком хвате",
+    "equipment": [
+      "Тренажер Смита"
+    ],
+    "settings": "Хват шире плеч в 1.5 раза",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Upright_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (импиджмент-синдром)",
+      "бицепс (тендинит)",
+      "локоть (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга штанги к подбородку узким хватом",
+      "Махи гантелями в стороны",
+      "Тяга каната к лицу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Smith Machine Upright Row"
+  },
+  {
+    "id": "d493fde1-7223-4bf9-a121-bfa1f7ebd42b",
+    "name": "Разгибание руки назад в кроссовере",
+    "primary_muscles": [
+      "трицепс (длинная головка)"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Боком к нижнему блоку, наклон, разогнуть руку назад",
+    "benefits": "Изоляция",
+    "risks": "Минимальные",
+    "equipment": [
+      "D-образная рукоять",
+      "Нижний блок"
+    ],
+    "settings": "Высота блока нижняя",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Incline_Triceps_Extension/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит)",
+      "поясница (растяжение)"
+    ],
+    "alternatives": [
+      "Разгибание руки назад в наклоне (кикбэк)",
+      "Французский жим сидя",
+      "Разгибание рук над головой в кроссовере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "c5a6c7e9-849d-4ffc-9af7-a9c38483d38c",
+    "name": "Тяга Ли Хейни (Lee Haney Shrug)",
+    "primary_muscles": [
+      "ромбовидные",
+      "средняя/нижняя трапеция"
+    ],
+    "secondary_muscles": [
+      "задняя дельта"
+    ],
+    "technique": "Встаньте в Смите, возьмите штангу за спиной. Поднимайте плечи вверх, сводя лопатки, затем опускайте.",
+    "benefits": "Изоляция средней трапеции без перегрузки верха",
+    "risks": "Дискомфорт при плохой мобильности",
+    "equipment": [
+      "Штанга"
+    ],
+    "settings": "Гриф за спиной, хват на ширине плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Behind_the_Back_Shrug/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение при плохой мобильности)",
+      "шейный отдел (растяжение мышц)"
+    ],
+    "alternatives": [
+      "Шраги с гантелями",
+      "Шраги со штангой",
+      "Тяга каната к лицу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Smith Machine Behind the Back Shrug"
+  },
+  {
+    "id": "5048ebb0-e930-4324-998c-faac2f6f5148",
+    "name": "Жим Арнольда",
+    "primary_muscles": [
+      "передняя дельта",
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "трапеция",
+      "трицепс"
+    ],
+    "technique": "Сядьте на скамью со спинкой. Держите гантели перед собой на уровне груди, ладони смотрят на вас. Выжимая гантели вверх, разворачивайте ладони от себя. В верхней точке руки полностью выпрямлены.",
+    "benefits": "Задействует все пучки, большая амплитуда",
+    "risks": "Нагрузка на плечи",
+    "equipment": [
+      "Гантели",
+      "Скамья со спинкой"
+    ],
+    "settings": "Спинка вертикальная",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arnold_Dumbbell_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (высокий риск импиджмента из-за ротации)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим гантелей сидя",
+      "Жим штанги стоя",
+      "Жим в тренажере Shoulder Press"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Arnold Dumbbell Press"
+  },
+  {
+    "id": "c606424e-6e7c-41bb-a485-759260dd0474",
+    "name": "Сведение рук в тренажере Pec Deck (Бабочка)",
+    "primary_muscles": [
+      "внутренняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта"
+    ],
+    "technique": "Сядьте в тренажер, прижмите спину к спинке. Сводите рукоятки перед собой, напрягая грудные мышцы, затем медленно разводите.",
+    "benefits": "Изолированная работа, постоянный угол нагрузки",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер Pec Deck"
+    ],
+    "settings": "Рукояти на уровне плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение при слишком широкой амплитуде)"
+    ],
+    "alternatives": [
+      "Разводка гантелей лежа",
+      "Разводка в кроссовере",
+      "Жим Свенда"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Butterfly"
+  },
+  {
+    "id": "5fefb645-f408-4363-95d5-21955ff5c66e",
+    "name": "Выпады с гантелями",
+    "primary_muscles": [
+      "квадрицепс",
+      "ягодичные мышцы"
+    ],
+    "secondary_muscles": [
+      "бицепс бедра"
+    ],
+    "technique": "Сделайте широкий шаг вперед, опуская заднее колено к полу. Оттолкнитесь передней ногой, чтобы вернуться в исходное положение.",
+    "benefits": "Меньшая нагрузка на спину",
+    "risks": "Нагрузка на колени",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Комфортная длина шага",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение)",
+      "голеностоп (растяжение)"
+    ],
+    "alternatives": [
+      "Выпады со штангой",
+      "Болгарские выпады",
+      "Зашагивания на тумбу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Dumbbell Lunges"
+  },
+  {
+    "id": "8a3dd8f1-0d0a-485b-a31a-75921af08be9",
+    "name": "Махи гантелями в стороны",
+    "primary_muscles": [
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "надостная"
+    ],
+    "technique": "Поднять гантели через стороны до уровня плеч, локти выше кистей",
+    "benefits": "Изоляция для ширины плеч",
+    "risks": "Импиджмент при неправильной технике",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Локти согнуты 10–15°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Deltoid_Raise/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (импиджмент, растяжение надостной)"
+    ],
+    "alternatives": [
+      "Махи в кроссовере на среднюю дельту",
+      "Тяга штанги к подбородку широким хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "f9c89e99-c570-4261-9f75-0018cea43bf7",
+    "name": "Шраги с гантелями",
+    "primary_muscles": [
+      "верхняя трапеция"
+    ],
+    "secondary_muscles": [
+      "мышцы, поднимающие лопатку"
+    ],
+    "technique": "Стоя, поднимайте плечи максимально высоко к ушам, задержитесь и медленно опустите.",
+    "benefits": "Изоляция верха трапеции",
+    "risks": "Минимальные",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Движение только в плечевых суставах",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shrug/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "шейный отдел (растяжение мышц при неправильной технике)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Шраги со штангой",
+      "Шраги в Смите",
+      "Тяга Ли Хейни"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Dumbbell Shrug"
+  },
+  {
+    "id": "aefdc8dc-bd06-4270-b2f2-3efa4f5360e8",
+    "name": "Французский жим сидя",
+    "primary_muscles": [
+      "трицепс (длинная головка)"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Гантель над головой, согнуть руки за голову",
+    "benefits": "Большая растяжка длинной головки",
+    "risks": "Нагрузка на локти",
+    "equipment": [
+      "EZ-гриф",
+      "Гантели",
+      "Скамья со спинкой"
+    ],
+    "settings": "Спинка вертикальная",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит трицепса)",
+      "плечевой сустав (растяжение при опускании за голову)"
+    ],
+    "alternatives": [
+      "Французский жим лежа",
+      "Разгибание рук над головой в кроссовере",
+      "Разгибание рук на верхнем блоке"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "efa318ff-02ea-40ac-910a-68e4ab910e57",
+    "name": "Тяга штанги в наклоне",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция",
+      "бицепс",
+      "задняя дельта"
+    ],
+    "technique": "Наклонитесь вперед, спина прямая. Тяните штангу к животу, сводя лопатки.",
+    "benefits": "Развитие толщины спины",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Штанга"
+    ],
+    "settings": "Наклон 45°, хват пронированный или супинированный",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение мышц, грыжа при округлении)",
+      "бицепс (тендинит, растяжение сухожилия)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга гантели одной рукой",
+      "Тяга нижнего блока к поясу",
+      "Тяга Т-грифа",
+      "Тяга в Смите в наклоне"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Bent Over Barbell Row"
+  },
+  {
+    "id": "41c227ca-71f5-4c62-b1a7-4105d15f316d",
+    "name": "Подъем гантелей перед собой",
+    "primary_muscles": [
+      "передняя дельта"
+    ],
+    "secondary_muscles": [
+      "верхняя часть большой грудной"
+    ],
+    "technique": "Поднять гантели перед собой до уровня плеч",
+    "benefits": "Изоляция передней дельты",
+    "risks": "Минимальные",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Руки прямые или слегка согнуты",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Incline_Shoulder_Raise/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение передней дельты)"
+    ],
+    "alternatives": [
+      "Жим штанги стоя",
+      "Махи гантелями в стороны",
+      "Жим в Хаммере на плечи"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "940d8e1b-1e01-4c7f-9187-0a91460b9ff7",
+    "name": "Тяга штанги к подбородку узким хватом",
+    "primary_muscles": [
+      "передняя дельта",
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "трапеция",
+      "бицепс"
+    ],
+    "technique": "Возьмите штангу узким хватом. Тяните ее вверх вдоль тела, разводя локти в стороны.",
+    "benefits": "Развитие передней/средней дельты и трапеции",
+    "risks": "Высокий риск импиджмента",
+    "equipment": [
+      "EZ-гриф",
+      "Штанга"
+    ],
+    "settings": "Хват 1–2 кулака",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Barbell_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (импиджмент-синдром)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Тяга штанги к подбородку широким хватом",
+      "Махи гантелями в стороны",
+      "Тяга каната к лицу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Upright Barbell Row"
+  },
+  {
+    "id": "8f017a2a-5115-4cee-8e3d-ffdbf7b7236f",
+    "name": "Жим гантелей сидя",
+    "primary_muscles": [
+      "передняя дельта",
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "трапеция",
+      "трицепс"
+    ],
+    "technique": "Сядьте на скамью со спинкой, гантели на уровне плеч. Выжмите гантели вверх, сводя их в верхней точке, затем опустите.",
+    "benefits": "Меньшая нагрузка на поясницу",
+    "risks": "Нагрузка на плечевые суставы",
+    "equipment": [
+      "Гантели",
+      "Скамья со спинкой"
+    ],
+    "settings": "Угол спинки 85–90°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение, импиджмент)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим штанги стоя",
+      "Жим в тренажере Shoulder Press",
+      "Жим Арнольда"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Seated Dumbbell Press"
+  },
+  {
+    "id": "754836fd-222e-46fb-899c-36f22d0ad934",
+    "name": "Жим гантелей лежа на горизонтальной скамье",
+    "primary_muscles": [
+      "большая грудная"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "трицепс"
+    ],
+    "technique": "Лягте на скамью, выжмите гантели вверх. Медленно опустите их до уровня груди, разводя локти, затем выжмите обратно.",
+    "benefits": "Большая амплитуда, равномерная нагрузка, меньше стресса для плеч",
+    "risks": "Потеря контроля над гантелями",
+    "equipment": [
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Скамья горизонтальная, хват нейтральный или пронированный",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение, импиджмент)",
+      "запястье (растяжение связок)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим штанги лежа",
+      "Жим в тренажере Смита",
+      "Жим в тренажере Chest Press",
+      "Отжимания"
+    ],
+    "reps_range": "8-12",
+    "category": "strength",
+    "name_eng": "Dumbbell Bench Press"
+  },
+  {
+    "id": "17c88780-5e54-4ee0-92da-67e0968a5a8f",
+    "name": "Жим стоя в Смите",
+    "primary_muscles": [
+      "передняя дельта",
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "трапеция",
+      "трицепс"
+    ],
+    "technique": "Выжать гриф над головой в Смите",
+    "benefits": "Безопасность",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Тренажер Смита"
+    ],
+    "settings": "Ограничители на уровне ключиц",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (импиджмент)",
+      "поясница (растяжение)"
+    ],
+    "alternatives": [
+      "Жим штанги стоя",
+      "Жим гантелей сидя",
+      "Жим в тренажере Shoulder Press"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "0f11cfd4-8912-4dd3-a0a3-d6f20632c788",
+    "name": "Жим штанги узким хватом лежа",
+    "primary_muscles": [
+      "трицепс"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "верхняя часть большой грудной"
+    ],
+    "technique": "Лягте на скамью, возьмите штангу узким хватом. Опустите штангу к нижней части груди, прижимая локти к корпусу, и выжмите вверх.",
+    "benefits": "База для массы трицепса",
+    "risks": "Нагрузка на запястья",
+    "equipment": [
+      "Скамья",
+      "Штанга"
+    ],
+    "settings": "Хват на ширине плеч или чуть уже",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (высокий риск растяжения)",
+      "локоть (тендинит трицепса)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Отжимания на брусьях (акцент трицепс)",
+      "Французский жим лежа",
+      "JM-жим"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Close-Grip Barbell Bench Press"
+  },
+  {
+    "id": "7a671fd3-8574-4c54-b03a-7ae3fe4a39bc",
+    "name": "Жим на наклонной скамье в Смите",
+    "primary_muscles": [
+      "верхняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "трицепс"
+    ],
+    "technique": "Лягте на наклонную скамью в тренажере Смита. Опустите гриф к верхней части груди и выжмите его вверх.",
+    "benefits": "Акцент на верх груди, безопасность",
+    "risks": "Повышенная нагрузка на переднюю дельту",
+    "equipment": [
+      "Наклонная скамья",
+      "Тренажер Смита"
+    ],
+    "settings": "Угол 30–45°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Incline_Bench_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (перегрузка передней дельты)",
+      "запястье (растяжение)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим штанги на наклонной скамье",
+      "Жим гантелей на наклонной скамье",
+      "Сведение рук в кроссовере снизу вверх"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Smith Machine Incline Bench Press"
+  },
+  {
+    "id": "7e3e802f-b8b5-4e80-a7d5-aab5d4254f29",
+    "name": "Отведение ноги назад в кроссовере",
+    "primary_muscles": [
+      "большая ягодичная"
+    ],
+    "secondary_muscles": [
+      "средняя ягодичная"
+    ],
+    "technique": "Закрепите манжету на лодыжке, подключите к нижнему блоку. Встаньте лицом к тренажёру, слегка наклонитесь вперёд. Отведите прямую ногу назад, напрягая ягодицы, затем медленно верните.",
+    "benefits": "Изоляция ягодиц",
+    "risks": "Минимальные",
+    "equipment": [
+      "Манжета",
+      "Нижний блок"
+    ],
+    "settings": "Корпус вертикально",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Glute_Kickback/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "тазобедренный сустав (растяжение)",
+      "поясница (переразгибание при наклоне)"
+    ],
+    "alternatives": [
+      "Ягодичный мостик",
+      "Жим ногами (ноги высоко)",
+      "Отведение ноги в сторону"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Glute Kickback"
+  },
+  {
+    "id": "fc2f132e-9414-4649-a1ab-bde16b4bdbe3",
+    "name": "Вращение грифа (Wrist Roller)",
+    "primary_muscles": [
+      "мышцы предплечья"
+    ],
+    "secondary_muscles": [
+      "брахиорадиалис"
+    ],
+    "technique": "Держите валик перед собой на вытянутых руках. Вращайте кисти, наматывая веревку с весом на валик, затем медленно разматывайте.",
+    "benefits": "Комплексная проработка, выносливость",
+    "risks": "Утомление плеч",
+    "equipment": [
+      "Блин",
+      "Ролик для запястий"
+    ],
+    "settings": "Вес умеренный",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wrist_Roller/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (растяжение)",
+      "плечо (утомление, растяжение)"
+    ],
+    "alternatives": [
+      "Сгибание/разгибание запястий",
+      "Молот",
+      "Удержание штанги"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Wrist Roller"
+  },
+  {
+    "id": "fd16fd41-e661-48ee-87be-a27fe7b0ad47",
+    "name": "Жим на грудь в кроссовере с нижних блоков лежа",
+    "primary_muscles": [
+      "большая грудная"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "трицепс"
+    ],
+    "technique": "Лягте на скамью между нижними блоками, возьмите рукояти. Выжмите рукояти вверх и вперёд, сводя их вместе над грудью. Медленно разведите руки, сохраняя контроль.",
+    "benefits": "Альтернатива жиму гантелей с постоянным напряжением",
+    "risks": "Минимальные",
+    "equipment": [
+      "Кроссовер (нижний блок)",
+      "Скамья"
+    ],
+    "settings": "Скамья между блоками",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение)",
+      "локтевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Жим гантелей лежа",
+      "Жим в Смите",
+      "Жим в Chest Press"
+    ],
+    "reps_range": "8-12",
+    "category": "strength",
+    "name_eng": "Low Cable Crossover"
+  },
+  {
+    "id": "6b08fd7d-7568-4c65-b2f6-552017886526",
+    "name": "Щипковый хват (Pinch Grip Hold)",
+    "primary_muscles": [
+      "мышцы предплечья"
+    ],
+    "secondary_muscles": [
+      "сгибатели пальцев"
+    ],
+    "technique": "Возьмите два гладких блина внешними сторонами друг к другу. Сожмите их пальцами и большим пальцем и удерживайте.",
+    "benefits": "Сила большого пальца, силовой хват",
+    "risks": "Падение блинов",
+    "equipment": [
+      "Блин"
+    ],
+    "settings": "Блин 10–20 кг, удержание до максимального жжения в пальцах",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plate_Pinch/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "большой палец (растяжение связок)",
+      "запястье (растяжение)"
+    ],
+    "alternatives": [
+      "Удержание штанги",
+      "Прогулка фермера",
+      "Сгибание запястий"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Plate Pinch"
+  },
+  {
+    "id": "1d20086e-c63d-4c7b-a6fc-1f4a6dc15380",
+    "name": "Болгарские выпады в Смите",
+    "primary_muscles": [
+      "квадрицепс",
+      "ягодичные мышцы"
+    ],
+    "secondary_muscles": [
+      "бицепс бедра"
+    ],
+    "technique": "Задняя нога на скамье, присесть в Смите",
+    "benefits": "Изоляция, безопасность",
+    "risks": "Нагрузка на колено",
+    "equipment": [
+      "Скамья",
+      "Тренажер Смита"
+    ],
+    "settings": "Передняя нога далеко от скамьи",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Pistol_Squat/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение)"
+    ],
+    "alternatives": [
+      "Болгарские выпады с гантелями",
+      "Выпады в Смите",
+      "Жим ногами"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "ea80a6de-03b3-4f39-af20-8f4771c008be",
+    "name": "Пуловер с гантелью",
+    "primary_muscles": [
+      "большая грудная (растяжение)",
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "зубчатые",
+      "трицепс"
+    ],
+    "technique": "Лягте поперек скамьи, держите гантель на согнутых руках. Опустите гантель за голову и верните к груди.",
+    "benefits": "Расширение грудной клетки, растяжение",
+    "risks": "Нагрузка на плечевые суставы",
+    "equipment": [
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Таз ниже уровня плеч (при положении поперек)",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Dumbbell_Pullover/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение капсулы, импиджмент)",
+      "локтевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Пуловер в Смите",
+      "Пуловер в блоке",
+      "Разводка гантелей лежа"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Bent-Arm Dumbbell Pullover"
+  },
+  {
+    "id": "668309c4-7be6-41e9-a2be-a9d8ba81d547",
+    "name": "Жим гантелей лежа обратным хватом",
+    "primary_muscles": [
+      "верхняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "трицепс"
+    ],
+    "technique": "Лечь на горизонтальную скамью, взять гантели обратным хватом. Выжать вверх, локти ближе к корпусу",
+    "benefits": "Активация верха груди без наклона, сниженная нагрузка на плечи",
+    "risks": "Сложность стабилизации гантелей",
+    "equipment": [
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Хват супинированный",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Dumbbell_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение)",
+      "запястье (растяжение при супинированном хвате)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим штанги на наклонной скамье",
+      "Жим гантелей на наклонной скамье",
+      "Сведение рук в кроссовере снизу вверх"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "e0fabf95-1533-4b0f-b120-ca6062641110",
+    "name": "Махи гантелями в наклоне",
+    "primary_muscles": [
+      "задняя дельта"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция"
+    ],
+    "technique": "Наклонитесь, упритесь лбом в наклонную скамью. Разводите гантели в стороны, акцентируя задние дельты.",
+    "benefits": "Развитие задней дельты",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Наклон 45–90°, спина прямая",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Обратные разведения в Pec Deck",
+      "Махи в кроссовере на заднюю дельту",
+      "Тяга каната к лицу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Bent Over Dumbbell Rear Delt Raise With Head On Bench"
+  },
+  {
+    "id": "03a969b2-948f-4d87-bf52-e27905c1d469",
+    "name": "Паучьи сгибания (Spider Curl)",
+    "primary_muscles": [
+      "бицепс (короткая головка)"
+    ],
+    "secondary_muscles": [
+      "брахиалис"
+    ],
+    "technique": "Лягте животом на скамью Скотта. Поднимите штангу, сгибая руки, затем медленно опустите.",
+    "benefits": "Изоляция короткой головки, пиковое сокращение",
+    "risks": "Минимальные",
+    "equipment": [
+      "EZ-гриф",
+      "Гантели",
+      "Наклонная скамья"
+    ],
+    "settings": "Угол 45°, грудь на подушке",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spider_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит)",
+      "поясница (переразгибание при отрыве от скамьи)"
+    ],
+    "alternatives": [
+      "Концентрированный подъем на бицепс",
+      "Подъем на бицепс на скамье Скотта",
+      "Подъем гантелей на бицепс стоя"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Spider Curl"
+  },
+  {
+    "id": "0be5b21e-1397-4542-975a-56c8785119e0",
+    "name": "Жим в тренажере Shoulder Press",
+    "primary_muscles": [
+      "дельтовидные"
+    ],
+    "secondary_muscles": [
+      "трицепс",
+      "трапеция"
+    ],
+    "technique": "Сядьте в тренажер, возьмитесь за рукоятки. Выжимайте вес вверх до полного выпрямления рук, затем медленно опускайте.",
+    "benefits": "Безопасность, фиксированная траектория",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для жима на плечи"
+    ],
+    "settings": "Рукояти на уровне плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Shoulder_Military_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (минимальный риск)",
+      "локоть (минимальный риск)"
+    ],
+    "alternatives": [
+      "Жим штанги стоя",
+      "Жим гантелей сидя",
+      "Жим в Хаммере на плечи"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Machine Shoulder (Military) Press"
+  },
+  {
+    "id": "edc14ebb-68d2-406b-9f2b-4104f00adcb2",
+    "name": "Жим в тренажере на трицепс (Dips Machine)",
+    "primary_muscles": [
+      "трицепс"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "большая грудная"
+    ],
+    "technique": "Сядьте в тренажер, возьмитесь за рукоятки. Опускайте вес, сгибая локти до 90 градусов, затем разгибайте руки, выжимая вес вверх.",
+    "benefits": "Безопасность",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для отжиманий на брусьях"
+    ],
+    "settings": "Рукояти на уровне плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dip_Machine/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (минимальный риск)",
+      "плечевой сустав (минимальный риск)"
+    ],
+    "alternatives": [
+      "Отжимания на брусьях",
+      "Жим штанги узким хватом",
+      "Французский жим"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Dip Machine"
+  },
+  {
+    "id": "216243c9-dd00-43ec-908f-d3729638b854",
+    "name": "Тяга Рынделя",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция",
+      "бицепс"
+    ],
+    "technique": "Лечь головой на скамью, потянуть вес к поясу, сводя лопатки",
+    "benefits": "Исключена нагрузка на поясницу",
+    "risks": "Минимальные",
+    "equipment": [
+      "Гантели",
+      "Скамья",
+      "Штанга"
+    ],
+    "settings": "Голова на скамье, спина параллельна полу",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "бицепс (тендинит)",
+      "плечевой сустав (растяжение)",
+      "локоть (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга гантели одной рукой",
+      "Тяга нижнего блока к поясу",
+      "Тяга в тренажере Row"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "2666d36f-f295-401b-b36f-1399ab5929d9",
+    "name": "Сгибание ног лежа",
+    "primary_muscles": [
+      "бицепс бедра"
+    ],
+    "secondary_muscles": [
+      "икроножная"
+    ],
+    "technique": "Лягте лицом вниз, отрегулируйте валик под нижнюю часть голеней. Сгибайте ноги, поднимая вес, затем медленно опускайте.",
+    "benefits": "Изоляция бицепса бедра",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для сгибаний ног лежа"
+    ],
+    "settings": "Ось вращения совпадает с коленом",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение связок)",
+      "бицепс бедра (судороги, растяжение)"
+    ],
+    "alternatives": [
+      "Сгибание ног сидя",
+      "Сгибание ног в кроссовере",
+      "Румынская тяга"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Lying Leg Curls"
+  },
+  {
+    "id": "cf3882bf-1ac1-403f-ac31-e841909eef2d",
+    "name": "Подъем на бицепс в тренажере",
+    "primary_muscles": [
+      "бицепс"
+    ],
+    "secondary_muscles": [
+      "брахиалис"
+    ],
+    "technique": "Сядьте в тренажер, прижмите локти к подушкам. Сгибайте руки, поднимая вес, затем медленно опускайте.",
+    "benefits": "Изоляция, фиксированная траектория",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для сгибаний рук"
+    ],
+    "settings": "Локти на подушках",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bicep_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит, растяжение связок)"
+    ],
+    "alternatives": [
+      "Подъем на бицепс на скамье Скотта",
+      "Концентрированный подъем на бицепс",
+      "Подъем штанги на бицепс стоя"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Machine Bicep Curl"
+  },
+  {
+    "id": "b69cd965-04cb-4623-9142-08c887b68021",
+    "name": "Подъем на бицепс на наклонной скамье",
+    "primary_muscles": [
+      "бицепс (длинная головка)"
+    ],
+    "secondary_muscles": [
+      "брахиалис"
+    ],
+    "technique": "Лягте на наклонную скамью. Сгибайте руки, разворачивая кисти вверх, и опускайте.",
+    "benefits": "Максимальная растяжка длинной головки",
+    "risks": "Растяжение сухожилия при резких движениях",
+    "equipment": [
+      "Гантели",
+      "Наклонная скамья"
+    ],
+    "settings": "Угол 45–60°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (растяжение сухожилия длинной головки)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Подъем гантелей на бицепс стоя",
+      "Подъем на бицепс на скамье Скотта",
+      "Паучьи сгибания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Incline Dumbbell Curl"
+  },
+  {
+    "id": "fbd2f9a5-f35c-4bd1-ad0a-6eda6244f91b",
+    "name": "Тяга горизонтального блока к поясу в кроссовере",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция",
+      "бицепс"
+    ],
+    "technique": "Сядьте в тренажер, упритесь ногами. Возьмите V-образную рукоять и тяните ее к животу, сводя лопатки.",
+    "benefits": "Вариативность угла",
+    "risks": "Минимальные",
+    "equipment": [
+      "V-образная рукоять",
+      "Кроссовер (нижний блок)"
+    ],
+    "settings": "Спина прямая",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (минимальный риск при прямой спине)",
+      "бицепс (тендинит)",
+      "локоть (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга нижнего блока к поясу сидя",
+      "Тяга штанги в наклоне",
+      "Тяга гантели одной рукой"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Seated Cable Rows"
+  },
+  {
+    "id": "822f7bec-bd5e-4cce-83bc-8fb0a4537864",
+    "name": "Отведение ноги в сторону в тренажере",
+    "primary_muscles": [
+      "средняя ягодичная"
+    ],
+    "secondary_muscles": [
+      "большая ягодичная"
+    ],
+    "technique": "Сядьте в тренажер, поместите ноги снаружи от валиков. Разводите ноги в стороны, преодолевая сопротивление.",
+    "benefits": "Изоляция средней ягодичной",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для разведений ног"
+    ],
+    "settings": "Высота сиденья комфортная",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Thigh_Abductor/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "тазобедренный сустав (растяжение)",
+      "колено (растяжение)"
+    ],
+    "alternatives": [
+      "Отведение ноги назад",
+      "Ягодичный мостик",
+      "Жим ногами"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Thigh Abductor"
+  },
+  {
+    "id": "ad96a296-f8b4-40a2-9168-3952f26c089b",
+    "name": "Концентрированный подъем на бицепс",
+    "primary_muscles": [
+      "бицепс (длинная головка)"
+    ],
+    "secondary_muscles": [
+      "брахиалис"
+    ],
+    "technique": "Сядьте, уприте локоть рабочей руки во внутреннюю часть бедра. Сгибайте руку, поднимая гантель к плечу, и медленно опускайте.",
+    "benefits": "Изоляция, исключен читинг",
+    "risks": "Минимальные",
+    "equipment": [
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Локоть в бедре",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Concentration_Curls/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит, растяжение сухожилия)"
+    ],
+    "alternatives": [
+      "Подъем гантелей на бицепс стоя",
+      "Паучьи сгибания",
+      "Подъем на бицепс в тренажере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Concentration Curls"
+  },
+  {
+    "id": "5e5be93b-5511-4c80-afa1-6b1c9b2c535d",
+    "name": "Фронтальные приседания",
+    "primary_muscles": [
+      "квадрицепс"
+    ],
+    "secondary_muscles": [
+      "ягодичные мышцы",
+      "разгибатели спины"
+    ],
+    "technique": "Поместите штангу на передние дельты, пальцы поддерживают гриф. Приседайте, сохраняя корпус вертикальным, затем встаньте.",
+    "benefits": "Больший акцент на квадрицепс, меньше нагрузка на поясницу",
+    "risks": "Сложность удержания штанги",
+    "equipment": [
+      "Стойки",
+      "Штанга"
+    ],
+    "settings": "Локти подняты, корпус вертикально",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squat_Clean_Grip/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение)",
+      "запястье (растяжение при удержании)",
+      "поясница (растяжение)"
+    ],
+    "alternatives": [
+      "Приседания со штангой",
+      "Гакк-приседания",
+      "Жим ногами"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Front Squat (Clean Grip)"
+  },
+  {
+    "id": "06bc27b8-e79f-4120-aecf-db385c1e97a6",
+    "name": "Пуловер в блоке (Straight-Arm Pulldown)",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "большая круглая",
+      "трицепс"
+    ],
+    "technique": "Руки прямые, потянуть рукоять к бедрам, двигая только в плечевых суставах",
+    "benefits": "Изоляция широчайших, преактивация",
+    "risks": "Минимальные",
+    "equipment": [
+      "Верхний блок",
+      "Длинная рукоять"
+    ],
+    "settings": "Руки прямые или слегка согнуты",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Straight-Arm_Pulldown/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение капсулы)",
+      "локоть (растяжение связок)"
+    ],
+    "alternatives": [
+      "Пуловер с гантелью",
+      "Пуловер в Смите",
+      "Подтягивания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "7561eee7-2ebc-49e6-b118-d00995febd23",
+    "name": "Румынская тяга в Смите",
+    "primary_muscles": [
+      "бицепс бедра",
+      "ягодичные мышцы"
+    ],
+    "secondary_muscles": [
+      "разгибатели спины"
+    ],
+    "technique": "Встаньте под гриф, наклонитесь вперед, сохраняя спину прямой, пока не почувствуете растяжение в бицепсе бедра, затем вернитесь вверх.",
+    "benefits": "Безопасность, фиксированная траектория",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Тренажер Смита"
+    ],
+    "settings": "Колени слегка согнуты, спина прямая",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Stiff-Legged_Deadlift/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение)",
+      "бицепс бедра (растяжение)"
+    ],
+    "alternatives": [
+      "Румынская тяга со штангой",
+      "Мертвая тяга в Смите",
+      "Гиперэкстензия"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Smith Machine Stiff-Legged Deadlift"
+  },
+  {
+    "id": "59bc6807-51d8-41e6-9855-1954d01d32c2",
+    "name": "Отжимания на брусьях (акцент трицепс)",
+    "primary_muscles": [
+      "трицепс"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "нижняя часть большой грудной"
+    ],
+    "technique": "Корпус вертикально, опуститься до 90°, выжать",
+    "benefits": "База с собственным весом",
+    "risks": "Травма плеч/локтей",
+    "equipment": [
+      "Брусья"
+    ],
+    "settings": "Корпус вертикально",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение)",
+      "локоть (тендинит)",
+      "грудь (растяжение)"
+    ],
+    "alternatives": [
+      "Жим штанги узким хватом",
+      "Жим в тренажере на трицепс",
+      "Алмазные отжимания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "b419d3b1-73c0-4e71-a670-fd1692c573e1",
+    "name": "Копенгагенские приведения (Copenhagen Adduction)",
+    "primary_muscles": [
+      "приводящие мышцы бедра"
+    ],
+    "secondary_muscles": [
+      "косые мышцы живота"
+    ],
+    "technique": "Лечь на бок, верхняя нога на скамье, поднять нижнюю ногу к верхней",
+    "benefits": "Укрепление приводящих, профилактика паховых травм",
+    "risks": "Нагрузка на колено верхней ноги",
+    "equipment": [
+      "Скамья"
+    ],
+    "settings": "Верхняя нога на уровне голени",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено верхней ноги (растяжение связок)",
+      "паховая область (растяжение)"
+    ],
+    "alternatives": [
+      "Сведение ног в тренажере",
+      "Приседания с широкой постановкой ног",
+      "Боковые выпады"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "507a334c-a3c1-4adc-86d8-05d19b9f77aa",
+    "name": "Разводка в кроссовере (сведение рук)",
+    "primary_muscles": [
+      "внутренняя часть большой грудной"
+    ],
+    "secondary_muscles": [
+      "передняя дельта"
+    ],
+    "technique": "Встаньте между верхними блоками. Слегка наклонитесь вперед и сводите рукоятки перед собой, напрягая грудь.",
+    "benefits": "Постоянное напряжение, акцент на внутреннюю часть",
+    "risks": "Нагрузка на локти при неправильной технике",
+    "equipment": [
+      "D-образная рукоять",
+      "Кроссовер (верхний блок)"
+    ],
+    "settings": "Высота блока верхняя",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локтевой сустав (растяжение связок)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Разводка гантелей лежа",
+      "Сведение рук в Pec Deck",
+      "Жим Свенда"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Cable Crossover"
+  },
+  {
+    "id": "98a632a4-6ac4-45ab-8bcc-638f4437bf44",
+    "name": "Подъем на носки в Смите",
+    "primary_muscles": [
+      "икроножная"
+    ],
+    "secondary_muscles": [
+      "камбаловидная"
+    ],
+    "technique": "Встаньте носками на возвышение в тренажере Смита, поместив гриф на плечи. Поднимитесь на носки как можно выше, задержитесь и медленно опуститесь.",
+    "benefits": "Безопасность, большой вес",
+    "risks": "Минимальные",
+    "equipment": [
+      "Платформа",
+      "Тренажер Смита"
+    ],
+    "settings": "Полная амплитуда",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "ахиллово сухожилие (растяжение)",
+      "плечо (давление грифа)"
+    ],
+    "alternatives": [
+      "Подъем на носки стоя",
+      "Подъем на носки в гакк-тренажере",
+      "Осел"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Smith Machine Calf Raise"
+  },
+  {
+    "id": "5f214a11-cabc-4155-b73a-1812e0f303e9",
+    "name": "Ягодичный мостик на полу",
+    "primary_muscles": [
+      "большая ягодичная"
+    ],
+    "secondary_muscles": [
+      "бицепс бедра"
+    ],
+    "technique": "Лечь на спину, поднять таз, сжимая ягодицы",
+    "benefits": "Безопасность, без оборудования",
+    "risks": "Минимальные",
+    "equipment": [
+      "Коврик",
+      "Пол"
+    ],
+    "settings": "Колени согнуты 90°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (переразгибание)"
+    ],
+    "alternatives": [
+      "Ягодичный мостик со штангой",
+      "Отведение ноги назад",
+      "Жим ногами"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "0a90e00b-0029-4bf3-b40f-0a2ca9cfb753",
+    "name": "Жим в тренажере Chest Press",
+    "primary_muscles": [
+      "большая грудная"
+    ],
+    "secondary_muscles": [
+      "трицепс",
+      "передняя дельта"
+    ],
+    "technique": "Отрегулируйте сиденье так, чтобы рукоятки были на уровне середины груди. Выжмите рукоятки вперед, сводя грудные мышцы, затем медленно верните.",
+    "benefits": "Безопасность, фиксированная траектория",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер Chest Press"
+    ],
+    "settings": "Рукояти на уровне середины груди",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (минимальный риск)",
+      "локтевой сустав (минимальный риск)"
+    ],
+    "alternatives": [
+      "Жим штанги лежа",
+      "Жим гантелей лежа",
+      "Жим в Смите",
+      "Жим в Хаммере"
+    ],
+    "reps_range": "8-12",
+    "category": "strength",
+    "name_eng": "Leverage Chest Press"
+  },
+  {
+    "id": "7e2e4d87-592f-4525-8ef7-a6c3075f9e2e",
+    "name": "Скручивания на полу",
+    "primary_muscles": [
+      "прямая мышца живота"
+    ],
+    "secondary_muscles": [
+      "косые мышцы живота"
+    ],
+    "technique": "Лягте на спину, ноги согнуты. Оторвите лопатки от пола, напрягая пресс, и медленно опуститесь обратно.",
+    "benefits": "Базовое упражнение для рельефа пресса",
+    "risks": "Нагрузка на шею при рывках",
+    "equipment": [
+      "Коврик",
+      "Пол"
+    ],
+    "settings": "Поясница прижата, движение только за счет пресса",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "шея (растяжение мышц)",
+      "поясница (растяжение)"
+    ],
+    "alternatives": [
+      "Скручивания на наклонной скамье",
+      "Молитва в блоке",
+      "Скручивания в тренажере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Crunches"
+  },
+  {
+    "id": "c7053107-e075-4644-ac3e-7be97f1e242e",
+    "name": "\"Дровосек\" в кроссовере (Woodchopper)",
+    "primary_muscles": [
+      "косые мышцы живота"
+    ],
+    "secondary_muscles": [
+      "дельтовидные",
+      "широчайшие",
+      "ягодичные мышцы"
+    ],
+    "technique": "Встать боком к верхнему блоку. Потянуть рукоять по диагонали вниз к противоположному колену, разворачивая корпус",
+    "benefits": "Функциональное упражнение, имитирующее реальные движения",
+    "risks": "Травма поясницы при круглой спине",
+    "equipment": [
+      "D-образная рукоять",
+      "Кроссовер"
+    ],
+    "settings": "Руки почти прямые, движение идет за счет скручивания корпуса",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Wood_Chop/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение при скручивании)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Русский твист",
+      "Боковая планка",
+      "Молитва в блоке"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "0cac699a-e5cd-4175-a95a-279cf9d46da2",
+    "name": "Гакк-приседания",
+    "primary_muscles": [
+      "квадрицепс"
+    ],
+    "secondary_muscles": [
+      "ягодичные мышцы"
+    ],
+    "technique": "Поместите плечи под подушки тренажера. Приседайте до угла 90° в коленях и встаньте, толкая платформу пятками.",
+    "benefits": "Акцент на квадрицепс, минимальная нагрузка на спину",
+    "risks": "Минимальные",
+    "equipment": [
+      "Гакк-тренажер"
+    ],
+    "settings": "Спина прижата",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение)",
+      "шейный отдел (сдавливание при неправильном положении)"
+    ],
+    "alternatives": [
+      "Приседания со штангой",
+      "Жим ногами",
+      "Фронтальные приседания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Hack Squat"
+  },
+  {
+    "id": "8bbde788-165e-4441-bf42-e408d74ef68f",
+    "name": "Сгибание запястий со штангой",
+    "primary_muscles": [
+      "сгибатели предплечья"
+    ],
+    "secondary_muscles": [
+      "бицепс"
+    ],
+    "technique": "Встаньте на колени, положите предплечья на скамью, кисти свисают ладонями вверх. Сгибайте запястья вверх со штангой.",
+    "benefits": "Изоляция сгибателей",
+    "risks": "Минимальные",
+    "equipment": [
+      "Скамья",
+      "Штанга"
+    ],
+    "settings": "Кисти свисают с коленей",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Palms-Up_Barbell_Wrist_Curl_Over_A_Bench/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (растяжение связок)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Сгибание запястий с гантелями",
+      "Молот",
+      "Удержание штанги"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Palms-Up Barbell Wrist Curl Over A Bench"
+  },
+  {
+    "id": "d4745323-62f5-4a5e-969a-005a0394c288",
+    "name": "\"Молитва\" (скручивания на верхнем блоке)",
+    "primary_muscles": [
+      "прямая мышца живота"
+    ],
+    "secondary_muscles": [
+      "косые мышцы живота"
+    ],
+    "technique": "Встаньте на колени перед верхним блоком, держите канат у головы. Скручивайте корпус вниз, напрягая пресс.",
+    "benefits": "Возможность прогрессировать в весах (гипертрофия пресса)",
+    "risks": "Работа бицепсом бедра или спиной вместо пресса",
+    "equipment": [
+      "Верхний блок",
+      "Канатная рукоять"
+    ],
+    "settings": "Таз неподвижен, скручивание только в позвоночнике",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение при сгибании)",
+      "шея (растяжение)"
+    ],
+    "alternatives": [
+      "Скручивания в блочном тренажере",
+      "Скручивания на наклонной скамье",
+      "Подъем ног в висе"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Cable Crunch"
+  },
+  {
+    "id": "f70c9ee3-a861-46c4-bcdf-9dc522dcf6d5",
+    "name": "Удержание штанги",
+    "primary_muscles": [
+      "мышцы предплечья"
+    ],
+    "secondary_muscles": [
+      "бицепс",
+      "трапеция"
+    ],
+    "technique": "Удерживать штангу максимально долго",
+    "benefits": "Сила хвата, статическая нагрузка",
+    "risks": "Минимальные",
+    "equipment": [
+      "Штанга"
+    ],
+    "settings": "Хват на ширине плеч",
+    "media_url": null,
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (растяжение)",
+      "бицепс (растяжение сухожилия)"
+    ],
+    "alternatives": [
+      "Прогулка фермера",
+      "Щипковый хват",
+      "Вис на турнике"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "8399f888-b4ce-42a1-b8c9-0a6a3dcaad16",
+    "name": "Скручивания на наклонной скамье",
+    "primary_muscles": [
+      "прямая мышца живота"
+    ],
+    "secondary_muscles": [
+      "косые мышцы живота"
+    ],
+    "technique": "Закрепите ноги на наклонной скамье. Скрутите корпус, поднимая лопатки, и медленно опуститесь.",
+    "benefits": "Увеличенная амплитуда и сложность",
+    "risks": "Нагрузка на поясницу при переразгибании",
+    "equipment": [
+      "Наклонная скамья"
+    ],
+    "settings": "Угол 30–45°, руки за головой или скрещены на груди",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Crunch/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение, грыжа)",
+      "шея (растяжение)"
+    ],
+    "alternatives": [
+      "Скручивания на полу",
+      "Молитва в блоке",
+      "Подъем ног в висе"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Decline Crunch"
+  },
+  {
+    "id": "e821fba4-d9ed-4aa9-91a6-5cc25fd0e2b6",
+    "name": "Хорошее утро (Good Morning)",
+    "primary_muscles": [
+      "бицепс бедра",
+      "разгибатели спины"
+    ],
+    "secondary_muscles": [
+      "ягодичные мышцы"
+    ],
+    "technique": "Штанга на плечах. Наклоняйтесь вперед, отводя таз назад, пока корпус не станет почти параллельным полу. Вернитесь в исходное положение.",
+    "benefits": "Растяжение бицепса бедра, укрепление поясницы",
+    "risks": "Высокий риск травмы поясницы",
+    "equipment": [
+      "Штанга"
+    ],
+    "settings": "Спина прямая, колени слегка согнуты",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Good_Morning/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (высокий риск грыжи/растяжения)",
+      "бицепс бедра (растяжение)"
+    ],
+    "alternatives": [
+      "Румынская тяга",
+      "Мертвая тяга",
+      "Гиперэкстензия"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Good Morning"
+  },
+  {
+    "id": "5daa66c2-8a1e-4e94-9eb4-c025770fd721",
+    "name": "Подъем на носки сидя",
+    "primary_muscles": [
+      "камбаловидная"
+    ],
+    "secondary_muscles": [
+      "икроножная"
+    ],
+    "technique": "Сядьте в тренажер, поставьте носки на платформу. Поднимайте пятки вверх, напрягая икры, затем опускайте.",
+    "benefits": "Акцент на камбаловидную (объем икры)",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для подъемов на носки сидя"
+    ],
+    "settings": "Колени согнуты 90°",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Raise/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "ахиллово сухожилие (растяжение)",
+      "колено (давление подушек)"
+    ],
+    "alternatives": [
+      "Подъем на носки стоя",
+      "Подъем на носки в Смите",
+      "Осел"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Seated Calf Raise"
+  },
+  {
+    "id": "e2fa44ff-8ef5-4ab6-bb69-db6abf95c2dd",
+    "name": "Разгибание руки назад в наклоне (кикбэк)",
+    "primary_muscles": [
+      "трицепс (длинная головка)"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Наклон, плечо прижато, разогнуть руку назад",
+    "benefits": "Изоляция",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Наклон 90°, плечо неподвижно",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Triceps_Extension/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит)",
+      "поясница (растяжение при наклоне)"
+    ],
+    "alternatives": [
+      "Разгибание руки назад в кроссовере",
+      "Французский жим сидя",
+      "Жим штанги узким хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "0f91bfa0-a417-4874-b8e1-bb5ba13412c7",
+    "name": "Сгибание ног сидя",
+    "primary_muscles": [
+      "бицепс бедра"
+    ],
+    "secondary_muscles": [
+      "икроножная"
+    ],
+    "technique": "Сядьте в тренажер, отрегулируйте валик. Сгибайте ноги, поднимая вес к ягодицам, затем медленно опускайте.",
+    "benefits": "Большая растяжка, акцент на верхнюю часть",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для сгибаний ног сидя"
+    ],
+    "settings": "Валики на уровне голеностопа",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение)",
+      "бицепс бедра (растяжение)"
+    ],
+    "alternatives": [
+      "Сгибание ног лежа",
+      "Сгибание ног в кроссовере",
+      "Румынская тяга"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Seated Leg Curl"
+  },
+  {
+    "id": "a673a68c-3b75-46c8-8fcb-da8962a14a80",
+    "name": "Жим штанги стоя (армейский жим)",
+    "primary_muscles": [
+      "передняя дельта",
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "трапеция",
+      "трицепс"
+    ],
+    "technique": "Выжать штангу над головой, опустить на ключицы",
+    "benefits": "База для массы и силы плеч",
+    "risks": "Нагрузка на поясницу и плечи",
+    "equipment": [
+      "Стойки",
+      "Штанга"
+    ],
+    "settings": "Хват на ширине плеч, пресс напряжен",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Barbell_Military_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (импиджмент)",
+      "поясница (растяжение)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Жим гантелей сидя",
+      "Жим в тренажере Shoulder Press",
+      "Жим Арнольда"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "2ddedfdd-7ccf-4334-a0c6-600dd7fb9ef3",
+    "name": "Сгибание ног в кроссовере",
+    "primary_muscles": [
+      "бицепс бедра"
+    ],
+    "secondary_muscles": [
+      "ягодичные мышцы"
+    ],
+    "technique": "Лечь лицом вниз, манжета на лодыжке, согнуть ногу",
+    "benefits": "Изоляция каждой ноги",
+    "risks": "Минимальные",
+    "equipment": [
+      "Манжета",
+      "Нижний блок"
+    ],
+    "settings": "Высота блока нижняя",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Cable_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение)",
+      "тазобедренный сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Сгибание ног лежа",
+      "Сгибание ног сидя",
+      "Румынская тяга"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "298495f1-7001-4ced-89ab-27490644dda2",
+    "name": "Тяга Т-грифа",
+    "primary_muscles": [
+      "ромбовидные",
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "трапеция",
+      "ромбовидные",
+      "бицепс"
+    ],
+    "technique": "Встаньте над грифом, возьмитесь за V-образную рукоять. Наклонитесь вперед и тяните вес к животу, сводя лопатки.",
+    "benefits": "Отличное упражнение для середины спины",
+    "risks": "Нагрузка на поясницу",
+    "equipment": [
+      "Т-гриф"
+    ],
+    "settings": "Наклон 45°, спина прямая",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/T-Bar_Row_with_Handle/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение мышц, грыжа при округлении)",
+      "бицепс (тендинит)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга штанги в наклоне",
+      "Тяга гантели одной рукой",
+      "Тяга нижнего блока к поясу",
+      "Тяга в тренажере Row"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "T-Bar Row with Handle"
+  },
+  {
+    "id": "4d2f5b01-4ba3-401e-8fad-36b7234dbbb1",
+    "name": "JM-жим (JM Press)",
+    "primary_muscles": [
+      "трицепс"
+    ],
+    "secondary_muscles": [
+      "передняя дельта",
+      "верхняя часть большой грудной"
+    ],
+    "technique": "Лягте на скамью. Опустите штангу к шее, затем отведите локти вперед и выжмите вес за счет трицепса.",
+    "benefits": "Гибрид жима и французского жима",
+    "risks": "Требует освоения техники",
+    "equipment": [
+      "Скамья",
+      "Штанга"
+    ],
+    "settings": "Узкий хват, локти вперед",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/JM_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (высокий риск тендинита)",
+      "запястье (растяжение)",
+      "плечо (растяжение)"
+    ],
+    "alternatives": [
+      "Жим штанги узким хватом",
+      "Французский жим лежа",
+      "Отжимания на брусьях"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "JM Press"
+  },
+  {
+    "id": "fe6b8456-b3fc-44f8-8d19-170e648cd3fe",
+    "name": "Подъем штанги на бицепс с EZ-грифом",
+    "primary_muscles": [
+      "бицепс"
+    ],
+    "secondary_muscles": [
+      "брахиалис",
+      "брахиорадиалис"
+    ],
+    "technique": "Возьмите EZ-штангу за внутренние изгибы. Сгибайте руки, поднимая штангу к плечам, не разводя локти.",
+    "benefits": "Меньшая нагрузка на запястья",
+    "risks": "Минимальные",
+    "equipment": [
+      "EZ-гриф"
+    ],
+    "settings": "Хват за изгибы",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_EZ_Bar_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит)",
+      "запястье (минимальный риск)"
+    ],
+    "alternatives": [
+      "Подъем штанги на бицепс стоя",
+      "Подъем гантелей на бицепс стоя",
+      "Подъем на бицепс на скамье Скотта"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Close-Grip EZ Bar Curl"
+  },
+  {
+    "id": "fd629069-0b51-407a-b93b-0548ed7ef4e9",
+    "name": "Махи в кроссовере на заднюю дельту (перекрестно)",
+    "primary_muscles": [
+      "задняя дельта"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция"
+    ],
+    "technique": "Возьмите рукояти верхних блоков крест-накрест. Разводите прямые руки в стороны, сводя лопатки.",
+    "benefits": "Постоянное напряжение в задней дельте",
+    "risks": "Минимальные",
+    "equipment": [
+      "D-образная рукоять",
+      "Кроссовер (верхний/средний блок)"
+    ],
+    "settings": "Высота блока на уровне плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rear_Delt_Fly/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Махи гантелями в наклоне",
+      "Обратные разведения в Pec Deck",
+      "Тяга каната к лицу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Cable Rear Delt Fly"
+  },
+  {
+    "id": "cc379eca-f15f-49cf-afb9-6ab50c7d3f6f",
+    "name": "Разгибание рук на верхнем блоке (канат)",
+    "primary_muscles": [
+      "трицепс (латеральная головка)"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Встаньте лицом к верхнему блоку, возьмитесь за канат. Разгибайте руки вниз, в нижней точке разводя концы каната в стороны.",
+    "benefits": "Пиковое сокращение при разведении",
+    "risks": "Минимальные",
+    "equipment": [
+      "Верхний блок",
+      "Канатная рукоять"
+    ],
+    "settings": "Локти прижаты",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит трицепса)",
+      "запястье (растяжение)"
+    ],
+    "alternatives": [
+      "Разгибание рук на верхнем блоке (прямая рукоять)",
+      "Французский жим лежа",
+      "Разгибание рук в кроссовере обратным хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Triceps Pushdown - Rope Attachment"
+  },
+  {
+    "id": "d8441ceb-3807-453e-9f1d-f836cfc77d6e",
+    "name": "Разгибание рук над головой в кроссовере (канат)",
+    "primary_muscles": [
+      "трицепс (длинная головка)"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Встаньте спиной к нижнему блоку. Держите канат над головой и разгибайте руки в локтях вверх.",
+    "benefits": "Максимальная растяжка длинной головки",
+    "risks": "Нагрузка на локти",
+    "equipment": [
+      "Канатная рукоять",
+      "Нижний блок"
+    ],
+    "settings": "Блок в самом низу",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит трицепса)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Французский жим сидя",
+      "Разгибание руки назад в наклоне",
+      "Пуловер в блоке"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Cable Rope Overhead Triceps Extension"
+  },
+  {
+    "id": "cb315b69-45bf-4e8b-9f98-9dca7bf2be0d",
+    "name": "Внешняя ротация в кроссовере",
+    "primary_muscles": [
+      "малая круглая",
+      "подостная"
+    ],
+    "secondary_muscles": [
+      "задняя дельта"
+    ],
+    "technique": "Плечо прижато, локоть 90°, повернуть предплечье наружу",
+    "benefits": "Здоровье плечевого сустава, профилактика травм",
+    "risks": "Чрезмерный вес",
+    "equipment": [
+      "D-образная рукоять",
+      "Нижний блок"
+    ],
+    "settings": "Минимальный вес, локоть фиксирован",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение ротаторов при большом весе)"
+    ],
+    "alternatives": [
+      "Внешняя ротация с гантелью",
+      "Тяга каната к лицу",
+      "Кубинский жим"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "0d7f121e-be39-407b-89c2-39cc85c6e7e3",
+    "name": "Жим ногами в тренажере",
+    "primary_muscles": [
+      "квадрицепс",
+      "ягодичные мышцы"
+    ],
+    "secondary_muscles": [
+      "бицепс бедра"
+    ],
+    "technique": "Сядьте в тренажер, поставьте стопы на платформу на ширине плеч. Снимите ограничители, согните колени до угла 90 градусов, затем мощно выжмите платформу вверх.",
+    "benefits": "Безопасность для спины",
+    "risks": "Нагрузка на колени",
+    "equipment": [
+      "Тренажер для жима ногами"
+    ],
+    "settings": "Ноги на ширине плеч",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение связок)",
+      "тазобедренный сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Приседания со штангой",
+      "Гакк-приседания",
+      "Разгибание ног в тренажере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Leg Press"
+  },
+  {
+    "id": "eb299866-a21a-4e33-9a8b-4ce0486ea5c4",
+    "name": "Тяга верхнего блока к груди широким хватом",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "бицепс",
+      "ромбовидные",
+      "трапеция"
+    ],
+    "technique": "Сядьте в тренажер, возьмитесь за рукоять широким хватом. Тяните рукоять к верхней части груди, сводя лопатки.",
+    "benefits": "Альтернатива подтягиваниям",
+    "risks": "Нагрузка на плечи при слишком широком хвате",
+    "equipment": [
+      "Верхний блок",
+      "Длинная рукоять"
+    ],
+    "settings": "Валики фиксируют бедра",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение при широком хвате)",
+      "бицепс (тендинит)",
+      "локоть (растяжение)"
+    ],
+    "alternatives": [
+      "Подтягивания широким хватом",
+      "Тяга гантели одной рукой",
+      "Тяга в тренажере Row"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Wide-Grip Lat Pulldown"
+  },
+  {
+    "id": "99e41686-535c-4315-b076-ec7a1adc5a6a",
+    "name": "Планка на локтях (классическая)",
+    "primary_muscles": [
+      "поперечная мышца живота"
+    ],
+    "secondary_muscles": [
+      "дельтовидные",
+      "ягодичные мышцы"
+    ],
+    "technique": "Встаньте в упор на предплечья и носки. Тело образует прямую линию от головы до пят. Удерживайте позицию.",
+    "benefits": "Статическая выносливость кора, безопасность для спины",
+    "risks": "Провисание поясницы",
+    "equipment": [
+      "Коврик",
+      "Пол"
+    ],
+    "settings": "Ягодицы напряжены, таз подкручен",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение при провисании)",
+      "плечо (утомление)"
+    ],
+    "alternatives": [
+      "Ролик для пресса",
+      "Боковая планка",
+      "Молитва в блоке"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Plank"
+  },
+  {
+    "id": "c71845ce-3a20-4772-858d-4f7b6d981431",
+    "name": "Разгибание рук в кроссовере обратным хватом",
+    "primary_muscles": [
+      "трицепс"
+    ],
+    "secondary_muscles": [
+      "мышцы предплечья"
+    ],
+    "technique": "Возьми рукоять верхнего блока обратным хватом. Разгибай руки, прижимая локти к бокам.",
+    "benefits": "Акцент на медиальную головку",
+    "risks": "Минимальные",
+    "equipment": [
+      "Верхний блок",
+      "Прямая рукоять"
+    ],
+    "settings": "Обратный хват",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит)",
+      "запястье (растяжение при обратном хвате)"
+    ],
+    "alternatives": [
+      "Разгибание рук на верхнем блоке (прямая рукоять)",
+      "Французский жим обратным хватом",
+      "Молот"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Reverse Grip Triceps Pushdown"
+  },
+  {
+    "id": "f337d88f-cce7-472f-9046-c4347b6d1612",
+    "name": "Становая тяга",
+    "primary_muscles": [
+      "разгибатели спины",
+      "трапеция",
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "бицепс бедра",
+      "ягодичные мышцы",
+      "квадрицепс",
+      "мышцы предплечья"
+    ],
+    "technique": "Встаньте перед штангой. Согните колени и наклонитесь, взяв гриф средним хватом. Держа спину прямой, начните движение, толкаясь ногами и выпрямляя корпус.",
+    "benefits": "Базовое упражнение для общей массы и силы",
+    "risks": "Высокий риск травмы поясницы",
+    "equipment": [
+      "Платформа",
+      "Штанга"
+    ],
+    "settings": "Хват на ширине плеч, спина прямая",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (грыжа межпозвоночных дисков, растяжение мышц)",
+      "спина (травма позвоночника при округлении)",
+      "бицепс (разрыв сухожилия - редко)",
+      "предплечья (растяжение связок)"
+    ],
+    "alternatives": [
+      "Румынская тяга",
+      "Ягодичный мост",
+      "Хип-траст",
+      "Гиперэкстензия",
+      "Тяга Т-грифа"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Barbell Deadlift"
+  },
+  {
+    "id": "ca484397-0464-4372-a0a1-7cf328abd530",
+    "name": "Подъем ног в висе на турнике",
+    "primary_muscles": [
+      "нижняя часть прямой мышцы живота",
+      "подвздошно-поясничная"
+    ],
+    "secondary_muscles": [
+      "косые мышцы живота"
+    ],
+    "technique": "Вис на турнике. Поднимайте прямые ноги до угла 90° с корпусом и медленно опускайте.",
+    "benefits": "Лучшее упражнение для низа пресса",
+    "risks": "Читинг (раскачивание), нагрузка на плечи",
+    "equipment": [
+      "Петли для рук",
+      "Турник"
+    ],
+    "settings": "Таз подкручивается в верхней точке",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение при висе)",
+      "поясница (растяжение при рывках)"
+    ],
+    "alternatives": [
+      "Подъем ног в упорах на брусьях",
+      "Обратные скручивания",
+      "Скручивания на полу"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Hanging Leg Raise"
+  },
+  {
+    "id": "026fe9a4-76f9-4db2-8b1d-5ee19579e9cb",
+    "name": "Махи в кроссовере одной рукой с наклоном (задняя дельта)",
+    "primary_muscles": [
+      "задняя дельта"
+    ],
+    "secondary_muscles": [
+      "ромбовидные"
+    ],
+    "technique": "Боком к нижнему блоку, наклон параллельно полу, мах через сторону дальней рукой",
+    "benefits": "Увеличенная амплитуда и растяжка",
+    "risks": "Потеря баланса",
+    "equipment": [
+      "D-образная рукоять",
+      "Нижний блок"
+    ],
+    "settings": "Корпус параллелен полу",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_One-Arm_Long_Bar_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение при наклоне)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Махи гантелями в наклоне",
+      "Махи в кроссовере на заднюю дельту",
+      "Обратные разведения в Pec Deck"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "5b0a3c63-36db-4fbb-b8d1-e7e0fa5346e3",
+    "name": "Кубинский жим (Cuban Press)",
+    "primary_muscles": [
+      "дельтовидные",
+      "ротаторная манжета"
+    ],
+    "secondary_muscles": [
+      "трапеция"
+    ],
+    "technique": "Поднимите гантели до уровня плеч, разверните локти вверх, затем выжмите гантели над головой. Вернитесь в обратном порядке.",
+    "benefits": "Комплексное укрепление плечевого пояса",
+    "risks": "Требует хорошей мобильности",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Минимальный вес",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cuban_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (высокий риск при плохой мобильности)",
+      "локоть (растяжение)"
+    ],
+    "alternatives": [
+      "Внешняя ротация в кроссовере",
+      "Тяга каната к лицу",
+      "Жим Арнольда"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Cuban Press"
+  },
+  {
+    "id": "8a3fd521-ff71-4e1c-84e7-182c8f669782",
+    "name": "Боковая планка",
+    "primary_muscles": [
+      "квадратная мышца поясницы",
+      "косые мышцы живота"
+    ],
+    "secondary_muscles": [
+      "средняя ягодичная"
+    ],
+    "technique": "Лягте на бок, упритесь предплечьем в пол. Поднимите таз так, чтобы тело образовало прямую линию. Удерживайте позицию.",
+    "benefits": "Изоляция косых мышц, стабилизация позвоночника",
+    "risks": "Заваливание таза вперед или назад",
+    "equipment": [
+      "Коврик",
+      "Пол"
+    ],
+    "settings": "Тело строго в одной плоскости",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Bridge/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение при заваливании)",
+      "локоть (давление)"
+    ],
+    "alternatives": [
+      "Планка на локтях",
+      "Русский твист",
+      "Дровосек в кроссовере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Side Bridge"
+  },
+  {
+    "id": "e4bcc6ac-eec8-4a7d-a29d-d97a5848f8f4",
+    "name": "Подтягивания широким хватом",
+    "primary_muscles": [
+      "широчайшие (верх)"
+    ],
+    "secondary_muscles": [
+      "бицепс",
+      "ромбовидные",
+      "трапеция"
+    ],
+    "technique": "Повиснуть широким хватом, подтянуться до касания грудью перекладины",
+    "benefits": "Лучшее упражнение для ширины спины",
+    "risks": "Травма плечевых суставов",
+    "equipment": [
+      "Турник"
+    ],
+    "settings": "Хват шире плеч в 1.5 раза",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение капсулы, импиджмент)",
+      "бицепс (тендинит, растяжение сухожилия)",
+      "локоть (растяжение связок)"
+    ],
+    "alternatives": [
+      "Тяга верхнего блока к груди",
+      "Тяга гантели одной рукой",
+      "Австралийские подтягивания",
+      "Тяга в тренажере Row"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "b639cd36-53df-46fd-9edf-b3bcef984076",
+    "name": "Тяга каната к лицу (Face Pull)",
+    "primary_muscles": [
+      "задняя дельта",
+      "ротаторная манжета"
+    ],
+    "secondary_muscles": [
+      "средняя/нижняя трапеция"
+    ],
+    "technique": "Возьмитесь за канатную рукоять верхнего блока. Тяните канат к лицу, разводя руки в стороны и сводя лопатки.",
+    "benefits": "Здоровье плеч, профилактика импиджмента",
+    "risks": "Минимальные",
+    "equipment": [
+      "Верхний блок",
+      "Канатная рукоять"
+    ],
+    "settings": "Высота блока на уровне лица",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (минимальный риск)",
+      "локоть (растяжение при слишком большом весе)"
+    ],
+    "alternatives": [
+      "Махи гантелями в наклоне",
+      "Обратные разведения в Pec Deck",
+      "Тяга Ли Хейни"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Face Pull"
+  },
+  {
+    "id": "7a3ccbdf-8711-4532-a2b4-b841edd4cb90",
+    "name": "Тяга в тренажере Row",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция",
+      "бицепс"
+    ],
+    "technique": "Грудь прижата к подушке, потянуть рукояти к корпусу",
+    "benefits": "Безопасность, исключена нагрузка на поясницу",
+    "risks": "Минимальные",
+    "equipment": [
+      "Тренажер для тяги"
+    ],
+    "settings": "Рукояти на уровне середины груди",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Shoulder_Military_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "бицепс (тендинит)",
+      "плечевой сустав (растяжение)",
+      "локоть (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга штанги в наклоне",
+      "Тяга гантели одной рукой",
+      "Тяга нижнего блока к поясу",
+      "Тяга Т-грифа"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "5f010a80-5886-46d5-b42b-78f1cfa91e0f",
+    "name": "Подъем на бицепс в кроссовере (нижний блок)",
+    "primary_muscles": [
+      "бицепс"
+    ],
+    "secondary_muscles": [
+      "брахиалис"
+    ],
+    "technique": "Возьмитесь за канат нижнего блока нейтральным хватом. Сгибайте руки, прижимая локти к корпусу.",
+    "benefits": "Постоянное напряжение",
+    "risks": "Минимальные",
+    "equipment": [
+      "D-образная рукоять",
+      "Нижний блок"
+    ],
+    "settings": "Высота блока нижняя",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "локоть (тендинит)",
+      "запястье (растяжение)"
+    ],
+    "alternatives": [
+      "Подъем гантелей на бицепс стоя",
+      "Подъем штанги на бицепс стоя",
+      "Сгибание руки на бицепс в кроссовере"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Cable Hammer Curls - Rope Attachment"
+  },
+  {
+    "id": "9a77e5f5-f1b9-4294-9ef2-ad552ef61c97",
+    "name": "Разгибание ног в Смите (с адаптером)",
+    "primary_muscles": [
+      "квадрицепс"
+    ],
+    "secondary_muscles": [
+      "прямая мышца бедра"
+    ],
+    "technique": "Сесть на скамью в Смите, гриф на стопах, разогнуть ноги",
+    "benefits": "Альтернатива тренажеру",
+    "risks": "Неудобство фиксации",
+    "equipment": [
+      "Адаптер",
+      "Скамья",
+      "Тренажер Смита"
+    ],
+    "settings": "Ось вращения совпадает с коленом",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Leg_Press/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (растяжение связок)",
+      "голеностоп (растяжение)"
+    ],
+    "alternatives": [
+      "Разгибание ног в тренажере",
+      "Жим ногами",
+      "Приседания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "a8a977d2-a594-4528-8c4e-c13faca1df25",
+    "name": "Подъем на носки в гакк-тренажере",
+    "primary_muscles": [
+      "икроножная"
+    ],
+    "secondary_muscles": [
+      "камбаловидная"
+    ],
+    "technique": "Лицом к спинке, носки на краю, подняться",
+    "benefits": "Фиксированная траектория, большой вес",
+    "risks": "Минимальные",
+    "equipment": [
+      "Гакк-тренажер"
+    ],
+    "settings": "Полная амплитуда",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Hack_Squats/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "ахиллово сухожилие (растяжение)",
+      "колено (растяжение)"
+    ],
+    "alternatives": [
+      "Подъем на носки стоя",
+      "Подъем на носки в Смите",
+      "Осел"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "c0944293-93db-4eea-a915-15bb3cf8e814",
+    "name": "Тяга гантели одной рукой в наклоне",
+    "primary_muscles": [
+      "широчайшие"
+    ],
+    "secondary_muscles": [
+      "ромбовидные",
+      "трапеция",
+      "бицепс",
+      "задняя дельта"
+    ],
+    "technique": "Обопритесь коленом и рукой о скамью. Тяните гантель к поясу, сводя лопатку.",
+    "benefits": "Большая амплитуда, устранение дисбаланса",
+    "risks": "Ротация корпуса",
+    "equipment": [
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Спина параллельна полу",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение мышц при ротации)",
+      "бицепс (тендинит)",
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Тяга штанги в наклоне",
+      "Тяга нижнего блока к поясу",
+      "Тяга Т-грифа",
+      "Тяга в тренажере Row"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "One-Arm Dumbbell Row"
+  },
+  {
+    "id": "49f994f1-4c89-4042-ab5a-92a2cd37d440",
+    "name": "Русский твист (Russian Twist)",
+    "primary_muscles": [
+      "косые мышцы живота"
+    ],
+    "secondary_muscles": [
+      "прямая мышца живота"
+    ],
+    "technique": "Сядьте на пол, согните ноги и отклоните корпус назад. Сцепите руки и поворачивайте корпус влево и вправо, касаясь руками пола.",
+    "benefits": "Развитие вращательной силы и рельефа косых мышц",
+    "risks": "Нагрузка на поясничные диски при скручивании с весом",
+    "equipment": [
+      "Блин",
+      "Гантели",
+      "Медбол",
+      "Пол"
+    ],
+    "settings": "Поворот идет за счет ребер, а не только рук",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "поясница (растяжение межпозвоночных дисков)",
+      "шея (растяжение)"
+    ],
+    "alternatives": [
+      "Боковая планка",
+      "Дровосек в кроссовере",
+      "Молитва в блоке"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Russian Twist"
+  },
+  {
+    "id": "2b2f46fb-6e99-4a01-8558-5fed7d0add09",
+    "name": "Разгибание ног в тренажере",
+    "primary_muscles": [
+      "квадрицепс"
+    ],
+    "secondary_muscles": [
+      "прямая мышца бедра"
+    ],
+    "technique": "Сядьте в тренажер, отрегулируйте валик так, чтобы он был на уровне нижних частей голеней. Разгибайте ноги до полного выпрямления, затем медленно опускайте.",
+    "benefits": "Изоляция квадрицепса",
+    "risks": "Нагрузка на коленные суставы",
+    "equipment": [
+      "Тренажер для разгибаний ног"
+    ],
+    "settings": "Ось вращения совпадает с коленом",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "колено (высокий риск растяжения связок надколенника)"
+    ],
+    "alternatives": [
+      "Жим ногами",
+      "Приседания со штангой",
+      "Сисси-приседания"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Leg Extensions"
+  },
+  {
+    "id": "90f8ea72-407e-4d2f-af02-d460642a3fa8",
+    "name": "Сгибания Зоттмана (Zottman Curl)",
+    "primary_muscles": [
+      "бицепс",
+      "брахиалис",
+      "брахиорадиалис"
+    ],
+    "secondary_muscles": [
+      "мышцы предплечья"
+    ],
+    "technique": "Поднимите гантели обычным хватом. В верхней точке разверните ладони вниз и медленно опустите вес обратным хватом.",
+    "benefits": "Одновременная проработка бицепса и предплечий",
+    "risks": "Нагрузка на запястья",
+    "equipment": [
+      "Гантели"
+    ],
+    "settings": "Плавная ротация вверху",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zottman_Curl/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (высокий риск растяжения из-за ротации)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Молот",
+      "Подъем гантелей на бицепс стоя",
+      "Сгибание запястий со штангой"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": "Zottman Curl"
+  },
+  {
+    "id": "c557b192-3494-42b7-a703-f1f7ac86b6fb",
+    "name": "Французский жим обратным хватом",
+    "primary_muscles": [
+      "трицепс (медиальная головка)"
+    ],
+    "secondary_muscles": [
+      "локтевая мышца"
+    ],
+    "technique": "Обратный хват, опустить вес ко лбу/за голову",
+    "benefits": "Акцент на медиальную головку",
+    "risks": "Нагрузка на запястья",
+    "equipment": [
+      "EZ-гриф",
+      "Гантели",
+      "Скамья"
+    ],
+    "settings": "Узкий обратный хват",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "запястье (высокий риск растяжения)",
+      "локоть (тендинит)"
+    ],
+    "alternatives": [
+      "Разгибание рук в кроссовере обратным хватом",
+      "Французский жим лежа",
+      "Подъем штанги на бицепс обратным хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  },
+  {
+    "id": "4e36cf74-041c-4e06-bcda-1ec02f826b05",
+    "name": "Махи в кроссовере на среднюю дельту",
+    "primary_muscles": [
+      "средняя дельта"
+    ],
+    "secondary_muscles": [
+      "надостная"
+    ],
+    "technique": "Встать боком к нижнему блоку, поднять руку через сторону",
+    "benefits": "Постоянное напряжение",
+    "risks": "Минимальные",
+    "equipment": [
+      "D-образная рукоять",
+      "Нижний блок"
+    ],
+    "settings": "Высота блока нижняя",
+    "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Lateral_Raise/0.jpg",
+    "created_at": "2026-07-03 07:11:49.019226+00",
+    "injuries": [
+      "плечевой сустав (растяжение)"
+    ],
+    "alternatives": [
+      "Махи гантелями в стороны",
+      "Тяга штанги к подбородку широким хватом"
+    ],
+    "reps_range": null,
+    "category": "strength",
+    "name_eng": null
+  }
+]

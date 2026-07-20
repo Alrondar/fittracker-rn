@@ -1,0 +1,181 @@
+======================================================================
+  ОТЧЁТ ПО СРАВНЕНИЮ БАЗ УПРАЖНЕНИЙ
+  Дата: 2026-07-20 08:21
+======================================================================
+
+📊 ОБЩАЯ СТАТИСТИКА
+----------------------------------------
+  b1 (all_new_exercises):  850 упражнений
+  b2 (db_exercises):       100 упражнений
+  Совпадений (matched):    95
+  Уникальных в b2:         5
+  Уникальных в b1:         755
+
+🔗 МЕТОДЫ МАТЧИНГА
+----------------------------------------
+  media_url           : 90
+  fuzzy_name          : 5
+
+🖼️  РАСХОЖДЕНИЯ MEDIA_URL: 5
+----------------------------------------
+  [15754cec] Отжимания на брусьях (акцент грудь)
+    b2 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/0.jpg
+    b1 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-Chest_Version/0.jpg (→ Отжимания на брусьях (акцент на грудь))
+
+  [37d6ecbf] Жим штанги на наклонной скамье (30–45°)
+    b2 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg
+    b1 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-Medium_Grip/0.jpg (→ Жим штанги на наклонной скамье (средний хват))
+
+  [59bc6807] Отжимания на брусьях (акцент трицепс)
+    b2 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg
+    b1 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-Chest_Version/0.jpg (→ Отжимания на брусьях (акцент на грудь))
+
+  [c7053107] "Дровосек" в кроссовере (Woodchopper)
+    b2 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Wood_Chop/0.jpg
+    b1 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Shrugs/0.jpg (→ Шраги в кроссовере)
+
+  [5f010a80] Подъем на бицепс в кроссовере (нижний блок)
+    b2 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg
+    b1 URL: https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hammer_Curls_-Rope_Attachment/0.jpg (→ Сгибание рук на бицепс в кроссовере (канат))
+
+🏷️  ОТСУТСТВУЕТ name_eng В b2: 95
+----------------------------------------
+  [ef37f62c] Жим Свенда (Svend Press) → Svend Press
+  [79584d7c] Жим в тренажере Смита (горизонтальный) → Smith Machine Bench Press
+  [a4b05d2e] Жим гантелей на наклонной скамье → Incline Dumbbell Press
+  [033d05e1] Приседания со штангой на плечах → Barbell Squat
+  [1581d922] Тяга в наклоне в Смите → Smith Machine Bent Over Row
+  [bb1fbbb4] Разгибание рук на верхнем блоке (прямая рукоять) → Triceps Pushdown - V-Bar Attachment
+  [15754cec] Отжимания на брусьях (акцент грудь) → Dips - Chest Version
+  [ba855ec2] Подъем ног в упорах на брусьях → Knee/Hip Raise On Parallel Bars
+  [37d6ecbf] Жим штанги на наклонной скамье (30–45°) → Barbell Incline Bench Press - Medium Grip
+  [210a2218] Гиперэкстензия → Hyperextensions (Back Extensions)
+  [7700bf50] Подъем штанги на бицепс стоя → Close-Grip Standing Barbell Curl
+  [faecbdb7] Подъем на бицепс на скамье Скотта → Preacher Curl
+  [22f71247] Тяга к подбородку в Смите (широкий хват) → Smith Machine Upright Row
+  [d493fde1] Разгибание руки назад в кроссовере → Cable Incline Triceps Extension
+  [c5a6c7e9] Тяга Ли Хейни (Lee Haney Shrug) → Smith Machine Behind the Back Shrug
+
+📝 РАЗЛИЧИЯ В РУССКИХ НАЗВАНИЯХ: 73
+----------------------------------------
+  [79584d7c] sim=0.778
+    b2: Жим в тренажере Смита (горизонтальный)
+    b1: Жим штанги лежа в тренажере Смита  → ⚠️  проверить
+
+  [1581d922] sim=0.689
+    b2: Тяга в наклоне в Смите
+    b1: Тяга штанги в наклоне в тренажере Смита  → ⚠️  проверить
+
+  [bb1fbbb4] sim=0.638
+    b2: Разгибание рук на верхнем блоке (прямая рукоять)
+    b1: Разгибание рук на трицепс в кроссовере (V-образная рукоять)  → ⚠️  проверить
+
+  [ba855ec2] sim=0.691
+    b2: Подъем ног в упорах на брусьях
+    b1: Подъем коленей на брусьях  → ⚠️  проверить
+
+  [7700bf50] sim=0.348
+    b2: Подъем штанги на бицепс стоя
+    b1: Сгибание рук со штангой стоя узким хватом  → ⚠️  проверить
+
+  [faecbdb7] sim=0.778
+    b2: Подъем на бицепс на скамье Скотта
+    b1: Сгибание рук на бицепс на скамье Скотта  → ⚠️  проверить
+
+  [22f71247] sim=0.8
+    b2: Тяга к подбородку в Смите (широкий хват)
+    b1: Тяга к подбородку в тренажере Смита  → ⚠️  проверить
+
+  [d493fde1] sim=0.619
+    b2: Разгибание руки назад в кроссовере
+    b1: Разгибание рук на трицепс в кроссовере лежа на наклонной скамье  → ⚠️  проверить
+
+  [c5a6c7e9] sim=0.298
+    b2: Тяга Ли Хейни (Lee Haney Shrug)
+    b1: Шраги со штангой за спиной в Смите  → ⚠️  проверить
+
+  [c606424e] sim=0.842
+    b2: Сведение рук в тренажере Pec Deck (Бабочка)
+    b1: Сведение рук в тренажере (Бабочка)  → ✅ оставить b2
+
+  [8a3dd8f1] sim=0.308
+    b2: Махи гантелями в стороны
+    b1: Попеременный подъем гантелей (фронтальный и в стороны)  → ⚠️  проверить
+
+  [aefdc8dc] sim=0.426
+    b2: Французский жим сидя
+    b1: Разгибание руки на трицепс сидя в наклоне  → ⚠️  проверить
+
+  [efa318ff] sim=0.75
+    b2: Тяга штанги в наклоне
+    b1: Тяга штанги в наклоне прямым хватом  → ⚠️  проверить
+
+  [41c227ca] sim=0.581
+    b2: Подъем гантелей перед собой
+    b1: Подъем гантелей на наклонной скамье (передние дельты)  → ⚠️  проверить
+
+  [940d8e1b] sim=0.818
+    b2: Тяга штанги к подбородку узким хватом
+    b1: Тяга штанги к подбородку стоя  → ✅ оставить b2
+
+  [754836fd] sim=0.576
+    b2: Жим гантелей лежа на горизонтальной скамье
+    b1: Жим гантелей лежа  → ⚠️  проверить
+
+  [17c88780] sim=0.484
+    b2: Жим стоя в Смите
+    b1: Жим штанги стоя из-за головы в тренажере Смита  → ⚠️  проверить
+
+  [0f11cfd4] sim=0.821
+    b2: Жим штанги узким хватом лежа
+    b1: Жим штанги лежа узким хватом  → ✅ оставить b2
+
+  [7a671fd3] sim=0.759
+    b2: Жим на наклонной скамье в Смите
+    b1: Жим штанги на наклонной скамье в тренажере Смита  → ⚠️  проверить
+
+  [7e3e802f] sim=0.755
+    b2: Отведение ноги назад в кроссовере
+    b1: Отведение ноги назад (Glute Kickback)  → ⚠️  проверить
+
+🔒 УНИКАЛЬНЫЕ В b2 (НЕ ТРОГАТЬ!): 5
+----------------------------------------
+  [3f168d4a] Скандинавские сгибания (Nordic Hamstring Curl)
+  [add5483d] Мертвая тяга
+  [6dc3d454] Прогулка фермера (Farmer's Walk)
+  [06bc27b8] Пуловер в блоке (Straight-Arm Pulldown)
+  [f70c9ee3] Удержание штанги
+
+➕ УНИКАЛЬНЫЕ В b1 (кандидаты на merge): 755
+----------------------------------------
+  3/4 Sit-Up → Неполные скручивания (3/4 амплитуды)
+  90/90 Hamstring → Динамическая растяжка бицепса бедра 90/90
+  Ab Crunch Machine → Скручивания в тренажере на пресс
+  Ab Roller → Ролик для пресса
+  Adductor → МФР приводящих мышц бедра
+  Adductor/Groin → Статическая растяжка паха с партнером
+  Advanced Kettlebell Windmill → Продвинутая мельница с гирей
+  Air Bike → Велосипед лежа (скручивания)
+  All Fours Quad Stretch → Растяжка квадрицепса на четвереньках
+  Alternate Hammer Curl → Попеременный подъем на бицепс (молот)
+  Alternate Heel Touchers → Попеременные касания пяток
+  Alternate Incline Dumbbell Curl → Попеременный подъем гантелей на наклонной скамье
+  Alternate Leg Diagonal Bound → Диагональные прыжки с ноги на ногу
+  Alternating Cable Shoulder Press → Попеременный жим плеч в кроссовере
+  Alternating Floor Press → Попеременный жим гирь лежа на полу
+  Alternating Hang Clean → Попеременное взятие гири на грудь из виса
+  Alternating Kettlebell Press → Попеременный жим гирь стоя
+  Alternating Kettlebell Row → Попеременная тяга гири в наклоне
+  Alternating Renegade Row → Тяга гири в упоре лежа (Renegade Row)
+  Ankle Circles → Вращения голеностопом
+  Ankle On The Knee → Растяжка ягодиц (лодыжка на колено)
+  Anterior Tibialis-SMR → МФР передней большеберцовой мышцы
+  Anti-Gravity Press → Антигравитационный жим штанги лежа животом
+  Arm Circles → Вращения руками
+  Around The Worlds → Вокруг света с гантелями
+  Back Flyes - With Bands → Разводка на заднюю дельту с резинкой
+  Backward Medicine Ball Throw → Бросок медбола назад из-за головы
+  Balance Board → Баланс на балансировочной доске
+  Ball Leg Curl → Сгибание ног на фитболе
+  Band Assisted Pull-Up → Подтягивания с резинкой
+  ... и ещё 725
