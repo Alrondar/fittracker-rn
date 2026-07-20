@@ -16,24 +16,48 @@ export type Database = {
     Tables: {
       body_metrics: {
         Row: {
+          arm_cm: number | null
+          chest_cm: number | null
           created_at: string | null
+          hips_cm: number | null
           id: string
           metric_date: string
+          neck_cm: number | null
+          notes: string | null
+          photo_url: string | null
+          thigh_cm: number | null
           user_id: string
+          waist_cm: number | null
           weight_kg: number | null
         }
         Insert: {
+          arm_cm?: number | null
+          chest_cm?: number | null
           created_at?: string | null
+          hips_cm?: number | null
           id?: string
           metric_date?: string
+          neck_cm?: number | null
+          notes?: string | null
+          photo_url?: string | null
+          thigh_cm?: number | null
           user_id: string
+          waist_cm?: number | null
           weight_kg?: number | null
         }
         Update: {
+          arm_cm?: number | null
+          chest_cm?: number | null
           created_at?: string | null
+          hips_cm?: number | null
           id?: string
           metric_date?: string
+          neck_cm?: number | null
+          notes?: string | null
+          photo_url?: string | null
+          thigh_cm?: number | null
           user_id?: string
+          waist_cm?: number | null
           weight_kg?: number | null
         }
         Relationships: [
@@ -111,6 +135,7 @@ export type Database = {
           injuries: string[] | null
           media_url: string | null
           name: string
+          name_eng: string | null
           primary_muscles: string[]
           reps_range: string | null
           risks: string | null
@@ -128,6 +153,7 @@ export type Database = {
           injuries?: string[] | null
           media_url?: string | null
           name: string
+          name_eng?: string | null
           primary_muscles: string[]
           reps_range?: string | null
           risks?: string | null
@@ -145,6 +171,7 @@ export type Database = {
           injuries?: string[] | null
           media_url?: string | null
           name?: string
+          name_eng?: string | null
           primary_muscles?: string[]
           reps_range?: string | null
           risks?: string | null
