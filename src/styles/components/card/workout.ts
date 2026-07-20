@@ -1,62 +1,12 @@
 import { StyleSheet, ViewStyle, TextStyle, Dimensions } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
-import { typography } from '../../typography';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 export const createWorkoutCardStyles = (colors: any) =>
   StyleSheet.create({
-    // Таймер тренировки
-    workoutTimerContainer: {
-      padding: SPACING.lg,
-      borderBottomWidth: 1,
-    } as ViewStyle,
-    workoutTimerHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: SPACING.md,
-    } as ViewStyle,
-    workoutTimerTitle: {
-      fontSize: 12,
-      fontWeight: '700',
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-    } as TextStyle,
-    workoutTimerCloseButton: {
-      padding: 4,
-    } as ViewStyle,
-    workoutTimerTime: {
-      fontSize: 56,
-      fontWeight: '800',
-      textAlign: 'center',
-      lineHeight: 64,
-      fontVariant: ['tabular-nums'],
-    } as TextStyle,
-    workoutTimerProgressBg: {
-      height: 8,
-      borderRadius: 4,
-      overflow: 'hidden',
-      marginVertical: SPACING.lg,
-    } as ViewStyle,
-    workoutTimerProgressFill: {
-      height: '100%',
-      borderRadius: 4,
-    } as ViewStyle,
-    workoutTimerControls: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: SPACING.xl,
-    } as ViewStyle,
-    workoutTimerControlButton: {
-      padding: SPACING.sm,
-    } as ViewStyle,
-    workoutTimerControlText: {
-      fontSize: 16,
-      fontWeight: '600',
-    } as TextStyle,
-    // Карточка упражнения в тренировке
+    // ===== КАРТОЧКА УПРАЖНЕНИЯ =====
     workoutExerciseCard: {
       width: CARD_WIDTH,
       marginHorizontal: 0,
@@ -95,28 +45,8 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontSize: 11,
       fontWeight: '600',
     } as TextStyle,
-    // Теги мышц
-    muscleTagPrimary: {
-      paddingHorizontal: SPACING.md,
-      paddingVertical: 6,
-      borderRadius: BORDER_RADIUS.full,
-      borderWidth: 1.5,
-    } as ViewStyle,
-    muscleTagPrimaryText: {
-      fontSize: 12,
-      fontWeight: '600',
-    } as TextStyle,
-    muscleTagSecondary: {
-      paddingHorizontal: SPACING.md,
-      paddingVertical: 6,
-      borderRadius: BORDER_RADIUS.full,
-      borderWidth: 1.5,
-    } as ViewStyle,
-    muscleTagSecondaryText: {
-      fontSize: 12,
-      fontWeight: '600',
-    } as TextStyle,
-    // Секция подходов
+
+    // ===== СЕКЦИЯ ПОДХОДОВ =====
     setsContainer: {
       marginTop: SPACING.lg,
       borderWidth: 1.5,
@@ -167,7 +97,8 @@ export const createWorkoutCardStyles = (colors: any) =>
       textAlign: 'center',
       width: '100%',
     } as TextStyle,
-    // Кнопка отдыха
+
+    // ===== КНОПКА ОТДЫХА =====
     restButton: {
       marginTop: SPACING.md,
       paddingVertical: 14,
@@ -182,7 +113,8 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: 'bold',
       fontSize: 15,
     } as TextStyle,
-    // Кнопка замены
+
+    // ===== КНОПКА ЗАМЕНЫ =====
     replaceButton: {
       marginTop: SPACING.lg,
       paddingVertical: 12,
@@ -197,7 +129,8 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: '600',
       fontSize: 14,
     } as TextStyle,
-    // Bottom Sheet настроек
+
+    // ===== BOTTOM SHEET НАСТРОЕК =====
     settingsSheetContainer: {
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
@@ -256,33 +189,8 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: 'bold',
       fontSize: 16,
     } as TextStyle,
-    // Кнопка "Завершить тренировку"
-    finishButtonContainer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: SPACING.lg,
-      borderTopWidth: 1,
-    } as ViewStyle,
-    finishButton: {
-      borderRadius: BORDER_RADIUS.xl,
-      overflow: 'hidden',
-    } as ViewStyle,
-    finishButtonLoading: {
-      paddingVertical: 16,
-      alignItems: 'center',
-    } as ViewStyle,
-    finishButtonGradient: {
-      paddingVertical: 16,
-      alignItems: 'center',
-    } as ViewStyle,
-    finishButtonText: {
-      color: colors.textInverse,
-      fontWeight: 'bold',
-      fontSize: 16,
-    } as TextStyle,
-    // Бейдж "Заменено"
+
+    // ===== БЕЙДЖ "ЗАМЕНЕНО" =====
     replacedBadgeContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -299,60 +207,6 @@ export const createWorkoutCardStyles = (colors: any) =>
     replacedResetText: {
       fontSize: 14,
       textDecorationLine: 'underline',
-    } as TextStyle,
-    // Collapsible секция
-    collapsibleWorkoutSection: {
-      marginBottom: SPACING.sm,
-      borderWidth: 1.5,
-      borderRadius: BORDER_RADIUS.md,
-      overflow: 'hidden',
-    } as ViewStyle,
-    collapsibleWorkoutHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: SPACING.md,
-    } as ViewStyle,
-    collapsibleWorkoutHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: SPACING.sm,
-      flex: 1,
-    } as ViewStyle,
-    collapsibleWorkoutTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-    } as TextStyle,
-    collapsibleWorkoutContent: {
-      padding: SPACING.md,
-    } as ViewStyle,
-    // Grouped секция
-    groupedWorkoutSection: {
-      marginBottom: SPACING.sm,
-      borderWidth: 1.5,
-      borderRadius: BORDER_RADIUS.md,
-      overflow: 'hidden',
-    } as ViewStyle,
-    groupedWorkoutContent: {
-      padding: SPACING.md,
-    } as ViewStyle,
-    groupedWorkoutDivider: {
-      height: 1,
-      marginVertical: SPACING.md,
-    } as ViewStyle,
-    groupedWorkoutSubHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: SPACING.sm,
-      marginBottom: SPACING.xs,
-    } as ViewStyle,
-    groupedWorkoutSubTitle: {
-      fontSize: 12,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-    } as TextStyle,
-    groupedWorkoutSubText: {
-      fontSize: 14,
     } as TextStyle,
   });
 
