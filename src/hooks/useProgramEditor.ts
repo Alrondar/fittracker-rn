@@ -72,10 +72,11 @@ export function useProgramEditor(programId: string, userId: string | null) {
 
   const handleStartProgram = async () => {
     if (!userId) return;
-    const firstPhase = program?.phases?.[0];
+    const phases = program?.phases || [];
+    const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
     Alert.alert(
       'Начать программу?',
-      `Будут созданы тренировки фазы "${firstPhase?.name || '1'}" (неделя 1) программы "${program?.name}"`,
+      `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`,
       [
         { text: 'Отмена', style: 'cancel' },
         {
@@ -85,7 +86,7 @@ export function useProgramEditor(programId: string, userId: string | null) {
             setStarting(true);
             try {
               await startProgram(programId);
-              await createWorkoutsFromProgram(programId, userId, 1, 1);
+              await createWorkoutsFromProgram(programId, userId);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.replace('/(tabs)/workouts');
             } catch (error: any) {

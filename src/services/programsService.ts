@@ -1,11 +1,10 @@
 import { supabase } from '../lib/supabase';
-import type { PhaseType } from '../constants/phaseTypes';
 
 // ============================================================================
 // ТИПЫ
 // ============================================================================
 
-export type { PhaseType };
+export type PhaseType = 'hypertrophy' | 'strength' | 'power' | 'deload' | 'custom';
 
 export interface Program {
   id: string;
@@ -16,8 +15,8 @@ export interface Program {
   schedule: string[];
   created_by?: string;
   created_at?: string;
-  phases?: ProgramPhase[]; // фазы/мезоциклы (новая структура)
-  days?: ProgramDay[];     // плоский список (неделя 1 всех фаз) — обратная совместимость
+  phases?: ProgramPhase[];
+  days?: ProgramDay[]; // плоский список (неделя 1 всех фаз) — обратная совместимость
 }
 
 export interface ProgramPhase {
@@ -31,7 +30,7 @@ export interface ProgramPhase {
   position?: number | null;
   created_at?: string;
   days?: ProgramDay[];
-  isNew?: boolean; // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+  isNew?: boolean;
 }
 
 export interface ProgramDay {
@@ -44,7 +43,7 @@ export interface ProgramDay {
   position?: number;
   created_at?: string;
   exercises?: ProgramExercise[];
-  isNew?: boolean; // ✅ ДОБАВИТЬ ЭТУ СТРОКУ
+  isNew?: boolean;
 }
 
 export interface ProgramExercise {
@@ -64,7 +63,7 @@ export interface UserProgram {
   id: string;
   user_id: string;
   program_id: string;
-  current_phase: number; // ✅ НОВОЕ
+  current_phase: number;
   current_week: number;
   current_day: number;
   started_at: string;
@@ -81,7 +80,7 @@ export interface ProgramFilters {
 }
 
 // ============================================================================
-// МАППЕРЫ (единый формат из сырых строк Supabase)
+// МАППЕРЫ
 // ============================================================================
 
 function mapExercise(ex: any): ProgramExercise {
@@ -181,7 +180,7 @@ export async function createProgram(
 }
 
 export async function updateProgram(programId: string, updates: Partial<Program>): Promise<Program> {
-  const { phases, days, ...rest } = updates; // фазы/дни не пишем в programs
+  const { phases, days, ...rest } = updates;
   const { data, error } = await supabase
     .from('programs')
     .update(rest)
@@ -208,12 +207,7 @@ export async function deleteProgram(programId: string): Promise<void> {
 // ЗАГРУЗКА ПРОГРАММЫ С ФАЗАМИ
 // ============================================================================
 
-/**
- * Программа с фазами → днями (по неделям) → упражнениями.
- * Также возвращает плоский `days` (неделя 1 всех фаз) для обратной совместимости
- * со старым редактором.
- */
-export async function getProgramWithDays(programId: string): Promise<Program | null> {
+export async function getProgramWithPhases(programId: string): Promise<Program | null> {
   const { data: program, error } = await supabase
     .from('programs')
     .select(`*, program_phases ( *, program_days ( *, program_exercises (*) ) )`)
@@ -230,8 +224,8 @@ export async function getProgramWithDays(programId: string): Promise<Program | n
     .sort((a: any, b: any) => a.phase_number - b.phase_number)
     .map(mapPhase);
 
-  // Плоский список для совместимости: неделя 1 каждой фазы
-  const flatDays = phases.flatMap(p => (p.days || []).filter(d => (d.week_number ?? 1) === 1));
+  // Плоский список (неделя 1 всех фаз) — для обратной совместимости со старым редактором
+  const flatDays = phases.flatMap(p => (p.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1));
 
   return {
     id: program.id,
@@ -247,6 +241,9 @@ export async function getProgramWithDays(programId: string): Promise<Program | n
   };
 }
 
+// Alias обратной совместимости (старый редактор использует это имя)
+export const getProgramWithDays = getProgramWithPhases;
+
 // ============================================================================
 // СТАРТ И ПРОГРЕСС ПРОГРАММЫ
 // ============================================================================
@@ -255,13 +252,19 @@ export async function startProgram(programId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  await supabase.from('user_programs').update({ is_active: false }).eq('user_id', user.id).eq('is_active', true);
+  const { error: deactivateError } = await supabase
+    .from('user_programs')
+    .update({ is_active: false })
+    .eq('user_id', user.id)
+    .eq('is_active', true);
+  if (deactivateError) console.warn('Ошибка деактивации:', deactivateError);
+
   await supabase.from('user_programs').delete().eq('user_id', user.id).eq('program_id', programId);
 
   const { error } = await supabase.from('user_programs').insert({
     user_id: user.id,
     program_id: programId,
-    current_phase: 1, // ✅ НОВОЕ
+    current_phase: 1,
     current_week: 1,
     current_day: 1,
     is_active: true,
@@ -301,7 +304,6 @@ export async function completeProgram(userProgramId: string): Promise<void> {
 /**
  * Фазовое автопереключение прогресса:
  * день → (конец недели?) неделя++ → (конец фазы?) фаза++ → (конец программы?) финиш.
- * Если для текущей недели нет своих дней — используется неделя 1 фазы (шаблон).
  */
 export async function advanceProgramProgress(
   userId: string,
@@ -322,7 +324,6 @@ export async function advanceProgramProgress(
     throw fetchError;
   }
 
-  // Фазы программы (упорядочены)
   const { data: phases } = await supabase
     .from('program_phases')
     .select('phase_number, weeks_count, program_days ( week_number, day_number )')
@@ -335,13 +336,12 @@ export async function advanceProgramProgress(
   const curWeek = current.current_week ?? 1;
   const curDay = current.current_day ?? 1;
 
-  // Fallback: программа без фаз (старая) — прежняя логика по общей длительности
+  // Fallback: программа без фаз — прежняя логика по общей длительности
   if (orderedPhases.length === 0) {
     const { count } = await supabase.from('program_days').select('*', { count: 'exact', head: true }).eq('program_id', programId);
     const totalDays = count || 5;
     const { data: prog } = await supabase.from('programs').select('duration').eq('id', programId).single();
     const actualWeeks = prog?.duration || 8;
-
     let newWeek = curWeek;
     let newDay = curDay + 1;
     if (newDay > totalDays) {
@@ -378,7 +378,6 @@ export async function advanceProgramProgress(
     if (newWeek > (phase.weeks_count || 1)) {
       newWeek = 1;
       newPhase = curPhase + 1;
-      // Следующая фаза существует?
       if (!orderedPhases.some((p: any) => p.phase_number === newPhase)) {
         await supabase.from('user_programs').update({ is_active: false, completed_at: new Date().toISOString() }).eq('id', current.id);
         return { phase: curPhase, week: curWeek, day: totalDaysThisWeek, isCompleted: true };
@@ -396,70 +395,73 @@ export async function advanceProgramProgress(
 }
 
 // ============================================================================
-// СОЗДАНИЕ ТРЕНИРОВОК ИЗ ПРОГРАММЫ (фазо-недельное)
+// СОЗДАНИЕ ТРЕНИРОВОК (все фазы/недели upfront — Вариант B)
 // ============================================================================
 
 /**
- * Создаёт тренировки для указанной фазы и недели (по умолчанию фаза 1, неделя 1).
- * Если для недели нет своих дней — берёт неделю 1 фазы (шаблон).
+ * Создаёт тренировки для ВСЕХ фаз и недель программы.
+ * Для каждой недели: её дни, либо шаблон недели 1 (если неделя не переопределена).
  */
-export async function createWorkoutsFromProgram(
-  programId: string,
-  userId: string,
-  phaseNumber: number = 1,
-  weekNumber: number = 1
-): Promise<string[]> {
-  const program = await getProgramWithDays(programId);
-  if (!program) throw new Error('Program not found');
-
-  const phase = (program.phases || []).find(p => p.phase_number === phaseNumber);
-  let days = (phase?.days || []).filter(d => (d.week_number ?? 1) === weekNumber);
-  if (days.length === 0 && phase) {
-    days = (phase.days || []).filter(d => (d.week_number ?? 1) === 1); // шаблон
-  }
-  if (days.length === 0) {
-    days = program.days || []; // fallback для программ без фаз
+export async function createWorkoutsFromProgram(programId: string, userId: string): Promise<string[]> {
+  const program = await getProgramWithPhases(programId);
+  if (!program || !program.phases || program.phases.length === 0) {
+    throw new Error('Program not found');
   }
 
   const workoutIds: string[] = [];
-  for (const day of days) {
-    const { data: workout, error: workoutError } = await supabase
-      .from('workouts')
-      .insert({
-        user_id: userId,
-        name: day.name,
-        description: `${program.name} — Фаза ${phaseNumber} · Неделя ${weekNumber}`,
-        program_id: programId,
-        week_number: weekNumber,
-        day_index: day.day_number,
-      })
-      .select()
-      .single();
-    if (workoutError) throw workoutError;
 
-    if (day.exercises) {
-      for (const exercise of day.exercises) {
-        const { data: foundExercise } = await supabase
-          .from('exercises')
-          .select('id')
-          .ilike('name', `%${exercise.exercise_name}%`)
-          .limit(1)
+  for (const phase of program.phases) {
+    for (let week = 1; week <= phase.weeks_count; week++) {
+      let days = (phase.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === week);
+      if (days.length === 0) {
+        days = (phase.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1);
+      }
+
+      for (const day of days) {
+        const { data: workout, error: workoutError } = await supabase
+          .from('workouts')
+          .insert({
+            user_id: userId,
+            name: day.name,
+            description: `${program.name} — ${phase.name} · Неделя ${week}`,
+            program_id: programId,
+            phase_number: phase.phase_number,
+            week_number: week,
+            day_index: day.day_number,
+          })
+          .select()
           .single();
-        const exerciseId = foundExercise?.id || null;
+        if (workoutError) throw workoutError;
 
-        const { error: exError } = await supabase.from('workout_exercises').insert({
-          workout_id: workout.id,
-          exercise_id: exerciseId,
-          order_index: exercise.position,
-          target_sets: exercise.sets,
-          target_reps: parseInt(exercise.reps_range.split('-')[0]) || 10,
-          target_reps_range: exercise.reps_range,
-          rest_seconds: exercise.rest_seconds,
-        });
-        if (exError) throw exError;
+        if (day.exercises) {
+          for (const exercise of day.exercises) {
+            let exerciseId: string | null = null;
+            const { data: foundExercise } = await supabase
+              .from('exercises')
+              .select('id')
+              .ilike('name', `%${exercise.exercise_name}%`)
+              .limit(1)
+              .single();
+            exerciseId = foundExercise?.id || null;
+
+            const { error: exError } = await supabase
+              .from('workout_exercises')
+              .insert({
+                workout_id: workout.id,
+                exercise_id: exerciseId,
+                order_index: exercise.position,
+                target_sets: exercise.sets,
+                target_reps: parseInt(exercise.reps_range.split('-')[0]) || 10,
+                target_reps_range: exercise.reps_range,
+                rest_seconds: exercise.rest_seconds,
+                intensity: exercise.intensity,
+              });
+            if (exError) throw exError;
+          }
+        }
+        workoutIds.push(workout.id);
       }
     }
-    workoutIds.push(workout.id);
   }
   return workoutIds;
 }
