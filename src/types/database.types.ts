@@ -128,6 +128,7 @@ export type Database = {
         Row: {
           alternatives: string[] | null
           benefits: string | null
+          can_be_activation: boolean
           category: string | null
           created_at: string | null
           equipment: string[] | null
@@ -146,6 +147,7 @@ export type Database = {
         Insert: {
           alternatives?: string[] | null
           benefits?: string | null
+          can_be_activation?: boolean
           category?: string | null
           created_at?: string | null
           equipment?: string[] | null
@@ -164,6 +166,7 @@ export type Database = {
         Update: {
           alternatives?: string[] | null
           benefits?: string | null
+          can_be_activation?: boolean
           category?: string | null
           created_at?: string | null
           equipment?: string[] | null
@@ -363,26 +366,39 @@ export type Database = {
           day_number: number
           id: string
           name: string
+          phase_id: string | null
           position: number | null
           program_id: string
+          week_number: number
         }
         Insert: {
           created_at?: string | null
           day_number: number
           id?: string
           name: string
+          phase_id?: string | null
           position?: number | null
           program_id: string
+          week_number?: number
         }
         Update: {
           created_at?: string | null
           day_number?: number
           id?: string
           name?: string
+          phase_id?: string | null
           position?: number | null
           program_id?: string
+          week_number?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "program_days_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "program_phases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "program_days_program_id_fkey"
             columns: ["program_id"]
@@ -442,6 +458,50 @@ export type Database = {
             columns: ["program_day_id"]
             isOneToOne: false
             referencedRelation: "program_days"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_phases: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          phase_number: number
+          phase_type: string
+          position: number | null
+          program_id: string
+          weeks_count: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          phase_number: number
+          phase_type?: string
+          position?: number | null
+          program_id: string
+          weeks_count?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          phase_number?: number
+          phase_type?: string
+          position?: number | null
+          program_id?: string
+          weeks_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_phases_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
         ]
@@ -574,6 +634,7 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           current_day: number | null
+          current_phase: number
           current_week: number | null
           id: string
           is_active: boolean | null
@@ -585,6 +646,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           current_day?: number | null
+          current_phase?: number
           current_week?: number | null
           id?: string
           is_active?: boolean | null
@@ -596,6 +658,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           current_day?: number | null
+          current_phase?: number
           current_week?: number | null
           id?: string
           is_active?: boolean | null
@@ -824,6 +887,25 @@ export type Database = {
       replace_in_array: {
         Args: { arr: string[]; new_val: string; old_val: string }
         Returns: string[]
+      }
+      search_exercises: {
+        Args: {
+          category_filter?: string[]
+          equipment_filter?: string[]
+          muscle_filter?: string[]
+          page_limit?: number
+          page_offset?: number
+          q?: string
+          sort_by?: string
+        }
+        Returns: {
+          category: string
+          equipment: string[]
+          id: string
+          name: string
+          popularity: number
+          primary_muscles: string[]
+        }[]
       }
       split_equipment: { Args: { item: string }; Returns: string[] }
       split_equipment_final: { Args: { item: string }; Returns: string[] }

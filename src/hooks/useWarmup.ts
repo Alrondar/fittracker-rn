@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { warmupService, WarmupExercise, InjuryExclusion } from '../services/warmupService';
 import { UserInjury } from '../constants/injuries';
+import { useTimerSettings } from './useTimerSettings';
 import * as Haptics from 'expo-haptics';
 
 export interface WarmupSourceExercise {
   id: string;
   primary_muscles: string[];
   secondary_muscles: string[];
-    equipment?: string[]; // ✅ НОВОЕ — для определения силовой тренировки
+  equipment?: string[];
 }
 
 export function useWarmup(
@@ -22,13 +23,15 @@ export function useWarmup(
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Настройка порядка разминки (растяжка/активация первым)
+  const { settings: timerSettings } = useTimerSettings();
+  const activationFirst = timerSettings.activationFirst;
+
   const exerciseKey = exercises.map(e => e.id).join(',');
-  // Ключ травм — чтобы разминка перегенерировалась, когда травмы догрузились
   const injuryKey = activeInjuries
     .map(i => `${i.body_part}|${i.injury_type}|${i.severity}`)
     .join(',');
 
-  // Генерация разминки при изменении состава тренировки ИЛИ травм
   useEffect(() => {
     if (exercises.length > 0) {
       generateWarmup();
@@ -36,16 +39,14 @@ export function useWarmup(
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseKey, injuryKey]);
+  }, [exerciseKey, injuryKey, activationFirst]);
 
-  // Cleanup таймера при размонтировании
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  // Автозавершение упражнения при нулевом таймере
   useEffect(() => {
     if (activeTimerId && timeLeft === 0) {
       completeExercise(activeTimerId);
@@ -59,7 +60,7 @@ export function useWarmup(
     setActiveTimerId(null);
     setTimeLeft(0);
     try {
-      const result = await warmupService.generateWarmup(exercises, activeInjuries);
+      const result = await warmupService.generateWarmup(exercises, activeInjuries, activationFirst);
       setWarmupExercises(result.exercises);
       setExcludedByInjury(result.excludedByInjury);
       setCompletedIds(new Set());
@@ -113,7 +114,6 @@ export function useWarmup(
     [warmupExercises]
   );
 
-  // Целевые мышцы разминки (для заголовка)
   const targetMuscles = useMemo(() => {
     const set = new Set<string>();
     warmupExercises.forEach(ex => ex.primary_muscles.forEach(m => set.add(m)));
@@ -122,7 +122,7 @@ export function useWarmup(
 
   return {
     warmupExercises,
-    excludedByInjury, // ✅ НОВОЕ
+    excludedByInjury,
     isLoading,
     completedIds,
     activeTimerId,

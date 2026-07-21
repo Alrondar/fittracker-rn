@@ -4,16 +4,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = '@fittracker_timer_settings';
 
 export interface TimerSettings {
-  sound: boolean;     // финальный звук
-  vibration: boolean; // вибрация по окончании
-  preBeep: boolean;   // бипы 3-2-1 перед концом
+  sound: boolean;
+  vibration: boolean;
+  preBeep: boolean;
+  activationFirst: boolean; // порядок разминки: активация перед растяжкой
 }
 
-const DEFAULTS: TimerSettings = { sound: true, vibration: true, preBeep: true };
+const DEFAULTS: TimerSettings = {
+  sound: true,
+  vibration: true,
+  preBeep: true,
+  activationFirst: false, // по умолчанию сначала растяжка
+};
 
-/**
- * Настройки таймера отдыха (персистятся в AsyncStorage).
- */
 export function useTimerSettings() {
   const [settings, setSettings] = useState<TimerSettings>(DEFAULTS);
 

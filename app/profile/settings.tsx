@@ -38,6 +38,7 @@ import {
   Download,
   Info,
   HelpCircle,
+  ArrowUpDown,
   X,
   Volume2,    // ✅ НОВОЕ
   BellRing,   // ✅ НОВОЕ
@@ -536,6 +537,31 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+               {/* Порядок разминки */}
+       <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm }]}>
+         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+             <ArrowUpDown size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+             <View style={{ flex: 1 }}>
+               <Text style={[typography.label, { color: colors.textPrimary }]}>Активация перед растяжкой</Text>
+               <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                 {timerSettings.activationFirst
+                   ? 'Сначала активация, затем растяжка'
+                   : 'Сначала растяжка, затем активация'}
+               </Text>
+             </View>
+           </View>
+           <Switch
+             value={timerSettings.activationFirst}
+             onValueChange={(value) => {
+               updateTimerSettings({ activationFirst: value });
+               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+             }}
+             trackColor={{ false: colors.border, true: colors.primary }}
+             thumbColor="#fff"
+           />
+         </View>
+       </View>
       </View>
         {/* Данные */}
         <View style={commonStyles.section}>
