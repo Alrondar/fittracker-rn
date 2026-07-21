@@ -25,14 +25,13 @@ import {
   ShieldAlert,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { TechniqueMediaSlider } from './TechniqueMediaSlider';
-import { WarmupExercise } from '../../services/warmupService';
+import { WarmupExercise, InjuryExclusion } from '../../services/warmupService';
 
 interface WarmupBlockProps {
   warmupExercises: WarmupExercise[];
@@ -41,6 +40,7 @@ interface WarmupBlockProps {
   timeLeft: number;
   isAllCompleted: boolean;
   totalDuration: number;
+  excludedByInjury: InjuryExclusion[]; // ✅ НОВОЕ
   isCompleted: (id: string) => boolean;
   onGenerateWarmup: () => void;
   onStartTimer: (id: string) => void;
@@ -239,7 +239,6 @@ function WarmupExerciseCard({
               <Text style={[typography.labelBold, { color: colors.warning }]}>{index + 1}</Text>
             )}
           </View>
-
           <View style={{ flex: 1 }}>
             <Text
               style={[
@@ -256,7 +255,6 @@ function WarmupExerciseCard({
               </Text>
             </View>
           </View>
-
           {isActive ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
               <Text style={[typography.h5, { color: colors.warning, fontVariant: ['tabular-nums'] }]}>
@@ -504,6 +502,7 @@ export function WarmupBlock({
   timeLeft,
   isAllCompleted,
   totalDuration,
+  excludedByInjury, // ✅ НОВОЕ
   isCompleted,
   onGenerateWarmup,
   onStartTimer,
@@ -617,6 +616,18 @@ export function WarmupBlock({
             <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>
               Под твою тренировку: {targetMuscles.join(' · ')}
             </Text>
+          )}
+          {/* ✅ НОВОЕ: учтённые травмы */}
+          {excludedByInjury.length > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+              <AlertTriangle size={12} color={colors.warning} />
+              <Text
+                style={[typography.captionSmall, { color: colors.warning, fontWeight: '600' }]}
+                numberOfLines={2}
+              >
+                Учтены травмы: {excludedByInjury.map(e => `${e.bodyPartLabel} (−${e.count})`).join(' · ')}
+              </Text>
+            </View>
           )}
         </View>
         <TouchableOpacity

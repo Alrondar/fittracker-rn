@@ -21,7 +21,7 @@ import {
   ChevronDown,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-
+import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../src/constants/injuries';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWorkoutSession } from '../../src/hooks/useWorkoutSession';
@@ -81,6 +81,7 @@ export default function WorkoutSessionScreen() {
   // Хук разминки (передаём объекты упражнений — сервис подбирает по целевым мышцам)
   const {
     warmupExercises,
+    excludedByInjury, // ✅ НОВОЕ
     isLoading: isWarmupLoading,
     activeTimerId,
     timeLeft,
@@ -227,8 +228,8 @@ export default function WorkoutSessionScreen() {
             </TouchableOpacity>
           </View>
           {activeInjuries.map((injury, index) => {
-            const bodyPartLabel = injury.body_part;
-            const injuryTypeLabel = injury.injury_type;
+            const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
+            const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
             const severityLabel = injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
             return (
               <Text key={index} style={[typography.caption, { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.xs }]}>
@@ -260,6 +261,7 @@ export default function WorkoutSessionScreen() {
               <WarmupBlock
                 warmupExercises={warmupExercises}
                 isLoading={isWarmupLoading}
+                excludedByInjury={excludedByInjury}
                 activeTimerId={activeTimerId}
                 timeLeft={timeLeft}
                 isAllCompleted={isWarmupCompleted}

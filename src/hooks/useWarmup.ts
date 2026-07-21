@@ -1,15 +1,21 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { warmupService, WarmupExercise } from '../services/warmupService';
+import { warmupService, WarmupExercise, InjuryExclusion } from '../services/warmupService';
+import { UserInjury } from '../constants/injuries';
 import * as Haptics from 'expo-haptics';
 
 export interface WarmupSourceExercise {
   id: string;
   primary_muscles: string[];
   secondary_muscles: string[];
+    equipment?: string[]; // ✅ НОВОЕ — для определения силовой тренировки
 }
 
-export function useWarmup(exercises: WarmupSourceExercise[]) {
+export function useWarmup(
+  exercises: WarmupSourceExercise[],
+  activeInjuries: UserInjury[] = [],
+) {
   const [warmupExercises, setWarmupExercises] = useState<WarmupExercise[]>([]);
+  const [excludedByInjury, setExcludedByInjury] = useState<InjuryExclusion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
@@ -17,8 +23,12 @@ export function useWarmup(exercises: WarmupSourceExercise[]) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const exerciseKey = exercises.map(e => e.id).join(',');
+  // Ключ травм — чтобы разминка перегенерировалась, когда травмы догрузились
+  const injuryKey = activeInjuries
+    .map(i => `${i.body_part}|${i.injury_type}|${i.severity}`)
+    .join(',');
 
-  // Генерация разминки при изменении состава тренировки
+  // Генерация разминки при изменении состава тренировки ИЛИ травм
   useEffect(() => {
     if (exercises.length > 0) {
       generateWarmup();
@@ -26,7 +36,7 @@ export function useWarmup(exercises: WarmupSourceExercise[]) {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseKey]);
+  }, [exerciseKey, injuryKey]);
 
   // Cleanup таймера при размонтировании
   useEffect(() => {
@@ -49,9 +59,9 @@ export function useWarmup(exercises: WarmupSourceExercise[]) {
     setActiveTimerId(null);
     setTimeLeft(0);
     try {
-      // ✅ Передаём объекты с мышцами, а не ID
-      const warmup = await warmupService.generateWarmup(exercises);
-      setWarmupExercises(warmup);
+      const result = await warmupService.generateWarmup(exercises, activeInjuries);
+      setWarmupExercises(result.exercises);
+      setExcludedByInjury(result.excludedByInjury);
       setCompletedIds(new Set());
     } catch (e) {
       console.error('Ошибка генерации разминки:', e);
@@ -63,11 +73,9 @@ export function useWarmup(exercises: WarmupSourceExercise[]) {
   const startExerciseTimer = (exerciseId: string) => {
     const exercise = warmupExercises.find(e => e.id === exerciseId);
     if (!exercise) return;
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setActiveTimerId(exerciseId);
     setTimeLeft(exercise.duration_seconds);
-
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => Math.max(0, prev - 1));
@@ -114,6 +122,7 @@ export function useWarmup(exercises: WarmupSourceExercise[]) {
 
   return {
     warmupExercises,
+    excludedByInjury, // ✅ НОВОЕ
     isLoading,
     completedIds,
     activeTimerId,

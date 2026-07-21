@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { UserInjury, WarningRule } from '../constants/injuries';
 
 export interface ProfileData {
   email: string;
@@ -142,6 +143,7 @@ export const profileService = {
     if (!todayWorkouts || todayWorkouts.length === 0) return 0;
 
     let totalBurned = 0;
+
     for (const workout of todayWorkouts) {
       const { data: logs } = await supabase
         .from('workout_logs')
@@ -171,6 +173,7 @@ export const profileService = {
     if (!userWorkouts || userWorkouts.length === 0) return [];
 
     const workoutIds = userWorkouts.map(w => w.id);
+
     const { data: workoutExercises } = await supabase
       .from('workout_exercises')
       .select('id, exercise_id')
@@ -195,9 +198,11 @@ export const profileService = {
       .order('weight_kg', { ascending: false });
 
     const exerciseRecords: Record<string, PersonalRecord> = {};
+
     logs?.forEach((log: any) => {
       const workoutExercise = workoutExercises.find(we => we.id === log.workout_exercise_id);
       if (!workoutExercise) return;
+
       const exerciseId = workoutExercise.exercise_id;
       const exerciseName = exerciseNameMap.get(exerciseId);
       if (!exerciseName) return;
@@ -230,3 +235,34 @@ export const profileService = {
     if (error) throw error;
   },
 };
+
+// ============================================================================
+// ТРАВМЫ — standalone-функции (для useInjuryWarnings и warmupService)
+// Вынесены из объекта profileService для единообразия с exercisesService/
+// programsService и прямого импорта в хуках.
+// ============================================================================
+
+/**
+ * Активные травмы пользователя (все, кроме полностью восстановленных).
+ */
+export async function getActiveInjuries(userId: string): Promise<UserInjury[]> {
+  const { data, error } = await supabase
+    .from('user_injuries')
+    .select('body_part, injury_type, severity')
+    .eq('user_id', userId)
+    .neq('status', 'recovered');
+  if (error) throw error;
+  return (data || []) as UserInjury[];
+}
+
+/**
+ * Правила предупреждений (body_part → muscle_group → рекомендация).
+ * Таблица может отсутствовать — возвращаем пустой список, не роняем.
+ */
+export async function getInjuryWarningRules(): Promise<WarningRule[]> {
+  const { data, error } = await supabase
+    .from('injury_exercise_warnings')
+    .select('body_part, muscle_group, recommendation');
+  if (error) return [];
+  return (data || []) as WarningRule[];
+}

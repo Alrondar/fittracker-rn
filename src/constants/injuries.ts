@@ -1,43 +1,206 @@
-// Маппинг частей тела на русские названия для поиска
-export const BODY_PART_RU: Record<string, string[]> = {
-  'knee': ['колено', 'колен', 'коленн', 'коленях'],
-  'shoulder': ['плечо', 'плеч', 'плечах', 'плечев', 'плечевой'],
-  'elbow': ['локоть', 'локтев', 'локтя', 'локтях', 'локтевой'],
-  'wrist': ['запястье', 'запясть', 'кисть', 'кистях', 'кисти'],
-  'back': ['спина', 'спин', 'поясниц', 'поясн', 'пояснице'],
-  'neck': ['шея', 'шеи', 'шей', 'шее'],
-  'hip': ['бедро', 'бедр', 'тазобедр', 'бёдрах'],
-  'ankle': ['голеностоп', 'щиколотк', 'лодыжк'],
+// ============================================================================
+// ТРАВМЫ: единый конфиг + чистые функции матчинга
+// ============================================================================
+
+export type BodyPart =
+  | 'knee' | 'shoulder' | 'elbow' | 'wrist'
+  | 'back' | 'neck' | 'hip' | 'ankle';
+
+export type InjuryType =
+  | 'strain' | 'sprain' | 'pain'
+  | 'inflammation' | 'fracture' | 'other';
+
+export type InjurySeverity = 'low' | 'medium' | 'high';
+export type WarningLevel = 'avoid' | 'caution';
+
+// --- Доменные типы ---
+export interface UserInjury {
+  body_part: string;
+  injury_type: string;
+  severity: string;
+}
+
+export interface InjuryWarning {
+  level: WarningLevel;
+  message: string;
+}
+
+export interface WarningRule {
+  body_part: string;
+  muscle_group: string;
+  recommendation: string;
+}
+
+// --- Конфигурация частей тела (ЕДИНЫЙ источник) ---
+interface BodyPartConfig {
+  label: string;
+  keywords: string[];      // для поиска в противопоказаниях (уровень 1)
+  muscleGroups: string[];  // мышцы зоны — для разминки и локальных проверок
+}
+
+export const BODY_PARTS: Record<BodyPart, BodyPartConfig> = {
+  knee: {
+    label: 'колено',
+    keywords: ['колено', 'колен', 'коленн', 'коленях'],
+    muscleGroups: ['квадрицепс', 'прямая мышца бедра', 'бицепс бедра', 'ягодичные мышцы', 'большая ягодичная', 'средняя ягодичная', 'икроножная', 'камбаловидная', 'приводящие мышцы бедра'],
+  },
+  shoulder: {
+    label: 'плечо',
+    keywords: ['плечо', 'плеч', 'плечах', 'плечев', 'плечевой'],
+    muscleGroups: ['дельтовидные', 'передняя дельта', 'средняя дельта', 'задняя дельта', 'ротаторная манжета', 'надостная', 'подостная', 'малая круглая'],
+  },
+  elbow: {
+    label: 'локоть',
+    keywords: ['локоть', 'локтев', 'локтя', 'локтях', 'локтевой'],
+    muscleGroups: ['бицепс', 'бицепс (длинная головка)', 'бицепс (короткая головка)', 'трицепс', 'трицепс (длинная головка)', 'трицепс (латеральная головка)', 'трицепс (медиальная головка)', 'брахиалис', 'брахиорадиалис'],
+  },
+  wrist: {
+    label: 'запястье',
+    keywords: ['запястье', 'запясть', 'кисть', 'кистях', 'кисти'],
+    muscleGroups: ['мышцы предплечья', 'сгибатели предплечья', 'разгибатели предплечья', 'сгибатели пальцев', 'локтевая мышца', 'брахиорадиалис'],
+  },
+  back: {
+    label: 'спина',
+    keywords: ['спина', 'спин', 'поясниц', 'поясн', 'пояснице'],
+    muscleGroups: ['разгибатели спины', 'квадратная мышца поясницы', 'широчайшие', 'широчайшие (верх)', 'широчайшие (середина/низ)', 'трапеция', 'ромбовидные', 'большая круглая'],
+  },
+  neck: {
+    label: 'шея',
+    keywords: ['шея', 'шеи', 'шей', 'шее'],
+    muscleGroups: ['верхняя трапеция', 'мышцы, поднимающие лопатку', 'трапеция'],
+  },
+  hip: {
+    label: 'бедро',
+    keywords: ['бедро', 'бедр', 'тазобедр', 'бёдрах'],
+    muscleGroups: ['ягодичные мышцы', 'большая ягодичная', 'средняя ягодичная', 'приводящие мышцы бедра', 'подвздошно-поясничная', 'бицепс бедра'],
+  },
+  ankle: {
+    label: 'голеностоп',
+    keywords: ['голеностоп', 'щиколотк', 'лодыжк'],
+    muscleGroups: ['икроножная', 'камбаловидная'],
+  },
 };
 
-// Маппинг типов травм на русские названия для поиска
-export const INJURY_TYPE_RU: Record<string, string[]> = {
-  'strain': ['растяжени', 'надрыв'],
-  'sprain': ['вывих', 'растяжени связок'],
-  'pain': ['боль', 'болят', 'болит', 'болезнен'],
-  'inflammation': ['воспалени'],
-  'fracture': ['перелом', 'трещин'],
-  'other': ['травм', 'повреждени'],
+// --- Конфигурация типов травм (ЕДИНЫЙ источник) ---
+interface InjuryTypeConfig {
+  label: string;
+  keywords: string[];
+}
+
+export const INJURY_TYPES: Record<InjuryType, InjuryTypeConfig> = {
+  strain: { label: 'растяжение', keywords: ['растяжени', 'надрыв'] },
+  sprain: { label: 'вывих', keywords: ['вывих', 'растяжени связок'] },
+  pain: { label: 'боль', keywords: ['боль', 'болят', 'болит', 'болезнен'] },
+  inflammation: { label: 'воспаление', keywords: ['воспалени'] },
+  fracture: { label: 'перелом', keywords: ['перелом', 'трещин'] },
+  other: { label: 'травма', keywords: ['травм', 'повреждени'] },
 };
 
-// Русские названия частей тела для отображения
-export const BODY_PART_LABELS: Record<string, string> = {
-  'knee': 'колено',
-  'shoulder': 'плечо',
-  'elbow': 'локоть',
-  'wrist': 'запястье',
-  'back': 'спина',
-  'neck': 'шея',
-  'hip': 'бедро',
-  'ankle': 'голеностоп',
-};
+// --- Производные словари (обратная совместимость со старыми импортами) ---
+export const BODY_PART_RU: Record<string, string[]> = Object.fromEntries(
+  (Object.keys(BODY_PARTS) as BodyPart[]).map(k => [k, BODY_PARTS[k].keywords]),
+);
 
-// Русские названия типов травм для отображения
-export const INJURY_TYPE_LABELS: Record<string, string> = {
-  'strain': 'растяжение',
-  'sprain': 'вывих',
-  'pain': 'боль',
-  'inflammation': 'воспаление',
-  'fracture': 'перелом',
-  'other': 'травма',
-};
+export const INJURY_TYPE_RU: Record<string, string[]> = Object.fromEntries(
+  (Object.keys(INJURY_TYPES) as InjuryType[]).map(k => [k, INJURY_TYPES[k].keywords]),
+);
+
+export const BODY_PART_LABELS: Record<string, string> = Object.fromEntries(
+  (Object.keys(BODY_PARTS) as BodyPart[]).map(k => [k, BODY_PARTS[k].label]),
+);
+
+export const INJURY_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  (Object.keys(INJURY_TYPES) as InjuryType[]).map(k => [k, INJURY_TYPES[k].label]),
+);
+
+// ============================================================================
+// ЧИСТЫЕ ФУНКЦИИ МАТЧИНГА (переиспользуются в хуке и warmupService)
+// ============================================================================
+
+interface ExerciseLike {
+  id: string;
+  injuries?: string[];
+  primary_muscles: string[];
+  secondary_muscles?: string[];
+}
+
+/**
+ * УРОВЕНЬ 1 (avoid): прямое совпадение противопоказаний упражнения
+ * с ключевыми словами травмы.
+ */
+export function matchesContraindication(
+  exerciseInjuries: string[],
+  bodyPart: string,
+  injuryType: string,
+): boolean {
+  const bpKeywords = BODY_PART_RU[bodyPart] || [];
+  const itKeywords = INJURY_TYPE_RU[injuryType] || [];
+  return exerciseInjuries.some(contraindication => {
+    const lower = contraindication.toLowerCase();
+    return bpKeywords.some(kw => lower.includes(kw)) ||
+           itKeywords.some(kw => lower.includes(kw));
+  });
+}
+
+/**
+ * Локальная проверка: нагружает ли упражнение травмированную зону
+ * (по группам мышц из конфига). Используется в warmupService.
+ */
+export function targetsInjuredMuscle(
+  primaryMuscles: string[],
+  secondaryMuscles: string[],
+  bodyPart: string,
+): boolean {
+  const groups = BODY_PARTS[bodyPart as BodyPart]?.muscleGroups || [];
+  if (!groups.length) return false;
+  return [...primaryMuscles, ...secondaryMuscles].some(m => groups.includes(m));
+}
+
+/**
+ * Полный расчёт предупреждений для списка упражнений.
+ * УРОВЕНЬ 1 (avoid) — по противопоказаниям; УРОВЕНЬ 2 (caution) — по правилам из БД.
+ */
+export function computeExerciseWarnings(
+  exercises: ExerciseLike[],
+  injuries: UserInjury[],
+  rules: WarningRule[],
+): Record<string, InjuryWarning> {
+  const warnings: Record<string, InjuryWarning> = {};
+
+  for (const ex of exercises) {
+    const exInjuries = ex.injuries || [];
+
+    for (const injury of injuries) {
+      const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
+      const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
+
+      // УРОВЕНЬ 1: прямое противопоказание (КРАСНЫЙ) — максимальный приоритет
+      if (matchesContraindication(exInjuries, injury.body_part, injury.injury_type)) {
+        const severityPrefix = injury.severity === 'high' ? '⛔' : '🚫';
+        warnings[ex.id] = {
+          level: 'avoid',
+          message: `${severityPrefix} Противопоказано при травме: ${bodyPartLabel} (${injuryTypeLabel})`,
+        };
+        break; // avoid — дальше по этому упражнению не проверяем
+      }
+
+      // УРОВЕНЬ 2: косвенное через правила БД (ЖЁЛТЫЙ) — только если ещё нет предупреждения
+      if (!warnings[ex.id]) {
+        const related = rules.find(
+          w =>
+            w.body_part === injury.body_part &&
+            (ex.primary_muscles.includes(w.muscle_group) ||
+              (ex.secondary_muscles?.includes(w.muscle_group) ?? false)),
+        );
+        if (related) {
+          warnings[ex.id] = {
+            level: 'caution',
+            message: `⚠️ Осторожно: ${related.recommendation}`,
+          };
+        }
+      }
+    }
+  }
+
+  return warnings;
+}
