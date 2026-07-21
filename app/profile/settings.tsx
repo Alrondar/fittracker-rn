@@ -21,6 +21,7 @@ import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
+import { useTimerSettings } from '../../src/hooks/useTimerSettings';
 import {
   ChevronLeft,
   User,
@@ -38,6 +39,9 @@ import {
   Info,
   HelpCircle,
   X,
+  Volume2,    // ✅ НОВОЕ
+  BellRing,   // ✅ НОВОЕ
+  Vibrate,    // ✅ НОВОЕ
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -52,7 +56,8 @@ export default function SettingsScreen() {
     availableAccents,
   } = useTheme();
   const { userId } = useStore();
-
+// ✅ НОВОЕ: настройки таймера отдыха
+  const { settings: timerSettings, updateSettings: updateTimerSettings } = useTimerSettings();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -454,7 +459,84 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
+      {/* Таймер отдыха */}
+      <View style={commonStyles.section}>
+        <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+          Таймер отдыха
+        </Text>
 
+        {/* Звук по окончании */}
+        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Volume2 size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.label, { color: colors.textPrimary }]}>Звук по окончании</Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Звуковой сигнал, когда отдых завершён
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={timerSettings.sound}
+              onValueChange={(value) => {
+                updateTimerSettings({ sound: value });
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
+        {/* Отсчёт 3-2-1 */}
+        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <BellRing size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.label, { color: colors.textPrimary }]}>Отсчёт 3-2-1</Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Короткие сигналы за 3 секунды до конца
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={timerSettings.preBeep}
+              onValueChange={(value) => {
+                updateTimerSettings({ preBeep: value });
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
+        {/* Вибрация */}
+        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.label, { color: colors.textPrimary }]}>Вибрация</Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Вибросигнал по окончании отдыха
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={timerSettings.vibration}
+              onValueChange={(value) => {
+                updateTimerSettings({ vibration: value });
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+      </View>
         {/* Данные */}
         <View style={commonStyles.section}>
           <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>

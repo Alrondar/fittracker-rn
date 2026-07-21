@@ -7,7 +7,9 @@
     "scheme": "fittracker",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fittracker.app"
@@ -24,7 +26,8 @@
       "supabaseAnonKey": "sb_publishable_urA0lde-UzaEHI6Et5wB2w_k5L308CK"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-audio"
     ]
   }
 }

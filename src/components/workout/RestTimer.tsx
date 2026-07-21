@@ -1,91 +1,113 @@
+import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, Minus, Plus, CheckCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING } from '../../constants/theme';
 import { createWorkoutStyles } from '../../styles/components/workout';
 
 interface RestTimerProps {
   timeLeft: number;
   total: number;
+  isFinished: boolean;
   onStop: () => void;
   onAdjust: (delta: number) => void;
   colors: any;
   workoutStyles: ReturnType<typeof createWorkoutStyles>;
 }
 
-export function RestTimer({ timeLeft, total, onStop, onAdjust, colors, workoutStyles }: RestTimerProps) {
-  const mins = Math.floor(timeLeft / 60);
-  const secs = timeLeft % 60;
-  const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
-  const progressPercent = total > 0 ? (timeLeft / total) * 100 : 0;
+const formatTime = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-  // Пульсация в последние 10 секунд
-  const isPulsing = timeLeft <= 10 && timeLeft > 0;
-  const opacity = isPulsing ? (timeLeft % 2 === 0 ? 1 : 0.4) : 1;
+export function RestTimer({
+  timeLeft,
+  total,
+  isFinished,
+  onStop,
+  onAdjust,
+  colors,
+  workoutStyles,
+}: RestTimerProps) {
+  const progress = total > 0 ? timeLeft / total : 0;
+  const timeColor = isFinished ? colors.success : timeLeft <= 3 ? colors.warning : colors.textPrimary;
 
   return (
-    <View style={[workoutStyles.workoutTimerContainer, { backgroundColor: colors.warningLight, borderBottomColor: colors.warning + '40' }]}>
-      {/* Шапка: ОТДЫХ + крестик */}
+    <View style={[workoutStyles.workoutTimerContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      {/* Шапка */}
       <View style={workoutStyles.workoutTimerHeader}>
-        <Text style={[workoutStyles.workoutTimerTitle, { color: colors.warning }]}>
-          Отдых
+        <Text style={[workoutStyles.workoutTimerTitle, { color: colors.textSecondary }]}>
+          {isFinished ? 'Отдых окончен' : 'Таймер отдыха'}
         </Text>
-        <TouchableOpacity onPress={onStop} style={workoutStyles.workoutTimerCloseButton}>
-          <X size={20} color={colors.warning} strokeWidth={2} />
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onStop();
+          }}
+          style={workoutStyles.workoutTimerCloseButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <X size={20} color={colors.textSecondary} strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
-      {/* Большие цифры с пульсацией */}
-      <Text
-        style={[
-          workoutStyles.workoutTimerTime,
-          {
-            color: colors.warning,
-            opacity,
-          },
-        ]}
-      >
-        {formatted}
+      {/* Время */}
+      <Text style={[workoutStyles.workoutTimerTime, { color: timeColor }]}>
+        {isFinished ? '💪' : formatTime(timeLeft)}
       </Text>
 
       {/* Прогресс-бар */}
-      <View style={[workoutStyles.workoutTimerProgressBg, { backgroundColor: colors.border }]}>
+      <View style={[workoutStyles.workoutTimerProgressBg, { backgroundColor: colors.surfaceSecondary }]}>
         <View
           style={[
             workoutStyles.workoutTimerProgressFill,
             {
-              width: `${progressPercent}%`,
-              backgroundColor: colors.warning,
+              width: `${(isFinished ? 1 : progress) * 100}%`,
+              backgroundColor: isFinished ? colors.success : timeLeft <= 3 ? colors.warning : colors.primary,
             },
           ]}
         />
       </View>
 
-      {/* Кнопки +/- 15 секунд */}
-      <View style={workoutStyles.workoutTimerControls}>
+      {/* Управление */}
+      {isFinished ? (
         <TouchableOpacity
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onAdjust(-15);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onStop();
           }}
-          style={workoutStyles.workoutTimerControlButton}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            backgroundColor: colors.success,
+            paddingVertical: 14,
+            borderRadius: 16,
+          }}
         >
-          <Text style={[workoutStyles.workoutTimerControlText, { color: colors.warning }]}>
-            -15с
+          <CheckCircle size={20} color={colors.textInverse} strokeWidth={2} />
+          <Text style={[workoutStyles.workoutTimerControlText, { color: colors.textInverse }]}>
+            Продолжить тренировку
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onAdjust(15);
-          }}
-          style={workoutStyles.workoutTimerControlButton}
-        >
-          <Text style={[workoutStyles.workoutTimerControlText, { color: colors.warning }]}>
-            +15с
-          </Text>
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <View style={workoutStyles.workoutTimerControls}>
+          <TouchableOpacity
+            onPress={() => onAdjust(-15)}
+            disabled={total <= 15}
+            style={[workoutStyles.workoutTimerControlButton, { opacity: total <= 15 ? 0.4 : 1 }]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Minus size={18} color={colors.textSecondary} strokeWidth={2} />
+              <Text style={[workoutStyles.workoutTimerControlText, { color: colors.textSecondary }]}>15с</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onAdjust(15)} style={workoutStyles.workoutTimerControlButton}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Plus size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[workoutStyles.workoutTimerControlText, { color: colors.primary }]}>15с</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }

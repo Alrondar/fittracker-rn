@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTimerSettings } from './useTimerSettings';
+import { initSounds, playBeep, playFinishSound } from '../lib/timerSounds';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -29,6 +31,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // Альтернативные упражнения
   const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
   const [replacements, setReplacements] = useState<Record<string, string>>({});
+
+    // Настройки таймера + timestamp-архитектура (точно даже в фоне)
+  const { settings: timerSettings } = useTimerSettings();
+  const [isRestFinished, setIsRestFinished] = useState(false);
+  const restEndsAtRef = useRef<number>(0);
+  const lastBeepRef = useRef<number>(0);
 
   // Ref-зеркала для стабильных колбэков (без них React.memo на карточках бесполезен)
   const exercisesRef = useRef<ExerciseData[]>([]);
@@ -304,31 +312,64 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     );
   }, [loadWorkout]);
 
-  // Таймер отдыха
+  // Внутренняя функция запуска тиков (250мс — setState с тем же значением не вызывает ре-рендер)
+  const runRestInterval = useCallback(() => {
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = setInterval(() => {
+      const msLeft = restEndsAtRef.current - Date.now();
+      const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
+      setRestTimeLeft(secLeft);
+
+      // Бипы 3-2-1
+      if (timerSettings.preBeep && secLeft <= 3 && secLeft > 0 && lastBeepRef.current !== secLeft) {
+        lastBeepRef.current = secLeft;
+        playBeep();
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      // Завершение отдыха
+      if (msLeft <= 0) {
+        if (restTimerRef.current) clearInterval(restTimerRef.current);
+        restTimerRef.current = null;
+        setIsRestFinished(true);
+        if (timerSettings.sound) playFinishSound();
+        if (timerSettings.vibration) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    }, 250);
+  }, [timerSettings]);
+
   const startRestTimer = useCallback((restSeconds: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (restTimerRef.current) clearInterval(restTimerRef.current);
-
-    setRestTimeLeft(restSeconds);
+    setIsRestFinished(false);
+    lastBeepRef.current = 0;
+    restEndsAtRef.current = Date.now() + restSeconds * 1000;
     setRestTimer(restSeconds);
+    setRestTimeLeft(restSeconds);
+    initSounds(); // предзагрузка плееров
+    runRestInterval();
+  }, [runRestInterval]);
 
-    restTimerRef.current = setInterval(() => {
-      setRestTimeLeft(prev => {
-        if (prev <= 1) {
-          if (restTimerRef.current) clearInterval(restTimerRef.current);
-          setRestTimer(null);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
+  // Корректировка (+15 / -15) — сдвигаем саму метку окончания
+  const adjustRestTimer = useCallback((delta: number) => {
+    if (restEndsAtRef.current === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    restEndsAtRef.current += delta * 1000;
+    const secLeft = Math.max(0, Math.ceil((restEndsAtRef.current - Date.now()) / 1000));
+    setRestTimeLeft(secLeft);
+    setRestTimer(prev => (prev ? Math.max(5, prev + delta) : prev));
+    if (secLeft > 0) {
+      setIsRestFinished(false);
+      if (!restTimerRef.current) runRestInterval(); // воскресаем, если успели завершиться
+    }
+  }, [runRestInterval]);
 
   const stopRestTimer = useCallback(() => {
     if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
+    restEndsAtRef.current = 0;
     setRestTimer(null);
     setRestTimeLeft(0);
+    setIsRestFinished(false);
   }, []);
 
   // Сохранение тренировки
@@ -438,6 +479,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     restTimer,
     restTimeLeft,
     setRestTimeLeft,
+    isRestFinished,
+    adjustRestTimer, 
     alternativesCache,
     replacements,
     currentTimeRef,

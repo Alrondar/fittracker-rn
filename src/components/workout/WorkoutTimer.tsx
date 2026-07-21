@@ -1,129 +1,120 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Clock, Pause, Play } from 'lucide-react-native';
-import { SPACING } from '../../constants/theme';
+import { Play, Pause, Clock } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 interface WorkoutTimerProps {
-  /** Начальное время в секундах (для восстановления) */
-  initialSeconds?: number;
-  /** Активен ли таймер при монтировании */
-  isActive?: boolean;
-  /** Колбэк при каждом тике (каждую секунду) */
-  onTick?: (seconds: number) => void;
-  /** Колбэк при старте */
-  onStart?: () => void;
-  /** Колбэк при остановке */
-  onStop?: () => void;
+  initialSeconds: number;
+  isActive: boolean;
+  onTick: (seconds: number) => void;
+  onStart: () => void;
+  onStop: () => void;
   colors: any;
 }
 
+const formatTime = (totalSeconds: number): string => {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const mm = m.toString().padStart(2, '0');
+  const ss = s.toString().padStart(2, '0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+};
+
 export function WorkoutTimer({
-  initialSeconds = 0,
-  isActive = false,
+  initialSeconds,
+  isActive,
   onTick,
   onStart,
   onStop,
   colors,
 }: WorkoutTimerProps) {
-  const [elapsedTime, setElapsedTime] = useState(initialSeconds);
-  const [isRunning, setIsRunning] = useState(isActive);
+  const [seconds, setSeconds] = useState(initialSeconds);
+  const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onTickRef = useRef(onTick);
 
-  // Форматирование времени MM:SS
-  const formatTime = useCallback((seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }, []);
+  // Свежий onTick — не пересоздаём интервал при каждом рендере
+  useEffect(() => {
+    onTickRef.current = onTick;
+  }, [onTick]);
 
-  // Запуск интервала
-  const startTimer = useCallback(() => {
-    if (intervalRef.current) return; // Уже запущен
-    
+  // Восстановление времени сессии (например, после перезапуска приложения)
+  useEffect(() => {
+    setSeconds(initialSeconds);
+  }, [initialSeconds]);
+
+  // Тикаем, пока running === true
+  useEffect(() => {
+    if (!running) return;
     intervalRef.current = setInterval(() => {
-      setElapsedTime(prev => {
-        const newTime = prev + 1;
-        onTick?.(newTime);
-        return newTime;
+      setSeconds(prev => {
+        const next = prev + 1;
+        onTickRef.current(next);
+        return next;
       });
     }, 1000);
-    
-    setIsRunning(true);
-    onStart?.();
-  }, [onTick, onStart]);
-
-  // Остановка интервала
-  const stopTimer = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setIsRunning(false);
-    onStop?.();
-  }, [onStop]);
-
-  // Сброс таймера
-  const resetTimer = useCallback(() => {
-    stopTimer();
-    setElapsedTime(0);
-  }, [stopTimer]);
-
-  // Восстановление состояния при монтировании
-  useEffect(() => {
-    if (isActive && initialSeconds >= 0) {
-      setElapsedTime(initialSeconds);
-      startTimer();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Очистка при размонтировании
-  useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, []);
+  }, [running]);
 
-  // Экспортируем текущее время через ref (для родителя)
-  useEffect(() => {
-    onTick?.(elapsedTime);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elapsedTime]);
+  const handleToggle = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (running) {
+      setRunning(false);
+      onStop();
+    } else {
+      setRunning(true);
+      onStart();
+    }
+  }, [running, onStart, onStop]);
 
   return (
-    <View style={{
-      backgroundColor: colors.primary,
-      padding: SPACING.md,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-        <Clock size={20} color="white" />
-        <Text style={[typography.h4, { color: 'white' }]}>
-          {formatTime(elapsedTime)}
-        </Text>
-      </View>
-      
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: SPACING.sm,
+        paddingVertical: SPACING.sm,
+        paddingHorizontal: SPACING.md,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      }}
+    >
+      <Clock size={16} color={colors.textSecondary} strokeWidth={2} />
+      <Text
+        style={[
+          typography.labelBold,
+          { color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+        ]}
+      >
+        {formatTime(seconds)}
+      </Text>
       <TouchableOpacity
-        onPress={isRunning ? stopTimer : startTimer}
+        onPress={handleToggle}
+        activeOpacity={0.7}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          justifyContent: 'center',
+          width: 28,
+          height: 28,
+          borderRadius: 14,
           alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.surfaceSecondary,
         }}
       >
-        {isRunning ? (
-          <Pause size={20} color="white" />
+        {running ? (
+          <Pause size={14} color={colors.primary} strokeWidth={2} />
         ) : (
-          <Play size={20} color="white" />
+          <Play size={14} color={colors.primary} strokeWidth={2} />
         )}
       </TouchableOpacity>
     </View>

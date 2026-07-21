@@ -57,6 +57,8 @@ export default function WorkoutSessionScreen() {
     restTimer,
     restTimeLeft,
     setRestTimeLeft,
+    isRestFinished,   // ✅ НОВОЕ
+    adjustRestTimer,  // ✅ НОВОЕ
     alternativesCache,
     replacements,
     handleTimerTick,
@@ -153,10 +155,11 @@ export default function WorkoutSessionScreen() {
         <RestTimer
           timeLeft={restTimeLeft}
           total={restTimer}
+          isFinished={isRestFinished}      // ✅ НОВОЕ
           onStop={stopRestTimer}
-          onAdjust={(delta) => setRestTimeLeft((prev: number) => Math.max(0, prev + delta))}
+          onAdjust={adjustRestTimer}       // ✅ БЫЛО: (delta) => setRestTimeLeft(...)
           colors={colors}
-          workoutStyles={workoutStyles} // ✅ мемоизированные стили
+          workoutStyles={workoutStyles}
         />
       )}
 
