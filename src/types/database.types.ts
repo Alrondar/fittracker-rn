@@ -680,6 +680,7 @@ export type Database = {
         Row: {
           exercise_id: string
           id: string
+          intensity: string | null
           order_index: number
           position: number | null
           reps: string | null
@@ -693,6 +694,7 @@ export type Database = {
         Insert: {
           exercise_id: string
           id?: string
+          intensity?: string | null
           order_index: number
           position?: number | null
           reps?: string | null
@@ -706,6 +708,7 @@ export type Database = {
         Update: {
           exercise_id?: string
           id?: string
+          intensity?: string | null
           order_index?: number
           position?: number | null
           reps?: string | null
@@ -820,6 +823,7 @@ export type Database = {
           finished_at: string | null
           id: string
           name: string
+          phase_number: number | null
           program_id: string | null
           started_at: string | null
           updated_at: string | null
@@ -835,6 +839,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           name: string
+          phase_number?: number | null
           program_id?: string | null
           started_at?: string | null
           updated_at?: string | null
@@ -850,6 +855,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           name?: string
+          phase_number?: number | null
           program_id?: string | null
           started_at?: string | null
           updated_at?: string | null

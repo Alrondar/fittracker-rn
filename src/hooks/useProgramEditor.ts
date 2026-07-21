@@ -7,12 +7,12 @@ import {
   startProgram,
   createWorkoutsFromProgram,
   Program,
+  ProgramPhase,
   ProgramDay,
   ProgramExercise,
 } from '../services/programsService';
 import * as Haptics from 'expo-haptics';
 
-// Генерация UUID
 const genRandomUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = (Math.random() * 16) | 0;
@@ -30,18 +30,22 @@ export function useProgramEditor(programId: string, userId: string | null) {
   const [editMode, setEditMode] = useState(false);
   const [editedProgram, setEditedProgram] = useState<Program | null>(null);
   const [deletedExerciseIds, setDeletedExerciseIds] = useState<string[]>([]);
+  const [deletedDayIds, setDeletedDayIds] = useState<string[]>([]);     // ✅ НОВОЕ
+  const [deletedPhaseIds, setDeletedPhaseIds] = useState<string[]>([]); // ✅ НОВОЕ
 
   // Модалки
   const [showDaySettings, setShowDaySettings] = useState(false);
   const [showExerciseSettings, setShowExerciseSettings] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [showScheduleEditor, setShowScheduleEditor] = useState(false);
+  const [showPhaseSettings, setShowPhaseSettings] = useState(false); // ✅ НОВОЕ
 
   // Выбранные элементы
   const [selectedDay, setSelectedDay] = useState<ProgramDay | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<ProgramExercise | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(-1);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number>(-1);
+  const [selectedPhaseIndex, setSelectedPhaseIndex] = useState<number>(-1); // ✅ НОВОЕ
 
   // Поиск упражнений
   const [exerciseSearch, setExerciseSearch] = useState('');
@@ -68,9 +72,10 @@ export function useProgramEditor(programId: string, userId: string | null) {
 
   const handleStartProgram = async () => {
     if (!userId) return;
+    const firstPhase = program?.phases?.[0];
     Alert.alert(
       'Начать программу?',
-      `Будет создано ${program?.days?.length || 0} тренировок на первую неделю программы "${program?.name}"`,
+      `Будут созданы тренировки фазы "${firstPhase?.name || '1'}" (неделя 1) программы "${program?.name}"`,
       [
         { text: 'Отмена', style: 'cancel' },
         {
@@ -80,7 +85,7 @@ export function useProgramEditor(programId: string, userId: string | null) {
             setStarting(true);
             try {
               await startProgram(programId);
-              const workoutIds = await createWorkoutsFromProgram(programId, userId);
+              await createWorkoutsFromProgram(programId, userId, 1, 1);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.replace('/(tabs)/workouts');
             } catch (error: any) {
@@ -99,6 +104,8 @@ export function useProgramEditor(programId: string, userId: string | null) {
       setEditMode(false);
       setEditedProgram(program);
       setDeletedExerciseIds([]);
+      setDeletedDayIds([]);
+      setDeletedPhaseIds([]);
     } else {
       if (program && !program.id.startsWith('user_')) {
         await copyProgramToUser();
@@ -117,7 +124,6 @@ export function useProgramEditor(programId: string, userId: string | null) {
       if (error) throw error;
       const newProgramId = Array.isArray(data) ? data[0]?.id || data[0] : data?.id || data;
       if (!newProgramId) throw new Error('Не удалось получить ID скопированной программы');
-
       const newData = await getProgramWithDays(newProgramId);
       setProgram(newData);
       setEditedProgram(newData);
@@ -128,14 +134,164 @@ export function useProgramEditor(programId: string, userId: string | null) {
     }
   };
 
-  const saveProgram = async () => {
+  // ============================================================================
+  // ФАЗЫ (управление)
+  // ============================================================================
+
+  /** Добавить фазу (с одним пустым днём по умолчанию). */
+  const addPhase = () => {
+    if (!editedProgram) return;
+    const phases = editedProgram.phases || [];
+    const newPhaseId = genRandomUUID();
+    const newPhase: ProgramPhase = {
+      id: newPhaseId,
+      program_id: editedProgram.id,
+      phase_number: phases.length + 1,
+      name: `Фаза ${phases.length + 1}`,
+      phase_type: 'custom',
+      weeks_count: 1,
+      description: null,
+      position: phases.length + 1,
+      days: [],
+      isNew: true,
+    };
+    const newDay: ProgramDay = {
+      id: genRandomUUID(),
+      program_id: editedProgram.id,
+      phase_id: newPhaseId,
+      week_number: 1,
+      day_number: 1,
+      name: 'День 1',
+      position: 1,
+      exercises: [],
+      isNew: true,
+    };
+    setEditedProgram({
+      ...editedProgram,
+      phases: [...phases, newPhase],
+      days: [...(editedProgram.days || []), newDay],
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  /** Удалить фазу вместе с её днями. */
+  const removePhase = (phaseIndex: number) => {
+    if (!editedProgram || !editedProgram.phases) return;
+    const phase = editedProgram.phases[phaseIndex];
+    if (!phase) return;
+    Alert.alert('Удалить фазу?', `"${phase.name}" и все её дни будут удалены`, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: () => {
+          const phaseDays = (editedProgram.days || []).filter(d => d.phase_id === phase.id);
+          const newPhases = editedProgram.phases!.filter((_, i) => i !== phaseIndex);
+          const newDays = (editedProgram.days || []).filter(d => d.phase_id !== phase.id);
+          setEditedProgram({ ...editedProgram, phases: newPhases, days: newDays });
+          if (!phase.isNew) setDeletedPhaseIds(prev => [...prev, phase.id]);
+          const removedDayIds = phaseDays.filter(d => !d.isNew).map(d => d.id);
+          if (removedDayIds.length) setDeletedDayIds(prev => [...prev, ...removedDayIds]);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      },
+    ]);
+  };
+
+  /** Обновить настройки фазы (название, тип, недели, описание). */
+  const updatePhaseSettings = (phaseIndex: number, settings: Partial<ProgramPhase>) => {
+    if (!editedProgram || !editedProgram.phases) return;
+    const newPhases = [...editedProgram.phases];
+    newPhases[phaseIndex] = { ...newPhases[phaseIndex], ...settings };
+    setEditedProgram({ ...editedProgram, phases: newPhases });
+  };
+
+  /** Переупорядочить фазы (drag & drop). */
+  const onPhaseDragEnd = (data: ProgramPhase[]) => {
+    if (!editedProgram) return;
+    const updatedPhases = data.map((phase, index) => ({
+      ...phase,
+      phase_number: index + 1,
+      position: index + 1,
+    }));
+    setEditedProgram({ ...editedProgram, phases: updatedPhases });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+    /** Переместить фазу стрелками (↑/↓). */
+  const movePhase = (phaseIndex: number, direction: 'up' | 'down') => {
+    if (!editedProgram || !editedProgram.phases) return;
+    const phases = [...editedProgram.phases];
+    const targetIndex = direction === 'up' ? phaseIndex - 1 : phaseIndex + 1;
+    if (targetIndex < 0 || targetIndex >= phases.length) return;
+    [phases[phaseIndex], phases[targetIndex]] = [phases[targetIndex], phases[phaseIndex]];
+    const renumbered = phases.map((p, i) => ({ ...p, phase_number: i + 1, position: i + 1 }));
+    setEditedProgram({ ...editedProgram, phases: renumbered });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  /** Добавить день в конкретную фазу. */
+  const addDayToPhase = (phaseIndex: number) => {
+    if (!editedProgram || !editedProgram.phases) return;
+    const phase = editedProgram.phases[phaseIndex];
+    if (!phase) return;
+    const phaseDays = (editedProgram.days || []).filter(d => d.phase_id === phase.id);
+    const newDay: ProgramDay = {
+      id: genRandomUUID(),
+      program_id: editedProgram.id,
+      phase_id: phase.id,
+      week_number: 1,
+      day_number: phaseDays.length + 1,
+      name: `День ${phaseDays.length + 1}`,
+      position: phaseDays.length + 1,
+      exercises: [],
+      isNew: true,
+    };
+    setEditedProgram({ ...editedProgram, days: [...(editedProgram.days || []), newDay] });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  /** Удалить день (по плоскому индексу в editedProgram.days). */
+  const removeDay = (dayIndex: number) => {
+    if (!editedProgram || !editedProgram.days) return;
+    const day = editedProgram.days[dayIndex];
+    if (!day) return;
+    Alert.alert('Удалить день?', `"${day.name}" будет удалён`, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: () => {
+          const newDays = editedProgram.days!.filter((_, i) => i !== dayIndex);
+          setEditedProgram({ ...editedProgram, days: newDays });
+          if (!day.isNew) setDeletedDayIds(prev => [...prev, day.id]);
+          const removedExIds = (day.exercises || []).filter(ex => !ex.isNew).map(ex => ex.id);
+          if (removedExIds.length) setDeletedExerciseIds(prev => [...prev, ...removedExIds]);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      },
+    ]);
+  };
+
+  /** Дни фазы (отсортированы по day_number). */
+  const getDaysForPhase = (phaseId: string): ProgramDay[] => {
+    if (!editedProgram || !editedProgram.days) return [];
+    return editedProgram.days
+      .filter(d => d.phase_id === phaseId)
+      .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+  };
+
+  // ============================================================================
+  // СОХРАНЕНИЕ (фазовое)
+  // ============================================================================
+
+    const saveProgram = async () => {
     setSaving(true);
     try {
-      if (!editedProgram || !editedProgram.days) return;
-
-      const updatePromises: Promise<any>[] = [];
+      if (!editedProgram) return;
+      const phases = editedProgram.phases || [];
       const days = editedProgram.days || [];
 
+      // 1. Расписание программы
       if (editedProgram.schedule) {
         const { error } = await supabase
           .from('programs')
@@ -144,76 +300,147 @@ export function useProgramEditor(programId: string, userId: string | null) {
         if (error) throw error;
       }
 
-      if (deletedExerciseIds.length > 0) {
-        deletedExerciseIds.forEach((exerciseId) => {
-          updatePromises.push(
-            Promise.resolve(supabase.from('program_exercises').delete().eq('id', exerciseId))
-          );
-        });
-      }
+      const updatePromises: Promise<any>[] = [];
 
-      for (let i = 0; i < days.length; i++) {
-        const day = days[i];
-        updatePromises.push(
-          Promise.resolve(
-            supabase
-              .from('program_days')
-              .update({ position: i + 1, day_number: i + 1 })
-              .eq('id', day.id)
-          )
-        );
-        const exercises = day.exercises || [];
-        for (let j = 0; j < exercises.length; j++) {
-          const exercise = exercises[j];
+      // 2. Удаление помеченных сущностей
+      deletedPhaseIds.forEach(id =>
+        updatePromises.push(Promise.resolve(supabase.from('program_phases').delete().eq('id', id)))
+      );
+      deletedDayIds.forEach(id =>
+        updatePromises.push(Promise.resolve(supabase.from('program_days').delete().eq('id', id)))
+      );
+      deletedExerciseIds.forEach(id =>
+        updatePromises.push(Promise.resolve(supabase.from('program_exercises').delete().eq('id', id)))
+      );
+
+      // 3. Фазы: insert (новые) / update; маппинг temp id → real id
+      const phaseIdMap: Record<string, string> = {};
+      for (let i = 0; i < phases.length; i++) {
+        const phase = phases[i];
+        if (phase.isNew) {
+          const { data, error } = await supabase
+            .from('program_phases')
+            .insert({
+              program_id: editedProgram.id,
+              phase_number: i + 1,
+              name: phase.name,
+              phase_type: phase.phase_type,
+              weeks_count: phase.weeks_count,
+              description: phase.description,
+              position: i + 1,
+            })
+            .select()
+            .single();
+          if (error) throw error;
+          phaseIdMap[phase.id] = data.id;
+        } else {
+          phaseIdMap[phase.id] = phase.id;
           updatePromises.push(
             Promise.resolve(
-              supabase.rpc('update_exercise_position', {
-                p_exercise_id: exercise.id,
-                p_new_position: j + 1,
-              })
+              supabase
+                .from('program_phases')
+                .update({
+                  phase_number: i + 1,
+                  name: phase.name,
+                  phase_type: phase.phase_type,
+                  weeks_count: phase.weeks_count,
+                  description: phase.description,
+                  position: i + 1,
+                })
+                .eq('id', phase.id)
             )
           );
-          if ((exercise as any).isNew) {
-            updatePromises.push(
-              Promise.resolve(
-                supabase.from('program_exercises').insert({
-                  id: exercise.id,
-                  program_day_id: exercise.program_day_id,
-                  exercise_id: (exercise as any).exercise_id,
-                  exercise_name: exercise.exercise_name,
-                  sets: exercise.sets,
-                  reps_range: exercise.reps_range,
-                  rest_seconds: exercise.rest_seconds,
-                  intensity: exercise.intensity,
-                  position: j + 1,
-                })
-              )
-            );
+        }
+      }
+
+      // 4. Дни (группируем по фазам, неделя 1) + упражнения
+      for (const phase of phases) {
+        const realPhaseId = phaseIdMap[phase.id];
+        const phaseDays = days
+          .filter(d => d.phase_id === phase.id)
+          .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+
+        for (let j = 0; j < phaseDays.length; j++) {
+          const day = phaseDays[j];
+          let realDayId = day.id;
+
+          if (day.isNew) {
+            const { data, error } = await supabase
+              .from('program_days')
+              .insert({
+                program_id: editedProgram.id,
+                phase_id: realPhaseId,
+                week_number: 1,
+                day_number: j + 1,
+                name: day.name,
+                position: j + 1,
+              })
+              .select()
+              .single();
+            if (error) throw error;
+            realDayId = data.id;
           } else {
             updatePromises.push(
               Promise.resolve(
                 supabase
-                  .from('program_exercises')
-                  .update({
+                  .from('program_days')
+                  .update({ phase_id: realPhaseId, week_number: 1, day_number: j + 1, position: j + 1 })
+                  .eq('id', day.id)
+              )
+            );
+          }
+
+          const exercises = day.exercises || [];
+          for (let k = 0; k < exercises.length; k++) {
+            const exercise = exercises[k];
+            if (exercise.isNew) {
+              updatePromises.push(
+                Promise.resolve(
+                  supabase.from('program_exercises').insert({
+                    program_day_id: realDayId,
+                    exercise_id: exercise.exercise_id,
+                    exercise_name: exercise.exercise_name,
                     sets: exercise.sets,
                     reps_range: exercise.reps_range,
                     rest_seconds: exercise.rest_seconds,
                     intensity: exercise.intensity,
+                    position: k + 1,
                   })
-                  .eq('id', exercise.id)
-              )
-            );
+                )
+              );
+            } else {
+              updatePromises.push(
+                Promise.resolve(
+                  supabase.rpc('update_exercise_position', { p_exercise_id: exercise.id, p_new_position: k + 1 })
+                )
+              );
+              updatePromises.push(
+                Promise.resolve(
+                  supabase
+                    .from('program_exercises')
+                    .update({
+                      sets: exercise.sets,
+                      reps_range: exercise.reps_range,
+                      rest_seconds: exercise.rest_seconds,
+                      intensity: exercise.intensity,
+                    })
+                    .eq('id', exercise.id)
+                )
+              );
+            }
           }
         }
       }
 
       const results = await Promise.all(updatePromises);
-      const errors = results.filter((r: any) => r.error);
+      const errors = results.filter((r: any) => r && r.error);
       if (errors.length > 0) throw errors[0].error;
 
       const updatedProgram = await getProgramWithDays(editedProgram.id);
       setProgram(updatedProgram);
       setEditedProgram(updatedProgram);
+      setDeletedPhaseIds([]);
+      setDeletedDayIds([]);
       setDeletedExerciseIds([]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditMode(false);
@@ -223,6 +450,10 @@ export function useProgramEditor(programId: string, userId: string | null) {
       setSaving(false);
     }
   };
+
+  // ============================================================================
+  // ДНИ / УПРАЖНЕНИЯ (плоский индекс — обратная совместимость)
+  // ============================================================================
 
   const updateExerciseParams = (dayIndex: number, exerciseIndex: number, params: Partial<ProgramExercise>) => {
     if (!editedProgram || !editedProgram.days) return;
@@ -255,10 +486,17 @@ export function useProgramEditor(programId: string, userId: string | null) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const onDayDragEnd = (data: ProgramDay[]) => {
-    if (!editedProgram) return;
-    const updatedDays = data.map((day, index) => ({ ...day, day_number: index + 1 }));
-    setEditedProgram({ ...editedProgram, days: updatedDays });
+  /** Переупорядочить дни. Если передан phaseId — только в пределах фазы. */
+  const onDayDragEnd = (data: ProgramDay[], phaseId?: string) => {
+    if (!editedProgram || !editedProgram.days) return;
+    if (phaseId) {
+      const otherDays = editedProgram.days.filter(d => d.phase_id !== phaseId);
+      const reordered = data.map((day, index) => ({ ...day, day_number: index + 1, position: index + 1 }));
+      setEditedProgram({ ...editedProgram, days: [...otherDays, ...reordered] });
+    } else {
+      const updatedDays = data.map((day, index) => ({ ...day, day_number: index + 1 }));
+      setEditedProgram({ ...editedProgram, days: updatedDays });
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -274,7 +512,6 @@ export function useProgramEditor(programId: string, userId: string | null) {
     if (!day || !day.exercises) return;
     const exercise = day.exercises[exerciseIndex];
     if (!exercise) return;
-
     Alert.alert('Удалить упражнение?', `"${exercise.exercise_name}" будет удалено из программы`, [
       { text: 'Отмена', style: 'cancel' },
       {
@@ -286,8 +523,8 @@ export function useProgramEditor(programId: string, userId: string | null) {
           const newDays = [...(editedProgram?.days || [])];
           newDays[dayIndex] = { ...day, exercises: newExercises };
           setEditedProgram({ ...(editedProgram as Program), days: newDays });
-          if (!(exercise as any).isNew) {
-            setDeletedExerciseIds((prev) => [...prev, exercise.id]);
+          if (!exercise.isNew) {
+            setDeletedExerciseIds(prev => [...prev, exercise.id]);
           }
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },
@@ -344,9 +581,13 @@ export function useProgramEditor(programId: string, userId: string | null) {
     saving,
     editMode,
     setEditMode,
-    setEditedProgram,  
+    setEditedProgram,
     deletedExerciseIds,
     setDeletedExerciseIds,
+    deletedDayIds,            // ✅ НОВОЕ
+    setDeletedDayIds,         // ✅ НОВОЕ
+    deletedPhaseIds,          // ✅ НОВОЕ
+    setDeletedPhaseIds,       // ✅ НОВОЕ
     showDaySettings,
     setShowDaySettings,
     showExerciseSettings,
@@ -355,6 +596,8 @@ export function useProgramEditor(programId: string, userId: string | null) {
     setShowExercisePicker,
     showScheduleEditor,
     setShowScheduleEditor,
+    showPhaseSettings,        // ✅ НОВОЕ
+    setShowPhaseSettings,     // ✅ НОВОЕ
     selectedDay,
     setSelectedDay,
     selectedExercise,
@@ -363,6 +606,8 @@ export function useProgramEditor(programId: string, userId: string | null) {
     setSelectedDayIndex,
     selectedExerciseIndex,
     setSelectedExerciseIndex,
+    selectedPhaseIndex,       // ✅ НОВОЕ
+    setSelectedPhaseIndex,    // ✅ НОВОЕ
     exerciseSearch,
     setExerciseSearch,
     availableExercises,
@@ -374,6 +619,16 @@ export function useProgramEditor(programId: string, userId: string | null) {
     handleStartProgram,
     toggleEditMode,
     saveProgram,
+    // Фазы
+    addPhase,                 // ✅ НОВОЕ
+    removePhase,              // ✅ НОВОЕ
+    updatePhaseSettings,      // ✅ НОВОЕ
+    onPhaseDragEnd,  
+    movePhase,        // ✅ НОВОЕ
+    addDayToPhase,            // ✅ НОВОЕ
+    removeDay,                // ✅ НОВОЕ
+    getDaysForPhase,          // ✅ НОВОЕ
+    // Дни / упражнения
     updateExerciseParams,
     updateDaySettings,
     updateSchedule,

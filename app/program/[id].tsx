@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Modal,
@@ -10,7 +10,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import {
   Sprout,
   Dumbbell,
@@ -21,15 +20,15 @@ import {
   Pencil,
   X,
   Save,
+  Plus,
   TrendingUp,
   Minus,
   TrendingDown,
 } from 'lucide-react-native';
-
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useProgramEditor } from '../../src/hooks/useProgramEditor';
-import { SPACING, GRADIENTS } from '../../src/constants/theme';
+import { SPACING, GRADIENTS, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
@@ -39,12 +38,12 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { Toast } from '../../src/components/Toast';
 import { useToast } from '../../src/hooks/useToast';
-import { DayCard } from '../../src/components/program/DayCard';
+import { PhaseCard } from '../../src/components/program/PhaseCard';
 import { ExerciseSettingsSheet } from '../../src/components/program/sheets/ExerciseSettingsSheet';
 import { DaySettingsSheet } from '../../src/components/program/sheets/DaySettingsSheet';
 import { ExercisePickerSheet } from '../../src/components/program/sheets/ExercisePickerSheet';
 import { ScheduleEditorSheet } from '../../src/components/program/sheets/ScheduleEditorSheet';
-import { ProgramDay } from '../../src/services/programsService';
+import { PhaseSettingsSheet } from '../../src/components/program/sheets/PhaseSettingsSheet';
 
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -72,6 +71,8 @@ export default function ProgramDetailScreen() {
     setShowExercisePicker,
     showScheduleEditor,
     setShowScheduleEditor,
+    showPhaseSettings,
+    setShowPhaseSettings,
     selectedDay,
     setSelectedDay,
     selectedExercise,
@@ -80,6 +81,8 @@ export default function ProgramDetailScreen() {
     setSelectedDayIndex,
     selectedExerciseIndex,
     setSelectedExerciseIndex,
+    selectedPhaseIndex,
+    setSelectedPhaseIndex,
     exerciseSearch,
     setExerciseSearch,
     availableExercises,
@@ -91,6 +94,14 @@ export default function ProgramDetailScreen() {
     handleStartProgram,
     toggleEditMode,
     saveProgram,
+    // Фазы
+    addPhase,
+    removePhase,
+    updatePhaseSettings,
+    movePhase,
+    addDayToPhase,
+    getDaysForPhase,
+    // Дни / упражнения
     updateExerciseParams,
     updateDaySettings,
     updateSchedule,
@@ -119,18 +130,19 @@ export default function ProgramDetailScreen() {
     }
   };
 
-  const getIntensityInfo = (intensity: string) => {
+  // ✅ Без хардкода: цвета интенсивности из темы (как на экране тренировки)
+  const getIntensityInfo = useCallback((intensity: string) => {
     switch (intensity) {
       case 'high':
-        return { label: 'Высокая', color: '#F44336', icon: <TrendingUp size={12} color="#F44336" strokeWidth={2} /> };
+        return { label: 'Высокая', color: colors.error, icon: <TrendingUp size={12} color={colors.error} strokeWidth={2} /> };
       case 'medium':
-        return { label: 'Средняя', color: '#FFC107', icon: <Minus size={12} color="#FFC107" strokeWidth={2} /> };
+        return { label: 'Средняя', color: colors.warning, icon: <Minus size={12} color={colors.warning} strokeWidth={2} /> };
       case 'low':
-        return { label: 'Низкая', color: '#4CAF50', icon: <TrendingDown size={12} color="#4CAF50" strokeWidth={2} /> };
+        return { label: 'Низкая', color: colors.success, icon: <TrendingDown size={12} color={colors.success} strokeWidth={2} /> };
       default:
         return { label: intensity, color: colors.textSecondary, icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} /> };
     }
-  };
+  }, [colors]);
 
   if (loading) {
     return (
@@ -152,8 +164,10 @@ export default function ProgramDetailScreen() {
 
   const displayProgram = editMode && editedProgram ? editedProgram : program;
   const levelInfo = getLevelInfo(displayProgram.level);
+  const phases = displayProgram.phases || [];
+  const allDays = displayProgram.days || [];
 
-  const renderListHeader = () => (
+  const renderHero = () => (
     <LinearGradient
       colors={GRADIENTS.hero}
       start={{ x: 0, y: 0 }}
@@ -210,93 +224,86 @@ export default function ProgramDetailScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={{ flex: 1 }}>
-        {editMode ? (
-          <DraggableFlatList
-            data={displayProgram.days || []}
-            onDragEnd={({ data }) => onDayDragEnd(data as ProgramDay[])}
-            keyExtractor={(item: ProgramDay) => item.id}
-            renderItem={({ item: day, drag, isActive }) => {
-              const dayIndex = (displayProgram.days || []).indexOf(day);
-              return (
-                <ScaleDecorator>
-                  <DayCard
-                    day={day}
-                    dayIndex={dayIndex}
-                    getIntensityInfo={getIntensityInfo}
-                    colors={colors}
-                    cardStyles={cardStyles}
-                    badgeStyles={badgeStyles}
-                    editMode={editMode}
-                    isActive={isActive}
-                    onDrag={drag}
-                    onEditSettings={() => {
-                      setSelectedDay(day);
-                      setSelectedDayIndex(dayIndex);
-                      setShowDaySettings(true);
-                    }}
-                    onExerciseSettings={(exerciseIndex: number) => {
-                      if (day.exercises) {
-                        setSelectedExercise(day.exercises[exerciseIndex]);
-                        setSelectedExerciseIndex(exerciseIndex);
-                        setShowExerciseSettings(true);
-                      }
-                    }}
-                    onAddExercise={() => addExercise(dayIndex)}
-                    onRemoveExercise={(exerciseIndex: number) => removeExercise(dayIndex, exerciseIndex)}
-                    updateExerciseParams={updateExerciseParams}
-                    onExerciseDragEnd={(data) => onExerciseDragEnd(dayIndex, data)}
-                  />
-                </ScaleDecorator>
-              );
-            }}
-            ListHeaderComponent={renderListHeader}
-            contentContainerStyle={{ paddingBottom: 100 }}
-          />
-        ) : (
-          <FlatList
-            data={displayProgram.days || []}
-            keyExtractor={(item: ProgramDay) => item.id}
-            renderItem={({ item: day }) => {
-              const dayIndex = (displayProgram.days || []).indexOf(day);
-              return (
-                <FadeIn key={day.id} delay={dayIndex * 80}>
-                  <DayCard
-                    day={day}
-                    dayIndex={dayIndex}
-                    getIntensityInfo={getIntensityInfo}
-                    colors={colors}
-                    cardStyles={cardStyles}
-                    badgeStyles={badgeStyles}
-                    editMode={editMode}
-                    onEditSettings={() => {
-                      setSelectedDay(day);
-                      setSelectedDayIndex(dayIndex);
-                      setShowDaySettings(true);
-                    }}
-                    onExerciseSettings={(exerciseIndex: number) => {
-                      if (day.exercises) {
-                        setSelectedExercise(day.exercises[exerciseIndex]);
-                        setSelectedExerciseIndex(exerciseIndex);
-                        setShowExerciseSettings(true);
-                      }
-                    }}
-                    onAddExercise={() => addExercise(dayIndex)}
-                    onRemoveExercise={(exerciseIndex: number) => removeExercise(dayIndex, exerciseIndex)}
-                    updateExerciseParams={updateExerciseParams}
-                  />
-                </FadeIn>
-              );
-            }}
-            ListHeaderComponent={renderListHeader}
-            ListFooterComponent={<View style={{ height: 100 }} />}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            showsVerticalScrollIndicator={false}
-            windowSize={5}
-            removeClippedSubviews={true}
-          />
-        )}
-      </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderHero()}
+
+        {/* ===== Фазы ===== */}
+        <View style={{ paddingTop: SPACING.md }}>
+          {phases.map((phase, phaseIndex) => (
+            <PhaseCard
+              key={phase.id}
+              phase={phase}
+              phaseIndex={phaseIndex}
+              phaseCount={phases.length}
+              days={getDaysForPhase(phase.id)}
+              allDays={allDays}
+              editMode={editMode}
+              colors={colors}
+              cardStyles={cardStyles}
+              badgeStyles={badgeStyles}
+              getIntensityInfo={getIntensityInfo}
+              onMoveUp={() => movePhase(phaseIndex, 'up')}
+              onMoveDown={() => movePhase(phaseIndex, 'down')}
+              onEditPhase={() => {
+                setSelectedPhaseIndex(phaseIndex);
+                setShowPhaseSettings(true);
+              }}
+              onRemovePhase={() => removePhase(phaseIndex)}
+              onAddDay={() => addDayToPhase(phaseIndex)}
+              onDayDragEnd={(data) => onDayDragEnd(data, phase.id)}
+              onEditDaySettings={(day, flatIndex) => {
+                setSelectedDay(day);
+                setSelectedDayIndex(flatIndex);
+                setShowDaySettings(true);
+              }}
+              onExerciseSettings={(day, exerciseIndex) => {
+                if (day.exercises) {
+                  const flatIndex = allDays.indexOf(day);
+                  setSelectedDay(day);
+                  setSelectedDayIndex(flatIndex); // ✅ фикс: индекс дня для updateExerciseParams
+                  setSelectedExercise(day.exercises[exerciseIndex]);
+                  setSelectedExerciseIndex(exerciseIndex);
+                  setShowExerciseSettings(true);
+                }
+              }}
+              onAddExercise={(flatIndex) => addExercise(flatIndex)}
+              onRemoveExercise={(flatIndex, exerciseIndex) => removeExercise(flatIndex, exerciseIndex)}
+              updateExerciseParams={updateExerciseParams}
+              onExerciseDragEnd={(flatIndex, data) => onExerciseDragEnd(flatIndex, data)}
+            />
+          ))}
+
+          {/* Добавить фазу (только в режиме редактирования) */}
+          {editMode && (
+            <TouchableOpacity
+              onPress={addPhase}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.xs,
+                marginHorizontal: SPACING.lg,
+                marginTop: SPACING.xs,
+                marginBottom: SPACING.md,
+                paddingVertical: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                backgroundColor: colors.primary + '08',
+              }}
+            >
+              <Plus size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[typography.labelBold, { color: colors.primary }]}>Добавить фазу</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
 
       {/* Футер с кнопками */}
       <View style={[commonStyles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
@@ -369,7 +376,23 @@ export default function ProgramDetailScreen() {
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
-      {/* Модалки */}
+      {/* ===== Модалки ===== */}
+      <Modal visible={showPhaseSettings} transparent animationType="slide" onRequestClose={() => setShowPhaseSettings(false)}>
+        <PhaseSettingsSheet
+          phase={selectedPhaseIndex >= 0 ? phases[selectedPhaseIndex] : null}
+          colors={colors}
+          buttonStyles={buttonStyles}
+          onSave={(settings) => {
+            if (selectedPhaseIndex >= 0) {
+              updatePhaseSettings(selectedPhaseIndex, settings);
+              showToast('Настройки фазы сохранены (не забудьте сохранить программу)', 'success');
+            }
+            setShowPhaseSettings(false);
+          }}
+          onClose={() => setShowPhaseSettings(false)}
+        />
+      </Modal>
+
       <Modal visible={showExerciseSettings} transparent animationType="slide" onRequestClose={() => setShowExerciseSettings(false)}>
         <ExerciseSettingsSheet
           exercise={selectedExercise}
