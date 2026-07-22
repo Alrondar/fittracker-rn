@@ -16,6 +16,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useToast } from '../../src/hooks/useToast';
 import { usePrograms } from '../../src/hooks/usePrograms';
 import { ProgramCard } from '../../src/components/ProgramCard';
+import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
 import { FadeIn } from '../../src/components/FadeIn';
 import { Toast } from '../../src/components/Toast';
@@ -34,9 +35,9 @@ const SORT_OPTIONS = [
 ];
 
 const LEVEL_OPTIONS = [
-  { value: 'beginner' as const, label: 'Новичок', icon: require('lucide-react-native').Sprout, color: '#4CAF50' },
-  { value: 'intermediate' as const, label: 'Средний', icon: require('lucide-react-native').Dumbbell, color: '#FF9800' },
-  { value: 'advanced' as const, label: 'Продвинутый', icon: require('lucide-react-native').Flame, color: '#F44336' },
+  { value: 'beginner' as const, label: 'Новичок', icon: require('lucide-react-native').Sprout, color: LEVEL_COLORS.beginner },
+  { value: 'intermediate' as const, label: 'Средний', icon: require('lucide-react-native').Dumbbell, color: LEVEL_COLORS.intermediate },
+  { value: 'advanced' as const, label: 'Продвинутый', icon: require('lucide-react-native').Flame, color: LEVEL_COLORS.advanced },
 ];
 
 export default function ProgramsScreen() {

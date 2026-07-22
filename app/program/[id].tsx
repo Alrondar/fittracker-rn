@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Sprout,
@@ -120,18 +121,18 @@ export default function ProgramDetailScreen() {
   const badgeStyles = createBadgeStyles(colors);
   const buttonStyles = createButtonStyles(colors);
 
-  const getLevelInfo = (level: string) => {
-    switch (level) {
-      case 'beginner':
-        return { label: 'Новичок', color: '#4CAF50', icon: <Sprout size={16} color="#4CAF50" strokeWidth={1.5} /> };
-      case 'intermediate':
-        return { label: 'Средний', color: '#FF9800', icon: <Dumbbell size={16} color="#FF9800" strokeWidth={1.5} /> };
-      case 'advanced':
-        return { label: 'Продвинутый', color: '#F44336', icon: <Flame size={16} color="#F44336" strokeWidth={1.5} /> };
-      default:
-        return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
-    }
-  };
+const getLevelInfo = (level: string) => {
+  switch (level) {
+    case 'beginner':
+      return { label: 'Новичок', color: LEVEL_COLORS.beginner, icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} /> };
+    case 'intermediate':
+      return { label: 'Средний', color: LEVEL_COLORS.intermediate, icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} /> };
+    case 'advanced':
+      return { label: 'Продвинутый', color: LEVEL_COLORS.advanced, icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} /> };
+    default:
+      return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
+  }
+};
 
   // ✅ Без хардкода: цвета интенсивности из темы (как на экране тренировки)
   const getIntensityInfo = useCallback((intensity: string) => {

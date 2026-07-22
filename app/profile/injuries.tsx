@@ -20,6 +20,7 @@ import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppBadge } from '../../src/components/ui/AppBadge';
+import { BODY_PART_COLORS, SEVERITY_COLORS } from '../../src/constants/semanticColors';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import {
   ChevronLeft,
@@ -48,14 +49,14 @@ interface Injury {
 }
 
 const BODY_PARTS = [
-  { value: 'shoulder', label: 'Плечо', color: '#2196F3' },
-  { value: 'elbow', label: 'Локоть', color: '#2196F3' },
-  { value: 'wrist', label: 'Запястье', color: '#2196F3' },
-  { value: 'back', label: 'Спина', color: '#9C27B0' },
-  { value: 'neck', label: 'Шея', color: '#9C27B0' },
-  { value: 'hip', label: 'Бедро', color: '#4CAF50' },
-  { value: 'knee', label: 'Колено', color: '#4CAF50' },
-  { value: 'ankle', label: 'Голеностоп', color: '#4CAF50' },
+  { value: 'shoulder', label: 'Плечо', color: BODY_PART_COLORS.shoulder },
+  { value: 'elbow', label: 'Локоть', color: BODY_PART_COLORS.elbow },
+  { value: 'wrist', label: 'Запястье', color: BODY_PART_COLORS.wrist },
+  { value: 'back', label: 'Спина', color: BODY_PART_COLORS.back },
+  { value: 'neck', label: 'Шея', color: BODY_PART_COLORS.neck },
+  { value: 'hip', label: 'Бедро', color: BODY_PART_COLORS.hip },
+  { value: 'knee', label: 'Колено', color: BODY_PART_COLORS.knee },
+  { value: 'ankle', label: 'Голеностоп', color: BODY_PART_COLORS.ankle },
 ];
 
 const INJURY_TYPES = [
@@ -215,14 +216,14 @@ export default function InjuriesScreen() {
     setShowAddModal(true);
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'low': return '#4CAF50';
-      case 'medium': return '#FFC107';
-      case 'high': return '#F44336';
-      default: return colors.textSecondary;
-    }
-  };
+const getSeverityColor = (severity: string) => {
+  switch (severity) {
+    case 'low': return SEVERITY_COLORS.low;
+    case 'medium': return SEVERITY_COLORS.medium;
+    case 'high': return SEVERITY_COLORS.high;
+    default: return colors.textSecondary;
+  }
+};
 
   const getSeverityLabel = (severity: string) => {
     switch (severity) {

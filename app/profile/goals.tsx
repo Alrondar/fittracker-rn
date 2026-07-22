@@ -19,6 +19,7 @@ import { typography } from '../../src/styles/typography';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppCard } from '../../src/components/ui/AppCard';
+import { PHARMA_COLORS, MACRO_COLORS } from '../../src/constants/semanticColors';
 import { metricsService } from '../../src/services/metricsService';
 import {
   ChevronLeft,
@@ -61,9 +62,9 @@ const ACTIVITY_LEVELS = [
 ];
 
 const PHARMA_TYPES = [
-  { value: 'steroids' as PharmaType, label: 'Анаболические стероиды', desc: 'Белок ×1.5, калории +10%', color: '#EF4444' },
-  { value: 'gh' as PharmaType, label: 'Гормон роста', desc: 'Жиры -20%', color: '#3B82F6' },
-  { value: 'combo' as PharmaType, label: 'Комбо (АС + ГР)', desc: 'Белок ×1.5, жиры -20%', color: '#8B5CF6' },
+  { value: 'steroids' as PharmaType, label: 'Анаболические стероиды', desc: 'Белок ×1.5, калории +10%', color: PHARMA_COLORS.steroids },
+  { value: 'gh' as PharmaType, label: 'Гормон роста', desc: 'Жиры -20%', color: PHARMA_COLORS.gh },
+  { value: 'combo' as PharmaType, label: 'Комбо (АС + ГР)', desc: 'Белок ×1.5, жиры -20%', color: PHARMA_COLORS.combo },
 ];
 
 export default function GoalsScreen() {
@@ -623,41 +624,41 @@ export default function GoalsScreen() {
                 </Text>
               </AppCard>
 
-              {/* Макросы */}
-              <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-                <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: '#F44336', borderWidth: 2 }}>
-                  <Beef size={24} color="#F44336" />
-                  <Text style={[typography.h3, { color: '#F44336', marginTop: SPACING.sm }]}>{proteins}г</Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>Белки</Text>
-                </AppCard>
-                <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: '#FFC107', borderWidth: 2 }}>
-                  <Droplet size={24} color="#FFC107" />
-                  <Text style={[typography.h3, { color: '#FFC107', marginTop: SPACING.sm }]}>{fats}г</Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>Жиры</Text>
-                </AppCard>
-                <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: '#4CAF50', borderWidth: 2 }}>
-                  <Wheat size={24} color="#4CAF50" />
-                  <Text style={[typography.h3, { color: '#4CAF50', marginTop: SPACING.sm }]}>{carbs}г</Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>Углеводы</Text>
-                </AppCard>
-              </View>
+{/* Макросы */}
+<View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+  <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: MACRO_COLORS.proteins, borderWidth: 2 }}>
+    <Beef size={24} color={MACRO_COLORS.proteins} />
+    <Text style={[typography.h3, { color: MACRO_COLORS.proteins, marginTop: SPACING.sm }]}>{proteins}г</Text>
+    <Text style={[typography.caption, { color: colors.textSecondary }]}>Белки</Text>
+  </AppCard>
+  <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: MACRO_COLORS.fats, borderWidth: 2 }}>
+    <Droplet size={24} color={MACRO_COLORS.fats} />
+    <Text style={[typography.h3, { color: MACRO_COLORS.fats, marginTop: SPACING.sm }]}>{fats}г</Text>
+    <Text style={[typography.caption, { color: colors.textSecondary }]}>Жиры</Text>
+  </AppCard>
+  <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: MACRO_COLORS.carbs, borderWidth: 2 }}>
+    <Wheat size={24} color={MACRO_COLORS.carbs} />
+    <Text style={[typography.h3, { color: MACRO_COLORS.carbs, marginTop: SPACING.sm }]}>{carbs}г</Text>
+    <Text style={[typography.caption, { color: colors.textSecondary }]}>Углеводы</Text>
+  </AppCard>
+</View>
 
-              {/* Процентное соотношение */}
-              <AppCard variant="compact">
-                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                  Соотношение макросов
-                </Text>
-                <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: SPACING.sm }}>
-                  <View style={{ width: `${(proteins * 4 / calories) * 100}%`, backgroundColor: '#F44336' }} />
-                  <View style={{ width: `${(fats * 9 / calories) * 100}%`, backgroundColor: '#FFC107' }} />
-                  <View style={{ flex: 1, backgroundColor: '#4CAF50' }} />
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={[typography.caption, { color: '#F44336' }]}>Б: {Math.round((proteins * 4 / calories) * 100)}%</Text>
-                  <Text style={[typography.caption, { color: '#FFC107' }]}>Ж: {Math.round((fats * 9 / calories) * 100)}%</Text>
-                  <Text style={[typography.caption, { color: '#4CAF50' }]}>У: {Math.round((carbs * 4 / calories) * 100)}%</Text>
-                </View>
-              </AppCard>
+{/* Процентное соотношение */}
+<AppCard variant="compact">
+  <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+    Соотношение макросов
+  </Text>
+  <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: SPACING.sm }}>
+    <View style={{ width: `${(proteins * 4 / calories) * 100}%`, backgroundColor: MACRO_COLORS.proteins }} />
+    <View style={{ width: `${(fats * 9 / calories) * 100}%`, backgroundColor: MACRO_COLORS.fats }} />
+    <View style={{ flex: 1, backgroundColor: MACRO_COLORS.carbs }} />
+  </View>
+  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+    <Text style={[typography.caption, { color: MACRO_COLORS.proteins }]}>Б: {Math.round((proteins * 4 / calories) * 100)}%</Text>
+    <Text style={[typography.caption, { color: MACRO_COLORS.fats }]}>Ж: {Math.round((fats * 9 / calories) * 100)}%</Text>
+    <Text style={[typography.caption, { color: MACRO_COLORS.carbs }]}>У: {Math.round((carbs * 4 / calories) * 100)}%</Text>
+  </View>
+</AppCard>
 
               {/* Формула */}
               <AppCard variant="compact" style={{ marginBottom: SPACING.xl }}>

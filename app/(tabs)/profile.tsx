@@ -21,6 +21,7 @@ import { AppInput } from '../../src/components/ui/AppInput';
 import { MacroPieChart } from '../../src/components/profile/MacroPieChart';
 import { supabase } from '../../src/lib/supabase';
 import { SectionHeader } from '../../src/components/SectionHeader';
+import { MACRO_COLORS } from '../../src/constants/semanticColors';
 import * as Haptics from 'expo-haptics';
 import {
   User,
@@ -42,15 +43,6 @@ import {
   Award,
   Ruler,
 } from 'lucide-react-native';
-
-const PROGRESS_COLORS = {
-  calories: '#F44336',
-  proteins: '#4CAF50',
-  fats: '#FFC107',
-  carbs: '#2196F3',
-  water: '#00BCD4',
-  burned: '#FF5722',
-};
 
 export default function ProfileScreen() {
   const { colors, themeMode, themeAccent, setThemeMode, setThemeAccent, availableAccents } = useTheme();
@@ -213,14 +205,14 @@ export default function ProfileScreen() {
         {/* Сожжённые калории */}
         {burnedCalories > 0 && (
           <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
-            <AppCard variant="compact" style={{ borderColor: PROGRESS_COLORS.burned, borderWidth: 1, backgroundColor: PROGRESS_COLORS.burned + '10' }}>
+            <AppCard variant="compact" style={{ borderColor: MACRO_COLORS.burned, borderWidth: 1, backgroundColor: MACRO_COLORS.burned + '10' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
-                <Zap size={20} color={PROGRESS_COLORS.burned} />
+                <Zap size={20} color={MACRO_COLORS.burned} />
                 <Text style={[typography.labelBold, { color: colors.textPrimary, marginLeft: SPACING.sm }]}>
                   Сожжено на тренировке
                 </Text>
               </View>
-              <Text style={[typography.h2, { color: PROGRESS_COLORS.burned, marginBottom: SPACING.xs }]}>
+              <Text style={[typography.h2, { color: MACRO_COLORS.burned, marginBottom: SPACING.xs }]}>
                 {burnedCalories} <Text style={[typography.body, { color: colors.textSecondary }]}>ккал</Text>
               </Text>
               <Text style={[typography.caption, { color: colors.textSecondary }]}>
@@ -243,11 +235,11 @@ export default function ProfileScreen() {
               {(todayNutrition.proteins > 0 || todayNutrition.fats > 0 || todayNutrition.carbs > 0) && (
                 <MacroPieChart proteins={todayNutrition.proteins} fats={todayNutrition.fats} carbs={todayNutrition.carbs} />
               )}
-              {renderProgressBar(<Flame size={18} color={PROGRESS_COLORS.calories} />, 'Калории', todayNutrition.calories, targets.calories, 'ккал', PROGRESS_COLORS.calories)}
-              {renderProgressBar(<Beef size={18} color={PROGRESS_COLORS.proteins} />, 'Белки', todayNutrition.proteins, targets.proteins, 'г', PROGRESS_COLORS.proteins)}
-              {renderProgressBar(<Droplet size={18} color={PROGRESS_COLORS.fats} />, 'Жиры', todayNutrition.fats, targets.fats, 'г', PROGRESS_COLORS.fats)}
-              {renderProgressBar(<Wheat size={18} color={PROGRESS_COLORS.carbs} />, 'Углеводы', todayNutrition.carbs, targets.carbs, 'г', PROGRESS_COLORS.carbs)}
-              {renderProgressBar(<Droplet size={18} color={PROGRESS_COLORS.water} />, 'Вода', todayNutrition.water_ml, 2500, 'мл', PROGRESS_COLORS.water)}
+              {renderProgressBar(<Flame size={18} color={MACRO_COLORS.calories} />, 'Калории', todayNutrition.calories, targets.calories, 'ккал', MACRO_COLORS.calories)}
+              {renderProgressBar(<Beef size={18} color={MACRO_COLORS.proteins} />, 'Белки', todayNutrition.proteins, targets.proteins, 'г', MACRO_COLORS.proteins)}
+              {renderProgressBar(<Droplet size={18} color={MACRO_COLORS.fats} />, 'Жиры', todayNutrition.fats, targets.fats, 'г', MACRO_COLORS.fats)}
+              {renderProgressBar(<Wheat size={18} color={MACRO_COLORS.carbs} />, 'Углеводы', todayNutrition.carbs, targets.carbs, 'г', MACRO_COLORS.carbs)}
+              {renderProgressBar(<Droplet size={18} color={MACRO_COLORS.water} />, 'Вода', todayNutrition.water_ml, 2500, 'мл', MACRO_COLORS.water)}
             </AppCard>
           </View>
         )}
