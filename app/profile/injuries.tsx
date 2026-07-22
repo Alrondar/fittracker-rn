@@ -20,6 +20,7 @@ import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppBadge } from '../../src/components/ui/AppBadge';
+import { SectionHeader } from '../../src/components/SectionHeader';
 import {
   ChevronLeft,
   Plus,
@@ -405,9 +406,7 @@ export default function InjuriesScreen() {
         </AppCard>
 
         {/* Активные травмы */}
-        <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md, marginTop: SPACING.lg }]}>
-          Активные травмы
-        </Text>
+<SectionHeader title="Активные травмы" style={{ paddingHorizontal: 0, paddingTop: 0, marginTop: SPACING.lg }} />
         {activeInjuries.length === 0 ? (
           <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
             <Activity size={48} color={colors.textTertiary} />
@@ -422,9 +421,7 @@ export default function InjuriesScreen() {
         {/* Восстановленные травмы */}
         {recoveredInjuries.length > 0 && (
           <>
-            <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md, marginTop: SPACING.lg }]}>
-              Восстановленные
-            </Text>
+<SectionHeader title="Восстановленные" style={{ paddingHorizontal: 0, paddingTop: 0, marginTop: SPACING.lg }} />
             {recoveredInjuries.map((injury) => renderInjuryCard(injury))}
           </>
         )}

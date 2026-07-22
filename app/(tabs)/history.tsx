@@ -14,6 +14,7 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
+import { SectionHeader } from '../../src/components/SectionHeader';
 
 interface WorkoutSection {
   title: string;
@@ -166,13 +167,9 @@ export default function HistoryScreen() {
     </FadeIn>
   );
 
-  const renderSectionHeader = ({ section }: { section: WorkoutSection }) => (
-    <View style={{ paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, backgroundColor: colors.background }}>
-      <Text style={[typography.h5, { color: colors.textPrimary, textTransform: 'capitalize' }]}>
-        {section.title}
-      </Text>
-    </View>
-  );
+const renderSectionHeader = ({ section }: { section: WorkoutSection }) => (
+  <SectionHeader title={section.title} />
+);
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>

@@ -60,14 +60,17 @@ exercises/ # Компоненты справочника
 CategoryStrip.tsx # Лента категорий + триггер оборудования
 EquipmentSheet.tsx # Шкаф оборудования (поиск, мультиселект)
 program/ # Компоненты программ
+  PhaseCard.tsx          # Карточка фазы: селектор недель, шаблон/переопределения, дни (DayCard)
+  sheets/
+    PhaseSettingsSheet.tsx  # Модалка настроек фазы (название, тип, недели, описание)
 DayCard.tsx # Карточка дня программы
 sheets/ # Модалки (DaySettings, ExercisePicker, ExerciseSettings, ScheduleEditor)
 profile/ # Компоненты профиля (MacroPieChart)
 Dashboard-компоненты: # ActivityCalendar, ExerciseProgressCard, LastWorkoutCard,
 # PersonalRecordsCard, WeeklyStatsCard, ProgramProgressCard
 Общие компоненты: # AnimatedButton, BottomSheet, CustomTabBar, EquipmentIcon,
-# FadeIn, ProgramCard, ProgramFormSheet, SectionHeader,
-# Skeleton, SwipeableCard, Toast/ToastProvider
+                  # FadeIn, ProgramCard, ProgramFormSheet, SectionHeader,
+                  # Skeleton, SwipeableCard, Toast/ToastProvider
 hooks/
 useBodyMetrics.ts # Замеры тела (CRUD, графики)
 useExerciseDetail.ts # Детальный экран упражнения (React Query, staleTime: Infinity)
@@ -84,12 +87,18 @@ services/
 exercisesService.ts # Упражнения: постраничный список, словари фильтров, по ID
 metricsService.ts # Замеры тела
 profileService.ts # Профиль, цели, травмы
-programsService.ts # Программы (вложенные запросы)
+programsService.ts    # Программы: getProgramWithPhases (вложенный select
+                      # programs→program_phases→program_days→program_exercises),
+                      # advanceProgramProgress (день→неделя→фаза→финиш),
+                      # createWorkoutsFromProgram (upfront, все фазы/недели),
+                      # getActiveProgram, CRUD
 warmupService.ts # Автогенерация разминки по целевым мышцам
 store/ # Zustand (только UI-стейт!)
 constants/
 equipmentIcons.ts # Маппинг оборудование → SVG-файл
 exerciseCategories.ts # Категории упражнений (value/label/icon)
+phaseTypes.ts         # Типы фаз (hypertrophy/strength/power/deload/custom):
+                      # getPhaseMeta (label/icon/colorKey/description), getPhaseColor
 injuries.ts # Маппинг травма → предупреждение (avoid/caution)
 muscleColors.ts # Цвета групп мышц + getMuscleColor/getMuscleGroup
 muscleGroups.ts # Группы мышц для фильтрации
@@ -129,7 +138,53 @@ exercise_names_comparison.txt
 - **Справочник:** пагинация 40/страница (`useInfiniteQuery`), лёгкий select (`id, name, primary_muscles, equipment`), серверные фильтры: `overlaps` (мышцы, оборудование), `in` (категория), `ilike` + `.or()` (поиск), debounce 300 мс, `keepPreviousData`, `staleTime: Infinity` для словарей фильтров.
 - **Альтернативы упражнения:** поле `alternatives` (массив ID) + fallback по `overlaps('primary_muscles', ...)`.
 
----
+## 🔁 Периодизация программ (фазы / мезоциклы)
+
+**Модель данных:**
+- `programs` → `program_phases` (`phase_number`, `name`, `phase_type`, `weeks_count`, `position`)
+  → `program_days` (`phase_id`, `week_number`, `day_number`) → `program_exercises`.
+- `user_programs`: `current_phase` / `current_week` / `current_day` (прогресс по фазам).
+- `workouts`: `phase_number` / `week_number` / `day_index` (связь тренировки с фазой/неделей/днём).
+- `program_days.id`, `program_exercises.id` — `uuid`; `programs.id`, `program_phases.id` — `text`
+  (важно для сидов: `gen_random_uuid()` для дней/упражнений, `gen_random_uuid()::text` для программ/фаз).
+
+**Типы фаз** (`constants/phaseTypes.ts`): `hypertrophy`, `strength`, `power`, `deload`, `custom`.
+Цвет/иконка/подпись — через `getPhaseMeta` / `getPhaseColor` (без хардкода).
+
+**Создание тренировок — Вариант B (upfront):** при старте программы `createWorkoutsFromProgram`
+создаёт тренировки для ВСЕХ фаз и недель сразу. Для каждой недели берутся её дни,
+либо шаблон недели 1 (fallback), если неделя не переопределена.
+
+**Вариативность по неделям — Вариант 2 (шаблон + переопределения):**
+- Неделя 1 фазы = шаблон (редактируется как обычно).
+- Недели 2…N наследуют шаблон, пока не переопределены (`copyTemplateToWeek`).
+- Переопределённую неделю можно сбросить к шаблону (`resetWeekToTemplate`).
+- В `PhaseCard`: селектор недель, баннер «использует шаблон», кнопки «Переопределить»/«Сбросить».
+
+**Прогрессия (`advanceProgramProgress`):** день → (конец недели?) неделя++ →
+(конец фазы по `weeks_count`?) фаза++ → (нет следующей фазы?) программа завершена.
+Fallback для программ без фаз — старая логика по `duration`.
+
+**RPC `copy_program_for_user(p_program_id, p_user_id)`:** копирует программу с фазами/днями/упражнениями
+(аргументы `text`; `programs.id`/`program_phases.id` — text, `program_days.id` — uuid).
+
+**Готовые программы (6, засеяны, `created_by IS NULL`):**
+| Программа | Уровень | Дней/нед | Фазы |
+|---|---|---|---|
+| Full Body — Старт | beginner | 3 | Адаптация (4) → Прогрессия (3) → Дилоуд (1) |
+| StrongLifts 5×5 | beginner | 2 | База 5×5 (8) → Интенсификация (3) → Дилоуд (1) |
+| PPL Классический | intermediate | 3 | Гипертрофия (4) → Сила (3) → Дилоуд (1) |
+| Upper/Lower | intermediate | 4 | Гипертрофия (4) → Сила (3) → Дилоуд (1) |
+| PPLUL | intermediate | 5 | Гипертрофия (4) → Сила (3) → Дилоуд (1) |
+| PPL 6-day | advanced | 6 | Гипертрофия (4) → Сила (3) → Дилоуд (1) |
+
+**UX списка тренировок (`workouts.tsx`):** `SectionList` с группировкой по фазам/неделям
+(заголовки через `SectionHeader`), статусы тренировок (✅ выполнена / ▶️ следующая /
+⏸️ в процессе / ⏳ будущая), бейджи фаз, шапка с прогрессом программы
+(«Выполнено X из Y»). «Следующая» определяется по `current_phase/week/day` из `user_programs`.
+
+**Дашборд (`ProgramProgressCard`):** бейдж текущей фазы (иконка + цвет типа),
+«Фаза N/M · Неделя X», прогресс-бар в цвете фазы.
 
 ## 🎨 Дизайн-система и стили
 
@@ -178,7 +233,8 @@ exercise_names_comparison.txt
 - ❌ Использовать `Image` из `react-native` (используй `expo-image`).
 - ❌ Включать `description` в select из `exercises` (колонки не существует).
 - ❌ Монтировать слайдеры/автоплеи в свёрнутых аккордеонах (ленивый монтаж через `everOpened`).
-
+❌ Вставлять `gen_random_uuid()::text` в `program_days.id` / `program_exercises.id` (они `uuid` —
+   использовать `gen_random_uuid()` без `::text`; `::text` только для `programs.id`/`program_phases.id`).
 ---
 
 ## 📝 ФОРМАТ ОТВЕТА AI (СТРОГО СОБЛЮДАТЬ)
@@ -239,19 +295,32 @@ UI-кит (AppButton, AppCard, AppBadge, AppInput) внедрён. `card.ts` р�
 - Травмы (рефакторинг): единый конфиг `injuries.ts` (`BODY_PARTS`/`INJURY_TYPES` + чистые функции `matchesContraindication`/`targetsInjuredMuscle`/`computeExerciseWarnings`), `useInjuryWarnings` на React Query, запросы в `profileService`, русские названия в баннере.
 - Разминка + травмы: `generateWarmup(exercises, activeInjuries)` — исключение противопоказанных (уровень 1 + high), штрафы me
 
-🚀 ЭТАП 6: Улучшения и полировка (В ПЛАНАХ)
-- Тип активности «Активация»: тег для упражнений с резинками/мобилизацией.
-- Фото прогресса: привязка фото к замерам тела (Supabase Storage).
-- Нечёткий поиск: pg_trgm + similarity (опечатки, «гантеля»→«гантели»).
-- Аудит тёмной темы: контраст и читаемость во всех 10 комбинациях.
-- Подготовка к релизу: EAS Build, иконки, сплэш-скрин.
-- (опционально) Автозапуск следующего подхода по окончании отдыха.
-- ❌ Калькулятор блинов — отклонено (решение пользователя).
+🚀 ЭТАП 6: Улучшения и полировка
+✅ Периодизация программ (ЗАВЕРШЕНО):
+   • Модель: programs → program_phases (phase_number, phase_type, weeks_count) → program_days (phase_id, week_number) → program_exercises; user_programs.current_phase; workouts.phase_number.
+   • Типы фаз: hypertrophy / strength / power / deload / custom (constants/phaseTypes.ts — getPhaseMeta/getPhaseColor, без хардкода).
+   • Редактор фаз: PhaseCard (селектор недель, шаблон + переопределения, стрелки ↑/↓), PhaseSettingsSheet, copyTemplateToWeek/resetWeekToTemplate/addDayToPhaseWeek.
+   • Прогрессия: advanceProgramProgress (день → неделя → фаза → финиш, fallback для программ без фаз).
+   • Создание тренировок: upfront (Вариант B) — все фазы/недели при старте; шаблон недели 1 как fallback.
+   • 6 готовых программ (created_by IS NULL): Full Body — Старт (beginner), StrongLifts 5×5 (beginner), PPL Классический (intermediate), Upper/Lower (intermediate), PPLUL (intermediate), PPL 6-day (advanced).
+   • UX списка тренировок: SectionList с группировкой по фазам/неделям (SectionHeader), статусы (выполнена/следующая/в процессе/будущая), бейджи фаз, шапка с прогрессом программы.
+   • Дашборд: ProgramProgressCard с бейджем текущей фазы (иконка + цвет типа), «Фаза N/M · Неделя X», прогресс-бар в цвете фазы.
+   • RPC copy_program_for_user копирует фазы/дни/упражнения (programs.id/program_phases.id — text, program_days.id — uuid).
+🔲 Тип активности «Активация»: колонка can_be_activation в exercises готова (БД); остался UI-тег в справочнике и тренировке (фильтр/бейдж для упражнений с резинками/мобилизацией).
+🔲 Фото прогресса: привязка фото к замерам тела (Supabase Storage).
+🔲 Нечёткий поиск: pg_trgm + similarity (опечатки, «гантеля»→«гантели»).
+🔲 Аудит тёмной темы: контраст и читаемость во всех 10 комбинациях (5 акцентов × 2 режима).
+🔲 Подготовка к релизу: EAS Build, иконки, сплэш-скрин.
+🔲 (опционально) Автозапуск следующего подхода по окончании отдыха.
+❌ Калькулятор блинов — отклонено (решение пользователя).
 
-### 🔮 ЭТАП 7: Дальнейшее развитие (ИДЕИ)
-- Видео техники (mp4 в media_url).
-- Избранные упражнения.
-- Офлайн-режим (локальный кэш каталога).
-- Онбординг первого запуска.
-- Аналитика и краш-репортинг (Sentry).
-- Экспорт истории тренировок.
+🔮 ЭТАП 7: Дальнейшее развитие (ИДЕИ)
+🔲 Адаптивная периодизация (ИИ): автоподбор прогрессии по 1ПМ (RecordsCard) и результатам тренировок; автопрогрессия весов по фазам (отложена до ИИ).
+🔲 Умный подбор упражнений (ИИ): рекомендации по целям/травмам/оборудованию.
+🔲 Видео техники (mp4 в media_url).
+🔲 Избранные упражнения.
+🔲 Офлайн-режим (локальный кэш каталога).
+🔲 Онбординг первого запуска.
+🔲 Аналитика и краш-репортинг (Sentry).
+🔲 Экспорт истории тренировок (PDF/CSV).
+🔲 UX списка тренировок (дополнения): автопрокрутка к «следующей» тренировке, фильтр по фазам, сворачивание прошедших недель.

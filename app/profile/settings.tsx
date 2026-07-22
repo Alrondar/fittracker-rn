@@ -22,6 +22,7 @@ import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { useTimerSettings } from '../../src/hooks/useTimerSettings';
+import { SectionHeader } from '../../src/components/SectionHeader';
 import {
   ChevronLeft,
   User,
@@ -230,9 +231,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
         {/* Профиль */}
         <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-            Профиль
-          </Text>
+<SectionHeader title="Профиль" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
           <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
               <User size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />

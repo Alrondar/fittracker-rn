@@ -20,6 +20,7 @@ import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { MacroPieChart } from '../../src/components/profile/MacroPieChart';
 import { supabase } from '../../src/lib/supabase';
+import { SectionHeader } from '../../src/components/SectionHeader';
 import * as Haptics from 'expo-haptics';
 import {
   User,
@@ -254,10 +255,12 @@ export default function ProfileScreen() {
         {/* Личные рекорды */}
         {personalRecords.length > 0 && (
           <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-              <Award size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
-              <Text style={[typography.h4, { color: colors.textPrimary }]}>Личные рекорды</Text>
-            </View>
+            <SectionHeader
+  title="Личные рекорды"
+  icon={<Award size={16} color={colors.warning} strokeWidth={2} />}
+  color={colors.warning}
+  style={{ paddingHorizontal: 0, paddingTop: 0 }}
+/>
             <AppCard variant="compact">
               {personalRecords.map((record, index) => (
                 <View key={index} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm, borderBottomWidth: index < personalRecords.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
@@ -279,7 +282,7 @@ export default function ProfileScreen() {
 
         {/* Быстрые действия */}
         <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
-          <Text style={[typography.h4, { color: colors.textPrimary, marginBottom: SPACING.md }]}>Быстрые действия</Text>
+          <SectionHeader title="Быстрые действия" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
           
           <TouchableOpacity
             style={{ backgroundColor: colors.surface, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm, borderColor: colors.border, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}

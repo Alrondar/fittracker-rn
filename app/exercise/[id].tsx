@@ -42,6 +42,7 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { EquipmentIcon } from '../../src/components/EquipmentIcon';
 import { FadeIn } from '../../src/components/FadeIn';
+import { SectionHeader } from '../../src/components/SectionHeader';
 
 type SectionKey = 'benefits' | 'risks' | 'injuries' | 'settings';
 
@@ -429,20 +430,7 @@ export default function ExerciseDetailScreen() {
           {alternatives.length > 0 && (
             <FadeIn delay={420}>
               <View style={{ marginTop: SPACING.xl }}>
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: colors.textSecondary,
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                      marginBottom: SPACING.md,
-                    },
-                  ]}
-                >
-                  Альтернативные упражнения · {alternatives.length}
-                </Text>
+<SectionHeader title="Альтернативные упражнения" count={alternatives.length} style={{ paddingHorizontal: 0, paddingTop: 0 }} />
                 {alternatives.map(alt => {
                   const altAccent = alt.primary_muscles.length > 0
                     ? getMuscleColor(alt.primary_muscles[0])

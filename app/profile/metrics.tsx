@@ -19,6 +19,7 @@ import { useBodyMetrics } from '../../src/hooks/useBodyMetrics';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
+import { SectionHeader } from '../../src/components/SectionHeader';
 import { METRIC_FIELDS, MetricFormData } from '../../src/types/metrics';
 import {
   ChevronLeft,
@@ -174,9 +175,7 @@ export default function MetricsScreen() {
         />
 
         {/* История замеров */}
-        <Text style={[typography.h4, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-          История
-        </Text>
+<SectionHeader title="История" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
 
         {metrics.length === 0 ? (
           <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>

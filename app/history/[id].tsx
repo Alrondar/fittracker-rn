@@ -17,6 +17,7 @@ import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
 import { AppButton } from '../../src/components/ui/AppButton';
+import { SectionHeader } from '../../src/components/SectionHeader';
 import {
   ChevronLeft,
   Clock,
@@ -239,9 +240,7 @@ export default function WorkoutHistoryScreen() {
         )}
 
         {/* Список упражнений */}
-        <Text style={[typography.h4, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-          Упражнения
-        </Text>
+<SectionHeader title="Упражнения" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
         {exercises.map((exercise, exIndex) => (
           <AppCard key={exercise.id} variant="compact" style={{ marginBottom: SPACING.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>

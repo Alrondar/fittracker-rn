@@ -14,6 +14,7 @@ import { ExerciseProgressCard } from '../../src/components/ExerciseProgressCard'
 import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
 import { LastWorkoutCard } from '../../src/components/LastWorkoutCard';
 import { SPACING } from '../../src/constants/theme';
+import { SectionHeader } from '../../src/components/SectionHeader';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -336,39 +337,39 @@ const loadDashboardData = async () => {
         )}
 
         {/* Календарь активности */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Активность</Text>
-          <ActivityCalendar workoutDates={workoutDates} />
-        </View>
+<View style={styles.section}>
+  <SectionHeader title="Активность" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+  <ActivityCalendar workoutDates={workoutDates} />
+</View>
 
-        {/* Статистика за неделю */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Эта неделя</Text>
-          <WeeklyStatsCard
-            workoutsCount={weeklyStats.workoutsCount}
-            totalVolume={weeklyStats.totalVolume}
-            burnedCalories={weeklyStats.burnedCalories}
-          />
-        </View>
+{/* Статистика за неделю */}
+<View style={styles.section}>
+  <SectionHeader title="Эта неделя" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+  <WeeklyStatsCard
+    workoutsCount={weeklyStats.workoutsCount}
+    totalVolume={weeklyStats.totalVolume}
+    burnedCalories={weeklyStats.burnedCalories}
+  />
+</View>
 
-        {/* Прогресс по упражнениям */}
-        {exerciseProgress.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Прогресс по упражнениям</Text>
-            {exerciseProgress.map((exercise) => (
-              <ExerciseProgressCard
-                key={exercise.exerciseId}
-                exerciseName={exercise.exerciseName}
-                history={exercise.history}
-                currentMaxWeight={exercise.currentMaxWeight}
-                currentVolume={exercise.currentVolume}
-                trend={exercise.trend}
-                selectedMetric="weight"
-                colors={colors}
-              />
-            ))}
-          </View>
-        )}
+{/* Прогресс по упражнениям */}
+{exerciseProgress.length > 0 && (
+  <View style={styles.section}>
+    <SectionHeader title="Прогресс по упражнениям" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+    {exerciseProgress.map((exercise) => (
+      <ExerciseProgressCard
+        key={exercise.exerciseId}
+        exerciseName={exercise.exerciseName}
+        history={exercise.history}
+        currentMaxWeight={exercise.currentMaxWeight}
+        currentVolume={exercise.currentVolume}
+        trend={exercise.trend}
+        selectedMetric="weight"
+        colors={colors}
+      />
+    ))}
+  </View>
+)}
 
         <View style={{ height: 40 }} />
       </ScrollView>

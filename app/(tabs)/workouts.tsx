@@ -1,28 +1,41 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, SectionList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
-import { SPACING } from '../../src/constants/theme';
+import { SectionHeader } from '../../src/components/SectionHeader';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { useTheme } from '../../src/hooks/useTheme';
 import * as Haptics from 'expo-haptics';
-import { ClipboardList, Dumbbell } from 'lucide-react-native';
+import { ClipboardList, Dumbbell, Check, Clock } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
+import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
+
+interface WorkoutSection {
+  key: string;
+  phaseNumber: number;
+  phaseName: string;
+  phaseType: string;
+  weekNumber: number;
+  data: any[];
+}
+
+type WorkoutStatus = 'completed' | 'next' | 'in_progress' | 'upcoming';
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
-  const [workouts, setWorkouts] = useState<any[]>([]);
+  const [sections, setSections] = useState<WorkoutSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
-  const [activeProgramId, setActiveProgramId] = useState<string | null>(null);
+  const [activeProgram, setActiveProgram] = useState<any>(null);
+  const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const router = useRouter();
 
   useEffect(() => {
@@ -32,10 +45,10 @@ export default function WorkoutsScreen() {
   const loadWorkouts = async () => {
     if (!userId) return;
     try {
-      // 1. Получаем активную программу через is_active
+      // 1. Активная программа + фазы + прогресс
       const { data: userProgram, error: progError } = await supabase
         .from('user_programs')
-        .select('program_id')
+        .select(`program_id, current_phase, current_week, current_day, programs!inner (name, program_phases (phase_number, name, phase_type))`)
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
@@ -43,40 +56,70 @@ export default function WorkoutsScreen() {
       if (progError) throw progError;
 
       if (!userProgram) {
-        setWorkouts([]);
-        setActiveProgramName(null);
-        setActiveProgramId(null);
+        setSections([]);
+        setActiveProgram(null);
+        setProgress({ completed: 0, total: 0 });
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      setActiveProgramId(userProgram.program_id);
+      const prog = Array.isArray(userProgram.programs) ? userProgram.programs[0] : userProgram.programs;
+      const phases = prog?.program_phases || [];
+      const curPhase = userProgram.current_phase ?? 1;
+      const curWeek = userProgram.current_week ?? 1;
+      const curDay = userProgram.current_day ?? 1;
 
-      // 2. Получаем название программы
-      const { data: programData, error: nameError } = await supabase
-        .from('programs')
-        .select('name')
-        .eq('id', userProgram.program_id)
-        .maybeSingle();
+      setActiveProgram({
+        programId: userProgram.program_id,
+        name: prog?.name || 'Программа',
+        currentPhase: curPhase,
+        currentWeek: curWeek,
+        currentDay: curDay,
+        phases,
+      });
 
-      if (!nameError && programData) {
-        setActiveProgramName(programData.name);
-      } else {
-        setActiveProgramName('Активная программа');
-      }
-
-      // 3. Загружаем ТОЛЬКО тренировки этой программы
-      const { data, error: workError } = await supabase
+      // 2. Тренировки программы (со статусами)
+      const { data: workouts, error: workError } = await supabase
         .from('workouts')
-        .select('id, name, description, program_id, week_number, day_index, created_at')
+        .select('id, name, description, program_id, phase_number, week_number, day_index, created_at, started_at, finished_at, duration_seconds')
         .eq('user_id', userId)
         .eq('program_id', userProgram.program_id)
+        .order('phase_number', { ascending: true })
         .order('week_number', { ascending: true })
         .order('day_index', { ascending: true });
 
       if (workError) throw workError;
-      setWorkouts(data || []);
+
+      const list = workouts || [];
+
+      // 3. Прогресс (выполнено / всего)
+      const completed = list.filter(w => w.finished_at).length;
+      setProgress({ completed, total: list.length });
+
+      // 4. Секции по (фаза, неделя)
+      const phaseMap = new Map<number, any>(phases.map((p: any) => [p.phase_number, p]));
+      const groups = new Map<string, any[]>();
+      list.forEach(w => {
+        const key = `${w.phase_number ?? 1}-${w.week_number ?? 1}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(w);
+      });
+
+      const built: WorkoutSection[] = Array.from(groups.entries()).map(([key, data]) => {
+        const [phaseNum, weekNum] = key.split('-').map(Number);
+        const phase = phaseMap.get(phaseNum);
+        return {
+          key,
+          phaseNumber: phaseNum,
+          phaseName: phase?.name || `Фаза ${phaseNum}`,
+          phaseType: phase?.phase_type || 'custom',
+          weekNumber: weekNum,
+          data,
+        };
+      });
+
+      setSections(built);
     } catch (e: any) {
       console.error('Ошибка загрузки тренировок:', e.message);
       Alert.alert('Ошибка', 'Не удалось загрузить список тренировок');
@@ -97,42 +140,167 @@ export default function WorkoutsScreen() {
     router.push(`/workout/${id}`);
   };
 
-  const renderWorkoutItem = ({ item, index }: { item: any; index: number }) => {
-    const isProgramWorkout = !!item.program_id;
-    const programLabel = isProgramWorkout
-      ? `Неделя ${item.week_number || 1}, День ${item.day_index || 1}`
-      : null;
+  const getWorkoutStatus = (w: any): WorkoutStatus => {
+    if (w.finished_at) return 'completed';
+    if (
+      activeProgram &&
+      w.phase_number === activeProgram.currentPhase &&
+      w.week_number === activeProgram.currentWeek &&
+      w.day_index === activeProgram.currentDay
+    ) {
+      return 'next';
+    }
+    if (w.started_at) return 'in_progress';
+    return 'upcoming';
+  };
+
+  const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)} мин`;
+
+  // ===== Шапка: прогресс программы =====
+  const renderHeader = () => {
+    if (!activeProgram) return null;
+    const currentPhaseObj = activeProgram.phases.find(
+      (p: any) => p.phase_number === activeProgram.currentPhase
+    );
+    const phaseColor = currentPhaseObj
+      ? getPhaseColor(currentPhaseObj.phase_type, colors)
+      : colors.primary;
+    const phaseMeta = currentPhaseObj ? getPhaseMeta(currentPhaseObj.phase_type) : null;
+    const PhaseIcon = phaseMeta?.icon;
+    const progressPct = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
 
     return (
-      <FadeIn delay={index * 60}>
-        <TouchableOpacity
-          onPress={() => navigateToWorkout(item.id)}
-          activeOpacity={0.85}
-        >
-          <AppCard variant="compact" style={{ borderColor: isProgramWorkout ? colors.primary : colors.border, borderWidth: isProgramWorkout ? 1.5 : 1 }}>
-            {isProgramWorkout && (
-              <AppBadge variant="primary" size="small" icon={<ClipboardList size={14} color={colors.primary} strokeWidth={2} />}>
-                {programLabel}
+      <View style={{ padding: SPACING.lg, paddingBottom: 0 }}>
+        <AppCard variant="default">
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+            {activeProgram.name}
+          </Text>
+          {currentPhaseObj && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: phaseColor + '18',
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 2,
+                  borderRadius: BORDER_RADIUS.sm,
+                }}
+              >
+                {PhaseIcon && <PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
+                <Text style={[typography.captionSmall, { color: phaseColor, fontWeight: '700' }]}>
+                  {currentPhaseObj.name}
+                </Text>
+              </View>
+              <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                Фаза {activeProgram.currentPhase}/{activeProgram.phases.length} · Неделя {activeProgram.currentWeek}
+              </Text>
+            </View>
+          )}
+          <View style={{ marginTop: SPACING.md }}>
+            <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surfaceSecondary, overflow: 'hidden' as const }}>
+              <View style={{ height: '100%' as const, width: `${progressPct}%` as const, backgroundColor: phaseColor, borderRadius: 4 }} />
+            </View>
+            <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+              Выполнено {progress.completed} из {progress.total} тренировок
+            </Text>
+          </View>
+        </AppCard>
+      </View>
+    );
+  };
+
+  // ===== Заголовок секции (фаза + неделя) =====
+  const renderSectionHeader = ({ section }: { section: WorkoutSection }) => {
+    const phaseMeta = getPhaseMeta(section.phaseType);
+    const phaseColor = getPhaseColor(section.phaseType, colors);
+    const PhaseIcon = phaseMeta.icon;
+    return (
+      <SectionHeader
+        title={section.phaseName}
+        subtitle={`Фаза ${section.phaseNumber} · Неделя ${section.weekNumber}`}
+        icon={<PhaseIcon size={16} color={phaseColor} strokeWidth={2} />}
+        color={phaseColor}
+        count={section.data.length}
+      />
+    );
+  };
+
+  // ===== Карточка тренировки (со статусом) =====
+  const renderWorkoutItem = ({ item, section }: { item: any; section: WorkoutSection }) => {
+    const status = getWorkoutStatus(item);
+    const phaseColor = getPhaseColor(section.phaseType, colors);
+    const phaseMeta = getPhaseMeta(section.phaseType);
+    const PhaseIcon = phaseMeta.icon;
+
+    const borderColor =
+      status === 'next' ? colors.primary
+      : status === 'in_progress' ? colors.warning
+      : status === 'completed' ? colors.success + '60'
+      : colors.border;
+
+    return (
+      <FadeIn>
+        <TouchableOpacity onPress={() => navigateToWorkout(item.id)} activeOpacity={0.85}>
+          <AppCard
+            variant="compact"
+            style={{
+              borderColor,
+              borderWidth: status === 'next' ? 1.5 : 1,
+              opacity: status === 'upcoming' ? 0.7 : 1,
+              marginHorizontal: SPACING.lg,
+            }}
+          >
+            {/* Бейджи: фаза + неделя/день + статус */}
+            <View style={{ flexDirection: 'row', gap: SPACING.xs, flexWrap: 'wrap' }}>
+              <AppBadge
+                variant="default"
+                size="small"
+                icon={<PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
+                style={{ backgroundColor: phaseColor + '18' }}
+                textStyle={{ color: phaseColor }}
+              >
+                {section.phaseName}
               </AppBadge>
-            )}
+              <AppBadge variant="primary" size="small" icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}>
+                Нед {item.week_number}, День {item.day_index}
+              </AppBadge>
+              {status === 'next' && (
+                <AppBadge variant="primary" size="small">Следующая</AppBadge>
+              )}
+              {status === 'completed' && (
+                <AppBadge variant="success" size="small" icon={<Check size={12} color={colors.success} strokeWidth={2} />}>
+                  Выполнена
+                </AppBadge>
+              )}
+              {status === 'in_progress' && (
+                <AppBadge variant="warning" size="small">В процессе</AppBadge>
+              )}
+            </View>
+
             <Text style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]} numberOfLines={2}>
               {item.name}
             </Text>
-            {item.description && !isProgramWorkout && (
-              <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.xs }]} numberOfLines={1}>
-                {item.description}
-              </Text>
-            )}
+
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md }}>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                {new Date(item.created_at).toLocaleDateString('ru-RU', {
-                  day: 'numeric',
-                  month: 'long',
-                })}
-              </Text>
-              <Text style={[typography.labelBold, { color: colors.primary }]}>
-                Начать →
-              </Text>
+              {status === 'completed' && item.duration_seconds ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    {formatDuration(item.duration_seconds)}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  {new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                </Text>
+              )}
+              {(status === 'next' || status === 'in_progress') && (
+                <Text style={[typography.labelBold, { color: colors.primary }]}>
+                  {status === 'in_progress' ? 'Продолжить →' : 'Начать →'}
+                </Text>
+              )}
             </View>
           </AppCard>
         </TouchableOpacity>
@@ -143,12 +311,10 @@ export default function WorkoutsScreen() {
   const renderEmpty = () => (
     <FadeIn delay={200} style={commonStyles.emptyContainer}>
       <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
-        Нет тренировок
-      </Text>
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет тренировок</Text>
       <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        {activeProgramName
-          ? `Для программы "${activeProgramName}" ещё нет запланированных тренировок.`
+        {activeProgram
+          ? `Для программы "${activeProgram.name}" ещё нет тренировок.`
           : 'Активируйте программу, чтобы увидеть список тренировок.'}
       </Text>
     </FadeIn>
@@ -157,29 +323,25 @@ export default function WorkoutsScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <View style={commonStyles.header}>
-        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
-          Тренировки
-        </Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>Тренировки</Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
-          {activeProgramName || 'Нет активной программы'}
+          {activeProgram?.name || 'Нет активной программы'}
         </Text>
       </View>
-
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
-        <FlatList
-          data={workouts}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => item.id}
           renderItem={renderWorkoutItem}
-          contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}
+          renderSectionHeader={renderSectionHeader}
+          ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmpty}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          stickySectionHeadersEnabled={true}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
         />
       )}
