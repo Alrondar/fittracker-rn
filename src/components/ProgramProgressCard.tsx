@@ -89,12 +89,7 @@ export function ProgramProgressCard({
 
       <View style={styles.progressContainer}>
         <View style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${progress}%` as const, backgroundColor: phaseColor },
-            ]}
-          />
+          <View style={[styles.progressFill, { width: `${progress}%` as const, backgroundColor: phaseColor }]} />
         </View>
         <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
           Неделя {currentWeek} · День {currentDay} из {totalDays}

@@ -117,7 +117,7 @@ const loadDashboardData = async () => {
       });
     }
 
- // 2. Активная программа
+ // 2. Активная программа (с фазами)
  if (userProgramResult.status === 'fulfilled' && userProgramResult.value.data) {
    const userPrograms = userProgramResult.value.data;
    const prog = Array.isArray(userPrograms.programs) ? userPrograms.programs[0] : userPrograms.programs;

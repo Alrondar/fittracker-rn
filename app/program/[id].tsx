@@ -101,6 +101,9 @@ export default function ProgramDetailScreen() {
     movePhase,
     addDayToPhase,
     getDaysForPhase,
+    copyTemplateToWeek,    // ✅ НОВОЕ
+    resetWeekToTemplate,   // ✅ НОВОЕ
+    addDayToPhaseWeek,     // ✅ НОВОЕ
     // Дни / упражнения
     updateExerciseParams,
     updateDaySettings,
@@ -274,6 +277,9 @@ export default function ProgramDetailScreen() {
               onRemoveExercise={(flatIndex, exerciseIndex) => removeExercise(flatIndex, exerciseIndex)}
               updateExerciseParams={updateExerciseParams}
               onExerciseDragEnd={(flatIndex, data) => onExerciseDragEnd(flatIndex, data)}
+              onAddDayToWeek={(week) => addDayToPhaseWeek(phaseIndex, week)}
+              onCopyTemplateToWeek={(week) => copyTemplateToWeek(phaseIndex, week)}
+              onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
             />
           ))}
 

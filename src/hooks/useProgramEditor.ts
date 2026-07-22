@@ -273,6 +273,98 @@ export function useProgramEditor(programId: string, userId: string | null) {
     ]);
   };
 
+  /** Скопировать шаблон (неделю 1) в неделю N — создать переопределение. */
+const copyTemplateToWeek = (phaseIndex: number, week: number) => {
+  if (!editedProgram || !editedProgram.phases || week <= 1) return;
+  const phase = editedProgram.phases[phaseIndex];
+  if (!phase) return;
+  const templateDays = (editedProgram.days || [])
+    .filter(d => d.phase_id === phase.id && (d.week_number ?? 1) === 1)
+    .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+
+  const newDays: ProgramDay[] = templateDays.map(td => {
+    const newDayId = genRandomUUID();
+    return {
+      id: newDayId,
+      program_id: editedProgram.id,
+      phase_id: phase.id,
+      week_number: week,
+      day_number: td.day_number,
+      name: td.name,
+      position: td.position,
+      exercises: (td.exercises || []).map(ex => ({
+        ...ex,
+        id: genRandomUUID(),
+        program_day_id: newDayId,
+        isNew: true,
+      })),
+      isNew: true,
+    };
+  });
+
+  setEditedProgram({ ...editedProgram, days: [...(editedProgram.days || []), ...newDays] });
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+};
+
+/** Сбросить неделю к шаблону (удалить переопределение). */
+const resetWeekToTemplate = (phaseIndex: number, week: number) => {
+  if (!editedProgram || !editedProgram.phases || week <= 1) return;
+  const phase = editedProgram.phases[phaseIndex];
+  if (!phase) return;
+  const weekDays = (editedProgram.days || []).filter(
+    d => d.phase_id === phase.id && (d.week_number ?? 1) === week
+  );
+  if (weekDays.length === 0) return;
+
+  Alert.alert(
+    'Сбросить неделю к шаблону?',
+    `Изменения недели ${week} будут удалены, снова будет использоваться шаблон недели 1`,
+    [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Сбросить',
+        style: 'destructive',
+        onPress: () => {
+          const newDays = (editedProgram.days || []).filter(
+            d => !(d.phase_id === phase.id && (d.week_number ?? 1) === week)
+          );
+          setEditedProgram({ ...editedProgram, days: newDays });
+          const removedDayIds = weekDays.filter(d => !d.isNew).map(d => d.id);
+          if (removedDayIds.length) setDeletedDayIds(prev => [...prev, ...removedDayIds]);
+          const removedExIds = weekDays.flatMap(d =>
+            (d.exercises || []).filter(ex => !ex.isNew).map(ex => ex.id)
+          );
+          if (removedExIds.length) setDeletedExerciseIds(prev => [...prev, ...removedExIds]);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      },
+    ]
+  );
+};
+
+/** Добавить день в конкретную неделю фазы. */
+const addDayToPhaseWeek = (phaseIndex: number, week: number) => {
+  if (!editedProgram || !editedProgram.phases) return;
+  const phase = editedProgram.phases[phaseIndex];
+  if (!phase) return;
+  const weekDays = (editedProgram.days || []).filter(
+    d => d.phase_id === phase.id && (d.week_number ?? 1) === week
+  );
+  const newDay: ProgramDay = {
+    id: genRandomUUID(),
+    program_id: editedProgram.id,
+    phase_id: phase.id,
+    week_number: week,
+    day_number: weekDays.length + 1,
+    name: `День ${weekDays.length + 1}`,
+    position: weekDays.length + 1,
+    exercises: [],
+    isNew: true,
+  };
+  setEditedProgram({ ...editedProgram, days: [...(editedProgram.days || []), newDay] });
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+};
+  
   /** Дни фазы (отсортированы по day_number). */
   const getDaysForPhase = (phaseId: string): ProgramDay[] => {
     if (!editedProgram || !editedProgram.days) return [];
@@ -285,7 +377,7 @@ export function useProgramEditor(programId: string, userId: string | null) {
   // СОХРАНЕНИЕ (фазовое)
   // ============================================================================
 
-    const saveProgram = async () => {
+  const saveProgram = async () => {
     setSaving(true);
     try {
       if (!editedProgram) return;
@@ -354,80 +446,87 @@ export function useProgramEditor(programId: string, userId: string | null) {
         }
       }
 
-      // 4. Дни (группируем по фазам, неделя 1) + упражнения
+      // 4. Дни (группируем по фазам И неделям) + упражнения
       for (const phase of phases) {
         const realPhaseId = phaseIdMap[phase.id];
-        const phaseDays = days
-          .filter(d => d.phase_id === phase.id)
-          .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+        const phaseDays = days.filter(d => d.phase_id === phase.id);
 
-        for (let j = 0; j < phaseDays.length; j++) {
-          const day = phaseDays[j];
-          let realDayId = day.id;
+        // Группируем дни по неделям
+        const byWeek = new Map<number, ProgramDay[]>();
+        for (const d of phaseDays) {
+          const wn = d.week_number ?? 1;
+          if (!byWeek.has(wn)) byWeek.set(wn, []);
+          byWeek.get(wn)!.push(d);
+        }
 
-          if (day.isNew) {
-            const { data, error } = await supabase
-              .from('program_days')
-              .insert({
-                program_id: editedProgram.id,
-                phase_id: realPhaseId,
-                week_number: 1,
-                day_number: j + 1,
-                name: day.name,
-                position: j + 1,
-              })
-              .select()
-              .single();
-            if (error) throw error;
-            realDayId = data.id;
-          } else {
-            updatePromises.push(
-              Promise.resolve(
-                supabase
-                  .from('program_days')
-                  .update({ phase_id: realPhaseId, week_number: 1, day_number: j + 1, position: j + 1 })
-                  .eq('id', day.id)
-              )
-            );
-          }
-
-          const exercises = day.exercises || [];
-          for (let k = 0; k < exercises.length; k++) {
-            const exercise = exercises[k];
-            if (exercise.isNew) {
-              updatePromises.push(
-                Promise.resolve(
-                  supabase.from('program_exercises').insert({
-                    program_day_id: realDayId,
-                    exercise_id: exercise.exercise_id,
-                    exercise_name: exercise.exercise_name,
-                    sets: exercise.sets,
-                    reps_range: exercise.reps_range,
-                    rest_seconds: exercise.rest_seconds,
-                    intensity: exercise.intensity,
-                    position: k + 1,
-                  })
-                )
-              );
+        for (const [weekNum, weekDays] of byWeek) {
+          weekDays.sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+          for (let j = 0; j < weekDays.length; j++) {
+            const day = weekDays[j];
+            let realDayId = day.id;
+            if (day.isNew) {
+              const { data, error } = await supabase
+                .from('program_days')
+                .insert({
+                  program_id: editedProgram.id,
+                  phase_id: realPhaseId,
+                  week_number: weekNum,
+                  day_number: j + 1,
+                  name: day.name,
+                  position: j + 1,
+                })
+                .select()
+                .single();
+              if (error) throw error;
+              realDayId = data.id;
             } else {
               updatePromises.push(
                 Promise.resolve(
-                  supabase.rpc('update_exercise_position', { p_exercise_id: exercise.id, p_new_position: k + 1 })
+                  supabase
+                    .from('program_days')
+                    .update({ phase_id: realPhaseId, week_number: weekNum, day_number: j + 1, position: j + 1 })
+                    .eq('id', day.id)
                 )
               );
-              updatePromises.push(
-                Promise.resolve(
-                  supabase
-                    .from('program_exercises')
-                    .update({
+            }
+            const exercises = day.exercises || [];
+            for (let k = 0; k < exercises.length; k++) {
+              const exercise = exercises[k];
+              if (exercise.isNew) {
+                updatePromises.push(
+                  Promise.resolve(
+                    supabase.from('program_exercises').insert({
+                      program_day_id: realDayId,
+                      exercise_id: exercise.exercise_id,
+                      exercise_name: exercise.exercise_name,
                       sets: exercise.sets,
                       reps_range: exercise.reps_range,
                       rest_seconds: exercise.rest_seconds,
                       intensity: exercise.intensity,
+                      position: k + 1,
                     })
-                    .eq('id', exercise.id)
-                )
-              );
+                  )
+                );
+              } else {
+                updatePromises.push(
+                  Promise.resolve(
+                    supabase.rpc('update_exercise_position', { p_exercise_id: exercise.id, p_new_position: k + 1 })
+                  )
+                );
+                updatePromises.push(
+                  Promise.resolve(
+                    supabase
+                      .from('program_exercises')
+                      .update({
+                        sets: exercise.sets,
+                        reps_range: exercise.reps_range,
+                        rest_seconds: exercise.rest_seconds,
+                        intensity: exercise.intensity,
+                      })
+                      .eq('id', exercise.id)
+                  )
+                );
+              }
             }
           }
         }
@@ -639,5 +738,8 @@ export function useProgramEditor(programId: string, userId: string | null) {
     removeExercise,
     loadAvailableExercises,
     handleAddExerciseFromPicker,
+    copyTemplateToWeek,    // ✅ НОВОЕ
+    resetWeekToTemplate,   // ✅ НОВОЕ
+    addDayToPhaseWeek,     // ✅ НОВОЕ
   };
 }
