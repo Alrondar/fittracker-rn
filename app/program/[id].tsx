@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Sprout,
@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Minus,
   TrendingDown,
+  Share2,
 } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -39,12 +40,15 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { Toast } from '../../src/components/Toast';
 import { useToast } from '../../src/hooks/useToast';
+import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { PhaseCard } from '../../src/components/program/PhaseCard';
 import { ExerciseSettingsSheet } from '../../src/components/program/sheets/ExerciseSettingsSheet';
 import { DaySettingsSheet } from '../../src/components/program/sheets/DaySettingsSheet';
 import { ExercisePickerSheet } from '../../src/components/program/sheets/ExercisePickerSheet';
 import { ScheduleEditorSheet } from '../../src/components/program/sheets/ScheduleEditorSheet';
 import { PhaseSettingsSheet } from '../../src/components/program/sheets/PhaseSettingsSheet';
+import { ShareProgramSheet } from '../../src/components/program/sheets/ShareProgramSheet';
+import { generateShareCode, formatShareCode } from '../../src/services/programSharingService';
 
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -52,7 +56,6 @@ export default function ProgramDetailScreen() {
   const { userId } = useStore();
   const { colors } = useTheme();
   const { toast, showToast, hideToast } = useToast();
-
   const {
     program,
     editedProgram,
@@ -102,9 +105,9 @@ export default function ProgramDetailScreen() {
     movePhase,
     addDayToPhase,
     getDaysForPhase,
-    copyTemplateToWeek,    // ✅ НОВОЕ
-    resetWeekToTemplate,   // ✅ НОВОЕ
-    addDayToPhaseWeek,     // ✅ НОВОЕ
+    copyTemplateToWeek,
+    resetWeekToTemplate,
+    addDayToPhaseWeek,
     // Дни / упражнения
     updateExerciseParams,
     updateDaySettings,
@@ -121,20 +124,24 @@ export default function ProgramDetailScreen() {
   const badgeStyles = createBadgeStyles(colors);
   const buttonStyles = createButtonStyles(colors);
 
-const getLevelInfo = (level: string) => {
-  switch (level) {
-    case 'beginner':
-      return { label: 'Новичок', color: LEVEL_COLORS.beginner, icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} /> };
-    case 'intermediate':
-      return { label: 'Средний', color: LEVEL_COLORS.intermediate, icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} /> };
-    case 'advanced':
-      return { label: 'Продвинутый', color: LEVEL_COLORS.advanced, icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} /> };
-    default:
-      return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
-  }
-};
+  // ===== Шаринг по коду =====
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
 
-  // ✅ Без хардкода: цвета интенсивности из темы (как на экране тренировки)
+  const getLevelInfo = (level: string) => {
+    switch (level) {
+      case 'beginner':
+        return { label: 'Новичок', color: LEVEL_COLORS.beginner, icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} /> };
+      case 'intermediate':
+        return { label: 'Средний', color: LEVEL_COLORS.intermediate, icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} /> };
+      case 'advanced':
+        return { label: 'Продвинутый', color: LEVEL_COLORS.advanced, icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} /> };
+      default:
+        return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
+    }
+  };
+
   const getIntensityInfo = useCallback((intensity: string) => {
     switch (intensity) {
       case 'high':
@@ -155,7 +162,6 @@ const getLevelInfo = (level: string) => {
       </View>
     );
   }
-
   if (!program) {
     return (
       <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
@@ -170,6 +176,29 @@ const getLevelInfo = (level: string) => {
   const levelInfo = getLevelInfo(displayProgram.level);
   const phases = displayProgram.phases || [];
   const allDays = displayProgram.days || [];
+
+  // ===== Действия шаринга (program сужен до non-null) =====
+  const openShare = async () => {
+    setShowShareModal(true);
+    if (shareCode) return;
+    setShareLoading(true);
+    try {
+      const code = await generateShareCode(program.id);
+      setShareCode(code);
+    } catch (e: any) {
+      showToast(e.message || 'Не удалось создать код', 'error');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+  const shareViaSystem = () => {
+    if (!shareCode) return;
+    const formatted = formatShareCode(shareCode);
+    Share.share({
+      message: `Моя программа «${program.name}» в FitTracker. Код для импорта: ${formatted}`,
+      title: 'Поделиться программой',
+    }).catch(() => {});
+  };
 
   const renderHero = () => (
     <LinearGradient
@@ -234,7 +263,6 @@ const getLevelInfo = (level: string) => {
         showsVerticalScrollIndicator={false}
       >
         {renderHero()}
-
         {/* ===== Фазы ===== */}
         <View style={{ paddingTop: SPACING.md }}>
           {phases.map((phase, phaseIndex) => (
@@ -268,7 +296,7 @@ const getLevelInfo = (level: string) => {
                 if (day.exercises) {
                   const flatIndex = allDays.indexOf(day);
                   setSelectedDay(day);
-                  setSelectedDayIndex(flatIndex); // ✅ фикс: индекс дня для updateExerciseParams
+                  setSelectedDayIndex(flatIndex);
                   setSelectedExercise(day.exercises[exerciseIndex]);
                   setSelectedExerciseIndex(exerciseIndex);
                   setShowExerciseSettings(true);
@@ -283,7 +311,6 @@ const getLevelInfo = (level: string) => {
               onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
             />
           ))}
-
           {/* Добавить фазу (только в режиме редактирования) */}
           {editMode && (
             <TouchableOpacity
@@ -354,7 +381,32 @@ const getLevelInfo = (level: string) => {
         </View>
       </View>
 
-      {/* FAB Кнопка редактирования */}
+      {/* FAB «Поделиться» (только вне режима редактирования) */}
+      {!editMode && (
+        <TouchableOpacity
+          onPress={openShare}
+          style={{
+            position: 'absolute',
+            top: SPACING.xl + 35 + 52,
+            right: SPACING.lg,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: colors.surface,
+            justifyContent: 'center',
+            alignItems: 'center',
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Share2 size={20} color={colors.primary} strokeWidth={2} />
+        </TouchableOpacity>
+      )}
+
+      {/* FAB редактирования */}
       <TouchableOpacity
         onPress={toggleEditMode}
         style={{
@@ -399,7 +451,6 @@ const getLevelInfo = (level: string) => {
           onClose={() => setShowPhaseSettings(false)}
         />
       </Modal>
-
       <Modal visible={showExerciseSettings} transparent animationType="slide" onRequestClose={() => setShowExerciseSettings(false)}>
         <ExerciseSettingsSheet
           exercise={selectedExercise}
@@ -415,7 +466,6 @@ const getLevelInfo = (level: string) => {
           onClose={() => setShowExerciseSettings(false)}
         />
       </Modal>
-
       <Modal visible={showDaySettings} transparent animationType="slide" onRequestClose={() => setShowDaySettings(false)}>
         <DaySettingsSheet
           day={selectedDay}
@@ -431,7 +481,6 @@ const getLevelInfo = (level: string) => {
           onClose={() => setShowDaySettings(false)}
         />
       </Modal>
-
       <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}>
         <ExercisePickerSheet
           searchQuery={exerciseSearch}
@@ -449,7 +498,6 @@ const getLevelInfo = (level: string) => {
           setShowSortSheet={setShowSortSheet}
         />
       </Modal>
-
       <Modal visible={showScheduleEditor} transparent animationType="slide" onRequestClose={() => setShowScheduleEditor(false)}>
         <ScheduleEditorSheet
           schedule={editedProgram?.schedule || []}
@@ -462,6 +510,16 @@ const getLevelInfo = (level: string) => {
           colors={colors}
           buttonStyles={buttonStyles}
           badgeStyles={badgeStyles}
+        />
+      </Modal>
+      {/* ✅ Модалка шаринга по коду */}
+      <Modal visible={showShareModal} transparent animationType="slide" onRequestClose={() => setShowShareModal(false)}>
+        <ShareProgramSheet
+          code={shareCode}
+          loading={shareLoading}
+          programName={program.name}
+          onShare={shareViaSystem}
+          onClose={() => setShowShareModal(false)}
         />
       </Modal>
     </SafeAreaView>

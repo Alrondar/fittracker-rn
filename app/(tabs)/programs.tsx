@@ -18,10 +18,12 @@ import { usePrograms } from '../../src/hooks/usePrograms';
 import { ProgramCard } from '../../src/components/ProgramCard';
 import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
+import { ImportProgramSheet } from '../../src/components/program/sheets/ImportProgramSheet';
+import { importProgramByCode } from '../../src/services/programSharingService';
 import { FadeIn } from '../../src/components/FadeIn';
 import { Toast } from '../../src/components/Toast';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import { Search, Plus, X, ArrowUpDown, Trophy } from 'lucide-react-native';
+import { Search, Plus, X, ArrowUpDown, Trophy, Link2 } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
@@ -33,7 +35,6 @@ const SORT_OPTIONS = [
   { value: 'name' as const, label: 'По названию' },
   { value: 'level' as const, label: 'По сложности' },
 ];
-
 const LEVEL_OPTIONS = [
   { value: 'beginner' as const, label: 'Новичок', icon: require('lucide-react-native').Sprout, color: LEVEL_COLORS.beginner },
   { value: 'intermediate' as const, label: 'Средний', icon: require('lucide-react-native').Dumbbell, color: LEVEL_COLORS.intermediate },
@@ -45,7 +46,6 @@ export default function ProgramsScreen() {
   const { userId } = useStore();
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
-
   const {
     activeTab,
     setActiveTab,
@@ -88,6 +88,29 @@ export default function ProgramsScreen() {
   const cardStyles = createCardStyles(colors);
   const badgeStyles = createBadgeStyles(colors);
   const buttonStyles = createButtonStyles(colors);
+
+  // ===== Импорт программы по коду =====
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importCode, setImportCode] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleImport = async () => {
+    setImportError(null);
+    setImporting(true);
+    try {
+      const newId = await importProgramByCode(importCode, userId!);
+      showToast('Программа добавлена', 'success');
+      setShowImportModal(false);
+      setImportCode('');
+      onRefresh();
+      router.push(`/program/${newId}`);
+    } catch (e: any) {
+      setImportError(e.message || 'Не удалось импортировать');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const renderProgramCard = ({ item, index }: { item: any; index: number }) => (
     <FadeIn delay={index * 80}>
@@ -147,7 +170,6 @@ export default function ProgramsScreen() {
           {activeTab === 'my' ? 'Ваши личные программы' : 'Готовые программы от тренеров'}
         </Text>
       </View>
-
       {/* Табы */}
       <View style={cardStyles.tabContainer}>
         <TouchableOpacity
@@ -171,8 +193,7 @@ export default function ProgramsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Панель поиска и сортировки */}
+      {/* Панель поиска, импорта и сортировки */}
       <View style={cardStyles.filterBar}>
         <View style={cardStyles.searchRow}>
           <TouchableOpacity
@@ -183,7 +204,6 @@ export default function ProgramsScreen() {
           >
             <Search size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
-
           {showSearch && (
             <View style={cardStyles.searchContainer}>
               <TextInput
@@ -203,7 +223,16 @@ export default function ProgramsScreen() {
               )}
             </View>
           )}
-
+          {/* ✅ Кнопка импорта по коду */}
+          <TouchableOpacity
+            style={cardStyles.sortButton}
+            onPress={() => {
+              setImportError(null);
+              setShowImportModal(true);
+            }}
+          >
+            <Link2 size={20} color={colors.textSecondary} strokeWidth={2} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={cardStyles.sortButton}
             onPress={() => setShowSortMenu(!showSortMenu)}
@@ -211,7 +240,6 @@ export default function ProgramsScreen() {
             <ArrowUpDown size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-
         {showSortMenu && (
           <View style={{ marginBottom: SPACING.sm }}>
             {SORT_OPTIONS.map((option) => (
@@ -240,7 +268,6 @@ export default function ProgramsScreen() {
             ))}
           </View>
         )}
-
         {/* Чипы фильтров по уровню */}
         <View style={cardStyles.filterChips}>
           {LEVEL_OPTIONS.map((option) => {
@@ -273,8 +300,6 @@ export default function ProgramsScreen() {
             <TouchableOpacity
               style={cardStyles.filterChip}
               onPress={() => {
-                // Сброс фильтров — нужно вызвать через хук
-                // Для простоты: вызываем toggleLevel для каждого выбранного
                 selectedLevels.forEach(l => toggleLevel(l));
               }}
             >
@@ -318,7 +343,6 @@ export default function ProgramsScreen() {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
       />
-
       {/* FAB */}
       {activeTab === 'my' && !loading && (
         <TouchableOpacity
@@ -329,9 +353,7 @@ export default function ProgramsScreen() {
           <Plus size={24} color="white" strokeWidth={2.5} />
         </TouchableOpacity>
       )}
-
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
-
       {/* Модалка формы */}
       <Modal
         visible={showCreateModal}
@@ -355,6 +377,25 @@ export default function ProgramsScreen() {
           colors={colors}
           cardStyles={cardStyles}
           buttonStyles={buttonStyles}
+        />
+      </Modal>
+      {/* ✅ Модалка импорта по коду */}
+      <Modal
+        visible={showImportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowImportModal(false)}
+      >
+        <ImportProgramSheet
+          code={importCode}
+          onChangeCode={(v) => {
+            setImportCode(v);
+            setImportError(null);
+          }}
+          importing={importing}
+          error={importError}
+          onImport={handleImport}
+          onClose={() => setShowImportModal(false)}
         />
       </Modal>
     </SafeAreaView>
