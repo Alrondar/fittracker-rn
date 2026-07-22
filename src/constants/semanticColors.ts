@@ -50,3 +50,10 @@ export const PHARMA_COLORS = {
   combo: '#8B5CF6',
 } as const;
 export type PharmaKey = keyof typeof PHARMA_COLORS;
+
+// ===== Группы зон тела (легенда) =====
+export const BODY_ZONE_COLORS = {
+  arms: '#2196F3',   // синий (руки: плечо, локоть, запястье)
+  torso: '#9C27B0',  // фиолетовый (корпус: спина, шея)
+  legs: '#4CAF50',   // зелёный (ноги: бедро, колено, голеностоп)
+} as const;

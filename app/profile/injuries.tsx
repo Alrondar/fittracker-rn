@@ -17,6 +17,7 @@ import { typography } from '../../src/styles/typography';
 import { supabase } from '../../src/lib/supabase';
 import { useStore } from '../../src/store/useStore';
 import { AppButton } from '../../src/components/ui/AppButton';
+import { BODY_ZONE_COLORS } from '../../src/constants/semanticColors';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppBadge } from '../../src/components/ui/AppBadge';
@@ -379,32 +380,32 @@ const getSeverityColor = (severity: string) => {
           </AppCard>
         </View>
 
-        {/* Легенда зон тела */}
-        <AppCard variant="compact">
-          <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-            Зоны тела
-          </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-            <View style={{ alignItems: 'center' }}>
-              <Circle size={16} color="#2196F3" fill="#2196F320" strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Руки
-              </Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Circle size={16} color="#9C27B0" fill="#9C27B020" strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Корпус
-              </Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Circle size={16} color="#4CAF50" fill="#4CAF5020" strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Ноги
-              </Text>
-            </View>
-          </View>
-        </AppCard>
+{/* Легенда зон тела */}
+<AppCard variant="compact">
+  <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+    Зоны тела
+  </Text>
+  <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+    <View style={{ alignItems: 'center' }}>
+      <Circle size={16} color={BODY_ZONE_COLORS.arms} fill={BODY_ZONE_COLORS.arms + '20'} strokeWidth={2} />
+      <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+        Руки
+      </Text>
+    </View>
+    <View style={{ alignItems: 'center' }}>
+      <Circle size={16} color={BODY_ZONE_COLORS.torso} fill={BODY_ZONE_COLORS.torso + '20'} strokeWidth={2} />
+      <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+        Корпус
+      </Text>
+    </View>
+    <View style={{ alignItems: 'center' }}>
+      <Circle size={16} color={BODY_ZONE_COLORS.legs} fill={BODY_ZONE_COLORS.legs + '20'} strokeWidth={2} />
+      <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+        Ноги
+      </Text>
+    </View>
+  </View>
+</AppCard>
 
         {/* Активные травмы */}
 <SectionHeader title="Активные травмы" style={{ paddingHorizontal: 0, paddingTop: 0, marginTop: SPACING.lg }} />
