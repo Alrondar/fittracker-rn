@@ -83,8 +83,9 @@ export function getPhaseIcon(type: string | null | undefined) {
 /** Цвет фазы из темы (без хардкода): getPhaseColor(phase.phase_type, colors) */
 export function getPhaseColor(
   type: string | null | undefined,
-  colors: Record<string, string>,
+  colors: Record<PhaseColorKey, string>,
 ): string {
   const meta = getPhaseMeta(type);
   return colors[meta.colorKey] ?? colors.primary;
 }
+// ============================================================================

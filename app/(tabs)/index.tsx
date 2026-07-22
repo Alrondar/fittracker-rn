@@ -57,13 +57,13 @@ const loadDashboardData = async () => {
     ] = await Promise.allSettled([
       // 1. Профиль
       supabase.from('profiles').select('full_name, username').eq('id', userId).single(),
-      // 2. Активная программа
-      supabase
-        .from('user_programs')
-        .select(`program_id, current_week, current_day, is_active, programs!inner (name, duration), program_days!inner (name, day_number)`)
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .single(),
+   // 2. Активная программа (с фазами)
+   supabase
+     .from('user_programs')
+     .select(`program_id, current_phase, current_week, current_day, is_active, programs!inner (name, duration, program_phases (phase_number, name, phase_type, weeks_count, program_days (name, day_number, week_number)))`)
+     .eq('user_id', userId)
+     .eq('is_active', true)
+     .single(),
       // 3. Даты тренировок за 14 дней
       supabase
         .from('workouts')
@@ -117,18 +117,36 @@ const loadDashboardData = async () => {
       });
     }
 
-    // 2. Активная программа
-    if (userProgramResult.status === 'fulfilled' && userProgramResult.value.data) {
-      const userPrograms = userProgramResult.value.data;
-      setActiveProgram({
-        programId: userPrograms.program_id,
-        currentWeek: userPrograms.current_week,
-        currentDay: userPrograms.current_day,
-        programName: userPrograms.programs?.[0]?.name || 'Программа',
-        dayName: userPrograms.program_days?.[0]?.name || 'День тренировки',
-        totalDays: userPrograms.programs?.[0]?.duration || 8,
-      });
-    }
+ // 2. Активная программа
+ if (userProgramResult.status === 'fulfilled' && userProgramResult.value.data) {
+   const userPrograms = userProgramResult.value.data;
+   const prog = Array.isArray(userPrograms.programs) ? userPrograms.programs[0] : userPrograms.programs;
+   const phases = prog?.program_phases || [];
+   const curPhaseNum = userPrograms.current_phase ?? 1;
+   const curWeek = userPrograms.current_week ?? 1;
+   const curDay = userPrograms.current_day ?? 1;
+
+   const currentPhase = phases.find((p: any) => p.phase_number === curPhaseNum) || phases[0];
+   const phaseDays = currentPhase?.program_days || [];
+   const currentDayObj =
+     phaseDays.find((d: any) => (d.week_number ?? 1) === curWeek && d.day_number === curDay) ||
+     phaseDays.find((d: any) => d.day_number === curDay) ||
+     phaseDays[0];
+   const daysThisWeek = phaseDays.filter((d: any) => (d.week_number ?? 1) === curWeek).length;
+
+   setActiveProgram({
+     programId: userPrograms.program_id,
+     currentPhase: curPhaseNum,
+     phaseName: currentPhase?.name,
+     phaseType: currentPhase?.phase_type,
+     totalPhases: phases.length,
+     currentWeek: curWeek,
+     currentDay: curDay,
+     programName: prog?.name || 'Программа',
+     dayName: currentDayObj?.name || 'День тренировки',
+     totalDays: daysThisWeek || phaseDays.length || 1,
+   });
+ }
 
     // 3. Даты тренировок
     if (workoutDatesResult.status === 'fulfilled' && workoutDatesResult.value.data) {
@@ -277,16 +295,20 @@ const loadDashboardData = async () => {
         </View>
 
         {/* Карточка активной программы */}
-        {activeProgram && (
-          <ProgramProgressCard
-            programName={activeProgram.programName}
-            dayName={activeProgram.dayName}
-            currentWeek={activeProgram.currentWeek}
-            currentDay={activeProgram.currentDay}
-            totalDays={activeProgram.totalDays}
-            onStartPress={handleStartWorkout}
-          />
-        )}
+{activeProgram && (
+  <ProgramProgressCard
+    programName={activeProgram.programName}
+    dayName={activeProgram.dayName}
+    currentPhase={activeProgram.currentPhase}
+    phaseName={activeProgram.phaseName}
+    phaseType={activeProgram.phaseType}
+    totalPhases={activeProgram.totalPhases}
+    currentWeek={activeProgram.currentWeek}
+    currentDay={activeProgram.currentDay}
+    totalDays={activeProgram.totalDays}
+    onStartPress={handleStartWorkout}
+  />
+)}
 
         {/* Последняя тренировка */}
         {lastWorkout && (

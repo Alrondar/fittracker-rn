@@ -4,41 +4,77 @@ import { useTheme } from '../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';
 import { Play } from 'lucide-react-native';
+import { getPhaseMeta, getPhaseColor } from '../constants/phaseTypes';
 
 interface ProgramProgressCardProps {
   programName: string;
   dayName?: string;
+  currentPhase?: number;   // ✅ НОВОЕ
+  phaseName?: string;      // ✅ НОВОЕ
+  phaseType?: string;      // ✅ НОВОЕ
+  totalPhases?: number;    // ✅ НОВОЕ
   currentWeek: number;
   currentDay: number;
   totalDays: number;
-  onStartPress?: () => void; // ✅ ДОБАВЛЕНО: опциональный колбэк
+  onStartPress?: () => void;
 }
 
 export function ProgramProgressCard({
   programName,
   dayName,
+  currentPhase,
+  phaseName,
+  phaseType,
+  totalPhases,
   currentWeek,
   currentDay,
   totalDays,
   onStartPress,
 }: ProgramProgressCardProps) {
   const { colors } = useTheme();
-
   const progress = totalDays > 0 ? (currentDay / totalDays) * 100 : 0;
+  const phaseColor = phaseType ? getPhaseColor(phaseType, colors) : colors.primary;
+  const phaseMeta = phaseType ? getPhaseMeta(phaseType) : null;
+  const PhaseIcon = phaseMeta?.icon;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-            {programName}
-          </Text>
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{programName}</Text>
+
+          {/* ✅ Бейдж фазы */}
+          {phaseName && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: phaseColor + '18',
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 2,
+                  borderRadius: BORDER_RADIUS.sm,
+                }}
+              >
+                {PhaseIcon && <PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
+                <Text style={[typography.captionSmall, { color: phaseColor, fontWeight: '700' }]}>
+                  {phaseName}
+                </Text>
+              </View>
+              {!!totalPhases && !!currentPhase && (
+                <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                  Фаза {currentPhase}/{totalPhases}
+                </Text>
+              )}
+            </View>
+          )}
+
           {dayName && (
-            <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
-              {dayName}
-            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>{dayName}</Text>
           )}
         </View>
+
         {onStartPress && (
           <TouchableOpacity
             onPress={onStartPress}
@@ -46,9 +82,7 @@ export function ProgramProgressCard({
             activeOpacity={0.8}
           >
             <Play size={16} color="white" strokeWidth={2} fill="white" />
-            <Text style={[typography.labelBold, { color: 'white', marginLeft: SPACING.xs }]}>
-              Начать
-            </Text>
+            <Text style={[typography.labelBold, { color: 'white', marginLeft: SPACING.xs }]}>Начать</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -58,15 +92,12 @@ export function ProgramProgressCard({
           <View
             style={[
               styles.progressFill,
-              {
-                width: `${progress}%` as const,
-                backgroundColor: colors.primary,
-              },
+              { width: `${progress}%` as const, backgroundColor: phaseColor },
             ]}
           />
         </View>
         <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-          Неделя {currentWeek}, День {currentDay} из {totalDays}
+          Неделя {currentWeek} · День {currentDay} из {totalDays}
         </Text>
       </View>
     </View>
