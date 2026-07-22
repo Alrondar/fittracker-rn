@@ -31,6 +31,7 @@ export function useExercises() {
   const [sortBy, setSortBy] = useState<ExerciseSortBy>('name-asc');
   const [showSortSheet, setShowSortSheet] = useState(false);
   const [showEquipmentSheet, setShowEquipmentSheet] = useState(false);
+  const [activationOnly, setActivationOnly] = useState(false);   // ✅ НОВОЕ
 
   // Debounce + порог в 2 символа + нормализация «ё» → «е».
   // Одиночный символ не фильтрует список (показываем всё), но подсказка видна.
@@ -77,13 +78,14 @@ export function useExercises() {
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery<ExerciseListItem[], Error>({
-    queryKey: ['exercises', selectedMuscles, selectedCategories, selectedEquipment, searchQuery, sortBy],
+    queryKey: ['exercises', selectedMuscles, selectedCategories, selectedEquipment, activationOnly, searchQuery, sortBy],
     queryFn: async ({ pageParam }): Promise<ExerciseListItem[]> => {
       return await getExercises({
         search: searchQuery || undefined,
         muscles: selectedMuscles.length > 0 ? selectedMuscles : undefined,
         categories: selectedCategories.length > 0 ? selectedCategories : undefined,
         equipment: selectedEquipment.length > 0 ? selectedEquipment : undefined,
+        activationOnly: activationOnly || undefined,   // ✅ НОВОЕ
         sortBy,
         limit: PAGE_SIZE,
         offset: pageParam as number,
@@ -105,8 +107,8 @@ export function useExercises() {
   const isSearching = isFetching && !isFetchingNextPage;
 
   // Суммарный счётчик активных фильтров (мышцы + категории + оборудование)
-  const activeFiltersCount =
-    selectedMuscles.length + selectedCategories.length + selectedEquipment.length;
+const activeFiltersCount =
+  selectedMuscles.length + selectedCategories.length + selectedEquipment.length + (activationOnly ? 1 : 0);
 
   // ===== ДЕЙСТВИЯ =====
   const toggleMuscle = useCallback((muscle: string) => {
@@ -130,11 +132,17 @@ export function useExercises() {
     );
   }, []);
 
+  const toggleActivation = useCallback(() => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  setActivationOnly(prev => !prev);
+}, []);
+
   const resetFilters = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedMuscles([]);
     setSelectedCategories([]);
     setSelectedEquipment([]);
+    setActivationOnly(false); 
     setSearchInput('');
   }, []);
 
@@ -192,5 +200,7 @@ export function useExercises() {
     onRefresh,
     loadMore,
     refetch,
+    activationOnly,      // ✅
+    toggleActivation,    // ✅
   };
 }

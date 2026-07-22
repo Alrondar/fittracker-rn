@@ -17,6 +17,7 @@ export interface ExerciseListItem {
   primary_muscles: string[];
   equipment: string[];
   popularity?: number; // количество использований в тренировках (есть только у getExercises)
+  can_be_activation?: boolean; 
 }
 
 export type ExerciseSortBy = 'name-asc' | 'name-desc' | 'popularity';
@@ -26,6 +27,7 @@ export interface ExerciseFilters {
   muscles?: string[];
   categories?: string[];
   equipment?: string[];
+  activationOnly?: boolean; 
   sortBy: ExerciseSortBy;
   limit: number;
   offset: number;
@@ -50,18 +52,19 @@ export async function getExercises(filters: ExerciseFilters): Promise<ExerciseLi
     muscle_filter: filters.muscles?.length ? filters.muscles : null,
     category_filter: filters.categories?.length ? filters.categories : null,
     equipment_filter: filters.equipment?.length ? filters.equipment : null,
+    activation_filter: filters.activationOnly ? true : null,   // ✅ НОВОЕ
     sort_by: filters.sortBy,
     page_limit: filters.limit,
     page_offset: filters.offset,
   });
   if (error) throw error;
-
   return (data || []).map((row: any) => ({
     id: row.id,
     name: row.name,
     primary_muscles: getList(row, 'primary_muscles'),
     equipment: getList(row, 'equipment'),
     popularity: Number(row.popularity) || 0,
+    can_be_activation: row.can_be_activation ?? false,   // ✅ НОВОЕ
   }));
 }
 
@@ -132,11 +135,12 @@ export interface ExerciseDetail {
   settings: string;
   category: string | null;
   media_url: string | null;
+  can_be_activation: boolean;
 }
 
 // ⚠️ Без description — этой колонки в таблице exercises НЕТ (ошибка 42703).
 const DETAIL_FIELDS =
-  'id, name, technique, primary_muscles, secondary_muscles, equipment, benefits, risks, injuries, alternatives, settings, category, media_url';
+  'id, name, technique, primary_muscles, secondary_muscles, equipment, benefits, risks, injuries, alternatives, settings, category, media_url, can_be_activation';
 
 /**
  * Загрузка одного упражнения.
@@ -162,6 +166,7 @@ export async function getExerciseById(id: string): Promise<ExerciseDetail | null
     risks: getString(data, 'risks'),
     injuries: getList(data, 'injuries'),
     alternatives: getList(data, 'alternatives'),
+    can_be_activation: data.can_be_activation ?? false,
     settings: getString(data, 'settings'),
     category: data.category ?? null,
     media_url: data.media_url ?? null,

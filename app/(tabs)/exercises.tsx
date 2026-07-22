@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame } from 'lucide-react-native';
+import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame, Zap } from 'lucide-react-native';
 
 import { useTheme } from '../../src/hooks/useTheme';
 import { useExercises } from '../../src/hooks/useExercises';
@@ -27,6 +27,7 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
+
 
 // Цвет группы мышц — из единых констант (дублирующий GROUP_COLORS удалён)
 const getGroupColor = (groupName: string): string =>
@@ -111,6 +112,15 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
             </Text>
           </View>
         )}
+                {/* ✅ НОВОЕ: бейдж «Активация» */}
+        {item.can_be_activation && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+            <Zap size={11} color={colors.warning} />
+            <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '600' }]}>
+              Активация
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -153,6 +163,8 @@ export default function ExercisesScreen() {
     equipmentOptions,
     categoryCounts,
     onRefresh,
+    activationOnly,
+    toggleActivation,
     loadMore,
     refetch,
   } = useExercises();
@@ -454,6 +466,30 @@ export default function ExercisesScreen() {
             setShowEquipmentSheet(true);
           }}
         />
+        {/* ✅ НОВОЕ: фильтр «Только активация» */}
+<View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm }}>
+  <TouchableOpacity
+    onPress={toggleActivation}
+    activeOpacity={0.7}
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.full,
+      backgroundColor: activationOnly ? colors.warning + '20' : colors.surface,
+      borderWidth: 1,
+      borderColor: activationOnly ? colors.warning : colors.border,
+    }}
+  >
+    <Zap size={14} color={activationOnly ? colors.warning : colors.textSecondary} strokeWidth={2} />
+    <Text style={[typography.caption, { color: activationOnly ? colors.warning : colors.textSecondary, fontWeight: activationOnly ? '700' : '500' }]}>
+      Только активация
+    </Text>
+  </TouchableOpacity>
+</View>
       </View>
 
       {/* Список упражнений */}

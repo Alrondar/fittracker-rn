@@ -236,6 +236,26 @@ export default function ExerciseDetailScreen() {
                   </Text>
                 </View>
               ) : null}
+              {exercise.can_be_activation && (
+  <View
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: colors.warning + '15',
+      borderWidth: 1,
+      borderColor: colors.warning + '40',
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 4,
+      borderRadius: BORDER_RADIUS.full,
+    }}
+  >
+    <Zap size={13} color={colors.warning} strokeWidth={2} />
+    <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
+      Активация
+    </Text>
+  </View>
+)}
               <EquipmentBubbles equipment={exercise.equipment} primaryMuscles={exercise.primary_muscles} />
             </View>
           </FadeIn>

@@ -248,12 +248,29 @@ function WarmupExerciseCard({
             >
               {exercise.name}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <Clock size={12} color={colors.textTertiary} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginLeft: 3 }]}>
-                {exercise.duration_seconds} сек
-              </Text>
-            </View>
+<View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 }}>
+  <Clock size={12} color={colors.textTertiary} />
+  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+    {exercise.duration_seconds} сек
+  </Text>
+  <View
+    style={{
+      backgroundColor: exercise.can_be_activation ? colors.warning + '20' : colors.info + '20',
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: BORDER_RADIUS.sm,
+    }}
+  >
+    <Text
+      style={[
+        typography.captionSmall,
+        { color: exercise.can_be_activation ? colors.warning : colors.info, fontWeight: '700' },
+      ]}
+    >
+      {exercise.can_be_activation ? 'Активация' : 'Растяжка'}
+    </Text>
+  </View>
+</View>
           </View>
           {isActive ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
