@@ -15,6 +15,47 @@ import { FadeIn } from '../FadeIn';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
 import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
+import { getMuscleColor } from '../../constants/muscleColors';
+import { typography } from '../../styles/typography';
+import { BORDER_RADIUS } from '../../constants/theme';
+
+// ✅ Мост к данным мышц, которые придут после патча programsService.ts (join exercises).
+//    Локальный опциональный тип: компонент компилируется и работает ДО патча
+//    (баблы просто не отобразятся, пока primary_muscles не придёт из БД).
+type MusclesHolder = { primary_muscles?: string[] };
+
+// ✅ Компактные цветные баблы мышц для строки упражнения в программе.
+//    Лимит 3 + «+N», чтобы не раздувать строку в редакторе.
+function ExerciseMuscles({ muscles, colors }: { muscles: string[]; colors: any }) {
+  if (muscles.length === 0) return null;
+  const shown = muscles.slice(0, 3);
+  const extra = muscles.length - shown.length;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+      {shown.map((m, i) => {
+        const c = getMuscleColor(m);
+        return (
+          <View key={`m-${i}`} style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: c + '1A', borderWidth: 1, borderColor: c + '55',
+            paddingHorizontal: 6, paddingVertical: 2, borderRadius: BORDER_RADIUS.full,
+          }}>
+            <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: c, marginRight: 4 }} />
+            <Text style={[typography.captionSmall, { color: c, fontWeight: '700', fontSize: 10 }]}>{m}</Text>
+          </View>
+        );
+      })}
+      {extra > 0 && (
+        <View style={{
+          backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
+          paddingHorizontal: 6, paddingVertical: 2, borderRadius: BORDER_RADIUS.full,
+        }}>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700', fontSize: 10 }]}>+{extra}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 interface DayCardProps {
   day: ProgramDay;
@@ -118,6 +159,7 @@ export function DayCard({
               renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
                 const exIndex = exercises.indexOf(exercise as ProgramExercise);
                 const intensityInfo = getIntensityInfo(exercise.intensity);
+                const muscles = (exercise as MusclesHolder).primary_muscles || [];
                 return (
                   <ScaleDecorator>
                     <View style={[cardStyles.dayCardExerciseRow, { opacity: isExerciseActive ? 0.5 : 1 }]}>
@@ -133,6 +175,7 @@ export function DayCard({
                           <Text style={cardStyles.dayCardExerciseName} numberOfLines={2}>
                             {exercise.exercise_name}
                           </Text>
+                          <ExerciseMuscles muscles={muscles} colors={colors} />
                           <View style={cardStyles.dayCardExerciseMeta}>
                             <Text style={cardStyles.dayCardExerciseMetaText}>
                               {exercise.sets} × {exercise.reps_range}
@@ -166,6 +209,7 @@ export function DayCard({
           ) : (
             exercises.map((exercise: ProgramExercise, exIndex: number) => {
               const intensityInfo = getIntensityInfo(exercise.intensity);
+              const muscles = (exercise as MusclesHolder).primary_muscles || [];
               return (
                 <View key={exercise.id} style={cardStyles.dayCardExerciseRow}>
                   <View style={cardStyles.dayCardExerciseContent}>
@@ -182,6 +226,7 @@ export function DayCard({
                       <Text style={cardStyles.dayCardExerciseName} numberOfLines={2}>
                         {exercise.exercise_name}
                       </Text>
+                      <ExerciseMuscles muscles={muscles} colors={colors} />
                       <View style={cardStyles.dayCardExerciseMeta}>
                         <Text style={cardStyles.dayCardExerciseMetaText}>
                           {exercise.sets} × {exercise.reps_range}

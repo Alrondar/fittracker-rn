@@ -30,10 +30,23 @@ export function useInjuryWarnings(userId: string | null, exercises: ExerciseData
   const activeInjuries = injuriesQuery.data ?? [];
   const warningsRules = rulesQuery.data ?? [];
 
+  // ✅ ФИКС: стабильный ключ по id+мышцам. Ввод веса/повторов меняет sets, но НЕ
+  //    id/мышцы → ключ не меняется → exerciseWarnings (и ссылки warning для карточек)
+  //    стабильны → React.memo карточек выдерживает при вводе. Пересчёт только при
+  //    замене упражнения (id меняется) или смене травм/правил.
+  const warningKey = useMemo(
+    () =>
+      exercises
+        .map((e) => `${e.id}:${e.primary_muscles.join(',')}:${e.secondary_muscles.join(',')}`)
+        .join('|'),
+    [exercises],
+  );
+
   const exerciseWarnings = useMemo<Record<string, InjuryWarning>>(() => {
     if (!exercises.length || !activeInjuries.length) return {};
     return computeExerciseWarnings(exercises, activeInjuries, warningsRules);
-  }, [exercises, activeInjuries, warningsRules]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warningKey, activeInjuries, warningsRules]);
 
   return {
     activeInjuries,

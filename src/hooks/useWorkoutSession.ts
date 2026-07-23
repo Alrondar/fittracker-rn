@@ -22,29 +22,33 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
+  // ✅ ФИКС быстродействия: alternativesCache больше НЕ state — только ref.
+  //    Раньше setAlternativesCache триггерил ререндер экрана при каждой загрузке
+  //    альтернатив без пользы (потребитель был мёртвым пропом). Guard от повторной
+  //    загрузки работает через ref. В return поле оставлено (читается из ref) ТОЛЬКО
+  //    для типовой совместимости со старым [id].tsx — ререндеров оно больше не вызывает.
+  const alternativesCacheRef = useRef<Record<string, AlternativeExercise[]>>({});
   const [replacements, setReplacements] = useState<Record<string, string>>({});
   const { settings: timerSettings } = useTimerSettings();
   const [isRestFinished, setIsRestFinished] = useState(false);
   const restEndsAtRef = useRef<number>(0);
   const lastBeepRef = useRef<number>(0);
-
   const exercisesRef = useRef<ExerciseData[]>([]);
   useEffect(() => { exercisesRef.current = exercises; }, [exercises]);
-  const alternativesCacheRef = useRef<Record<string, AlternativeExercise[]>>({});
-  useEffect(() => { alternativesCacheRef.current = alternativesCache; }, [alternativesCache]);
 
   // Загрузка тренировки
   const loadWorkout = useCallback(async () => {
     try {
       const { data: workout, error } = await supabase
         .from('workouts')
-        // ✅ intensity берём из workout_exercises (фикс бага .eq('program_id'))
-        .select(`name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, intensity, exercises ( id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, alternatives, media_url ) )`)
+        // ✅ ДОБАВЛЕНО target_reps_range в select workout_exercises — чтобы бейдж
+        //    reps_range в ExerciseCard получил значение из программы.
+        .select(`name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, intensity, target_reps_range, exercises ( id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, alternatives, media_url ) )`)
         .eq('id', workoutId)
         .single();
 
       if (error) throw error;
+
       setWorkoutName(workout.name);
       setProgramId(workout.program_id);
 
@@ -66,7 +70,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         }
       }
 
-      const exercisesData: ExerciseData[] = workout.workout_exercises.map((we: any) => {
+      // ✅ Аннотация `: ExerciseData[]` СНЯТА намеренно: маппер добавляет опциональное
+      //    поле reps_range, которого может ещё не быть в интерфейсе ExerciseData (патч
+      //    типов workout.ts применяется независимо). Без аннотации тип выводится шире и
+      //    структурно присваивается в setExercises(ExerciseData[]) без excess-property
+      //    ошибки — файл компилируется и ДО, и ПОСЛЕ патча типов. В ExerciseCard поле
+      //    читается через безопасный каст (RepsRangeHolder).
+      const exercisesData = workout.workout_exercises.map((we: any) => {
         const exercise = we.exercises;
         const sets: SetData[] = [];
         for (let i = 0; i < we.target_sets; i++) {
@@ -88,8 +98,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           media_url: exercise.media_url || null,
           target_sets: we.target_sets,
           rest_seconds: we.rest_seconds,
-          intensity: we.intensity || 'medium', // ✅ из workout_exercises
+          intensity: we.intensity || 'medium',
           sets,
+          reps_range: we.target_reps_range || undefined, // ✅ НОВОЕ (из программы)
         };
       });
       setExercises(exercisesData);
@@ -121,15 +132,20 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     currentTimeRef.current = seconds;
   }, []);
 
+  // ✅ ФИКС бага 3: пишем started_at ТОЛЬКО при самом первом старте новой тренировки.
+  //    При возобновлении с паузы / автостарте незавершённой currentTimeRef > 0 → базу
+  //    НЕ трогаем: реальный started_at и накопленное время сохраняются.
   const handleTimerStart = useCallback(() => {
     setIsWorkoutActive(true);
-    supabase
-      .from('workouts')
-      .update({ started_at: new Date().toISOString(), duration_seconds: 0 })
-      .eq('id', workoutId)
-      .then(({ error }) => {
-        if (error) console.error('Ошибка сохранения started_at:', error);
-      });
+    if (currentTimeRef.current === 0) {
+      supabase
+        .from('workouts')
+        .update({ started_at: new Date().toISOString(), duration_seconds: 0 })
+        .eq('id', workoutId)
+        .then(({ error }) => {
+          if (error) console.error('Ошибка сохранения started_at:', error);
+        });
+    }
   }, [workoutId]);
 
   const handleTimerStop = useCallback(() => {
@@ -160,7 +176,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         injuries: ex.injuries || [],
         media_url: ex.media_url || null,
       }));
-      setAlternativesCache(prev => ({ ...prev, [exerciseId]: alternatives }));
+      // ✅ Запись только в ref — без setState, без ререндера экрана
+      alternativesCacheRef.current = { ...alternativesCacheRef.current, [exerciseId]: alternatives };
       return alternatives;
     } catch {
       return [];
@@ -302,7 +319,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     setIsRestFinished(false);
   }, []);
 
-  // Сохранение тренировки
+  // Сохранение тренировки.
+  // ⚠️ insert (не upsert) оставлен НАМЕРЕННО: upsert по onConflict требует накатанного
+  //    уникального индекса ux_workout_logs_ex_set (секция 2 единого SQL-скрипта). Без него
+  //    upsert упадёт ошибкой «no unique constraint matching ON CONFLICT» и сломает сохранение.
+  //    Идемпотентность закрывается индексом на БД; клиентский upsert — отдельным шагом ПОСЛЕ индекса.
   const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
       Alert.alert('Тренировка не начата', 'Нажмите "Начать тренировку" перед завершением');
@@ -312,7 +333,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
     Alert.alert('Завершить тренировку?', `Время тренировки: ${formattedTime}\nВсе данные будут сохранены`, [
       { text: 'Отмена', style: 'cancel' },
       {
@@ -330,9 +350,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
             let totalLogs = 0;
             for (const exercise of exercisesRef.current) {
+              // ✅ ФИКС истории: запоминаем РЕАЛЬНЫЙ индекс подхода ДО фильтра,
+              //    иначе пропущенный подход в середине сдвигал set_number в истории.
               const logsToSave = exercise.sets
-                .filter(set => isSetCompleted(set))
-                .map((set, index) => ({
+                .map((set, index) => ({ set, index }))
+                .filter(({ set }) => isSetCompleted(set))
+                .map(({ set, index }) => ({
                   workout_exercise_id: exercise.workout_exercise_id,
                   set_number: index + 1,
                   weight_kg: parseFloat(set.weight) || 0,
@@ -354,7 +377,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                   router.replace('/(tabs)/programs');
                 } else {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  // ✅ Алерт с фазой
                   Alert.alert(
                     'Тренировка завершена!',
                     `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
@@ -395,7 +417,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     setRestTimeLeft,
     isRestFinished,
     adjustRestTimer,
-    alternativesCache,
+    // ✅ Возвращаем для типовой совместимости со старым [id].tsx; это НЕ state →
+    //    ререндеров не вызывает. Новый [id].tsx это поле просто не деструктурирует.
+    alternativesCache: alternativesCacheRef.current,
     replacements,
     currentTimeRef,
     loadWorkout,

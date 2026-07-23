@@ -1,5 +1,5 @@
 import { useState, useEffect, memo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
@@ -12,7 +12,6 @@ interface ExerciseSliderProps {
   exercise: ExerciseData;
   exerciseIndex: number;
   isReplaced: boolean;
-  alternativesCache: Record<string, AlternativeExercise[]>;
   loadAlternatives: (id: string, muscles: string[]) => Promise<AlternativeExercise[]>;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   isSetCompleted: (set: SetData) => boolean;
@@ -23,7 +22,6 @@ interface ExerciseSliderProps {
   updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
-  // НОВОЕ: предупреждение о травме
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
@@ -31,7 +29,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   exercise,
   exerciseIndex,
   isReplaced,
-  alternativesCache,
   loadAlternatives,
   updateSet,
   isSetCompleted,
@@ -47,19 +44,28 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      if (exercise.alternatives.length > 0 || isReplaced) {
-        setLoadingAlts(true);
-        const alts = await loadAlternatives(exercise.id, exercise.primary_muscles);
-        setAlternatives(alts);
-        setLoadingAlts(false);
-      }
-    };
-    load();
-  }, [exercise.id]);
+  // «Есть ли потенциальные замены» известно БЕЗ загрузки полных объектов:
+  // exercise.alternatives — массив ID из БД (приходит в loadWorkout).
+  const hasAlts = exercise.alternatives.length > 0 || isReplaced;
 
-  const allCards = [exercise, ...alternatives];
+  // ✅ АВТОЗАГРУЗКА альтернатив при монтировании слайдера — без кнопки-шеврона.
+  //    Ленивость сохраняется на уровне списка: FlatList в workout/[id].tsx имеет
+  //    windowSize={5}, поэтому ExerciseSlider монтируется только для видимых (+буфер)
+  //    упражнений. При вертикальном свайпе к новому упражнению его слайдер монтируется
+  //    и тянет альтернативы именно для него (loadAlternatives кэширует по id в ref).
+  useEffect(() => {
+    if (!hasAlts) return;
+    let alive = true;
+    setLoadingAlts(true);
+    loadAlternatives(exercise.id, exercise.primary_muscles)
+      .then((alts) => { if (alive) setAlternatives(alts); })
+      .finally(() => { if (alive) setLoadingAlts(false); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAlts, exercise.id, loadAlternatives]);
+
+  const showPlaceholder = loadingAlts;
+  const showAlts = !loadingAlts && alternatives.length > 0;
 
   return (
     <View style={{ marginTop: SPACING.lg }}>
@@ -79,28 +85,59 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         decelerationRate="fast"
         contentContainerStyle={{ paddingLeft: 16, gap: 16 }}
       >
-        {allCards.map((card, cardIndex) => (
-          <ExerciseCard
-            key={`${card.id}-${cardIndex}`}
-            exercise={card}
-            isMain={cardIndex === 0}
-            isReplaced={isReplaced}
-            exerciseIndex={exerciseIndex}
-            alternatives={alternatives}
-            updateSet={updateSet}
-            isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
-            startRestTimer={startRestTimer}
-            loadingAlts={loadingAlts}
-            getIntensityInfo={getIntensityInfo}
-            updateExerciseSettings={updateExerciseSettings}
-            colors={colors}
-            cardStyles={cardStyles}
-            // НОВОЕ: передаём warning только в главную карточку
-            warning={cardIndex === 0 ? warning : null}
-          />
-        ))}
+        <ExerciseCard
+          key={exercise.id}
+          exercise={exercise}
+          isMain
+          isReplaced={isReplaced}
+          exerciseIndex={exerciseIndex}
+          alternatives={alternatives}
+          updateSet={updateSet}
+          isSetCompleted={isSetCompleted}
+          replaceExercise={replaceExercise}
+          startRestTimer={startRestTimer}
+          getIntensityInfo={getIntensityInfo}
+          updateExerciseSettings={updateExerciseSettings}
+          colors={colors}
+          cardStyles={cardStyles}
+          warning={warning}
+        />
+        {showPlaceholder && (
+          <View
+            style={{
+              width: CARD_WIDTH,
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: SPACING.sm,
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: BORDER_RADIUS.lg,
+            }}
+          >
+            <ActivityIndicator color={colors.primary} />
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Загружаем замены…</Text>
+          </View>
+        )}
+        {showAlts &&
+          alternatives.map((alt) => (
+            <ExerciseCard
+              key={alt.id}
+              exercise={alt}
+              isMain={false}
+              isReplaced={false}
+              exerciseIndex={exerciseIndex}
+              alternatives={alternatives}
+              updateSet={updateSet}
+              isSetCompleted={isSetCompleted}
+              replaceExercise={replaceExercise}
+              startRestTimer={startRestTimer}
+              getIntensityInfo={getIntensityInfo}
+              updateExerciseSettings={updateExerciseSettings}
+              colors={colors}
+              cardStyles={cardStyles}
+              warning={null}
+            />
+          ))}
       </ScrollView>
     </View>
   );
-})
+});

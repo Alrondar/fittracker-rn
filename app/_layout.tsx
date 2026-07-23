@@ -5,19 +5,14 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { supabase } from '../src/lib/supabase';
 import { useStore } from '../src/store/useStore';
 import { ToastProvider } from '../src/components/ToastProvider';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
+import { getSession, onAuthStateChange } from '../src/services/authService';
 
-// QueryClient создаётся ВНЕ компонента
+// QueryClient ВНЕ компонента (правило CLAUDE.md)
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      retry: 1,
-    },
-  },
+  defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
 });
 
 function ThemedStatusBar() {
@@ -26,43 +21,43 @@ function ThemedStatusBar() {
 }
 
 function RootLayoutContent() {
-  const { setAuth, isAuthenticated } = useStore();
+  const { setAuth, isAuthenticated } = useStore(); // setUnauth в useStore НЕТ — не используем
   const router = useRouter();
-  const segments = useSegments();
+  // ✅ FIX TS2493: useSegments() в root layout выводится как кортеж фикс. длины;
+  // расширяем до string[], чтобы segments[1] не падал проверкой индекса кортежа.
+  const segments = useSegments() as string[];
   const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setAuth(session?.user?.id ?? null);
-      } catch (e) {
-        console.error('Session load error:', e);
-      } finally {
-        setIsLoading(false);
+    let mounted = true;
+    getSession()
+      .then((session) => { if (mounted) setAuth(session?.user?.id ?? null); })
+      .catch((e) => { console.error('Session load error:', e); })
+      .finally(() => { if (mounted) setIsLoading(false); });
+
+    const unsub = onAuthStateChange((event, session) => {
+      // ✅ recovery (клик по ссылке из письма): ведём на смену пароля.
+      // setAuth здесь НЕ вызываем намеренно; даже если getSession выставит auth=true
+      // по recovery-сессии — исключение в гейте ниже удержит экран update-password.
+      if (event === 'PASSWORD_RECOVERY') {
+        router.replace('/(auth)/update-password');
+        return;
       }
-    };
-
-    loadSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setAuth(session?.user?.id ?? null);
+      setAuth(session?.user?.id ?? null); // SIGNED_IN / SIGNED_OUT / прочие
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    return () => { mounted = false; unsub(); };
+  }, [setAuth, router]);
 
   useEffect(() => {
-    if (isLoading || !segments) return;
-
+    if (isLoading) return;
     const inAuthGroup = segments[0] === '(auth)';
 
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
+    } else if (isAuthenticated && inAuthGroup && segments[1] !== 'update-password') {
+      // ✅ авторизованный не видит auth-экраны, КРОМЕ смены пароля по recovery
       router.replace('/(tabs)');
     }
   }, [isLoading, isAuthenticated, segments, router]);

@@ -16,11 +16,12 @@ export interface ExerciseData {
   risks: string;
   injuries: string[];
   alternatives: string[];
-  media_url: string | null; // ✅ НОВОЕ
+  media_url: string | null;
   target_sets: number;
   rest_seconds: number;
   intensity: string;
   sets: SetData[];
+  reps_range?: string; // ✅ НОВОЕ
 }
 
 export interface AlternativeExercise {
@@ -34,5 +35,6 @@ export interface AlternativeExercise {
   benefits: string;
   risks: string;
   injuries: string[];
-  media_url: string | null; // ✅ НОВОЕ
+  media_url: string | null;
+  reps_range?: string; // ✅ НОВОЕ
 }

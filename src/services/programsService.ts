@@ -56,6 +56,10 @@ export interface ProgramExercise {
   rest_seconds: number;
   intensity: 'low' | 'medium' | 'high';
   position: number;
+  // ✅ НОВОЕ: опционально, приходит из join exercises(primary_muscles) в
+  //    getProgramWithPhases. DayCard рендерит по нему цветные баблы мышц.
+  //    Поле опциональное → код устойчив, даже если join вернул null/пусто.
+  primary_muscles?: string[];
   isNew?: boolean;
 }
 
@@ -94,6 +98,9 @@ function mapExercise(ex: any): ProgramExercise {
     rest_seconds: ex.rest_seconds,
     intensity: ex.intensity,
     position: ex.position,
+    // ✅ НОВОЕ: мышцы из вложенного join (ex.exercises). `?.` + `|| []` страхуют
+    //    от null exercise_id и от отсутствия join (тогда просто []).
+    primary_muscles: ex.exercises?.primary_muscles || [],
   };
 }
 
@@ -210,10 +217,12 @@ export async function deleteProgram(programId: string): Promise<void> {
 export async function getProgramWithPhases(programId: string): Promise<Program | null> {
   const { data: program, error } = await supabase
     .from('programs')
-    .select(`*, program_phases ( *, program_days ( *, program_exercises (*) ) )`)
+    // ✅ ДОБАВЛЕН join exercises(primary_muscles) на уровне program_exercises —
+    //    чтобы mapExercise мог заполнить ProgramExercise.primary_muscles для DayCard.
+    //    getActiveProgram (дашборд) мышцы не рендерит — его select не трогаем.
+    .select(`*, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )`)
     .eq('id', programId)
     .single();
-
   if (error) {
     if (error.code === 'PGRST116') return null;
     throw error;
@@ -318,7 +327,6 @@ export async function advanceProgramProgress(
     .order('started_at', { ascending: false })
     .limit(1)
     .single();
-
   if (fetchError) {
     if (fetchError.code === 'PGRST116') throw new Error('Активная программа не найдена');
     throw fetchError;
@@ -331,7 +339,6 @@ export async function advanceProgramProgress(
     .order('phase_number', { ascending: true });
 
   const orderedPhases = (phases || []).sort((a: any, b: any) => a.phase_number - b.phase_number);
-
   const curPhase = current.current_phase ?? 1;
   const curWeek = current.current_week ?? 1;
   const curDay = current.current_day ?? 1;
@@ -367,11 +374,9 @@ export async function advanceProgramProgress(
   };
 
   const totalDaysThisWeek = daysFor(curWeek);
-
   let newPhase = curPhase;
   let newWeek = curWeek;
   let newDay = curDay + 1;
-
   if (newDay > totalDaysThisWeek) {
     newDay = 1;
     newWeek = curWeek + 1;
@@ -459,10 +464,12 @@ export async function createWorkoutsFromProgram(programId: string, userId: strin
             if (exError) throw exError;
           }
         }
+
         workoutIds.push(workout.id);
       }
     }
   }
+
   return workoutIds;
 }
 
@@ -479,7 +486,6 @@ export async function getActiveProgram(userId: string) {
     .order('started_at', { ascending: false })
     .limit(1)
     .single();
-
   if (error) {
     if (error.code === 'PGRST116') return null;
     throw error;

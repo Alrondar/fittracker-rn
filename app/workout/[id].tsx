@@ -42,11 +42,11 @@ export default function WorkoutSessionScreen() {
   const { userId } = useStore();
   const { colors, gradients } = useTheme();
 
-  // ✅ ФИКС: стили создаются ОДИН раз на смену темы, а не на каждую карточку на каждый рендер
+  // Стили создаются ОДИН раз на смену темы
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
 
-  // Хук сессии тренировки
+  // Хук сессии тренировки (alternativesCache больше не возвращается — ликвидирован)
   const {
     exercises,
     loading,
@@ -57,9 +57,8 @@ export default function WorkoutSessionScreen() {
     restTimer,
     restTimeLeft,
     setRestTimeLeft,
-    isRestFinished,   // ✅ НОВОЕ
-    adjustRestTimer,  // ✅ НОВОЕ
-    alternativesCache,
+    isRestFinished,
+    adjustRestTimer,
     replacements,
     handleTimerTick,
     handleTimerStart,
@@ -78,10 +77,11 @@ export default function WorkoutSessionScreen() {
   // Хук предупреждений о травмах
   const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
 
-  // Хук разминки (передаём объекты упражнений — сервис подбирает по целевым мышцам)
+  // ✅ ПОПУТНЫЙ ФИКС: передаём activeInjuries — разминка теперь реально исключает
+  //    противопоказанные упражнения (раньше уходило activeInjuries = []).
   const {
     warmupExercises,
-    excludedByInjury, // ✅ НОВОЕ
+    excludedByInjury,
     isLoading: isWarmupLoading,
     activeTimerId,
     timeLeft,
@@ -92,17 +92,21 @@ export default function WorkoutSessionScreen() {
     stopTimer: stopWarmupTimer,
     markAsCompleted: markWarmupCompleted,
     isCompleted: isWarmupExerciseCompleted,
-  } = useWarmup(exercises);
+  } = useWarmup(exercises, activeInjuries);
 
   const [showInjuryBanner, setShowInjuryBanner] = useState(false);
   const [showWarmup, setShowWarmup] = useState(true);
 
-  // Подсчёт предупреждений
-  const avoidCount = Object.values(exerciseWarnings).filter(w => w.level === 'avoid').length;
-  const cautionCount = Object.values(exerciseWarnings).filter(w => w.level === 'caution').length;
-  const hasWarnings = avoidCount > 0 || cautionCount > 0;
+  // ✅ ФИКС: подсчёт предупреждений мемоизирован (раньше Object.values().filter()
+  //    считался на каждый рендер; теперь — только при смене exerciseWarnings).
+  const { avoidCount, cautionCount, hasWarnings } = useMemo(() => {
+    const values = Object.values(exerciseWarnings);
+    const avoid = values.filter((w) => w.level === 'avoid').length;
+    const caution = values.filter((w) => w.level === 'caution').length;
+    return { avoidCount: avoid, cautionCount: caution, hasWarnings: avoid > 0 || caution > 0 };
+  }, [exerciseWarnings]);
 
-  // ✅ ФИКС: стабильная ссылка — не пересоздаётся на каждый рендер
+  // Стабильная ссылка — не пересоздаётся на каждый рендер
   const getIntensityInfo = useCallback((intensity: string) => {
     switch (intensity) {
       case 'high':
@@ -156,9 +160,9 @@ export default function WorkoutSessionScreen() {
         <RestTimer
           timeLeft={restTimeLeft}
           total={restTimer}
-          isFinished={isRestFinished}      // ✅ НОВОЕ
+          isFinished={isRestFinished}
           onStop={stopRestTimer}
-          onAdjust={adjustRestTimer}       // ✅ БЫЛО: (delta) => setRestTimeLeft(...)
+          onAdjust={adjustRestTimer}
           colors={colors}
           workoutStyles={workoutStyles}
         />
@@ -310,7 +314,6 @@ export default function WorkoutSessionScreen() {
             exercise={exercise}
             exerciseIndex={exIndex}
             isReplaced={!!replacements[exercise.workout_exercise_id]}
-            alternativesCache={alternativesCache}
             loadAlternatives={loadAlternatives}
             updateSet={updateSet}
             isSetCompleted={isSetCompleted}
@@ -320,7 +323,7 @@ export default function WorkoutSessionScreen() {
             getIntensityInfo={getIntensityInfo}
             updateExerciseSettings={updateExerciseSettings}
             colors={colors}
-            cardStyles={cardStyles} // ✅ мемоизированные стили
+            cardStyles={cardStyles}
             warning={exerciseWarnings[exercise.id] || null}
           />
         )}

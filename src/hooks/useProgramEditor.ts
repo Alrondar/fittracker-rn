@@ -100,21 +100,28 @@ export function useProgramEditor(programId: string, userId: string | null) {
     );
   };
 
-  const toggleEditMode = async () => {
-    if (editMode) {
-      setEditMode(false);
-      setEditedProgram(program);
-      setDeletedExerciseIds([]);
-      setDeletedDayIds([]);
-      setDeletedPhaseIds([]);
+const toggleEditMode = async () => {
+  if (editMode) {
+    setEditMode(false);
+    setEditedProgram(program);
+    setDeletedExerciseIds([]);
+    setDeletedDayIds([]);
+    setDeletedPhaseIds([]);
+  } else {
+    // ✅ ФИКС бага 6: «своя копия» определяется по created_by, а не по префиксу id.
+    //    RPC copy_program_for_user создаёт копии с uuid без префикса 'user_', поэтому
+    //    старая проверка !id.startsWith('user_') принимала СОБСТВЕННУЮ копию за сид и
+    //    повторно звала копирование → duplicate key (ux_programs_user_name) / дубль копии.
+    //    Своя копия (created_by === userId) → редактируем напрямую, без копирования.
+    //    Сид (created_by == null) или чужая программа → копируем себе, как раньше.
+    const isOwnProgram = !!program?.created_by && program.created_by === userId;
+    if (program && !isOwnProgram) {
+      await copyProgramToUser();
     } else {
-      if (program && !program.id.startsWith('user_')) {
-        await copyProgramToUser();
-      } else {
-        setEditMode(true);
-      }
+      setEditMode(true);
     }
-  };
+  }
+};
 
   const copyProgramToUser = async () => {
     try {
