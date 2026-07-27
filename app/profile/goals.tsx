@@ -1,59 +1,106 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../src/lib/supabase';
+import { useRouter } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import {
+  Activity,
+  AlertTriangle,
+  Beef,
+  Calculator,
+  ChevronLeft,
+  Droplet,
+  Flame,
+  Minus,
+  Pill,
+  Ruler,
+  Save,
+  TrendingDown,
+  TrendingUp,
+  User,
+  Weight,
+  Wheat,
+} from 'lucide-react-native';
+
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { BORDER_RADIUS, SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppCard } from '../../src/components/ui/AppCard';
-import { PHARMA_COLORS, MACRO_COLORS } from '../../src/constants/semanticColors';
+import { MACRO_COLORS, PHARMA_COLORS } from '../../src/constants/semanticColors';
 import { metricsService } from '../../src/services/metricsService';
 import {
-  ChevronLeft,
-  User,
-  Ruler,
-  Weight,
-  Target,
-  Activity,
-  Flame,
-  Beef,
-  Droplet,
-  Wheat,
-  Save,
-  Calculator,
-  Pill,
-  AlertTriangle,
-  TrendingDown,
-  TrendingUp,
-  Minus,
-} from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+  getGoalsProfile,
+  saveGoalsProfile,
+  type GoalsSavePayload,
+  type GoalType,
+  type GenderType,
+  type PharmaType,
+} from '../../src/services/goalsService';
 
-type GoalType = 'lose' | 'maintain' | 'gain';
-type GenderType = 'male' | 'female';
-type ActivityLevel = 1.2 | 1.375 | 1.55 | 1.725 | 1.9;
-type PharmaType = 'steroids' | 'gh' | 'combo' | null;
+type IconComponent = typeof Activity;
+type ThemeColors = ReturnType<typeof useTheme>['colors'];
 
-const GOALS = [
-  { value: 'lose' as GoalType, label: 'Похудение', icon: TrendingDown, desc: 'Дефицит калорий' },
-  { value: 'maintain' as GoalType, label: 'Поддержание', icon: Minus, desc: 'Баланс калорий' },
-  { value: 'gain' as GoalType, label: 'Набор массы', icon: TrendingUp, desc: 'Профицит калорий' },
+const GOALS: Array<{
+  value: GoalType;
+  label: string;
+  icon: IconComponent;
+  desc: string;
+}> = [
+  {
+    value: 'lose',
+    label: 'Похудение',
+    icon: TrendingDown,
+    desc: 'Дефицит калорий',
+  },
+  {
+    value: 'maintain',
+    label: 'Поддержание',
+    icon: Minus,
+    desc: 'Баланс калорий',
+  },
+  {
+    value: 'gain',
+    label: 'Набор массы',
+    icon: TrendingUp,
+    desc: 'Профицит калорий',
+  },
 ];
 
-const ACTIVITY_LEVELS = [
+const GENDERS: Array<{
+  value: GenderType;
+  label: string;
+  icon: IconComponent;
+}> = [
+  {
+    value: 'male',
+    label: 'Мужской',
+    icon: User,
+  },
+  {
+    value: 'female',
+    label: 'Женский',
+    icon: User,
+  },
+];
+
+const ACTIVITY_LEVELS: Array<{
+  value: number;
+  label: string;
+  desc: string;
+}> = [
   { value: 1.2, label: 'Минимальная', desc: 'Сидячий образ жизни' },
   { value: 1.375, label: 'Низкая', desc: '1-2 тренировки/нед' },
   { value: 1.55, label: 'Средняя', desc: '3-4 тренировки/нед' },
@@ -61,22 +108,232 @@ const ACTIVITY_LEVELS = [
   { value: 1.9, label: 'Очень высокая', desc: 'Ежедневные тренировки' },
 ];
 
-const PHARMA_TYPES = [
-  { value: 'steroids' as PharmaType, label: 'Анаболические стероиды', desc: 'Белок ×1.5, калории +10%', color: PHARMA_COLORS.steroids },
-  { value: 'gh' as PharmaType, label: 'Гормон роста', desc: 'Жиры -20%', color: PHARMA_COLORS.gh },
-  { value: 'combo' as PharmaType, label: 'Комбо (АС + ГР)', desc: 'Белок ×1.5, жиры -20%', color: PHARMA_COLORS.combo },
+const PHARMA_TYPES: Array<{
+  value: Exclude<PharmaType, null>;
+  label: string;
+  desc: string;
+  color: string;
+}> = [
+  {
+    value: 'steroids',
+    label: 'Анаболические стероиды',
+    desc: 'Белок ×1.5, калории +10%',
+    color: PHARMA_COLORS.steroids,
+  },
+  {
+    value: 'gh',
+    label: 'Гормон роста',
+    desc: 'Жиры -20%',
+    color: PHARMA_COLORS.gh,
+  },
+  {
+    value: 'combo',
+    label: 'Комбо (АС + ГР)',
+    desc: 'Белок ×1.5, жиры -20%',
+    color: PHARMA_COLORS.combo,
+  },
 ];
+
+function StepDots({
+  step,
+  activeColor,
+  inactiveColor,
+}: {
+  step: number;
+  activeColor: string;
+  inactiveColor: string;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: SPACING.xl,
+        gap: SPACING.sm,
+      }}
+    >
+      {[1, 2, 3].map((s) => (
+        <View
+          key={s}
+          style={{
+            width: s === step ? 32 : 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: s === step ? activeColor : inactiveColor,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+function CheckMark({
+  backgroundColor,
+  textColor,
+}: {
+  backgroundColor: string;
+  textColor: string;
+}) {
+  return (
+    <View
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={[typography.captionSmall, { color: textColor, fontWeight: '700' }]}>
+        ✓
+      </Text>
+    </View>
+  );
+}
+
+function GenderCard({
+  selected,
+  onPress,
+  label,
+  icon: Icon,
+  colors,
+}: {
+  selected: boolean;
+  onPress: () => void;
+  label: string;
+  icon: IconComponent;
+  colors: ThemeColors;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: SPACING.lg,
+        borderColor: selected ? colors.primary : colors.border,
+        borderWidth: 2,
+        backgroundColor: selected ? colors.primary + '15' : colors.surface,
+        borderRadius: BORDER_RADIUS.lg,
+      }}
+    >
+      <Icon size={32} color={selected ? colors.primary : colors.textSecondary} />
+      <Text
+        style={[
+          typography.labelBold,
+          {
+            color: selected ? colors.primary : colors.textSecondary,
+            marginTop: SPACING.sm,
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function SelectableRow({
+  selected,
+  onPress,
+  icon: Icon,
+  title,
+  desc,
+  accentColor,
+  colors,
+}: {
+  selected: boolean;
+  onPress: () => void;
+  icon: IconComponent;
+  title: string;
+  desc: string;
+  accentColor: string;
+  colors: ThemeColors;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderColor: selected ? accentColor : colors.border,
+        borderWidth: 2,
+        backgroundColor: selected ? accentColor + '18' : colors.surface,
+        marginBottom: SPACING.sm,
+        padding: SPACING.lg,
+        borderRadius: BORDER_RADIUS.lg,
+      }}
+    >
+      <Icon
+        size={22}
+        color={selected ? accentColor : colors.textSecondary}
+        style={{ marginRight: SPACING.md }}
+      />
+
+      <View style={{ flex: 1 }}>
+        <Text
+          style={[
+            typography.labelBold,
+            { color: selected ? accentColor : colors.textPrimary },
+          ]}
+        >
+          {title}
+        </Text>
+        <Text style={[typography.caption, { color: colors.textSecondary }]}>
+          {desc}
+        </Text>
+      </View>
+
+      {selected && (
+        <CheckMark backgroundColor={accentColor} textColor={colors.textInverse} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function MacroCard({
+  icon: Icon,
+  value,
+  label,
+  color,
+  colors,
+}: {
+  icon: IconComponent;
+  value: number;
+  label: string;
+  color: string;
+  colors: ThemeColors;
+}) {
+  return (
+    <AppCard
+      variant="compact"
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        borderColor: color,
+        borderWidth: 2,
+      }}
+    >
+      <Icon size={24} color={color} />
+      <Text style={[typography.h3, { color, marginTop: SPACING.sm }]}>
+        {value}г
+      </Text>
+      <Text style={[typography.caption, { color: colors.textSecondary }]}>
+        {label}
+      </Text>
+    </AppCard>
+  );
+}
 
 export default function GoalsScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+  const queryClient = useQueryClient();
 
   const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
-  // Данные профиля
   const [gender, setGender] = useState<GenderType | null>(null);
   const [birthDate, setBirthDate] = useState('');
   const [height, setHeight] = useState('');
@@ -84,56 +341,99 @@ export default function GoalsScreen() {
   const [goal, setGoal] = useState<GoalType | null>(null);
   const [activityLevel, setActivityLevel] = useState<number | null>(null);
 
-  // Фармакология
   const [usePharma, setUsePharma] = useState(false);
   const [pharmaType, setPharmaType] = useState<PharmaType>(null);
 
-  // Рассчитанные КБЖУ
   const [calories, setCalories] = useState(0);
   const [proteins, setProteins] = useState(0);
   const [fats, setFats] = useState(0);
   const [carbs, setCarbs] = useState(0);
 
+  const initializedRef = useRef(false);
+
+  const { data: profile, isPending } = useQuery({
+    queryKey: ['goalsProfile', userId],
+    queryFn: () => getGoalsProfile(userId as string),
+    enabled: !!userId,
+  });
+
+  const loading = !!userId && isPending;
+
   useEffect(() => {
-    loadProfile();
-  }, []);
+    if (!profile || initializedRef.current) return;
 
-  const loadProfile = async () => {
-    if (!userId) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    setGender(profile.gender);
+    setBirthDate(profile.birthDate);
+    setHeight(profile.height);
+    setWeight(profile.weight);
+    setGoal(profile.goal);
+    setActivityLevel(profile.activityLevel);
+    setUsePharma(profile.pharmacologyType !== null);
+    setPharmaType(profile.pharmacologyType);
+    setCalories(profile.calories);
+    setProteins(profile.proteins);
+    setFats(profile.fats);
+    setCarbs(profile.carbs);
 
-      if (error) throw error;
-      if (data) {
-        setGender(data.gender);
-        setBirthDate(data.birth_date || '');
-        setHeight(data.height_cm?.toString() || '');
-        setWeight(data.current_weight_kg?.toString() || '');
-        setGoal(data.goal);
-        setActivityLevel(data.activity_level);
-        setCalories(data.target_calories || 0);
-        setProteins(data.target_proteins || 0);
-        setFats(data.target_fats || 0);
-        setCarbs(data.target_carbs || 0);
+    initializedRef.current = true;
+  }, [profile]);
+
+  const saveMutation = useMutation({
+    mutationFn: (payload: GoalsSavePayload) =>
+      saveGoalsProfile(userId as string, payload),
+
+    onSuccess: async (_data, variables) => {
+      if (!userId) return;
+
+      await queryClient.invalidateQueries({ queryKey: ['goalsProfile', userId] });
+      await queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard', userId] });
+
+      try {
+        if (variables.current_weight_kg) {
+          const latestMetric = await metricsService.getLatestMetric(userId);
+
+          if (!latestMetric || latestMetric.weight_kg !== variables.current_weight_kg) {
+            await metricsService.createMetric(userId, {
+              metric_date: new Date().toISOString().split('T')[0],
+              weight_kg: variables.current_weight_kg,
+            });
+          }
+        }
+      } catch (metricError) {
+        console.warn('Не удалось сохранить замер веса:', metricError);
       }
-    } catch (e) {
-      console.error('Ошибка загрузки профиля:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      Alert.alert('Сохранено', 'Твои цели успешно обновлены!', [
+        {
+          text: 'Отлично',
+          onPress: () => router.back(),
+        },
+      ]);
+    },
+
+    onError: (error: Error) => {
+      Alert.alert('Ошибка', error.message || 'Не удалось сохранить цели');
+    },
+  });
+
+  const saving = saveMutation.isPending;
 
   const calculateAge = (birthDateStr: string): number => {
     if (!birthDateStr) return 25;
+
     const birth = new Date(birthDateStr);
     const today = new Date();
+
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
     return age;
   };
 
@@ -145,17 +445,22 @@ export default function GoalsScreen() {
     const activity = activityLevel || 1.55;
 
     let bmr: number;
+
     if (g === 'male') {
       bmr = 10 * w + 6.25 * h - 5 * age + 5;
     } else {
       bmr = 10 * w + 6.25 * h - 5 * age - 161;
     }
 
-    let tdee = bmr * activity;
-    let targetCalories = tdee;
+    let targetCalories = bmr * activity;
 
-    if (goal === 'lose') targetCalories = tdee * 0.85;
-    if (goal === 'gain') targetCalories = tdee * 1.15;
+    if (goal === 'lose') {
+      targetCalories = targetCalories * 0.85;
+    }
+
+    if (goal === 'gain') {
+      targetCalories = targetCalories * 1.15;
+    }
 
     let targetProteins = Math.round(w * 2);
     let targetFats = Math.round(w * 1);
@@ -163,10 +468,14 @@ export default function GoalsScreen() {
     if (usePharma && pharmaType) {
       if (pharmaType === 'steroids') {
         targetProteins = Math.min(Math.round(w * 3), 3 * w);
-        targetCalories = targetCalories * 1.10;
-      } else if (pharmaType === 'gh') {
+        targetCalories = targetCalories * 1.1;
+      }
+
+      if (pharmaType === 'gh') {
         targetFats = Math.round(targetFats * 0.8);
-      } else if (pharmaType === 'combo') {
+      }
+
+      if (pharmaType === 'combo') {
         targetProteins = Math.min(Math.round(w * 3), 3 * w);
         targetFats = Math.round(targetFats * 0.8);
       }
@@ -174,8 +483,8 @@ export default function GoalsScreen() {
 
     const proteinCalories = targetProteins * 4;
     const fatCalories = targetFats * 9;
-    const carbCalories = targetCalories - proteinCalories - fatCalories;
-    const targetCarbs = Math.round(carbCalories / 4);
+    const remainingCalories = Math.max(0, targetCalories - proteinCalories - fatCalories);
+    const targetCarbs = Math.round(remainingCalories / 4);
 
     setCalories(Math.round(targetCalories));
     setProteins(targetProteins);
@@ -184,66 +493,98 @@ export default function GoalsScreen() {
   };
 
   const handleCalculate = () => {
-    if (!gender || !height || !weight || !goal || !activityLevel) {
+    if (!gender || !height || !weight || !goal || activityLevel === null) {
       Alert.alert('Заполни данные', 'Пожалуйста, заполни все поля');
       return;
     }
+
+    if (usePharma && !pharmaType) {
+      Alert.alert('Выбери тип', 'Укажи тип фармакологии или отключи переключатель');
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     calculateMacros();
     setStep(3);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!userId) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          gender,
-          birth_date: birthDate || null,
-          height_cm: parseFloat(height) || null,
-          current_weight_kg: parseFloat(weight) || null,
-          goal,
-          activity_level: activityLevel,
-          target_calories: calories,
-          target_proteins: proteins,
-          target_fats: fats,
-          target_carbs: carbs,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
 
-      if (error) throw error;
-
-      // ✅ НОВОЕ: Если вес изменился — создаём новый замер
-      if (weight) {
-        const weightNum = parseFloat(weight);
-        const latestMetric = await metricsService.getLatestMetric(userId);
-        if (!latestMetric || latestMetric.weight_kg !== weightNum) {
-          await metricsService.createMetric(userId, {
-            metric_date: new Date().toISOString().split('T')[0],
-            weight_kg: weightNum,
-          });
-        }
-      }
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Сохранено', 'Твои цели успешно обновлены!', [
-        { text: 'Отлично', onPress: () => router.back() },
-      ]);
-    } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
-    } finally {
-      setSaving(false);
+    if (!gender || !goal || activityLevel === null) {
+      Alert.alert('Заполни данные', 'Укажи пол, цель и уровень активности');
+      return;
     }
+
+    const payload: GoalsSavePayload = {
+      gender,
+      birth_date: birthDate || null,
+      height_cm: parseFloat(height) || null,
+      current_weight_kg: parseFloat(weight) || null,
+      goal,
+      activity_level: activityLevel,
+      pharmacology_type: usePharma ? pharmaType : null,
+      target_calories: calories,
+      target_proteins: proteins,
+      target_fats: fats,
+      target_carbs: carbs,
+      updated_at: new Date().toISOString(),
+    };
+
+    saveMutation.mutate(payload);
   };
+
+  const togglePharma = () => {
+    const nextValue = !usePharma;
+
+    setUsePharma(nextValue);
+
+    if (!nextValue) {
+      setPharmaType(null);
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const macroRatio = useMemo(() => {
+    const total = proteins * 4 + fats * 9 + carbs * 4;
+
+    if (!total) {
+      return {
+        proteins: 0,
+        fats: 0,
+        carbs: 0,
+      };
+    }
+
+    return {
+      proteins: Math.round((proteins * 4 / total) * 100),
+      fats: Math.round((fats * 9 / total) * 100),
+      carbs: Math.round((carbs * 4 / total) * 100),
+    };
+  }, [proteins, fats, carbs]);
+
+  const pharmaLabel = PHARMA_TYPES.find((p) => p.value === pharmaType)?.label;
+
+  if (!userId) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={commonStyles.center}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            Пользователь не авторизован
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <View style={commonStyles.center}>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            Загрузка...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -251,71 +592,60 @@ export default function GoalsScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
-      {/* Шапка */}
-      <View style={[commonStyles.navHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          commonStyles.navHeader,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
+
         <Text style={[typography.h4, { color: colors.textPrimary }]}>Мои цели</Text>
+
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
-          {/* Индикатор шагов */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: SPACING.xl, gap: SPACING.sm }}>
-            {[1, 2, 3].map((s) => (
-              <View
-                key={s}
-                style={{
-                  width: s === step ? 32 : 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: s === step ? colors.primary : colors.border,
-                }}
-              />
-            ))}
-          </View>
+          <StepDots step={step} activeColor={colors.primary} inactiveColor={colors.border} />
 
-          {/* ШАГ 1: Антропометрия */}
           {step === 1 && (
             <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>О тебе</Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                О тебе
+              </Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Эти данные нужны для расчета нормы калорий
               </Text>
 
-              {/* Пол */}
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>Пол</Text>
+              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+                Пол
+              </Text>
+
               <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xl }}>
-                {(['male', 'female'] as GenderType[]).map((g) => (
-                  <TouchableOpacity
-                    key={g}
-                    style={[
-                      {
-                        flex: 1,
-                        alignItems: 'center',
-                        paddingVertical: SPACING.lg,
-                        borderColor: gender === g ? colors.primary : colors.border,
-                        borderWidth: 2,
-                        backgroundColor: gender === g ? colors.primaryLight : colors.surface,
-                        borderRadius: BORDER_RADIUS.lg,
-                      },
-                    ]}
+                {GENDERS.map((g) => (
+                  <GenderCard
+                    key={g.value}
+                    selected={gender === g.value}
                     onPress={() => {
-                      setGender(g);
+                      setGender(g.value);
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     }}
-                  >
-                    <User size={32} color={gender === g ? colors.primary : colors.textSecondary} />
-                    <Text style={[typography.labelBold, { color: gender === g ? colors.primary : colors.textSecondary, marginTop: SPACING.sm }]}>
-                      {g === 'male' ? 'Мужской' : 'Женский'}
-                    </Text>
-                  </TouchableOpacity>
+                    label={g.label}
+                    icon={g.icon}
+                    colors={colors}
+                  />
                 ))}
               </View>
 
-              {/* Дата рождения */}
               <AppInput
                 label="Дата рождения"
                 placeholder="ГГГГ-ММ-ДД"
@@ -323,7 +653,6 @@ export default function GoalsScreen() {
                 onChangeText={setBirthDate}
               />
 
-              {/* Рост */}
               <AppInput
                 label="Рост (см)"
                 placeholder="175"
@@ -333,7 +662,6 @@ export default function GoalsScreen() {
                 icon={<Ruler size={20} color={colors.primary} />}
               />
 
-              {/* Вес */}
               <AppInput
                 label="Текущий вес (кг)"
                 placeholder="70"
@@ -343,7 +671,6 @@ export default function GoalsScreen() {
                 icon={<Weight size={20} color={colors.primary} />}
               />
 
-              {/* Кнопка Далее */}
               <AppButton
                 title="Далее"
                 variant="primary"
@@ -353,6 +680,7 @@ export default function GoalsScreen() {
                     Alert.alert('Заполни данные', 'Укажи пол, рост и вес');
                     return;
                   }
+
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setStep(2);
                 }}
@@ -361,113 +689,85 @@ export default function GoalsScreen() {
             </>
           )}
 
-          {/* ШАГ 2: Цель и активность */}
           {step === 2 && (
             <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Твоя цель</Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                Твоя цель
+              </Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Выбери, чего хочешь достичь
               </Text>
 
-              {/* Выбор цели */}
               <View style={{ marginBottom: SPACING.xl }}>
-                {GOALS.map((g) => {
-                  const Icon = g.icon;
-                  return (
-                    <TouchableOpacity
-                      key={g.value}
-                      style={[
-                        {
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          borderColor: goal === g.value ? colors.primary : colors.border,
-                          borderWidth: 2,
-                          backgroundColor: goal === g.value ? colors.primaryLight : colors.surface,
-                          marginBottom: SPACING.sm,
-                          padding: SPACING.lg,
-                          borderRadius: BORDER_RADIUS.lg,
-                        },
-                      ]}
-                      onPress={() => {
-                        setGoal(g.value);
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      }}
-                    >
-                      <Icon size={24} color={goal === g.value ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.md }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[typography.labelBold, { color: goal === g.value ? colors.primary : colors.textPrimary }]}>
-                          {g.label}
-                        </Text>
-                        <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                          {g.desc}
-                        </Text>
-                      </View>
-                      {goal === g.value && (
-                        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ color: colors.textInverse, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                {GOALS.map((g) => (
+                  <SelectableRow
+                    key={g.value}
+                    selected={goal === g.value}
+                    onPress={() => {
+                      setGoal(g.value);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                    icon={g.icon}
+                    title={g.label}
+                    desc={g.desc}
+                    accentColor={colors.primary}
+                    colors={colors}
+                  />
+                ))}
               </View>
 
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Уровень активности</Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                Уровень активности
+              </Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Сколько тренировок в неделю?
               </Text>
 
-              {/* Уровень активности */}
               <View style={{ marginBottom: SPACING.xl }}>
                 {ACTIVITY_LEVELS.map((level) => (
-                  <TouchableOpacity
+                  <SelectableRow
                     key={level.value}
-                    style={[
-                      {
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        borderColor: activityLevel === level.value ? colors.primary : colors.border,
-                        borderWidth: 2,
-                        backgroundColor: activityLevel === level.value ? colors.primaryLight : colors.surface,
-                        marginBottom: SPACING.sm,
-                        padding: SPACING.lg,
-                        borderRadius: BORDER_RADIUS.lg,
-                      },
-                    ]}
+                    selected={activityLevel === level.value}
                     onPress={() => {
                       setActivityLevel(level.value);
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     }}
-                  >
-                    <Activity size={20} color={activityLevel === level.value ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.md }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[typography.labelBold, { color: activityLevel === level.value ? colors.primary : colors.textPrimary }]}>
-                        {level.label}
-                      </Text>
-                      <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                        {level.desc}
-                      </Text>
-                    </View>
-                    {activityLevel === level.value && (
-                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: colors.textInverse, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
+                    icon={Activity}
+                    title={level.label}
+                    desc={level.desc}
+                    accentColor={colors.primary}
+                    colors={colors}
+                  />
                 ))}
               </View>
 
-              {/* Переключатель фармакологии */}
               <AppCard variant="compact">
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <Pill size={20} color={usePharma ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.sm }} />
+                    <Pill
+                      size={20}
+                      color={usePharma ? colors.primary : colors.textSecondary}
+                      style={{ marginRight: SPACING.sm }}
+                    />
+
                     <View style={{ flex: 1 }}>
-                      <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Использую фармакологию</Text>
-                      <Text style={[typography.caption, { color: colors.textSecondary }]}>АС, ГР или комбо</Text>
+                      <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                        Использую фармакологию
+                      </Text>
+                      <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                        АС, ГР или комбо
+                      </Text>
                     </View>
                   </View>
+
                   <TouchableOpacity
+                    onPress={togglePharma}
                     style={{
                       width: 50,
                       height: 28,
@@ -475,14 +775,6 @@ export default function GoalsScreen() {
                       backgroundColor: usePharma ? colors.primary : colors.border,
                       alignItems: 'center',
                       justifyContent: 'center',
-                    }}
-                    onPress={() => {
-                      setUsePharma(!usePharma);
-                      if (!usePharma) {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      } else {
-                        setPharmaType(null);
-                      }
                     }}
                   >
                     <View
@@ -498,10 +790,18 @@ export default function GoalsScreen() {
                 </View>
               </AppCard>
 
-              {/* Блок фармакологии */}
               {usePharma && (
                 <>
-                  <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs, marginTop: SPACING.lg }]}>
+                  <Text
+                    style={[
+                      typography.h3,
+                      {
+                        color: colors.textPrimary,
+                        marginBottom: SPACING.xs,
+                        marginTop: SPACING.lg,
+                      },
+                    ]}
+                  >
                     Тип фармакологии
                   </Text>
                   <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
@@ -510,51 +810,55 @@ export default function GoalsScreen() {
 
                   <View style={{ marginBottom: SPACING.xl }}>
                     {PHARMA_TYPES.map((p) => (
-                      <TouchableOpacity
+                      <SelectableRow
                         key={p.value}
-                        style={[
-                          {
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            borderColor: pharmaType === p.value ? p.color : colors.border,
-                            borderWidth: 2,
-                            backgroundColor: pharmaType === p.value ? p.color + '20' : colors.surface,
-                            marginBottom: SPACING.sm,
-                            padding: SPACING.lg,
-                            borderRadius: BORDER_RADIUS.lg,
-                          },
-                        ]}
+                        selected={pharmaType === p.value}
                         onPress={() => {
                           setPharmaType(p.value);
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         }}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={[typography.labelBold, { color: pharmaType === p.value ? p.color : colors.textPrimary }]}>
-                            {p.label}
-                          </Text>
-                          <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                            {p.desc}
-                          </Text>
-                        </View>
-                        {pharmaType === p.value && (
-                          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: p.color, alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={{ color: colors.textInverse, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
+                        icon={Pill}
+                        title={p.label}
+                        desc={p.desc}
+                        accentColor={p.color}
+                        colors={colors}
+                      />
                     ))}
                   </View>
 
-                  <AppCard variant="compact" style={{ borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10' }}>
+                  <AppCard
+                    variant="compact"
+                    style={{
+                      borderColor: colors.warning,
+                      borderWidth: 1,
+                      backgroundColor: colors.warning + '10',
+                    }}
+                  >
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                      <AlertTriangle size={20} color={colors.warning} style={{ marginRight: SPACING.sm, marginTop: 2 }} />
+                      <AlertTriangle
+                        size={20}
+                        color={colors.warning}
+                        style={{ marginRight: SPACING.sm, marginTop: 2 }}
+                      />
+
                       <View style={{ flex: 1 }}>
-                        <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                        <Text
+                          style={[
+                            typography.labelBold,
+                            { color: colors.textPrimary, marginBottom: SPACING.xs },
+                          ]}
+                        >
                           Важное предупреждение
                         </Text>
-                        <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
-                          Использование фармакологических препаратов может нанести серьёзный вред здоровью. Расчет КБЖУ с учетом фармакологии является приблизительным. Настоятельно рекомендуем проконсультироваться с врачом перед началом курса.
+                        <Text
+                          style={[
+                            typography.caption,
+                            { color: colors.textSecondary, lineHeight: 18 },
+                          ]}
+                        >
+                          Использование фармакологических препаратов может нанести серьёзный вред здоровью.
+                          Расчет КБЖУ с учетом фармакологии является приблизительным.
+                          Настоятельно рекомендуем проконсультироваться с врачом перед началом курса.
                         </Text>
                       </View>
                     </View>
@@ -562,7 +866,6 @@ export default function GoalsScreen() {
                 </>
               )}
 
-              {/* Кнопки навигации */}
               <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg }}>
                 <AppButton
                   title="Назад"
@@ -571,51 +874,66 @@ export default function GoalsScreen() {
                   onPress={() => setStep(1)}
                   style={{ flex: 1 }}
                 />
+
                 <AppButton
                   title="Рассчитать"
                   variant="primary"
                   size="large"
                   icon={<Calculator size={20} color={colors.textInverse} />}
-                  onPress={() => {
-                    if (usePharma && !pharmaType) {
-                      Alert.alert('Выбери тип', 'Укажи тип фармакологии или отключи переключатель');
-                      return;
-                    }
-                    handleCalculate();
-                  }}
+                  onPress={handleCalculate}
                   style={{ flex: 2 }}
                 />
               </View>
             </>
           )}
 
-          {/* ШАГ 3: Результаты КБЖУ */}
           {step === 3 && (
             <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Твоя норма</Text>
+              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                Твоя норма
+              </Text>
               <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
                 Рекомендуемые значения на день
               </Text>
 
-              {usePharma && pharmaType && (
-                <AppCard variant="compact" style={{ borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10', marginBottom: SPACING.lg }}>
+              {usePharma && pharmaType && pharmaLabel && (
+                <AppCard
+                  variant="compact"
+                  style={{
+                    borderColor: colors.warning,
+                    borderWidth: 1,
+                    backgroundColor: colors.warning + '10',
+                    marginBottom: SPACING.lg,
+                  }}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Pill size={16} color={colors.warning} style={{ marginRight: SPACING.sm }} />
                     <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      Расчет с учетом фармакологии: {PHARMA_TYPES.find(p => p.value === pharmaType)?.label}
+                      Расчет с учетом фармакологии: {pharmaLabel}
                     </Text>
                   </View>
                 </AppCard>
               )}
 
-              {/* Калории */}
-              <AppCard variant="highlighted" style={{ backgroundColor: colors.primary, marginBottom: SPACING.lg }}>
+              <AppCard
+                variant="highlighted"
+                style={{
+                  backgroundColor: colors.primary,
+                  marginBottom: SPACING.lg,
+                }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
                   <Flame size={24} color={colors.textInverse} />
-                  <Text style={[typography.h5, { color: colors.textInverse, marginLeft: SPACING.sm }]}>
+                  <Text
+                    style={[
+                      typography.h5,
+                      { color: colors.textInverse, marginLeft: SPACING.sm },
+                    ]}
+                  >
                     Калории
                   </Text>
                 </View>
+
                 <Text style={[typography.h1, { color: colors.textInverse, marginBottom: SPACING.xs }]}>
                   {calories}
                 </Text>
@@ -624,44 +942,78 @@ export default function GoalsScreen() {
                 </Text>
               </AppCard>
 
-{/* Макросы */}
-<View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-  <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: MACRO_COLORS.proteins, borderWidth: 2 }}>
-    <Beef size={24} color={MACRO_COLORS.proteins} />
-    <Text style={[typography.h3, { color: MACRO_COLORS.proteins, marginTop: SPACING.sm }]}>{proteins}г</Text>
-    <Text style={[typography.caption, { color: colors.textSecondary }]}>Белки</Text>
-  </AppCard>
-  <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: MACRO_COLORS.fats, borderWidth: 2 }}>
-    <Droplet size={24} color={MACRO_COLORS.fats} />
-    <Text style={[typography.h3, { color: MACRO_COLORS.fats, marginTop: SPACING.sm }]}>{fats}г</Text>
-    <Text style={[typography.caption, { color: colors.textSecondary }]}>Жиры</Text>
-  </AppCard>
-  <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: MACRO_COLORS.carbs, borderWidth: 2 }}>
-    <Wheat size={24} color={MACRO_COLORS.carbs} />
-    <Text style={[typography.h3, { color: MACRO_COLORS.carbs, marginTop: SPACING.sm }]}>{carbs}г</Text>
-    <Text style={[typography.caption, { color: colors.textSecondary }]}>Углеводы</Text>
-  </AppCard>
-</View>
+              <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+                <MacroCard
+                  icon={Beef}
+                  value={proteins}
+                  label="Белки"
+                  color={MACRO_COLORS.proteins}
+                  colors={colors}
+                />
+                <MacroCard
+                  icon={Droplet}
+                  value={fats}
+                  label="Жиры"
+                  color={MACRO_COLORS.fats}
+                  colors={colors}
+                />
+                <MacroCard
+                  icon={Wheat}
+                  value={carbs}
+                  label="Углеводы"
+                  color={MACRO_COLORS.carbs}
+                  colors={colors}
+                />
+              </View>
 
-{/* Процентное соотношение */}
-<AppCard variant="compact">
-  <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-    Соотношение макросов
-  </Text>
-  <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: SPACING.sm }}>
-    <View style={{ width: `${(proteins * 4 / calories) * 100}%`, backgroundColor: MACRO_COLORS.proteins }} />
-    <View style={{ width: `${(fats * 9 / calories) * 100}%`, backgroundColor: MACRO_COLORS.fats }} />
-    <View style={{ flex: 1, backgroundColor: MACRO_COLORS.carbs }} />
-  </View>
-  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-    <Text style={[typography.caption, { color: MACRO_COLORS.proteins }]}>Б: {Math.round((proteins * 4 / calories) * 100)}%</Text>
-    <Text style={[typography.caption, { color: MACRO_COLORS.fats }]}>Ж: {Math.round((fats * 9 / calories) * 100)}%</Text>
-    <Text style={[typography.caption, { color: MACRO_COLORS.carbs }]}>У: {Math.round((carbs * 4 / calories) * 100)}%</Text>
-  </View>
-</AppCard>
+              <AppCard variant="compact">
+                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+                  Соотношение макросов
+                </Text>
 
-              {/* Формула */}
-              <AppCard variant="compact" style={{ marginBottom: SPACING.xl }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    height: 8,
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                    marginBottom: SPACING.sm,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: `${macroRatio.proteins}%`,
+                      backgroundColor: MACRO_COLORS.proteins,
+                    }}
+                  />
+                  <View
+                    style={{
+                      width: `${macroRatio.fats}%`,
+                      backgroundColor: MACRO_COLORS.fats,
+                    }}
+                  />
+                  <View
+                    style={{
+                      flex: 1,
+                      backgroundColor: MACRO_COLORS.carbs,
+                    }}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={[typography.caption, { color: MACRO_COLORS.proteins }]}>
+                    Б: {macroRatio.proteins}%
+                  </Text>
+                  <Text style={[typography.caption, { color: MACRO_COLORS.fats }]}>
+                    Ж: {macroRatio.fats}%
+                  </Text>
+                  <Text style={[typography.caption, { color: MACRO_COLORS.carbs }]}>
+                    У: {macroRatio.carbs}%
+                  </Text>
+                </View>
+              </AppCard>
+
+              <AppCard variant="compact" style={{ marginTop: SPACING.lg, marginBottom: SPACING.xl }}>
                 <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
                   ℹ️ Как рассчитано
                 </Text>
@@ -676,7 +1028,6 @@ export default function GoalsScreen() {
                 </Text>
               </AppCard>
 
-              {/* Кнопки */}
               <View style={{ flexDirection: 'row', gap: SPACING.md }}>
                 <AppButton
                   title="Изменить"
@@ -685,6 +1036,7 @@ export default function GoalsScreen() {
                   onPress={() => setStep(2)}
                   style={{ flex: 1 }}
                 />
+
                 <AppButton
                   title={saving ? 'Сохранение...' : 'Сохранить цели'}
                   variant="primary"

@@ -10,17 +10,19 @@ import type { Session, User } from '@supabase/supabase-js';
 
 /** Страховочное создание профиля (баг 1). Идемпотентно: on conflict do nothing.
  *  Имя таблицы/колонок сверьте с database.types.ts (предположительно `profiles`). */
-async function ensureProfile(userId: string, email?: string): Promise<void> {
+async function ensureProfile(userId: string): Promise<void> {
   if (!userId) return;
+
   try {
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, ...(email ? { email } : {}) }, { onConflict: 'id' });
+      .upsert({ id: userId }, { onConflict: 'id' });
+
     if (error && !String(error.code).includes('23505')) {
       console.warn('[authService] ensureProfile:', error.message);
     }
   } catch (e) {
-    console.warn('[authService] ensureProfile threw:', e); // вход НЕ блокируем
+    console.warn('[authService] ensureProfile threw:', e);
   }
 }
 
@@ -29,7 +31,14 @@ export async function signIn(email: string, password: string): Promise<User | nu
     email: email.trim(),
     password,
   });
+
   if (error) throw error;
+
+  // Чинит старые аккаунты, у которых профиль мог не создаться
+  if (data.user) {
+    await ensureProfile(data.user.id);
+  }
+
   return data.user;
 }
 
@@ -41,10 +50,19 @@ export async function signUp(email: string, password: string): Promise<{
     email: email.trim(),
     password,
   });
+
   if (error) throw error;
-  // профиль создаём сразу (триггер на БД + страховка), не ждём подтверждения
-  if (data.user) await ensureProfile(data.user.id, email.trim());
-  return { user: data.user, needsEmailConfirmation: !data.session };
+
+  // Если сессия есть, значит email confirmation выключен или уже подтверждён.
+  // Если сессии нет, профиль создаст триггер в БД.
+  if (data.user && data.session) {
+    await ensureProfile(data.user.id);
+  }
+
+  return {
+    user: data.user,
+    needsEmailConfirmation: !data.session,
+  };
 }
 
 export async function signOut(): Promise<void> {

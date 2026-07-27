@@ -39,11 +39,11 @@ export interface PersonalRecord {
 export const profileService = {
   async getProfileData(userId: string): Promise<ProfileData> {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('username, full_name, avatar_url, current_weight_kg')
-      .eq('id', userId)
-      .single();
+  const { data: profileData } = await supabase
+  .from('profiles')
+  .select('username, full_name, avatar_url, current_weight_kg')
+  .eq('id', userId)
+  .maybeSingle();
 
     return {
       email: user?.email || '',
@@ -93,7 +93,7 @@ export const profileService = {
       .from('profiles')
       .select('target_calories, target_proteins, target_fats, target_carbs')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     return {
       calories: data?.target_calories || 0,

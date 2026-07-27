@@ -516,6 +516,8 @@ export type Database = {
           level: string
           name: string
           schedule: string[] | null
+          share_code: string | null
+          source_program_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -527,6 +529,8 @@ export type Database = {
           level: string
           name: string
           schedule?: string[] | null
+          share_code?: string | null
+          source_program_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -538,6 +542,8 @@ export type Database = {
           level?: string
           name?: string
           schedule?: string[] | null
+          share_code?: string | null
+          source_program_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -881,6 +887,7 @@ export type Database = {
         Args: { p_program_id: string; p_user_id: string }
         Returns: string
       }
+      generate_share_code: { Args: { p_program_id: string }; Returns: string }
       migrate_exercise_equipment: { Args: never; Returns: undefined }
       normalize_equipment_array: { Args: { arr: string[] }; Returns: string[] }
       normalize_equipment_final: { Args: { item: string }; Returns: string }
@@ -896,6 +903,7 @@ export type Database = {
       }
       search_exercises: {
         Args: {
+          activation_filter?: boolean
           category_filter?: string[]
           equipment_filter?: string[]
           muscle_filter?: string[]
@@ -905,6 +913,7 @@ export type Database = {
           sort_by?: string
         }
         Returns: {
+          can_be_activation: boolean
           category: string
           equipment: string[]
           id: string
@@ -913,6 +922,8 @@ export type Database = {
           primary_muscles: string[]
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       split_equipment: { Args: { item: string }; Returns: string[] }
       split_equipment_final: { Args: { item: string }; Returns: string[] }
       update_day_position: {
