@@ -3,9 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Позволяет запускать вручную из GitHub UI
+  workflow_dispatch:  # Позволяет запускать вручную из вкладки Actions
 
 jobs:
   build:
@@ -18,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22' # Обновлено на 22 для избежания предупреждений о депрекации Node 20
           cache: 'npm'
 
       - name: Install dependencies
@@ -50,7 +48,8 @@ jobs:
         run: |
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          # Добавлены флаги --stacktrace и --info для детального лога в случае ошибки
+          ./gradlew assembleRelease --stacktrace --info
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
