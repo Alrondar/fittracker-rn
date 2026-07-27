@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:  # Позволяет запускать вручную из вкладки Actions
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # Обновлено на 22 для избежания предупреждений о депрекации Node 20
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -34,21 +34,15 @@ jobs:
       - name: Generate native code
         run: npx expo prebuild --clean
 
-      - name: Create JS bundle
+      - name: Create JS bundle (Expo way)
         run: |
           mkdir -p android/app/src/main/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file index.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res
+          npx expo export --platform android --output-dir android/app/src/main/assets
 
       - name: Build APK
         run: |
           cd android
           chmod +x ./gradlew
-          # Добавлены флаги --stacktrace и --info для детального лога в случае ошибки
           ./gradlew assembleRelease --stacktrace --info
 
       - name: Upload APK artifact
