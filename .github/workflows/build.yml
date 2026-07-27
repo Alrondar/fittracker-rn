@@ -34,7 +34,7 @@ jobs:
       - name: Generate native code
         run: npx expo prebuild --clean
 
-      - name: Create JS bundle (Expo way)
+      - name: Create JS bundle (Expo native way)
         run: |
           mkdir -p android/app/src/main/assets
           npx expo export --platform android --output-dir android/app/src/main/assets
