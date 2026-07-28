@@ -9,9 +9,9 @@
 - **Бэкенд:** Supabase (PostgreSQL + RLS + RPC + Auth), `@supabase/supabase-js` ^2.110. Project ID: `trgiihqqcovidwcqwdkl`
 - **Аутентификация:** Supabase Auth (email/password), единый слой `src/services/authService.ts`.
 - **Стейт-менеджмент:**
-  - `@tanstack/react-query` ^5.101 — для ВСЕХ серверных данных (списки, CRUD, пагинация, dashboard, goals).
-  - `zustand` ^5 — ТОЛЬКО для UI-стейта (`isAuthenticated`, `userId`, `themePreferences`).
-    ⚠️ Исторически в `useStore` ещё лежат `workouts`/`logs`/`alternativesCache` — это tech debt (см. ниже), постепенно выносить в React Query.
+  - `@tanstack/react-query` ^5.101 — для ВСЕХ серверных данных (списки, CRUD, пагинация, dashboard, goals, history, workouts, injuries).
+  - `zustand` ^5 — ТОЛЬКО для UI-стейта (`isAuthenticated`, `userId`).
+  - ✅ Серверные данные из `useStore` УБРАНЫ (workouts/logs/alternativesCache больше нет в Zustand).
 - **Стилизация:** Единая дизайн-система через `useTheme()` + атомарные UI-компоненты.
 - **Анимации:** `react-native-reanimated` ^3.16 + `react-native-gesture-handler` ~2.28.
 - **Иконки:** `lucide-react-native` ^1.24 + кастомные SVG (`react-native-svg` 15.12 + `react-native-svg-transformer`).
@@ -37,15 +37,15 @@ update-password.tsx # Смена пароля по recovery-сессии
 _layout.tsx # Таб-бар layout
 index.tsx # Dashboard (React Query через useDashboard)
 exercises.tsx # Справочник упражнений (infinite scroll, фильтры)
-history.tsx # История тренировок
+history.tsx # История тренировок (React Query через useHistory)
 programs.tsx # Программы тренировок (+ импорт по коду)
-workouts.tsx # Тренировки (useFocusEffect — обновление по фокусу)
+workouts.tsx # Тренировки (React Query через useWorkouts, useFocusEffect)
 profile.tsx # Профиль пользователя
 exercise/[id].tsx # Детальный экран упражнения (hero-слайдер, аккордеоны)
 history/[id].tsx # Детали истории
 profile/ # Экраны профиля (без таб-бара)
 goals.tsx # Цели и макросы (React Query через goalsService)
-injuries.tsx # Травмы пользователя
+injuries.tsx # Травмы (React Query через useInjuries, useFocusEffect)
 metrics.tsx # Замеры тела
 settings.tsx # Настройки (тема, профиль)
 program/[id].tsx # Детальный экран программы (редактор + шаринг)
@@ -71,7 +71,7 @@ program/ # Компоненты программ
 PhaseCard.tsx
 sheets/ # PhaseSettings, DaySettings, ExercisePicker,
 # ExerciseSettings, ScheduleEditor, ImportProgram, ShareProgram
-profile/ # MacroPieChart и др.
+profile/ # MacroPieChart, InjuryFormSheet, injuryOptions
 Dashboard-компоненты: # ActivityCalendar, ExerciseProgressCard, LastWorkoutCard,
 # PersonalRecordsCard, WeeklyStatsCard, ProgramProgressCard
 Общие: # AnimatedButton, BottomSheet, CustomTabBar, EquipmentIcon,
@@ -79,6 +79,9 @@ Dashboard-компоненты: # ActivityCalendar, ExerciseProgressCard, LastWo
 # Skeleton, SwipeableCard, Toast/ToastProvider
 hooks/
 useDashboard.ts # Dashboard (React Query, queryKey ['dashboard', userId])
+useHistory.ts # История (React Query, queryKey ['history', userId])
+useWorkouts.ts # Тренировки (React Query, queryKey ['workouts', userId])
+useInjuries.ts # Травмы (React Query, queryKey ['injuries', userId])
 useBodyMetrics.ts
 useExerciseDetail.ts # staleTime: Infinity
 useExercises.ts # useInfiniteQuery, debounce, фильтры, activationOnly
@@ -97,14 +100,17 @@ authService.ts # Supabase Auth: signIn/signUp/signOut/reset/update/getSession/
 dashboardService.ts # Агрегация данных dashboard (Promise.allSettled)
 exercisesService.ts # Упражнения: список, словари фильтров, по ID
 goalsService.ts # Цели: getGoalsProfile/saveGoalsProfile (upsert)
+historyService.ts # История: getHistory (группировка по месяцам, статистика)
+injuriesService.ts # Травмы: CRUD (getInjuries/create/update/markRecovered/delete)
 metricsService.ts # Замеры тела (getLatestMetric/createMetric)
 profileService.ts # Профиль, статистика, КБЖУ, личные рекорды, травмы
 programsService.ts # getProgramWithPhases, advanceProgramProgress,
 # createWorkoutsFromProgram (upfront), getActiveProgram, CRUD
 programSharingService.ts # generateShareCode, importProgramByCode, formatShareCode
 warmupService.ts # Автогенерация разминки по целевым мышцам
-workoutService.ts # startProgramWorkout, repeatWorkout
-store/ # Zustand (в идеале только UI-стейт)
+workoutService.ts # startProgramWorkout (идемпотентно), repeatWorkout
+workoutsService.ts # getWorkoutsData (активная программа + тренировки + секции)
+store/ # Zustand — ТОЛЬКО UI-стейт (isAuthenticated/userId/setAuth)
 constants/
 equipmentIcons.ts
 exerciseCategories.ts
@@ -137,14 +143,14 @@ timerSounds.ts # Генерация WAV-бипов (expo-audio)
 ## 🔐 Авторизация и профили (Supabase Auth)
 
 ### Единый слой `authService.ts`
-- UI-экраны **НЕ** вызывают `supabase.auth.*` напрямую — только через `authService`.
-- Редиректы по состоянию сессии делает **корневой `_layout.tsx`** через `onAuthStateChange` (единственный источник истины по переходам), не сервис.
+- UI-экраны НЕ вызывают `supabase.auth.*` напрямую — только через `authService`.
+- Редиректы по состоянию сессии делает корневой `_layout.tsx` через `onAuthStateChange` (единственный источник истины по переходам), не сервис.
 - Экспортирует: `signIn`, `signUp`, `signOut`, `sendPasswordReset`, `updatePassword`, `getSession`, `onAuthStateChange`, `mapAuthError`.
 - `signUp` возвращает `{ user, needsEmailConfirmation }` (`needsEmailConfirmation = !data.session`).
 
 ### Создание профиля
-- Профиль создаётся **триггером БД** `handle_new_user` (AFTER INSERT ON auth.users).
-- ⚠️ **КРИТИЧНО:** в таблице `profiles` **НЕТ колонки `email`**. Триггер и `ensureProfile` пишут ТОЛЬКО `id`. Попытка записать `email` роняет запрос ошибкой `42703`.
+- Профиль создаётся триггером БД `handle_new_user` (AFTER INSERT ON auth.users).
+- ⚠️ КРИТИЧНО: в таблице `profiles` НЕТ колонки `email`. Триггер и `ensureProfile` пишут ТОЛЬКО `id`. Попытка записать `email` роняет запрос ошибкой `42703`.
 - `ensureProfile(userId)` — страховочный идемпотентный `upsert({ id }, { onConflict: 'id' })`; вызывается на `signIn` (чинит старые аккаунты) и на `signUp` только при наличии сессии. Ошибку `23505` (unique violation) игнорирует, вход НЕ блокирует.
 - Email пользователя всегда берётся из `auth.users` (`supabase.auth.getUser()`), не из `profiles`.
 
@@ -173,11 +179,11 @@ timerSounds.ts # Генерация WAV-бипов (expo-audio)
 - **Категории** (поле `category`, скаляр): `strength`, `stretching`, `plyometrics`, `olympic weightlifting`, `powerlifting`, `cardio`. Русские подписи/иконки — в `constants/exerciseCategories.ts`.
 - **Мышцы** (`primary_muscles`, `secondary_muscles` — массивы) на русском. Группы для фильтра — в `constants/muscleGroups.ts`.
 - **Оборудование** (`equipment` — массив) на русском (68 значений).
-- **`can_be_activation`** (boolean) — тип «Активация» (62 упражнения).
-- **`media_url`** — одиночный URL (free-exercise-db). Клиент генерирует пару `0.jpg + 1.jpg` через `parseMediaUrls` в `TechniqueMediaSlider.tsx`.
+- `can_be_activation` (boolean) — тип «Активация» (62 упражнения).
+- `media_url` — одиночный URL (free-exercise-db). Клиент генерирует пару `0.jpg + 1.jpg` через `parseMediaUrls` в `TechniqueMediaSlider.tsx`.
 - ⚠️ Колонки `description` в таблице НЕТ — не включать в select (ошибка 42703).
 - **Справочник:** пагинация 40/страница (`useInfiniteQuery`), лёгкий select (`id, name, primary_muscles, equipment, can_be_activation`), серверные фильтры: `overlaps` (мышцы, оборудование), `in` (категория), `ilike` + `.or()` (поиск), debounce 300 мс, `keepPreviousData`, `staleTime: Infinity` для словарей.
-- **Альтернативы:** поле `alternatives` (массив ID) + fallback по `overlaps('primary_muscles', ...)`.
+- **Альтернативы:** поле `alternatives` (массив ID) + fallback по `overlaps('primary_muscles', ...)`. В `useWorkoutSession.loadAlternatives` — явный select (не `'*'`), кэш в `alternativesCacheRef` (ref, без ререндеров).
 
 ---
 
@@ -192,8 +198,8 @@ timerSounds.ts # Генерация WAV-бипов (expo-audio)
 
 ### Создание тренировок
 - **Вариант B (upfront):** при старте программы `createWorkoutsFromProgram` создаёт тренировки для ВСЕХ фаз и недель сразу. Для каждой недели берутся её дни либо шаблон недели 1 (fallback).
-- **Точечное создание** (`workoutService.startProgramWorkout`): создаёт тренировку текущего дня (`current_phase/week/day`), идемпотентно (возвращает существующую незавершённую), fallback на шаблон недели 1. Используется экраном `workout/create.tsx`.
-- **Повтор** (`workoutService.repeatWorkout`): копирует тренировку как ad-hoc (без привязки к программе).
+- **Точечное создание (`workoutService.startProgramWorkout`):** создаёт тренировку текущего дня (`current_phase/week/day`), идемпотентно (возвращает существующую незавершённую), 4-уровневый fallback дня (точный → шаблон недели 1 → день программы → fallback по `day_number`). Сначала создаёт тренировку и получает реальный `id`, затем формирует упражнения с реальным `workout_id` (без плейсхолдера `''`). Используется экраном `workout/create.tsx`.
+- **Повтор (`workoutService.repeatWorkout`):** копирует тренировку как ad-hoc (без привязки к программе), копирует также `description`.
 - **Вариативность по неделям (шаблон + переопределения):** неделя 1 = шаблон; недели 2…N наследуют, пока не переопределены (`copyTemplateToWeek`); сброс — `resetWeekToTemplate`.
 
 ### Прогрессия
@@ -211,9 +217,10 @@ timerSounds.ts # Генерация WAV-бипов (expo-audio)
 | PPL 6-day | advanced | 6 | Гипертрофия (4) → Сила (3) → Дилоуд (1) |
 
 ### UX списка тренировок (`workouts.tsx`)
+- Данные через `useWorkouts` (React Query) → `workoutsService.getWorkoutsData`.
 - `SectionList` с группировкой по фазам/неделям (заголовки через `SectionHeader`), статусы (✅ выполнена / ▶️ следующая / ⏸️ в процессе / ⏳ будущая), бейджи фаз, шапка с прогрессом программы.
 - «Следующая» определяется по `current_phase/week/day` из `user_programs`.
-- **`useFocusEffect`** — список обновляется при каждом возврате на вкладку (решает проблему «начал программу → ушёл → вернулся → экран не обновился»).
+- `useFocusEffect` — список обновляется при каждом возврате на вкладку.
 
 ### Dashboard (`ProgramProgressCard`)
 - Бейдж текущей фазы (иконка + цвет типа), «Фаза N/M · Неделя X», прогресс-бар в цвете фазы.
@@ -258,17 +265,18 @@ timerSounds.ts # Генерация WAV-бипов (expo-audio)
 - Использовать `expo-image` вместо `Image` из React Native.
 - Фабрики стилей (`createCardStyles(colors)`, `createDashboardStyles(colors)` и др.) — только через `useMemo` на уровне экрана. НИКОГДА внутри `renderItem`.
 - Колбэки в карточки — только `useCallback`; в хуках с зависимостью от массивов — ref-зеркала (`exercisesRef` в `useWorkoutSession`).
-- Карточки списков — `React.memo`.
-- Тяжёлые данные (technique, benefits, risks, injuries, settings, alternatives, media_url) — не тянуть в списки; грузить по требованию на детальных экранах.
-- **`useFocusEffect`** (из `expo-router`) для обновления данных экрана при возврате по фокусу (вкладки).
-- Серверные данные — через React Query (`useQuery`/`useInfiniteQuery`/`useMutation`), запросы в `services/`.
+- Карточки списков — `React.memo` (напр. `InjuryCard`).
+- Тяжёлые данные (technique, benefits, risks, injuries, settings, alternatives, media_url) — не тянуть в списки; грузить по требованию на детальных экранах. В `loadAlternatives` — явный select, не `'*'`.
+- `useFocusEffect` (из `expo-router`) для обновления данных экрана при возврате по фокусу (вкладки) — history, workouts, injuries.
+- Серверные данные — через React Query (`useQuery`/`useInfiniteQuery`/`useMutation`), запросы в `services/`. Никаких `supabase.from()` в UI-компонентах.
+- **Никаких N+1:** пакетные запросы через `.in(...)` и вложенные `select`. В `useWorkoutSession.saveWorkout` — один batch `insert` всех логов через `flatMap` (предварительный `delete` по `workout_exercise_id` для идемпотентности).
 
 ---
 
 ## 🚫 Анти-паттерны (НЕ ДЕЛАЙ ТАК)
 
-- ❌ Хранить серверные данные в Zustand.
-- ❌ Делать N+1 запросов к Supabase (используй вложенные `select('*, days(*, exercises(*))')`).
+- ❌ Хранить серверные данные в Zustand (useStore — только UI-стейт).
+- ❌ Делать N+1 запросов к Supabase (используй вложенные `select('*, days(*, exercises(*))')` и `.in(...)`).
 - ❌ Писать `supabase.from()` прямо в UI-компонентах (выноси в `services/` или хуки).
 - ❌ Использовать `Math.random()` в `keyExtractor`.
 - ❌ Использовать `LayoutAnimation` (no-op в New Architecture).
@@ -278,19 +286,22 @@ timerSounds.ts # Генерация WAV-бипов (expo-audio)
 - ❌ Монтировать слайдеры/автоплеи в свёрнутых аккордеонах (ленивый монтаж через `everOpened`).
 - ❌ Вставлять `gen_random_uuid()::text` в `program_days.id` / `program_exercises.id` (они `uuid` — использовать `gen_random_uuid()` без `::text`; `::text` только для `programs.id` / `program_phases.id`).
 - ❌ Вызывать `supabase.auth.*` в UI (только через `authService`).
+- ❌ Формировать `workout_exercises` с плейсхолдером `workout_id: ''` (сначала создать тренировку, затем упражнения с реальным `id`).
 
 ---
 
 ## ⚠️ Известный tech debt
 
-- **`supabase.from()` в UI:** `history.tsx`, `injuries.tsx`, `workouts.tsx` (запросы пока в компоненте; `workouts.tsx` уже на `useFocusEffect`, но не в сервисе). Выносить в `services/` + React Query.
-- **Серверные данные в Zustand:** `useStore.workouts`/`logs`/`alternativesCache` — выносить в React Query / локальный state экранов.
-- **Хардкод градиентов:** `history.tsx` (`getWorkoutGradient` — массив hex). Заменить на `gradients` из `useTheme()`.
-- **`profileService.getBurnedCalories`:** в части версий N+1 (цикл по тренировкам). Корректная версия — один запрос логов через `.in('workout_exercises.workout_id', workoutIds)`.
-- **`useWorkoutSession.saveWorkout`:** идемпотентность записи логов зависит от уникального индекса `ux_workout_logs_ex_set` на БД; клиентский `upsert` — после накатки индекса.
-- **`database.types.ts`:** держать в синхроне с БД (regenerate после миграций): `npx supabase gen types typescript --project-id trgiihqqcovidwcqwdkl --schema public > src/types/database.types.ts` (запускать из корня проекта, не из `android/`).
-- **Превышение 500 строк:** `goals.tsx`, `program/[id].tsx` — кандидаты на разбиение.
-- **Артефакты форматирования:** в ряде файлов встречаются синтаксические артефакты (`= >`, `& &`, пробелы в `</Text >`, именах пропсов). Проверять `npx tsc --noEmit`; при наличии — чистить.
+- ✅ **ЗАКРЫТО — `supabase.from()` в UI:** `history.tsx`, `injuries.tsx`, `workouts.tsx` вынесены в `historyService`/`injuriesService`/`workoutsService` + React Query-хуки (`useHistory`/`useInjuries`/`useWorkouts`).
+- ✅ **ЗАКРЫТО — Серверные данные в Zustand:** `useStore` содержит только `isAuthenticated`/`userId`/`setAuth`. `workouts`/`logs`/`alternativesCache` убраны (подходы — в `exercises.sets` хука `useWorkoutSession`, кэш альтернатив — в `alternativesCacheRef`, `ExerciseSlider` — в своём useState).
+- ✅ **ЗАКРЫТО — N+1 в `profileService.getBurnedCalories`:** один запрос логов через `.in('workout_exercises.workout_id', workoutIds)`.
+- ✅ **ЗАКРЫТО — `useWorkoutSession.saveWorkout`:** batch `insert` всех логов через `flatMap` + `delete` по `workout_exercise_id` (идемпотентность). Уникальный индекс `ux_workout_logs_ex_set` на БД как страховка.
+- ✅ **ЗАКРЫТО — `workoutService`:** идемпотентный `startProgramWorkout` (4-уровневый fallback дня, реальный `workout_id`), `repeatWorkout` копирует `description`.
+- ⚠️ **Хардкод градиентов:** `history.tsx` (`getWorkoutGradient` — массив hex + `white`/`rgba(255,255,255,X)`). Заменить на `gradients` из `useTheme()` и `colors.textInverse` + альфа-суффиксы.
+- ⚠️ **`database.types.ts`:** держать в синхроне с БД (regenerate после миграций): `npx supabase gen types typescript --project-id trgiihqqcovidwcqwdkl --schema public > src/types/database.types.ts` (запускать из корня проекта, не из `android/`). Сверить наличие `programs.share_code`/`source_program_id`, `generate_share_code`, `search_exercises.activation_filter`/`can_be_activation`.
+- ⚠️ **Превышение 500 строк:** `goals.tsx`, `program/[id].tsx` — кандидаты на разбиение.
+- ⚠️ **Артефакты форматирования:** в ряде файлов встречаются синтаксические артефакты (`= >`, `& &`, пробелы в `</Text >`, именах пропсов). Проверять `npx tsc --noEmit`; при наличии — чистить.
+- ⚠️ **Хардкод ключей Supabase:** `lib/supabase.ts` — URL и anon key вшиты. Вынести в `process.env.EXPO_PUBLIC_*`.
 
 ---
 
@@ -345,39 +356,54 @@ UI-кит (AppButton, AppCard, AppBadge, AppInput) внедрён. `card.ts` р�
 - Supabase Auth (email/password), единый слой `authService.ts`.
 - Триггер `handle_new_user` создаёт профиль (только `id`, без `email`).
 - `ensureProfile` идемпотентен, не блокирует вход; чинит старые аккаунты на `signIn`.
-- RLS-политики профилей/программ/тренировок/логов (см. секцию «Авторизация и профили»).
+- RLS-политики профилей/программ/тренировок/логов.
 - Экраны `login` / `reset-password` / `update-password`, корневой auth-гейт, `PASSWORD_RECOVERY`.
 - ⚠️ Осталось: прогнать сквозной тест-сценарий (регистрация → вход → dashboard → старт программы → завершение → история).
 
 #### ✅ Dashboard на React Query (ЗАВЕРШЕНО)
-- `useDashboard` + `dashboardService` (Promise.allSettled), `useMemo`-стили, error-state с `refetch`.
+`useDashboard` + `dashboardService` (Promise.allSettled), `useMemo`-стили, error-state с `refetch`.
 
 #### ✅ Цели и макросы на React Query (ЗАВЕРШЕНО)
-- `goalsService` (`getGoalsProfile`/`saveGoalsProfile`, upsert), `useQuery`/`useMutation`, `invalidateQueries`, авто-создание замера веса через `metricsService`.
+`goalsService` (`getGoalsProfile`/`saveGoalsProfile`, upsert), `useQuery`/`useMutation`, `invalidateQueries`, авто-создание замера веса через `metricsService`.
 
-#### ✅ Список тренировок: обновление по фокусу (ЗАВЕРШЕНО)
-- `useFocusEffect` в `workouts.tsx`.
+#### ✅ Список тренировок на React Query (ЗАВЕРШЕНО)
+`workoutsService.getWorkoutsData` + `useWorkouts`, `useFocusEffect` (обновление по фокусу).
+
+#### ✅ История на React Query (ЗАВЕРШЕНО)
+`historyService.getHistory` + `useHistory`, `useFocusEffect`, предвычисленные `sets`/`volume`.
+
+#### ✅ Травмы на React Query (ЗАВЕРШЕНО)
+`injuriesService` + `useInjuries`, `useFocusEffect`, `InjuryCard` (memo), `InjuryFormSheet`, `injuryOptions`.
+
+#### ✅ Очистка useStore (ЗАВЕРШЕНО)
+Серверные данные убраны из Zustand; только `isAuthenticated`/`userId`/`setAuth`.
+
+#### ✅ Сессия тренировки: batch-запись логов (ЗАВЕРШЕНО)
+`useWorkoutSession.saveWorkout`: один batch `insert` через `flatMap` + `delete` по `workout_exercise_id`; подгрузка сохранённых логов при возобновлении; `reps_range`; явный select в `loadAlternatives`.
 
 #### ✅ Экран создания тренировки (ЗАВЕРШЕНО)
-- `workout/create.tsx` + `workoutService` (`startProgramWorkout` идемпотентно, `repeatWorkout`).
+`workout/create.tsx` + `workoutService` (`startProgramWorkout` идемпотентно с 4-уровневым fallback, `repeatWorkout` с `description`).
 
 #### ✅ Периодизация программ (ЗАВЕРШЕНО)
-- Модель programs → program_phases → program_days → program_exercises; типы фаз; редактор фаз (PhaseCard, шаблон + переопределения); прогрессия (`advanceProgramProgress`); создание тренировок upfront; 6 готовых программ; UX списка тренировок; ProgramProgressCard; RPC `copy_program_for_user`.
+Модель programs → program_phases → program_days → program_exercises; типы фаз; редактор фаз (PhaseCard, шаблон + переопределения); прогрессия (`advanceProgramProgress`); создание тренировок upfront; 6 готовых программ; UX списка тренировок; ProgramProgressCard; RPC `copy_program_for_user`.
 
 #### ✅ Шаринг программ по коду (ЗАВЕРШЕНО)
-- `programs.share_code`, RPC `generate_share_code`, `programSharingService`, UI (ShareProgramSheet / ImportProgramSheet).
+`programs.share_code`, RPC `generate_share_code`, `programSharingService`, UI (ShareProgramSheet / ImportProgramSheet).
 
 #### ✅ Тип активности «Активация» (ЗАВЕРШЕНО)
-- Колонка `can_be_activation` (62 упражнения); RPC `search_exercises` возвращает `can_be_activation` + параметр `activation_filter`; бейджи в справочнике/детальном экране/разминке; фильтр «Только активация».
+Колонка `can_be_activation` (62 упражнения); RPC `search_exercises` возвращает `can_be_activation` + параметр `activation_filter`; бейджи в справочнике/детальном экране/разминке; фильтр «Только активация».
 
 #### ✅ Нечёткий поиск (ЗАВЕРШЕНО)
-- `pg_trgm` + `word_similarity` (порог 0.4) в RPC `search_exercises`; гибридный поиск LIKE + word_similarity; GIN-индекс `idx_exercises_name_norm_trgm`; ранжирование по релевантности.
+`pg_trgm` + `word_similarity` (порог 0.4) в RPC `search_exercises`; гибридный поиск LIKE + word_similarity; GIN-индекс `idx_exercises_name_norm_trgm`; ранжирование по релевантности.
+
+#### 🔲 Хардкод градиентов в history.tsx
+Заменить hex-массив `getWorkoutGradient` и `white`/`rgba` на `gradients` из `useTheme()` и `colors.textInverse` + альфа-суффиксы.
 
 #### 🔲 Аудит тёмной темы
 Контраст и читаемость во всех 10 комбинациях (5 акцентов × 2 режима).
 
 #### 🔲 Подготовка к релизу
-EAS Build, иконки, сплэш-скрин.
+EAS Build, иконки, сплэш-скрин, вынос ключей Supabase в `process.env.EXPO_PUBLIC_*`.
 
 #### 🔲 (опционально) Автозапуск следующего подхода по окончании отдыха.
 

@@ -7,7 +7,7 @@ import { create } from 'zustand';
  * ❌ Серверные данные (workouts / logs / alternativesCache) УБРАНЫ —
  *    они принадлежат React Query (списки, CRUD) либо локальному state/ref
  *    экранов и хуков: useWorkoutSession хранит подходы в exercises.sets,
- *    кэш альтернатив — в alternativesCacheRef.
+ *    кэш альтернатив — в alternativesCacheRef, ExerciseSlider — в своём useState.
  */
 interface AppState {
   isAuthenticated: boolean;

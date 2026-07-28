@@ -24,38 +24,38 @@ export interface HistoryData {
   monthlyStats: MonthlyStats;
 }
 
-function calculateWorkoutTotals(workout: any): { volume: number; sets: number } {
+function calculateVolume(workout: any): number {
   let volume = 0;
-  let sets = 0;
-
   workout.workout_exercises?.forEach((ex: any) => {
     ex.workout_logs?.forEach((log: any) => {
       volume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
-      sets += 1;
     });
   });
+  return volume;
+}
 
-  return { volume, sets };
+function calculateSets(workout: any): number {
+  let sets = 0;
+  workout.workout_exercises?.forEach((ex: any) => {
+    sets += ex.workout_logs?.length || 0;
+  });
+  return sets;
 }
 
 function groupByMonth(workouts: HistoryWorkout[]): HistorySection[] {
   const groups: Record<string, HistoryWorkout[]> = {};
-
   workouts.forEach((workout) => {
     const date = new Date(workout.created_at);
     const monthYear = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
     const formattedMonth = monthYear.charAt(0).toUpperCase() + monthYear.slice(1);
-
     if (!groups[formattedMonth]) groups[formattedMonth] = [];
     groups[formattedMonth].push(workout);
   });
-
   return Object.entries(groups).map(([title, data]) => ({ title, data }));
 }
 
 function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
   const now = new Date();
-
   const thisMonth = workouts.filter((w) => {
     const date = new Date(w.created_at);
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
@@ -63,7 +63,6 @@ function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
 
   let totalVolume = 0;
   let bestWorkout = 0;
-
   thisMonth.forEach((w) => {
     totalVolume += w.volume;
     if (w.volume > bestWorkout) bestWorkout = w.volume;
@@ -87,16 +86,13 @@ export async function getHistory(userId: string): Promise<HistoryData> {
 
   const completed = (data || [])
     .filter((w: any) => w.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0))
-    .map((w: any) => {
-      const { volume, sets } = calculateWorkoutTotals(w);
-      return {
-        id: w.id,
-        name: w.name,
-        created_at: w.created_at,
-        volume,
-        sets,
-      } as HistoryWorkout;
-    });
+    .map((w: any) => ({
+      id: w.id,
+      name: w.name,
+      created_at: w.created_at,
+      volume: calculateVolume(w),
+      sets: calculateSets(w),
+    }));
 
   return {
     sections: groupByMonth(completed),
