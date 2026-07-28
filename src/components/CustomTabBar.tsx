@@ -1,18 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Dumbbell, BookOpen, Clock, User } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
-
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
+  // ✅ Резерв под системную навигацию: кнопки Android больше не перекрывают подписи.
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: 'transparent' }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent', paddingBottom: insets.bottom + SPACING.sm }]}>
       <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -57,7 +58,15 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
                   {getTabIcon(route.name, iconColor)}
                 </View>
               </View>
-              <Text style={[styles.label, { color: isFocused ? colors.primary : colors.textSecondary }]}>
+              {/* ✅ Подпись не переносится: flex:1 + numberOfLines + центрирование.
+                  Размер масштабируется, чтобы на узких экранах влезало в долю вкладки. */}
+              <Text
+                style={[
+                  styles.label,
+                  { color: isFocused ? colors.primary : colors.textSecondary },
+                ]}
+                numberOfLines={1}
+              >
                 {typeof label === 'string' ? label : route.name}
               </Text>
             </TouchableOpacity>
@@ -69,9 +78,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 }
 
 function getTabIcon(routeName: string, color: string) {
-  const size = 22;
-  const strokeWidth = 1.5; // Делаем линии тонкими для современного вида
-
+  const size = scale(22);
+  const strokeWidth = 1.5;
   switch (routeName) {
     case 'index':
       return <Home size={size} color={color} strokeWidth={strokeWidth} />;
@@ -94,7 +102,6 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'transparent',
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.lg,
   },
   tabBar: {
     flexDirection: 'row',
@@ -111,13 +118,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.sm,
+    paddingHorizontal: 2,
     position: 'relative',
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
-    height: 24, // Фиксированная высота, чтобы интерфейс не прыгал
+    height: 24,
   },
   indicator: {
     position: 'absolute',
@@ -127,7 +135,11 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   label: {
-    fontSize: 10,
+    // ✅ flex:1 + центрирование дают тексту всю ширину доли вкладки;
+    // numberOfLines={1} (в JSX) режет перенос. Размер — масштабируемый.
+    flex: 1,
+    textAlign: 'center',
+    fontSize: fontScale(10),
     fontWeight: '500',
   },
 });

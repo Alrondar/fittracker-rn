@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { Hand } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useDashboard } from '../../src/hooks/useDashboard';
@@ -14,7 +14,7 @@ import { WeeklyStatsCard } from '../../src/components/WeeklyStatsCard';
 import { ExerciseProgressCard } from '../../src/components/ExerciseProgressCard';
 import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
 import { LastWorkoutCard } from '../../src/components/LastWorkoutCard';
-import { SPACING } from '../../src/constants/theme';
+import { SPACING, scale } from '../../src/constants/theme';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppButton } from '../../src/components/ui/AppButton';
 
@@ -22,7 +22,6 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-
   const styles = useMemo(() => createDashboardStyles(colors), [colors]);
 
   const {
@@ -76,7 +75,6 @@ export default function DashboardScreen() {
           <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
             Не удалось загрузить данные
           </Text>
-
           <AppButton
             title="Повторить"
             variant="primary"
@@ -93,7 +91,30 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Привет, {displayName}! 👋</Text>
+          {/* ✅ Приветствие: имя + векторная иконка в одной строке.
+              Имя сжимается и режется многоточием (flexShrink + numberOfLines),
+              бейдж с иконкой никогда не переносится. Растровый эмодзи 👋 убран —
+              он не принимал цвет темы и падал на вторую строку на узких экранах. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Text
+              style={[styles.headerTitle, { flexShrink: 1, marginBottom: 0 }]}
+              numberOfLines={1}
+            >
+              Привет, {displayName}!
+            </Text>
+            <View
+              style={{
+                width: scale(32),
+                height: scale(32),
+                borderRadius: scale(16),
+                backgroundColor: colors.primary + '15',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Hand size={scale(18)} color={colors.primary} strokeWidth={1.8} />
+            </View>
+          </View>
           <Text style={styles.headerSubtitle}>
             Всего тренировок: {data.totalWorkouts}
           </Text>
@@ -162,7 +183,6 @@ export default function DashboardScreen() {
               title="Прогресс по упражнениям"
               style={{ paddingHorizontal: 0, paddingTop: 0 }}
             />
-
             {data.exerciseProgress.map((exercise) => (
               <ExerciseProgressCard
                 key={exercise.exerciseId}

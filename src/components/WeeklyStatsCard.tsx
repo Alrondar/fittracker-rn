@@ -1,6 +1,5 @@
-// @ts-nocheck
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { createDashboardStyles } from '../styles/components/dashboard';
 import { useTheme } from '../hooks/useTheme';
 import { typography } from '../styles/typography';
@@ -23,29 +22,46 @@ export function WeeklyStatsCard({
   return (
     <View style={styles.statsRow}>
       <View style={styles.statCard}>
-        <View style={{ flexDirection: 'row' as const, alignItems: 'center' as const, marginBottom: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
           <Dumbbell size={16} color={colors.primary} strokeWidth={2} />
-          <Text style={[typography.caption, { color: colors.textSecondary, marginLeft: 4 }]}>
+          {/* ✅ Лейбл не обрезается: flexShrink + numberOfLines + автоподбор на iOS. */}
+          <Text
+            style={[typography.caption, { color: colors.textSecondary, marginLeft: 4, flexShrink: 1 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={Platform.OS === 'ios'}
+            minimumFontScale={0.8}
+          >
             Тренировок
           </Text>
         </View>
         <Text style={styles.statValue}>{workoutsCount}</Text>
       </View>
-      
+
       <View style={styles.statCard}>
-        <View style={{ flexDirection: 'row' as const, alignItems: 'center' as const, marginBottom: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
           <Trophy size={16} color={colors.warning} strokeWidth={2} />
-          <Text style={[typography.caption, { color: colors.textSecondary, marginLeft: 4 }]}>
+          <Text
+            style={[typography.caption, { color: colors.textSecondary, marginLeft: 4, flexShrink: 1 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={Platform.OS === 'ios'}
+            minimumFontScale={0.8}
+          >
             Объём (т)
           </Text>
         </View>
         <Text style={styles.statValue}>{(totalVolume / 1000).toFixed(1)}</Text>
       </View>
-      
+
       <View style={styles.statCard}>
-        <View style={{ flexDirection: 'row' as const, alignItems: 'center' as const, marginBottom: 4 }}>
-          <Zap size={16} color="#FF5722" strokeWidth={2} />
-          <Text style={[typography.caption, { color: colors.textSecondary, marginLeft: 4 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+          {/* ✅ Хардкод #FF5722 убран → colors.error (семантика энергии, без нарушения дизайн-системы). */}
+          <Zap size={16} color={colors.error} strokeWidth={2} />
+          <Text
+            style={[typography.caption, { color: colors.textSecondary, marginLeft: 4, flexShrink: 1 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={Platform.OS === 'ios'}
+            minimumFontScale={0.8}
+          >
             Ккал
           </Text>
         </View>

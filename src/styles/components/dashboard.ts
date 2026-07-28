@@ -1,11 +1,14 @@
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { Dimensions } from 'react-native';
+import { SPACING, BORDER_RADIUS, fontScale } from '../../constants/theme';
+
+// Локальный alias, чтобы не тянуть import в каждое поле; fontScale уже учитывает ширину.
+const fs = fontScale;
 
 export const createDashboardStyles = (colors: any) => ({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  
   // Шапка
   header: {
     paddingHorizontal: SPACING.lg,
@@ -16,16 +19,15 @@ export const createDashboardStyles = (colors: any) => ({
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: '700' as const,
     color: colors.textPrimary,
     marginBottom: SPACING.xs,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSecondary,
   },
-  
   // Карточка программы (Hero)
   programCard: {
     backgroundColor: colors.primary,
@@ -35,48 +37,46 @@ export const createDashboardStyles = (colors: any) => ({
     padding: SPACING.xl,
   },
   programTitle: {
-    fontSize: 20,
+    fontSize: fs(20),
     fontWeight: '700' as const,
     color: colors.textInverse,
     marginBottom: SPACING.xs,
   },
   programDay: {
-    fontSize: 16,
+    fontSize: fs(16),
     color: 'rgba(255,255,255,0.9)',
     marginBottom: SPACING.lg,
   },
-programProgress: {
-  height: 8,
-  backgroundColor: colors.textInverse + '30', // ✅ ИСПРАВЛЕНО (было 'rgba(255,255,255,0.2)')
-  borderRadius: 4,
-  overflow: 'hidden',
-  marginBottom: SPACING.md,
+  programProgress: {
+    height: 8,
+    backgroundColor: colors.textInverse + '30',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
   },
-programProgressBar: {
-  height: '100%',
-  backgroundColor: colors.textInverse, // ✅ ИСПРАВЛЕНО
-  borderRadius: 4,
+  programProgressBar: {
+    height: '100%',
+    backgroundColor: colors.textInverse,
+    borderRadius: 4,
   },
   programButtonText: {
-    fontSize: 16,
+    fontSize: fs(16),
     fontWeight: '600' as const,
     color: colors.textInverse,
     textAlign: 'center' as const,
   },
-  
   // Секции
   section: {
     marginTop: SPACING.lg,
     paddingHorizontal: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: fs(18),
     fontWeight: '700' as const,
     color: colors.textPrimary,
     marginBottom: SPACING.md,
   },
-  
-  // Календарь активности
+  // Календарь активности (оставлен для обратной совместимости)
   calendarCard: {
     backgroundColor: colors.surface,
     borderRadius: BORDER_RADIUS.md,
@@ -107,11 +107,10 @@ programProgressBar: {
     fontWeight: '600' as const,
     color: colors.textInverse,
   },
-  
   // Статистика недели
   statsRow: {
     flexDirection: 'row' as const,
-    gap: SPACING.md,
+    gap: SPACING.sm,
     marginBottom: SPACING.md,
   },
   statCard: {
@@ -123,16 +122,15 @@ programProgressBar: {
     borderColor: colors.border,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: fs(24),
     fontWeight: '700' as const,
     color: colors.textPrimary,
     marginBottom: SPACING.xs,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.textSecondary,
   },
-  
   // Прогресс упражнений
   progressCard: {
     backgroundColor: colors.surface,

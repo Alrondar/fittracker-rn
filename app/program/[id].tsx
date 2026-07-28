@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -56,6 +56,10 @@ export default function ProgramDetailScreen() {
   const { userId } = useStore();
   const { colors } = useTheme();
   const { toast, showToast, hideToast } = useToast();
+
+  // ✅ Мёртвый слой пикера (exerciseSearch/availableExercises/loadAvailableExercises/
+  //    sortBy/showSortSheet) из деструктуризации УБРАН: пикер теперь самодостаточен
+  //    на useExercises и ничего этого из хука не читает.
   const {
     program,
     editedProgram,
@@ -87,14 +91,6 @@ export default function ProgramDetailScreen() {
     setSelectedExerciseIndex,
     selectedPhaseIndex,
     setSelectedPhaseIndex,
-    exerciseSearch,
-    setExerciseSearch,
-    availableExercises,
-    loadingExercises,
-    sortBy,
-    setSortBy,
-    showSortSheet,
-    setShowSortSheet,
     handleStartProgram,
     toggleEditMode,
     saveProgram,
@@ -116,13 +112,13 @@ export default function ProgramDetailScreen() {
     onDayDragEnd,
     addExercise,
     removeExercise,
-    loadAvailableExercises,
     handleAddExerciseFromPicker,
   } = useProgramEditor(id as string, userId);
 
-  const cardStyles = createCardStyles(colors);
-  const badgeStyles = createBadgeStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
+  // ✅ Фабрики стилей — через useMemo (правило доки: никогда не в renderItem/на каждый рендер).
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const badgeStyles = useMemo(() => createBadgeStyles(colors), [colors]);
+  const buttonStyles = useMemo(() => createButtonStyles(colors), [colors]);
 
   // ===== Шаринг по коду =====
   const [showShareModal, setShowShareModal] = useState(false);
@@ -132,28 +128,63 @@ export default function ProgramDetailScreen() {
   const getLevelInfo = (level: string) => {
     switch (level) {
       case 'beginner':
-        return { label: 'Новичок', color: LEVEL_COLORS.beginner, icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} /> };
+        return {
+          label: 'Новичок',
+          color: LEVEL_COLORS.beginner,
+          icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} />,
+        };
       case 'intermediate':
-        return { label: 'Средний', color: LEVEL_COLORS.intermediate, icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} /> };
+        return {
+          label: 'Средний',
+          color: LEVEL_COLORS.intermediate,
+          icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} />,
+        };
       case 'advanced':
-        return { label: 'Продвинутый', color: LEVEL_COLORS.advanced, icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} /> };
+        return {
+          label: 'Продвинутый',
+          color: LEVEL_COLORS.advanced,
+          icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} />,
+        };
       default:
-        return { label: level, color: colors.textSecondary, icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} /> };
+        return {
+          label: level,
+          color: colors.textSecondary,
+          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
+        };
     }
   };
 
-  const getIntensityInfo = useCallback((intensity: string) => {
-    switch (intensity) {
-      case 'high':
-        return { label: 'Высокая', color: colors.error, icon: <TrendingUp size={12} color={colors.error} strokeWidth={2} /> };
-      case 'medium':
-        return { label: 'Средняя', color: colors.warning, icon: <Minus size={12} color={colors.warning} strokeWidth={2} /> };
-      case 'low':
-        return { label: 'Низкая', color: colors.success, icon: <TrendingDown size={12} color={colors.success} strokeWidth={2} /> };
-      default:
-        return { label: intensity, color: colors.textSecondary, icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} /> };
-    }
-  }, [colors]);
+  const getIntensityInfo = useCallback(
+    (intensity: string) => {
+      switch (intensity) {
+        case 'high':
+          return {
+            label: 'Высокая',
+            color: colors.error,
+            icon: <TrendingUp size={12} color={colors.error} strokeWidth={2} />,
+          };
+        case 'medium':
+          return {
+            label: 'Средняя',
+            color: colors.warning,
+            icon: <Minus size={12} color={colors.warning} strokeWidth={2} />,
+          };
+        case 'low':
+          return {
+            label: 'Низкая',
+            color: colors.success,
+            icon: <TrendingDown size={12} color={colors.success} strokeWidth={2} />,
+          };
+        default:
+          return {
+            label: intensity,
+            color: colors.textSecondary,
+            icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} />,
+          };
+      }
+    },
+    [colors],
+  );
 
   if (loading) {
     return (
@@ -162,10 +193,16 @@ export default function ProgramDetailScreen() {
       </View>
     );
   }
+
   if (!program) {
     return (
       <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
-        <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center', marginTop: 100 }]}>
+        <Text
+          style={[
+            typography.body,
+            { color: colors.textSecondary, textAlign: 'center', marginTop: 100 },
+          ]}
+        >
           Программа не найдена
         </Text>
       </View>
@@ -191,6 +228,7 @@ export default function ProgramDetailScreen() {
       setShareLoading(false);
     }
   };
+
   const shareViaSystem = () => {
     if (!shareCode) return;
     const formatted = formatShareCode(shareCode);
@@ -205,7 +243,11 @@ export default function ProgramDetailScreen() {
       colors={GRADIENTS.hero}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={{ paddingTop: SPACING.xl + 10, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl }}
+      style={{
+        paddingTop: SPACING.xl + 10,
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.xl,
+      }}
     >
       <FadeIn>
         <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.sm }]}>
@@ -214,7 +256,14 @@ export default function ProgramDetailScreen() {
         <Text style={[typography.body, { color: 'rgba(255,255,255,0.9)', marginBottom: SPACING.lg }]}>
           {displayProgram.description}
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: SPACING.sm,
+            marginBottom: SPACING.lg,
+          }}
+        >
           <View style={badgeStyles.metaBadge}>
             {levelInfo.icon}
             <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
@@ -230,7 +279,12 @@ export default function ProgramDetailScreen() {
         </View>
         <View style={cardStyles.scheduleBlock}>
           <View style={cardStyles.scheduleHeader}>
-            <Text style={[typography.caption, { color: 'rgba(255,255,255,0.9)', fontWeight: '600' }]}>
+            <Text
+              style={[
+                typography.caption,
+                { color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
+              ]}
+            >
               Расписание:
             </Text>
             {editMode && (
@@ -256,13 +310,17 @@ export default function ProgramDetailScreen() {
   );
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         {renderHero()}
+
         {/* ===== Фазы ===== */}
         <View style={{ paddingTop: SPACING.md }}>
           {phases.map((phase, phaseIndex) => (
@@ -303,7 +361,9 @@ export default function ProgramDetailScreen() {
                 }
               }}
               onAddExercise={(flatIndex) => addExercise(flatIndex)}
-              onRemoveExercise={(flatIndex, exerciseIndex) => removeExercise(flatIndex, exerciseIndex)}
+              onRemoveExercise={(flatIndex, exerciseIndex) =>
+                removeExercise(flatIndex, exerciseIndex)
+              }
               updateExerciseParams={updateExerciseParams}
               onExerciseDragEnd={(flatIndex, data) => onExerciseDragEnd(flatIndex, data)}
               onAddDayToWeek={(week) => addDayToPhaseWeek(phaseIndex, week)}
@@ -340,7 +400,12 @@ export default function ProgramDetailScreen() {
       </ScrollView>
 
       {/* Футер с кнопками */}
-      <View style={[commonStyles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+      <View
+        style={[
+          commonStyles.footer,
+          { backgroundColor: colors.surface, borderTopColor: colors.border },
+        ]}
+      >
         <View style={{ flexDirection: 'row', gap: SPACING.md }}>
           {editMode && (
             <TouchableOpacity
@@ -355,7 +420,14 @@ export default function ProgramDetailScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[buttonStyles.primary, buttonStyles.large, { flex: editMode ? 2 : 1, backgroundColor: editMode ? colors.success : colors.primary }]}
+            style={[
+              buttonStyles.primary,
+              buttonStyles.large,
+              {
+                flex: editMode ? 2 : 1,
+                backgroundColor: editMode ? colors.success : colors.primary,
+              },
+            ]}
             onPress={editMode ? saveProgram : handleStartProgram}
             disabled={saving || starting}
             activeOpacity={0.8}
@@ -433,10 +505,20 @@ export default function ProgramDetailScreen() {
         )}
       </TouchableOpacity>
 
-      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onHide={hideToast}
+      />
 
       {/* ===== Модалки ===== */}
-      <Modal visible={showPhaseSettings} transparent animationType="slide" onRequestClose={() => setShowPhaseSettings(false)}>
+      <Modal
+        visible={showPhaseSettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPhaseSettings(false)}
+      >
         <PhaseSettingsSheet
           phase={selectedPhaseIndex >= 0 ? phases[selectedPhaseIndex] : null}
           colors={colors}
@@ -451,7 +533,13 @@ export default function ProgramDetailScreen() {
           onClose={() => setShowPhaseSettings(false)}
         />
       </Modal>
-      <Modal visible={showExerciseSettings} transparent animationType="slide" onRequestClose={() => setShowExerciseSettings(false)}>
+
+      <Modal
+        visible={showExerciseSettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExerciseSettings(false)}
+      >
         <ExerciseSettingsSheet
           exercise={selectedExercise}
           colors={colors}
@@ -466,7 +554,13 @@ export default function ProgramDetailScreen() {
           onClose={() => setShowExerciseSettings(false)}
         />
       </Modal>
-      <Modal visible={showDaySettings} transparent animationType="slide" onRequestClose={() => setShowDaySettings(false)}>
+
+      <Modal
+        visible={showDaySettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDaySettings(false)}
+      >
         <DaySettingsSheet
           day={selectedDay}
           colors={colors}
@@ -481,24 +575,29 @@ export default function ProgramDetailScreen() {
           onClose={() => setShowDaySettings(false)}
         />
       </Modal>
-      <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}>
+
+      {/* ✅ Пикер самодостаточен: поиск/фильтры/иконки живёт внутри него.
+          Экран передаёт только колбэк выбора + закрытие + стили. */}
+      <Modal
+        visible={showExercisePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExercisePicker(false)}
+      >
         <ExercisePickerSheet
-          searchQuery={exerciseSearch}
-          onSearchChange={setExerciseSearch}
-          exercises={availableExercises}
-          loading={loadingExercises}
-          onLoadExercises={loadAvailableExercises}
           onSelectExercise={handleAddExerciseFromPicker}
-          onClose={() => { setShowExercisePicker(false); setExerciseSearch(''); }}
+          onClose={() => setShowExercisePicker(false)}
           colors={colors}
           badgeStyles={badgeStyles}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          showSortSheet={showSortSheet}
-          setShowSortSheet={setShowSortSheet}
         />
       </Modal>
-      <Modal visible={showScheduleEditor} transparent animationType="slide" onRequestClose={() => setShowScheduleEditor(false)}>
+
+      <Modal
+        visible={showScheduleEditor}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowScheduleEditor(false)}
+      >
         <ScheduleEditorSheet
           schedule={editedProgram?.schedule || []}
           onSave={(newSchedule) => {
@@ -512,8 +611,14 @@ export default function ProgramDetailScreen() {
           badgeStyles={badgeStyles}
         />
       </Modal>
-      {/* ✅ Модалка шаринга по коду */}
-      <Modal visible={showShareModal} transparent animationType="slide" onRequestClose={() => setShowShareModal(false)}>
+
+      {/* Модалка шаринга по коду */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShareModal(false)}
+      >
         <ShareProgramSheet
           code={shareCode}
           loading={shareLoading}

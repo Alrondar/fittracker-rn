@@ -72,14 +72,14 @@ export const purpleLightTheme: Theme = {
     shadow: 'rgba(0, 0, 0, 0.1)',
     overlay: 'rgba(0, 0, 0, 0.5)',
   },
-gradients: {
-  primary: ['#7c3aed', '#5b21b6'],
-  success: ['#10b981', '#059669'],
-  warning: ['#f59e0b', '#d97706'],
-  danger: ['#ef4444', '#dc2626'],
-  hero: ['#8b5cf6', '#3b82f6'],
-  dark: ['#1e293b', '#0f172a'],
-},
+  gradients: {
+    primary: ['#7c3aed', '#5b21b6'],
+    success: ['#10b981', '#059669'],
+    warning: ['#f59e0b', '#d97706'],
+    danger: ['#ef4444', '#dc2626'],
+    hero: ['#8b5cf6', '#3b82f6'],
+    dark: ['#1e293b', '#0f172a'],
+  },
 };
 
 export const purpleDarkTheme: Theme = {
@@ -109,14 +109,14 @@ export const purpleDarkTheme: Theme = {
     shadow: 'rgba(0, 0, 0, 0.5)',
     overlay: 'rgba(0, 0, 0, 0.7)',
   },
-gradients: {
-  primary: ['#8b5cf6', '#6d28d9'],
-  success: ['#34d399', '#10b981'],
-  warning: ['#fbbf24', '#f59e0b'],
-  danger: ['#f87171', '#ef4444'],
-  hero: ['#a78bfa', '#60a5fa'],
-  dark: ['#1e293b', '#0f172a'],
-},
+  gradients: {
+    primary: ['#8b5cf6', '#6d28d9'],
+    success: ['#34d399', '#10b981'],
+    warning: ['#fbbf24', '#f59e0b'],
+    danger: ['#f87171', '#ef4444'],
+    hero: ['#a78bfa', '#60a5fa'],
+    dark: ['#1e293b', '#0f172a'],
+  },
 };
 
 // ============================================================
@@ -509,3 +509,26 @@ export const GRADIENTS = {
   hero: ['#8b5cf6', '#3b82f6'] as const,
   dark: ['#1e293b', '#0f172a'] as const,
 };
+
+// ============================================================
+// АДАПТИВНОСТЬ (масштабирование под ширину экрана)
+// ============================================================
+// Базовая ширина верстки. Всё, что задано в px, пересчитывается относительно неё,
+// чтобы на узких (320–360) и широких (414+) экранах пропорции не «ехали».
+// Ширина читается один раз при загрузке модуля: в app.json зафиксирован portrait,
+// поэтому поворота и рассинхрона между рендерами нет.
+import { Dimensions, PixelRatio } from 'react-native';
+
+const BASE_WIDTH = 375;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+/** Масштаб для размеров, отступов-иконок, радиусов. */
+export const scale = (size: number): number =>
+  PixelRatio.roundToNearestPixel((SCREEN_WIDTH / BASE_WIDTH) * size);
+
+/** Масштаб для шрифтов: сжимается мягче (95% линейно + 5% база),
+ *  чтобы на больших экранах текст не становился несоразмерно крупным. */
+export const fontScale = (size: number): number =>
+  PixelRatio.roundToNearestPixel(
+    (SCREEN_WIDTH / BASE_WIDTH) * size * 0.95 + size * 0.05,
+  );
