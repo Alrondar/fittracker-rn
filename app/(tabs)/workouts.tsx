@@ -1,164 +1,84 @@
-import { useState, useEffect } from 'react';
-import { View, Text, SectionList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { supabase } from '../../src/lib/supabase';
+import { useCallback } from 'react';
+import { View, Text, SectionList, RefreshControl, TouchableOpacity } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import { ClipboardList, Dumbbell, Check, Clock } from 'lucide-react-native';
+
 import { useStore } from '../../src/store/useStore';
+import { useTheme } from '../../src/hooks/useTheme';
+import { useWorkouts } from '../../src/hooks/useWorkouts';
+import type { ActiveProgram, WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import { useTheme } from '../../src/hooks/useTheme';
-import * as Haptics from 'expo-haptics';
-import { ClipboardList, Dumbbell, Check, Clock } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { commonStyles } from '../../src/styles/common';
-import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { commonStyles } from '../../src/styles/common';
+import { typography } from '../../src/styles/typography';
 import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
 
-interface WorkoutSection {
-  key: string;
-  phaseNumber: number;
-  phaseName: string;
-  phaseType: string;
-  weekNumber: number;
-  data: any[];
+type WorkoutStatus = 'completed' | 'next' | 'in_progress' | 'upcoming';
+
+function getWorkoutStatus(w: any, activeProgram: ActiveProgram | null): WorkoutStatus {
+  if (w.finished_at) return 'completed';
+
+  if (
+    activeProgram &&
+    w.phase_number === activeProgram.currentPhase &&
+    w.week_number === activeProgram.currentWeek &&
+    w.day_index === activeProgram.currentDay
+  ) {
+    return 'next';
+  }
+
+  if (w.started_at) return 'in_progress';
+
+  return 'upcoming';
 }
 
-type WorkoutStatus = 'completed' | 'next' | 'in_progress' | 'upcoming';
+function formatDuration(seconds: number): string {
+  return `${Math.floor(seconds / 60)} мин`;
+}
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
-  const [sections, setSections] = useState<WorkoutSection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeProgram, setActiveProgram] = useState<any>(null);
-  const [progress, setProgress] = useState({ completed: 0, total: 0 });
   const router = useRouter();
 
-  useEffect(() => {
-    loadWorkouts();
-  }, [userId]);
+  const { data, isPending, isFetching, refetch } = useWorkouts(userId);
 
-  const loadWorkouts = async () => {
-    if (!userId) return;
-    try {
-      // 1. Активная программа + фазы + прогресс
-      const { data: userProgram, error: progError } = await supabase
-        .from('user_programs')
-        .select(`program_id, current_phase, current_week, current_day, programs!inner (name, program_phases (phase_number, name, phase_type))`)
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .maybeSingle();
+  const activeProgram = data?.activeProgram ?? null;
+  const sections = data?.sections ?? [];
+  const progress = data?.progress ?? { completed: 0, total: 0 };
+  const loading = isPending;
+  const refreshing = isFetching && !isPending;
 
-      if (progError) throw progError;
+  // ✅ Обновляем список при КАЖДОМ возврате на вкладку, а не только на mount.
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
-      if (!userProgram) {
-        setSections([]);
-        setActiveProgram(null);
-        setProgress({ completed: 0, total: 0 });
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      const prog = Array.isArray(userProgram.programs) ? userProgram.programs[0] : userProgram.programs;
-      const phases = prog?.program_phases || [];
-      const curPhase = userProgram.current_phase ?? 1;
-      const curWeek = userProgram.current_week ?? 1;
-      const curDay = userProgram.current_day ?? 1;
-
-      setActiveProgram({
-        programId: userProgram.program_id,
-        name: prog?.name || 'Программа',
-        currentPhase: curPhase,
-        currentWeek: curWeek,
-        currentDay: curDay,
-        phases,
-      });
-
-      // 2. Тренировки программы (со статусами)
-      const { data: workouts, error: workError } = await supabase
-        .from('workouts')
-        .select('id, name, description, program_id, phase_number, week_number, day_index, created_at, started_at, finished_at, duration_seconds')
-        .eq('user_id', userId)
-        .eq('program_id', userProgram.program_id)
-        .order('phase_number', { ascending: true })
-        .order('week_number', { ascending: true })
-        .order('day_index', { ascending: true });
-
-      if (workError) throw workError;
-
-      const list = workouts || [];
-
-      // 3. Прогресс (выполнено / всего)
-      const completed = list.filter(w => w.finished_at).length;
-      setProgress({ completed, total: list.length });
-
-      // 4. Секции по (фаза, неделя)
-      const phaseMap = new Map<number, any>(phases.map((p: any) => [p.phase_number, p]));
-      const groups = new Map<string, any[]>();
-      list.forEach(w => {
-        const key = `${w.phase_number ?? 1}-${w.week_number ?? 1}`;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(w);
-      });
-
-      const built: WorkoutSection[] = Array.from(groups.entries()).map(([key, data]) => {
-        const [phaseNum, weekNum] = key.split('-').map(Number);
-        const phase = phaseMap.get(phaseNum);
-        return {
-          key,
-          phaseNumber: phaseNum,
-          phaseName: phase?.name || `Фаза ${phaseNum}`,
-          phaseType: phase?.phase_type || 'custom',
-          weekNumber: weekNum,
-          data,
-        };
-      });
-
-      setSections(built);
-    } catch (e: any) {
-      console.error('Ошибка загрузки тренировок:', e.message);
-      Alert.alert('Ошибка', 'Не удалось загрузить список тренировок');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRefreshing(true);
-    loadWorkouts();
-  };
+    refetch();
+  }, [refetch]);
 
-  const navigateToWorkout = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push(`/workout/${id}`);
-  };
-
-  const getWorkoutStatus = (w: any): WorkoutStatus => {
-    if (w.finished_at) return 'completed';
-    if (
-      activeProgram &&
-      w.phase_number === activeProgram.currentPhase &&
-      w.week_number === activeProgram.currentWeek &&
-      w.day_index === activeProgram.currentDay
-    ) {
-      return 'next';
-    }
-    if (w.started_at) return 'in_progress';
-    return 'upcoming';
-  };
-
-  const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)} мин`;
+  const navigateToWorkout = useCallback(
+    (id: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push(`/workout/${id}`);
+    },
+    [router]
+  );
 
   // ===== Шапка: прогресс программы =====
   const renderHeader = () => {
     if (!activeProgram) return null;
+
     const currentPhaseObj = activeProgram.phases.find(
       (p: any) => p.phase_number === activeProgram.currentPhase
     );
@@ -175,8 +95,16 @@ export default function WorkoutsScreen() {
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
             {activeProgram.name}
           </Text>
+
           {currentPhaseObj && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SPACING.xs,
+                marginTop: 4,
+              }}
+            >
               <View
                 style={{
                   flexDirection: 'row',
@@ -189,20 +117,48 @@ export default function WorkoutsScreen() {
                 }}
               >
                 {PhaseIcon && <PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
-                <Text style={[typography.captionSmall, { color: phaseColor, fontWeight: '700' }]}>
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: phaseColor, fontWeight: '700' },
+                  ]}
+                >
                   {currentPhaseObj.name}
                 </Text>
               </View>
+
               <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                Фаза {activeProgram.currentPhase}/{activeProgram.phases.length} · Неделя {activeProgram.currentWeek}
+                Фаза {activeProgram.currentPhase}/{activeProgram.phases.length} · Неделя{' '}
+                {activeProgram.currentWeek}
               </Text>
             </View>
           )}
+
           <View style={{ marginTop: SPACING.md }}>
-            <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surfaceSecondary, overflow: 'hidden' as const }}>
-              <View style={{ height: '100%' as const, width: `${progressPct}%` as const, backgroundColor: phaseColor, borderRadius: 4 }} />
+            <View
+              style={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: colors.surfaceSecondary,
+                overflow: 'hidden' as const,
+              }}
+            >
+              <View
+                style={{
+                  height: '100%' as const,
+                  width: `${progressPct}%` as const,
+                  backgroundColor: phaseColor,
+                  borderRadius: 4,
+                }}
+              />
             </View>
-            <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textSecondary, marginTop: SPACING.xs },
+              ]}
+            >
               Выполнено {progress.completed} из {progress.total} тренировок
             </Text>
           </View>
@@ -216,6 +172,7 @@ export default function WorkoutsScreen() {
     const phaseMeta = getPhaseMeta(section.phaseType);
     const phaseColor = getPhaseColor(section.phaseType, colors);
     const PhaseIcon = phaseMeta.icon;
+
     return (
       <SectionHeader
         title={section.phaseName}
@@ -229,16 +186,19 @@ export default function WorkoutsScreen() {
 
   // ===== Карточка тренировки (со статусом) =====
   const renderWorkoutItem = ({ item, section }: { item: any; section: WorkoutSection }) => {
-    const status = getWorkoutStatus(item);
+    const status = getWorkoutStatus(item, activeProgram);
     const phaseColor = getPhaseColor(section.phaseType, colors);
     const phaseMeta = getPhaseMeta(section.phaseType);
     const PhaseIcon = phaseMeta.icon;
 
     const borderColor =
-      status === 'next' ? colors.primary
-      : status === 'in_progress' ? colors.warning
-      : status === 'completed' ? colors.success + '60'
-      : colors.border;
+      status === 'next'
+        ? colors.primary
+        : status === 'in_progress'
+          ? colors.warning
+          : status === 'completed'
+            ? colors.success + '60'
+            : colors.border;
 
     return (
       <FadeIn>
@@ -263,27 +223,49 @@ export default function WorkoutsScreen() {
               >
                 {section.phaseName}
               </AppBadge>
-              <AppBadge variant="primary" size="small" icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}>
+
+              <AppBadge
+                variant="primary"
+                size="small"
+                icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}
+              >
                 Нед {item.week_number}, День {item.day_index}
               </AppBadge>
+
               {status === 'next' && (
                 <AppBadge variant="primary" size="small">Следующая</AppBadge>
               )}
+
               {status === 'completed' && (
-                <AppBadge variant="success" size="small" icon={<Check size={12} color={colors.success} strokeWidth={2} />}>
+                <AppBadge
+                  variant="success"
+                  size="small"
+                  icon={<Check size={12} color={colors.success} strokeWidth={2} />}
+                >
                   Выполнена
                 </AppBadge>
               )}
+
               {status === 'in_progress' && (
                 <AppBadge variant="warning" size="small">В процессе</AppBadge>
               )}
             </View>
 
-            <Text style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]} numberOfLines={2}>
+            <Text
+              style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]}
+              numberOfLines={2}
+            >
               {item.name}
             </Text>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: SPACING.md }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: SPACING.md,
+              }}
+            >
               {status === 'completed' && item.duration_seconds ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
@@ -293,9 +275,13 @@ export default function WorkoutsScreen() {
                 </View>
               ) : (
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  {new Date(item.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                  {new Date(item.created_at).toLocaleDateString('ru-RU', {
+                    day: 'numeric',
+                    month: 'long',
+                  })}
                 </Text>
               )}
+
               {(status === 'next' || status === 'in_progress') && (
                 <Text style={[typography.labelBold, { color: colors.primary }]}>
                   {status === 'in_progress' ? 'Продолжить →' : 'Начать →'}
@@ -311,7 +297,9 @@ export default function WorkoutsScreen() {
   const renderEmpty = () => (
     <FadeIn delay={200} style={commonStyles.emptyContainer}>
       <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет тренировок</Text>
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
+        Нет тренировок
+      </Text>
       <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
         {activeProgram
           ? `Для программы "${activeProgram.name}" ещё нет тренировок.`
@@ -323,11 +311,14 @@ export default function WorkoutsScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <View style={commonStyles.header}>
-        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>Тренировки</Text>
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
+          Тренировки
+        </Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
           {activeProgram?.name || 'Нет активной программы'}
         </Text>
       </View>
+
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
@@ -341,7 +332,11 @@ export default function WorkoutsScreen() {
           contentContainerStyle={{ paddingBottom: 100 }}
           stickySectionHeadersEnabled={true}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
           }
         />
       )}

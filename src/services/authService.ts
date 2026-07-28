@@ -8,8 +8,12 @@ import type { Session, User } from '@supabase/supabase-js';
  * через onAuthStateChange (единственный источник истины по переходам).
  */
 
-/** Страховочное создание профиля (баг 1). Идемпотентно: on conflict do nothing.
- *  Имя таблицы/колонок сверьте с database.types.ts (предположительно `profiles`). */
+/**
+ * Страховочное создание профиля. Идемпотентно: on conflict do nothing.
+ * ⚠️ В `profiles` НЕТ колонки `email` (сверено с database.types.ts и схемой БД).
+ *    Писать email сюда нельзя — это роняет upsert ошибкой 42703.
+ *    Email пользователя всегда берётся из auth.users (supabase.auth.getUser()).
+ */
 async function ensureProfile(userId: string): Promise<void> {
   if (!userId) return;
 
@@ -18,11 +22,12 @@ async function ensureProfile(userId: string): Promise<void> {
       .from('profiles')
       .upsert({ id: userId }, { onConflict: 'id' });
 
+    // 23505 = unique violation (профиль уже есть) — не ошибка
     if (error && !String(error.code).includes('23505')) {
       console.warn('[authService] ensureProfile:', error.message);
     }
   } catch (e) {
-    console.warn('[authService] ensureProfile threw:', e);
+    console.warn('[authService] ensureProfile threw:', e); // вход НЕ блокируем
   }
 }
 
@@ -53,8 +58,9 @@ export async function signUp(email: string, password: string): Promise<{
 
   if (error) throw error;
 
-  // Если сессия есть, значит email confirmation выключен или уже подтверждён.
-  // Если сессии нет, профиль создаст триггер в БД.
+  // Если сессия есть — email confirmation выключен или уже подтверждён,
+  // создаём профиль сразу (страховка поверх триггера БД).
+  // Если сессии нет — профиль создаст триггер on_auth_user_created.
   if (data.user && data.session) {
     await ensureProfile(data.user.id);
   }
@@ -70,8 +76,7 @@ export async function signOut(): Promise<void> {
   if (error) throw error; // SIGNED_OUT поймает _layout и редиректнет в auth
 }
 
-/** Запрос письма сброса пароля. redirectTo — deep link в приложение
- *  (схема из app.json, напр. fittracker://reset-password). Сверьте со своим scheme. */
+/** Запрос письма сброса пароля. redirectTo — deep link (fittracker://reset-password). */
 export async function sendPasswordReset(email: string, redirectTo?: string): Promise<void> {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
     ...(redirectTo ? { redirectTo } : {}),

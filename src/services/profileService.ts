@@ -39,18 +39,22 @@ export interface PersonalRecord {
 export const profileService = {
   async getProfileData(userId: string): Promise<ProfileData> {
     const { data: { user } } = await supabase.auth.getUser();
-  const { data: profileData } = await supabase
-  .from('profiles')
-  .select('username, full_name, avatar_url, current_weight_kg')
-  .eq('id', userId)
-  .maybeSingle();
+
+    // maybeSingle: если профиля ещё нет — вернёт null без ошибки PGRST116
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('username, full_name, avatar_url, current_weight_kg')
+      .eq('id', userId)
+      .maybeSingle();
 
     return {
       email: user?.email || '',
       username: profileData?.username || user?.email?.split('@')[0] || 'Пользователь',
       fullName: profileData?.full_name || null,
       avatarUrl: profileData?.avatar_url || null,
-      weight: profileData?.current_weight_kg ? parseFloat(profileData.current_weight_kg) : null,
+      weight: profileData?.current_weight_kg
+        ? parseFloat(profileData.current_weight_kg)
+        : null,
     };
   },
 
@@ -70,7 +74,10 @@ export const profileService = {
     let totalWorkouts = 0;
 
     workouts?.forEach((workout: any) => {
-      const hasLogs = workout.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0);
+      const hasLogs = workout.workout_exercises?.some(
+        (ex: any) => ex.workout_logs?.length > 0
+      );
+
       if (hasLogs) {
         totalWorkouts++;
         workout.workout_exercises?.forEach((ex: any) => {
@@ -89,6 +96,7 @@ export const profileService = {
   },
 
   async getNutritionTargets(userId: string): Promise<NutritionTargets> {
+    // maybeSingle: отсутствие профиля не роняет запрос
     const { data } = await supabase
       .from('profiles')
       .select('target_calories, target_proteins, target_fats, target_carbs')
@@ -105,6 +113,7 @@ export const profileService = {
 
   async getDailyNutrition(userId: string): Promise<DailyNutrition> {
     const today = new Date().toISOString().split('T')[0];
+
     const { data } = await supabase
       .from('nutrition_logs')
       .select('calories, proteins, fats, carbs, water_ml')
@@ -135,28 +144,45 @@ export const profileService = {
 
     const { data: todayWorkouts } = await supabase
       .from('workouts')
-      .select('id, name, created_at')
+      .select('id, created_at')
       .eq('user_id', userId)
       .gte('created_at', startOfDay)
       .lte('created_at', endOfDay);
 
     if (!todayWorkouts || todayWorkouts.length === 0) return 0;
 
+    const workoutIds = todayWorkouts.map((w) => w.id);
+
+    // ✅ Устранён N+1: один запрос всех логов за день вместо запроса на каждую тренировку
+    const { data: logs } = await supabase
+      .from('workout_logs')
+      .select('completed_at, workout_exercises!inner (workout_id)')
+      .in('workout_exercises.workout_id', workoutIds)
+      .order('completed_at', { ascending: true });
+
+    const logsByWorkout = new Map<string, number[]>();
+
+    logs?.forEach((log: any) => {
+      const workoutId = log.workout_exercises?.workout_id;
+      if (!workoutId || !log.completed_at) return;
+
+      const time = new Date(log.completed_at).getTime();
+      if (!logsByWorkout.has(workoutId)) logsByWorkout.set(workoutId, []);
+      logsByWorkout.get(workoutId)!.push(time);
+    });
+
     let totalBurned = 0;
 
     for (const workout of todayWorkouts) {
-      const { data: logs } = await supabase
-        .from('workout_logs')
-        .select('completed_at, workout_exercises!inner(workout_id)')
-        .eq('workout_exercises.workout_id', workout.id)
-        .order('completed_at', { ascending: true });
+      const times = logsByWorkout.get(workout.id);
 
-      if (logs && logs.length > 0) {
-        const firstLog = new Date(logs[0].completed_at).getTime();
-        const lastLog = new Date(logs[logs.length - 1].completed_at).getTime();
+      if (times && times.length > 0) {
+        const firstLog = Math.min(...times);
+        const lastLog = Math.max(...times);
         const durationHours = Math.max(0, (lastLog - firstLog) / 1000 / 3600);
         totalBurned += 5.0 * userWeight * durationHours;
       } else {
+        // Fallback: тренировка без логов ≈ 45 минут
         totalBurned += 5.0 * userWeight * (45 / 60);
       }
     }
@@ -172,7 +198,7 @@ export const profileService = {
 
     if (!userWorkouts || userWorkouts.length === 0) return [];
 
-    const workoutIds = userWorkouts.map(w => w.id);
+    const workoutIds = userWorkouts.map((w) => w.id);
 
     const { data: workoutExercises } = await supabase
       .from('workout_exercises')
@@ -181,15 +207,15 @@ export const profileService = {
 
     if (!workoutExercises || workoutExercises.length === 0) return [];
 
-    const exerciseIds = [...new Set(workoutExercises.map(we => we.exercise_id))];
-    const workoutExerciseIds = workoutExercises.map(we => we.id);
+    const exerciseIds = [...new Set(workoutExercises.map((we) => we.exercise_id))];
+    const workoutExerciseIds = workoutExercises.map((we) => we.id);
 
     const { data: exercises } = await supabase
       .from('exercises')
       .select('id, name')
       .in('id', exerciseIds);
 
-    const exerciseNameMap = new Map(exercises?.map(e => [e.id, e.name]) || []);
+    const exerciseNameMap = new Map(exercises?.map((e) => [e.id, e.name]) || []);
 
     const { data: logs } = await supabase
       .from('workout_logs')
@@ -200,7 +226,9 @@ export const profileService = {
     const exerciseRecords: Record<string, PersonalRecord> = {};
 
     logs?.forEach((log: any) => {
-      const workoutExercise = workoutExercises.find(we => we.id === log.workout_exercise_id);
+      const workoutExercise = workoutExercises.find(
+        (we) => we.id === log.workout_exercise_id
+      );
       if (!workoutExercise) return;
 
       const exerciseId = workoutExercise.exercise_id;
@@ -210,13 +238,16 @@ export const profileService = {
       const weight = parseFloat(log.weight_kg) || 0;
       const reps = parseInt(log.reps) || 0;
 
-      if (!exerciseRecords[exerciseId] || weight > exerciseRecords[exerciseId].maxWeight) {
+      if (
+        !exerciseRecords[exerciseId] ||
+        weight > exerciseRecords[exerciseId].maxWeight
+      ) {
         exerciseRecords[exerciseId] = { name: exerciseName, maxWeight: weight, reps };
       }
     });
 
     return Object.values(exerciseRecords)
-      .filter(record => record.maxWeight > 0)
+      .filter((record) => record.maxWeight > 0)
       .sort((a, b) => b.maxWeight - a.maxWeight)
       .slice(0, 5);
   },
@@ -226,20 +257,20 @@ export const profileService = {
     data: { calories: number; proteins: number; fats: number; carbs: number; water_ml: number }
   ): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
+
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: userId,
       log_date: today,
       meal_type: 'manual',
       ...data,
     });
+
     if (error) throw error;
   },
 };
 
 // ============================================================================
 // ТРАВМЫ — standalone-функции (для useInjuryWarnings и warmupService)
-// Вынесены из объекта profileService для единообразия с exercisesService/
-// programsService и прямого импорта в хуках.
 // ============================================================================
 
 /**
@@ -251,7 +282,9 @@ export async function getActiveInjuries(userId: string): Promise<UserInjury[]> {
     .select('body_part, injury_type, severity')
     .eq('user_id', userId)
     .neq('status', 'recovered');
+
   if (error) throw error;
+
   return (data || []) as UserInjury[];
 }
 
@@ -263,6 +296,8 @@ export async function getInjuryWarningRules(): Promise<WarningRule[]> {
   const { data, error } = await supabase
     .from('injury_exercise_warnings')
     .select('body_part, muscle_group, recommendation');
+
   if (error) return [];
+
   return (data || []) as WarningRule[];
 }

@@ -1,402 +1,694 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Share,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  Sprout,
+  Dumbbell,
+  Flame,
+  Clock,
+  Calendar,
+  Play,
+  Pencil,
+  X,
+  Save,
+  Plus,
   TrendingUp,
   Minus,
   TrendingDown,
-  X,
-  Play,
-  Square,
-  ShieldAlert,
-  Flame,
-  ChevronDown,
+  Share2,
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
-import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../src/constants/injuries';
+
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useWorkoutSession } from '../../src/hooks/useWorkoutSession';
-import { useInjuryWarnings } from '../../src/hooks/useInjuryWarnings';
-import { useWarmup } from '../../src/hooks/useWarmup';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { useProgramEditor } from '../../src/hooks/useProgramEditor';
+import { SPACING, GRADIENTS, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
-import { typography } from '../../src/styles/typography';
-import { RestTimer } from '../../src/components/workout/RestTimer';
-import { WorkoutTimer } from '../../src/components/workout/WorkoutTimer';
-import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
-import { WarmupBlock } from '../../src/components/workout/WarmupBlock';
 import { createCardStyles } from '../../src/styles/components/card';
-import { createWorkoutStyles } from '../../src/styles/components/workout';
+import { createBadgeStyles } from '../../src/styles/components/badge';
+import { createButtonStyles } from '../../src/styles/components/button';
+import { typography } from '../../src/styles/typography';
+import { FadeIn } from '../../src/components/FadeIn';
+import { ListSkeleton } from '../../src/components/Skeleton';
+import { Toast } from '../../src/components/Toast';
+import { useToast } from '../../src/hooks/useToast';
+import { LEVEL_COLORS } from '../../src/constants/semanticColors';
+import { PhaseCard } from '../../src/components/program/PhaseCard';
+import { ExerciseSettingsSheet } from '../../src/components/program/sheets/ExerciseSettingsSheet';
+import { DaySettingsSheet } from '../../src/components/program/sheets/DaySettingsSheet';
+import { ExercisePickerSheet } from '../../src/components/program/sheets/ExercisePickerSheet';
+import { ScheduleEditorSheet } from '../../src/components/program/sheets/ScheduleEditorSheet';
+import { PhaseSettingsSheet } from '../../src/components/program/sheets/PhaseSettingsSheet';
+import { ShareProgramSheet } from '../../src/components/program/sheets/ShareProgramSheet';
+import { generateShareCode, formatShareCode } from '../../src/services/programSharingService';
 
-export default function WorkoutSessionScreen() {
+export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const { userId } = useStore();
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
+  const { toast, showToast, hideToast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Стили создаются ОДИН раз на смену темы
-  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
-  const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
-
-  // Хук сессии тренировки (alternativesCache больше не возвращается — ликвидирован)
   const {
-    exercises,
+    program,
+    editedProgram,
+    setEditedProgram,
     loading,
+    starting,
     saving,
-    isWorkoutActive,
-    setIsWorkoutActive,
-    initialTime,
-    restTimer,
-    restTimeLeft,
-    setRestTimeLeft,
-    isRestFinished,
-    adjustRestTimer,
-    replacements,
-    handleTimerTick,
-    handleTimerStart,
-    handleTimerStop,
-    loadAlternatives,
-    updateSet,
-    isSetCompleted,
-    updateExerciseSettings,
-    replaceExercise,
-    resetToOriginal,
-    startRestTimer,
-    stopRestTimer,
-    saveWorkout,
-  } = useWorkoutSession(id as string, userId);
+    editMode,
+    setEditMode,
+    deletedExerciseIds,
+    setDeletedExerciseIds,
+    showDaySettings,
+    setShowDaySettings,
+    showExerciseSettings,
+    setShowExerciseSettings,
+    showExercisePicker,
+    setShowExercisePicker,
+    showScheduleEditor,
+    setShowScheduleEditor,
+    showPhaseSettings,
+    setShowPhaseSettings,
+    selectedDay,
+    setSelectedDay,
+    selectedExercise,
+    setSelectedExercise,
+    selectedDayIndex,
+    setSelectedDayIndex,
+    selectedExerciseIndex,
+    setSelectedExerciseIndex,
+    selectedPhaseIndex,
+    setSelectedPhaseIndex,
+    exerciseSearch,
+    setExerciseSearch,
+    availableExercises,
+    loadingExercises,
+    sortBy,
+    setSortBy,
+    showSortSheet,
+    setShowSortSheet,
+    handleStartProgram,
+    toggleEditMode,
+    saveProgram,
+    addPhase,
+    removePhase,
+    updatePhaseSettings,
+    movePhase,
+    addDayToPhase,
+    getDaysForPhase,
+    copyTemplateToWeek,
+    resetWeekToTemplate,
+    addDayToPhaseWeek,
+    updateExerciseParams,
+    updateDaySettings,
+    updateSchedule,
+    onExerciseDragEnd,
+    onDayDragEnd,
+    addExercise,
+    removeExercise,
+    loadAvailableExercises,
+    handleAddExerciseFromPicker,
+  } = useProgramEditor(id as string, userId);
 
-  // Хук предупреждений о травмах
-  const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
+  const cardStyles = createCardStyles(colors);
+  const badgeStyles = createBadgeStyles(colors);
+  const buttonStyles = createButtonStyles(colors);
 
-  // ✅ ПОПУТНЫЙ ФИКС: передаём activeInjuries — разминка теперь реально исключает
-  //    противопоказанные упражнения (раньше уходило activeInjuries = []).
-  const {
-    warmupExercises,
-    excludedByInjury,
-    isLoading: isWarmupLoading,
-    activeTimerId,
-    timeLeft,
-    isAllCompleted: isWarmupCompleted,
-    totalDuration: warmupTotalDuration,
-    generateWarmup,
-    startExerciseTimer,
-    stopTimer: stopWarmupTimer,
-    markAsCompleted: markWarmupCompleted,
-    isCompleted: isWarmupExerciseCompleted,
-  } = useWarmup(exercises, activeInjuries);
+  // ===== Шаринг по коду =====
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
 
-  const [showInjuryBanner, setShowInjuryBanner] = useState(false);
-  const [showWarmup, setShowWarmup] = useState(true);
+  // ===== Старт программы =====
+  // ✅ После старта инвалидируем кэши списков, чтобы «Тренировки» и «Dashboard»
+  //    подтянули свежие данные сразу, а не только при ручном pull-to-refresh.
+  //    Тост даёт явный сигнал, что программа начата.
+  const onStartProgram = useCallback(async () => {
+    try {
+      await handleStartProgram();
 
-  // ✅ ФИКС: подсчёт предупреждений мемоизирован (раньше Object.values().filter()
-  //    считался на каждый рендер; теперь — только при смене exerciseWarnings).
-  const { avoidCount, cautionCount, hasWarnings } = useMemo(() => {
-    const values = Object.values(exerciseWarnings);
-    const avoid = values.filter((w) => w.level === 'avoid').length;
-    const caution = values.filter((w) => w.level === 'caution').length;
-    return { avoidCount: avoid, cautionCount: caution, hasWarnings: avoid > 0 || caution > 0 };
-  }, [exerciseWarnings]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['workouts'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['userPrograms'] }),
+        queryClient.invalidateQueries({ queryKey: ['programs'] }),
+      ]);
 
-  // Стабильная ссылка — не пересоздаётся на каждый рендер
-  const getIntensityInfo = useCallback((intensity: string) => {
-    switch (intensity) {
-      case 'high':
+      showToast('Программа начата', 'success');
+    } catch (e: any) {
+      showToast(e?.message || 'Не удалось начать программу', 'error');
+    }
+  }, [handleStartProgram, queryClient, showToast]);
+
+  const getLevelInfo = (level: string) => {
+    switch (level) {
+      case 'beginner':
         return {
-          label: 'Высокая',
-          color: colors.error,
-          bgColor: colors.error + '20',
-          icon: <TrendingUp size={14} color={colors.error} strokeWidth={2} />,
+          label: 'Новичок',
+          color: LEVEL_COLORS.beginner,
+          icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} />,
         };
-      case 'medium':
+      case 'intermediate':
         return {
-          label: 'Средняя',
-          color: colors.warning,
-          bgColor: colors.warning + '20',
-          icon: <Minus size={14} color={colors.warning} strokeWidth={2} />,
+          label: 'Средний',
+          color: LEVEL_COLORS.intermediate,
+          icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} />,
         };
-      case 'low':
+      case 'advanced':
         return {
-          label: 'Низкая',
-          color: colors.success,
-          bgColor: colors.success + '20',
-          icon: <TrendingDown size={14} color={colors.success} strokeWidth={2} />,
+          label: 'Продвинутый',
+          color: LEVEL_COLORS.advanced,
+          icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} />,
         };
       default:
         return {
-          label: intensity,
+          label: level,
           color: colors.textSecondary,
-          bgColor: colors.textSecondary + '20',
-          icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} />,
+          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
         };
     }
-  }, [colors]);
+  };
+
+  const getIntensityInfo = useCallback(
+    (intensity: string) => {
+      switch (intensity) {
+        case 'high':
+          return {
+            label: 'Высокая',
+            color: colors.error,
+            icon: <TrendingUp size={12} color={colors.error} strokeWidth={2} />,
+          };
+        case 'medium':
+          return {
+            label: 'Средняя',
+            color: colors.warning,
+            icon: <Minus size={12} color={colors.warning} strokeWidth={2} />,
+          };
+        case 'low':
+          return {
+            label: 'Низкая',
+            color: colors.success,
+            icon: <TrendingDown size={12} color={colors.success} strokeWidth={2} />,
+          };
+        default:
+          return {
+            label: intensity,
+            color: colors.textSecondary,
+            icon: <Minus size={12} color={colors.textSecondary} strokeWidth={2} />,
+          };
+      }
+    },
+    [colors]
+  );
 
   if (loading) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={commonStyles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-            Загрузка...
-          </Text>
-        </View>
-      </SafeAreaView>
+      <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <ListSkeleton count={3} />
+      </View>
     );
   }
 
-  return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* Таймер отдыха */}
-      {restTimer !== null && (
-        <RestTimer
-          timeLeft={restTimeLeft}
-          total={restTimer}
-          isFinished={isRestFinished}
-          onStop={stopRestTimer}
-          onAdjust={adjustRestTimer}
-          colors={colors}
-          workoutStyles={workoutStyles}
-        />
-      )}
+  if (!program) {
+    return (
+      <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <Text
+          style={[
+            typography.body,
+            { color: colors.textSecondary, textAlign: 'center', marginTop: 100 },
+          ]}
+        >
+          Программа не найдена
+        </Text>
+      </View>
+    );
+  }
 
-      {/* Таймер тренировки */}
-      {isWorkoutActive && (
-        <WorkoutTimer
-          initialSeconds={initialTime}
-          isActive={true}
-          onTick={handleTimerTick}
-          onStart={handleTimerStart}
-          onStop={handleTimerStop}
-          colors={colors}
-        />
-      )}
+  const displayProgram = editMode && editedProgram ? editedProgram : program;
+  const levelInfo = getLevelInfo(displayProgram.level);
+  const phases = displayProgram.phases || [];
+  const allDays = displayProgram.days || [];
 
-      {/* Компактная кнопка предупреждений о травмах */}
-      {hasWarnings && !showInjuryBanner && (
-        <TouchableOpacity
-          onPress={() => {
-            setShowInjuryBanner(true);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }}
+  // ===== Действия шаринга =====
+  const openShare = async () => {
+    setShowShareModal(true);
+
+    if (shareCode) return;
+
+    setShareLoading(true);
+
+    try {
+      const code = await generateShareCode(program.id);
+      setShareCode(code);
+    } catch (e: any) {
+      showToast(e.message || 'Не удалось создать код', 'error');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const shareViaSystem = () => {
+    if (!shareCode) return;
+
+    const formatted = formatShareCode(shareCode);
+
+    Share.share({
+      message: `Моя программа «${program.name}» в FitTracker. Код для импорта: ${formatted}`,
+      title: 'Поделиться программой',
+    }).catch(() => {});
+  };
+
+  const renderHero = () => (
+    <LinearGradient
+      colors={GRADIENTS.hero}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        paddingTop: SPACING.xl + 10,
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.xl,
+      }}
+    >
+      <FadeIn>
+        <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.sm }]}>
+          {displayProgram.name}
+        </Text>
+        <Text
+          style={[
+            typography.body,
+            { color: 'rgba(255,255,255,0.9)', marginBottom: SPACING.lg },
+          ]}
+        >
+          {displayProgram.description}
+        </Text>
+
+        <View
           style={{
             flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: avoidCount > 0 ? colors.error : colors.warning,
-            paddingHorizontal: SPACING.md,
-            paddingVertical: SPACING.sm,
-            borderRadius: 20,
-            margin: SPACING.md,
-            alignSelf: 'flex-end',
-            elevation: 4,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
+            flexWrap: 'wrap',
+            gap: SPACING.sm,
+            marginBottom: SPACING.lg,
           }}
         >
-          <ShieldAlert size={18} color={colors.textInverse} strokeWidth={2} />
-          <Text style={{ color: colors.textInverse, fontWeight: '700', marginLeft: SPACING.xs, fontSize: 13 }}>
-            {avoidCount > 0 ? `${avoidCount}⛔` : ''}{avoidCount > 0 && cautionCount > 0 ? ' ' : ''}{cautionCount > 0 ? `${cautionCount}⚠️` : ''}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Раскрывающийся баннер с деталями травм */}
-      {showInjuryBanner && (
-        <View style={{
-          backgroundColor: avoidCount > 0 ? colors.error + '15' : colors.warning + '15',
-          borderColor: avoidCount > 0 ? colors.error : colors.warning,
-          borderWidth: 1,
-          margin: SPACING.md,
-          borderRadius: BORDER_RADIUS.md,
-          padding: SPACING.md,
-        }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <ShieldAlert size={20} color={avoidCount > 0 ? colors.error : colors.warning} style={{ marginRight: SPACING.sm }} />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, flex: 1 }]}>
-                Внимание: активные травмы
-              </Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowInjuryBanner(false)}>
-              <X size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+          <View style={badgeStyles.metaBadge}>
+            {levelInfo.icon}
+            <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
           </View>
-          {activeInjuries.map((injury, index) => {
-            const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
-            const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
-            const severityLabel = injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
-            return (
-              <Text key={index} style={[typography.caption, { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.xs }]}>
-                • {bodyPartLabel} ({injuryTypeLabel}) — {severityLabel} тяжесть
-              </Text>
-            );
-          })}
-          {avoidCount > 0 && (
-            <Text style={[typography.captionSmall, { color: colors.error, marginTop: SPACING.sm, fontWeight: '600' }]}>
-              🚫 {avoidCount} упражнений противопоказаны
-            </Text>
-          )}
-          {cautionCount > 0 && (
-            <Text style={[typography.captionSmall, { color: colors.warning, marginTop: SPACING.xs, fontWeight: '600' }]}>
-              ⚠️ {cautionCount} упражнений требуют осторожности
-            </Text>
-          )}
-        </View>
-      )}
 
-      {/* Список упражнений (виртуализированный) */}
-      <FlatList
-        data={exercises}
-        keyExtractor={(item) => item.workout_exercise_id}
-        ListHeaderComponent={
-          <>
-            {/* Блок разминки — внутри списка, скроллится вместе с контентом */}
-            {showWarmup && !isWorkoutActive && (warmupExercises.length > 0 || isWarmupLoading) && (
-              <WarmupBlock
-                warmupExercises={warmupExercises}
-                isLoading={isWarmupLoading}
-                excludedByInjury={excludedByInjury}
-                activeTimerId={activeTimerId}
-                timeLeft={timeLeft}
-                isAllCompleted={isWarmupCompleted}
-                totalDuration={warmupTotalDuration}
-                isCompleted={isWarmupExerciseCompleted}
-                onGenerateWarmup={generateWarmup}
-                onStartTimer={startExerciseTimer}
-                onStopTimer={stopWarmupTimer}
-                onMarkCompleted={markWarmupCompleted}
-                onSkip={() => setShowWarmup(false)}
-              />
-            )}
-            {/* Пилюля повторного открытия разминки */}
-            {!showWarmup && !isWorkoutActive && warmupExercises.length > 0 && (
+          <View style={badgeStyles.metaBadge}>
+            <Clock size={14} color="white" strokeWidth={1.5} />
+            <Text style={badgeStyles.metaBadgeText}>{displayProgram.duration} недель</Text>
+          </View>
+
+          <View style={badgeStyles.metaBadge}>
+            <Calendar size={14} color="white" strokeWidth={1.5} />
+            <Text style={badgeStyles.metaBadgeText}>
+              {displayProgram.schedule.length} дн/нед
+            </Text>
+          </View>
+        </View>
+
+        <View style={cardStyles.scheduleBlock}>
+          <View style={cardStyles.scheduleHeader}>
+            <Text
+              style={[
+                typography.caption,
+                { color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
+              ]}
+            >
+              Расписание:
+            </Text>
+
+            {editMode && (
               <TouchableOpacity
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowWarmup(true);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  alignSelf: 'flex-start',
-                  gap: SPACING.sm,
-                  marginHorizontal: SPACING.lg,
-                  marginTop: SPACING.md,
-                  paddingHorizontal: SPACING.md,
-                  paddingVertical: SPACING.sm,
-                  backgroundColor: colors.warning + '12',
-                  borderRadius: BORDER_RADIUS.full,
-                  borderWidth: 1,
-                  borderColor: colors.warning + '40',
-                }}
+                onPress={() => setShowScheduleEditor(true)}
+                style={cardStyles.scheduleEditButton}
+                activeOpacity={0.7}
               >
-                <Flame size={14} color={colors.warning} />
-                <Text style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '600' }]}>
-                  {isWarmupCompleted ? 'Разминка завершена · Показать снова' : 'Показать разминку'}
-                </Text>
-                <ChevronDown size={14} color={colors.textSecondary} style={{ transform: [{ rotate: '180deg' }] }} />
+                <Pencil size={16} color="white" strokeWidth={2} />
               </TouchableOpacity>
             )}
-          </>
-        }
-        renderItem={({ item: exercise, index: exIndex }) => (
-          <ExerciseSlider
-            exercise={exercise}
-            exerciseIndex={exIndex}
-            isReplaced={!!replacements[exercise.workout_exercise_id]}
-            loadAlternatives={loadAlternatives}
-            updateSet={updateSet}
-            isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
-            resetToOriginal={resetToOriginal}
-            startRestTimer={startRestTimer}
-            getIntensityInfo={getIntensityInfo}
-            updateExerciseSettings={updateExerciseSettings}
-            colors={colors}
-            cardStyles={cardStyles}
-            warning={exerciseWarnings[exercise.id] || null}
-          />
-        )}
+          </View>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
+            {displayProgram.schedule.map((day, idx) => (
+              <View key={idx} style={badgeStyles.dayChip}>
+                <Text style={badgeStyles.dayChipText}>{day}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </FadeIn>
+    </LinearGradient>
+  );
+
+  return (
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        windowSize={5}
-        removeClippedSubviews={true}
-      />
+      >
+        {renderHero()}
 
-      {/* Кнопки управления тренировкой */}
-      <View style={{
-        backgroundColor: colors.surface,
-        borderTopColor: colors.border,
-        borderTopWidth: 1,
-        padding: SPACING.lg,
-      }}>
-        {!isWorkoutActive ? (
-          <TouchableOpacity
-            onPress={() => {
-              setIsWorkoutActive(true);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }}
-            disabled={saving}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={gradients.success}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+        {/* ===== Фазы ===== */}
+        <View style={{ paddingTop: SPACING.md }}>
+          {phases.map((phase, phaseIndex) => (
+            <PhaseCard
+              key={phase.id}
+              phase={phase}
+              phaseIndex={phaseIndex}
+              phaseCount={phases.length}
+              days={getDaysForPhase(phase.id)}
+              allDays={allDays}
+              editMode={editMode}
+              colors={colors}
+              cardStyles={cardStyles}
+              badgeStyles={badgeStyles}
+              getIntensityInfo={getIntensityInfo}
+              onMoveUp={() => movePhase(phaseIndex, 'up')}
+              onMoveDown={() => movePhase(phaseIndex, 'down')}
+              onEditPhase={() => {
+                setSelectedPhaseIndex(phaseIndex);
+                setShowPhaseSettings(true);
+              }}
+              onRemovePhase={() => removePhase(phaseIndex)}
+              onAddDay={() => addDayToPhase(phaseIndex)}
+              onDayDragEnd={(data) => onDayDragEnd(data, phase.id)}
+              onEditDaySettings={(day, flatIndex) => {
+                setSelectedDay(day);
+                setSelectedDayIndex(flatIndex);
+                setShowDaySettings(true);
+              }}
+              onExerciseSettings={(day, exerciseIndex) => {
+                if (day.exercises) {
+                  const flatIndex = allDays.indexOf(day);
+                  setSelectedDay(day);
+                  setSelectedDayIndex(flatIndex);
+                  setSelectedExercise(day.exercises[exerciseIndex]);
+                  setSelectedExerciseIndex(exerciseIndex);
+                  setShowExerciseSettings(true);
+                }
+              }}
+              onAddExercise={(flatIndex) => addExercise(flatIndex)}
+              onRemoveExercise={(flatIndex, exerciseIndex) =>
+                removeExercise(flatIndex, exerciseIndex)
+              }
+              updateExerciseParams={updateExerciseParams}
+              onExerciseDragEnd={(flatIndex, data) => onExerciseDragEnd(flatIndex, data)}
+              onAddDayToWeek={(week) => addDayToPhaseWeek(phaseIndex, week)}
+              onCopyTemplateToWeek={(week) => copyTemplateToWeek(phaseIndex, week)}
+              onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
+            />
+          ))}
+
+          {/* Добавить фазу (только в режиме редактирования) */}
+          {editMode && (
+            <TouchableOpacity
+              onPress={addPhase}
+              activeOpacity={0.7}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: SPACING.xs,
+                marginHorizontal: SPACING.lg,
+                marginTop: SPACING.xs,
+                marginBottom: SPACING.md,
                 paddingVertical: SPACING.md,
-                paddingHorizontal: SPACING.xl,
-                borderRadius: BORDER_RADIUS.lg,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                backgroundColor: colors.primary + '08',
               }}
             >
-              <Play size={20} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} style={{ marginRight: SPACING.sm }} />
-              <Text style={[typography.button, { color: colors.textInverse }]}>Начать тренировку</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
+              <Plus size={18} color={colors.primary} strokeWidth={2} />
+              <Text style={[typography.labelBold, { color: colors.primary }]}>
+                Добавить фазу
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Футер с кнопками */}
+      <View
+        style={[
+          commonStyles.footer,
+          { backgroundColor: colors.surface, borderTopColor: colors.border },
+        ]}
+      >
+        <View style={{ flexDirection: 'row', gap: SPACING.md }}>
+          {editMode && (
+            <TouchableOpacity
+              style={[buttonStyles.secondary, { flex: 1 }]}
+              onPress={() => {
+                setEditMode(false);
+                setEditedProgram(program);
+                setDeletedExerciseIds([]);
+              }}
+            >
+              <Text style={buttonStyles.textSecondary}>Отмена</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
-            onPress={saveWorkout}
-            disabled={saving}
+            style={[
+              buttonStyles.primary,
+              buttonStyles.large,
+              {
+                flex: editMode ? 2 : 1,
+                backgroundColor: editMode ? colors.success : colors.primary,
+              },
+            ]}
+            onPress={editMode ? saveProgram : onStartProgram}
+            disabled={saving || starting}
             activeOpacity={0.8}
           >
-            {saving ? (
-              <View style={{ paddingVertical: SPACING.lg, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.primary} size="small" />
-              </View>
+            {saving || starting ? (
+              <ActivityIndicator color="white" size="small" />
             ) : (
-              <LinearGradient
-                colors={gradients.success}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingVertical: SPACING.md,
-                  paddingHorizontal: SPACING.xl,
-                  borderRadius: BORDER_RADIUS.lg,
-                }}
-              >
-                <Square size={20} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} style={{ marginRight: SPACING.sm }} />
-                <Text style={[typography.button, { color: colors.textInverse }]}>Завершить</Text>
-              </LinearGradient>
+              <View style={buttonStyles.content}>
+                {editMode ? (
+                  <>
+                    <Save size={20} color="white" strokeWidth={2} />
+                    <Text style={buttonStyles.textPrimary}>Сохранить</Text>
+                  </>
+                ) : (
+                  <>
+                    <Play size={20} color="white" strokeWidth={2} fill="white" />
+                    <Text style={buttonStyles.textPrimary}>Начать программу</Text>
+                  </>
+                )}
+              </View>
             )}
           </TouchableOpacity>
-        )}
+        </View>
       </View>
+
+      {/* FAB «Поделиться» (только вне режима редактирования) */}
+      {!editMode && (
+        <TouchableOpacity
+          onPress={openShare}
+          style={{
+            position: 'absolute',
+            top: SPACING.xl + 35 + 52,
+            right: SPACING.lg,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: colors.surface,
+            justifyContent: 'center',
+            alignItems: 'center',
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Share2 size={20} color={colors.primary} strokeWidth={2} />
+        </TouchableOpacity>
+      )}
+
+      {/* FAB редактирования */}
+      <TouchableOpacity
+        onPress={toggleEditMode}
+        style={{
+          position: 'absolute',
+          top: SPACING.xl + 35,
+          right: SPACING.lg,
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: colors.surface,
+          justifyContent: 'center',
+          alignItems: 'center',
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        }}
+      >
+        {editMode ? (
+          <X size={20} color={colors.error} strokeWidth={2} />
+        ) : (
+          <Pencil size={20} color={colors.primary} strokeWidth={2} />
+        )}
+      </TouchableOpacity>
+
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onHide={hideToast}
+      />
+
+      {/* ===== Модалки ===== */}
+      <Modal
+        visible={showPhaseSettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPhaseSettings(false)}
+      >
+        <PhaseSettingsSheet
+          phase={selectedPhaseIndex >= 0 ? phases[selectedPhaseIndex] : null}
+          colors={colors}
+          buttonStyles={buttonStyles}
+          onSave={(settings) => {
+            if (selectedPhaseIndex >= 0) {
+              updatePhaseSettings(selectedPhaseIndex, settings);
+              showToast('Настройки фазы сохранены (не забудьте сохранить программу)', 'success');
+            }
+            setShowPhaseSettings(false);
+          }}
+          onClose={() => setShowPhaseSettings(false)}
+        />
+      </Modal>
+
+      <Modal
+        visible={showExerciseSettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExerciseSettings(false)}
+      >
+        <ExerciseSettingsSheet
+          exercise={selectedExercise}
+          colors={colors}
+          buttonStyles={buttonStyles}
+          onSave={(params) => {
+            if (selectedExercise && selectedDayIndex >= 0 && selectedExerciseIndex >= 0) {
+              updateExerciseParams(selectedDayIndex, selectedExerciseIndex, params);
+              showToast('Параметры обновлены', 'success');
+            }
+            setShowExerciseSettings(false);
+          }}
+          onClose={() => setShowExerciseSettings(false)}
+        />
+      </Modal>
+
+      <Modal
+        visible={showDaySettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDaySettings(false)}
+      >
+        <DaySettingsSheet
+          day={selectedDay}
+          colors={colors}
+          buttonStyles={buttonStyles}
+          onSave={(settings) => {
+            if (selectedDayIndex >= 0) {
+              updateDaySettings(selectedDayIndex, settings);
+              showToast('Настройки дня сохранены', 'success');
+            }
+            setShowDaySettings(false);
+          }}
+          onClose={() => setShowDaySettings(false)}
+        />
+      </Modal>
+
+      <Modal
+        visible={showExercisePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowExercisePicker(false);
+          setExerciseSearch('');
+        }}
+      >
+        <ExercisePickerSheet
+          searchQuery={exerciseSearch}
+          onSearchChange={setExerciseSearch}
+          exercises={availableExercises}
+          loading={loadingExercises}
+          onLoadExercises={loadAvailableExercises}
+          onSelectExercise={handleAddExerciseFromPicker}
+          onClose={() => {
+            setShowExercisePicker(false);
+            setExerciseSearch('');
+          }}
+          colors={colors}
+          badgeStyles={badgeStyles}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          showSortSheet={showSortSheet}
+          setShowSortSheet={setShowSortSheet}
+        />
+      </Modal>
+
+      <Modal
+        visible={showScheduleEditor}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowScheduleEditor(false)}
+      >
+        <ScheduleEditorSheet
+          schedule={editedProgram?.schedule || []}
+          onSave={(newSchedule) => {
+            updateSchedule(newSchedule);
+            showToast('Расписание обновлено (не забудьте сохранить программу)', 'success');
+            setShowScheduleEditor(false);
+          }}
+          onClose={() => setShowScheduleEditor(false)}
+          colors={colors}
+          buttonStyles={buttonStyles}
+          badgeStyles={badgeStyles}
+        />
+      </Modal>
+
+      {/* Модалка шаринга по коду */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <ShareProgramSheet
+          code={shareCode}
+          loading={shareLoading}
+          programName={program.name}
+          onShare={shareViaSystem}
+          onClose={() => setShowShareModal(false)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }

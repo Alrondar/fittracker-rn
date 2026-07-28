@@ -887,6 +887,10 @@ export type Database = {
         Args: { p_program_id: string; p_user_id: string }
         Returns: string
       }
+      create_workouts_for_program: {
+        Args: { p_program_id: string; p_user_id: string }
+        Returns: number
+      }
       generate_share_code: { Args: { p_program_id: string }; Returns: string }
       migrate_exercise_equipment: { Args: never; Returns: undefined }
       normalize_equipment_array: { Args: { arr: string[] }; Returns: string[] }
