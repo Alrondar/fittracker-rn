@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
 import {
   getProgramWithDays,
   startProgram,
-  createWorkoutsFromProgram,
   Program,
   ProgramPhase,
   ProgramDay,
@@ -70,35 +69,45 @@ export function useProgramEditor(programId: string, userId: string | null) {
     }
   };
 
-  const handleStartProgram = async () => {
-    if (!userId) return;
-    const phases = program?.phases || [];
-    const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
-    Alert.alert(
-      'Начать программу?',
-      `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Начать',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setStarting(true);
-            try {
-              await startProgram(programId);
-              await createWorkoutsFromProgram(programId, userId);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.replace('/(tabs)/workouts');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            } finally {
-              setStarting(false);
-            }
-          },
+const handleStartProgram = async () => {
+  if (!userId) return;
+  const phases = program?.phases || [];
+  const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
+  Alert.alert(
+    'Начать программу?',
+    `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`,
+    [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Начать',
+        onPress: async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setStarting(true);
+          try {
+            await startProgram(programId);
+
+            // ✅ БЫЛО (медленно, нестабильно):
+            // await createWorkoutsFromProgram(programId, userId);
+
+            // ✅ СТАЛО (один серверный запрос, идемпотентно):
+            const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
+              p_program_id: programId,
+              p_user_id: userId,
+            });
+            if (rpcError) throw rpcError;
+
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.replace('/(tabs)/workouts');
+          } catch (error: any) {
+            Alert.alert('Ошибка', error.message);
+          } finally {
+            setStarting(false);
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
 
 const toggleEditMode = async () => {
   if (editMode) {
@@ -486,16 +495,22 @@ const addDayToPhaseWeek = (phaseIndex: number, week: number) => {
                 .single();
               if (error) throw error;
               realDayId = data.id;
-            } else {
-              updatePromises.push(
-                Promise.resolve(
-                  supabase
-                    .from('program_days')
-                    .update({ phase_id: realPhaseId, week_number: weekNum, day_number: j + 1, position: j + 1 })
-                    .eq('id', day.id)
-                )
-              );
-            }
+} else {
+  updatePromises.push(
+    Promise.resolve(
+      supabase
+        .from('program_days')
+        .update({
+          name: day.name,                 // ✅ ДОБАВЛЕНО: сохраняем название дня
+          phase_id: realPhaseId,
+          week_number: weekNum,
+          day_number: j + 1,
+          position: j + 1,
+        })
+        .eq('id', day.id)
+    )
+  );
+}
             const exercises = day.exercises || [];
             for (let k = 0; k < exercises.length; k++) {
               const exercise = exercises[k];
