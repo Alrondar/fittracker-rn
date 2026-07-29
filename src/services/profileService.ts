@@ -54,11 +54,19 @@ export const profileService = {
       avatarUrl: profileData?.avatar_url || null,
       weight: profileData?.current_weight_kg
         ? parseFloat(profileData.current_weight_kg)
-        : null,
-    };
-  },
-
-  async getStats(userId: string): Promise<ProfileStats> {
+      : null,
+  };
+},
+// SEC-10: обновление имени из настроек (вынесено из UI settings.tsx).
+// RLS profiles_update гарантирует auth.uid() = id.
+async updateFullName(userId: string, fullName: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ full_name: fullName })
+    .eq('id', userId);
+  if (error) throw error;
+},
+async getStats(userId: string): Promise<ProfileStats> {
     const { data: workouts } = await supabase
       .from('workouts')
       .select('id, workout_exercises (workout_logs (weight_kg, reps))')

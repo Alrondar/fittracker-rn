@@ -229,6 +229,7 @@ export function DayCard({
                   </ScaleDecorator>
                 );
               }}
+              scrollEnabled={false}
             />
           ) : (
             exercises.map((exercise: ProgramExercise, exIndex: number) => {

@@ -445,9 +445,14 @@ export async function createWorkoutsFromProgram(programId: string, userId: strin
               .from('exercises')
               .select('id')
               .ilike('name', `%${exercise.exercise_name}%`)
-              .limit(1)
-              .single();
-            exerciseId = foundExercise?.id || null;
+           .limit(1)
+           .maybeSingle();
+         exerciseId = foundExercise?.id || null;
+         // SEC-4: имя не нашлось в справочнике → пропускаем подход, как в RPC
+         // create_workouts_for_program (там фильтр pe.exercise_id is not null).
+         // Без этого вставка workout_exercises с exercise_id = null либо упадёт
+         // по NOT NULL, либо создаст битую строку без связи с упражнением.
+         if (!exerciseId) continue;
 
             const { error: exError } = await supabase
               .from('workout_exercises')

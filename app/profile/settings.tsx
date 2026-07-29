@@ -19,7 +19,8 @@ import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
-import { supabase } from '../../src/lib/supabase';
+import { profileService } from '../../src/services/profileService';
+import { sendPasswordReset } from '../../src/services/authService';
 import { useStore } from '../../src/store/useStore';
 import { useTimerSettings } from '../../src/hooks/useTimerSettings';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -36,7 +37,6 @@ import {
   Save,
   Bell,
   Ruler,
-  Download,
   Info,
   HelpCircle,
   ArrowUpDown,
@@ -74,14 +74,11 @@ export default function SettingsScreen() {
   const loadUserData = async () => {
     if (!userId) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', userId)
-        .single();
-      setFullName(profileData?.full_name || '');
-      setEmail(user?.email || '');
+      // SEC-10: единый сервисный вызов вместо supabase.auth.getUser + supabase.from в UI.
+      // getProfileData внутри делает getUser() + profiles.maybeSingle() → email + fullName.
+      const data = await profileService.getProfileData(userId);
+      setFullName(data.fullName || '');
+      setEmail(data.email || '');
     } catch (e) {
       console.error('Ошибка загрузки данных:', e);
     }
@@ -91,8 +88,7 @@ export default function SettingsScreen() {
     if (!userId) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId);
-      if (error) throw error;
+      await profileService.updateFullName(userId, fullName);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Успех', 'Данные сохранены');
     } catch (e: any) {
@@ -109,34 +105,10 @@ export default function SettingsScreen() {
         text: 'Отправить',
         onPress: async () => {
           try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email);
-            if (error) throw error;
+            // SEC-5: через authService + redirectTo, чтобы письмо вело обратно в
+            // приложение (PASSWORD_RECOVERY → update-password), а не на Supabase URL.
+            await sendPasswordReset(email, 'fittracker://reset-password');
             Alert.alert('Успех', 'Письмо для смены пароля отправлено');
-          } catch (e: any) {
-            Alert.alert('Ошибка', e.message);
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleExportData = () => {
-    Alert.alert('Экспорт данных', 'Ваши данные будут экспортированы в формате JSON', [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Экспортировать',
-        onPress: async () => {
-          try {
-            const { data: workouts } = await supabase.from('workouts').select('*').eq('user_id', userId);
-            const { data: nutritionLogs } = await supabase
-              .from('nutrition_logs')
-              .select('*')
-              .eq('user_id', userId);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert(
-              'Успех',
-              `Экспортировано:\n- ${workouts?.length || 0} тренировок\n- ${nutritionLogs?.length || 0} записей питания`,
-            );
           } catch (e: any) {
             Alert.alert('Ошибка', e.message);
           }
@@ -577,32 +549,6 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
-        </View>
-
-        {/* Данные */}
-        <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-            Данные
-          </Text>
-          <TouchableOpacity
-            style={[
-              cardStyles.compact,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderColor: colors.border,
-                borderWidth: 1,
-              },
-            ]}
-            onPress={handleExportData}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Download size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-              <Text style={[typography.label, { color: colors.textPrimary }]}>Экспорт данных</Text>
-            </View>
-            <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
         </View>
 
         {/* О приложении */}
