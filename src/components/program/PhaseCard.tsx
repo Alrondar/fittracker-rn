@@ -85,9 +85,9 @@ export function PhaseCard({
   const sortByDay = (a: ProgramDay, b: ProgramDay) => (a.day_number || 0) - (b.day_number || 0);
   const weekDays = days.filter((d) => (d.week_number ?? 1) === selectedWeek).sort(sortByDay);
   const templateDays = days.filter((d) => (d.week_number ?? 1) === 1).sort(sortByDay);
-  const isOverridden = selectedWeek === 1 || weekDays.length > 0;
-  const displayDays = isOverridden ? weekDays : templateDays;
-  const isInherited = !isOverridden;
+const isOverridden = selectedWeek === 1 || weekDays.length > 0;
+const displayDays = isOverridden ? weekDays : templateDays;
+const isInherited = !isOverridden;
   const canEditDays = editMode && isOverridden;
 
   const getFlatIndex = (day: ProgramDay) => allDays.indexOf(day);

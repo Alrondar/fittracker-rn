@@ -13,21 +13,44 @@ interface DaySettingsSheetProps {
   onClose: () => void;
 }
 
-export function DaySettingsSheet({ day, colors, buttonStyles, onSave, onClose }: DaySettingsSheetProps) {
+export function DaySettingsSheet({
+  day,
+  colors,
+  buttonStyles,
+  onSave,
+  onClose,
+}: DaySettingsSheetProps) {
   const [dayName, setDayName] = useState(day?.name || '');
+
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-        <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: SPACING.lg }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg }}>
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: SPACING.lg,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: SPACING.lg,
+            }}
+          >
             <Text style={[typography.h5, { color: colors.textPrimary }]}>Настройки дня</Text>
             <TouchableOpacity onPress={onClose}>
               <X size={20} color={colors.textSecondary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           <View style={{ marginBottom: SPACING.lg }}>
-            <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>Название дня</Text>
+            <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+              Название дня
+            </Text>
             <TextInput
               style={{
                 borderWidth: 1,
@@ -44,7 +67,10 @@ export function DaySettingsSheet({ day, colors, buttonStyles, onSave, onClose }:
               placeholderTextColor={colors.textTertiary}
             />
           </View>
-          <TouchableOpacity onPress={() => onSave({ name: dayName })} style={[buttonStyles.primary, { backgroundColor: colors.primary }]}>
+          <TouchableOpacity
+            onPress={() => onSave({ name: dayName })}
+            style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
+          >
             <Text style={buttonStyles.textPrimary}>Сохранить</Text>
           </TouchableOpacity>
         </View>

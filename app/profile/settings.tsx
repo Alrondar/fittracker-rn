@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -41,42 +41,34 @@ import {
   HelpCircle,
   ArrowUpDown,
   X,
-  Volume2,    // ✅ НОВОЕ
-  BellRing,   // ✅ НОВОЕ
-  Vibrate,    // ✅ НОВОЕ
+  Volume2,
+  BellRing,
+  Vibrate,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const {
-    colors,
-    themeMode,
-    themeAccent,
-    setThemeMode,
-    setThemeAccent,
-    availableAccents,
-  } = useTheme();
+  const { colors, themeMode, themeAccent, setThemeMode, setThemeAccent, availableAccents } =
+    useTheme();
   const { userId } = useStore();
-// ✅ НОВОЕ: настройки таймера отдыха
   const { settings: timerSettings, updateSettings: updateTimerSettings } = useTimerSettings();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  
-  // Единицы измерения
-  const [useImperial, setUseImperial] = useState(false); // false = метрическая (кг/см), true = имперская (фунты/дюймы)
-  
-  // Уведомления
+  const [useImperial, setUseImperial] = useState(false);
   const [workoutReminders, setWorkoutReminders] = useState(true);
   const [nutritionReminders, setNutritionReminders] = useState(true);
 
-  const cardStyles = createCardStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
+  // ✅ Фабрики стилей — через useMemo (правило CLAUDE.md)
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const buttonStyles = useMemo(() => createButtonStyles(colors), [colors]);
 
   useEffect(() => {
     loadUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const loadUserData = async () => {
@@ -88,7 +80,6 @@ export default function SettingsScreen() {
         .select('full_name')
         .eq('id', userId)
         .single();
-
       setFullName(profileData?.full_name || '');
       setEmail(user?.email || '');
     } catch (e) {
@@ -100,11 +91,7 @@ export default function SettingsScreen() {
     if (!userId) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName })
-        .eq('id', userId);
-
+      const { error } = await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId);
       if (error) throw error;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Успех', 'Данные сохранены');
@@ -116,72 +103,55 @@ export default function SettingsScreen() {
   };
 
   const handleChangePassword = () => {
-    Alert.alert(
-      'Смена пароля',
-      'Для смены пароля вам будет отправлено письмо на почту',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Отправить',
-          onPress: async () => {
-            try {
-              const { error } = await supabase.auth.resetPasswordForEmail(email);
-              if (error) throw error;
-              Alert.alert('Успех', 'Письмо для смены пароля отправлено');
-            } catch (e: any) {
-              Alert.alert('Ошибка', e.message);
-            }
-          },
+    Alert.alert('Смена пароля', 'Для смены пароля вам будет отправлено письмо на почту', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Отправить',
+        onPress: async () => {
+          try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email);
+            if (error) throw error;
+            Alert.alert('Успех', 'Письмо для смены пароля отправлено');
+          } catch (e: any) {
+            Alert.alert('Ошибка', e.message);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleExportData = () => {
-    Alert.alert(
-      'Экспорт данных',
-      'Ваши данные будут экспортированы в формате JSON',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Экспортировать',
-          onPress: async () => {
-            try {
-              // Загружаем данные
-              const { data: workouts } = await supabase
-                .from('workouts')
-                .select('*')
-                .eq('user_id', userId);
-              
-              const { data: nutritionLogs } = await supabase
-                .from('nutrition_logs')
-                .select('*')
-                .eq('user_id', userId);
-
-              const exportData = {
-                exported_at: new Date().toISOString(),
-                user_id: userId,
-                workouts: workouts || [],
-                nutrition_logs: nutritionLogs || [],
-              };
-
-              // В реальном приложении здесь нужно использовать expo-file-system для сохранения файла
-              // Пока просто показываем успех
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Успех', `Экспортировано:\n- ${workouts?.length || 0} тренировок\n- ${nutritionLogs?.length || 0} записей питания`);
-            } catch (e: any) {
-              Alert.alert('Ошибка', e.message);
-            }
-          },
+    Alert.alert('Экспорт данных', 'Ваши данные будут экспортированы в формате JSON', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Экспортировать',
+        onPress: async () => {
+          try {
+            const { data: workouts } = await supabase.from('workouts').select('*').eq('user_id', userId);
+            const { data: nutritionLogs } = await supabase
+              .from('nutrition_logs')
+              .select('*')
+              .eq('user_id', userId);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert(
+              'Успех',
+              `Экспортировано:\n- ${workouts?.length || 0} тренировок\n- ${nutritionLogs?.length || 0} записей питания`,
+            );
+          } catch (e: any) {
+            Alert.alert('Ошибка', e.message);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const renderThemeOption = ({ item }: { item: { key: ThemeAccent; label: string; keys: ThemeKey[] } }) => {
+  const renderThemeOption = ({
+    item,
+  }: {
+    item: { key: ThemeAccent; label: string; keys: ThemeKey[] };
+  }) => {
     const isSelected = themeAccent === item.key;
     const currentTheme = themes[item.keys[0]];
-
     return (
       <TouchableOpacity
         style={[
@@ -209,8 +179,18 @@ export default function SettingsScreen() {
           <Text style={[typography.h5, { color: colors.textPrimary }]}>{item.label}</Text>
         </View>
         {isSelected && (
-          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: 'bold' }}>✓</Text>
+          <View
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {/* ✅ #ffffff → colors.textInverse */}
+            <Text style={{ color: colors.textInverse, fontSize: 14, fontWeight: 'bold' }}>✓</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -220,7 +200,12 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       {/* Шапка */}
-      <View style={[commonStyles.navHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          commonStyles.navHeader,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
@@ -231,17 +216,19 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
         {/* Профиль */}
         <View style={commonStyles.section}>
-<SectionHeader title="Профиль" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
-          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md }]}>
+          <SectionHeader title="Профиль" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md },
+            ]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
               <User size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
               <Text style={[typography.label, { color: colors.textPrimary }]}>Имя и фамилия</Text>
             </View>
             <TextInput
-              style={[
-                cardStyles.sheetInput,
-                { color: colors.textPrimary },
-              ]}
+              style={[cardStyles.sheetInput, { color: colors.textPrimary }]}
               placeholder="Введите имя и фамилию"
               placeholderTextColor={colors.textTertiary}
               value={fullName}
@@ -249,16 +236,18 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md }]}>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md },
+            ]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
               <Mail size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
               <Text style={[typography.label, { color: colors.textPrimary }]}>Email</Text>
             </View>
             <TextInput
-              style={[
-                cardStyles.sheetInput,
-                { color: colors.textPrimary },
-              ]}
+              style={[cardStyles.sheetInput, { color: colors.textPrimary }]}
               placeholder="email@example.com"
               placeholderTextColor={colors.textTertiary}
               value={email}
@@ -286,16 +275,13 @@ export default function SettingsScreen() {
             <ChevronRight size={20} color={colors.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[buttonStyles.primary]}
-            onPress={handleSaveProfile}
-            disabled={saving}
-          >
+          <TouchableOpacity style={[buttonStyles.primary]} onPress={handleSaveProfile} disabled={saving}>
             {saving ? (
               <Text style={buttonStyles.textPrimary}>Сохранение...</Text>
             ) : (
               <>
-                <Save size={20} color="#fff" style={{ marginRight: SPACING.sm }} />
+                {/* ✅ #fff → colors.textInverse */}
+                <Save size={20} color={colors.textInverse} style={{ marginRight: SPACING.sm }} />
                 <Text style={buttonStyles.textPrimary}>Сохранить изменения</Text>
               </>
             )}
@@ -307,17 +293,23 @@ export default function SettingsScreen() {
           <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
             Внешний вид
           </Text>
-          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md }]}>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md },
+            ]}
+          >
             <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
               Тема оформления
             </Text>
-            {/* Сегментированный контрол для выбора темы */}
-            <View style={{ 
-              flexDirection: 'row', 
-              backgroundColor: colors.surfaceSecondary, 
-              borderRadius: BORDER_RADIUS.md, 
-              padding: 4,
-            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: BORDER_RADIUS.md,
+                padding: 4,
+              }}
+            >
               {(['light', 'dark', 'system'] as const).map((mode) => (
                 <TouchableOpacity
                   key={mode}
@@ -335,14 +327,20 @@ export default function SettingsScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                 >
-                  {mode === 'light' && <Sun size={18} color={themeMode === mode ? '#fff' : colors.textSecondary} />}
-                  {mode === 'dark' && <Moon size={18} color={themeMode === mode ? '#fff' : colors.textSecondary} />}
-                  {mode === 'system' && <Monitor size={18} color={themeMode === mode ? '#fff' : colors.textSecondary} />}
+                  {mode === 'light' && (
+                    <Sun size={18} color={themeMode === mode ? colors.textInverse : colors.textSecondary} />
+                  )}
+                  {mode === 'dark' && (
+                    <Moon size={18} color={themeMode === mode ? colors.textInverse : colors.textSecondary} />
+                  )}
+                  {mode === 'system' && (
+                    <Monitor size={18} color={themeMode === mode ? colors.textInverse : colors.textSecondary} />
+                  )}
                   <Text
                     style={[
                       typography.caption,
                       {
-                        color: themeMode === mode ? '#fff' : colors.textSecondary,
+                        color: themeMode === mode ? colors.textInverse : colors.textSecondary,
                         fontWeight: themeMode === mode ? '600' : '400',
                         marginTop: SPACING.xs,
                       },
@@ -373,7 +371,7 @@ export default function SettingsScreen() {
               <View>
                 <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Цветовая схема</Text>
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  {availableAccents.find(a => a.key === themeAccent)?.label || 'Синяя'}
+                  {availableAccents.find((a) => a.key === themeAccent)?.label || 'Синяя'}
                 </Text>
               </View>
             </View>
@@ -386,9 +384,12 @@ export default function SettingsScreen() {
           <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
             Предпочтения
           </Text>
-          
-          {/* Единицы измерения */}
-          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm }]}>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Ruler size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
@@ -406,13 +407,17 @@ export default function SettingsScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#fff"
+                thumbColor={colors.textInverse}
               />
             </View>
           </View>
 
-          {/* Уведомления о тренировках */}
-          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm }]}>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Bell size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
@@ -430,12 +435,11 @@ export default function SettingsScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#fff"
+                thumbColor={colors.textInverse}
               />
             </View>
           </View>
 
-          {/* Уведомления о питании */}
           <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -454,114 +458,127 @@ export default function SettingsScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#fff"
+                thumbColor={colors.textInverse}
               />
             </View>
           </View>
         </View>
-      {/* Таймер отдыха */}
-      <View style={commonStyles.section}>
-        <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-          Таймер отдыха
-        </Text>
 
-        {/* Звук по окончании */}
-        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Volume2 size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typography.label, { color: colors.textPrimary }]}>Звук по окончании</Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  Звуковой сигнал, когда отдых завершён
-                </Text>
+        {/* Таймер отдыха */}
+        <View style={commonStyles.section}>
+          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+            Таймер отдыха
+          </Text>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Volume2 size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>Звук по окончании</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Звуковой сигнал, когда отдых завершён
+                  </Text>
+                </View>
               </View>
+              <Switch
+                value={timerSettings.sound}
+                onValueChange={(value) => {
+                  updateTimerSettings({ sound: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
             </View>
-            <Switch
-              value={timerSettings.sound}
-              onValueChange={(value) => {
-                updateTimerSettings({ sound: value });
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#fff"
-            />
+          </View>
+
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <BellRing size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>Отсчёт 3-2-1</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Короткие сигналы за 3 секунды до конца
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.preBeep}
+                onValueChange={(value) => {
+                  updateTimerSettings({ preBeep: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
+            </View>
+          </View>
+
+          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>Вибрация</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Вибросигнал по окончании отдыха
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.vibration}
+                onValueChange={(value) => {
+                  updateTimerSettings({ vibration: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
+            </View>
+          </View>
+
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <ArrowUpDown size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>Активация перед растяжкой</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    {timerSettings.activationFirst
+                      ? 'Сначала активация, затем растяжка'
+                      : 'Сначала растяжка, затем активация'}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.activationFirst}
+                onValueChange={(value) => {
+                  updateTimerSettings({ activationFirst: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
+            </View>
           </View>
         </View>
 
-        {/* Отсчёт 3-2-1 */}
-        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <BellRing size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typography.label, { color: colors.textPrimary }]}>Отсчёт 3-2-1</Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  Короткие сигналы за 3 секунды до конца
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={timerSettings.preBeep}
-              onValueChange={(value) => {
-                updateTimerSettings({ preBeep: value });
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#fff"
-            />
-          </View>
-        </View>
-
-        {/* Вибрация */}
-        <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typography.label, { color: colors.textPrimary }]}>Вибрация</Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  Вибросигнал по окончании отдыха
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={timerSettings.vibration}
-              onValueChange={(value) => {
-                updateTimerSettings({ vibration: value });
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#fff"
-            />
-          </View>
-        </View>
-               {/* Порядок разминки */}
-       <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm }]}>
-         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-             <ArrowUpDown size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
-             <View style={{ flex: 1 }}>
-               <Text style={[typography.label, { color: colors.textPrimary }]}>Активация перед растяжкой</Text>
-               <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                 {timerSettings.activationFirst
-                   ? 'Сначала активация, затем растяжка'
-                   : 'Сначала растяжка, затем активация'}
-               </Text>
-             </View>
-           </View>
-           <Switch
-             value={timerSettings.activationFirst}
-             onValueChange={(value) => {
-               updateTimerSettings({ activationFirst: value });
-               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-             }}
-             trackColor={{ false: colors.border, true: colors.primary }}
-             thumbColor="#fff"
-           />
-         </View>
-       </View>
-      </View>
         {/* Данные */}
         <View style={commonStyles.section}>
           <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
@@ -642,16 +659,28 @@ export default function SettingsScreen() {
         transparent={true}
         onRequestClose={() => setShowThemeModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.xl, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-              <Text style={[typography.h3, { color: colors.textPrimary }]}>
-                Выберите цветовую схему
-              </Text>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              maxHeight: '80%',
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: SPACING.xl,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <Text style={[typography.h3, { color: colors.textPrimary }]}>Выберите цветовую схему</Text>
               <TouchableOpacity onPress={() => setShowThemeModal(false)}>
-                <Text style={[typography.buttonSmall, { color: colors.primary }]}>
-                  Закрыть
-                </Text>
+                <Text style={[typography.buttonSmall, { color: colors.primary }]}>Закрыть</Text>
               </TouchableOpacity>
             </View>
             <FlatList

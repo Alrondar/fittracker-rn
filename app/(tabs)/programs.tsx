@@ -23,7 +23,7 @@ import { importProgramByCode } from '../../src/services/programSharingService';
 import { FadeIn } from '../../src/components/FadeIn';
 import { Toast } from '../../src/components/Toast';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import { Search, Plus, X, ArrowUpDown, Trophy, Link2 } from 'lucide-react-native';
+import { Search, Plus, X, ArrowUpDown, Trophy, Link2, Sprout, Dumbbell, Flame } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
@@ -35,10 +35,16 @@ const SORT_OPTIONS = [
   { value: 'name' as const, label: 'По названию' },
   { value: 'level' as const, label: 'По сложности' },
 ];
+
 const LEVEL_OPTIONS = [
-  { value: 'beginner' as const, label: 'Новичок', icon: require('lucide-react-native').Sprout, color: LEVEL_COLORS.beginner },
-  { value: 'intermediate' as const, label: 'Средний', icon: require('lucide-react-native').Dumbbell, color: LEVEL_COLORS.intermediate },
-  { value: 'advanced' as const, label: 'Продвинутый', icon: require('lucide-react-native').Flame, color: LEVEL_COLORS.advanced },
+  { value: 'beginner' as const, label: 'Новичок', icon: Sprout, color: LEVEL_COLORS.beginner },
+  {
+    value: 'intermediate' as const,
+    label: 'Средний',
+    icon: Dumbbell,
+    color: LEVEL_COLORS.intermediate,
+  },
+  { value: 'advanced' as const, label: 'Продвинутый', icon: Flame, color: LEVEL_COLORS.advanced },
 ];
 
 export default function ProgramsScreen() {
@@ -152,7 +158,7 @@ export default function ProgramsScreen() {
           onPress={openCreateModal}
         >
           <View style={buttonStyles.content}>
-            <Plus size={20} color="white" strokeWidth={2} />
+            <Plus size={20} color={colors.textInverse} strokeWidth={2} />
             <Text style={buttonStyles.textPrimary}>Создать программу</Text>
           </View>
         </TouchableOpacity>
@@ -174,9 +180,7 @@ export default function ProgramsScreen() {
       <View style={cardStyles.tabContainer}>
         <TouchableOpacity
           style={[cardStyles.tab, activeTab === 'my' && cardStyles.tabActive]}
-          onPress={() => {
-            setActiveTab('my');
-          }}
+          onPress={() => setActiveTab('my')}
         >
           <Text style={[cardStyles.tabText, activeTab === 'my' && cardStyles.tabTextActive]}>
             Мои программы
@@ -184,9 +188,7 @@ export default function ProgramsScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[cardStyles.tab, activeTab === 'ready' && cardStyles.tabActive]}
-          onPress={() => {
-            setActiveTab('ready');
-          }}
+          onPress={() => setActiveTab('ready')}
         >
           <Text style={[cardStyles.tabText, activeTab === 'ready' && cardStyles.tabTextActive]}>
             Готовые
@@ -198,9 +200,7 @@ export default function ProgramsScreen() {
         <View style={cardStyles.searchRow}>
           <TouchableOpacity
             style={cardStyles.searchButton}
-            onPress={() => {
-              setShowSearch(!showSearch);
-            }}
+            onPress={() => setShowSearch(!showSearch)}
           >
             <Search size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
@@ -211,9 +211,7 @@ export default function ProgramsScreen() {
                 placeholder="Поиск программ..."
                 placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
-                onChangeText={(text) => {
-                  setSearchQuery(text);
-                }}
+                onChangeText={(text) => setSearchQuery(text)}
                 autoFocus
               />
               {searchQuery.length > 0 && (
@@ -223,7 +221,7 @@ export default function ProgramsScreen() {
               )}
             </View>
           )}
-          {/* ✅ Кнопка импорта по коду */}
+          {/* Кнопка импорта по коду */}
           <TouchableOpacity
             style={cardStyles.sortButton}
             onPress={() => {
@@ -276,19 +274,13 @@ export default function ProgramsScreen() {
             return (
               <TouchableOpacity
                 key={option.value}
-                style={[
-                  cardStyles.filterChip,
-                  isActive && cardStyles.filterChipActive,
-                ]}
+                style={[cardStyles.filterChip, isActive && cardStyles.filterChipActive]}
                 onPress={() => toggleLevel(option.value)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Icon size={14} color={isActive ? 'white' : option.color} strokeWidth={2} />
+                  <Icon size={14} color={isActive ? colors.textInverse : option.color} strokeWidth={2} />
                   <Text
-                    style={[
-                      cardStyles.filterChipText,
-                      isActive && cardStyles.filterChipTextActive,
-                    ]}
+                    style={[cardStyles.filterChipText, isActive && cardStyles.filterChipTextActive]}
                   >
                     {option.label}
                   </Text>
@@ -299,9 +291,7 @@ export default function ProgramsScreen() {
           {selectedLevels.length > 0 && (
             <TouchableOpacity
               style={cardStyles.filterChip}
-              onPress={() => {
-                selectedLevels.forEach(l => toggleLevel(l));
-              }}
+              onPress={() => selectedLevels.forEach((l) => toggleLevel(l))}
             >
               <Text style={cardStyles.filterChipText}>Сбросить</Text>
             </TouchableOpacity>
@@ -321,7 +311,10 @@ export default function ProgramsScreen() {
   };
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <FlatList
         data={programs}
         keyExtractor={(item) => item.id}
@@ -329,28 +322,17 @@ export default function ProgramsScreen() {
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={!loading ? renderEmpty() : null}
-        contentContainerStyle={{
-          paddingHorizontal: SPACING.lg,
-          paddingBottom: 100,
-        }}
+        contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
       />
       {/* FAB */}
       {activeTab === 'my' && !loading && (
-        <TouchableOpacity
-          style={cardStyles.fab}
-          onPress={openCreateModal}
-          activeOpacity={0.8}
-        >
-          <Plus size={24} color="white" strokeWidth={2.5} />
+        <TouchableOpacity style={cardStyles.fab} onPress={openCreateModal} activeOpacity={0.8}>
+          <Plus size={24} color={colors.textInverse} strokeWidth={2.5} />
         </TouchableOpacity>
       )}
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
@@ -379,7 +361,7 @@ export default function ProgramsScreen() {
           buttonStyles={buttonStyles}
         />
       </Modal>
-      {/* ✅ Модалка импорта по коду */}
+      {/* Модалка импорта по коду */}
       <Modal
         visible={showImportModal}
         transparent

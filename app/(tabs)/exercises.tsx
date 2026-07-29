@@ -12,7 +12,6 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame, Zap } from 'lucide-react-native';
-
 import { useTheme } from '../../src/hooks/useTheme';
 import { useExercises } from '../../src/hooks/useExercises';
 import { ExerciseListItem, ExerciseSortBy } from '../../src/services/exercisesService';
@@ -28,13 +27,11 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
 
-
-// Цвет группы мышц — из единых констант (дублирующий GROUP_COLORS удалён)
+// Цвет группы мышц — из единых констант
 const getGroupColor = (groupName: string): string =>
   MUSCLE_COLORS[groupName.toLowerCase()] || '#6B7280';
 
 // ===== Мемоизированная строка списка =====
-// Перерисовывается только при смене темы; onPress — стабильный useCallback.
 interface ExerciseRowProps {
   item: ExerciseListItem;
   onPress: (id: string) => void;
@@ -42,10 +39,8 @@ interface ExerciseRowProps {
 
 const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProps) {
   const { colors } = useTheme();
-  const borderColor = item.primary_muscles.length > 0
-    ? getMuscleColor(item.primary_muscles[0])
-    : colors.border;
-
+  const borderColor =
+    item.primary_muscles.length > 0 ? getMuscleColor(item.primary_muscles[0]) : colors.border;
   return (
     <TouchableOpacity
       style={{
@@ -63,7 +58,6 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
       onPress={() => onPress(item.id)}
       activeOpacity={0.7}
     >
-      {/* Иконка оборудования */}
       <View
         style={{
           width: 50,
@@ -82,8 +76,6 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
           scale={0.9}
         />
       </View>
-
-      {/* Контент */}
       <View style={{ flex: 1 }}>
         <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
           {item.name}
@@ -103,7 +95,6 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
             ))}
           </View>
         )}
-        {/* ✅ НОВОЕ: индикатор популярности (число использований в тренировках) */}
         {(item.popularity ?? 0) > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
             <Flame size={11} color={colors.warning} />
@@ -112,7 +103,6 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
             </Text>
           </View>
         )}
-                {/* ✅ НОВОЕ: бейдж «Активация» */}
         {item.can_be_activation && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
             <Zap size={11} color={colors.warning} />
@@ -131,7 +121,6 @@ export default function ExercisesScreen() {
   const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
-
   const {
     exercises,
     loading,
@@ -181,14 +170,16 @@ export default function ExercisesScreen() {
 
   const toggleGroup = (groupName: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveGroup(prev => (prev === groupName ? null : groupName));
+    setActiveGroup((prev) => (prev === groupName ? null : groupName));
   };
 
-  // Стабильный колбэк для мемоизированных строк
-  const handleExercisePress = useCallback((id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push(`/exercise/${id}`);
-  }, [router]);
+  const handleExercisePress = useCallback(
+    (id: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push(`/exercise/${id}`);
+    },
+    [router],
+  );
 
   const renderEmpty = () => (
     <FadeIn delay={200} style={commonStyles.emptyContainer}>
@@ -203,7 +194,9 @@ export default function ExercisesScreen() {
       </Text>
       {(activeFiltersCount > 0 || searchInput) && (
         <TouchableOpacity style={{ marginTop: SPACING.md }} onPress={resetFilters}>
-          <AppBadge variant="primary" size="medium">Сбросить</AppBadge>
+          <AppBadge variant="primary" size="medium">
+            Сбросить
+          </AppBadge>
         </TouchableOpacity>
       )}
     </FadeIn>
@@ -219,7 +212,9 @@ export default function ExercisesScreen() {
         Проверьте соединение и попробуйте снова
       </Text>
       <TouchableOpacity style={{ marginTop: SPACING.md }} onPress={() => refetch()}>
-        <AppBadge variant="primary" size="medium">Повторить</AppBadge>
+        <AppBadge variant="primary" size="medium">
+          Повторить
+        </AppBadge>
       </TouchableOpacity>
     </View>
   );
@@ -227,7 +222,15 @@ export default function ExercisesScreen() {
   const renderFooter = () => {
     if (loadingMore) {
       return (
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.lg }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: SPACING.sm,
+            paddingVertical: SPACING.lg,
+          }}
+        >
           <ActivityIndicator size="small" color={colors.primary} />
           <Text style={[typography.caption, { color: colors.textSecondary }]}>Загружаем ещё...</Text>
         </View>
@@ -235,7 +238,12 @@ export default function ExercisesScreen() {
     }
     if (!hasMore && exercises.length > 0) {
       return (
-        <Text style={[typography.captionSmall, { color: colors.textTertiary, textAlign: 'center', paddingVertical: SPACING.lg }]}>
+        <Text
+          style={[
+            typography.captionSmall,
+            { color: colors.textTertiary, textAlign: 'center', paddingVertical: SPACING.lg },
+          ]}
+        >
           Показаны все упражнения ({exercises.length})
         </Text>
       );
@@ -246,7 +254,10 @@ export default function ExercisesScreen() {
   const groupNames = Object.keys(MUSCLE_GROUPS);
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       {/* Header */}
       <View style={commonStyles.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -271,7 +282,11 @@ export default function ExercisesScreen() {
               }}
               activeOpacity={0.7}
             >
-              <ArrowUpDown size={20} color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary} strokeWidth={2} />
+              <ArrowUpDown
+                size={20}
+                color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary}
+                strokeWidth={2}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleToggleSearch}
@@ -293,8 +308,7 @@ export default function ExercisesScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* ✅ Поиск: живой спиннер + подсветка рамки + подсказка */}
+        {/* Поиск: живой спиннер + подсветка рамки + подсказка */}
         {showSearch && (
           <View style={{ marginTop: SPACING.md }}>
             <View
@@ -346,7 +360,7 @@ export default function ExercisesScreen() {
         )}
       </View>
 
-      {/* Индикатор активных фильтров (мышцы + категории + оборудование) */}
+      {/* Индикатор активных фильтров */}
       {activeFiltersCount > 0 && (
         <View
           style={{
@@ -369,7 +383,7 @@ export default function ExercisesScreen() {
         </View>
       )}
 
-      {/* Фильтр по группам мышц (промежутки через gap) */}
+      {/* Фильтр по группам мышц */}
       <View style={{ backgroundColor: colors.background }}>
         <FlatList
           horizontal
@@ -378,7 +392,7 @@ export default function ExercisesScreen() {
           renderItem={({ item: groupName }) => {
             const muscles = MUSCLE_GROUPS[groupName];
             const isActive = activeGroup === groupName;
-            const selectedInGroup = muscles.filter(m => selectedMuscles.includes(m)).length;
+            const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
             const groupColor = getGroupColor(groupName);
             return (
               <TouchableOpacity
@@ -396,7 +410,13 @@ export default function ExercisesScreen() {
                 onPress={() => toggleGroup(groupName)}
                 activeOpacity={0.6}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: isActive ? groupColor : colors.textPrimary }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: isActive ? groupColor : colors.textPrimary,
+                  }}
+                >
                   {groupName}
                 </Text>
                 {selectedInGroup > 0 && (
@@ -417,13 +437,17 @@ export default function ExercisesScreen() {
               </TouchableOpacity>
             );
           }}
-          contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, gap: SPACING.sm }}
+          contentContainerStyle={{
+            paddingHorizontal: SPACING.lg,
+            paddingVertical: SPACING.md,
+            gap: SPACING.sm,
+          }}
           showsHorizontalScrollIndicator={false}
         />
         {activeGroup && (
           <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-              {MUSCLE_GROUPS[activeGroup].map(muscle => {
+              {MUSCLE_GROUPS[activeGroup].map((muscle) => {
                 const isSelected = selectedMuscles.includes(muscle);
                 const muscleColor = getMuscleColor(muscle);
                 return (
@@ -443,9 +467,20 @@ export default function ExercisesScreen() {
                     activeOpacity={0.6}
                   >
                     {isSelected && (
-                      <Check size={12} color={muscleColor} strokeWidth={2.5} style={{ marginRight: 4 }} />
+                      <Check
+                        size={12}
+                        color={muscleColor}
+                        strokeWidth={2.5}
+                        style={{ marginRight: 4 }}
+                      />
                     )}
-                    <Text style={{ fontSize: 13, color: isSelected ? muscleColor : colors.textSecondary, fontWeight: '500' }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: isSelected ? muscleColor : colors.textSecondary,
+                        fontWeight: '500',
+                      }}
+                    >
                       {muscle}
                     </Text>
                   </TouchableOpacity>
@@ -454,7 +489,6 @@ export default function ExercisesScreen() {
             </View>
           </View>
         )}
-
         {/* Лента категорий + триггер оборудования */}
         <CategoryStrip
           selectedCategories={selectedCategories}
@@ -466,30 +500,42 @@ export default function ExercisesScreen() {
             setShowEquipmentSheet(true);
           }}
         />
-        {/* ✅ НОВОЕ: фильтр «Только активация» */}
-<View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm }}>
-  <TouchableOpacity
-    onPress={toggleActivation}
-    activeOpacity={0.7}
-    style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      gap: 6,
-      paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.sm,
-      borderRadius: BORDER_RADIUS.full,
-      backgroundColor: activationOnly ? colors.warning + '20' : colors.surface,
-      borderWidth: 1,
-      borderColor: activationOnly ? colors.warning : colors.border,
-    }}
-  >
-    <Zap size={14} color={activationOnly ? colors.warning : colors.textSecondary} strokeWidth={2} />
-    <Text style={[typography.caption, { color: activationOnly ? colors.warning : colors.textSecondary, fontWeight: activationOnly ? '700' : '500' }]}>
-      Только активация
-    </Text>
-  </TouchableOpacity>
-</View>
+        {/* Фильтр «Только активация» */}
+        <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm }}>
+          <TouchableOpacity
+            onPress={toggleActivation}
+            activeOpacity={0.7}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              alignSelf: 'flex-start',
+              gap: 6,
+              paddingHorizontal: SPACING.md,
+              paddingVertical: SPACING.sm,
+              borderRadius: BORDER_RADIUS.full,
+              backgroundColor: activationOnly ? colors.warning + '20' : colors.surface,
+              borderWidth: 1,
+              borderColor: activationOnly ? colors.warning : colors.border,
+            }}
+          >
+            <Zap
+              size={14}
+              color={activationOnly ? colors.warning : colors.textSecondary}
+              strokeWidth={2}
+            />
+            <Text
+              style={[
+                typography.caption,
+                {
+                  color: activationOnly ? colors.warning : colors.textSecondary,
+                  fontWeight: activationOnly ? '700' : '500',
+                },
+              ]}
+            >
+              Только активация
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Список упражнений */}
@@ -521,7 +567,7 @@ export default function ExercisesScreen() {
           options={equipmentOptions}
           selected={selectedEquipment}
           onToggle={toggleEquipment}
-          onReset={() => selectedEquipment.forEach(eq => toggleEquipment(eq))}
+          onReset={() => selectedEquipment.forEach((eq) => toggleEquipment(eq))}
           onClose={() => setShowEquipmentSheet(false)}
         />
       )}
@@ -532,8 +578,11 @@ export default function ExercisesScreen() {
           <TouchableOpacity
             style={{
               position: 'absolute',
-              top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: colors.overlay,
             }}
             onPress={() => setShowSortSheet(false)}
             activeOpacity={1}
@@ -541,7 +590,9 @@ export default function ExercisesScreen() {
           <View
             style={{
               position: 'absolute',
-              bottom: 0, left: 0, right: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
               backgroundColor: colors.surface,
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
@@ -551,11 +602,13 @@ export default function ExercisesScreen() {
             <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
               Сортировка
             </Text>
-            {[
-              { key: 'name-asc', label: 'По названию (А-Я)' },
-              { key: 'name-desc', label: 'По названию (Я-А)' },
-              { key: 'popularity', label: 'По популярности' },
-            ].map(option => (
+            {(
+              [
+                { key: 'name-asc', label: 'По названию (А-Я)' },
+                { key: 'name-desc', label: 'По названию (Я-А)' },
+                { key: 'popularity', label: 'По популярности' },
+              ] as { key: ExerciseSortBy; label: string }[]
+            ).map((option) => (
               <TouchableOpacity
                 key={option.key}
                 style={{
@@ -567,7 +620,7 @@ export default function ExercisesScreen() {
                   borderBottomColor: colors.border,
                 }}
                 onPress={() => {
-                  setSortBy(option.key as ExerciseSortBy);
+                  setSortBy(option.key);
                   setShowSortSheet(false);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}

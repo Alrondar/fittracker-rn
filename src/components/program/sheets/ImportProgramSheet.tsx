@@ -1,5 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  ScrollView,
+  Platform,
+  KeyboardAvoidingView,
+} from 'react-native';
 import { X, Link2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
@@ -14,20 +23,69 @@ interface ImportProgramSheetProps {
   onClose: () => void;
 }
 
-export function ImportProgramSheet({ code, onChangeCode, importing, error, onImport, onClose }: ImportProgramSheetProps) {
+export function ImportProgramSheet({
+  code,
+  onChangeCode,
+  importing,
+  error,
+  onImport,
+  onClose,
+}: ImportProgramSheetProps) {
   const { colors } = useTheme();
+
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SPACING.xl, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Text style={[typography.h3, { color: colors.textPrimary }]}>Импорт по коду</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.background,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            maxHeight: '92%',
+          }}
+        >
+          {/* Заголовок — вне скролла */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingHorizontal: SPACING.xl,
+              paddingTop: SPACING.xl,
+              paddingBottom: SPACING.md,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <Text style={[typography.h3, { color: colors.textPrimary }]}>
+              Импорт по коду
+            </Text>
             <TouchableOpacity onPress={onClose}>
               <X size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
-          <View style={{ padding: SPACING.xl }}>
-            <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+
+          {/* ✅ Скроллируемый контент */}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: SPACING.xl }}
+          >
+            <Text
+              style={[
+                typography.body,
+                { color: colors.textSecondary, marginBottom: SPACING.md },
+              ]}
+            >
               Введите код, который вам отправили (например, FIT-ABC123).
             </Text>
             <TextInput
@@ -53,7 +111,20 @@ export function ImportProgramSheet({ code, onChangeCode, importing, error, onImp
               autoCorrect={false}
               maxLength={12}
             />
-            {error ? <Text style={[typography.caption, { color: colors.error, marginBottom: SPACING.md, textAlign: 'center' }]}>{error}</Text> : null}
+            {error ? (
+              <Text
+                style={[
+                  typography.caption,
+                  {
+                    color: colors.error,
+                    marginBottom: SPACING.md,
+                    textAlign: 'center',
+                  },
+                ]}
+              >
+                {error}
+              </Text>
+            ) : null}
             <TouchableOpacity
               onPress={onImport}
               disabled={importing || code.trim().length < 4}
@@ -63,16 +134,25 @@ export function ImportProgramSheet({ code, onChangeCode, importing, error, onImp
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: SPACING.sm,
-                backgroundColor: importing || code.trim().length < 4 ? colors.textTertiary : colors.primary,
+                backgroundColor:
+                  importing || code.trim().length < 4
+                    ? colors.textTertiary
+                    : colors.primary,
                 paddingVertical: SPACING.md,
                 borderRadius: BORDER_RADIUS.lg,
                 opacity: importing || code.trim().length < 4 ? 0.6 : 1,
               }}
             >
-              {importing ? <ActivityIndicator size="small" color={colors.textInverse} /> : <Link2 size={20} color={colors.textInverse} strokeWidth={2} />}
-              <Text style={[typography.labelBold, { color: colors.textInverse }]}>{importing ? 'Импорт...' : 'Добавить программу'}</Text>
+              {importing ? (
+                <ActivityIndicator size="small" color={colors.textInverse} />
+              ) : (
+                <Link2 size={20} color={colors.textInverse} strokeWidth={2} />
+              )}
+              <Text style={[typography.labelBold, { color: colors.textInverse }]}>
+                {importing ? 'Импорт...' : 'Добавить программу'}
+              </Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </View>
     </KeyboardAvoidingView>

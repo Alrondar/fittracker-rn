@@ -50,6 +50,13 @@ import { PhaseSettingsSheet } from '../../src/components/program/sheets/PhaseSet
 import { ShareProgramSheet } from '../../src/components/program/sheets/ShareProgramSheet';
 import { generateShareCode, formatShareCode } from '../../src/services/programSharingService';
 
+// Светлый цвет поверх НЕтемизируемых цветных фонов: статичный hero-градиент
+// (GRADIENTS.hero) и цветные кнопки (colors.success / colors.primary) одинаковы
+// в обеих темах, поэтому текст/иконки на них фиксированно светлые. colors.textInverse
+// сюда НЕ подходит — это токен для текста на surface. Прецедент в проекте:
+// TechniqueMediaSlider рисует лейбл на тёмном скриме тем же '#FFFFFF'.
+const ON_COLOR = '#FFFFFF';
+
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -57,9 +64,13 @@ export default function ProgramDetailScreen() {
   const { colors } = useTheme();
   const { toast, showToast, hideToast } = useToast();
 
-  // ✅ Мёртвый слой пикера (exerciseSearch/availableExercises/loadAvailableExercises/
-  //    sortBy/showSortSheet) из деструктуризации УБРАН: пикер теперь самодостаточен
-  //    на useExercises и ничего этого из хука не читает.
+  // Фабрики стилей — через useMemo (правило доки: никогда не пересоздавать в теле).
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const badgeStyles = useMemo(() => createBadgeStyles(colors), [colors]);
+  const buttonStyles = useMemo(() => createButtonStyles(colors), [colors]);
+
+  // Мёртвый слой пикера (exerciseSearch/availableExercises/loadAvailableExercises/
+  // sortBy/showSortSheet) НЕ деструктурируем: пикер самодостаточен на useExercises.
   const {
     program,
     editedProgram,
@@ -115,44 +126,42 @@ export default function ProgramDetailScreen() {
     handleAddExerciseFromPicker,
   } = useProgramEditor(id as string, userId);
 
-  // ✅ Фабрики стилей — через useMemo (правило доки: никогда не в renderItem/на каждый рендер).
-  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
-  const badgeStyles = useMemo(() => createBadgeStyles(colors), [colors]);
-  const buttonStyles = useMemo(() => createButtonStyles(colors), [colors]);
-
   // ===== Шаринг по коду =====
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
 
-  const getLevelInfo = (level: string) => {
-    switch (level) {
-      case 'beginner':
-        return {
-          label: 'Новичок',
-          color: LEVEL_COLORS.beginner,
-          icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} />,
-        };
-      case 'intermediate':
-        return {
-          label: 'Средний',
-          color: LEVEL_COLORS.intermediate,
-          icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} />,
-        };
-      case 'advanced':
-        return {
-          label: 'Продвинутый',
-          color: LEVEL_COLORS.advanced,
-          icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} />,
-        };
-      default:
-        return {
-          label: level,
-          color: colors.textSecondary,
-          icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
-        };
-    }
-  };
+  const getLevelInfo = useCallback(
+    (level: string) => {
+      switch (level) {
+        case 'beginner':
+          return {
+            label: 'Новичок',
+            color: LEVEL_COLORS.beginner,
+            icon: <Sprout size={16} color={LEVEL_COLORS.beginner} strokeWidth={1.5} />,
+          };
+        case 'intermediate':
+          return {
+            label: 'Средний',
+            color: LEVEL_COLORS.intermediate,
+            icon: <Dumbbell size={16} color={LEVEL_COLORS.intermediate} strokeWidth={1.5} />,
+          };
+        case 'advanced':
+          return {
+            label: 'Продвинутый',
+            color: LEVEL_COLORS.advanced,
+            icon: <Flame size={16} color={LEVEL_COLORS.advanced} strokeWidth={1.5} />,
+          };
+        default:
+          return {
+            label: level,
+            color: colors.textSecondary,
+            icon: <Dumbbell size={16} color={colors.textSecondary} strokeWidth={1.5} />,
+          };
+      }
+    },
+    [colors],
+  );
 
   const getIntensityInfo = useCallback(
     (intensity: string) => {
@@ -250,10 +259,10 @@ export default function ProgramDetailScreen() {
       }}
     >
       <FadeIn>
-        <Text style={[typography.h3, { color: 'white', marginBottom: SPACING.sm }]}>
+        <Text style={[typography.h3, { color: ON_COLOR, marginBottom: SPACING.sm }]}>
           {displayProgram.name}
         </Text>
-        <Text style={[typography.body, { color: 'rgba(255,255,255,0.9)', marginBottom: SPACING.lg }]}>
+        <Text style={[typography.body, { color: ON_COLOR, marginBottom: SPACING.lg, opacity: 0.9 }]}>
           {displayProgram.description}
         </Text>
         <View
@@ -269,11 +278,11 @@ export default function ProgramDetailScreen() {
             <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
           </View>
           <View style={badgeStyles.metaBadge}>
-            <Clock size={14} color="white" strokeWidth={1.5} />
+            <Clock size={14} color={ON_COLOR} strokeWidth={1.5} />
             <Text style={badgeStyles.metaBadgeText}>{displayProgram.duration} недель</Text>
           </View>
           <View style={badgeStyles.metaBadge}>
-            <Calendar size={14} color="white" strokeWidth={1.5} />
+            <Calendar size={14} color={ON_COLOR} strokeWidth={1.5} />
             <Text style={badgeStyles.metaBadgeText}>{displayProgram.schedule.length} дн/нед</Text>
           </View>
         </View>
@@ -282,7 +291,7 @@ export default function ProgramDetailScreen() {
             <Text
               style={[
                 typography.caption,
-                { color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
+                { color: ON_COLOR, fontWeight: '600', opacity: 0.9 },
               ]}
             >
               Расписание:
@@ -293,7 +302,7 @@ export default function ProgramDetailScreen() {
                 style={cardStyles.scheduleEditButton}
                 activeOpacity={0.7}
               >
-                <Pencil size={16} color="white" strokeWidth={2} />
+                <Pencil size={16} color={ON_COLOR} strokeWidth={2} />
               </TouchableOpacity>
             )}
           </View>
@@ -433,17 +442,17 @@ export default function ProgramDetailScreen() {
             activeOpacity={0.8}
           >
             {saving || starting ? (
-              <ActivityIndicator color="white" size="small" />
+              <ActivityIndicator color={ON_COLOR} size="small" />
             ) : (
               <View style={buttonStyles.content}>
                 {editMode ? (
                   <>
-                    <Save size={20} color="white" strokeWidth={2} />
+                    <Save size={20} color={ON_COLOR} strokeWidth={2} />
                     <Text style={buttonStyles.textPrimary}>Сохранить</Text>
                   </>
                 ) : (
                   <>
-                    <Play size={20} color="white" strokeWidth={2} fill="white" />
+                    <Play size={20} color={ON_COLOR} strokeWidth={2} fill={ON_COLOR} />
                     <Text style={buttonStyles.textPrimary}>Начать программу</Text>
                   </>
                 )}
@@ -576,7 +585,7 @@ export default function ProgramDetailScreen() {
         />
       </Modal>
 
-      {/* ✅ Пикер самодостаточен: поиск/фильтры/иконки живёт внутри него.
+      {/* Пикер самодостаточен: поиск/фильтры/иконки живёт внутри него.
           Экран передаёт только колбэк выбора + закрытие + стили. */}
       <Modal
         visible={showExercisePicker}

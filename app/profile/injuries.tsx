@@ -13,7 +13,6 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react-native';
-
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useInjuries } from '../../src/hooks/useInjuries';
@@ -52,25 +51,12 @@ const InjuryCard = memo(function InjuryCard({
 }) {
   const bodyPartColor = getBodyPartColor(injury.body_part, colors.primary);
   const severityColor = getSeverityColor(injury.severity, colors.textSecondary);
-
   return (
+    // ✅ variant="compact" без хвостового пробела
     <AppCard variant="compact" style={{ borderColor: severityColor, borderWidth: 1 }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: SPACING.sm,
-        }}
-      >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.sm }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <Circle
-            size={20}
-            color={bodyPartColor}
-            fill={bodyPartColor + '20'}
-            strokeWidth={2}
-            style={{ marginRight: SPACING.sm }}
-          />
+          <Circle size={20} color={bodyPartColor} fill={bodyPartColor + '20'} strokeWidth={2} style={{ marginRight: SPACING.sm }} />
           <View style={{ flex: 1 }}>
             <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
               {getBodyPartLabel(injury.body_part)}
@@ -80,6 +66,7 @@ const InjuryCard = memo(function InjuryCard({
             </Text>
           </View>
         </View>
+        {/* ✅ variant/size без хвостовых пробелов */}
         <AppBadge
           variant="default"
           size="small"
@@ -89,13 +76,11 @@ const InjuryCard = memo(function InjuryCard({
           {getSeverityLabel(injury.severity)}
         </AppBadge>
       </View>
-
       {!!injury.description && (
         <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>
           {injury.description}
         </Text>
       )}
-
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
           С {new Date(injury.created_at).toLocaleDateString('ru-RU')}
@@ -150,17 +135,8 @@ export default function InjuriesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { userId } = useStore();
-
-  const {
-    injuries,
-    loading,
-    refetch,
-    createInjury,
-    updateInjury,
-    markRecovered,
-    deleteInjury,
-    saving,
-  } = useInjuries(userId);
+  const { injuries, loading, refetch, createInjury, updateInjury, markRecovered, deleteInjury, saving } =
+    useInjuries(userId);
 
   const [showForm, setShowForm] = useState(false);
   const [editingInjury, setEditingInjury] = useState<Injury | null>(null);
@@ -168,7 +144,7 @@ export default function InjuriesScreen() {
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+    }, [refetch]),
   );
 
   const activeInjuries = injuries.filter((i) => i.status !== 'recovered');
@@ -249,7 +225,10 @@ export default function InjuriesScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <View
-        style={[commonStyles.navHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
+        style={[
+          commonStyles.navHeader,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
       >
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
@@ -310,7 +289,10 @@ export default function InjuriesScreen() {
           <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
             <Activity size={48} color={colors.textTertiary} />
             <Text
-              style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' }]}
+              style={[
+                typography.body,
+                { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' },
+              ]}
             >
               У вас нет активных травм
             </Text>
