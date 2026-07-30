@@ -68,39 +68,55 @@ export function useProgramEditor(programId: string, userId: string | null) {
   };
 
   const handleStartProgram = async () => {
-    if (!userId) return;
-    const phases = program?.phases || [];
-    const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
-    Alert.alert(
-      'Начать программу?',
-      `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Начать',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setStarting(true);
-            try {
-              await startProgram(programId);
-              // Один серверный запрос, идемпотентно (вместо медленного createWorkoutsFromProgram)
-              const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
-                p_program_id: programId,
-                p_user_id: userId,
-              });
-              if (rpcError) throw rpcError;
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.replace('/(tabs)/workouts');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            } finally {
-              setStarting(false);
-            }
-          },
+  if (!userId) return;
+  
+  // ✅ ПРОВЕРКА: если программа уже активна, не создаём дубли
+  const { data: existingProgram } = await supabase
+    .from('user_programs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('program_id', program?.id)
+    .eq('is_active', true)
+    .maybeSingle();
+  
+  if (existingProgram) {
+    Alert.alert('Программа уже активна', 'Перейдите во вкладку "Тренировки"');
+    router.replace('/(tabs)/workouts');
+    return;
+  }
+  
+  const phases = program?.phases || [];
+  const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
+  
+  Alert.alert(
+    'Начать программу?',
+    `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`,
+    [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Начать',
+        onPress: async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setStarting(true);
+          try {
+            await startProgram(programId);
+            const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
+              p_program_id: programId,
+              p_user_id: userId,
+            });
+            if (rpcError) throw rpcError;
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.replace('/(tabs)/workouts');
+          } catch (error: any) {
+            Alert.alert('Ошибка', error.message);
+          } finally {
+            setStarting(false);
+          }
         },
-      ],
-    );
-  };
+      },
+    ]
+  );
+};
 
   const toggleEditMode = async () => {
     if (editMode) {
@@ -370,187 +386,199 @@ export function useProgramEditor(programId: string, userId: string | null) {
   // ============================================================================
   // СОХРАНЕНИЕ (фазовое)
   // ============================================================================
-  const saveProgram = async () => {
-    setSaving(true);
-    try {
-      if (!editedProgram) return;
-      const phases = editedProgram.phases || [];
-      const days = editedProgram.days || [];
+const saveProgram = async () => {
+  setSaving(true);
+  try {
+    if (!editedProgram) return;
+    
+    // ✅ ПРОВЕРКА: editedProgram должен быть копией пользователя, а не сидом
+    if (!editedProgram.created_by || editedProgram.created_by !== userId) {
+      throw new Error('Нельзя редактировать чужую программу. Сначала скопируйте её.');
+    }
+    
+    const phases = editedProgram.phases || [];
+    const days = editedProgram.days || [];
 
-      // 1. Расписание программы
-      if (editedProgram.schedule) {
-        const { error } = await supabase
-          .from('programs')
-          .update({ schedule: editedProgram.schedule })
-          .eq('id', editedProgram.id);
+    // 1. Расписание программы
+    if (editedProgram.schedule) {
+      const { error } = await supabase
+        .from('programs')
+        .update({ schedule: editedProgram.schedule })
+        .eq('id', editedProgram.id);
+      if (error) throw error;
+    }
+
+    const updatePromises: Promise<any>[] = [];
+    
+    // 2. Удаление помеченных сущностей
+    deletedPhaseIds.forEach(id =>
+      updatePromises.push(Promise.resolve(supabase.from('program_phases').delete().eq('id', id)))
+    );
+    deletedDayIds.forEach(id =>
+      updatePromises.push(Promise.resolve(supabase.from('program_days').delete().eq('id', id)))
+    );
+    deletedExerciseIds.forEach(id =>
+      updatePromises.push(Promise.resolve(supabase.from('program_exercises').delete().eq('id', id)))
+    );
+
+    // 3. Фазы: insert (новые) / update; маппинг temp id → real id
+    const phaseIdMap: Record<string, string> = {};
+    for (let i = 0; i < phases.length; i++) {
+      const phase = phases[i];
+      if (phase.isNew) {
+        const { data, error } = await supabase
+          .from('program_phases')
+          .insert({
+            program_id: editedProgram.id,
+            phase_number: i + 1,
+            name: phase.name,
+            phase_type: phase.phase_type,
+            weeks_count: phase.weeks_count,
+            description: phase.description,
+            position: i + 1,
+          })
+          .select()
+          .single();
         if (error) throw error;
-      }
-
-      const updatePromises: Promise<any>[] = [];
-
-      // 2. Удаление помеченных сущностей
-      deletedPhaseIds.forEach((id) =>
-        updatePromises.push(Promise.resolve(supabase.from('program_phases').delete().eq('id', id))),
-      );
-      deletedDayIds.forEach((id) =>
-        updatePromises.push(Promise.resolve(supabase.from('program_days').delete().eq('id', id))),
-      );
-      deletedExerciseIds.forEach((id) =>
+        phaseIdMap[phase.id] = data.id;
+      } else {
+        phaseIdMap[phase.id] = phase.id;
         updatePromises.push(
-          Promise.resolve(supabase.from('program_exercises').delete().eq('id', id)),
-        ),
-      );
-
-      // 3. Фазы: insert (новые) / update; маппинг temp id → real id
-      const phaseIdMap: Record<string, string> = {};
-      for (let i = 0; i < phases.length; i++) {
-        const phase = phases[i];
-        if (phase.isNew) {
-          const { data, error } = await supabase
-            .from('program_phases')
-            .insert({
-              program_id: editedProgram.id,
-              phase_number: i + 1,
-              name: phase.name,
-              phase_type: phase.phase_type,
-              weeks_count: phase.weeks_count,
-              description: phase.description,
-              position: i + 1,
-            })
-            .select()
-            .single();
-          if (error) throw error;
-          phaseIdMap[phase.id] = data.id;
-        } else {
-          phaseIdMap[phase.id] = phase.id;
-          updatePromises.push(
-            Promise.resolve(
-              supabase
-                .from('program_phases')
-                .update({
-                  phase_number: i + 1,
-                  name: phase.name,
-                  phase_type: phase.phase_type,
-                  weeks_count: phase.weeks_count,
-                  description: phase.description,
-                  position: i + 1,
-                })
-                .eq('id', phase.id),
-            ),
-          );
-        }
+          Promise.resolve(
+            supabase
+              .from('program_phases')
+              .update({
+                phase_number: i + 1,
+                name: phase.name,
+                phase_type: phase.phase_type,
+                weeks_count: phase.weeks_count,
+                description: phase.description,
+                position: i + 1,
+              })
+              .eq('id', phase.id)
+          )
+        );
       }
+    }
 
-      // 4. Дни (группируем по фазам И неделям) + упражнения
-      for (const phase of phases) {
-        const realPhaseId = phaseIdMap[phase.id];
-        const phaseDays = days.filter((d) => d.phase_id === phase.id);
-        const byWeek = new Map<number, ProgramDay[]>();
-        for (const d of phaseDays) {
-          const wn = d.week_number ?? 1;
-          if (!byWeek.has(wn)) byWeek.set(wn, []);
-          byWeek.get(wn)!.push(d);
-        }
-        for (const [weekNum, weekDays] of byWeek) {
-          weekDays.sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
-          for (let j = 0; j < weekDays.length; j++) {
-            const day = weekDays[j];
-            let realDayId = day.id;
-            if (day.isNew) {
-              const { data, error } = await supabase
-                .from('program_days')
-                .insert({
-                  program_id: editedProgram.id,
-                  phase_id: realPhaseId,
-                  week_number: weekNum,
-                  day_number: j + 1,
-                  name: day.name,
-                  position: j + 1,
-                })
-                .select()
-                .single();
-              if (error) throw error;
-              realDayId = data.id;
+    // 4. Дни (группируем по фазам И неделям) + упражнения
+    for (const phase of phases) {
+      const realPhaseId = phaseIdMap[phase.id];
+      const phaseDays = days.filter(d => d.phase_id === phase.id);
+      const byWeek = new Map<number, ProgramDay[]>();
+      for (const d of phaseDays) {
+        const wn = d.week_number ?? 1;
+        if (!byWeek.has(wn)) byWeek.set(wn, []);
+        byWeek.get(wn)!.push(d);
+      }
+      for (const [weekNum, weekDays] of byWeek) {
+        weekDays.sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+        for (let j = 0; j < weekDays.length; j++) {
+          const day = weekDays[j];
+          let realDayId = day.id;
+          if (day.isNew) {
+            const { data, error } = await supabase
+              .from('program_days')
+              .insert({
+                program_id: editedProgram.id,
+                phase_id: realPhaseId,
+                week_number: weekNum,
+                day_number: j + 1,
+                name: day.name,
+                position: j + 1,
+              })
+              .select()
+              .single();
+            if (error) throw error;
+            realDayId = data.id;
+          } else {
+            updatePromises.push(
+              Promise.resolve(
+                supabase
+                  .from('program_days')
+                  .update({
+                    name: day.name,
+                    phase_id: realPhaseId,
+                    week_number: weekNum,
+                    day_number: j + 1,
+                    position: j + 1,
+                  })
+                  .eq('id', day.id)
+              )
+            );
+          }
+          const exercises = day.exercises || [];
+          for (let k = 0; k < exercises.length; k++) {
+            const exercise = exercises[k];
+            if (exercise.isNew) {
+              updatePromises.push(
+                Promise.resolve(
+                  supabase.from('program_exercises').insert({
+                    program_day_id: realDayId,
+                    exercise_id: exercise.exercise_id,
+                    exercise_name: exercise.exercise_name,
+                    sets: exercise.sets,
+                    reps_range: exercise.reps_range,
+                    rest_seconds: exercise.rest_seconds,
+                    intensity: exercise.intensity,
+                    position: k + 1,
+                  })
+                )
+              );
             } else {
               updatePromises.push(
                 Promise.resolve(
-                  supabase
-                    .from('program_days')
-                    .update({
-                      name: day.name,
-                      phase_id: realPhaseId,
-                      week_number: weekNum,
-                      day_number: j + 1,
-                      position: j + 1,
-                    })
-                    .eq('id', day.id),
-                ),
+                  supabase.rpc('update_exercise_position', { p_exercise_id: exercise.id, p_new_position: k + 1 })
+                )
               );
-            }
-            const exercises = day.exercises || [];
-            for (let k = 0; k < exercises.length; k++) {
-              const exercise = exercises[k];
-              if (exercise.isNew) {
-                updatePromises.push(
-                  Promise.resolve(
-                    supabase.from('program_exercises').insert({
-                      program_day_id: realDayId,
-                      exercise_id: exercise.exercise_id,
-                      exercise_name: exercise.exercise_name,
+              updatePromises.push(
+                Promise.resolve(
+                  supabase
+                    .from('program_exercises')
+                    .update({
                       sets: exercise.sets,
                       reps_range: exercise.reps_range,
                       rest_seconds: exercise.rest_seconds,
                       intensity: exercise.intensity,
-                      position: k + 1,
-                    }),
-                  ),
-                );
-              } else {
-                updatePromises.push(
-                  Promise.resolve(
-                    supabase.rpc('update_exercise_position', {
-                      p_exercise_id: exercise.id,
-                      p_new_position: k + 1,
-                    }),
-                  ),
-                );
-                updatePromises.push(
-                  Promise.resolve(
-                    supabase
-                      .from('program_exercises')
-                      .update({
-                        sets: exercise.sets,
-                        reps_range: exercise.reps_range,
-                        rest_seconds: exercise.rest_seconds,
-                        intensity: exercise.intensity,
-                      })
-                      .eq('id', exercise.id),
-                  ),
-                );
-              }
+                    })
+                    .eq('id', exercise.id)
+                )
+              );
             }
           }
         }
       }
-
-      const results = await Promise.all(updatePromises);
-      const errors = results.filter((r: any) => r && r.error);
-      if (errors.length > 0) throw errors[0].error;
-
-      const updatedProgram = await getProgramWithDays(editedProgram.id);
-      setProgram(updatedProgram);
-      setEditedProgram(updatedProgram);
-      setDeletedPhaseIds([]);
-      setDeletedDayIds([]);
-      setDeletedExerciseIds([]);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setEditMode(false);
-    } catch (error: any) {
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить программу');
-    } finally {
-      setSaving(false);
     }
-  };
+
+    // ✅ ИСПРАВЛЕНИЕ: проверить КАЖДЫЙ промис на ошибку
+    const results = await Promise.all(updatePromises);
+    const errors = results.filter((r: any) => r && r.error);
+    if (errors.length > 0) {
+      // Логируем ВСЕ ошибки для отладки
+      console.error('Ошибки сохранения программы:', errors.map(e => e.error));
+      throw errors[0].error;
+    }
+
+    // ✅ ИСПРАВЛЕНИЕ: принудительный рефetch без кэша
+    const updatedProgram = await getProgramWithDays(editedProgram.id);
+    if (!updatedProgram) {
+      throw new Error('Программа не найдена после сохранения');
+    }
+    
+    setProgram(updatedProgram);
+    setEditedProgram(updatedProgram);
+    setDeletedPhaseIds([]);
+    setDeletedDayIds([]);
+    setDeletedExerciseIds([]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setEditMode(false);
+  } catch (error: any) {
+    console.error('Ошибка saveProgram:', error);
+    Alert.alert('Ошибка', error.message || 'Не удалось сохранить программу');
+  } finally {
+    setSaving(false);
+  }
+};
 
   // ============================================================================
   // ДНИ / УПРАЖНЕНИЯ (плоский индекс — обратная совместимость)

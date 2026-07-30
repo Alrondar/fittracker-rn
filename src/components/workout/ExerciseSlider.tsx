@@ -1,27 +1,57 @@
-import { useState, useEffect, memo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+  InteractionManager,
+} from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
 import { ExerciseData, AlternativeExercise, SetData } from '../../types/workout';
+import { WeightUnit } from '../../hooks/useUnitPreferences';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Карточка = экран минус симметричные боковые отступы (по 16).
 const CARD_WIDTH = SCREEN_WIDTH - 32;
+const H_GAP = 16; // промежуток между карточками при свайпе
+const PAD = 16;   // боковой отступ, центрирующий первую/последнюю карточку
 
 interface ExerciseSliderProps {
   exercise: ExerciseData;
   exerciseIndex: number;
   isReplaced: boolean;
   loadAlternatives: (id: string, muscles: string[]) => Promise<AlternativeExercise[]>;
-  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
+  updateSet: (
+    exIndex: number,
+    setIndex: number,
+    field: 'weight' | 'reps',
+    value: string,
+  ) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
   startRestTimer: (seconds: number) => void;
-  getIntensityInfo: (intensity: string) => { label: string; color: string; bgColor: string; icon: React.ReactNode };
-  updateExerciseSettings: (exIndex: number, setsCount: number, restSeconds: number) => void;
+  getIntensityInfo: (intensity: string) => {
+    label: string;
+    color: string;
+    bgColor: string;
+    icon: React.ReactNode;
+  };
+  // ✅ ВОЛНА 3: проброс колбэка открытия общей модалки настроек
+  //    (updateExerciseSettings больше не пробрасывается — модалка на экране).
+  onOpenSettings: (
+    exerciseIndex: number,
+    setsCount: number,
+    restSeconds: number,
+  ) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
+  unit: WeightUnit;
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
@@ -36,72 +66,111 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
-  updateExerciseSettings,
+  onOpenSettings,
   colors,
   cardStyles,
+  unit,
   warning = null,
 }: ExerciseSliderProps) {
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
+  // ВОЛНА 2: тяжёлые карточки альтернатив монтируются в idle-окне либо по жесту.
+  const [altsMounted, setAltsMounted] = useState(false);
 
-  // «Есть ли потенциальные замены» известно БЕЗ загрузки полных объектов:
-  // exercise.alternatives — массив ID из БД (приходит в loadWorkout).
   const hasAlts = exercise.alternatives.length > 0 || isReplaced;
 
-  // ✅ АВТОЗАГРУЗКА альтернатив при монтировании слайдера — без кнопки-шеврона.
-  //    Ленивость сохраняется на уровне списка: FlatList в workout/[id].tsx имеет
-  //    windowSize={5}, поэтому ExerciseSlider монтируется только для видимых (+буфер)
-  //    упражнений. При вертикальном свайпе к новому упражнению его слайдер монтируется
-  //    и тянет альтернативы именно для него (loadAlternatives кэширует по id в ref).
   useEffect(() => {
     if (!hasAlts) return;
     let alive = true;
     setLoadingAlts(true);
     loadAlternatives(exercise.id, exercise.primary_muscles)
-      .then((alts) => { if (alive) setAlternatives(alts); })
-      .finally(() => { if (alive) setLoadingAlts(false); });
-    return () => { alive = false; };
+      .then((alts) => {
+        if (alive) setAlternatives(alts);
+      })
+      .finally(() => {
+        if (alive) setLoadingAlts(false);
+      });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAlts, exercise.id, loadAlternatives]);
 
+  useEffect(() => {
+    if (loadingAlts || !hasAlts || altsMounted) return;
+    const handle = InteractionManager.runAfterInteractions(() => {
+      setAltsMounted(true);
+    });
+    return () => handle.cancel();
+  }, [loadingAlts, hasAlts, altsMounted]);
+
+  const handleScrollBeginDrag = useCallback(() => {
+    if (!altsMounted && hasAlts) setAltsMounted(true);
+  }, [altsMounted, hasAlts]);
+
   const showPlaceholder = loadingAlts;
-  const showAlts = !loadingAlts && alternatives.length > 0;
+  const showPeek = !loadingAlts && hasAlts && !altsMounted;
+  const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
+
+  const childCount =
+    1 +
+    (showPlaceholder ? 1 : 0) +
+    (showPeek ? 1 : 0) +
+    (showAlts ? alternatives.length : 0);
+  const snapOffsets = useMemo(
+    () => Array.from({ length: childCount }, (_, i) => i * (CARD_WIDTH + H_GAP)),
+    [childCount],
+  );
 
   return (
     <View style={{ marginTop: SPACING.lg }}>
       {isReplaced && (
-        <View style={[cardStyles.replacedBadgeContainer, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>Заменено</Text>
+        <View
+          style={[
+            cardStyles.replacedBadgeContainer,
+            { backgroundColor: colors.primaryLight },
+          ]}
+        >
+          <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>
+            Заменено
+          </Text>
           <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
-            <Text style={[cardStyles.replacedResetText, { color: colors.primary }]}>Вернуть</Text>
+            <Text style={[cardStyles.replacedResetText, { color: colors.primary }]}>
+              Вернуть
+            </Text>
           </TouchableOpacity>
         </View>
       )}
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        snapToInterval={CARD_WIDTH + 16}
+        snapToOffsets={snapOffsets}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingLeft: 16, gap: 16 }}
+        removeClippedSubviews={true}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
-        <ExerciseCard
-          key={exercise.id}
-          exercise={exercise}
-          isMain
-          isReplaced={isReplaced}
-          exerciseIndex={exerciseIndex}
-          alternatives={alternatives}
-          updateSet={updateSet}
-          isSetCompleted={isSetCompleted}
-          replaceExercise={replaceExercise}
-          startRestTimer={startRestTimer}
-          getIntensityInfo={getIntensityInfo}
-          updateExerciseSettings={updateExerciseSettings}
-          colors={colors}
-          cardStyles={cardStyles}
-          warning={warning}
-        />
+        <View style={{ width: CARD_WIDTH }}>
+          <ExerciseCard
+            exercise={exercise}
+            isMain
+            isReplaced={isReplaced}
+            exerciseIndex={exerciseIndex}
+            alternatives={alternatives}
+            updateSet={updateSet}
+            isSetCompleted={isSetCompleted}
+            replaceExercise={replaceExercise}
+            startRestTimer={startRestTimer}
+            getIntensityInfo={getIntensityInfo}
+            onOpenSettings={onOpenSettings}
+            colors={colors}
+            cardStyles={cardStyles}
+            unit={unit}
+            warning={warning}
+          />
+        </View>
+
         {showPlaceholder && (
           <View
             style={{
@@ -114,28 +183,61 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             }}
           >
             <ActivityIndicator color={colors.primary} />
-            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Загружаем замены…</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+              Загружаем замены…
+            </Text>
           </View>
         )}
+
+        {showPeek && (
+          <View
+            style={{
+              width: CARD_WIDTH,
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: SPACING.sm,
+              backgroundColor: colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: BORDER_RADIUS.lg,
+              paddingHorizontal: SPACING.lg,
+            }}
+          >
+            <ChevronRight size={22} color={colors.textTertiary} strokeWidth={2} />
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                fontWeight: '600',
+                textAlign: 'center',
+              }}
+            >
+              Свайпни для замен
+            </Text>
+          </View>
+        )}
+
         {showAlts &&
           alternatives.map((alt) => (
-            <ExerciseCard
-              key={alt.id}
-              exercise={alt}
-              isMain={false}
-              isReplaced={false}
-              exerciseIndex={exerciseIndex}
-              alternatives={alternatives}
-              updateSet={updateSet}
-              isSetCompleted={isSetCompleted}
-              replaceExercise={replaceExercise}
-              startRestTimer={startRestTimer}
-              getIntensityInfo={getIntensityInfo}
-              updateExerciseSettings={updateExerciseSettings}
-              colors={colors}
-              cardStyles={cardStyles}
-              warning={null}
-            />
+            <View key={alt.id} style={{ width: CARD_WIDTH }}>
+              <ExerciseCard
+                exercise={alt}
+                isMain={false}
+                isReplaced={false}
+                exerciseIndex={exerciseIndex}
+                alternatives={alternatives}
+                updateSet={updateSet}
+                isSetCompleted={isSetCompleted}
+                replaceExercise={replaceExercise}
+                startRestTimer={startRestTimer}
+                getIntensityInfo={getIntensityInfo}
+                onOpenSettings={onOpenSettings}
+                colors={colors}
+                cardStyles={cardStyles}
+                unit={unit}
+                warning={null}
+              />
+            </View>
           ))}
       </ScrollView>
     </View>

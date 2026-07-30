@@ -219,4 +219,59 @@ export const warmupService = {
       return { exercises: [], excludedByInjury: [] };
     }
   },
+ /**
+   * Альтернативы для упражнения РАЗМИНКИ: только stretching / активация,
+   * пересекающиеся по целевым мышцам. Не тянет силовые упражнения в замены.
+   * Возвращает объекты в той же форме WarmupExercise (с duration_seconds),
+   * чтобы карточка разминки рендерила замену без адаптеров.
+   */
+  async getWarmupAlternatives(
+    exerciseId: string,
+    primaryMuscles: string[],
+  ): Promise<WarmupExercise[]> {
+    try {
+      let query = supabase
+        .from('exercises')
+        .select(
+          'id, name, technique, benefits, risks, injuries, equipment, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation',
+        )
+        .neq('id', exerciseId)
+        .or('category.eq.stretching,can_be_activation.is.true')
+        .limit(20);
+
+      if (primaryMuscles.length > 0) {
+        query = query.overlaps('primary_muscles', primaryMuscles);
+      }
+
+      const { data, error } = await query;
+      if (error || !data) return [];
+
+      return data.map((ex: any) => {
+        let duration = 30;
+        if (ex.settings) {
+          const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
+          if (match) duration = parseInt(match[1]);
+        }
+        return {
+          id: ex.id,
+          name: ex.name,
+          technique: ex.technique || '',
+          benefits: ex.benefits || '',
+          risks: ex.risks || '',
+          injuries: ex.injuries || [],
+          equipment: ex.equipment || [],
+          media_url: ex.media_url || null,
+          primary_muscles: ex.primary_muscles || [],
+          secondary_muscles: ex.secondary_muscles || [],
+          duration_seconds: duration,
+          relevance_score: 0,
+          category: ex.category ?? null,
+          can_be_activation: ex.can_be_activation ?? false,
+        } as WarmupExercise;
+      });
+    } catch (e) {
+      console.error('Ошибка загрузки альтернатив разминки:', e);
+      return [];
+    }
+  },
 };

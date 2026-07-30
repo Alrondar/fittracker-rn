@@ -1,5 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,6 +30,7 @@ import {
   Sparkles,
   AlertTriangle,
   ShieldAlert,
+  RotateCcw,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
@@ -33,31 +41,18 @@ import { EquipmentIcon } from '../EquipmentIcon';
 import { TechniqueMediaSlider } from './TechniqueMediaSlider';
 import { WarmupExercise, InjuryExclusion } from '../../services/warmupService';
 
-interface WarmupBlockProps {
-  warmupExercises: WarmupExercise[];
-  isLoading: boolean;
-  activeTimerId: string | null;
-  timeLeft: number;
-  isAllCompleted: boolean;
-  totalDuration: number;
-  excludedByInjury: InjuryExclusion[]; // ✅ НОВОЕ
-  isCompleted: (id: string) => boolean;
-  onGenerateWarmup: () => void;
-  onStartTimer: (id: string) => void;
-  onStopTimer: () => void;
-  onMarkCompleted: (id: string) => void;
-  onSkip: () => void;
-}
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ALT_CARD_WIDTH = SCREEN_WIDTH * 0.7;
 
 // Лимиты высоты раскрытого контента
-const DEFAULT_MAX_HEIGHT = 300;   // польза / риски / противопоказания
+const DEFAULT_MAX_HEIGHT = 300; // польза / риски / противопоказания
 const TECHNIQUE_MAX_HEIGHT = 640; // техника со слайдером (190px) + текст
 
 const formatTime = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 
 const formatEquipmentName = (name: string) =>
-  name.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  name.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 // ===== Раскрывающаяся секция (тот же механизм, что в ExerciseCard) =====
 function ExpandableSection({
@@ -150,10 +145,79 @@ function CollapsibleInfo({
           <ChevronDown size={14} color={colors.textTertiary} />
         </View>
       </TouchableOpacity>
-      <ExpandableSection expanded={expanded} maxHeight={maxHeight}>
-        {children}
-      </ExpandableSection>
+      <ExpandableSection expanded={expanded} maxHeight={maxHeight}>{children}</ExpandableSection>
     </View>
+  );
+}
+
+// ===== Компактная карточка альтернативы разминки (горизонтальный слайдер) =====
+interface WarmupAlternativeCardProps {
+  alt: WarmupExercise;
+  onPress: () => void;
+}
+
+/**
+ * Мини‑карточка замены в горизонтальном слайдере разминки.
+ * Не memo: перерисовка дешёвая и случается только при замене/регенерации
+ * родительской карточки (не на каждый тик секундомера).
+ */
+function WarmupAlternativeCard({ alt, onPress }: WarmupAlternativeCardProps) {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={{
+        width: ALT_CARD_WIDTH,
+        backgroundColor: colors.surfaceSecondary,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: BORDER_RADIUS.md,
+        padding: SPACING.sm,
+        gap: 6,
+      }}
+    >
+      <Text
+        style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '700' }]}
+        numberOfLines={2}
+      >
+        {alt.name}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Clock size={11} color={colors.textTertiary} />
+          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+            {alt.duration_seconds} сек
+          </Text>
+        </View>
+        <View
+          style={{
+            backgroundColor: alt.can_be_activation ? colors.warning + '20' : colors.info + '20',
+            paddingHorizontal: 6,
+            paddingVertical: 1,
+            borderRadius: BORDER_RADIUS.sm,
+          }}
+        >
+          <Text
+            style={[
+              typography.captionSmall,
+              {
+                color: alt.can_be_activation ? colors.warning : colors.info,
+                fontWeight: '700',
+              },
+            ]}
+          >
+            {alt.can_be_activation ? 'Активация' : 'Растяжка'}
+          </Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <RotateCcw size={12} color={colors.primary} />
+        <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+          Заменить
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -163,13 +227,16 @@ interface WarmupExerciseCardProps {
   index: number;
   completed: boolean;
   isActive: boolean;
+  /** Передаётся ТОЛЬКО активной карточке; неактивным — 0, чтобы memo не сбивался тиком. */
   timeLeft: number;
-  onStartTimer: () => void;
+  onStartTimer: (id: string) => void;
   onStopTimer: () => void;
-  onMarkCompleted: () => void;
+  onMarkCompleted: (id: string) => void;
+  loadAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
+  onReplace: (index: number, alt: WarmupExercise) => void;
 }
 
-function WarmupExerciseCard({
+const WarmupExerciseCard = memo(function WarmupExerciseCard({
   exercise,
   index,
   completed,
@@ -178,19 +245,51 @@ function WarmupExerciseCard({
   onStartTimer,
   onStopTimer,
   onMarkCompleted,
+  loadAlternatives,
+  onReplace,
 }: WarmupExerciseCardProps) {
   const { colors } = useTheme();
   const progress = useSharedValue(0);
   const [openSection, setOpenSection] = useState<SectionKey | null>(null);
-  // ✅ Ленивый монтаж: слайдер создаётся только после первого открытия техники
+  // Ленивый монтаж: слайдер техники создаётся только после первого открытия
   const [everOpened, setEverOpened] = useState<Set<SectionKey>>(new Set());
+  // Альтернативы разминки (горизонтальный слайдер замен)
+  const [alts, setAlts] = useState<WarmupExercise[]>([]);
+  const [loadingAlts, setLoadingAlts] = useState(false);
 
-  const toggleSection = (key: SectionKey) => {
-    setEverOpened(prev => (prev.has(key) ? prev : new Set(prev).add(key)));
-    setOpenSection(prev => (prev === key ? null : key));
-  };
+  const toggleSection = useCallback((key: SectionKey) => {
+    setEverOpened((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+    setOpenSection((prev) => (prev === key ? null : key));
+  }, []);
 
-  // Плавный прогресс-бар таймера (синхронизирован с тиком раз в секунду)
+  // Загрузка альтернатив с кэшем на уровне useWarmup.
+  // Зависимость от exercise.id: при замене упражнения id меняется → подтянутся
+  // альтернативы уже для нового упражнения. Цикла нет (fetch не зовёт onReplace).
+  useEffect(() => {
+    let alive = true;
+    setLoadingAlts(true);
+    loadAlternatives(exercise.id, exercise.primary_muscles)
+      .then((list) => {
+        if (alive) setAlts(list);
+      })
+      .finally(() => {
+        if (alive) setLoadingAlts(false);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercise.id]);
+
+  const handleReplace = useCallback(
+    (alt: WarmupExercise) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onReplace(index, alt);
+    },
+    [index, onReplace],
+  );
+
+  // Плавный прогресс‑бар таймера (синхронизирован с тиком раз в секунду)
   useEffect(() => {
     if (isActive && exercise.duration_seconds > 0) {
       progress.value = withTiming(timeLeft / exercise.duration_seconds, {
@@ -200,9 +299,11 @@ function WarmupExerciseCard({
     } else {
       progress.value = withTiming(0, { duration: 200 });
     }
-  }, [isActive, timeLeft, exercise.duration_seconds]);
+  }, [isActive, timeLeft, exercise.duration_seconds, progress]);
 
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+
+  const hasAlts = !loadingAlts && alts.length > 0;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 70).duration(300)}>
@@ -211,7 +312,11 @@ function WarmupExerciseCard({
           backgroundColor: isActive ? colors.warning + '12' : colors.surface,
           borderRadius: BORDER_RADIUS.lg,
           borderWidth: 1,
-          borderColor: isActive ? colors.warning : completed ? colors.success + '60' : colors.border,
+          borderColor: isActive
+            ? colors.warning
+            : completed
+            ? colors.success + '60'
+            : colors.border,
           marginBottom: SPACING.sm,
           overflow: 'hidden',
           opacity: completed && !isActive ? 0.7 : 1,
@@ -243,38 +348,51 @@ function WarmupExerciseCard({
             <Text
               style={[
                 typography.labelBold,
-                { color: colors.textPrimary, textDecorationLine: completed ? 'line-through' : 'none' },
+                {
+                  color: colors.textPrimary,
+                  textDecorationLine: completed ? 'line-through' : 'none',
+                },
               ]}
             >
               {exercise.name}
             </Text>
-<View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 }}>
-  <Clock size={12} color={colors.textTertiary} />
-  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-    {exercise.duration_seconds} сек
-  </Text>
-  <View
-    style={{
-      backgroundColor: exercise.can_be_activation ? colors.warning + '20' : colors.info + '20',
-      paddingHorizontal: 6,
-      paddingVertical: 1,
-      borderRadius: BORDER_RADIUS.sm,
-    }}
-  >
-    <Text
-      style={[
-        typography.captionSmall,
-        { color: exercise.can_be_activation ? colors.warning : colors.info, fontWeight: '700' },
-      ]}
-    >
-      {exercise.can_be_activation ? 'Активация' : 'Растяжка'}
-    </Text>
-  </View>
-</View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 }}>
+              <Clock size={12} color={colors.textTertiary} />
+              <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                {exercise.duration_seconds} сек
+              </Text>
+              <View
+                style={{
+                  backgroundColor: exercise.can_be_activation
+                    ? colors.warning + '20'
+                    : colors.info + '20',
+                  paddingHorizontal: 6,
+                  paddingVertical: 1,
+                  borderRadius: BORDER_RADIUS.sm,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    {
+                      color: exercise.can_be_activation ? colors.warning : colors.info,
+                      fontWeight: '700',
+                    },
+                  ]}
+                >
+                  {exercise.can_be_activation ? 'Активация' : 'Растяжка'}
+                </Text>
+              </View>
+            </View>
           </View>
           {isActive ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-              <Text style={[typography.h5, { color: colors.warning, fontVariant: ['tabular-nums'] }]}>
+              <Text
+                style={[
+                  typography.h5,
+                  { color: colors.warning, fontVariant: ['tabular-nums'] },
+                ]}
+              >
                 {formatTime(timeLeft)}
               </Text>
               <TouchableOpacity
@@ -293,7 +411,7 @@ function WarmupExerciseCard({
             </View>
           ) : (
             <TouchableOpacity
-              onPress={onStartTimer}
+              onPress={() => onStartTimer(exercise.id)}
               activeOpacity={0.75}
               style={{
                 width: 40,
@@ -307,13 +425,18 @@ function WarmupExerciseCard({
               {completed ? (
                 <Check size={18} color={colors.success} />
               ) : (
-                <Play size={16} color={colors.textInverse} fill={colors.textInverse} style={{ marginLeft: 2 }} />
+                <Play
+                  size={16}
+                  color={colors.textInverse}
+                  fill={colors.textInverse}
+                  style={{ marginLeft: 2 }}
+                />
               )}
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Прогресс-бар таймера */}
+        {/* Прогресс‑бар таймера */}
         {isActive && (
           <View
             style={{
@@ -325,15 +448,20 @@ function WarmupExerciseCard({
             }}
           >
             <Animated.View
-              style={[{ height: '100%', backgroundColor: colors.warning, borderRadius: 2 }, progressStyle]}
+              style={[
+                { height: '100%', backgroundColor: colors.warning, borderRadius: 2 },
+                progressStyle,
+              ]}
             />
           </View>
         )}
 
         {/* Бейджи мышц */}
         {(exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0) && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
-            {exercise.primary_muscles.map(m => (
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}
+          >
+            {exercise.primary_muscles.map((m) => (
               <View
                 key={`p-${m}`}
                 style={{
@@ -345,10 +473,17 @@ function WarmupExerciseCard({
                   borderRadius: BORDER_RADIUS.full,
                 }}
               >
-                <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '600' }]}>{m}</Text>
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.primary, fontWeight: '600' },
+                  ]}
+                >
+                  {m}
+                </Text>
               </View>
             ))}
-            {exercise.secondary_muscles.map(m => (
+            {exercise.secondary_muscles.map((m) => (
               <View
                 key={`s-${m}`}
                 style={{
@@ -365,7 +500,9 @@ function WarmupExerciseCard({
         )}
 
         {/* Оборудование: отдельный чип на каждую единицу */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
+        <View
+          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}
+        >
           {exercise.equipment.length > 0 ? (
             exercise.equipment.map((eq, i) => (
               <View
@@ -383,7 +520,12 @@ function WarmupExerciseCard({
                 }}
               >
                 <EquipmentIcon name={eq} size={16} primaryMuscles={exercise.primary_muscles} />
-                <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textSecondary, fontWeight: '600' },
+                  ]}
+                >
                   {formatEquipmentName(eq)}
                 </Text>
               </View>
@@ -403,15 +545,58 @@ function WarmupExerciseCard({
               }}
             >
               <Dumbbell size={12} color={colors.textTertiary} />
-              <Text style={[typography.captionSmall, { color: colors.textTertiary, fontWeight: '600' }]}>
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textTertiary, fontWeight: '600' },
+                ]}
+              >
                 Без оборудования
               </Text>
             </View>
           )}
         </View>
 
-        {/* ✅ Техника — аккордеон со слайдером внутри (ленивый монтаж) */}
-        {(exercise.technique || exercise.media_url) ? (
+        {/* ✅ Горизонтальный слайдер альтернатив разминки (свайп).
+               Тот же паттерн pagingEnabled, что и в силовом ExerciseSlider.
+               Решает проблему «нет партнёра / нет оборудования» для разминки. */}
+        {hasAlts && (
+          <View style={{ marginTop: SPACING.md }}>
+            <Text
+              style={[
+                typography.captionSmall,
+                {
+                  color: colors.textTertiary,
+                  fontWeight: '700',
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                },
+              ]}
+            >
+              Альтернативы (свайп)
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled
+              snapToInterval={ALT_CARD_WIDTH + SPACING.sm}
+              decelerationRate="fast"
+              contentContainerStyle={{ paddingRight: SPACING.sm, gap: SPACING.sm }}
+            >
+              {alts.map((alt) => (
+                <WarmupAlternativeCard
+                  key={alt.id}
+                  alt={alt}
+                  onPress={() => handleReplace(alt)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Техника — аккордеон со слайдером внутри (ленивый монтаж) */}
+        {exercise.technique || exercise.media_url ? (
           <CollapsibleInfo
             icon={<BookOpen size={13} color={colors.primary} />}
             title="Техника"
@@ -423,11 +608,16 @@ function WarmupExerciseCard({
             {everOpened.has('technique') && (
               <TechniqueMediaSlider
                 mediaUrl={exercise.media_url}
-                autoPlay={openSection === 'technique'} // автоплей только в открытом виде
+                autoPlay={openSection === 'technique'}
               />
             )}
             {exercise.technique ? (
-              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, marginTop: SPACING.sm }]}>
+              <Text
+                style={[
+                  typography.bodySmall,
+                  { color: colors.textSecondary, lineHeight: 18, marginTop: SPACING.sm },
+                ]}
+              >
                 {exercise.technique}
               </Text>
             ) : null}
@@ -474,9 +664,19 @@ function WarmupExerciseCard({
             onToggle={() => toggleSection('injuries')}
           >
             {exercise.injuries.map((item, i) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
-                <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
-                <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, flex: 1 }]}>
+              <View
+                key={i}
+                style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}
+              >
+                <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>
+                  •
+                </Text>
+                <Text
+                  style={[
+                    typography.bodySmall,
+                    { color: colors.textSecondary, lineHeight: 18, flex: 1 },
+                  ]}
+                >
                   {item}
                 </Text>
               </View>
@@ -487,7 +687,7 @@ function WarmupExerciseCard({
         {/* Ручная отметка выполнения */}
         {!completed && (
           <TouchableOpacity
-            onPress={onMarkCompleted}
+            onPress={() => onMarkCompleted(exercise.id)}
             activeOpacity={0.7}
             style={{
               flexDirection: 'row',
@@ -501,7 +701,12 @@ function WarmupExerciseCard({
             }}
           >
             <Check size={14} color={colors.success} />
-            <Text style={[typography.captionSmall, { color: colors.success, fontWeight: '600', marginLeft: 4 }]}>
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.success, fontWeight: '600', marginLeft: 4 },
+              ]}
+            >
               Отметить выполненным
             </Text>
           </TouchableOpacity>
@@ -509,9 +714,27 @@ function WarmupExerciseCard({
       </View>
     </Animated.View>
   );
-}
+});
 
 // ===== Основной блок разминки =====
+interface WarmupBlockProps {
+  warmupExercises: WarmupExercise[];
+  isLoading: boolean;
+  activeTimerId: string | null;
+  timeLeft: number;
+  isAllCompleted: boolean;
+  totalDuration: number;
+  excludedByInjury: InjuryExclusion[];
+  isCompleted: (id: string) => boolean;
+  onGenerateWarmup: () => void;
+  onStartTimer: (id: string) => void;
+  onStopTimer: () => void;
+  onMarkCompleted: (id: string) => void;
+  onSkip: () => void;
+  loadWarmupAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
+  onReplaceWarmup: (index: number, alt: WarmupExercise) => void;
+}
+
 export function WarmupBlock({
   warmupExercises,
   isLoading,
@@ -519,13 +742,15 @@ export function WarmupBlock({
   timeLeft,
   isAllCompleted,
   totalDuration,
-  excludedByInjury, // ✅ НОВОЕ
+  excludedByInjury,
   isCompleted,
   onGenerateWarmup,
   onStartTimer,
   onStopTimer,
   onMarkCompleted,
   onSkip,
+  loadWarmupAlternatives,
+  onReplaceWarmup,
 }: WarmupBlockProps) {
   const { colors } = useTheme();
   const pulse = useSharedValue(0.35);
@@ -538,14 +763,14 @@ export function WarmupBlock({
       pulse.value = withRepeat(
         withTiming(0.85, { duration: 700, easing: Easing.inOut(Easing.ease) }),
         -1,
-        true
+        true,
       );
     }
-  }, [isLoading]);
+  }, [isLoading, pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
-  const completedCount = warmupExercises.filter(ex => isCompleted(ex.id)).length;
+  const completedCount = warmupExercises.filter((ex) => isCompleted(ex.id)).length;
 
   // Анимация прогресса в футере
   useEffect(() => {
@@ -553,13 +778,15 @@ export function WarmupBlock({
       duration: 350,
       easing: Easing.out(Easing.cubic),
     });
-  }, [completedCount, warmupExercises.length]);
+  }, [completedCount, warmupExercises.length, footerProgress]);
 
-  const footerProgressStyle = useAnimatedStyle(() => ({ width: `${footerProgress.value * 100}%` }));
+  const footerProgressStyle = useAnimatedStyle(() => ({
+    width: `${footerProgress.value * 100}%`,
+  }));
 
   const targetMuscles = useMemo(() => {
     const set = new Set<string>();
-    warmupExercises.forEach(ex => ex.primary_muscles.forEach(m => set.add(m)));
+    warmupExercises.forEach((ex) => ex.primary_muscles.forEach((m) => set.add(m)));
     return Array.from(set).slice(0, 4);
   }, [warmupExercises]);
 
@@ -570,11 +797,26 @@ export function WarmupBlock({
     return (
       <View style={{ marginHorizontal: SPACING.lg, marginTop: SPACING.md }}>
         <Animated.View
-          style={[{ backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.lg, height: 132 }, pulseStyle]}
+          style={[
+            { backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.lg, height: 132 },
+            pulseStyle,
+          ]}
         />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: SPACING.sm }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: SPACING.sm,
+          }}
+        >
           <ActivityIndicator size="small" color={colors.warning} />
-          <Text style={[typography.captionSmall, { color: colors.textSecondary, marginLeft: SPACING.sm }]}>
+          <Text
+            style={[
+              typography.captionSmall,
+              { color: colors.textSecondary, marginLeft: SPACING.sm },
+            ]}
+          >
             Подбираем упражнения под твою тренировку...
           </Text>
         </View>
@@ -626,15 +868,24 @@ export function WarmupBlock({
                 borderRadius: BORDER_RADIUS.sm,
               }}
             >
-              <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>~{mins} мин</Text>
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.warning, fontWeight: '700' },
+                ]}
+              >
+                ~{mins} мин
+              </Text>
             </View>
           </View>
           {targetMuscles.length > 0 && (
-            <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>
+            <Text
+              style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}
+              numberOfLines={1}
+            >
               Под твою тренировку: {targetMuscles.join(' · ')}
             </Text>
           )}
-          {/* ✅ НОВОЕ: учтённые травмы */}
           {excludedByInjury.length > 0 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
               <AlertTriangle size={12} color={colors.warning} />
@@ -642,7 +893,8 @@ export function WarmupBlock({
                 style={[typography.captionSmall, { color: colors.warning, fontWeight: '600' }]}
                 numberOfLines={2}
               >
-                Учтены травмы: {excludedByInjury.map(e => `${e.bodyPartLabel} (−${e.count})`).join(' · ')}
+                Учтены травмы:{' '}
+                {excludedByInjury.map((e) => `${e.bodyPartLabel} (−${e.count})`).join(' · ')}
               </Text>
             </View>
           )}
@@ -661,19 +913,26 @@ export function WarmupBlock({
 
       {/* Список упражнений */}
       <View style={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.xs }}>
-        {warmupExercises.map((exercise, index) => (
-          <WarmupExerciseCard
-            key={exercise.id}
-            exercise={exercise}
-            index={index}
-            completed={isCompleted(exercise.id)}
-            isActive={activeTimerId === exercise.id}
-            timeLeft={timeLeft}
-            onStartTimer={() => onStartTimer(exercise.id)}
-            onStopTimer={onStopTimer}
-            onMarkCompleted={() => onMarkCompleted(exercise.id)}
-          />
-        ))}
+        {warmupExercises.map((exercise, index) => {
+          const active = activeTimerId === exercise.id;
+          return (
+            <WarmupExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              index={index}
+              completed={isCompleted(exercise.id)}
+              isActive={active}
+              // ✅ timeLeft только активной карточке → неактивные не ловят тик и
+              //    не перерисовываются (React.memo bail out). Фикс лага разминки.
+              timeLeft={active ? timeLeft : 0}
+              onStartTimer={onStartTimer}
+              onStopTimer={onStopTimer}
+              onMarkCompleted={onMarkCompleted}
+              loadAlternatives={loadWarmupAlternatives}
+              onReplace={onReplaceWarmup}
+            />
+          );
+        })}
       </View>
 
       {/* Футер: пропуск + прогресс выполнения */}
@@ -696,21 +955,39 @@ export function WarmupBlock({
           style={{ flex: 1 }}
         />
         <View style={{ flex: 1.3 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>Выполнено</Text>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}
+          >
+            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+              Выполнено
+            </Text>
             <Text
               style={[
                 typography.captionSmall,
-                { color: isAllCompleted ? colors.success : colors.textPrimary, fontWeight: '700' },
+                {
+                  color: isAllCompleted ? colors.success : colors.textPrimary,
+                  fontWeight: '700',
+                },
               ]}
             >
               {isAllCompleted ? 'Готово ✓' : `${completedCount}/${warmupExercises.length}`}
             </Text>
           </View>
-          <View style={{ height: 6, backgroundColor: colors.surfaceSecondary, borderRadius: 3, overflow: 'hidden' }}>
+          <View
+            style={{
+              height: 6,
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: 3,
+              overflow: 'hidden',
+            }}
+          >
             <Animated.View
               style={[
-                { height: '100%', backgroundColor: isAllCompleted ? colors.success : colors.warning, borderRadius: 3 },
+                {
+                  height: '100%',
+                  backgroundColor: isAllCompleted ? colors.success : colors.warning,
+                  borderRadius: 3,
+                },
                 footerProgressStyle,
               ]}
             />
