@@ -67,10 +67,10 @@ export function useProgramEditor(programId: string, userId: string | null) {
     }
   };
 
-  const handleStartProgram = async () => {
+const handleStartProgram = async () => {
   if (!userId) return;
-  
-  // ✅ ПРОВЕРКА: если программа уже активна, не создаём дубли
+
+  // Проверка: есть ли уже активная программа или старые тренировки?
   const { data: existingProgram } = await supabase
     .from('user_programs')
     .select('id')
@@ -78,33 +78,47 @@ export function useProgramEditor(programId: string, userId: string | null) {
     .eq('program_id', program?.id)
     .eq('is_active', true)
     .maybeSingle();
-  
-  if (existingProgram) {
-    Alert.alert('Программа уже активна', 'Перейдите во вкладку "Тренировки"');
-    router.replace('/(tabs)/workouts');
-    return;
-  }
-  
+
+  const { count: existingWorkoutsCount } = await supabase
+    .from('workouts')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('program_id', programId);
+
+  const hasExistingData = existingProgram || (existingWorkoutsCount && existingWorkoutsCount > 0);
+
   const phases = program?.phases || [];
   const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
-  
+
+  // Усиленное предупреждение, если есть старые данные
+  const message = hasExistingData
+    ? `⚠️ ВНИМАНИЕ: Все старые тренировки этой программы будут УДАЛЕНЫ (включая завершённые с историей подходов, личными рекордами и прогрессом).\n\n` +
+      `Будут созданы новые тренировки с актуальными упражнениями.\n\n` +
+      `Программа: "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)\n\n` +
+      `Продолжить?`
+    : `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`;
+
   Alert.alert(
-    'Начать программу?',
-    `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`,
+    hasExistingData ? 'Перезапустить программу?' : 'Начать программу?',
+    message,
     [
       { text: 'Отмена', style: 'cancel' },
       {
-        text: 'Начать',
+        text: hasExistingData ? 'Перезапустить' : 'Начать',
+        style: hasExistingData ? 'destructive' : 'default',
         onPress: async () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           setStarting(true);
           try {
             await startProgram(programId);
+            
+            // ✅ RPC теперь удаляет все старые тренировки перед созданием новых
             const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
               p_program_id: programId,
               p_user_id: userId,
             });
             if (rpcError) throw rpcError;
+            
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.replace('/(tabs)/workouts');
           } catch (error: any) {
@@ -689,6 +703,8 @@ const saveProgram = async () => {
     setShowExercisePicker(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
+
+  
 
   return {
     program,
