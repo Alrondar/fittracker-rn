@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Hand } from 'lucide-react-native';
+import { Hand, ListChecks } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useDashboard } from '../../src/hooks/useDashboard';
@@ -14,22 +14,17 @@ import { WeeklyStatsCard } from '../../src/components/WeeklyStatsCard';
 import { ExerciseProgressCard } from '../../src/components/ExerciseProgressCard';
 import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
 import { LastWorkoutCard } from '../../src/components/LastWorkoutCard';
-import { SPACING, scale } from '../../src/constants/theme';
+import { SPACING, scale, BORDER_RADIUS } from '../../src/constants/theme';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppButton } from '../../src/components/ui/AppButton';
+import { AppCard } from '../../src/components/ui/AppCard';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
   const styles = useMemo(() => createDashboardStyles(colors), [colors]);
-
-  const {
-    data,
-    isPending,
-    isError,
-    refetch,
-  } = useDashboard(userId);
+  const { data, isPending, isError, refetch } = useDashboard(userId);
 
   const handleStartWorkout = () => {
     if (data?.activeProgram) {
@@ -75,11 +70,7 @@ export default function DashboardScreen() {
           <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
             Не удалось загрузить данные
           </Text>
-          <AppButton
-            title="Повторить"
-            variant="primary"
-            onPress={() => refetch()}
-          />
+          <AppButton title="Повторить" variant="primary" onPress={() => refetch()} />
         </View>
       </SafeAreaView>
     );
@@ -91,10 +82,6 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          {/* ✅ Приветствие: имя + векторная иконка в одной строке.
-              Имя сжимается и режется многоточием (flexShrink + numberOfLines),
-              бейдж с иконкой никогда не переносится. Растровый эмодзи 👋 убран —
-              он не принимал цвет темы и падал на вторую строку на узких экранах. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Text
               style={[styles.headerTitle, { flexShrink: 1, marginBottom: 0 }]}
@@ -115,13 +102,12 @@ export default function DashboardScreen() {
               <Hand size={scale(18)} color={colors.primary} strokeWidth={1.8} />
             </View>
           </View>
-          <Text style={styles.headerSubtitle}>
-            Всего тренировок: {data.totalWorkouts}
-          </Text>
+          <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>
         </View>
 
-        {data.activeProgram && (
-          <View style={styles.section}>
+        {/* ✅ Активная программа ИЛИ плейсхолдер «Выберите программу» */}
+        <View style={styles.section}>
+          {data.activeProgram ? (
             <ProgramProgressCard
               programName={data.activeProgram.programName}
               dayName={data.activeProgram.dayName}
@@ -134,8 +120,48 @@ export default function DashboardScreen() {
               totalDays={data.activeProgram.totalDays}
               onStartPress={handleStartWorkout}
             />
-          </View>
-        )}
+          ) : (
+            <AppCard variant="default">
+              <View style={{ alignItems: 'center', paddingVertical: SPACING.lg }}>
+                <View
+                  style={{
+                    width: scale(48),
+                    height: scale(48),
+                    borderRadius: scale(24),
+                    backgroundColor: colors.primary + '15',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: SPACING.md,
+                  }}
+                >
+                  <ListChecks size={scale(24)} color={colors.primary} strokeWidth={1.8} />
+                </View>
+                <Text
+                  style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.xs }]}
+                >
+                  Нет активной программы
+                </Text>
+                <Text
+                  style={[
+                    typography.body,
+                    {
+                      color: colors.textSecondary,
+                      textAlign: 'center',
+                      marginBottom: SPACING.lg,
+                    },
+                  ]}
+                >
+                  Выберите программу, чтобы начать тренировки
+                </Text>
+                <AppButton
+                  title="Выбрать программу"
+                  variant="primary"
+                  onPress={() => router.push('/(tabs)/programs')}
+                />
+              </View>
+            </AppCard>
+          )}
+        </View>
 
         {data.lastWorkout && (
           <View style={styles.section}>
@@ -158,18 +184,12 @@ export default function DashboardScreen() {
         )}
 
         <View style={styles.section}>
-          <SectionHeader
-            title="Активность"
-            style={{ paddingHorizontal: 0, paddingTop: 0 }}
-          />
+          <SectionHeader title="Активность" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
           <ActivityCalendar workoutDates={data.workoutDates} />
         </View>
 
         <View style={styles.section}>
-          <SectionHeader
-            title="Эта неделя"
-            style={{ paddingHorizontal: 0, paddingTop: 0 }}
-          />
+          <SectionHeader title="Эта неделя" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
           <WeeklyStatsCard
             workoutsCount={data.weeklyStats.workoutsCount}
             totalVolume={data.weeklyStats.totalVolume}

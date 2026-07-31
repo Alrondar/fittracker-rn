@@ -153,19 +153,22 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (programId: string) => {
-      await deleteProgram(programId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToast('Программа удалена', 'success');
-    },
-    onError: (error: any) => {
-      showToast(error.message || 'Не удалось удалить', 'error');
-    },
-  });
+const deleteMutation = useMutation({
+  mutationFn: async (programId: string) => {
+    await deleteProgram(programId, userId!);
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['programs'] });
+    queryClient.invalidateQueries({ queryKey: ['activeProgramId'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    showToast('Программа удалена', 'success');
+  },
+  onError: (error: any) => {
+    showToast(error.message || 'Не удалось удалить', 'error');
+  },
+});
 
   // ===== ОБЁРТКИ С АНИМАЦИЕЙ =====
   const setActiveTab = (tab: TabType) => {

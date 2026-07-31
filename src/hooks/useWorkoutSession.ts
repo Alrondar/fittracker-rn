@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-
 import { useTimerSettings } from './useTimerSettings';
 import { initSounds, playBeep, playFinishSound } from '../lib/timerSounds';
 import { supabase } from '../lib/supabase';
@@ -11,7 +10,6 @@ import { advanceProgramProgress } from '../services/programsService';
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
-
   const [workoutName, setWorkoutName] = useState('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -20,23 +18,17 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [initialTime, setInitialTime] = useState(0);
   const [isFinishing, setIsFinishing] = useState(false);
-
   const currentTimeRef = useRef<number>(0);
-
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   // Кэш альтернатив — только ref (без setState → без ререндеров экрана)
   const alternativesCacheRef = useRef<Record<string, AlternativeExercise[]>>({});
   const [replacements, setReplacements] = useState<Record<string, string>>({});
-
   const { settings: timerSettings } = useTimerSettings();
-
   const [isRestFinished, setIsRestFinished] = useState(false);
   const restEndsAtRef = useRef<number>(0);
   const lastBeepRef = useRef<number>(0);
-
   const exercisesRef = useRef<ExerciseData[]>([]);
 
   useEffect(() => {
@@ -48,23 +40,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const { data: workout, error } = await supabase
         .from('workouts')
         .select(
-          `name, program_id, started_at, finished_at, duration_seconds,
-           workout_exercises (
-             id, target_sets, rest_seconds, intensity, target_reps_range,
-             exercises (
-               id, name, primary_muscles, secondary_muscles, technique,
-               equipment, settings, benefits, risks, injuries, alternatives, media_url
-             )
-           )`
+          `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, intensity, target_reps_range, exercises ( id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, alternatives, media_url ) )`
         )
         .eq('id', workoutId)
         .single();
-
       if (error) throw error;
-
       setWorkoutName(workout.name);
       setProgramId(workout.program_id);
-
       // Возобновление незавершённой тренировки
       if (workout.started_at && !workout.finished_at) {
         const savedDuration = workout.duration_seconds || 0;
@@ -83,22 +65,18 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           }
         }
       }
-
       // Подгрузка сохранённых логов (для возобновления)
       const workoutExercises = workout.workout_exercises || [];
       const workoutExerciseIds = workoutExercises.map((we: any) => we.id);
-
       const logsByWorkoutExercise: Record<
         string,
         Array<{ set_number: number; weight_kg: number | null; reps: number | null }>
       > = {};
-
       if (workoutExerciseIds.length > 0) {
         const { data: logs } = await supabase
           .from('workout_logs')
           .select('workout_exercise_id, set_number, weight_kg, reps')
           .in('workout_exercise_id', workoutExerciseIds);
-
         logs?.forEach((log: any) => {
           if (!logsByWorkoutExercise[log.workout_exercise_id]) {
             logsByWorkoutExercise[log.workout_exercise_id] = [];
@@ -106,16 +84,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           logsByWorkoutExercise[log.workout_exercise_id].push(log);
         });
       }
-
       const exercisesData = workoutExercises.map((we: any) => {
         const exercise = we.exercises;
         const targetSets = we.target_sets ?? 3;
-
         const sets: SetData[] = [];
         for (let i = 0; i < targetSets; i++) {
           sets.push({ weight: '', reps: '' });
         }
-
         // Восстанавливаем сохранённые подходы
         const savedLogs = logsByWorkoutExercise[we.id] || [];
         savedLogs.forEach((log) => {
@@ -127,7 +102,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             };
           }
         });
-
         return {
           id: exercise.id,
           workout_exercise_id: we.id,
@@ -149,7 +123,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           reps_range: we.target_reps_range || undefined,
         };
       });
-
       setExercises(exercisesData);
     } catch (error: any) {
       Alert.alert('Ошибка', error.message || 'Не удалось загрузить тренировку');
@@ -162,13 +135,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     loadWorkout();
   }, [loadWorkout]);
 
-  // Сохранение прогресса при размонтировании (если тренировка активна)
+  // Сохранение прогресса при размонтировании (если тренировка активна).
+  // ⚠️ Намеренно НЕ тронуто в этом раунде: эффект привязан к deps
+  // [isWorkoutActive, isFinishing, workoutId], поэтому cleanup стреляет и при
+  // смене isFinishing внутри saveWorkout (лишний, но безобидный по значению UPDATE).
+  // Это medium-term (SEC-2), не потеря данных — правим отдельно через ref-чтение.
   useEffect(() => {
     return () => {
       if (restTimerRef.current) {
         clearInterval(restTimerRef.current);
       }
-
       if (isWorkoutActive && !isFinishing && currentTimeRef.current > 0) {
         supabase
           .from('workouts')
@@ -190,7 +166,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // started_at пишем только при самом первом старте (currentTimeRef === 0)
   const handleTimerStart = useCallback(() => {
     setIsWorkoutActive(true);
-
     if (currentTimeRef.current === 0) {
       supabase
         .from('workouts')
@@ -216,7 +191,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       if (alternativesCacheRef.current[exerciseId]) {
         return alternativesCacheRef.current[exerciseId];
       }
-
       try {
         // Явный select (не '*') — не тянем лишнего
         let query = supabase
@@ -226,14 +200,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
              equipment, settings, benefits, risks, injuries, media_url, reps_range`
           )
           .neq('id', exerciseId);
-
         if (primaryMuscles.length > 0) {
           query = query.overlaps('primary_muscles', primaryMuscles);
         }
-
         const { data, error } = await query.limit(10);
         if (error) throw error;
-
         const alternatives: AlternativeExercise[] = (data || []).map((ex: any) => ({
           id: ex.id,
           name: ex.name,
@@ -248,13 +219,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           media_url: ex.media_url || null,
           reps_range: ex.reps_range || undefined,
         }));
-
         // Запись только в ref — без setState, без ререндера экрана
         alternativesCacheRef.current = {
           ...alternativesCacheRef.current,
           [exerciseId]: alternatives,
         };
-
         return alternatives;
       } catch {
         return [];
@@ -269,12 +238,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
         const sets = [...exercise.sets];
-
         sets[setIndex] = {
           ...sets[setIndex],
           [field]: value,
         };
-
         exercise.sets = sets;
         updated[exerciseIndex] = exercise;
         return updated;
@@ -292,7 +259,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       setExercises((prev) => {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
-
         const currentSets = exercise.sets;
         const newSets: SetData[] = [];
         for (let i = 0; i < newSetsCount; i++) {
@@ -302,10 +268,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             newSets.push({ weight: '', reps: '' });
           }
         }
-
         exercise.sets = newSets;
         exercise.rest_seconds = newRestSeconds;
-
         updated[exerciseIndex] = exercise;
         return updated;
       });
@@ -317,13 +281,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     async (exerciseIndex: number, alternativeId: string) => {
       const exercise = exercisesRef.current[exerciseIndex];
       if (!exercise) return;
-
       const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
       const alternative = alternatives.find((item) => item.id === alternativeId);
       if (!alternative) return;
-
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
       setExercises((prev) => {
         const updated = [...prev];
         updated[exerciseIndex] = {
@@ -343,12 +304,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         };
         return updated;
       });
-
       setReplacements((prev) => ({
         ...prev,
         [exercise.workout_exercise_id]: alternativeId,
       }));
-
       Alert.alert('Заменено', `${exercise.name} → ${alternative.name}`);
     },
     [loadAlternatives]
@@ -358,9 +317,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     (exerciseIndex: number) => {
       const exercise = exercisesRef.current[exerciseIndex];
       if (!exercise) return;
-
       const workoutExerciseId = exercise.workout_exercise_id;
-
       Alert.alert(
         'Вернуть оригинальное упражнение?',
         'Данные подходов будут перезагружены из тренировки',
@@ -388,13 +345,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
     }
-
     restTimerRef.current = setInterval(() => {
       const msLeft = restEndsAtRef.current - Date.now();
       const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
-
       setRestTimeLeft(secLeft);
-
       if (
         timerSettings.preBeep &&
         secLeft <= 3 &&
@@ -405,14 +359,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         playBeep();
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-
       if (msLeft <= 0) {
         if (restTimerRef.current) {
           clearInterval(restTimerRef.current);
         }
         restTimerRef.current = null;
         setIsRestFinished(true);
-
         if (timerSettings.sound) {
           playFinishSound();
         }
@@ -426,14 +378,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const startRestTimer = useCallback(
     (restSeconds: number) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
       setIsRestFinished(false);
       lastBeepRef.current = 0;
       restEndsAtRef.current = Date.now() + restSeconds * 1000;
-
       setRestTimer(restSeconds);
       setRestTimeLeft(restSeconds);
-
       initSounds();
       runRestInterval();
     },
@@ -443,19 +392,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const adjustRestTimer = useCallback(
     (delta: number) => {
       if (restEndsAtRef.current === 0) return;
-
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
       restEndsAtRef.current += delta * 1000;
-
       const secLeft = Math.max(
         0,
         Math.ceil((restEndsAtRef.current - Date.now()) / 1000)
       );
-
       setRestTimeLeft(secLeft);
       setRestTimer((prev) => (prev ? Math.max(5, prev + delta) : prev));
-
       if (secLeft > 0) {
         setIsRestFinished(false);
         if (!restTimerRef.current) {
@@ -470,10 +414,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
     }
-
     restTimerRef.current = null;
     restEndsAtRef.current = 0;
-
     setRestTimer(null);
     setRestTimeLeft(0);
     setIsRestFinished(false);
@@ -487,14 +429,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       );
       return;
     }
-
     const durationSeconds = currentTimeRef.current;
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     const formattedTime = `${mins.toString().padStart(2, '0')}:${secs
       .toString()
       .padStart(2, '0')}`;
-
     Alert.alert(
       'Завершить тренировку?',
       `Время тренировки: ${formattedTime}\nВсе данные будут сохранены`,
@@ -505,10 +445,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           onPress: async () => {
             setSaving(true);
             setIsFinishing(true);
-
             try {
               const now = new Date();
-
               const { error: updateError } = await supabase
                 .from('workouts')
                 .update({
@@ -516,25 +454,20 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                   duration_seconds: durationSeconds,
                 })
                 .eq('id', workoutId);
-
               if (updateError) {
                 console.error('Ошибка сохранения времени:', updateError);
               }
-
               const workoutExerciseIds = exercisesRef.current.map(
                 (exercise) => exercise.workout_exercise_id
               );
-
               // Удаляем старые логи (идемпотентность при повторном завершении)
               if (workoutExerciseIds.length > 0) {
                 const { error: deleteError } = await supabase
                   .from('workout_logs')
                   .delete()
                   .in('workout_exercise_id', workoutExerciseIds);
-
                 if (deleteError) throw deleteError;
               }
-
               // ✅ Один batch insert ВСЕХ логов (вместо N отдельных запросов).
               //    flatMap собирает логи по всем упражнениям в один массив;
               //    индекс подхода запоминается ДО фильтра (set_number не съезжает).
@@ -550,21 +483,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                     completed_at: now.toISOString(),
                   }))
               );
-
               if (allLogsToSave.length > 0) {
                 const { error } = await supabase
                   .from('workout_logs')
                   .insert(allLogsToSave);
-
                 if (error) throw error;
               }
-
               const totalLogs = allLogsToSave.length;
-
               if (programId && userId) {
                 try {
                   const progress = await advanceProgramProgress(userId, programId);
-
                   if (progress.isCompleted) {
                     Haptics.notificationAsync(
                       Haptics.NotificationFeedbackType.Success
@@ -585,12 +513,52 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                     router.replace('/(tabs)/workouts');
                   }
                 } catch (progressError: any) {
+                  // ✅ SEC-7: тренировка УЖЕ сохранена выше (finished_at + логи), но
+                  // прогресс программы НЕ продвинут. Честно сообщаем об ошибке и даём
+                  // повторить — НЕ маскируем сбой под «Успех» и НЕ уходим в историю
+                  // как ни в чём не бывало. Данные тренировки не теряются ни при каком исходе.
                   console.error('Ошибка обновления прогресса:', progressError);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+                  const retryAdvance = async () => {
+                    try {
+                      // userId/programId гарантированно truthy (мы внутри ветки if выше),
+                      // но TS не сужает их через замыкание → non-null assertion безопасен.
+                      const progress = await advanceProgramProgress(userId!, programId!);
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      if (progress.isCompleted) {
+                        Alert.alert(
+                          'Программа завершена!',
+                          'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
+                        );
+                        router.replace('/(tabs)/programs');
+                      } else {
+                        router.replace('/(tabs)/workouts');
+                      }
+                    } catch (e: any) {
+                      Alert.alert(
+                        'Не удалось продвинуть прогресс',
+                        e?.message ||
+                          'Прогресс можно продвинуть автоматически при следующей тренировке.'
+                      );
+                    }
+                  };
+
                   Alert.alert(
-                    'Успех',
-                    `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
+                    'Тренировка сохранена',
+                    `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
+                      `Не удалось обновить прогресс программы: ${
+                        progressError?.message || 'неизвестная ошибка'
+                      }.\n\nПовторить обновление прогресса сейчас?`,
+                    [
+                      {
+                        text: 'Позже',
+                        style: 'cancel',
+                        onPress: () => router.replace('/(tabs)/workouts'),
+                      },
+                      { text: 'Повторить', onPress: retryAdvance },
+                    ]
                   );
-                  router.replace('/(tabs)/history');
                 }
               } else {
                 Haptics.notificationAsync(

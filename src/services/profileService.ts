@@ -309,3 +309,4 @@ export async function getInjuryWarningRules(): Promise<WarningRule[]> {
 
   return (data || []) as WarningRule[];
 }
+

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,12 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useToast } from '../../src/hooks/useToast';
@@ -20,10 +23,21 @@ import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
 import { ImportProgramSheet } from '../../src/components/program/sheets/ImportProgramSheet';
 import { importProgramByCode } from '../../src/services/programSharingService';
+import { getUserProgramsStatus, activateProgram } from '../../src/services/programsService';
 import { FadeIn } from '../../src/components/FadeIn';
 import { Toast } from '../../src/components/Toast';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import { Search, Plus, X, ArrowUpDown, Trophy, Link2, Sprout, Dumbbell, Flame } from 'lucide-react-native';
+import {
+  Search,
+  Plus,
+  X,
+  ArrowUpDown,
+  Trophy,
+  Link2,
+  Sprout,
+  Dumbbell,
+  Flame,
+} from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
@@ -51,6 +65,7 @@ export default function ProgramsScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { toast, showToast, hideToast } = useToast();
   const {
     activeTab,
@@ -91,9 +106,49 @@ export default function ProgramsScreen() {
     handleProgramPress,
   } = usePrograms({ userId, showToast });
 
-  const cardStyles = createCardStyles(colors);
-  const badgeStyles = createBadgeStyles(colors);
-  const buttonStyles = createButtonStyles(colors);
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const badgeStyles = useMemo(() => createBadgeStyles(colors), [colors]);
+  const buttonStyles = useMemo(() => createButtonStyles(colors), [colors]);
+
+  // ===== Статусы программ пользователя (активность + completed_at) =====
+  // Один запрос на весь список: из него выводим и активную программу (для бейджа
+  // «Текущая» и сортировки), и completed_at (для диалога «начать заново?»).
+  const { data: userProgramsStatus } = useQuery({
+    queryKey: ['userProgramsStatus', userId],
+    queryFn: () => getUserProgramsStatus(userId as string),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const statusMap = useMemo(() => {
+    const m: Record<string, { is_active: boolean; completed_at: string | null }> = {};
+    (userProgramsStatus || []).forEach((s) => {
+      m[s.program_id] = { is_active: s.is_active, completed_at: s.completed_at };
+    });
+    return m;
+  }, [userProgramsStatus]);
+
+  const activeProgramId = useMemo(
+    () => Object.keys(statusMap).find((id) => statusMap[id].is_active) ?? null,
+    [statusMap]
+  );
+
+  // Мутация активации: { programId, reset }. reset=true — «начать заново».
+  const activateMutation = useMutation({
+    mutationFn: (args: { programId: string; reset: boolean }) =>
+      activateProgram(args.programId, userId as string, args.reset),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      queryClient.invalidateQueries({ queryKey: ['userProgramsStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('Программа активирована', 'success');
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Не удалось активировать', 'error');
+    },
+  });
 
   // ===== Импорт программы по коду =====
   const [showImportModal, setShowImportModal] = useState(false);
@@ -118,27 +173,97 @@ export default function ProgramsScreen() {
     }
   };
 
-  const renderProgramCard = ({ item, index }: { item: any; index: number }) => (
-    <FadeIn delay={index * 80}>
-      <ProgramCard
-        item={item}
-        index={index}
-        isMyProgram={activeTab === 'my'}
-        onPress={() => handleProgramPress(item)}
-        onLongPress={() => handleLongPress(item)}
-        onEditPress={() => {
-          setEditingProgram(item);
-          setFormName(item.name);
-          setFormDescription(item.description);
-          setFormDuration(item.duration.toString());
-          setFormLevel(item.level);
-          setShowCreateModal(true);
-        }}
-        colors={colors}
-        cardStyles={cardStyles}
-        badgeStyles={badgeStyles}
-      />
-    </FadeIn>
+  // ===== Активация программы (с учётом завершённости) =====
+  const handleActivatePress = useCallback(
+    (programId: string, programName: string) => {
+      if (!userId || programId === activeProgramId) return; // защита от случайного клика
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      // Edge-case: программа полностью пройдена — предлагаем начать заново.
+      if (statusMap[programId]?.completed_at) {
+        Alert.alert(
+          'Программа завершена',
+          `«${programName}» полностью пройдена.\n\nНачать заново? Прогресс и история тренировок этой программы будут сброшены (прогресс других программ сохранится).`,
+          [
+            { text: 'Отмена', style: 'cancel' },
+            {
+              text: 'Начать заново',
+              style: 'destructive',
+              onPress: () => activateMutation.mutate({ programId, reset: true }),
+            },
+          ]
+        );
+        return;
+      }
+
+      Alert.alert(
+        'Активировать программу?',
+        `Вы переключаетесь на "${programName}". Прогресс других программ сохранится.`,
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Активировать',
+            onPress: () => activateMutation.mutate({ programId, reset: false }),
+          },
+        ]
+      );
+    },
+    [userId, activeProgramId, statusMap, activateMutation]
+  );
+
+  // ===== Сортировка: активная программа всегда сверху =====
+  const sortedPrograms = useMemo(() => {
+    if (!activeProgramId) return programs;
+    return [...programs].sort((a, b) => {
+      const aActive = a.id === activeProgramId;
+      const bActive = b.id === activeProgramId;
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+      return 0;
+    });
+  }, [programs, activeProgramId]);
+
+  const renderProgramCard = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <FadeIn delay={index * 80}>
+        <ProgramCard
+          item={item}
+          index={index}
+          isMyProgram={activeTab === 'my'}
+          isActive={item.id === activeProgramId}
+          onPress={() => handleProgramPress(item)}
+          onLongPress={() => handleLongPress(item)}
+          onEditPress={() => {
+            setEditingProgram(item);
+            setFormName(item.name);
+            setFormDescription(item.description);
+            setFormDuration(item.duration.toString());
+            setFormLevel(item.level);
+            setShowCreateModal(true);
+          }}
+          onActivatePress={() => handleActivatePress(item.id, item.name)}
+          colors={colors}
+          cardStyles={cardStyles}
+          badgeStyles={badgeStyles}
+        />
+      </FadeIn>
+    ),
+    [
+      activeTab,
+      activeProgramId,
+      handleProgramPress,
+      handleLongPress,
+      setEditingProgram,
+      setFormName,
+      setFormDescription,
+      setFormDuration,
+      setFormLevel,
+      setShowCreateModal,
+      handleActivatePress,
+      colors,
+      cardStyles,
+      badgeStyles,
+    ]
   );
 
   const renderEmpty = () => (
@@ -176,6 +301,7 @@ export default function ProgramsScreen() {
           {activeTab === 'my' ? 'Ваши личные программы' : 'Готовые программы от тренеров'}
         </Text>
       </View>
+
       {/* Табы */}
       <View style={cardStyles.tabContainer}>
         <TouchableOpacity
@@ -195,6 +321,7 @@ export default function ProgramsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
       {/* Панель поиска, импорта и сортировки */}
       <View style={cardStyles.filterBar}>
         <View style={cardStyles.searchRow}>
@@ -221,7 +348,6 @@ export default function ProgramsScreen() {
               )}
             </View>
           )}
-          {/* Кнопка импорта по коду */}
           <TouchableOpacity
             style={cardStyles.sortButton}
             onPress={() => {
@@ -278,7 +404,11 @@ export default function ProgramsScreen() {
                 onPress={() => toggleLevel(option.value)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Icon size={14} color={isActive ? colors.textInverse : option.color} strokeWidth={2} />
+                  <Icon
+                    size={14}
+                    color={isActive ? colors.textInverse : option.color}
+                    strokeWidth={2}
+                  />
                   <Text
                     style={[cardStyles.filterChipText, isActive && cardStyles.filterChipTextActive]}
                   >
@@ -316,7 +446,7 @@ export default function ProgramsScreen() {
       edges={['top']}
     >
       <FlatList
-        data={programs}
+        data={sortedPrograms}
         keyExtractor={(item) => item.id}
         renderItem={renderProgramCard}
         ListHeaderComponent={renderHeader}
@@ -329,13 +459,16 @@ export default function ProgramsScreen() {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
       />
+
       {/* FAB */}
       {activeTab === 'my' && !loading && (
         <TouchableOpacity style={cardStyles.fab} onPress={openCreateModal} activeOpacity={0.8}>
           <Plus size={24} color={colors.textInverse} strokeWidth={2.5} />
         </TouchableOpacity>
       )}
+
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
+
       {/* Модалка формы */}
       <Modal
         visible={showCreateModal}
@@ -361,6 +494,7 @@ export default function ProgramsScreen() {
           buttonStyles={buttonStyles}
         />
       </Modal>
+
       {/* Модалка импорта по коду */}
       <Modal
         visible={showImportModal}
