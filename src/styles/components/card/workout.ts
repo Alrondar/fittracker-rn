@@ -1,14 +1,24 @@
-import { StyleSheet, ViewStyle, TextStyle, Dimensions } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 32;
+// PERF-5: «замороженная» ширина карточки УДАЛЕНА из фабрики.
+// Раньше здесь было:
+//   const { width: SCREEN_WIDTH } = Dimensions.get('window');
+//   const CARD_WIDTH = SCREEN_WIDTH - 32;
+//   workoutExerciseCard: { width: CARD_WIDTH, ... }
+// Это читало ширину один раз при загрузке модуля и не реагировало на
+// поворот / iPad Split View / ресайз окна. Теперь ширина карточки задаётся
+// РЕАКТИВНО внешним контейнером в ExerciseSlider (useWindowDimensions →
+// <View style={{ width: cardWidth }}>), а корневой View карточки в
+// ExerciseCard растягивается на него по умолчанию RN (stretch у flex-колонки).
+// Безопасно: ExerciseCard рендерится ТОЛЬКО внутри этого контейнера
+// (единственный потребитель — ExerciseSlider), поэтому в портрете ширина
+// идентична прежней (экран − 32), а в Split View становится живой.
 
 export const createWorkoutCardStyles = (colors: any) =>
   StyleSheet.create({
     // ===== КАРТОЧКА УПРАЖНЕНИЯ =====
     workoutExerciseCard: {
-      width: CARD_WIDTH,
       marginHorizontal: 0,
     } as ViewStyle,
     workoutExerciseHeader: {
@@ -45,7 +55,6 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontSize: 11,
       fontWeight: '600',
     } as TextStyle,
-
     // ===== СЕКЦИЯ ПОДХОДОВ =====
     setsContainer: {
       marginTop: SPACING.lg,
@@ -97,7 +106,6 @@ export const createWorkoutCardStyles = (colors: any) =>
       textAlign: 'center',
       width: '100%',
     } as TextStyle,
-
     // ===== КНОПКА ОТДЫХА =====
     restButton: {
       marginTop: SPACING.md,
@@ -113,7 +121,6 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: 'bold',
       fontSize: 15,
     } as TextStyle,
-
     // ===== КНОПКА ЗАМЕНЫ =====
     replaceButton: {
       marginTop: SPACING.lg,
@@ -129,7 +136,6 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: '600',
       fontSize: 14,
     } as TextStyle,
-
     // ===== BOTTOM SHEET НАСТРОЕК =====
     settingsSheetContainer: {
       borderTopLeftRadius: 20,
@@ -189,7 +195,6 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: 'bold',
       fontSize: 16,
     } as TextStyle,
-
     // ===== БЕЙДЖ "ЗАМЕНЕНО" =====
     replacedBadgeContainer: {
       flexDirection: 'row',

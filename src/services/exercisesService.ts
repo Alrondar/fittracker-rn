@@ -84,35 +84,15 @@ export interface ExerciseFilterOptions {
 
 /**
  * Категории и оборудование со счётчиками использования.
- * Один лёгкий запрос (2 колонки), кэшируется на клиенте (staleTime: Infinity).
+ * PERF-2: агрегация на сервере (GROUP BY + unnest) вместо выборки всех 870+
+ * строк и клиентского пересчёта. Один лёгкий RPC, кэшируется staleTime: Infinity.
  */
 export async function getFilterOptions(): Promise<ExerciseFilterOptions> {
-  const { data, error } = await supabase
-    .from('exercises')
-    .select('category, equipment');
+  const { data, error } = await supabase.rpc('get_exercise_filter_counts');
   if (error) throw error;
-
-  const categoryCounts = new Map<string, number>();
-  const equipmentCounts = new Map<string, number>();
-
-  (data || []).forEach((row: any) => {
-    const cat = row.category;
-    if (typeof cat === 'string' && cat.trim()) {
-      categoryCounts.set(cat, (categoryCounts.get(cat) ?? 0) + 1);
-    }
-    getList(row, 'equipment').forEach(eq => {
-      equipmentCounts.set(eq, (equipmentCounts.get(eq) ?? 0) + 1);
-    });
-  });
-
-  const toOptions = (map: Map<string, number>): FilterOption[] =>
-    Array.from(map.entries())
-      .map(([value, count]) => ({ value, count }))
-      .sort((a, b) => b.count - a.count);
-
   return {
-    categories: toOptions(categoryCounts),
-    equipment: toOptions(equipmentCounts),
+    categories: data?.categories ?? [],
+    equipment: data?.equipment ?? [],
   };
 }
 

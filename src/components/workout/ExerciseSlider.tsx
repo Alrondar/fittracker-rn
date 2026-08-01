@@ -4,7 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   InteractionManager,
 } from 'react-native';
@@ -15,9 +15,8 @@ import { ExerciseCard } from './ExerciseCard';
 import { ExerciseData, AlternativeExercise, SetData } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Карточка = экран минус симметричные боковые отступы (по 16).
-const CARD_WIDTH = SCREEN_WIDTH - 32;
+// PERF-5: модульные SCREEN_WIDTH / CARD_WIDTH УДАЛЕНЫ.
+// Ширина окна читается реактивно через useWindowDimensions() внутри компонента.
 const H_GAP = 16; // промежуток между карточками при свайпе
 const PAD = 16;   // боковой отступ, центрирующий первую/последнюю карточку
 
@@ -72,11 +71,16 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   unit,
   warning = null,
 }: ExerciseSliderProps) {
+  // PERF-5: ширина окна реактивна (rotate / iPad Split View / resize).
+  // Раньше CARD_WIDTH считался один раз на уровне модуля и «замерзал».
+  const { width: screenWidth } = useWindowDimensions();
+  // Карточка = экран минус симметричные боковые отступы (по 16).
+  const cardWidth = screenWidth - 32;
+
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
   // ВОЛНА 2: тяжёлые карточки альтернатив монтируются в idle-окне либо по жесту.
   const [altsMounted, setAltsMounted] = useState(false);
-
   const hasAlts = exercise.alternatives.length > 0 || isReplaced;
 
   useEffect(() => {
@@ -111,15 +115,15 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const showPlaceholder = loadingAlts;
   const showPeek = !loadingAlts && hasAlts && !altsMounted;
   const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
-
   const childCount =
     1 +
     (showPlaceholder ? 1 : 0) +
     (showPeek ? 1 : 0) +
     (showAlts ? alternatives.length : 0);
+
   const snapOffsets = useMemo(
-    () => Array.from({ length: childCount }, (_, i) => i * (CARD_WIDTH + H_GAP)),
-    [childCount],
+    () => Array.from({ length: childCount }, (_, i) => i * (cardWidth + H_GAP)),
+    [childCount, cardWidth],
   );
 
   return (
@@ -141,7 +145,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </TouchableOpacity>
         </View>
       )}
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -151,7 +154,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         onScrollBeginDrag={handleScrollBeginDrag}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
-        <View style={{ width: CARD_WIDTH }}>
+        <View style={{ width: cardWidth }}>
           <ExerciseCard
             exercise={exercise}
             isMain
@@ -170,11 +173,10 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             warning={warning}
           />
         </View>
-
         {showPlaceholder && (
           <View
             style={{
-              width: CARD_WIDTH,
+              width: cardWidth,
               justifyContent: 'center',
               alignItems: 'center',
               gap: SPACING.sm,
@@ -188,11 +190,10 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             </Text>
           </View>
         )}
-
         {showPeek && (
           <View
             style={{
-              width: CARD_WIDTH,
+              width: cardWidth,
               justifyContent: 'center',
               alignItems: 'center',
               gap: SPACING.sm,
@@ -216,10 +217,9 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             </Text>
           </View>
         )}
-
         {showAlts &&
           alternatives.map((alt) => (
-            <View key={alt.id} style={{ width: CARD_WIDTH }}>
+            <View key={alt.id} style={{ width: cardWidth }}>
               <ExerciseCard
                 exercise={alt}
                 isMain={false}

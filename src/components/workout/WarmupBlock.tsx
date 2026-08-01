@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -41,8 +41,9 @@ import { EquipmentIcon } from '../EquipmentIcon';
 import { TechniqueMediaSlider } from './TechniqueMediaSlider';
 import { WarmupExercise, InjuryExclusion } from '../../services/warmupService';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ALT_CARD_WIDTH = SCREEN_WIDTH * 0.7;
+// PERF-5: модульные константы SCREEN_WIDTH / ALT_CARD_WIDTH УДАЛЕНЫ.
+// Ширина окна читается реактивно через useWindowDimensions() внутри
+// WarmupExerciseCard и прокидывается в WarmupAlternativeCard пропом cardWidth.
 
 // Лимиты высоты раскрытого контента
 const DEFAULT_MAX_HEIGHT = 300; // польза / риски / противопоказания
@@ -65,7 +66,6 @@ function ExpandableSection({
   children: React.ReactNode;
 }) {
   const progress = useSharedValue(expanded ? 1 : 0);
-
   useEffect(() => {
     progress.value = withTiming(expanded ? 1 : 0, {
       duration: 280,
@@ -73,13 +73,11 @@ function ExpandableSection({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded]);
-
   const style = useAnimatedStyle(() => ({
     maxHeight: progress.value * maxHeight,
     opacity: 0.1 + progress.value * 0.9,
     transform: [{ translateY: (1 - progress.value) * -6 }],
   }));
-
   return (
     // Свёрнутая секция не перехватывает касания (слайдер внутри не блокирует соседей)
     <Animated.View pointerEvents={expanded ? 'auto' : 'none'} style={[{ overflow: 'hidden' }, style]}>
@@ -92,7 +90,6 @@ function ExpandableSection({
 
 // ===== Аккордеон без обводки: цветной значок + заголовок + шеврон =====
 type SectionKey = 'technique' | 'benefits' | 'risks' | 'injuries';
-
 function CollapsibleInfo({
   icon,
   title,
@@ -145,7 +142,9 @@ function CollapsibleInfo({
           <ChevronDown size={14} color={colors.textTertiary} />
         </View>
       </TouchableOpacity>
-      <ExpandableSection expanded={expanded} maxHeight={maxHeight}>{children}</ExpandableSection>
+      <ExpandableSection expanded={expanded} maxHeight={maxHeight}>
+        {children}
+      </ExpandableSection>
     </View>
   );
 }
@@ -154,21 +153,22 @@ function CollapsibleInfo({
 interface WarmupAlternativeCardProps {
   alt: WarmupExercise;
   onPress: () => void;
+  /** PERF-5: живая ширина карточки от родителя (useWindowDimensions). */
+  cardWidth: number;
 }
-
 /**
  * Мини‑карточка замены в горизонтальном слайдере разминки.
  * Не memo: перерисовка дешёвая и случается только при замене/регенерации
  * родительской карточки (не на каждый тик секундомера).
  */
-function WarmupAlternativeCard({ alt, onPress }: WarmupAlternativeCardProps) {
+function WarmupAlternativeCard({ alt, onPress, cardWidth }: WarmupAlternativeCardProps) {
   const { colors } = useTheme();
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
       style={{
-        width: ALT_CARD_WIDTH,
+        width: cardWidth,
         backgroundColor: colors.surfaceSecondary,
         borderWidth: 1,
         borderColor: colors.border,
@@ -235,7 +235,6 @@ interface WarmupExerciseCardProps {
   loadAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
   onReplace: (index: number, alt: WarmupExercise) => void;
 }
-
 const WarmupExerciseCard = memo(function WarmupExerciseCard({
   exercise,
   index,
@@ -249,6 +248,10 @@ const WarmupExerciseCard = memo(function WarmupExerciseCard({
   onReplace,
 }: WarmupExerciseCardProps) {
   const { colors } = useTheme();
+  // PERF-5: ширина окна реактивна (rotate / iPad Split View / resize).
+  // Раньше ALT_CARD_WIDTH считался один раз на уровне модуля и «замерзал».
+  const { width: screenWidth } = useWindowDimensions();
+  const altCardWidth = screenWidth * 0.7;
   const progress = useSharedValue(0);
   const [openSection, setOpenSection] = useState<SectionKey | null>(null);
   // Ленивый монтаж: слайдер техники создаётся только после первого открытия
@@ -302,7 +305,6 @@ const WarmupExerciseCard = memo(function WarmupExerciseCard({
   }, [isActive, timeLeft, exercise.duration_seconds, progress]);
 
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
-
   const hasAlts = !loadingAlts && alts.length > 0;
 
   return (
@@ -500,9 +502,7 @@ const WarmupExerciseCard = memo(function WarmupExerciseCard({
         )}
 
         {/* Оборудование: отдельный чип на каждую единицу */}
-        <View
-          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}
-        >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
           {exercise.equipment.length > 0 ? (
             exercise.equipment.map((eq, i) => (
               <View
@@ -557,9 +557,7 @@ const WarmupExerciseCard = memo(function WarmupExerciseCard({
           )}
         </View>
 
-        {/* ✅ Горизонтальный слайдер альтернатив разминки (свайп).
-               Тот же паттерн pagingEnabled, что и в силовом ExerciseSlider.
-               Решает проблему «нет партнёра / нет оборудования» для разминки. */}
+        {/* Горизонтальный слайдер альтернатив разминки (свайп). */}
         {hasAlts && (
           <View style={{ marginTop: SPACING.md }}>
             <Text
@@ -580,7 +578,7 @@ const WarmupExerciseCard = memo(function WarmupExerciseCard({
               horizontal
               showsHorizontalScrollIndicator={false}
               pagingEnabled
-              snapToInterval={ALT_CARD_WIDTH + SPACING.sm}
+              snapToInterval={altCardWidth + SPACING.sm}
               decelerationRate="fast"
               contentContainerStyle={{ paddingRight: SPACING.sm, gap: SPACING.sm }}
             >
@@ -589,6 +587,7 @@ const WarmupExerciseCard = memo(function WarmupExerciseCard({
                   key={alt.id}
                   alt={alt}
                   onPress={() => handleReplace(alt)}
+                  cardWidth={altCardWidth}
                 />
               ))}
             </ScrollView>
@@ -734,7 +733,6 @@ interface WarmupBlockProps {
   loadWarmupAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
   onReplaceWarmup: (index: number, alt: WarmupExercise) => void;
 }
-
 export function WarmupBlock({
   warmupExercises,
   isLoading,
@@ -767,7 +765,6 @@ export function WarmupBlock({
       );
     }
   }, [isLoading, pulse]);
-
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
   const completedCount = warmupExercises.filter((ex) => isCompleted(ex.id)).length;
@@ -779,7 +776,6 @@ export function WarmupBlock({
       easing: Easing.out(Easing.cubic),
     });
   }, [completedCount, warmupExercises.length, footerProgress]);
-
   const footerProgressStyle = useAnimatedStyle(() => ({
     width: `${footerProgress.value * 100}%`,
   }));
@@ -922,8 +918,8 @@ export function WarmupBlock({
               index={index}
               completed={isCompleted(exercise.id)}
               isActive={active}
-              // ✅ timeLeft только активной карточке → неактивные не ловят тик и
-              //    не перерисовываются (React.memo bail out). Фикс лага разминки.
+              // timeLeft только активной карточке → неактивные не ловят тик и
+              // не перерисовываются (React.memo bail out). Фикс лага разминки.
               timeLeft={active ? timeLeft : 0}
               onStartTimer={onStartTimer}
               onStopTimer={onStopTimer}

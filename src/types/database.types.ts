@@ -117,6 +117,13 @@ export type Database = {
         Args: { p_exercise_id: string; p_new_position: number }
         Returns: undefined
       }
+      get_exercise_filter_counts: {
+        Args: Record<string, never>
+        Returns: {
+          categories: { value: string; count: number }[]
+          equipment: { value: string; count: number }[]
+        }
+      }
     }
     Enums: {
       [_ in never]: never

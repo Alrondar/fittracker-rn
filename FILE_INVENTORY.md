@@ -36,7 +36,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | ui/AppButton, AppCard, AppBadge, AppInput | атомарный UI-кит | ✅(Card/Badge) | |
 | ui/SheetShell | каноническая шторка (colors.overlay) | структ. | ARCH-1: 1 потребитель |
 | ProgramCard.tsx | карточка программы (бейдж «Текущая», «Активировать») | ✅ | ARCH-3 ✅ (LEVEL_COLORS), memo |
-| ProgramFormSheet.tsx | модалка создания/редактирования программы | структ. | ARCH-3 (хардкод уровней?) |
+| ProgramFormSheet.tsx | модалка создания/редактирования программы | структ. |✅|ARCH-3 ✅ (LEVEL_COLORS), KAV ✅, colors.overlay ✅|
 | ProgramProgressCard.tsx | виджет активной программы на Dashboard | структ. | ARCH-5: color="white" |
 | ActivityCalendar / WeeklyStatsCard / ExerciseProgressCard / PersonalRecordsCard / LastWorkoutCard | виджеты Dashboard | структ. | |
 | SectionHeader / FadeIn / Skeleton / Toast | общие | структ. | ARCH-4 (FadeIn=Animated), ARCH-2 (Toast) |
@@ -65,7 +65,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅)|✅|debounce-автосохранение (500мс) + RPC upsert_workout_logs + flush при размонтировании|| useExercises.ts | справочник (useInfiniteQuery, debounce, фильтры) | структ. | |
 | useExerciseDetail.ts | детальное упражнение (staleTime Infinity) | структ. | |
 | useInjuryWarnings.ts | avoid/caution (React Query + memo по warningKey) | ✅ | |
-| useWarmup.ts | авторазминка с учётом травм | структ. | PERF-3 |
+| useWarmup.ts|авторазминка с учётом травм|✅(импорт)|
 | useProfile.ts | профиль (profileService) | ✅ | |
 | useTimerSettings.ts | настройки таймера (AsyncStorage) | структ. | |
 | useUnitPreferences.ts | единицы веса кг/фунты | ✅(импорт) | |
@@ -88,7 +88,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | exercisesService.ts | упражнения: список/словари/по ID | структ. | PERF-2 |
 | goalsService.ts | цели (upsert) | структ. | |
 | metricsService.ts | замеры тела | структ. | |
-| warmupService.ts | генерация разминки | структ. | PERF-3 |
+| warmupService.ts|генерация разминки|✅|PERF-3
 
 ## src/constants/
 
@@ -115,7 +115,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | Файл|Назначение|Инспект.|Примечание|
 | ---|---|---|---|
 | database.types.ts|типы Supabase (Tables/Functions/Enums)|✅|синхронизирован с БД (UTF-8, содержит sync_program_changes_to_workouts и upsert_workout_logs)|
-| workout.ts|ExerciseData/AlternativeExercise/SetData|✅(импорт)| |
+| workout.ts|фабрика стилей карточки тренировки|✅|PERF-5 ✅ (width убран из workoutExerciseCard)|
 | metrics.ts|замеры|структ.| |
 
 ## src/lib/

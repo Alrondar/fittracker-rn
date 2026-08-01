@@ -68,7 +68,7 @@
 | exercisesService.ts | Упражнения: список, фильтры (PERF-2) |
 | goalsService.ts | Цели (upsert) |
 | metricsService.ts | Замеры тела |
-| warmupService.ts | Авторазминка (PERF-3) |
+| warmupService.ts | Авторазминка  (PERF-3 ✅ двухфазный select)|
 
 ### Ключевые хуки
 
@@ -135,6 +135,7 @@ Secret key в проекте НЕ хранится. .env в .gitignore; комм
 | search_exercises | DEFINER, STABLE | Нечёткий поиск (pg_trgm) |
 | update_day_position / update_exercise_position | INVOKER + search_path | Drag & drop |
 | handle_new_user | DEFINER | Триггер создания профиля |
+| get_exercise_filter_counts|INVOKER, STABLE|Счётчики категорий/оборудования (PERF-2)|
 
 ### Правила работы с RPC
 

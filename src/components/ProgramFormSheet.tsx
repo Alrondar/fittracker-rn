@@ -7,20 +7,23 @@ import {
   TextInput,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Program } from '../services/programsService';
-import { Sprout, Dumbbell, Flame, X, ChevronDown } from 'lucide-react-native';
+import { Sprout, Dumbbell, Flame, X } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';
+import { LEVEL_COLORS } from '../constants/semanticColors';
 import { createCardStyles } from '../styles/components/card';
 import { createButtonStyles } from '../styles/components/button';
 
 type LevelFilter = 'beginner' | 'intermediate' | 'advanced';
 
-const LEVEL_OPTIONS: { value: LevelFilter; label: string; icon: any; color: string }[] = [
-  { value: 'beginner', label: 'Новичок', icon: Sprout, color: '#4CAF50' },
-  { value: 'intermediate', label: 'Средний', icon: Dumbbell, color: '#FF9800' },
-  { value: 'advanced', label: 'Продвинутый', icon: Flame, color: '#F44336' },
+const LEVEL_OPTIONS: { value: LevelFilter; label: string; icon: any }[] = [
+  { value: 'beginner', label: 'Новичок', icon: Sprout },
+  { value: 'intermediate', label: 'Средний', icon: Dumbbell },
+  { value: 'advanced', label: 'Продвинутый', icon: Flame },
 ];
 
 interface ProgramFormSheetProps {
@@ -59,123 +62,128 @@ export function ProgramFormSheet({
   buttonStyles,
 }: ProgramFormSheetProps) {
   return (
-    <TouchableWithoutFeedback onPress={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-        <TouchableWithoutFeedback onPress={() => {}}>
-          <View style={[cardStyles.sheetContainer, { maxHeight: '90%' }]}>
-            <View style={cardStyles.sheetHeader}>
-              <Text style={cardStyles.sheetTitle}>
-                {editingProgram ? 'Редактировать программу' : 'Новая программа'}
-              </Text>
-              <TouchableOpacity onPress={onClose}>
-                <X size={20} color={colors.textSecondary} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: SPACING.lg }}>
-              <View style={cardStyles.sheetField}>
-                <Text style={cardStyles.sheetLabel}>Название *</Text>
-                <TextInput
-                  style={cardStyles.sheetInput}
-                  value={formName}
-                  onChangeText={onFormNameChange}
-                  placeholder="Например: PPL на 8 недель"
-                  placeholderTextColor={colors.textTertiary}
-                />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={[cardStyles.sheetContainer, { maxHeight: '90%' }]}>
+              <View style={cardStyles.sheetHeader}>
+                <Text style={cardStyles.sheetTitle}>
+                  {editingProgram ? 'Редактировать программу' : 'Новая программа'}
+                </Text>
+                <TouchableOpacity onPress={onClose}>
+                  <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
               </View>
-
-              <View style={cardStyles.sheetField}>
-                <Text style={cardStyles.sheetLabel}>Описание</Text>
-                <TextInput
-                  style={cardStyles.sheetTextarea}
-                  value={formDescription}
-                  onChangeText={onFormDescriptionChange}
-                  placeholder="Краткое описание программы..."
-                  placeholderTextColor={colors.textTertiary}
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-
-              <View style={cardStyles.sheetField}>
-                <Text style={cardStyles.sheetLabel}>Недель</Text>
-                <TextInput
-                  style={cardStyles.sheetInput}
-                  value={formDuration}
-                  onChangeText={onFormDurationChange}
-                  placeholder="8"
-                  placeholderTextColor={colors.textTertiary}
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              {/* Сегментированный контрол уровня */}
-              <View style={cardStyles.sheetField}>
-                <Text style={cardStyles.sheetLabel}>Уровень</Text>
-                <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-                  {LEVEL_OPTIONS.map((option) => {
-                    const isSelected = formLevel === option.value;
-                    return (
-                      <TouchableOpacity
-                        key={option.value}
-                        onPress={() => onFormLevelChange(option.value)}
-                        style={{
-                          flex: 1,
-                          paddingVertical: SPACING.md,
-                          paddingHorizontal: SPACING.sm,
-                          borderRadius: BORDER_RADIUS.md,
-                          borderWidth: 2,
-                          borderColor: isSelected ? option.color : colors.border,
-                          backgroundColor: isSelected ? option.color + '15' : colors.surface,
-                          alignItems: 'center',
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <option.icon
-                          size={20}
-                          color={isSelected ? option.color : colors.textTertiary}
-                          strokeWidth={2}
-                        />
-                        <Text
-                          style={{
-                            marginTop: 4,
-                            fontSize: 11,
-                            fontWeight: '600',
-                            color: isSelected ? option.color : colors.textSecondary,
-                            textAlign: 'center',
-                          }}
-                        >
-                          {option.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  buttonStyles.primary,
-                  {
-                    backgroundColor: saving ? colors.textTertiary : colors.primary,
-                    marginTop: SPACING.lg,
-                  },
-                ]}
-                onPress={onSave}
-                disabled={saving}
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: SPACING.lg }}
               >
-                {saving ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={buttonStyles.textPrimary}>
-                    {editingProgram ? 'Сохранить изменения' : 'Создать программу'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </TouchableWithoutFeedback>
-      </View>
-    </TouchableWithoutFeedback>
+                <View style={cardStyles.sheetField}>
+                  <Text style={cardStyles.sheetLabel}>Название *</Text>
+                  <TextInput
+                    style={cardStyles.sheetInput}
+                    value={formName}
+                    onChangeText={onFormNameChange}
+                    placeholder="Например: PPL на 8 недель"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+                </View>
+                <View style={cardStyles.sheetField}>
+                  <Text style={cardStyles.sheetLabel}>Описание</Text>
+                  <TextInput
+                    style={cardStyles.sheetTextarea}
+                    value={formDescription}
+                    onChangeText={onFormDescriptionChange}
+                    placeholder="Краткое описание программы..."
+                    placeholderTextColor={colors.textTertiary}
+                    multiline
+                    numberOfLines={4}
+                  />
+                </View>
+                <View style={cardStyles.sheetField}>
+                  <Text style={cardStyles.sheetLabel}>Недель</Text>
+                  <TextInput
+                    style={cardStyles.sheetInput}
+                    value={formDuration}
+                    onChangeText={onFormDurationChange}
+                    placeholder="8"
+                    placeholderTextColor={colors.textTertiary}
+                    keyboardType="number-pad"
+                  />
+                </View>
+                {/* Сегментированный контрол уровня — ARCH-3 ✅ (LEVEL_COLORS) */}
+                <View style={cardStyles.sheetField}>
+                  <Text style={cardStyles.sheetLabel}>Уровень</Text>
+                  <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+                    {LEVEL_OPTIONS.map((option) => {
+                      const isSelected = formLevel === option.value;
+                      const levelColor = LEVEL_COLORS[option.value];
+                      return (
+                        <TouchableOpacity
+                          key={option.value}
+                          onPress={() => onFormLevelChange(option.value)}
+                          style={{
+                            flex: 1,
+                            paddingVertical: SPACING.md,
+                            paddingHorizontal: SPACING.sm,
+                            borderRadius: BORDER_RADIUS.md,
+                            borderWidth: 2,
+                            borderColor: isSelected ? levelColor : colors.border,
+                            backgroundColor: isSelected ? levelColor + '15' : colors.surface,
+                            alignItems: 'center',
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <option.icon
+                            size={20}
+                            color={isSelected ? levelColor : colors.textTertiary}
+                            strokeWidth={2}
+                          />
+                          <Text
+                            style={{
+                              marginTop: 4,
+                              fontSize: 11,
+                              fontWeight: '600',
+                              color: isSelected ? levelColor : colors.textSecondary,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {option.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    buttonStyles.primary,
+                    {
+                      backgroundColor: saving ? colors.textTertiary : colors.primary,
+                      marginTop: SPACING.lg,
+                    },
+                  ]}
+                  onPress={onSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={buttonStyles.textPrimary}>
+                      {editingProgram ? 'Сохранить изменения' : 'Создать программу'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }

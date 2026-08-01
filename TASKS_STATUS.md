@@ -22,7 +22,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 |---|---|---|---|---|
 | ARCH-1 | 🟠 | централизация Bottom Sheet на SheetShell|✅|01.08.2026 (DaySettingsSheet, ExerciseSettingsSheet, ScheduleEditorSheet переведены; ExercisePickerSheet, ImportProgramSheet, ShareProgramSheet — кастомный оверлей сохранён)|
 | ARCH-2 | 🟠 | две системы Toast (useToast + мёртвый ToastProvider context) | 🔲 | |
-| ARCH-3 | 🟡 | дубли маппинга уровень→цвет | 🟡 | ProgramCard ✅ (LEVEL_COLORS); ProgramFormSheet — не подтверждено |
+| ARCH-3 | 🟡 | дубли маппинга уровень→цвет | ✅ |01.08.2026 (ProgramCard ✅, ProgramFormSheet ✅ — LEVEL_COLORS из semanticCol
 | ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet) | 🔲 | |
 | ARCH-5 | 🟡 | хардкод цветов в UI-компонентах|✅|01.08.2026 (ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на colors.overlay/textTertiary/success/warning/error)|
 | ARCH-6 | 🟡 | систематический any в мапперах сервисов | 🔲 | |
@@ -34,10 +34,10 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | ID | Приоритет | Описание | Статус | Дата / Комментарий |
 |---|---|---|---|---|
 | PERF-1 | 🟡 | N+1 в легаси createWorkoutsFromProgram|✅|01.08.2026 (функция удалена, нигде не использовалась)|
-| PERF-2 | 🟡 | клиентский пересчёт getFilterOptions | 🔲 | |
-| PERF-3 | 🟢 | тяжёлые поля в warmupService.generateWarmup | 🔲 | |
+| PERF-2 | 🟡 | клиентский пересчёт getFilterOptions |✅|01.08.2026 (RPC get_exercise_filter_counts: агрегация GROUP BY+unnest на сервере, клиентский цикл удалён)|
+| PERF-3 | 🟢 | тяжёлые поля в warmupService.generateWarmup | ✅ |01.08.2026 (двухфазный запрос: лёгкий select для 80 кандидатов + тяжёлые поля только для финальных 7)|
 | PERF-4 | 🟡 | двойные запросы на упражнение в saveProgram|✅|01.08.2026 (RPC save_program_snapshot — 1 запрос вместо N×2)|
-| PERF-5 | 🟢 | SCREEN_WIDTH не реагирует на Split View | 🔲 | |
+| PERF-5 | 🟢 | SCREEN_WIDTH не реагирует на Split View |✅|01.08.2026 (ExerciseSlider/WarmupBlock → useWindowDimensions; workoutExerciseCard.width убран из фабрики; мёртвые SwipeableCard/BottomSheet удалены; theme.ts — осознанное исключение для portrait)|
 | PERF-6 | 🟡 | нет транзакции в saveProgram (Promise.all не откатывается)|✅|01.08.2026 (RPC save_program_snapsh
 
 ## 📈 Масштабируемость (SCALE)
@@ -73,5 +73,5 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 ## Итоговая сводка
 
 Закрыто полностью: SEC-1,2,3,4,5,6,7 · RPC-1,2,3 · SCALE-3,6 · FIT-1..6
-Частично: ARCH-3, SCALE-5, SCALE-7
-Открыто (производительность): PERF-2,3,5
+Частично: SCALE-5, SCALE-7
+Открыто (производительность): нет

@@ -28,6 +28,10 @@ Master Refactoring Guide — FitTracker RN
 | PERF-4|двойные запросы на упражнение в saveProgram|RPC save_program_snapshot — 1 запрос вместо N×2|useProgramEditor.ts|
 | PERF-6|нет транзакции в saveProgram|RPC save_program_snapshot — атомарная транзакция|useProgramEditor.ts|
 | SEC-10|прямые supabase.* в UI|history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый|historyService.ts, [id].tsx|
+| ARCH-3|дубли маппинга уровень→цвет|ProgramFormSheet переведён на LEVEL_COLORS из semanticColors.ts|ProgramFormSheet.tsx|
+| PERF-2|клиентский пересчёт getFilterOptions|RPC get_exercise_filter_counts — агрегация на сервере вместо выборки 870+ строк|exercisesService.ts|
+| PERF-3|тяжёлые поля в warmupService.generateWarmup|двухфазный запрос: лёгкий select (80 кандидатов) + тяжёлые тексты только для финальных 7|warmupService.ts|
+| PERF-5|SCREEN_WIDTH не реагирует на Split View|ExerciseSlider/WarmupBlock → useWindowDimensions; ширина карточки вынесена из фабрики в реактивный контейнер; мёртвые SwipeableCard/BottomSheet удалены|ExerciseSlider.tsx, WarmupBlock.tsx, card/workout.ts|
 
 Новые зафиксированные факты долга:
 
