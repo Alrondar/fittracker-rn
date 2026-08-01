@@ -17,8 +17,8 @@ interface ShareProgramSheetProps {
 export function ShareProgramSheet({ code, loading, programName, onShare, onClose }: ShareProgramSheetProps) {
   const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-      <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+<View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
         <View
           style={{
             flexDirection: 'row',

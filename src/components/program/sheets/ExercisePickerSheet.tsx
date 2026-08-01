@@ -7,6 +7,8 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { X, Search, Check, ArrowUpDown, Zap, Flame, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -29,17 +31,16 @@ interface ExercisePickerSheetProps {
   badgeStyles: any;
 }
 
-const getGroupColor = (groupName: string): string =>
-  MUSCLE_COLORS[groupName.toLowerCase()] || '#6B7280';
+const getGroupColor = (groupName: string, colors: any): string =>
+  MUSCLE_COLORS[groupName.toLowerCase()] || colors.textTertiary;
 
 // ===== Мемоизированная строка результата (иконка оборудования вместо заглушки-гантели) =====
 interface PickerRowProps {
   item: ExerciseListItem;
   onPress: (exercise: ExerciseListItem) => void;
+  colors: any;
 }
-
-const PickerRow = memo(function PickerRow({ item, onPress }: PickerRowProps) {
-  const { colors } = useTheme();
+const PickerRow = memo(function PickerRow({ item, onPress, colors }: PickerRowProps) {
   const borderColor =
     item.primary_muscles.length > 0 ? getMuscleColor(item.primary_muscles[0]) : colors.border;
   return (
@@ -163,7 +164,7 @@ export function ExercisePickerSheet({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSelectExercise(exercise);
     },
-    [onSelectExercise],
+    [onSelectExercise]
   );
 
   const toggleGroup = (groupName: string) => {
@@ -191,7 +192,7 @@ export function ExercisePickerSheet({
           const muscles = MUSCLE_GROUPS[groupName];
           const isActive = activeGroup === groupName;
           const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
-          const groupColor = getGroupColor(groupName);
+          const groupColor = getGroupColor(groupName, colors);
           return (
             <TouchableOpacity
               onPress={() => toggleGroup(groupName)}
@@ -280,7 +281,6 @@ export function ExercisePickerSheet({
           </View>
         </View>
       )}
-
       {/* Категории + триггер шкафа оборудования (переиспользуем справочник) */}
       <CategoryStrip
         selectedCategories={selectedCategories}
@@ -292,7 +292,6 @@ export function ExercisePickerSheet({
           setShowEquipmentSheet(true);
         }}
       />
-
       {/* Тумблер «Только активация» + индикатор сброса фильтров */}
       <View
         style={{
@@ -405,166 +404,169 @@ export function ExercisePickerSheet({
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-      <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          maxHeight: '88%',
-        }}
-      >
-        {/* Фиксированный верх: заголовок + поиск */}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+    >
+      <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+        <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
         <View
           style={{
-            paddingTop: SPACING.lg,
-            paddingHorizontal: SPACING.lg,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            maxHeight: '88%',
           }}
         >
+          {/* Фиксированный верх: заголовок + поиск */}
           <View
             style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: SPACING.md,
+              paddingTop: SPACING.lg,
+              paddingHorizontal: SPACING.lg,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
             }}
           >
-            <Text style={[typography.h5, { color: colors.textPrimary }]}>Добавить упражнение</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-              <TouchableOpacity
-                onPress={() => setShowSortSheet(true)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor:
-                    sortBy !== 'name-asc' ? colors.primaryLight : colors.surfaceSecondary,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: SPACING.md,
+              }}
+            >
+              <Text style={[typography.h5, { color: colors.textPrimary }]}>Добавить упражнение</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <TouchableOpacity
+                  onPress={() => setShowSortSheet(true)}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: sortBy !== 'name-asc' ? colors.primaryLight : colors.surfaceSecondary,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <ArrowUpDown
+                    size={18}
+                    color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary}
+                    strokeWidth={2}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onClose}>
+                  <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: BORDER_RADIUS.md,
+                paddingHorizontal: SPACING.md,
+                marginBottom: SPACING.md,
+                borderWidth: 1,
+                borderColor: searchTooShort ? colors.warning : colors.border,
+              }}
+            >
+              {isSearching ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Search size={18} color={colors.textTertiary} strokeWidth={2} />
+              )}
+              <TextInput
+                style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }}
+                placeholder="Поиск по названию..."
+                placeholderTextColor={colors.textTertiary}
+                value={searchInput}
+                onChangeText={setSearchInput}
+                autoFocus
+                returnKeyType="search"
+              />
+              {searchInput.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchInput('')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <X size={18} color={colors.textTertiary} strokeWidth={2} />
+                </TouchableOpacity>
+              )}
+            </View>
+            {searchTooShort && (
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.warning, marginBottom: SPACING.sm },
+                ]}
               >
-                <ArrowUpDown
-                  size={18}
-                  color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary}
-                  strokeWidth={2}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onClose}>
-                <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                Введите минимум 2 символа
+              </Text>
+            )}
+          </View>
+          {/* Результаты + фильтры в скроллящемся заголовке */}
+          {loading ? (
+            <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : isError && exercises.length === 0 ? (
+            <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
+              <Text
+                style={[
+                  typography.body,
+                  { color: colors.textSecondary, textAlign: 'center' },
+                ]}
+              >
+                Не удалось загрузить упражнения
+              </Text>
+              <TouchableOpacity onPress={() => refetch()} style={{ marginTop: SPACING.md }}>
+                <AppBadge variant="primary" size="medium">
+                  Повторить
+                </AppBadge>
               </TouchableOpacity>
             </View>
-          </View>
+          ) : (
+            <FlatList
+              data={exercises}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <PickerRow item={item} onPress={handlePick} colors={colors} />
+              )}
+              ListHeaderComponent={renderHeader}
+              ListEmptyComponent={renderEmpty}
+              ListFooterComponent={renderFooter}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              windowSize={7}
+              removeClippedSubviews={true}
+              keyboardShouldPersistTaps="handled"
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.primary}
+                />
+              }
+            />
+          )}
+          {/* Плашка параметров по умолчанию */}
           <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: colors.surfaceSecondary,
+              marginHorizontal: SPACING.lg,
+              marginTop: SPACING.sm,
+              marginBottom: SPACING.lg,
+              padding: SPACING.md,
+              backgroundColor: colors.primaryLight,
               borderRadius: BORDER_RADIUS.md,
-              paddingHorizontal: SPACING.md,
-              marginBottom: SPACING.md,
-              borderWidth: 1,
-              borderColor: searchTooShort ? colors.warning : colors.border,
             }}
           >
-            {isSearching ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Search size={18} color={colors.textTertiary} strokeWidth={2} />
-            )}
-            <TextInput
-              style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }}
-              placeholder="Поиск по названию..."
-              placeholderTextColor={colors.textTertiary}
-              value={searchInput}
-              onChangeText={setSearchInput}
-              autoFocus
-              returnKeyType="search"
-            />
-            {searchInput.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearchInput('')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <X size={18} color={colors.textTertiary} strokeWidth={2} />
-              </TouchableOpacity>
-            )}
-          </View>
-          {searchTooShort && (
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.warning, marginBottom: SPACING.sm },
-              ]}
-            >
-              Введите минимум 2 символа
+            <Text style={[typography.caption, { color: colors.primary }]}>
+              По умолчанию: 4 подхода × 8-12 повт., отдых 90с, средняя интенсивность
             </Text>
-          )}
-        </View>
-
-        {/* Результаты + фильтры в скроллящемся заголовке */}
-        {loading ? (
-          <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        ) : isError && exercises.length === 0 ? (
-          <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
-            <Text
-              style={[
-                typography.body,
-                { color: colors.textSecondary, textAlign: 'center' },
-              ]}
-            >
-              Не удалось загрузить упражнения
-            </Text>
-            <TouchableOpacity onPress={() => refetch()} style={{ marginTop: SPACING.md }}>
-              <AppBadge variant="primary" size="medium">
-                Повторить
-              </AppBadge>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <FlatList
-            data={exercises}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <PickerRow item={item} onPress={handlePick} />}
-            ListHeaderComponent={renderHeader}
-            ListEmptyComponent={renderEmpty}
-            ListFooterComponent={renderFooter}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.5}
-            windowSize={7}
-            removeClippedSubviews={true}
-            keyboardShouldPersistTaps="handled"
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.primary}
-              />
-            }
-          />
-        )}
-
-        {/* Плашка параметров по умолчанию */}
-        <View
-          style={{
-            marginHorizontal: SPACING.lg,
-            marginTop: SPACING.sm,
-            marginBottom: SPACING.lg,
-            padding: SPACING.md,
-            backgroundColor: colors.primaryLight,
-            borderRadius: BORDER_RADIUS.md,
-          }}
-        >
-          <Text style={[typography.caption, { color: colors.primary }]}>
-            По умолчанию: 4 подхода × 8-12 повт., отдых 90с, средняя интенсивность
-          </Text>
         </View>
       </View>
-
       {/* Шкаф оборудования (оверлей) */}
       {showEquipmentSheet && (
         <EquipmentSheet
@@ -575,7 +577,6 @@ export function ExercisePickerSheet({
           onClose={() => setShowEquipmentSheet(false)}
         />
       )}
-
       {/* Лист сортировки (оверлей) */}
       {showSortSheet && (
         <>
@@ -586,7 +587,7 @@ export function ExercisePickerSheet({
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
+              backgroundColor: colors.overlay,
             }}
             onPress={() => setShowSortSheet(false)}
             activeOpacity={1}
@@ -646,6 +647,6 @@ export function ExercisePickerSheet({
           </View>
         </>
       )}
-    </View>
+</KeyboardAvoidingView>
   );
 }

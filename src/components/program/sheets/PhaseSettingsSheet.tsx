@@ -33,6 +33,7 @@ export function PhaseSettingsSheet({
   );
   const [weeksCount, setWeeksCount] = useState(phase?.weeks_count || 1);
   const [description, setDescription] = useState(phase?.description || '');
+
   const selectedMeta = PHASE_TYPES.find((p) => p.value === phaseType);
 
   return (
@@ -175,7 +176,7 @@ export function PhaseSettingsSheet({
         />
       </View>
 
-      {/* Сохранить — внутри ScrollView SheetShell, поэтому всегда достижим прокруткой */}
+      {/* Сохранить */}
       <TouchableOpacity
         onPress={() =>
           onSave({

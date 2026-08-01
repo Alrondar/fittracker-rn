@@ -33,7 +33,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 | ID | Приоритет | Описание | Статус | Дата / Комментарий |
 |---|---|---|---|---|
-| PERF-1 | 🟡 | N+1 в легаси createWorkoutsFromProgram | 🔲 | канонический RPC create_workouts_for_program есть; легаси не удалён |
+| PERF-1 | 🟡 | N+1 в легаси createWorkoutsFromProgram|✅|01.08.2026 (функция удалена, нигде не использовалась)|
 | PERF-2 | 🟡 | клиентский пересчёт getFilterOptions | 🔲 | |
 | PERF-3 | 🟢 | тяжёлые поля в warmupService.generateWarmup | 🔲 | |
 | PERF-4 | 🟡 | двойные запросы на упражнение в saveProgram | 🔲 | |
@@ -46,7 +46,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 |---|---|---|---|---|
 | SCALE-1 | 🟡 | ноль автотестов | 🔲 | |
 | SCALE-2 | 🟡 | нет Sentry/crash-мониторинга | 🔲 | |
-| SCALE-3 | 🟢 | мёртвый код/ассеты | 🟡 | идентифицирован мёртвый useActiveProgram.ts; удаление не выполнено |
+| SCALE-3 | 🟢 | мёртвый код/ассеты|✅|useActiveProgram.ts удалён|
 | SCALE-4 | 🟢 | секреты/конфиг в 3 местах | 🔲 | |
 | SCALE-5 | 🟡 | модули > 500 строк | 🟡 | useProgramEditor разбит (+useProgramPhases); useWorkoutSession/ExerciseCard/WarmupBlock — нет |
 | SCALE-6 | 🟡 | RPC не под ревью | ✅ | 29.07.2026 (аудит) |
@@ -72,6 +72,6 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 ## Итоговая сводка
 
-Закрыто полностью: SEC-1,2,3,4,5,6,7 · RPC-1,2,3 · SCALE-6 · FIT-1..6
-Частично: ARCH-3, ARCH-5, SCALE-3, SCALE-5, SCALE-7, SEC-10
-Открыто (архитектурное): ARCH-1,2,4,6,7,8 · PERF-1..6 · SCALE-1,2,4
+Закрыто полностью: SEC-1,2,3,4,5,6,7 · RPC-1,2,3 · SCALE-3,6 · FIT-1..6
+Частично: ARCH-3, ARCH-5, SCALE-5, SCALE-7, SEC-10
+Открыто (производительность): PERF-2,3,4,5,6

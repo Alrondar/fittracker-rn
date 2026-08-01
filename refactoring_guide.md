@@ -22,6 +22,7 @@ Master Refactoring Guide — FitTracker RN
 | SCALE-7 | Документация актуализирована; команда регенерации типов переведена на --db-url (legacy-ключи отключены). | CLAUDE.md, этот файл |
 | SEC-2|updateSet() не персистит до saveWorkout (краш = потеря тренировки)|debounce 500мс + RPC upsert_workout_logs + flush при размонтировании|useWorkoutSession.ts|
 | SEC-6|неатомарный DELETE+INSERT workout_logs в saveWorkout|RPC upsert_workout_logs: INSERT ON CONFLICT + удаление отсутствующих в одной транзакции|useWorkoutSession.ts|
+| PERF-1|N+1 в легаси createWorkoutsFromProgram|функция удалена (нигде не использовалась)|programsService.ts|
 
 Новые зафиксированные факты долга:
 

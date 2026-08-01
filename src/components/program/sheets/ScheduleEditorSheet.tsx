@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
+import { SheetShell } from '../../ui/SheetShell';
 
 interface ScheduleEditorSheetProps {
   schedule: string[];
@@ -36,7 +37,9 @@ export function ScheduleEditorSheet({
 
   const toggleDay = (day: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
   };
 
   const selectAll = () => {
@@ -52,39 +55,27 @@ export function ScheduleEditorSheet({
   // ✅ ФИКС: копия перед sort — раньше .sort() мутировал массив состояния in-place
   //    прямо в рендере (без setState), что давало непредсказуемое поведение.
   const orderedSelected = [...selectedDays].sort(
-    (a, b) => WEEKDAYS.findIndex((d) => d.value === a) - WEEKDAYS.findIndex((d) => d.value === b),
+    (a, b) =>
+      WEEKDAYS.findIndex((d) => d.value === a) - WEEKDAYS.findIndex((d) => d.value === b)
   );
 
   return (
-    <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-      <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          padding: SPACING.lg,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: SPACING.lg,
-          }}
+    <SheetShell title="Расписание тренировок" onClose={onClose}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text
+          style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
         >
-          <Text style={[typography.h5, { color: colors.textPrimary }]}>Расписание тренировок</Text>
-          <TouchableOpacity onPress={onClose}>
-            <X size={20} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
           Выберите дни недели, в которые будут проходить тренировки
         </Text>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: SPACING.sm,
+            marginBottom: SPACING.lg,
+          }}
+        >
           {WEEKDAYS.map((day) => {
             const isSelected = selectedDays.includes(day.value);
             return (
@@ -105,7 +96,10 @@ export function ScheduleEditorSheet({
                 <Text
                   style={[
                     typography.h4,
-                    { color: isSelected ? colors.primary : colors.textSecondary, fontWeight: '700' },
+                    {
+                      color: isSelected ? colors.primary : colors.textSecondary,
+                      fontWeight: '700',
+                    },
                   ]}
                 >
                   {day.short}
@@ -113,7 +107,10 @@ export function ScheduleEditorSheet({
                 <Text
                   style={[
                     typography.captionSmall,
-                    { color: isSelected ? colors.primary : colors.textTertiary, marginTop: 2 },
+                    {
+                      color: isSelected ? colors.primary : colors.textTertiary,
+                      marginTop: 2,
+                    },
                   ]}
                 >
                   {day.label}
@@ -159,7 +156,12 @@ export function ScheduleEditorSheet({
               marginBottom: SPACING.lg,
             }}
           >
-            <Text style={[typography.caption, { color: colors.primary, marginBottom: SPACING.sm, fontWeight: '600' }]}>
+            <Text
+              style={[
+                typography.caption,
+                { color: colors.primary, marginBottom: SPACING.sm, fontWeight: '600' },
+              ]}
+            >
               Выбрано: {selectedDays.length} дн/нед
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
@@ -178,16 +180,19 @@ export function ScheduleEditorSheet({
           style={[
             buttonStyles.primary,
             {
-              backgroundColor: selectedDays.length === 0 ? colors.textTertiary : colors.primary,
+              backgroundColor:
+                selectedDays.length === 0 ? colors.textTertiary : colors.primary,
               opacity: selectedDays.length === 0 ? 0.5 : 1,
             },
           ]}
         >
           <Text style={buttonStyles.textPrimary}>
-            {selectedDays.length === 0 ? 'Выберите хотя бы один день' : 'Сохранить расписание'}
+            {selectedDays.length === 0
+              ? 'Выберите хотя бы один день'
+              : 'Сохранить расписание'}
           </Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </SheetShell>
   );
 }

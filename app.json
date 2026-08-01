@@ -7,9 +7,7 @@
     "scheme": "fittracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fittracker.app"
@@ -20,6 +18,7 @@
         "backgroundColor": "#7c3aed"
       },
       "package": "com.fittracker.app",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
@@ -33,11 +32,7 @@
         "projectId": "56a40b35-5721-4c21-b743-ae3fc74186a8"
       }
     },
-    "plugins": [
-      "expo-router",
-      "expo-audio"
-    ],
+    "plugins": ["expo-router", "expo-audio"],
     "owner": "alrondar"
   }
 }
-

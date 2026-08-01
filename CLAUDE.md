@@ -82,7 +82,6 @@
 | useExercises.ts | Справочник (useInfiniteQuery) |
 | useInjuryWarnings.ts | avoid/caution |
 | useWarmup.ts | Разминка с учётом травм |
-| useActiveProgram.ts | МЁРТВЫЙ (SCALE-3) — кандидат на удаление |
 
 ## Авторизация и профили
 
@@ -415,9 +414,7 @@ advanceProgramProgress: день → неделя → фаза → заверш�
 - Хардкод градиентов: history.tsx (getWorkoutGradient)
 - useWorkoutSession cleanup-эффект на deps (лишний UPDATE) — medium-term
 - dashboardService: PR-bias + формула калорий * 300 vs profileService
-- useActiveProgram.ts — мёртвый (SCALE-3)
 - Превышение 500 строк: goals.tsx, program/[id].tsx, ExerciseCard.tsx, WarmupBlock.tsx
-- programsService.createWorkoutsFromProgram — легаси (PERF-1)
 
 ## ФОРМАТ ОТВЕТА AI (СТРОГО СОБЛЮДАТЬ)
 

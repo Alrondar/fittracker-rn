@@ -49,6 +49,8 @@ import { ScheduleEditorSheet } from '../../src/components/program/sheets/Schedul
 import { PhaseSettingsSheet } from '../../src/components/program/sheets/PhaseSettingsSheet';
 import { ShareProgramSheet } from '../../src/components/program/sheets/ShareProgramSheet';
 import { generateShareCode, formatShareCode } from '../../src/services/programSharingService';
+import { PhaseType } from '../../src/constants/phaseTypes';
+
 
 // Светлый цвет поверх НЕтемизируемых цветных фонов: статичный hero-градиент
 // (GRADIENTS.hero) и цветные кнопки (colors.success / colors.primary) одинаковы
@@ -574,8 +576,12 @@ export default function ProgramDetailScreen() {
           day={selectedDay}
           colors={colors}
           buttonStyles={buttonStyles}
-          onSave={(settings) => {
-            if (selectedDayIndex >= 0) {
+onSave={(settings: {
+  name: string;
+  phase_type: PhaseType;
+  weeks_count: number;
+  description: string;
+}) => {            if (selectedDayIndex >= 0) {
               updateDaySettings(selectedDayIndex, settings);
               showToast('Настройки дня сохранены', 'success');
             }

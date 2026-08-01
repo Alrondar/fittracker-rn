@@ -60,7 +60,6 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | usePrograms.ts | список программ (useInfiniteQuery) + мутации | ✅ | deleteMutation(id,userId!) + invalidate dashboard/workouts |
 | useProgramEditor.ts | редактор программы (CRUD/drag&drop/фазы) + syncProgramChanges в save | ✅ | SCALE-5 ✅ разбит |
 | useProgramPhases.ts | фазовая логика редактора (вынесена) | ✅(импорт) | SCALE-5 |
-| useActiveProgram.ts | хук активной программы | ✅ | SCALE-3: МЁРТВЫЙ (не импортируется; programs.tsx использует getUserProgramsStatus напрямую) — кандидат на удаление |
 | useWorkouts.ts | тренировки (React Query) | ✅(импорт) | |
 | useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅)|✅|debounce-автосохранение (500мс) + RPC upsert_workout_logs + flush при размонтировании|| useExercises.ts | справочник (useInfiniteQuery, debounce, фильтры) | структ. | |
 | useExerciseDetail.ts | детальное упражнение (staleTime Infinity) | структ. | |
@@ -78,7 +77,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | Файл | Назначение | Инспект. | Примечание / долг |
 |---|---|---|---|
 | authService.ts | Supabase Auth единый слой | структ. | |
-| programsService.ts | CRUD программ + активация + syncProgramChanges + getWorkoutProgramInfo + getActiveProgram | ✅ | activateProgram(+reset), getUserProgramsStatus, deactivateAllPrograms, getActiveProgramId |
+| programsService.ts|CRUD программ + активация + syncProgramChanges + getWorkoutProgramInfo + getActiveProgram|✅|activateProgram(+reset), getUserProgramsStatus, deactivateAllPrograms, getActiveProgramId. PERF-1 ✅ (createWorkoutsFromProgram удалён)|
 | programSharingService.ts | generateShareCode / importProgramByCode / formatShareCode | ✅ | |
 | workoutService.ts | startProgramWorkout / repeatWorkout | ✅ | |
 | workoutsService.ts | getWorkoutsData (секции по фазам/неделям + прогресс) | ✅ | |

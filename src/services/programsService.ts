@@ -618,69 +618,6 @@ export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutP
 }
 
 // ============================================================================
-// СОЗДАНИЕ ТРЕНИРОВОК (легаси, upfront — кандидат на удаление, PERF-1)
-// ============================================================================
-export async function createWorkoutsFromProgram(
-  programId: string,
-  userId: string
-): Promise<string[]> {
-  const program = await getProgramWithPhases(programId);
-  if (!program || !program.phases || program.phases.length === 0) {
-    throw new Error('Program not found');
-  }
-  const workoutIds: string[] = [];
-  for (const phase of program.phases) {
-    for (let week = 1; week <= phase.weeks_count; week++) {
-      let days = (phase.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === week);
-      if (days.length === 0) {
-        days = (phase.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1);
-      }
-      for (const day of days) {
-        const { data: workout, error: workoutError } = await supabase
-          .from('workouts')
-          .insert({
-            user_id: userId,
-            name: day.name,
-            description: `${program.name} — ${phase.name} · Неделя ${week}`,
-            program_id: programId,
-            phase_number: phase.phase_number,
-            week_number: week,
-            day_index: day.day_number,
-          })
-          .select()
-          .single();
-        if (workoutError) throw workoutError;
-        if (day.exercises) {
-          for (const exercise of day.exercises) {
-            const { data: foundExercise } = await supabase
-              .from('exercises')
-              .select('id')
-              .ilike('name', `%${exercise.exercise_name}%`)
-              .limit(1)
-              .maybeSingle();
-            const exerciseId = foundExercise?.id || null;
-            if (!exerciseId) continue;
-            const { error: exError } = await supabase.from('workout_exercises').insert({
-              workout_id: workout.id,
-              exercise_id: exerciseId,
-              order_index: exercise.position,
-              target_sets: exercise.sets,
-              target_reps: parseInt(exercise.reps_range.split('-')[0]) || 10,
-              target_reps_range: exercise.reps_range,
-              rest_seconds: exercise.rest_seconds,
-              intensity: exercise.intensity,
-            });
-            if (exError) throw exError;
-          }
-        }
-        workoutIds.push(workout.id);
-      }
-    }
-  }
-  return workoutIds;
-}
-
-// ============================================================================
 // АКТИВНАЯ ПРОГРАММА (для дашборда)
 // ============================================================================
 export async function getActiveProgram(userId: string) {
