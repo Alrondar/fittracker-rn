@@ -159,7 +159,7 @@ const deleteMutation = useMutation({
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['programs'] });
-    queryClient.invalidateQueries({ queryKey: ['activeProgramId'] });
+    queryClient.invalidateQueries({ queryKey: ['userProgramsStatus'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     queryClient.invalidateQueries({ queryKey: ['workouts'] });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
