@@ -8,7 +8,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useStore } from '../src/store/useStore';
-import { ToastProvider } from '../src/components/ToastProvider';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { SPACING } from '../src/constants/theme';
@@ -121,9 +120,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.container}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <ToastProvider>
-            <RootLayoutContent />
-          </ToastProvider>
+          <RootLayoutContent />
         </ThemeProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

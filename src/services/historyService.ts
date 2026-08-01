@@ -1,5 +1,9 @@
 import { supabase } from '../lib/supabase';
+import type { Database } from '../types/database.types';
 
+// ============================================================================
+// ПУБЛИЧНЫЕ ТИПЫ (контракт для history.tsx / history/[id].tsx — не менять)
+// ============================================================================
 export interface HistoryWorkout {
   id: string;
   name: string;
@@ -24,19 +28,40 @@ export interface HistoryData {
   monthlyStats: MonthlyStats;
 }
 
-function calculateVolume(workout: any): number {
+// ============================================================================
+// ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any)
+// ============================================================================
+type WorkoutLogRow = Database['public']['Tables']['workout_logs']['Row'];
+
+/** getHistory: select('id, name, created_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )') */
+interface HistoryLogRow {
+  weight_kg: number | null;
+  reps: number | null;
+}
+interface HistoryExerciseRow {
+  id: string;
+  workout_logs: HistoryLogRow[] | null;
+}
+interface HistoryWorkoutRow {
+  id: string;
+  name: string;
+  created_at: string;
+  workout_exercises: HistoryExerciseRow[] | null;
+}
+
+function calculateVolume(workout: HistoryWorkoutRow): number {
   let volume = 0;
-  workout.workout_exercises?.forEach((ex: any) => {
-    ex.workout_logs?.forEach((log: any) => {
-      volume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
+  (workout.workout_exercises ?? []).forEach((ex) => {
+    (ex.workout_logs ?? []).forEach((log) => {
+      volume += (Number(log.weight_kg) || 0) * (Number(log.reps) || 0);
     });
   });
   return volume;
 }
 
-function calculateSets(workout: any): number {
+function calculateSets(workout: HistoryWorkoutRow): number {
   let sets = 0;
-  workout.workout_exercises?.forEach((ex: any) => {
+  (workout.workout_exercises ?? []).forEach((ex) => {
     sets += ex.workout_logs?.length || 0;
   });
   return sets;
@@ -60,14 +85,12 @@ function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
     const date = new Date(w.created_at);
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   });
-
   let totalVolume = 0;
   let bestWorkout = 0;
   thisMonth.forEach((w) => {
     totalVolume += w.volume;
     if (w.volume > bestWorkout) bestWorkout = w.volume;
   });
-
   return {
     totalWorkouts: thisMonth.length,
     totalVolume: Math.round(totalVolume),
@@ -84,9 +107,11 @@ export async function getHistory(userId: string): Promise<HistoryData> {
 
   if (error) throw error;
 
-  const completed = (data || [])
-    .filter((w: any) => w.workout_exercises?.some((ex: any) => ex.workout_logs?.length > 0))
-    .map((w: any) => ({
+  const rows = (data ?? []) as unknown as HistoryWorkoutRow[];
+
+  const completed: HistoryWorkout[] = rows
+    .filter((w) => (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0))
+    .map((w) => ({
       id: w.id,
       name: w.name,
       created_at: w.created_at,
@@ -98,15 +123,32 @@ export async function getHistory(userId: string): Promise<HistoryData> {
     sections: groupByMonth(completed),
     monthlyStats: calculateMonthlyStats(completed),
   };
-  
 }
+
 // ============================================================================
 // ДЕТАЛИ ТРЕНИРОВКИ (для history/[id].tsx) — SEC-10
 // ============================================================================
-import type { Database } from '../types/database.types';
-
-type WorkoutLogRow = Database['public']['Tables']['workout_logs']['Row'];
-type WorkoutExerciseRow = Database['public']['Tables']['workout_exercises']['Row'];
+/** getWorkoutDetail: вложенный select с exercises(name) и workout_logs */
+interface WorkoutDetailExerciseRow {
+  id: string;
+  exercise_id: string;
+  target_sets: number | null;
+  target_reps_range: string | null;
+  rest_seconds: number | null;
+  exercises: { name: string } | null;
+  workout_logs: WorkoutLogRow[] | null;
+}
+interface WorkoutDetailRow {
+  id: string;
+  name: string;
+  created_at: string;
+  finished_at: string | null;
+  duration_seconds: number | null;
+  program_id: string | null;
+  week_number: number | null;
+  day_index: number | null;
+  workout_exercises: WorkoutDetailExerciseRow[] | null;
+}
 
 export interface WorkoutDetailLog {
   id: string;
@@ -149,11 +191,7 @@ export async function getWorkoutDetail(
     .from('workouts')
     .select(
       `id, name, created_at, finished_at, duration_seconds, program_id, week_number, day_index,
-       workout_exercises (
-         id, exercise_id, target_sets, target_reps_range, rest_seconds,
-         exercises ( name ),
-         workout_logs ( id, set_number, weight_kg, reps )
-       )`,
+       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name ), workout_logs ( id, set_number, weight_kg, reps ) )`,
     )
     .eq('id', workoutId)
     .maybeSingle();
@@ -170,26 +208,17 @@ export async function getWorkoutDetail(
     return { data: null, error: { notFound: true, message: 'Тренировка не найдена' } };
   }
 
-  // Маппинг упражнений с типизацией
-  const rawExercises = (data as any).workout_exercises as Array<{
-    id: string;
-    exercise_id: string;
-    target_sets: number | null;
-    target_reps_range: string | null;
-    rest_seconds: number | null;
-    exercises: { name: string } | null;
-    workout_logs: WorkoutLogRow[];
-  }>;
+  const workout = data as unknown as WorkoutDetailRow;
 
-  const exercises: WorkoutDetailExercise[] = (rawExercises || []).map((we) => ({
+  const exercises: WorkoutDetailExercise[] = (workout.workout_exercises ?? []).map((we) => ({
     id: we.id,
     exercise_id: we.exercise_id,
     exercise_name: we.exercises?.name || 'Неизвестное упражнение',
     target_sets: we.target_sets,
     target_reps_range: we.target_reps_range,
     rest_seconds: we.rest_seconds,
-    logs: (we.workout_logs || [])
-      .sort((a: WorkoutLogRow, b: WorkoutLogRow) => a.set_number - b.set_number)
+    logs: (we.workout_logs ?? [])
+      .sort((a, b) => a.set_number - b.set_number)
       .map((log) => ({
         id: log.id,
         set_number: log.set_number,
@@ -200,14 +229,14 @@ export async function getWorkoutDetail(
 
   return {
     data: {
-      id: data.id,
-      name: data.name,
-      created_at: data.created_at,
-      finished_at: data.finished_at,
-      duration_seconds: data.duration_seconds,
-      program_id: data.program_id,
-      week_number: data.week_number,
-      day_index: data.day_index,
+      id: workout.id,
+      name: workout.name,
+      created_at: workout.created_at,
+      finished_at: workout.finished_at,
+      duration_seconds: workout.duration_seconds,
+      program_id: workout.program_id,
+      week_number: workout.week_number,
+      day_index: workout.day_index,
       exercises,
     },
     error: null,

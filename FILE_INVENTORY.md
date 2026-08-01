@@ -39,8 +39,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | ProgramFormSheet.tsx | модалка создания/редактирования программы | структ. |✅|ARCH-3 ✅ (LEVEL_COLORS), KAV ✅, colors.overlay ✅|
 | ProgramProgressCard.tsx | виджет активной программы на Dashboard | структ. | ARCH-5: color="white" |
 | ActivityCalendar / WeeklyStatsCard / ExerciseProgressCard / PersonalRecordsCard / LastWorkoutCard | виджеты Dashboard | структ. | |
-| SectionHeader / FadeIn / Skeleton / Toast | общие | структ. | ARCH-4 (FadeIn=Animated), ARCH-2 (Toast) |
-| program/PhaseCard.tsx | карточка фазы (DraggableFlatList scrollEnabled=false) | ✅ | |
+| SectionHeader / FadeIn / Skeleton / Toast|общие|✅|ARCH-4 ✅ (FadeIn/Skeleton/Toast → Reanimated v3)|| program/PhaseCard.tsx | карточка фазы (DraggableFlatList scrollEnabled=false) | ✅ | |
 | program/DayCard.tsx | карточка дня (DraggableFlatList scrollEnabled=false) + баблы мышц | ✅ | SEC-3 ✅ |
 | program/sheets/PhaseSettingsSheet.tsx | настройки фазы (на SheetShell) | ✅ | |
 | ExercisePickerSheet.tsx|пикер упражнений (useExercises)|✅|ARCH-1: кастомный оверлей (сортировка); ARCH-5 ✅ (colors.overlay/textTertiary); KAV ✅|

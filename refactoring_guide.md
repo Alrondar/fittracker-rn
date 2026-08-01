@@ -32,6 +32,7 @@ Master Refactoring Guide — FitTracker RN
 | PERF-2|клиентский пересчёт getFilterOptions|RPC get_exercise_filter_counts — агрегация на сервере вместо выборки 870+ строк|exercisesService.ts|
 | PERF-3|тяжёлые поля в warmupService.generateWarmup|двухфазный запрос: лёгкий select (80 кандидатов) + тяжёлые тексты только для финальных 7|warmupService.ts|
 | PERF-5|SCREEN_WIDTH не реагирует на Split View|ExerciseSlider/WarmupBlock → useWindowDimensions; ширина карточки вынесена из фабрики в реактивный контейнер; мёртвые SwipeableCard/BottomSheet удалены|ExerciseSlider.tsx, WarmupBlock.tsx, card/workout.ts|
+| ARCH-4|Reanimated v3 vs легаси Animated|FadeIn/Skeleton/Toast переведены на Reanimated v3 (useSharedValue/withTiming/withRepeat/withSequence); SwipeableCard/BottomSheet/ToastProvider/AnimatedButton удалены как мёртвые — легаси Animated/PanResponder/useNativeDriver в живом коде не осталось (grep чист)|FadeIn.tsx, Skeleton.tsx, Toast.tsx|
 
 Новые зафиксированные факты долга:
 

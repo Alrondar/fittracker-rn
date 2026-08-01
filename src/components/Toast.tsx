@@ -1,6 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Check, X, Info, AlertCircle } from 'lucide-react-native';
+import { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
+import { Check, X, Info } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ToastProps {
@@ -11,84 +18,57 @@ interface ToastProps {
   duration?: number;
 }
 
-export function Toast({ 
-  message, 
-  type = 'success', 
-  visible, 
-  onHide, 
-  duration = 2500 
+export function Toast({
+  message,
+  type = 'success',
+  visible,
+  onHide,
+  duration = 2500,
 }: ToastProps) {
   const insets = useSafeAreaInsets();
-  const translateY = useRef(new Animated.Value(-150)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(-150);
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 80,
-          friction: 12,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Появление: выезд сверху (spring) + fade-in.
+      translateY.value = withSpring(0, { stiffness: 80, damping: 12 });
+      opacity.value = withTiming(1, { duration: 250 });
 
+      // Исчезновение через duration; onHide — после завершения анимации.
       const timer = setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: -150,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start(() => onHide());
+        opacity.value = withTiming(0, { duration: 300 });
+        translateY.value = withTiming(-150, { duration: 300 }, (finished) => {
+          if (finished) runOnJS(onHide)();
+        });
       }, duration);
-
       return () => clearTimeout(timer);
     }
-  }, [visible]);
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, duration, onHide]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
 
   if (!visible) return null;
 
+  // ⚠️ Хардкод цветов — остаточный долг ARCH-5 (не часть ARCH-4, не усугубляю).
   const config = {
-    success: { 
-      icon: Check, 
-      bgColor: '#10b981',
-      bgLight: 'rgba(16, 185, 129, 0.15)',
-    },
-    error: { 
-      icon: X, 
-      bgColor: '#ef4444',
-      bgLight: 'rgba(239, 68, 68, 0.15)',
-    },
-    info: { 
-      icon: Info, 
-      bgColor: '#7c3aed',
-      bgLight: 'rgba(124, 58, 237, 0.15)',
-    },
+    success: { icon: Check, bgColor: '#10b981' },
+    error: { icon: X, bgColor: '#ef4444' },
+    info: { icon: Info, bgColor: '#7c3aed' },
   };
-
   const { icon: Icon, bgColor } = config[type];
 
   return (
     <Animated.View
       style={[
         styles.container,
-        {
-          top: insets.top + 16,
-          backgroundColor: bgColor,
-          transform: [{ translateY }],
-          opacity,
-        },
+        { top: insets.top + 16, backgroundColor: bgColor },
+        animatedStyle,
       ]}
     >
       <View style={styles.iconWrapper}>

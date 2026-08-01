@@ -23,7 +23,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | ARCH-1 | 🟠 | централизация Bottom Sheet на SheetShell|✅|01.08.2026 (DaySettingsSheet, ExerciseSettingsSheet, ScheduleEditorSheet переведены; ExercisePickerSheet, ImportProgramSheet, ShareProgramSheet — кастомный оверлей сохранён)|
 | ARCH-2 | 🟠 | две системы Toast (useToast + мёртвый ToastProvider context) | 🔲 | |
 | ARCH-3 | 🟡 | дубли маппинга уровень→цвет | ✅ |01.08.2026 (ProgramCard ✅, ProgramFormSheet ✅ — LEVEL_COLORS из semanticCol
-| ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet) | 🔲 | |
+| ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet)|✅|01.08.2026 (FadeIn/Skeleton/Toast → Reanimated v3; SwipeableCard/BottomSheet/ToastProvider/AnimatedButton удалены как мёртвые; grep по маркерам легаси чист)|
 | ARCH-5 | 🟡 | хардкод цветов в UI-компонентах|✅|01.08.2026 (ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на colors.overlay/textTertiary/success/warning/error)|
 | ARCH-6 | 🟡 | систематический any в мапперах сервисов | 🔲 | |
 | ARCH-7 | 🟢 | types/index.ts vs types/workout.ts дублирование | 🔲 | |
