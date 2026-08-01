@@ -20,9 +20,9 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | (tabs)/workouts.tsx | тренировки по фазам/неделям + «Следующая» (FIT-5) | ✅ | useWorkouts + workoutsService |
 | (tabs)/profile.tsx | профиль | структ. | |
 | (tabs)/exercise/[id].tsx | детальный экран упражнения | структ. | |
-| (tabs)/history/[id].tsx | детали истории | структ. | tech debt: supabase.from в UI (SEC-10) |
+| (tabs)/history/[id].tsx | детали истории | структ. | ✅ |SEC-10 ✅ (historyService.getWorkoutDetail)|
 | (tabs)/profile/goals.tsx | цели/макросы | структ. | SCALE-5 кандидат (>500 строк) |
-| (tabs)/profile/injuries.tsx | травмы | структ. | tech debt (SEC-10) |
+| (tabs)/profile/injuries.tsx | травмы | ✅ |SEC-10 ✅ (useInjuries хук)|
 | (tabs)/profile/metrics.tsx | замеры тела | структ. | |
 | (tabs)/profile/settings.tsx | настройки (тема/профиль/таймер) | ✅ | SEC-10 ✅ (profileService + sendPasswordReset) |
 | (tabs)/program/[id].tsx | редактор программы + шаринг | структ. | SCALE-5 кандидат |
@@ -43,11 +43,12 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | program/PhaseCard.tsx | карточка фазы (DraggableFlatList scrollEnabled=false) | ✅ | |
 | program/DayCard.tsx | карточка дня (DraggableFlatList scrollEnabled=false) + баблы мышц | ✅ | SEC-3 ✅ |
 | program/sheets/PhaseSettingsSheet.tsx | настройки фазы (на SheetShell) | ✅ | |
-| program/sheets/DaySettingsSheet.tsx | настройки дня (свой оверлей, без затемнения) | ✅ | ARCH-1 |
-| program/sheets/ExerciseSettingsSheet.tsx | настройки упражнения (свой оверлей) | ✅ | ARCH-1 + ARCH-5 (#4CAF50/#FFC107/#F44336) |
-| program/sheets/ExercisePickerSheet.tsx | пикер упражнения (хардкод rgba) | ✅ | ARCH-1 |
-| program/sheets/ImportProgramSheet.tsx | импорт по коду (хардкод rgba) | ✅ | ARCH-1 |
-| program/sheets/ShareProgramSheet.tsx | шаринг кода (хардкод rgba) | ✅ | ARCH-1 |
+| ExercisePickerSheet.tsx|пикер упражнений (useExercises)|✅|ARCH-1: кастомный оверлей (сортировка); ARCH-5 ✅ (colors.overlay/textTertiary); KAV ✅|
+| ExerciseSettingsSheet.tsx|настройки упражнения|✅|ARCH-1 ✅ (SheetShell); ARCH-5 ✅ (colors.success/warning/error); KAV ✅|
+| DaySettingsSheet.tsx|настройки дня|✅|ARCH-1 ✅ (SheetShell); KAV ✅|
+| ScheduleEditorSheet.tsx|редактор расписания|✅|ARCH-1 ✅ (SheetShell)|
+| ImportProgramSheet.tsx|импорт программы|✅|ARCH-5 ✅ (colors.overlay)|
+| ShareProgramSheet.tsx|поделиться программой|✅|ARCH-5 ✅ (colors.overlay)|
 | workout/ExerciseSlider / ExerciseCard / ExerciseInfoAccordion / MuscleBubbles / EquipmentBubbles / TechniqueMediaSlider / WarmupBlock / RestTimer / WorkoutTimer / WorkoutTabs / UnitToggle / ExerciseSettingsModal | компоненты тренировки | структ. | SCALE-5 (ExerciseCard/WarmupBlock) |
 | exercises/CategoryStrip / EquipmentSheet | фильтры справочника | ✅(частично) | EquipmentSheet — хардкод rgba (ARCH-1) |
 | EquipmentIcon.tsx | иконка оборудования | структ. | ARCH-5 (#6B7280?), рассинхрон ICON_MAP (ref-guide 2.F) |
@@ -77,6 +78,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | Файл | Назначение | Инспект. | Примечание / долг |
 |---|---|---|---|
 | authService.ts | Supabase Auth единый слой | структ. | |
+| historyService.ts|агрегация истории + getWorkoutDetail|✅|SEC-10 ✅|
 | programsService.ts|CRUD программ + активация + syncProgramChanges + getWorkoutProgramInfo + getActiveProgram|✅|activateProgram(+reset), getUserProgramsStatus, deactivateAllPrograms, getActiveProgramId. PERF-1 ✅ (createWorkoutsFromProgram удалён)|
 | programSharingService.ts | generateShareCode / importProgramByCode / formatShareCode | ✅ | |
 | workoutService.ts | startProgramWorkout / repeatWorkout | ✅ | |

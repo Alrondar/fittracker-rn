@@ -23,6 +23,11 @@ Master Refactoring Guide — FitTracker RN
 | SEC-2|updateSet() не персистит до saveWorkout (краш = потеря тренировки)|debounce 500мс + RPC upsert_workout_logs + flush при размонтировании|useWorkoutSession.ts|
 | SEC-6|неатомарный DELETE+INSERT workout_logs в saveWorkout|RPC upsert_workout_logs: INSERT ON CONFLICT + удаление отсутствующих в одной транзакции|useWorkoutSession.ts|
 | PERF-1|N+1 в легаси createWorkoutsFromProgram|функция удалена (нигде не использовалась)|programsService.ts|
+| ARCH-1|централизация Bottom Sheet на SheetShell|DaySettingsSheet, ExerciseSettingsSheet, ScheduleEditorSheet переведены на SheetShell|sheets/|
+| ARCH-5|хардкод цветов в UI-компонентах|ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на токены|sheets/|
+| PERF-4|двойные запросы на упражнение в saveProgram|RPC save_program_snapshot — 1 запрос вместо N×2|useProgramEditor.ts|
+| PERF-6|нет транзакции в saveProgram|RPC save_program_snapshot — атомарная транзакция|useProgramEditor.ts|
+| SEC-10|прямые supabase.* в UI|history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый|historyService.ts, [id].tsx|
 
 Новые зафиксированные факты долга:
 

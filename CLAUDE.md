@@ -409,10 +409,11 @@ advanceProgramProgress: день → неделя → фаза → заверш�
 ## Известный tech debt
 
 Известный tech debt
-- supabase.from() в UI: history.tsx, injuries.tsx (выносить в services/ + React Query)
+- supabase.from() в UI: history.tsx (выносить в services/ + React Query) — injuries.tsx ✅ через useInjuries, history/[id].tsx ✅ через historyService
 - Серверные данные в Zustand: useStore.workouts/logs/alternativesCache
 - Хардкод градиентов: history.tsx (getWorkoutGradient)
 - useWorkoutSession cleanup-эффект на deps (лишний UPDATE) — medium-term
+- RPC save_program_snapshot — атомарное сохранение программы (
 - dashboardService: PR-bias + формула калорий * 300 vs profileService
 - Превышение 500 строк: goals.tsx, program/[id].tsx, ExerciseCard.tsx, WarmupBlock.tsx
 

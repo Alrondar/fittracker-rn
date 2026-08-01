@@ -14,17 +14,17 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | SEC-6|🟡|неатомарный DELETE+INSERT workout_logs в saveWorkout|✅|01.08.2026 (RPC upsert_workout_logs: INSERT ON CONFLICT + удаление отсутствующих в одной транзакции)|| SEC-7 | 🟡 | ошибка advanceProgramProgress маскировалась под «Успех» | ✅ | 31.07.2026 (честный Alert + «Повторить/Позже», Haptics.Warning) |
 | SEC-8 | 🟡 | кастомная схема fittracker:// вместо Universal/App Links | 🔲 | |
 | SEC-9 | 🟢 | сырые ошибки Postgres пользователю | 🔲 | единый маппер не создан |
-| SEC-10 | 🟢 | прямые supabase.* в UI | 🟡 | settings.tsx ✅; history/[id].tsx, injuries.tsx — tech debt |
+| SEC-10 | 🟢 | прямые supabase.* в UI|✅|01.08.2026 (history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый через useInjuries)|
 
 ## 🏗️ Архитектура (ARCH)
 
 | ID | Приоритет | Описание | Статус | Дата / Комментарий |
 |---|---|---|---|---|
-| ARCH-1 | 🟠 | фрагментация Bottom Sheet (3 поведения затемнения) | 🔲 | SheetShell есть, но 6+ шторок со своими оверлеями (ExercisePicker/Import/Share/ExerciseSettings/DaySettings) |
+| ARCH-1 | 🟠 | централизация Bottom Sheet на SheetShell|✅|01.08.2026 (DaySettingsSheet, ExerciseSettingsSheet, ScheduleEditorSheet переведены; ExercisePickerSheet, ImportProgramSheet, ShareProgramSheet — кастомный оверлей сохранён)|
 | ARCH-2 | 🟠 | две системы Toast (useToast + мёртвый ToastProvider context) | 🔲 | |
 | ARCH-3 | 🟡 | дубли маппинга уровень→цвет | 🟡 | ProgramCard ✅ (LEVEL_COLORS); ProgramFormSheet — не подтверждено |
 | ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet) | 🔲 | |
-| ARCH-5 | 🟡 | хардкод цветов сверх долга | 🟡 | ProgramCard-уровни ✅; НО ProgramProgressCard color="white", ExerciseSettingsSheet #4CAF50/#FFC107/#F44336, оверлеи rgba(0,0,0,0.5) — открыто |
+| ARCH-5 | 🟡 | хардкод цветов в UI-компонентах|✅|01.08.2026 (ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на colors.overlay/textTertiary/success/warning/error)|
 | ARCH-6 | 🟡 | систематический any в мапперах сервисов | 🔲 | |
 | ARCH-7 | 🟢 | types/index.ts vs types/workout.ts дублирование | 🔲 | |
 | ARCH-8 | 🟢 | противопоказания через keyword-эвристики | 🔲 | |
@@ -36,9 +36,9 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | PERF-1 | 🟡 | N+1 в легаси createWorkoutsFromProgram|✅|01.08.2026 (функция удалена, нигде не использовалась)|
 | PERF-2 | 🟡 | клиентский пересчёт getFilterOptions | 🔲 | |
 | PERF-3 | 🟢 | тяжёлые поля в warmupService.generateWarmup | 🔲 | |
-| PERF-4 | 🟡 | двойные запросы на упражнение в saveProgram | 🔲 | |
+| PERF-4 | 🟡 | двойные запросы на упражнение в saveProgram|✅|01.08.2026 (RPC save_program_snapshot — 1 запрос вместо N×2)|
 | PERF-5 | 🟢 | SCREEN_WIDTH не реагирует на Split View | 🔲 | |
-| PERF-6 | 🟡 | нет транзакции в saveProgram (Promise.all не откатывается) | 🔲 | |
+| PERF-6 | 🟡 | нет транзакции в saveProgram (Promise.all не откатывается)|✅|01.08.2026 (RPC save_program_snapsh
 
 ## 📈 Масштабируемость (SCALE)
 
@@ -73,5 +73,5 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 ## Итоговая сводка
 
 Закрыто полностью: SEC-1,2,3,4,5,6,7 · RPC-1,2,3 · SCALE-3,6 · FIT-1..6
-Частично: ARCH-3, ARCH-5, SCALE-5, SCALE-7, SEC-10
-Открыто (производительность): PERF-2,3,4,5,6
+Частично: ARCH-3, SCALE-5, SCALE-7
+Открыто (производительность): PERF-2,3,5

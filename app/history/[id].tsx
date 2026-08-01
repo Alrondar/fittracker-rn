@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  FlatList,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../src/lib/supabase';
 import { useTheme } from '../../src/hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
@@ -27,113 +19,50 @@ import {
   Flame,
   CheckCircle,
 } from 'lucide-react-native';
-
-interface WorkoutLog {
-  id: string;
-  set_number: number;
-  weight_kg: number;
-  reps: number;
-}
-
-interface WorkoutExercise {
-  id: string;
-  exercise_id: string;
-  exercise_name: string;
-  target_sets: number;
-  target_reps_range: string;
-  rest_seconds: number;
-  logs: WorkoutLog[];
-}
+import {
+  getWorkoutDetail,
+  type WorkoutDetail,
+  type WorkoutDetailError,
+  type WorkoutDetailExercise,
+  type WorkoutDetailLog,
+} from '../../src/services/historyService';
 
 export default function WorkoutHistoryScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { colors } = useTheme();
-  const [workout, setWorkout] = useState<any>(null);
-  const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
+  const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [totalVolume, setTotalVolume] = useState(0);
-  const [totalSets, setTotalSets] = useState(0);
+  const [error, setError] = useState<WorkoutDetailError | null>(null);
 
   useEffect(() => {
     loadWorkout();
   }, [id]);
 
   const loadWorkout = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select(`
-          id,
-          name,
-          created_at,
-          finished_at,
-          duration_seconds,
-          program_id,
-          week_number,
-          day_index,
-          workout_exercises (
-            id,
-            exercise_id,
-            target_sets,
-            target_reps_range,
-            rest_seconds,
-            exercises (
-              name
-            ),
-            workout_logs (
-              id,
-              set_number,
-              weight_kg,
-              reps
-            )
-          )
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
+      const { data, error: detailError } = await getWorkoutDetail(id as string);
+      if (detailError) {
+        setError(detailError);
+        return;
+      }
       setWorkout(data);
-
-      // Маппинг упражнений
-      const exercisesData: WorkoutExercise[] = data.workout_exercises.map((we: any) => ({
-        id: we.id,
-        exercise_id: we.exercise_id,
-        exercise_name: we.exercises?.name || 'Неизвестное упражнение',
-        target_sets: we.target_sets,
-        target_reps_range: we.target_reps_range,
-        rest_seconds: we.rest_seconds,
-        logs: (we.workout_logs || []).sort((a: any, b: any) => a.set_number - b.set_number),
-      }));
-
-      setExercises(exercisesData);
-
-      // Подсчёт общего объёма
-      let volume = 0;
-      let sets = 0;
-      exercisesData.forEach(ex => {
-        ex.logs.forEach(log => {
-          volume += (log.weight_kg || 0) * (log.reps || 0);
-          sets++;
-        });
-      });
-      setTotalVolume(volume);
-      setTotalSets(sets);
-    } catch (e) {
-      console.error('Ошибка загрузки тренировки:', e);
+    } catch (e: any) {
+      setError({ notFound: false, message: e.message || 'Неизвестная ошибка' });
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('ru-RU', {
       day: 'numeric',
@@ -144,6 +73,25 @@ export default function WorkoutHistoryScreen() {
     });
   };
 
+  // Подсчёт статистики (типизировано)
+  const totalVolume =
+    workout?.exercises.reduce(
+      (acc: number, ex: WorkoutDetailExercise) =>
+        acc +
+        ex.logs.reduce(
+          (sum: number, log: WorkoutDetailLog) =>
+            sum + (log.weight_kg || 0) * (log.reps || 0),
+          0,
+        ),
+      0,
+    ) || 0;
+
+  const totalSets =
+    workout?.exercises.reduce(
+      (acc: number, ex: WorkoutDetailExercise) => acc + ex.logs.length,
+      0,
+    ) || 0;
+
   if (loading) {
     return (
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
@@ -152,6 +100,36 @@ export default function WorkoutHistoryScreen() {
           <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
             Загрузка...
           </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={commonStyles.center}>
+          <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+          <Text style={[typography.h4, { color: colors.textPrimary, marginTop: SPACING.md }]}>
+            {error.notFound ? 'Тренировка не найдена' : 'Ошибка загрузки'}
+          </Text>
+          {!error.notFound && (
+            <Text
+              style={[
+                typography.body,
+                { color: colors.textSecondary, marginTop: SPACING.sm },
+              ]}
+            >
+              {error.message}
+            </Text>
+          )}
+          <AppButton
+            title="Назад"
+            variant="secondary"
+            size="medium"
+            onPress={() => router.back()}
+            style={{ marginTop: SPACING.lg }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -180,11 +158,18 @@ export default function WorkoutHistoryScreen() {
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       {/* Шапка */}
-      <View style={[commonStyles.navHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          commonStyles.navHeader,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
-        <Text style={[typography.h4, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]}>
+        <Text
+          style={[typography.h4, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]}
+        >
           История тренировки
         </Text>
         <View style={{ width: 40 }} />
@@ -232,7 +217,12 @@ export default function WorkoutHistoryScreen() {
           <AppCard variant="compact" style={{ marginBottom: SPACING.lg }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Flame size={20} color={colors.primary} />
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginLeft: SPACING.sm }]}>
+              <Text
+                style={[
+                  typography.labelBold,
+                  { color: colors.textPrimary, marginLeft: SPACING.sm },
+                ]}
+              >
                 Программа: Неделя {workout.week_number || 1}, День {workout.day_index || 1}
               </Text>
             </View>
@@ -240,10 +230,17 @@ export default function WorkoutHistoryScreen() {
         )}
 
         {/* Список упражнений */}
-<SectionHeader title="Упражнения" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
-        {exercises.map((exercise, exIndex) => (
+        <SectionHeader title="Упражнения" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+        {workout.exercises.map((exercise: WorkoutDetailExercise, exIndex: number) => (
           <AppCard key={exercise.id} variant="compact" style={{ marginBottom: SPACING.md }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: SPACING.sm,
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <View
                   style={{
@@ -271,7 +268,7 @@ export default function WorkoutHistoryScreen() {
 
             {exercise.logs.length > 0 ? (
               <View style={{ marginTop: SPACING.sm }}>
-                {exercise.logs.map((log, logIndex) => (
+                {exercise.logs.map((log: WorkoutDetailLog, logIndex: number) => (
                   <View
                     key={log.id}
                     style={{
@@ -285,7 +282,12 @@ export default function WorkoutHistoryScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <CheckCircle size={14} color={colors.success} />
-                      <Text style={[typography.body, { color: colors.textSecondary, marginLeft: SPACING.sm }]}>
+                      <Text
+                        style={[
+                          typography.body,
+                          { color: colors.textSecondary, marginLeft: SPACING.sm },
+                        ]}
+                      >
                         Подход {log.set_number}
                       </Text>
                     </View>
