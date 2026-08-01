@@ -1,0 +1,639 @@
+import { supabase } from '../lib/supabase';
+
+// ============================================================================
+// ТИПЫ
+// ============================================================================
+export type PhaseType = 'hypertrophy' | 'strength' | 'power' | 'deload' | 'custom';
+
+export interface Program {
+  id: string;
+  name: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  duration: number;
+  description: string;
+  schedule: string[];
+  created_by?: string;
+  created_at?: string;
+  phases?: ProgramPhase[];
+  days?: ProgramDay[];
+}
+
+export interface ProgramPhase {
+  id: string;
+  program_id: string;
+  phase_number: number;
+  name: string;
+  phase_type: PhaseType;
+  weeks_count: number;
+  description?: string | null;
+  position?: number | null;
+  created_at?: string;
+  days?: ProgramDay[];
+  isNew?: boolean;
+}
+
+export interface ProgramDay {
+  id: string;
+  program_id: string;
+  phase_id?: string | null;
+  week_number: number;
+  day_number: number;
+  name: string;
+  position?: number;
+  created_at?: string;
+  exercises?: ProgramExercise[];
+  isNew?: boolean;
+}
+
+export interface ProgramExercise {
+  id: string;
+  program_day_id: string;
+  exercise_id?: string;
+  exercise_name: string;
+  sets: number;
+  reps_range: string;
+  rest_seconds: number;
+  intensity: 'low' | 'medium' | 'high';
+  position: number;
+  primary_muscles?: string[];
+  isNew?: boolean;
+}
+
+export interface UserProgram {
+  id: string;
+  user_id: string;
+  program_id: string;
+  current_phase: number;
+  current_week: number;
+  current_day: number;
+  started_at: string;
+  completed_at?: string;
+  is_active: boolean;
+}
+
+/** Статус программы для пользователя (один запрос на весь список). */
+export interface UserProgramStatus {
+  program_id: string;
+  is_active: boolean;
+  completed_at: string | null;
+}
+
+export interface ProgramFilters {
+  level?: readonly ('beginner' | 'intermediate' | 'advanced')[];
+  search?: string;
+  sortBy?: 'date' | 'name' | 'level';
+  limit?: number;
+  offset?: number;
+}
+
+export interface SyncProgramChangesResult {
+  deleted_workouts: number;
+  updated_workouts: number;
+  deleted_exercises: number;
+  updated_exercises: number;
+  inserted_exercises: number;
+}
+
+export interface WorkoutProgramInfo {
+  programName: string;
+  phaseName?: string;
+  phaseType?: string;
+}
+
+// ============================================================================
+// МАППЕРЫ
+// ============================================================================
+function mapExercise(ex: any): ProgramExercise {
+  return {
+    id: ex.id,
+    program_day_id: ex.program_day_id,
+    exercise_id: ex.exercise_id,
+    exercise_name: ex.exercise_name,
+    sets: ex.sets,
+    reps_range: ex.reps_range,
+    rest_seconds: ex.rest_seconds,
+    intensity: ex.intensity,
+    position: ex.position,
+    primary_muscles: ex.exercises?.primary_muscles || [],
+  };
+}
+
+function mapDay(day: any): ProgramDay {
+  return {
+    id: day.id,
+    program_id: day.program_id,
+    phase_id: day.phase_id,
+    week_number: day.week_number ?? 1,
+    day_number: day.day_number,
+    name: day.name,
+    position: day.position,
+    created_at: day.created_at,
+    exercises: (day.program_exercises || [])
+      .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+      .map(mapExercise),
+  };
+}
+
+export function mapPhase(phase: any): ProgramPhase {
+  return {
+    id: phase.id,
+    program_id: phase.program_id,
+    phase_number: phase.phase_number,
+    name: phase.name,
+    phase_type: phase.phase_type,
+    weeks_count: phase.weeks_count,
+    description: phase.description,
+    position: phase.position,
+    created_at: phase.created_at,
+    days: (phase.program_days || [])
+      .sort((a: any, b: any) => (a.week_number - b.week_number) || (a.day_number - b.day_number))
+      .map(mapDay),
+  };
+}
+
+// ============================================================================
+// ПРОГРАММЫ (CRUD)
+// ============================================================================
+export async function getPrograms(filters?: ProgramFilters): Promise<Program[]> {
+  let query = supabase.from('programs').select('*').is('created_by', null);
+  if (filters?.level && filters.level.length > 0) query = query.in('level', filters.level as any);
+  if (filters?.search) query = query.ilike('name', `%${filters.search}%`);
+  const sortBy = filters?.sortBy || 'date';
+  if (sortBy === 'name') query = query.order('name', { ascending: true });
+  else if (sortBy === 'level') query = query.order('level', { ascending: true });
+  else query = query.order('created_at', { ascending: false });
+  const limit = filters?.limit || 10;
+  const offset = filters?.offset || 0;
+  query = query.range(offset, offset + limit - 1);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getMyPrograms(userId: string, filters?: ProgramFilters): Promise<Program[]> {
+  let query = supabase.from('programs').select('*').eq('created_by', userId);
+  if (filters?.level && filters.level.length > 0) query = query.in('level', filters.level as any);
+  if (filters?.search) query = query.ilike('name', `%${filters.search}%`);
+  const sortBy = filters?.sortBy || 'date';
+  if (sortBy === 'name') query = query.order('name', { ascending: true });
+  else if (sortBy === 'level') query = query.order('level', { ascending: true });
+  else query = query.order('created_at', { ascending: false });
+  const limit = filters?.limit || 10;
+  const offset = filters?.offset || 0;
+  query = query.range(offset, offset + limit - 1);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createProgram(
+  program: Omit<Program, 'id' | 'created_at' | 'phases' | 'days'>,
+  userId: string
+): Promise<Program> {
+  // id генерируется на стороне БД (DEFAULT gen_random_uuid()::text).
+  const { data, error } = await supabase
+    .from('programs')
+    .insert({ ...program, created_by: userId })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProgram(programId: string, updates: Partial<Program>): Promise<Program> {
+  const { phases, days, ...rest } = updates;
+  const { data, error } = await supabase
+    .from('programs')
+    .update(rest)
+    .eq('id', programId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteProgram(programId: string, userId: string): Promise<void> {
+  // 1. Отвязываем тренировки пользователя от программы: история сохраняется
+  //    как ad-hoc (workouts.program_id nullable). Явный фильтр по user_id —
+  //    defense in depth поверх RLS (workouts: auth.uid() = user_id).
+  const { error: unlinkErr } = await supabase
+    .from('workouts')
+    .update({ program_id: null })
+    .eq('program_id', programId)
+    .eq('user_id', userId);
+  if (unlinkErr) throw unlinkErr;
+
+  // 2. Удаляем запись прогресса пользователя. После этого активных программ
+  //    у него на одну меньше; если удалили активную — остаётся 0 активных
+  //    (другую НЕ активируем автоматически, per ТЗ).
+  const { error: progErr } = await supabase
+    .from('user_programs')
+    .delete()
+    .eq('program_id', programId)
+    .eq('user_id', userId);
+  if (progErr) throw progErr;
+
+  // 3. Каскадная чистка содержимого программы (упражнения → дни → фазы).
+  //    RLS на этих таблицах = created_by = auth.uid() (мы владелец).
+  const { data: days } = await supabase
+    .from('program_days')
+    .select('id')
+    .eq('program_id', programId);
+  if (days && days.length > 0) {
+    const dayIds = days.map((d) => d.id);
+    await supabase.from('program_exercises').delete().in('program_day_id', [...dayIds] as any);
+    await supabase.from('program_days').delete().in('program_id', [programId] as any);
+  }
+  await supabase.from('program_phases').delete().eq('program_id', programId);
+
+  // 4. Удаляем саму программу (RLS: created_by = auth.uid()).
+  //    К этому моменту шагами 1–2 убраны ВСЕ ссылки на program_id у владельца,
+  //    а у других пользователей их нет (импорт создаёт копию с новым id) —
+  //    поэтому DELETE не упрётся в FK workouts/user_programs (RESTRICT).
+  const { error } = await supabase.from('programs').delete().eq('id', programId);
+  if (error) throw error;
+}
+
+// ============================================================================
+// ЗАГРУЗКА ПРОГРАММЫ С ФАЗАМИ
+// ============================================================================
+export async function getProgramWithPhases(programId: string): Promise<Program | null> {
+  const { data: program, error } = await supabase
+    .from('programs')
+    .select(
+      `*, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )`
+    )
+    .eq('id', programId)
+    .single();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  if (!program) return null;
+  const phases: ProgramPhase[] = (program.program_phases || [])
+    .sort((a: any, b: any) => a.phase_number - b.phase_number)
+    .map(mapPhase);
+  const flatDays = phases.flatMap((p) =>
+    (p.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1)
+  );
+  return {
+    id: program.id,
+    name: program.name,
+    level: program.level,
+    duration: program.duration,
+    description: program.description,
+    schedule: program.schedule || [],
+    created_by: program.created_by,
+    created_at: program.created_at,
+    phases,
+    days: flatDays,
+  };
+}
+
+export const getProgramWithDays = getProgramWithPhases;
+
+// ============================================================================
+// СТАРТ И ПРОГРЕСС ПРОГРАММЫ
+// ============================================================================
+export async function startProgram(programId: string): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { error: deactivateError } = await supabase
+    .from('user_programs')
+    .update({ is_active: false })
+    .eq('user_id', user.id)
+    .eq('is_active', true);
+  if (deactivateError) console.warn('Ошибка деактивации:', deactivateError);
+  await supabase.from('user_programs').delete().eq('user_id', user.id).eq('program_id', programId);
+  const { error } = await supabase.from('user_programs').insert({
+    user_id: user.id,
+    program_id: programId,
+    current_phase: 1,
+    current_week: 1,
+    current_day: 1,
+    is_active: true,
+  });
+  if (error) throw error;
+}
+
+export async function getActiveUserProgram(): Promise<UserProgram | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from('user_programs')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
+}
+
+export async function updateProgramProgress(
+  userProgramId: string,
+  week: number,
+  day: number
+): Promise<void> {
+  const { error } = await supabase
+    .from('user_programs')
+    .update({ current_week: week, current_day: day })
+    .eq('id', userProgramId);
+  if (error) throw error;
+}
+
+export async function completeProgram(userProgramId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_programs')
+    .update({ is_active: false, completed_at: new Date().toISOString() })
+    .eq('id', userProgramId);
+  if (error) throw error;
+}
+
+export async function advanceProgramProgress(
+  userId: string,
+  programId: string
+): Promise<{ phase: number; week: number; day: number; isCompleted: boolean }> {
+  const { data: current, error: fetchError } = await supabase
+    .from('user_programs')
+    .select('id, current_phase, current_week, current_day')
+    .eq('user_id', userId)
+    .eq('program_id', programId)
+    .eq('is_active', true)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .single();
+  if (fetchError) {
+    if (fetchError.code === 'PGRST116') throw new Error('Активная программа не найдена');
+    throw fetchError;
+  }
+  const { data: phases } = await supabase
+    .from('program_phases')
+    .select('phase_number, weeks_count, program_days ( week_number, day_number )')
+    .eq('program_id', programId)
+    .order('phase_number', { ascending: true });
+  const orderedPhases = (phases || []).sort((a: any, b: any) => a.phase_number - b.phase_number);
+  const curPhase = current.current_phase ?? 1;
+  const curWeek = current.current_week ?? 1;
+  const curDay = current.current_day ?? 1;
+
+  if (orderedPhases.length === 0) {
+    const { count } = await supabase
+      .from('program_days')
+      .select('*', { count: 'exact', head: true })
+      .eq('program_id', programId);
+    const totalDays = count || 5;
+    const { data: prog } = await supabase
+      .from('programs')
+      .select('duration')
+      .eq('id', programId)
+      .single();
+    const actualWeeks = prog?.duration || 8;
+    let newWeek = curWeek;
+    let newDay = curDay + 1;
+    if (newDay > totalDays) {
+      newDay = 1;
+      newWeek += 1;
+      if (newWeek > actualWeeks) {
+        await supabase
+          .from('user_programs')
+          .update({ is_active: false, completed_at: new Date().toISOString() })
+          .eq('id', current.id);
+        return { phase: 1, week: actualWeeks, day: totalDays, isCompleted: true };
+      }
+    }
+    await supabase
+      .from('user_programs')
+      .update({ current_week: newWeek, current_day: newDay })
+      .eq('id', current.id);
+    return { phase: 1, week: newWeek, day: newDay, isCompleted: false };
+  }
+
+  const phase = orderedPhases.find((p: any) => p.phase_number === curPhase) || orderedPhases[0];
+  const daysFor = (week: number): number => {
+    const all = phase.program_days || [];
+    const inWeek = all.filter((d: any) => d.week_number === week);
+    if (inWeek.length > 0) return inWeek.length;
+    return all.filter((d: any) => d.week_number === 1).length || 1;
+  };
+  const totalDaysThisWeek = daysFor(curWeek);
+  let newPhase = curPhase;
+  let newWeek = curWeek;
+  let newDay = curDay + 1;
+  if (newDay > totalDaysThisWeek) {
+    newDay = 1;
+    newWeek = curWeek + 1;
+    if (newWeek > (phase.weeks_count || 1)) {
+      newWeek = 1;
+      newPhase = curPhase + 1;
+      if (!orderedPhases.some((p: any) => p.phase_number === newPhase)) {
+        await supabase
+          .from('user_programs')
+          .update({ is_active: false, completed_at: new Date().toISOString() })
+          .eq('id', current.id);
+        return { phase: curPhase, week: curWeek, day: totalDaysThisWeek, isCompleted: true };
+      }
+    }
+  }
+  const { error: updateError } = await supabase
+    .from('user_programs')
+    .update({ current_phase: newPhase, current_week: newWeek, current_day: newDay })
+    .eq('id', current.id);
+  if (updateError) throw updateError;
+  return { phase: newPhase, week: newWeek, day: newDay, isCompleted: false };
+}
+
+// ============================================================================
+// АКТИВАЦИЯ ПРОГРАММЫ
+// ============================================================================
+/**
+ * Активирует программу. Одновременно может быть только одна активная.
+ * @param reset true — «начать заново» завершённую программу: прогресс в 1/1/1,
+ *   completed_at = null, новый started_at, тренировки пересоздаются через RPC
+ *   (старые, включая завершённые, удаляются — консистентно с «Перезапустить»
+ *   в редакторе). false — прогресс сохраняется, тренировки создаются только
+ *   если их ещё нет.
+ */
+export async function activateProgram(
+  programId: string,
+  userId: string,
+  reset: boolean = false
+): Promise<void> {
+  // 1. Деактивируем все программы пользователя.
+  const { error: deactivateError } = await supabase
+    .from('user_programs')
+    .update({ is_active: false })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+  if (deactivateError) throw deactivateError;
+
+  // 2. Есть ли уже запись user_programs для этой программы?
+  const { data: existing } = await supabase
+    .from('user_programs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('program_id', programId)
+    .maybeSingle();
+
+  if (existing) {
+    const update: Record<string, unknown> = { is_active: true };
+    if (reset) {
+      update.current_phase = 1;
+      update.current_week = 1;
+      update.current_day = 1;
+      update.completed_at = null;
+      update.started_at = new Date().toISOString();
+    }
+    const { error } = await supabase.from('user_programs').update(update).eq('id', existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('user_programs').insert({
+      user_id: userId,
+      program_id: programId,
+      current_phase: 1,
+      current_week: 1,
+      current_day: 1,
+      is_active: true,
+    });
+    if (error) throw error;
+  }
+
+  // 3. Тренировки: при reset — пересоздаём (RPC удалит старые + создаст свежие);
+  //    иначе — создаём только если их нет.
+  if (reset) {
+    const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
+      p_program_id: programId,
+      p_user_id: userId,
+    });
+    if (rpcError) throw rpcError;
+  } else {
+    const { count } = await supabase
+      .from('workouts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('program_id', programId);
+    if (!count || count === 0) {
+      const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
+        p_program_id: programId,
+        p_user_id: userId,
+      });
+      if (rpcError) throw rpcError;
+    }
+  }
+}
+
+/** Деактивирует все программы пользователя (0 активных). */
+export async function deactivateAllPrograms(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_programs')
+    .update({ is_active: false })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+  if (error) throw error;
+}
+
+/** ID активной программы (или null). Лёгкий запрос. */
+export async function getActiveProgramId(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('user_programs')
+    .select('program_id')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data?.program_id ?? null;
+}
+
+/**
+ * Карта статусов ВСЕХ программ пользователя одним запросом: is_active + completed_at.
+ * Используется списком программ для бейджа «Текущая», сортировки и диалога
+ * «программа завершена — начать заново?».
+ */
+export async function getUserProgramsStatus(userId: string): Promise<UserProgramStatus[]> {
+  const { data, error } = await supabase
+    .from('user_programs')
+    .select('program_id, is_active, completed_at')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return (data || []).map((row: any) => ({
+    program_id: row.program_id,
+    is_active: !!row.is_active,
+    completed_at: row.completed_at ?? null,
+  }));
+}
+
+// ============================================================================
+// СИНХРОНИЗАЦИЯ ПРАВОК ПРОГРАММЫ С ТРЕНИРОВКАМИ (RPC)
+// ============================================================================
+/**
+ * Атомарно синхронизирует будущие тренировки с текущим состоянием программы.
+ * Будущая тренировка = started_at IS NULL AND finished_at IS NULL.
+ * Тренировки в процессе и завершённые НЕ трогаются.
+ */
+export async function syncProgramChanges(programId: string): Promise<SyncProgramChangesResult> {
+  const { data, error } = await supabase.rpc('sync_program_changes_to_workouts', {
+    p_program_id: programId,
+  });
+  if (error) {
+    console.error('[syncProgramChanges] RPC error:', error);
+    throw error;
+  }
+  return data as SyncProgramChangesResult;
+}
+
+// ============================================================================
+// ИНФО О ПРОГРАММЕ ДЛЯ ТРЕНИРОВКИ (шапка workout/[id])
+// ============================================================================
+export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutProgramInfo | null> {
+  const { data: workout, error } = await supabase
+    .from('workouts')
+    .select('program_id, phase_number, programs ( name )')
+    .eq('id', workoutId)
+    .maybeSingle();
+  if (error || !workout?.program_id) return null;
+  const program = Array.isArray(workout.programs) ? workout.programs[0] : workout.programs;
+  let phaseName: string | undefined;
+  let phaseType: string | undefined;
+  if (workout.phase_number != null) {
+    const { data: phase } = await supabase
+      .from('program_phases')
+      .select('name, phase_type')
+      .eq('program_id', workout.program_id)
+      .eq('phase_number', workout.phase_number)
+      .maybeSingle();
+    phaseName = phase?.name;
+    phaseType = phase?.phase_type;
+  }
+  return {
+    programName: program?.name || 'Программа',
+    phaseName,
+    phaseType,
+  };
+}
+
+// ============================================================================
+// АКТИВНАЯ ПРОГРАММА (для дашборда)
+// ============================================================================
+export async function getActiveProgram(userId: string) {
+  const { data, error } = await supabase
+    .from('user_programs')
+    .select(
+      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) ) )`
+    )
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .single();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data;
+}

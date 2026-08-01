@@ -1,17 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Home, Trophy, Dumbbell, BookOpen, Clock, User } from 'lucide-react-native';
+import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
-
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
-  
+  // ✅ Резерв под системную навигацию: кнопки Android больше не перекрывают подписи.
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: 'transparent', paddingBottom: insets.bottom + SPACING.sm }]}>
       <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -25,7 +27,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               target: route.key,
               canPreventDefault: true,
             });
-
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
@@ -37,6 +38,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               target: route.key,
             });
           };
+
+          const iconColor = isFocused ? colors.primary : colors.textSecondary;
 
           return (
             <TouchableOpacity
@@ -51,11 +54,19 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             >
               <View style={styles.iconContainer}>
                 {isFocused && <View style={[styles.indicator, { backgroundColor: colors.primary }]} />}
-                <Text style={[styles.icon, { opacity: isFocused ? 1 : 0.6, color: isFocused ? colors.primary : colors.textSecondary }]}>
-                  {getTabIcon(route.name)}
-                </Text>
+                <View style={{ opacity: isFocused ? 1 : 0.6 }}>
+                  {getTabIcon(route.name, iconColor)}
+                </View>
               </View>
-              <Text style={[styles.label, { color: isFocused ? colors.primary : colors.textSecondary }]}>
+              {/* ✅ Подпись не переносится: flex:1 + numberOfLines + центрирование.
+                  Размер масштабируется, чтобы на узких экранах влезало в долю вкладки. */}
+              <Text
+                style={[
+                  styles.label,
+                  { color: isFocused ? colors.primary : colors.textSecondary },
+                ]}
+                numberOfLines={1}
+              >
                 {typeof label === 'string' ? label : route.name}
               </Text>
             </TouchableOpacity>
@@ -66,20 +77,24 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   );
 }
 
-function getTabIcon(routeName: string): string {
+function getTabIcon(routeName: string, color: string) {
+  const size = scale(22);
+  const strokeWidth = 1.5;
   switch (routeName) {
     case 'index':
-      return '🏠';
+      return <Home size={size} color={color} strokeWidth={strokeWidth} />;
+    case 'programs':
+      return <Trophy size={size} color={color} strokeWidth={strokeWidth} />;
     case 'workouts':
-      return '💪';
+      return <Dumbbell size={size} color={color} strokeWidth={strokeWidth} />;
     case 'exercises':
-      return '📚';
+      return <BookOpen size={size} color={color} strokeWidth={strokeWidth} />;
     case 'history':
-      return '📊';
+      return <Clock size={size} color={color} strokeWidth={strokeWidth} />;
     case 'profile':
-      return '👤';
+      return <User size={size} color={color} strokeWidth={strokeWidth} />;
     default:
-      return '';
+      return <Home size={size} color={color} strokeWidth={strokeWidth} />;
   }
 }
 
@@ -87,7 +102,6 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'transparent',
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.lg,
   },
   tabBar: {
     flexDirection: 'row',
@@ -104,12 +118,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.sm,
+    paddingHorizontal: 2,
     position: 'relative',
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
+    height: 24,
   },
   indicator: {
     position: 'absolute',
@@ -118,11 +134,12 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
   },
-  icon: {
-    fontSize: 22,
-  },
   label: {
-    fontSize: 10,
+    // ✅ flex:1 + центрирование дают тексту всю ширину доли вкладки;
+    // numberOfLines={1} (в JSX) режет перенос. Размер — масштабируемый.
+    flex: 1,
+    textAlign: 'center',
+    fontSize: fontScale(10),
     fontWeight: '500',
   },
 });

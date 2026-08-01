@@ -1,189 +1,608 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Switch } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  Platform,
+  KeyboardAvoidingView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/lib/supabase';
-import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { commonStyles } from '../../src/styles/common';
+import { typography } from '../../src/styles/typography';
+import { useStore } from '../../src/store/useStore';
+import { useProfile } from '../../src/hooks/useProfile';
+import { signOut } from '../../src/services/authService';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppInput } from '../../src/components/ui/AppInput';
+import { MacroPieChart } from '../../src/components/profile/MacroPieChart';
+import { SectionHeader } from '../../src/components/SectionHeader';
+import { MACRO_COLORS } from '../../src/constants/semanticColors';
 import * as Haptics from 'expo-haptics';
+import {
+  User,
+  Settings,
+  Target,
+  Activity,
+  LogOut,
+  ChevronRight,
+  Trophy,
+  Dumbbell,
+  Calendar,
+  Flame,
+  Beef,
+  Droplet,
+  Wheat,
+  Plus,
+  X,
+  Zap,
+  Award,
+  Ruler,
+} from 'lucide-react-native';
+
+// Фиксированная палитра рангов (золото/серебро/бронза) — семантика медалей,
+// не темовой цвет; вынесена в именованную константу вместо inline-hex.
+const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
+  const { userId } = useStore();
   const router = useRouter();
-  const { setAuth, userId } = useStore();
-  const { colors, themeMode, setThemeMode, isDark } = useTheme();
+  const {
+    userData,
+    stats,
+    targets,
+    todayNutrition,
+    burnedCalories,
+    personalRecords,
+    loading,
+    saveNutrition,
+  } = useProfile(userId);
 
-  const handleLogout = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      'Выйти из аккаунта',
-      'Вы уверены, что хотите выйти?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Выйти',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await supabase.auth.signOut();
-              setAuth(null);
-              router.replace('/(auth)/login');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            }
-          },
+  const [showNutritionSheet, setShowNutritionSheet] = useState(false);
+  const [inputCalories, setInputCalories] = useState('');
+  const [inputProteins, setInputProteins] = useState('');
+  const [inputFats, setInputFats] = useState('');
+  const [inputCarbs, setInputCarbs] = useState('');
+  const [inputWater, setInputWater] = useState('');
+
+  const handleLogout = () => {
+    Alert.alert('Выход из аккаунта', 'Вы уверены, что хотите выйти?', [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Выйти',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            // ✅ Через единый слой authService (правило доки), не supabase.auth напрямую
+            await signOut();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } catch (error) {
+            console.error('Ошибка выхода:', error);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const toggleTheme = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setThemeMode(isDark ? 'light' : 'dark');
+  const handleSaveNutrition = async () => {
+    await saveNutrition({
+      calories: inputCalories,
+      proteins: inputProteins,
+      fats: inputFats,
+      carbs: inputCarbs,
+      water_ml: inputWater,
+    });
+    setShowNutritionSheet(false);
+    setInputCalories('');
+    setInputProteins('');
+    setInputFats('');
+    setInputCarbs('');
+    setInputWater('');
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-        <Text style={styles.avatarText}>👤</Text>
-      </View>
-      
-      <Text style={[styles.title, { color: colors.textPrimary }]}>Профиль</Text>
-      {userId && (
-        <Text style={[styles.userId, { color: colors.textTertiary }]}>ID: {userId.slice(0, 8)}...</Text>
-      )}
-      
-      {/* Переключатель темы */}
-      <View style={[styles.section, { backgroundColor: colors.surface }]}>
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={[styles.settingIcon, { fontSize: 24 }]}>🌙</Text>
-            <View style={styles.settingText}>
-              <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Темная тема</Text>
-              <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>
-                {isDark ? 'Включена' : 'Выключена'}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={isDark}
-            onValueChange={toggleTheme}
-            trackColor={{ false: colors.border, true: colors.primaryLight }}
-            thumbColor={isDark ? colors.primary : '#f4f3f4'}
+  const renderProgressBar = (
+    icon: React.ReactNode,
+    label: string,
+    current: number,
+    target: number,
+    unit: string,
+    color: string,
+  ) => {
+    const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+    const isOver = current > target;
+    return (
+      <View style={{ marginBottom: SPACING.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
+          {icon}
+          <Text
+            style={[
+              typography.labelBold,
+              { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 },
+            ]}
+          >
+            {label}
+          </Text>
+          <Text style={[typography.caption, { color: isOver ? colors.error : colors.textSecondary }]}>
+            {current}/{target} {unit}
+          </Text>
+        </View>
+        <View
+          style={{
+            height: 8,
+            backgroundColor: colors.surfaceSecondary,
+            borderRadius: 4,
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            style={{
+              height: '100%',
+              width: `${percentage}%`,
+              backgroundColor: isOver ? colors.error : color,
+              borderRadius: 4,
+            }}
           />
         </View>
       </View>
+    );
+  };
 
-      <View style={[styles.section, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <Text style={styles.menuIcon}>⚙️</Text>
-          <Text style={[styles.menuText, { color: colors.textPrimary }]}>Настройки</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <Text style={styles.menuIcon}>🎯</Text>
-          <Text style={[styles.menuText, { color: colors.textPrimary }]}>Мои цели</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-        >
-          <Text style={styles.menuIcon}>🚨</Text>
-          <Text style={[styles.menuText, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
-        </TouchableOpacity>
-      </View>
+  if (loading || !userData) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={commonStyles.center}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-      <TouchableOpacity 
-        style={[styles.logoutButton, { backgroundColor: colors.error }]} 
-        onPress={handleLogout}
+  const displayName = userData.fullName || userData.username || 'Пользователь';
+  const displayEmail = userData.email || '';
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  return (
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: SPACING.xl }}>
+        {/* Шапка профиля */}
+        <View style={{ position: 'relative' }}>
+          <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: colors.primaryLight,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: SPACING.md,
+              }}
+            >
+              <Text style={[typography.h2, { color: colors.primary }]}>{initials}</Text>
+            </View>
+            <Text style={[typography.h3, { color: colors.textPrimary, textAlign: 'center' }]}>
+              {displayName}
+            </Text>
+            {displayEmail && (
+              <Text
+                style={[
+                  typography.body,
+                  { color: colors.textSecondary, textAlign: 'center', marginTop: 4 },
+                ]}
+              >
+                {displayEmail}
+              </Text>
+            )}
+          </AppCard>
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/profile/settings');
+            }}
+            style={{
+              position: 'absolute',
+              top: SPACING.lg,
+              right: SPACING.lg,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: colors.surface,
+              justifyContent: 'center',
+              alignItems: 'center',
+              elevation: 4,
+            }}
+          >
+            <Settings size={22} color={colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Статистика */}
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginBottom: SPACING.xl,
+            paddingHorizontal: SPACING.lg,
+          }}
+        >
+          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
+            <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
+            <Text style={[typography.h3, { color: colors.primary, marginTop: SPACING.xs }]}>
+              {stats.totalWorkouts}
+            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Тренировки</Text>
+          </AppCard>
+          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
+            <Calendar size={20} color={colors.success} strokeWidth={1.5} />
+            <Text style={[typography.h3, { color: colors.success, marginTop: SPACING.xs }]}>
+              {stats.totalPrograms}
+            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Программы</Text>
+          </AppCard>
+          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
+            <Trophy size={20} color={colors.warning} strokeWidth={1.5} />
+            <Text style={[typography.h3, { color: colors.warning, marginTop: SPACING.xs }]}>
+              {(stats.totalVolume / 1000).toFixed(1)}
+            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Объем (т)</Text>
+          </AppCard>
+        </View>
+
+        {/* Сожжённые калории */}
+        {burnedCalories > 0 && (
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+            <AppCard
+              variant="compact"
+              style={{
+                borderColor: MACRO_COLORS.burned,
+                borderWidth: 1,
+                backgroundColor: MACRO_COLORS.burned + '10',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+                <Zap size={20} color={MACRO_COLORS.burned} />
+                <Text
+                  style={[
+                    typography.labelBold,
+                    { color: colors.textPrimary, marginLeft: SPACING.sm },
+                  ]}
+                >
+                  Сожжено на тренировке
+                </Text>
+              </View>
+              <Text style={[typography.h2, { color: MACRO_COLORS.burned, marginBottom: SPACING.xs }]}>
+                {burnedCalories}{' '}
+                <Text style={[typography.body, { color: colors.textSecondary }]}>ккал</Text>
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Рассчитано автоматически по длительности и весу
+              </Text>
+            </AppCard>
+          </View>
+        )}
+
+        {/* Трекер КБЖУ */}
+        {targets.calories > 0 && (
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: SPACING.md,
+              }}
+            >
+              <Text style={[typography.h4, { color: colors.textPrimary }]}>Питание сегодня</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowNutritionSheet(true);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                style={{ padding: SPACING.sm }}
+              >
+                <Plus size={20} color={colors.primary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            <AppCard variant="compact">
+              {(todayNutrition.proteins > 0 ||
+                todayNutrition.fats > 0 ||
+                todayNutrition.carbs > 0) && (
+                <MacroPieChart
+                  proteins={todayNutrition.proteins}
+                  fats={todayNutrition.fats}
+                  carbs={todayNutrition.carbs}
+                />
+              )}
+              {renderProgressBar(
+                <Flame size={18} color={MACRO_COLORS.calories} />,
+                'Калории',
+                todayNutrition.calories,
+                targets.calories,
+                'ккал',
+                MACRO_COLORS.calories,
+              )}
+              {renderProgressBar(
+                <Beef size={18} color={MACRO_COLORS.proteins} />,
+                'Белки',
+                todayNutrition.proteins,
+                targets.proteins,
+                'г',
+                MACRO_COLORS.proteins,
+              )}
+              {renderProgressBar(
+                <Droplet size={18} color={MACRO_COLORS.fats} />,
+                'Жиры',
+                todayNutrition.fats,
+                targets.fats,
+                'г',
+                MACRO_COLORS.fats,
+              )}
+              {renderProgressBar(
+                <Wheat size={18} color={MACRO_COLORS.carbs} />,
+                'Углеводы',
+                todayNutrition.carbs,
+                targets.carbs,
+                'г',
+                MACRO_COLORS.carbs,
+              )}
+              {renderProgressBar(
+                <Droplet size={18} color={MACRO_COLORS.water} />,
+                'Вода',
+                todayNutrition.water_ml,
+                2500,
+                'мл',
+                MACRO_COLORS.water,
+              )}
+            </AppCard>
+          </View>
+        )}
+
+        {/* Личные рекорды */}
+        {personalRecords.length > 0 && (
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+            <SectionHeader
+              title="Личные рекорды"
+              icon={<Award size={16} color={colors.warning} strokeWidth={2} />}
+              color={colors.warning}
+              style={{ paddingHorizontal: 0, paddingTop: 0 }}
+            />
+            <AppCard variant="compact">
+              {personalRecords.map((record, index) => (
+                <View
+                  key={index}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: SPACING.sm,
+                    borderBottomWidth: index < personalRecords.length - 1 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor:
+                        index < 3 ? RANK_COLORS[index] : colors.surfaceSecondary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: SPACING.md,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        typography.caption,
+                        {
+                          color: index < 3 ? colors.textInverse : colors.textSecondary,
+                          fontWeight: '700',
+                        },
+                      ]}
+                    >
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[typography.labelBold, { color: colors.textPrimary }]}
+                      numberOfLines={1}
+                    >
+                      {record.name}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[typography.h5, { color: colors.primary }]}>{record.maxWeight} кг</Text>
+                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                      × {record.reps}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </AppCard>
+          </View>
+        )}
+
+        {/* Быстрые действия */}
+        <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+          <SectionHeader title="Быстрые действия" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.md,
+              padding: SPACING.md,
+              marginBottom: SPACING.sm,
+              borderColor: colors.border,
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/profile/metrics');
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Ruler size={20} color={colors.primary} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.h5, { color: colors.textPrimary }]}>Замеры тела</Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Вес, объёмы, прогресс
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.md,
+              padding: SPACING.md,
+              marginBottom: SPACING.sm,
+              borderColor: colors.border,
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/profile/goals');
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Target size={20} color={colors.success} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <Text style={[typography.h5, { color: colors.textPrimary }]}>Мои цели</Text>
+            </View>
+            <ChevronRight size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.md,
+              padding: SPACING.md,
+              borderColor: colors.border,
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/profile/injuries');
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Activity size={20} color={colors.error} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <Text style={[typography.h5, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
+            </View>
+            <ChevronRight size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Кнопка выхода */}
+        <View style={{ paddingHorizontal: SPACING.lg }}>
+          <AppButton
+            title="Выйти из аккаунта"
+            variant="danger"
+            size="large"
+            icon={<LogOut size={20} color={colors.textInverse} />}
+            onPress={handleLogout}
+          />
+        </View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {/* Модалка питания — обёрнута в KeyboardAvoidingView, чтобы поля не уходили под клавиатуру */}
+      <Modal
+        visible={showNutritionSheet}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNutritionSheet(false)}
       >
-        <Text style={[styles.logoutText, { color: colors.textInverse }]}>Выйти из аккаунта</Text>
-      </TouchableOpacity>
-    </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+            <View
+              style={{
+                backgroundColor: colors.background,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                maxHeight: '70%',
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: SPACING.xl,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                }}
+              >
+                <Text style={[typography.h3, { color: colors.textPrimary }]}>Добавить приём пищи</Text>
+                <TouchableOpacity onPress={() => setShowNutritionSheet(false)}>
+                  <X size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
+                <AppInput
+                  label="Калории (ккал)"
+                  placeholder="0"
+                  value={inputCalories}
+                  onChangeText={setInputCalories}
+                  keyboardType="numeric"
+                />
+                <AppInput
+                  label="Белки (г)"
+                  placeholder="0"
+                  value={inputProteins}
+                  onChangeText={setInputProteins}
+                  keyboardType="numeric"
+                />
+                <AppInput
+                  label="Жиры (г)"
+                  placeholder="0"
+                  value={inputFats}
+                  onChangeText={setInputFats}
+                  keyboardType="numeric"
+                />
+                <AppInput
+                  label="Углеводы (г)"
+                  placeholder="0"
+                  value={inputCarbs}
+                  onChangeText={setInputCarbs}
+                  keyboardType="numeric"
+                />
+                <AppInput
+                  label="Вода (мл)"
+                  placeholder="0"
+                  value={inputWater}
+                  onChangeText={setInputWater}
+                  keyboardType="numeric"
+                />
+                <AppButton
+                  title="Сохранить"
+                  variant="primary"
+                  size="large"
+                  onPress={handleSaveNutrition}
+                  style={{ marginTop: SPACING.md }}
+                />
+              </ScrollView>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: SPACING.xl,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: SPACING.md,
-  },
-  avatarText: { fontSize: 48 },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    textAlign: 'center', 
-    marginBottom: SPACING.xs,
-  },
-  userId: { 
-    fontSize: 12, 
-    textAlign: 'center', 
-    marginBottom: SPACING.xxl,
-  },
-  section: {
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
-    marginBottom: SPACING.xl,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.lg,
-  },
-  settingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  settingIcon: {
-    marginRight: SPACING.md,
-  },
-  settingText: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  settingSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  menuIcon: { 
-    fontSize: 24, 
-    marginRight: SPACING.md,
-  },
-  menuText: { 
-    fontSize: 16,
-  },
-  logoutButton: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

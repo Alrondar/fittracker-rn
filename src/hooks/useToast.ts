@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface ToastState {
   message: string;
@@ -12,8 +12,15 @@ export function useToast() {
     type: 'info',
     visible: false,
   });
+  
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    // Сбрасываем предыдущий таймер, если toast ещё виден
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+    }
+    
     setToast({ message, type, visible: true });
   }, []);
 

@@ -1,233 +1,331 @@
-import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert,
-  RefreshControl,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { supabase } from '../../src/lib/supabase';
-import { Workout } from '../../src/types';
+import { useCallback } from 'react';
+import { View, Text, SectionList, RefreshControl, TouchableOpacity } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import { ClipboardList, Dumbbell, Check, Clock, ChevronRight } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
+import { useTheme } from '../../src/hooks/useTheme';
+import { useWorkouts } from '../../src/hooks/useWorkouts';
+import type { ActiveProgram, WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
+import { SectionHeader } from '../../src/components/SectionHeader';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppBadge } from '../../src/components/ui/AppBadge';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import { useTheme } from '../../src/hooks/useTheme';
-import * as Haptics from 'expo-haptics';
+import { commonStyles } from '../../src/styles/common';
+import { typography } from '../../src/styles/typography';
+import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
+
+type WorkoutStatus = 'completed' | 'next' | 'in_progress' | 'upcoming';
+
+function getWorkoutStatus(w: any, activeProgram: ActiveProgram | null): WorkoutStatus {
+  if (w.finished_at) return 'completed';
+  if (
+    activeProgram &&
+    w.phase_number === activeProgram.currentPhase &&
+    w.week_number === activeProgram.currentWeek &&
+    w.day_index === activeProgram.currentDay
+  ) {
+    return 'next';
+  }
+  if (w.started_at) return 'in_progress';
+  return 'upcoming';
+}
+
+function formatDuration(seconds: number): string {
+  return `${Math.floor(seconds / 60)} мин`;
+}
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { userId } = useStore();
   const router = useRouter();
-  const { setWorkouts: setStoreWorkouts } = useStore();
+  const { data, isPending, isFetching, refetch } = useWorkouts(userId);
+  const activeProgram = data?.activeProgram ?? null;
+  const sections = data?.sections ?? [];
+  const progress = data?.progress ?? { completed: 0, total: 0 };
+  const loading = isPending;
+  const refreshing = isFetching && !isPending;
 
-  useEffect(() => {
-    loadWorkouts();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
 
-  const loadWorkouts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select()
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-
-      const list = data || [];
-      setWorkouts(list);
-      setStoreWorkouts(list);
-    } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRefreshing(true);
-    loadWorkouts();
-  };
+    refetch();
+  }, [refetch]);
 
-  const deleteWorkout = async (id: string, name: string) => {
-    Alert.alert(
-      'Удалить тренировку?',
-      `"${name}" будет удалена навсегда`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            try {
-              await supabase.from('workout_exercises').delete().eq('workout_id', id);
-              await supabase.from('workouts').delete().eq('id', id);
-              loadWorkouts();
-            } catch (e: any) {
-              Alert.alert('Ошибка', e.message);
-            }
-          },
-        },
-      ]
+  const navigateToWorkout = useCallback(
+    (id: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push(`/workout/${id}`);
+    },
+    [router],
+  );
+
+  // ===== Шапка: прогресс программы + «Следующая» =====
+  const renderHeader = useCallback(() => {
+    if (!activeProgram) return null;
+    const currentPhaseObj = activeProgram.phases.find(
+      (p: any) => p.phase_number === activeProgram.currentPhase,
     );
-  };
+    const phaseColor = currentPhaseObj
+      ? getPhaseColor(currentPhaseObj.phase_type, colors)
+      : colors.primary;
+    const phaseMeta = currentPhaseObj ? getPhaseMeta(currentPhaseObj.phase_type) : null;
+    const PhaseIcon = phaseMeta?.icon;
+    const progressPct = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-  };
+    return (
+      <View style={{ padding: SPACING.lg, paddingBottom: 0 }}>
+        <AppCard variant="default">
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+            {activeProgram.name}
+          </Text>
+
+          {/* ✅ НОВОЕ: «Следующая: Фаза N, Неделя X» (только при активной программе) */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: SPACING.xs,
+              marginTop: SPACING.xs,
+            }}
+          >
+            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+              Следующая:
+            </Text>
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.primary, fontWeight: '700' },
+              ]}
+            >
+              Фаза {activeProgram.currentPhase}, Неделя {activeProgram.currentWeek}
+            </Text>
+            <ChevronRight size={12} color={colors.primary} strokeWidth={2.5} />
+          </View>
+
+          {currentPhaseObj && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: phaseColor + '18',
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 2,
+                  borderRadius: BORDER_RADIUS.sm,
+                }}
+              >
+                {PhaseIcon && <PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
+                <Text style={[typography.captionSmall, { color: phaseColor, fontWeight: '700' }]}>
+                  {currentPhaseObj.name}
+                </Text>
+              </View>
+              <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                Фаза {activeProgram.currentPhase}/{activeProgram.phases.length} · Неделя{' '}
+                {activeProgram.currentWeek}
+              </Text>
+            </View>
+          )}
+
+          <View style={{ marginTop: SPACING.md }}>
+            <View
+              style={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: colors.surfaceSecondary,
+                overflow: 'hidden',
+              }}
+            >
+              <View
+                style={{
+                  height: '100%',
+                  width: `${progressPct}%`,
+                  backgroundColor: phaseColor,
+                  borderRadius: 4,
+                }}
+              />
+            </View>
+            <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+              Выполнено {progress.completed} из {progress.total} тренировок
+            </Text>
+          </View>
+        </AppCard>
+      </View>
+    );
+  }, [activeProgram, progress, colors]);
+
+  // ===== Заголовок секции (фаза + неделя) =====
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: WorkoutSection }) => {
+      const phaseMeta = getPhaseMeta(section.phaseType);
+      const phaseColor = getPhaseColor(section.phaseType, colors);
+      const PhaseIcon = phaseMeta.icon;
+      return (
+        <SectionHeader
+          title={section.phaseName}
+          subtitle={`Фаза ${section.phaseNumber} · Неделя ${section.weekNumber}`}
+          icon={<PhaseIcon size={16} color={phaseColor} strokeWidth={2} />}
+          color={phaseColor}
+          count={section.data.length}
+        />
+      );
+    },
+    [colors],
+  );
+
+  // ===== Карточка тренировки (со статусом) =====
+  const renderWorkoutItem = useCallback(
+    ({ item, section }: { item: any; section: WorkoutSection }) => {
+      const status = getWorkoutStatus(item, activeProgram);
+      const phaseColor = getPhaseColor(section.phaseType, colors);
+      const phaseMeta = getPhaseMeta(section.phaseType);
+      const PhaseIcon = phaseMeta.icon;
+      const borderColor =
+        status === 'next'
+          ? colors.primary
+          : status === 'in_progress'
+            ? colors.warning
+            : status === 'completed'
+              ? colors.success + '60'
+              : colors.border;
+      return (
+        <FadeIn>
+          <TouchableOpacity onPress={() => navigateToWorkout(item.id)} activeOpacity={0.85}>
+            <AppCard
+              variant="compact"
+              style={{
+                borderColor,
+                borderWidth: status === 'next' ? 1.5 : 1,
+                opacity: status === 'upcoming' ? 0.7 : 1,
+                marginHorizontal: SPACING.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', gap: SPACING.xs, flexWrap: 'wrap' }}>
+                <AppBadge
+                  variant="default"
+                  size="small"
+                  icon={<PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
+                  style={{ backgroundColor: phaseColor + '18' }}
+                  textStyle={{ color: phaseColor }}
+                >
+                  {section.phaseName}
+                </AppBadge>
+                <AppBadge
+                  variant="primary"
+                  size="small"
+                  icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}
+                >
+                  Нед {item.week_number}, День {item.day_index}
+                </AppBadge>
+                {status === 'next' && (
+                  <AppBadge variant="primary" size="small">
+                    Следующая
+                  </AppBadge>
+                )}
+                {status === 'completed' && (
+                  <AppBadge
+                    variant="success"
+                    size="small"
+                    icon={<Check size={12} color={colors.success} strokeWidth={2} />}
+                  >
+                    Выполнена
+                  </AppBadge>
+                )}
+                {status === 'in_progress' && (
+                  <AppBadge variant="warning" size="small">
+                    В процессе
+                  </AppBadge>
+                )}
+              </View>
+              <Text
+                style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]}
+                numberOfLines={2}
+              >
+                {item.name}
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: SPACING.md,
+                }}
+              >
+                {status === 'completed' && item.duration_seconds ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
+                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                      {formatDuration(item.duration_seconds)}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    {new Date(item.created_at).toLocaleDateString('ru-RU', {
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                  </Text>
+                )}
+                {(status === 'next' || status === 'in_progress') && (
+                  <Text style={[typography.labelBold, { color: colors.primary }]}>
+                    {status === 'in_progress' ? 'Продолжить →' : 'Начать →'}
+                  </Text>
+                )}
+              </View>
+            </AppCard>
+          </TouchableOpacity>
+        </FadeIn>
+      );
+    },
+    [activeProgram, colors, navigateToWorkout],
+  );
 
   const renderEmpty = () => (
-    <FadeIn delay={200} style={styles.emptyContainer}>
-      <Text style={[styles.emptyIcon, { color: colors.textTertiary }]}>🏋️♂️</Text>
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Пока нет тренировок</Text>
-      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Создай свою первую программу, чтобы начать отслеживать прогресс!</Text>
-      <TouchableOpacity 
-        style={[styles.emptyButton, { backgroundColor: colors.primary }]}
-        onPress={() => router.push('/workout/create')}
-      >
-        <Text style={[styles.emptyButtonText, { color: colors.textInverse }]}>+ Создать тренировку</Text>
-      </TouchableOpacity>
+    <FadeIn delay={200} style={commonStyles.emptyContainer}>
+      <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет тренировок</Text>
+      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
+        {activeProgram
+          ? `Для программы "${activeProgram.name}" ещё нет тренировок.`
+          : 'Активируйте программу, чтобы увидеть список тренировок.'}
+      </Text>
     </FadeIn>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+      <View style={commonStyles.header}>
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>Тренировки</Text>
+        <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
+          {activeProgram?.name || 'Нет активной программы'}
+        </Text>
+      </View>
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
-        <FlatList
-          data={workouts}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <FadeIn delay={index * 50}>
-              <TouchableOpacity
-                style={[styles.card, { backgroundColor: colors.surface }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/workout/${item.id}`);
-                }}
-                onLongPress={() => deleteWorkout(item.id, item.name)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.name}</Text>
-                  <Text style={[styles.cardDate, { color: colors.textTertiary }]}>{formatDate(item.created_at)}</Text>
-                </View>
-                <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
-                  {item.description || 'Нет описания'}
-                </Text>
-              </TouchableOpacity>
-            </FadeIn>
-          )}
-          contentContainerStyle={styles.list}
+          renderItem={renderWorkoutItem}
+          renderSectionHeader={renderSectionHeader}
+          ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmpty}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          stickySectionHeadersEnabled={true}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
         />
       )}
-
-      <FadeIn delay={300}>
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.primary }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/workout/create');
-          }}
-        >
-          <Text style={[styles.fabText, { color: colors.textInverse }]}>+</Text>
-        </TouchableOpacity>
-      </FadeIn>
-    </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  list: { padding: SPACING.lg, paddingBottom: 100 },
-  
-  card: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  cardTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  cardDate: { 
-    fontSize: 12 
-  },
-  cardSubtitle: { 
-    fontSize: 14,
-  },
-
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.xxl,
-    marginTop: 60,
-  },
-  emptyIcon: { fontSize: 64, marginBottom: SPACING.lg },
-  emptyTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    marginBottom: SPACING.sm,
-    textAlign: 'center',
-  },
-  emptyText: { 
-    fontSize: 14, 
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
-    lineHeight: 20,
-  },
-  emptyButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: BORDER_RADIUS.full,
-  },
-  emptyButtonText: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-
-  fab: {
-    position: 'absolute',
-    bottom: SPACING.xl,
-    right: SPACING.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-  },
-  fabText: { 
-    fontWeight: 'bold', 
-    fontSize: 28,
-    marginTop: -2,
-  },
-});

@@ -1,273 +1,219 @@
-import { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ActivityIndicator,
-  RefreshControl,
-  SafeAreaView,
-} from 'react-native';
+import { useMemo } from 'react';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/lib/supabase';
-import { useStore } from '../../src/store/useStore';
-import { AnimatedButton } from '../../src/components/AnimatedButton';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import * as Haptics from 'expo-haptics';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Hand, ListChecks } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
-
-interface DashboardStats {
-  totalWorkouts: number;
-  weekWorkouts: number;
-  monthWorkouts: number;
-  totalVolume: number;
-  weekVolume: number;
-}
+import { useStore } from '../../src/store/useStore';
+import { useDashboard } from '../../src/hooks/useDashboard';
+import { createDashboardStyles } from '../../src/styles/components/dashboard';
+import { typography } from '../../src/styles/typography';
+import { ActivityCalendar } from '../../src/components/ActivityCalendar';
+import { ProgramProgressCard } from '../../src/components/ProgramProgressCard';
+import { WeeklyStatsCard } from '../../src/components/WeeklyStatsCard';
+import { ExerciseProgressCard } from '../../src/components/ExerciseProgressCard';
+import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
+import { LastWorkoutCard } from '../../src/components/LastWorkoutCard';
+import { SPACING, scale, BORDER_RADIUS } from '../../src/constants/theme';
+import { SectionHeader } from '../../src/components/SectionHeader';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppCard } from '../../src/components/ui/AppCard';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
-  const { colors } = useTheme(); // Используем хук темы
-  
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalWorkouts: 0,
-    weekWorkouts: 0,
-    monthWorkouts: 0,
-    totalVolume: 0,
-    weekVolume: 0,
-  });
-  const [lastWorkout, setLastWorkout] = useState<any>(null);
-  const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => createDashboardStyles(colors), [colors]);
+  const { data, isPending, isError, refetch } = useDashboard(userId);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  const loadDashboard = async () => {
-    try {
-      const { data: workouts, error } = await supabase
-        .from('workouts')
-        .select(`
-          id,
-          name,
-          created_at,
-          workout_exercises (
-            id,
-            workout_logs (
-              weight_kg,
-              reps
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('🔴 Ошибка загрузки:', error);
-        return;
-      }
-      
-      const now = new Date();
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-      let weekWorkouts = 0;
-      let monthWorkouts = 0;
-      let totalVolume = 0;
-      let weekVolume = 0;
-
-      workouts?.forEach((workout: any) => {
-        const createdAt = new Date(workout.created_at);
-        
-        if (createdAt >= weekAgo) weekWorkouts++;
-        if (createdAt >= monthAgo) monthWorkouts++;
-
-        let workoutVolume = 0;
-        workout.workout_exercises?.forEach((we: any) => {
-          we.workout_logs?.forEach((log: any) => {
-            workoutVolume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
-          });
-        });
-
-        totalVolume += workoutVolume;
-        if (createdAt >= weekAgo) weekVolume += workoutVolume;
-      });
-
-      setStats({
-        totalWorkouts: workouts?.length || 0,
-        weekWorkouts,
-        monthWorkouts,
-        totalVolume,
-        weekVolume,
-      });
-
-      if (workouts && workouts.length > 0) {
-        setLastWorkout(workouts[0]);
-      }
-      setRecentWorkouts(workouts?.slice(0, 3) || []);
-    } catch (error: any) {
-      console.error(' Исключение:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const handleStartWorkout = () => {
+    if (data?.activeProgram) {
+      router.push(`/workout/create?programId=${data.activeProgram.programId}`);
     }
   };
 
-  const onRefresh = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRefreshing(true);
-    loadDashboard();
+  const handleRepeatWorkout = () => {
+    if (data?.lastWorkout) {
+      router.push(`/workout/create?repeatId=${data.lastWorkout.id}`);
+    }
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return 'Сегодня';
-    if (days === 1) return 'Вчера';
-    if (days < 7) return `${days} дн. назад`;
-    
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-  };
-
-  if (loading) {
+  if (!userId) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={[styles.container, { flex: 1 }]}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            Пользователь не авторизован
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  if (isPending) {
+    return (
+      <SafeAreaView style={[styles.container, { flex: 1 }]}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+            Загрузка...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <SafeAreaView style={[styles.container, { flex: 1 }]}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}>
+          <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
+            Не удалось загрузить данные
+          </Text>
+          <AppButton title="Повторить" variant="primary" onPress={() => refetch()} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const displayName = data.userName || 'Пользователь';
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView 
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {/* Приветствие */}
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.greeting, { color: colors.textPrimary }]}>Привет! 👋</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Готов к тренировке?</Text>
-        </View>
-
-        {/* Статистика */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.weekWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>На неделе</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.monthWorkouts}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>В месяце</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{Math.round(stats.weekVolume)}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>кг за неделю</Text>
-          </View>
-        </View>
-
-        {/* Последняя тренировка */}
-        {lastWorkout ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Последняя тренировка</Text>
-            <TouchableOpacity 
-              style={[styles.lastWorkoutCard, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push(`/workout/${lastWorkout.id}`);
-              }}
-              activeOpacity={0.8}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Text
+              style={[styles.headerTitle, { flexShrink: 1, marginBottom: 0 }]}
+              numberOfLines={1}
             >
-              <View style={styles.lastWorkoutInfo}>
-                <Text style={[styles.lastWorkoutName, { color: colors.textInverse }]}>{lastWorkout.name}</Text>
-                <Text style={[styles.lastWorkoutDate, { color: 'rgba(255,255,255,0.8)' }]}>
-                  {formatDate(lastWorkout.created_at)}
-                </Text>
-              </View>
-              <Text style={[styles.arrow, { color: colors.textInverse }]}>→</Text>
-            </TouchableOpacity>
+              Привет, {displayName}!
+            </Text>
+            <View
+              style={{
+                width: scale(32),
+                height: scale(32),
+                borderRadius: scale(16),
+                backgroundColor: colors.primary + '15',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Hand size={scale(18)} color={colors.primary} strokeWidth={1.8} />
+            </View>
           </View>
-        ) : (
+          <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>
+        </View>
+
+        {/* ✅ Активная программа ИЛИ плейсхолдер «Выберите программу» */}
+        <View style={styles.section}>
+          {data.activeProgram ? (
+            <ProgramProgressCard
+              programName={data.activeProgram.programName}
+              dayName={data.activeProgram.dayName}
+              currentPhase={data.activeProgram.currentPhase}
+              phaseName={data.activeProgram.phaseName}
+              phaseType={data.activeProgram.phaseType}
+              totalPhases={data.activeProgram.totalPhases}
+              currentWeek={data.activeProgram.currentWeek}
+              currentDay={data.activeProgram.currentDay}
+              totalDays={data.activeProgram.totalDays}
+              onStartPress={handleStartWorkout}
+            />
+          ) : (
+            <AppCard variant="default">
+              <View style={{ alignItems: 'center', paddingVertical: SPACING.lg }}>
+                <View
+                  style={{
+                    width: scale(48),
+                    height: scale(48),
+                    borderRadius: scale(24),
+                    backgroundColor: colors.primary + '15',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: SPACING.md,
+                  }}
+                >
+                  <ListChecks size={scale(24)} color={colors.primary} strokeWidth={1.8} />
+                </View>
+                <Text
+                  style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.xs }]}
+                >
+                  Нет активной программы
+                </Text>
+                <Text
+                  style={[
+                    typography.body,
+                    {
+                      color: colors.textSecondary,
+                      textAlign: 'center',
+                      marginBottom: SPACING.lg,
+                    },
+                  ]}
+                >
+                  Выберите программу, чтобы начать тренировки
+                </Text>
+                <AppButton
+                  title="Выбрать программу"
+                  variant="primary"
+                  onPress={() => router.push('/(tabs)/programs')}
+                />
+              </View>
+            </AppCard>
+          )}
+        </View>
+
+        {data.lastWorkout && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Начни первую тренировку</Text>
-            <AnimatedButton
-              title="Создать тренировку"
-              onPress={() => router.push('/(tabs)/workouts')}
-              icon="🏋️"
-              size="large"
-              style={styles.emptyCard}
+            <LastWorkoutCard
+              workoutName={data.lastWorkout.name}
+              date={data.lastWorkout.date}
+              durationSeconds={data.lastWorkout.durationSeconds}
+              exercisesCount={data.lastWorkout.exercisesCount}
+              totalVolume={data.lastWorkout.totalVolume}
+              onRepeatPress={handleRepeatWorkout}
+              colors={colors}
             />
           </View>
         )}
 
-        {/* Быстрый доступ */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Быстрый доступ</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity 
-              style={[styles.quickAction, { backgroundColor: colors.surface }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/(tabs)/workouts');
-              }}
-            >
-              <Text style={styles.quickActionIcon}>💪</Text>
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Тренировки</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.quickAction, { backgroundColor: colors.surface }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/(tabs)/exercises');
-              }}
-            >
-              <Text style={styles.quickActionIcon}></Text>
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>Справочник</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.quickAction, { backgroundColor: colors.surface }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/(tabs)/history');
-              }}
-            >
-              <Text style={styles.quickActionIcon}>📊</Text>
-              <Text style={[styles.quickActionText, { color: colors.textPrimary }]}>История</Text>
-            </TouchableOpacity>
+        {data.personalRecords.length > 0 && (
+          <View style={styles.section}>
+            <PersonalRecordsCard records={data.personalRecords} colors={colors} />
           </View>
+        )}
+
+        <View style={styles.section}>
+          <SectionHeader title="Активность" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+          <ActivityCalendar workoutDates={data.workoutDates} />
         </View>
 
-        {/* Недавние тренировки */}
-        {recentWorkouts.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader title="Эта неделя" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+          <WeeklyStatsCard
+            workoutsCount={data.weeklyStats.workoutsCount}
+            totalVolume={data.weeklyStats.totalVolume}
+            burnedCalories={data.weeklyStats.burnedCalories}
+          />
+        </View>
+
+        {data.exerciseProgress.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Недавние тренировки</Text>
-            {recentWorkouts.map((workout) => (
-              <TouchableOpacity
-                key={workout.id}
-                style={[styles.recentCard, { backgroundColor: colors.surface }]}
-                onPress={() => router.push(`/history/${workout.id}`)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.recentInfo}>
-                  <Text style={[styles.recentName, { color: colors.textPrimary }]}>{workout.name}</Text>
-                  <Text style={[styles.recentDate, { color: colors.textSecondary }]}>
-                    {formatDate(workout.created_at)}
-                  </Text>
-                </View>
-                <Text style={[styles.arrow, { color: colors.primary }]}>→</Text>
-              </TouchableOpacity>
+            <SectionHeader
+              title="Прогресс по упражнениям"
+              style={{ paddingHorizontal: 0, paddingTop: 0 }}
+            />
+            {data.exerciseProgress.map((exercise) => (
+              <ExerciseProgressCard
+                key={exercise.exerciseId}
+                exerciseName={exercise.exerciseName}
+                history={exercise.history}
+                currentMaxWeight={exercise.currentMaxWeight}
+                currentVolume={exercise.currentVolume}
+                trend={exercise.trend}
+                selectedMetric="weight"
+                colors={colors}
+              />
             ))}
           </View>
         )}
@@ -277,120 +223,3 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  
-  header: {
-    padding: SPACING.xl,
-    paddingBottom: SPACING.lg,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: SPACING.xs,
-  },
-
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
-    gap: SPACING.md,
-  },
-  statCard: {
-    flex: 1,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: SPACING.xs,
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-
-  section: {
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.md,
-  },
-
-  lastWorkoutCard: {
-    padding: SPACING.xl,
-    borderRadius: BORDER_RADIUS.xl,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 4,
-  },
-  lastWorkoutInfo: { flex: 1 },
-  lastWorkoutName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.xs,
-  },
-  lastWorkoutDate: {
-    fontSize: 14,
-  },
-  arrow: {
-    fontSize: 24,
-    marginLeft: SPACING.md,
-  },
-
-  emptyCard: {
-    padding: SPACING.xl,
-    borderRadius: BORDER_RADIUS.xl,
-    elevation: 2,
-  },
-
-  quickActions: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-  },
-  quickAction: {
-    flex: 1,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    alignItems: 'center',
-    elevation: 2,
-  },
-  quickActionIcon: {
-    fontSize: 32,
-    marginBottom: SPACING.sm,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  recentCard: {
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 2,
-  },
-  recentInfo: { flex: 1 },
-  recentName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
-  },
-  recentDate: {
-    fontSize: 14,
-  },
-});

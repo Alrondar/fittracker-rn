@@ -31,7 +31,10 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.local
+.env.production
+.env.development
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +42,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Игнорируем всё в папке data
+data/*
+
+# Разрешаем папку exercises и её содержимое
+!data/exercises/
+!data/exercises/**/*

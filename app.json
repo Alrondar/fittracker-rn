@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "fittracker",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -17,12 +17,22 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7c3aed"
       },
-      "package": "com.fittracker.app"
+      "package": "com.fittracker.app",
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "extra": {
       "supabaseUrl": "https://trgiihqqcovidwcqwdkl.supabase.co",
-      "supabaseAnonKey": "sb_publishable_urA0lde-UzaEHI6Et5wB2w_k5L308CK"
+      "supabaseAnonKey": "sb_publishable_urA0lde-UzaEHI6Et5wB2w_k5L308CK",
+      "router": {},
+      "eas": {
+        "projectId": "56a40b35-5721-4c21-b743-ae3fc74186a8"
+      }
     },
-    "plugins": ["expo-router"]
+    "plugins": ["expo-router", "expo-audio"],
+    "owner": "alrondar"
   }
 }

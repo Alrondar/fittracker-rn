@@ -1,849 +1,626 @@
-import { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput,
-  Alert,
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
+  ScrollView,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { supabase, getList, getString } from '../../src/lib/supabase';
+import { useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import {
+  ChevronLeft,
+  TrendingUp,
+  Minus,
+  TrendingDown,
+  Dumbbell,
+  ShieldAlert,
+  X,
+  Play,
+  Square,
+} from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../src/constants/injuries';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useWorkoutSession } from '../../src/hooks/useWorkoutSession';
+import { useInjuryWarnings } from '../../src/hooks/useInjuryWarnings';
+import { useWarmup } from '../../src/hooks/useWarmup';
+import { useUnitPreferences } from '../../src/hooks/useUnitPreferences';
+import { getWorkoutProgramInfo } from '../../src/services/programsService';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
-import * as Haptics from 'expo-haptics';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 48;
-
-interface SetData {
-  weight: string;
-  reps: string;
-}
-
-interface ExerciseData {
-  id: string;
-  workout_exercise_id: string;
-  name: string;
-  primary_muscles: string[];
-  technique: string;
-  equipment: string[];
-  settings: string;
-  alternatives: string[];
-  target_sets: number;
-  rest_seconds: number;
-  sets: SetData[];
-}
-
-interface AlternativeExercise {
-  id: string;
-  name: string;
-  primary_muscles: string[];
-  technique: string;
-  equipment: string[];
-  settings: string;
-}
+import { commonStyles } from '../../src/styles/common';
+import { typography } from '../../src/styles/typography';
+import { SetData } from '../../src/types/workout';
+import { RestTimer } from '../../src/components/workout/RestTimer';
+import {
+  WorkoutTimerProvider,
+  WorkoutTimerPill,
+  WorkoutTimerPanel,
+} from '../../src/components/workout/WorkoutTimer';
+import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
+import { WarmupBlock } from '../../src/components/workout/WarmupBlock';
+import { WorkoutTabs, WorkoutTabKey } from '../../src/components/workout/WorkoutTabs';
+import { UnitToggle } from '../../src/components/workout/UnitToggle';
+import {
+  ExerciseSettingsModal,
+  ExerciseSettingsTarget,
+} from '../../src/components/workout/ExerciseSettingsModal';
+import { createCardStyles } from '../../src/styles/components/card';
+import { createWorkoutStyles } from '../../src/styles/components/workout';
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   const { userId } = useStore();
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { unit, setUnit } = useUnitPreferences();
 
-  const [workoutName, setWorkoutName] = useState('');
-  const [exercises, setExercises] = useState<ExerciseData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  
-  const [restTimer, setRestTimer] = useState<number | null>(null);
-  const [restTimeLeft, setRestTimeLeft] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+  const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
 
-  const [alternativesCache, setAlternativesCache] = useState<Record<string, AlternativeExercise[]>>({});
-  const [replacements, setReplacements] = useState<Record<string, string>>({});
+  const {
+    workoutName,
+    exercises,
+    loading,
+    saving,
+    isWorkoutActive,
+    setIsWorkoutActive,
+    initialTime,
+    restTimer,
+    restTimeLeft,
+    isRestFinished,
+    adjustRestTimer,
+    replacements,
+    handleTimerTick,
+    handleTimerStart,
+    handleTimerStop,
+    loadAlternatives,
+    updateSet,
+    isSetCompleted,
+    updateExerciseSettings,
+    replaceExercise,
+    resetToOriginal,
+    startRestTimer,
+    stopRestTimer,
+    saveWorkout,
+  } = useWorkoutSession(id as string, userId);
+
+  // ✅ НОВОЕ: название программы + фаза для шапки (запрос в сервисе, не в UI)
+  const { data: workoutProgramInfo } = useQuery({
+    queryKey: ['workoutProgramInfo', id],
+    queryFn: () => getWorkoutProgramInfo(id as string),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
+
+  const warmupSource = useMemo(
+    () =>
+      exercises.map((e) => ({
+        id: e.id,
+        primary_muscles: e.primary_muscles,
+        secondary_muscles: e.secondary_muscles,
+        equipment: e.equipment,
+      })),
+    [exercises],
+  );
+
+  const {
+    warmupExercises,
+    excludedByInjury,
+    isLoading: isWarmupLoading,
+    activeTimerId,
+    timeLeft,
+    isAllCompleted: isWarmupCompleted,
+    totalDuration: warmupTotalDuration,
+    generateWarmup,
+    startExerciseTimer,
+    stopTimer: stopWarmupTimer,
+    markAsCompleted: markWarmupCompleted,
+    isCompleted: isWarmupExerciseCompleted,
+    loadWarmupAlternatives,
+    replaceWarmupExercise,
+  } = useWarmup(warmupSource, activeInjuries);
+
+  const [showInjuryBanner, setShowInjuryBanner] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
+  const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
+
+  const exercisesRef = useRef(exercises);
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
 
   useEffect(() => {
-    loadWorkout();
-  }, [id]);
+    if (!isWarmupLoading && warmupExercises.length === 0 && activeTab === 'warmup') {
+      setActiveTab('workout');
+    }
+  }, [isWarmupLoading, warmupExercises.length, activeTab]);
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  const loadWorkout = async () => {
-    try {
-      const { data: workout, error } = await supabase
-        .from('workouts')
-        .select(`
-          name,
-          workout_exercises (
-            id,
-            target_sets,
-            rest_seconds,
-            exercises (
-              id,
-              name,
-              primary_muscles,
-              technique,
-              equipment,
-              settings,
-              alternatives
-            )
-          )
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-
-      setWorkoutName(workout.name);
-
-      const exercisesData: ExerciseData[] = workout.workout_exercises.map((we: any) => {
-        const exercise = we.exercises;
-        const sets: SetData[] = [];
-        for (let i = 0; i < we.target_sets; i++) {
-          sets.push({ weight: '', reps: '' });
-        }
-
-        return {
-          id: exercise.id,
-          workout_exercise_id: we.id,
-          name: exercise.name,
-          primary_muscles: getList(exercise, 'primary_muscles'),
-          technique: getString(exercise, 'technique'),
-          equipment: getList(exercise, 'equipment'),
-          settings: getString(exercise, 'settings'),
-          alternatives: getList(exercise, 'alternatives'),
-          target_sets: we.target_sets,
-          rest_seconds: we.rest_seconds,
-          sets,
-        };
-      });
-
-      setExercises(exercisesData);
-    } catch (error: any) {
-      Alert.alert('Ошибка', error.message);
-    } finally {
-      setLoading(false);
+    if (isWarmupCompleted && warmupExercises.length > 0) {
+      setActiveTab('workout');
     }
-  };
+  }, [isWarmupCompleted, warmupExercises.length]);
 
-  const loadAlternatives = async (exerciseId: string, primaryMuscles: string[]) => {
-    if (alternativesCache[exerciseId]) {
-      return alternativesCache[exerciseId];
-    }
+  const { avoidCount, cautionCount, hasWarnings } = useMemo(() => {
+    const values = Object.values(exerciseWarnings);
+    const avoid = values.filter((w) => w.level === 'avoid').length;
+    const caution = values.filter((w) => w.level === 'caution').length;
+    return { avoidCount: avoid, cautionCount: caution, hasWarnings: avoid > 0 || caution > 0 };
+  }, [exerciseWarnings]);
 
-    try {
-      let query = supabase
-        .from('exercises')
-        .select('*')
-        .neq('id', exerciseId);
-      
-      if (primaryMuscles.length > 0) {
-        query = query.overlaps('primary_muscles', primaryMuscles);
+  const openExerciseSettings = useCallback(
+    (exerciseIndex: number, setsCount: number, restSeconds: number) => {
+      const currentSets: SetData[] = exercisesRef.current[exerciseIndex]?.sets ?? [];
+      setSettingsTarget({ exerciseIndex, setsCount, restSeconds, currentSets });
+    },
+    [],
+  );
+  const closeExerciseSettings = useCallback(() => setSettingsTarget(null), []);
+  const saveExerciseSettings = useCallback(
+    (exerciseIndex: number, setsCount: number, restSeconds: number) => {
+      updateExerciseSettings(exerciseIndex, setsCount, restSeconds);
+      setSettingsTarget(null);
+    },
+    [updateExerciseSettings],
+  );
+
+  const getIntensityInfo = useCallback(
+    (intensity: string) => {
+      switch (intensity) {
+        case 'high':
+          return {
+            label: 'Высокая',
+            color: colors.error,
+            bgColor: colors.error + '20',
+            icon: <TrendingUp size={14} color={colors.error} strokeWidth={2} />,
+          };
+        case 'medium':
+          return {
+            label: 'Средняя',
+            color: colors.warning,
+            bgColor: colors.warning + '20',
+            icon: <Minus size={14} color={colors.warning} strokeWidth={2} />,
+          };
+        case 'low':
+          return {
+            label: 'Низкая',
+            color: colors.success,
+            bgColor: colors.success + '20',
+            icon: <TrendingDown size={14} color={colors.success} strokeWidth={2} />,
+          };
+        default:
+          return {
+            label: intensity,
+            color: colors.textSecondary,
+            bgColor: colors.textSecondary + '20',
+            icon: <Minus size={14} color={colors.textSecondary} strokeWidth={2} />,
+          };
       }
-      
-      const { data, error } = await query.limit(10);
-      
-      if (error) throw error;
+    },
+    [colors],
+  );
 
-      const alternatives: AlternativeExercise[] = (data || []).map((ex: any) => ({
-        id: ex.id,
-        name: ex.name,
-        primary_muscles: getList(ex, 'primary_muscles'),
-        technique: getString(ex, 'technique'),
-        equipment: getList(ex, 'equipment'),
-        settings: getString(ex, 'settings'),
-      }));
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <ExerciseSlider
+        exercise={item}
+        exerciseIndex={index}
+        isReplaced={!!replacements[item.workout_exercise_id]}
+        loadAlternatives={loadAlternatives}
+        updateSet={updateSet}
+        isSetCompleted={isSetCompleted}
+        replaceExercise={replaceExercise}
+        resetToOriginal={resetToOriginal}
+        startRestTimer={startRestTimer}
+        getIntensityInfo={getIntensityInfo}
+        onOpenSettings={openExerciseSettings}
+        colors={colors}
+        cardStyles={cardStyles}
+        unit={unit}
+        warning={exerciseWarnings[item.id] || null}
+      />
+    ),
+    [
+      replacements,
+      loadAlternatives,
+      updateSet,
+      isSetCompleted,
+      replaceExercise,
+      resetToOriginal,
+      startRestTimer,
+      getIntensityInfo,
+      openExerciseSettings,
+      colors,
+      cardStyles,
+      unit,
+      exerciseWarnings,
+    ],
+  );
 
-      setAlternativesCache(prev => ({ ...prev, [exerciseId]: alternatives }));
-      return alternatives;
-    } catch (error: any) {
-      return [];
-    }
-  };
-
-  const updateSet = (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
-    setExercises(prev => {
-      const updated = [...prev];
-      const exercise = { ...updated[exerciseIndex] };
-      const sets = [...exercise.sets];
-      sets[setIndex] = { ...sets[setIndex], [field]: value };
-      exercise.sets = sets;
-      updated[exerciseIndex] = exercise;
-      return updated;
-    });
-  };
-
-  const isSetCompleted = (set: SetData): boolean => {
-    return set.weight !== '' || set.reps !== '';
-  };
-
-  const replaceExercise = async (exerciseIndex: number, alternativeId: string) => {
-    const exercise = exercises[exerciseIndex];
-    
-    const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
-    const alt = alternatives.find(a => a.id === alternativeId);
-    
-    if (!alt) return;
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    setExercises(prev => {
-      const updated = [...prev];
-      updated[exerciseIndex] = {
-        ...updated[exerciseIndex],
-        id: alt.id,
-        name: alt.name,
-        primary_muscles: alt.primary_muscles,
-        technique: alt.technique,
-        equipment: alt.equipment,
-        settings: alt.settings,
-      };
-      return updated;
-    });
-
-    setReplacements(prev => ({
-      ...prev,
-      [exercise.workout_exercise_id]: alternativeId,
-    }));
-
-    Alert.alert('✅ Заменено', `${exercise.name} → ${alt.name}`);
-  };
-
-  const resetToOriginal = (exerciseIndex: number) => {
-    const exercise = exercises[exerciseIndex];
-    const workoutExId = exercise.workout_exercise_id;
-    
-    Alert.alert(
-      'Вернуть оригинальное упражнение?',
-      'Данные подходов сохранятся',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Вернуть',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            loadWorkout();
-            setReplacements(prev => {
-              const updated = { ...prev };
-              delete updated[workoutExId];
-              return updated;
-            });
-          },
-        },
-      ]
-    );
-  };
-
-  const startRestTimer = (restSeconds: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    setRestTimeLeft(restSeconds);
-    setRestTimer(restSeconds);
-
-    timerRef.current = setInterval(() => {
-      setRestTimeLeft(prev => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          setRestTimer(null);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const stopRestTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setRestTimer(null);
-    setRestTimeLeft(0);
-  };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const saveWorkout = async () => {
-    Alert.alert(
-      'Завершить тренировку?',
-      'Все данные будут сохранены',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Завершить',
-          onPress: async () => {
-            setSaving(true);
-            try {
-              let totalLogs = 0;
-
-              for (const exercise of exercises) {
-                const logsToSave = exercise.sets
-                  .filter(set => isSetCompleted(set))
-                  .map((set, index) => ({
-                    workout_exercise_id: exercise.workout_exercise_id,
-                    set_number: index + 1,
-                    weight_kg: parseFloat(set.weight) || 0,
-                    reps: parseInt(set.reps) || 0,
-                  }));
-
-                if (logsToSave.length > 0) {
-                  const { error } = await supabase
-                    .from('workout_logs')
-                    .insert(logsToSave);
-                  
-                  if (error) throw error;
-                  totalLogs += logsToSave.length;
-                }
-              }
-
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert('Успех', `Тренировка завершена! Сохранено подходов: ${totalLogs}`);
-              router.replace('/(tabs)/history');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ]
-    );
-  };
+  const renderEmpty = () => (
+    <View style={commonStyles.emptyContainer}>
+      <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет упражнений</Text>
+      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
+        В этой тренировке пока нет упражнений
+      </Text>
+    </View>
+  );
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Загрузка...</Text>
-      </View>
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View style={commonStyles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+            Загрузка...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
+  const hasWarmup = warmupExercises.length > 0 || isWarmupLoading;
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Шапка */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={[styles.backText, { color: colors.primary }]}>← Назад</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>{workoutName}</Text>
-        <TouchableOpacity 
-          style={[styles.finishButton, { backgroundColor: saving ? colors.textTertiary : colors.success }]} 
-          onPress={saveWorkout}
-          disabled={saving}
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
+      <WorkoutTimerProvider
+        initialSeconds={initialTime}
+        isActive={isWorkoutActive}
+        onTick={handleTimerTick}
+        onStart={handleTimerStart}
+        onStop={handleTimerStop}
+      >
+        {/* Шапка: назад + название программы/фазы + живая пилюля-таймер */}
+        <View
+          style={[
+            commonStyles.navHeader,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}
         >
-          {saving ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.finishButtonText}>Завершить</Text>
-          )}
+          <TouchableOpacity
+            onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            style={commonStyles.backButton}
+          >
+            <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
+
+          {/* ✅ НОВОЕ: название программы + фаза (если тренировка из программы) */}
+          <View style={{ flex: 1 }}>
+            {workoutProgramInfo?.programName ? (
+              <>
+                <Text
+                  style={[typography.captionSmall, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {workoutProgramInfo.programName}
+                  {workoutProgramInfo.phaseName ? ` · ${workoutProgramInfo.phaseName}` : ''}
+                </Text>
+                <Text
+                  style={[typography.h5, { color: colors.textPrimary }]}
+                  numberOfLines={1}
+                >
+                  {workoutName}
+                </Text>
+              </>
+            ) : (
+              <Text
+                style={[typography.h4, { color: colors.textPrimary }]}
+                numberOfLines={1}
+              >
+                {workoutName}
+              </Text>
+            )}
+          </View>
+
+          <WorkoutTimerPill colors={colors} />
+        </View>
+
+        <WorkoutTimerPanel colors={colors} />
+      </WorkoutTimerProvider>
+
+      {hasWarmup && (
+        <WorkoutTabs
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          warmupCount={warmupExercises.length}
+          warmupCompleted={isWarmupCompleted}
+        />
+      )}
+
+      {/* Баннер травм */}
+      {hasWarnings && !showInjuryBanner && activeTab === 'workout' && (
+        <TouchableOpacity
+          onPress={() => {
+            setShowInjuryBanner(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: avoidCount > 0 ? colors.error : colors.warning,
+            paddingHorizontal: SPACING.md,
+            paddingVertical: SPACING.sm,
+            borderRadius: 20,
+            marginHorizontal: SPACING.md,
+            marginTop: SPACING.sm,
+            alignSelf: 'flex-end',
+            elevation: 4,
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+          }}
+        >
+          <ShieldAlert size={18} color={colors.textInverse} strokeWidth={2} />
+          <Text
+            style={{
+              color: colors.textInverse,
+              fontWeight: '700',
+              marginLeft: SPACING.xs,
+              fontSize: 13,
+            }}
+          >
+            {avoidCount > 0 ? `${avoidCount}⛔` : ''}
+            {avoidCount > 0 && cautionCount > 0 ? ' ' : ''}
+            {cautionCount > 0 ? `${cautionCount}⚠️` : ''}
+          </Text>
         </TouchableOpacity>
-      </View>
+      )}
+
+      {/* Раскрывающийся баннер с деталями травм */}
+      {showInjuryBanner && (
+        <View
+          style={{
+            backgroundColor: avoidCount > 0 ? colors.error + '15' : colors.warning + '15',
+            borderColor: avoidCount > 0 ? colors.error : colors.warning,
+            borderWidth: 1,
+            margin: SPACING.md,
+            borderRadius: BORDER_RADIUS.md,
+            padding: SPACING.md,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: SPACING.sm,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <ShieldAlert
+                size={20}
+                color={avoidCount > 0 ? colors.error : colors.warning}
+                style={{ marginRight: SPACING.sm }}
+              />
+              <Text style={[typography.labelBold, { color: colors.textPrimary, flex: 1 }]}>
+                Внимание: активные травмы
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowInjuryBanner(false)}>
+              <X size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          {activeInjuries.map((injury, index) => {
+            const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
+            const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
+            const severityLabel =
+              injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
+            return (
+              <Text
+                key={index}
+                style={[
+                  typography.caption,
+                  { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.xs },
+                ]}
+              >
+                • {bodyPartLabel} ({injuryTypeLabel}) — {severityLabel} тяжесть
+              </Text>
+            );
+          })}
+          {avoidCount > 0 && (
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.error, marginTop: SPACING.sm, fontWeight: '600' },
+              ]}
+            >
+              🚫 {avoidCount} упражнений противопоказаны
+            </Text>
+          )}
+          {cautionCount > 0 && (
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.warning, marginTop: SPACING.xs, fontWeight: '600' },
+              ]}
+            >
+              ⚠️ {cautionCount} упражнений требуют осторожности
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* ТАБ: РАЗМИНКА */}
+      {hasWarmup && activeTab === 'warmup' && (
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <WarmupBlock
+            warmupExercises={warmupExercises}
+            isLoading={isWarmupLoading}
+            excludedByInjury={excludedByInjury}
+            activeTimerId={activeTimerId}
+            timeLeft={timeLeft}
+            isAllCompleted={isWarmupCompleted}
+            totalDuration={warmupTotalDuration}
+            isCompleted={isWarmupExerciseCompleted}
+            onGenerateWarmup={generateWarmup}
+            onStartTimer={startExerciseTimer}
+            onStopTimer={stopWarmupTimer}
+            onMarkCompleted={markWarmupCompleted}
+            onSkip={() => setActiveTab('workout')}
+            loadWarmupAlternatives={loadWarmupAlternatives}
+            onReplaceWarmup={replaceWarmupExercise}
+          />
+        </ScrollView>
+      )}
+
+      {/* ТАБ: ТРЕНИРОВКА */}
+      {(!hasWarmup || activeTab === 'workout') && (
+        <>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              paddingHorizontal: SPACING.lg,
+              paddingVertical: SPACING.xs,
+              gap: SPACING.sm,
+            }}
+          >
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textSecondary, fontWeight: '600' },
+              ]}
+            >
+              Единицы веса
+            </Text>
+            <UnitToggle unit={unit} onChange={setUnit} />
+          </View>
+          <FlatList
+            data={exercises}
+            keyExtractor={(item) => item.workout_exercise_id}
+            renderItem={renderItem}
+            ListEmptyComponent={renderEmpty}
+            contentContainerStyle={{ paddingBottom: 120 }}
+            showsVerticalScrollIndicator={false}
+            windowSize={5}
+            removeClippedSubviews={true}
+          />
+        </>
+      )}
 
       {/* Таймер отдыха */}
       {restTimer !== null && (
-        <View style={[styles.restTimer, { backgroundColor: colors.warningLight, borderBottomColor: colors.warning }]}>
-          <Text style={[styles.restTimerLabel, { color: colors.warning }]}>Отдых</Text>
-          <Text style={[styles.restTimerTime, { color: colors.warning }]}>{formatTime(restTimeLeft)}</Text>
-          <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.warning }]} onPress={stopRestTimer}>
-            <Text style={styles.skipButtonText}>Пропустить</Text>
-          </TouchableOpacity>
-        </View>
+        <RestTimer
+          timeLeft={restTimeLeft}
+          total={restTimer}
+          isFinished={isRestFinished}
+          onStop={stopRestTimer}
+          onAdjust={adjustRestTimer}
+          colors={colors}
+          workoutStyles={workoutStyles}
+        />
       )}
 
-      {/* Список упражнений */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {exercises.map((exercise, exIndex) => (
-          <ExerciseSlider
-            key={exercise.workout_exercise_id}
-            exercise={exercise}
-            exerciseIndex={exIndex}
-            isReplaced={!!replacements[exercise.workout_exercise_id]}
-            alternativesCache={alternativesCache}
-            loadAlternatives={loadAlternatives}
-            updateSet={updateSet}
-            isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
-            resetToOriginal={resetToOriginal}
-            startRestTimer={startRestTimer}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
+      <ExerciseSettingsModal
+        target={settingsTarget}
+        onClose={closeExerciseSettings}
+        onSave={saveExerciseSettings}
+        colors={colors}
+        cardStyles={cardStyles}
+      />
 
-function ExerciseSlider({
-  exercise,
-  exerciseIndex,
-  isReplaced,
-  alternativesCache,
-  loadAlternatives,
-  updateSet,
-  isSetCompleted,
-  replaceExercise,
-  resetToOriginal,
-  startRestTimer,
-}: {
-  exercise: ExerciseData;
-  exerciseIndex: number;
-  isReplaced: boolean;
-  alternativesCache: Record<string, AlternativeExercise[]>;
-  loadAlternatives: (id: string, muscles: string[]) => Promise<AlternativeExercise[]>;
-  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
-  isSetCompleted: (set: SetData) => boolean;
-  replaceExercise: (exIndex: number, altId: string) => void;
-  resetToOriginal: (exIndex: number) => void;
-  startRestTimer: (seconds: number) => void;
-}) {
-  const { colors } = useTheme();
-  const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
-  const [loadingAlts, setLoadingAlts] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      if (exercise.alternatives.length > 0 || isReplaced) {
-        setLoadingAlts(true);
-        const alts = await loadAlternatives(exercise.id, exercise.primary_muscles);
-        setAlternatives(alts);
-        setLoadingAlts(false);
-      }
-    };
-    load();
-  }, [exercise.id]);
-
-  const allCards = [exercise, ...alternatives];
-
-  return (
-    <View style={styles.exerciseSection}>
-      {isReplaced && (
-        <View style={[styles.replacedBadge, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.replacedText, { color: colors.primary }]}> Заменено</Text>
-          <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
-            <Text style={[styles.resetText, { color: colors.primary }]}>Вернуть</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        snapToInterval={CARD_WIDTH + 16}
-        decelerationRate="fast"
-        contentContainerStyle={styles.sliderContainer}
+      {/* Футер с учётом safe area снизу */}
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          padding: SPACING.lg,
+          paddingBottom: insets.bottom + SPACING.lg,
+        }}
       >
-        {allCards.map((card, cardIndex) => (
-          <ExerciseCard
-            key={`${card.id}-${cardIndex}`}
-            exercise={card}
-            isMain={cardIndex === 0}
-            isReplaced={isReplaced}
-            exerciseIndex={exerciseIndex}
-            alternatives={alternatives}
-            updateSet={updateSet}
-            isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
-            startRestTimer={startRestTimer}
-            loadingAlts={loadingAlts}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
-function ExerciseCard({
-  exercise,
-  isMain,
-  isReplaced,
-  exerciseIndex,
-  alternatives,
-  updateSet,
-  isSetCompleted,
-  replaceExercise,
-  startRestTimer,
-  loadingAlts,
-}: {
-  exercise: ExerciseData | AlternativeExercise;
-  isMain: boolean;
-  isReplaced: boolean;
-  exerciseIndex: number;
-  alternatives: AlternativeExercise[];
-  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
-  isSetCompleted: (set: SetData) => boolean;
-  replaceExercise: (exIndex: number, altId: string) => void;
-  startRestTimer: (seconds: number) => void;
-  loadingAlts: boolean;
-}) {
-  const { colors } = useTheme();
-  const [expandedSections, setExpandedSections] = useState({
-    technique: false,
-    equipment: false,
-    settings: false,
-  });
-
-  const toggleSection = (section: 'technique' | 'equipment' | 'settings') => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  const hasSets = 'sets' in exercise;
-  const sets = hasSets ? (exercise as ExerciseData).sets : [];
-  const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
-
-  return (
-    <View style={[styles.card, { width: CARD_WIDTH, backgroundColor: colors.surface }]}>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={2}>{exercise.name}</Text>
-        {'primary_muscles' in exercise && (exercise as ExerciseData).primary_muscles.length > 0 && (
-          <Text style={[styles.musclesText, { color: colors.textSecondary }]}>
-            {(exercise as ExerciseData).primary_muscles.join(', ')}
-          </Text>
+        {!isWorkoutActive ? (
+          <TouchableOpacity
+            onPress={() => {
+              setIsWorkoutActive(true);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }}
+            disabled={saving}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={gradients.success}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: SPACING.md,
+                paddingHorizontal: SPACING.xl,
+                borderRadius: BORDER_RADIUS.lg,
+              }}
+            >
+              <Play
+                size={20}
+                color={colors.textInverse}
+                strokeWidth={2}
+                fill={colors.textInverse}
+                style={{ marginRight: SPACING.sm }}
+              />
+              <Text style={[typography.button, { color: colors.textInverse }]}>
+                Начать тренировку
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={saveWorkout} disabled={saving} activeOpacity={0.8}>
+            {saving ? (
+              <View
+                style={{
+                  paddingVertical: SPACING.lg,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator color={colors.primary} size="small" />
+              </View>
+            ) : (
+              <LinearGradient
+                colors={gradients.success}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: SPACING.md,
+                  paddingHorizontal: SPACING.xl,
+                  borderRadius: BORDER_RADIUS.lg,
+                }}
+              >
+                <Square
+                  size={20}
+                  color={colors.textInverse}
+                  strokeWidth={2}
+                  fill={colors.textInverse}
+                  style={{ marginRight: SPACING.sm }}
+                />
+                <Text style={[typography.button, { color: colors.textInverse }]}>Завершить</Text>
+              </LinearGradient>
+            )}
+          </TouchableOpacity>
         )}
       </View>
-
-      {'technique' in exercise && (exercise as ExerciseData).technique ? (
-        <CollapsibleSection
-          title="Техника выполнения"
-          expanded={expandedSections.technique}
-          onToggle={() => toggleSection('technique')}
-        >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>{(exercise as ExerciseData).technique}</Text>
-        </CollapsibleSection>
-      ) : null}
-
-      {'equipment' in exercise && (exercise as ExerciseData).equipment.length > 0 && (
-        <CollapsibleSection
-          title="Оборудование"
-          expanded={expandedSections.equipment}
-          onToggle={() => toggleSection('equipment')}
-        >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>{(exercise as ExerciseData).equipment.join(', ')}</Text>
-        </CollapsibleSection>
-      )}
-
-      {'settings' in exercise && (exercise as ExerciseData).settings ? (
-        <CollapsibleSection
-          title="Настройки"
-          expanded={expandedSections.settings}
-          onToggle={() => toggleSection('settings')}
-        >
-          <Text style={[styles.sectionText, { color: colors.textPrimary }]}>{(exercise as ExerciseData).settings}</Text>
-        </CollapsibleSection>
-      ) : null}
-
-      {!isMain && (
-        <TouchableOpacity
-          style={[styles.replaceButton, { backgroundColor: colors.primary }]}
-          onPress={() => replaceExercise(exerciseIndex, exercise.id)}
-        >
-          <Text style={styles.replaceButtonText}>🔄 Заменить на это</Text>
-        </TouchableOpacity>
-      )}
-
-      {hasSets && sets.length > 0 && (
-        <View style={styles.setsSection}>
-          <View style={styles.setsHeader}>
-            <View style={styles.setLabelCell}>
-              <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Подход</Text>
-            </View>
-            {sets.map((_, setIndex) => (
-              <View key={setIndex} style={styles.setDataCell}>
-                <Text style={[styles.setDataText, { color: colors.textPrimary }]}>{setIndex + 1}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.setsRow}>
-            <View style={styles.setLabelCell}>
-              <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Вес (кг)</Text>
-            </View>
-            {sets.map((set, setIndex) => (
-              <View 
-                key={setIndex} 
-                style={[
-                  styles.setDataCell,
-                  { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary },
-                ]}
-              >
-                <TextInput
-                  style={[styles.setInput, { color: colors.textPrimary }]}
-                  placeholder="0"
-                  value={set.weight}
-                  onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'weight', val)}
-                  keyboardType="decimal-pad"
-                  placeholderTextColor={colors.textTertiary}
-                />
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.setsRow}>
-            <View style={styles.setLabelCell}>
-              <Text style={[styles.setLabelText, { color: colors.textSecondary }]}>Повт.</Text>
-            </View>
-            {sets.map((set, setIndex) => (
-              <View 
-                key={setIndex} 
-                style={[
-                  styles.setDataCell,
-                  { backgroundColor: isSetCompleted(set) ? colors.successLight : colors.surfaceSecondary },
-                ]}
-              >
-                <TextInput
-                  style={[styles.setInput, { color: colors.textPrimary }]}
-                  placeholder="0"
-                  value={set.reps}
-                  onChangeText={(val) => updateSet(exerciseIndex, setIndex, 'reps', val)}
-                  keyboardType="number-pad"
-                  placeholderTextColor={colors.textTertiary}
-                />
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.restButton, { backgroundColor: colors.primary }]}
-            onPress={() => startRestTimer(restSeconds)}
-          >
-            <Text style={styles.restButtonText}>⏱ Отдых {restSeconds}с</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+    </SafeAreaView>
   );
 }
-
-function CollapsibleSection({ 
-  title, 
-  expanded, 
-  onToggle, 
-  children 
-}: { 
-  title: string; 
-  expanded: boolean; 
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  const { colors } = useTheme();
-  
-  return (
-    <View style={[styles.collapsibleSection, { borderColor: colors.border }]}>
-      <TouchableOpacity style={[styles.collapsibleHeader, { backgroundColor: colors.surfaceSecondary }]} onPress={onToggle}>
-        <Text style={[styles.collapsibleTitle, { color: colors.textPrimary }]}>{title}</Text>
-        <Text style={[styles.collapsibleArrow, { color: colors.textSecondary }]}>{expanded ? '▼' : '▶'}</Text>
-      </TouchableOpacity>
-      {expanded && (
-        <View style={[styles.collapsibleContent, { backgroundColor: colors.surface }]}>
-          {children}
-        </View>
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12 },
-  
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: SPACING.sm,
-  },
-  backText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    marginRight: SPACING.md,
-  },
-  finishButton: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: 20,
-  },
-  finishButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-
-  restTimer: {
-    padding: SPACING.lg,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-  },
-  restTimerLabel: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  restTimerTime: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  skipButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm,
-    borderRadius: 16,
-  },
-  skipButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-
-  scrollView: { flex: 1 },
-  exerciseSection: {
-    marginTop: SPACING.lg,
-  },
-  replacedBadge: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    marginHorizontal: SPACING.xl,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.sm,
-  },
-  replacedText: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  resetText: {
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  sliderContainer: {
-    paddingHorizontal: SPACING.xl,
-    gap: SPACING.md,
-  },
-  card: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    elevation: 2,
-  },
-  cardHeader: {
-    marginBottom: SPACING.md,
-    minHeight: 50,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  musclesText: {
-    fontSize: 14,
-  },
-
-  collapsibleSection: {
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
-  },
-  collapsibleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: SPACING.md,
-  },
-  collapsibleTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  collapsibleArrow: {
-    fontSize: 12,
-  },
-  collapsibleContent: {
-    padding: SPACING.md,
-  },
-  sectionText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-
-  replaceButton: {
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginTop: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  replaceButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-
-  setsSection: {
-    marginTop: SPACING.lg,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    marginBottom: SPACING.sm,
-  },
-  setsRow: {
-    flexDirection: 'row',
-    marginBottom: SPACING.sm,
-  },
-  setLabelCell: {
-    width: 70,
-    justifyContent: 'center',
-  },
-  setLabelText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  setDataCell: {
-    flex: 1,
-    marginHorizontal: 2,
-    padding: 4,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  setDataText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  setInput: {
-    fontSize: 16,
-    textAlign: 'center',
-    width: '100%',
-  },
-
-  restButton: {
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    marginTop: SPACING.md,
-  },
-  restButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-});

@@ -1,41 +1,131 @@
 import { useState, createContext, useContext, ReactNode, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
-import { lightTheme, darkTheme } from '../constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  lightTheme,
+  darkTheme,
+  themes,
+  themeGroups,
+  Theme,
+  ThemeKey,
+  ThemeAccent,
+  ThemeColors,
+  ThemeGradients,
+} from '../constants/theme';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
-  theme: typeof lightTheme;
+  theme: Theme;
   isDark: boolean;
-  colors: typeof lightTheme.colors;
+  colors: ThemeColors;
+  gradients: ThemeGradients;
   themeMode: ThemeMode;
+  themeAccent: ThemeAccent;
+  themeKey: ThemeKey;
   setThemeMode: (mode: ThemeMode) => void;
+  setThemeAccent: (accent: ThemeAccent) => void;
+  availableAccents: { key: ThemeAccent; label: string; keys: ThemeKey[] }[];
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const THEME_MODE_KEY = '@fittracker_theme_mode';
+const THEME_ACCENT_KEY = '@fittracker_theme_accent';
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [themeAccent, setThemeAccentState] = useState<ThemeAccent>('purple');
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Определяем, темная ли тема
-  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark');
-  const theme = isDark ? darkTheme : lightTheme;
-
-  // Синхронизируем системный UI (Android navigation bar, status bar background)
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync(theme.colors.background);
+    loadSavedSettings();
+  }, []);
+
+  const loadSavedSettings = async () => {
+    try {
+      const savedMode = await AsyncStorage.getItem(THEME_MODE_KEY);
+      const savedAccent = await AsyncStorage.getItem(THEME_ACCENT_KEY);
+
+      if (savedMode && ['light', 'dark', 'system'].includes(savedMode)) {
+        setThemeModeState(savedMode as ThemeMode);
+      }
+      if (savedAccent && themeGroups[savedAccent]) {
+        setThemeAccentState(savedAccent as ThemeAccent);
+      }
+    } catch (error) {
+      console.error('Failed to load theme settings:', error);
+    } finally {
+      setIsLoaded(true);
+    }
+  };
+
+  const setThemeMode = async (mode: ThemeMode) => {
+    setThemeModeState(mode);
+    try {
+      await AsyncStorage.setItem(THEME_MODE_KEY, mode);
+    } catch (error) {
+      console.error('Failed to save theme mode:', error);
+    }
+  };
+
+  const setThemeAccent = async (accent: ThemeAccent) => {
+    setThemeAccentState(accent);
+    try {
+      await AsyncStorage.setItem(THEME_ACCENT_KEY, accent);
+    } catch (error) {
+      console.error('Failed to save theme accent:', error);
+    }
+  };
+
+  const getTheme = (): Theme => {
+    const isDarkMode = themeMode === 'dark' ||
+      (themeMode === 'system' && systemColorScheme === 'dark');
+    const suffix = isDarkMode ? '-dark' : '-light';
+    const themeKey = `${themeAccent}${suffix}` as ThemeKey;
+    return themes[themeKey] || themes['purple-light'];
+  };
+
+  const theme = getTheme();
+  const isDark = theme.mode === 'dark';
+  const themeKey = `${themeAccent}${isDark ? '-dark' : '-light'}` as ThemeKey;
+
+  // ✅ ИСПРАВЛЕНО: Добавлен try-catch и cleanup
+  useEffect(() => {
+    let isMounted = true;
+
+    const setBackgroundColor = async () => {
+      try {
+        if (isMounted) {
+          await SystemUI.setBackgroundColorAsync(theme.colors.background);
+        }
+      } catch (error) {
+        // Игнорируем ошибку "activity no longer available"
+        // Она возникает при быстром переключении экранов или закрытии приложения
+        if (!(error as Error).message?.includes('no longer available')) {
+          console.warn('SystemUI setBackgroundColor error:', error);
+        }
+      }
+    };
+
+    setBackgroundColor();
+
+    return () => {
+      isMounted = false;
+    };
   }, [theme.colors.background]);
 
-  useEffect(() => {
-    console.log('🎨 Theme Debug:', {
-      systemColorScheme,
-      themeMode,
-      isDark,
-      themeType: isDark ? 'DARK' : 'LIGHT'
-    });
-  }, [systemColorScheme, themeMode, isDark]);
+  const availableAccents = Object.entries(themeGroups).map(([key, group]) => ({
+    key: key as ThemeAccent,
+    label: group.label,
+    keys: group.keys as ThemeKey[],
+  }));
+
+  if (!isLoaded) {
+    return null;
+  }
 
   return (
     <ThemeContext.Provider
@@ -43,8 +133,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme,
         isDark,
         colors: theme.colors,
+        gradients: theme.gradients,
         themeMode,
+        themeAccent,
+        themeKey,
         setThemeMode,
+        setThemeAccent,
+        availableAccents,
       }}
     >
       {children}

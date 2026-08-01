@@ -1,5 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '../hooks/useTheme';
 
 interface SkeletonProps {
@@ -9,50 +16,39 @@ interface SkeletonProps {
   style?: any;
 }
 
-export function Skeleton({ 
-  width = '100%', 
-  height = 20, 
+export function Skeleton({
+  width = '100%',
+  height = 20,
   borderRadius = 8,
-  style 
+  style,
 }: SkeletonProps) {
   const { colors } = useTheme();
-  const animatedValue = useRef(new Animated.Value(0)).current;
+    // Фаза пульсации 0→1→0 (бесконечный цикл на Reanimated: withRepeat + withSequence).
+  const phase = useSharedValue(0);
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
+    phase.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1000 }),
+        withTiming(0, { duration: 1000 }),
+      ),
+      -1, // бесконечно
+      false, // sequence сам делает 0→1→0, reverse не нужен
     );
-    animation.start();
-    return () => animation.stop();
-  }, []);
+    // При размонтировании shared value уничтожается → анимация останавливается сама.
+  }, [phase]);
 
-  const opacity = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
+  // Интерполяция [0,1] → [0.3, 0.7] (как в оригинале).
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: 0.3 + phase.value * 0.4,
+  }));
 
   return (
     <Animated.View
       style={[
         styles.skeleton,
-        { 
-          width, 
-          height, 
-          borderRadius, 
-          opacity,
-          backgroundColor: colors.surfaceSecondary 
-        },
+        { width, height, borderRadius, backgroundColor: colors.surfaceSecondary },
+        animatedStyle,
         style,
       ]}
     />
@@ -61,7 +57,6 @@ export function Skeleton({
 
 export function CardSkeleton() {
   const { colors } = useTheme();
-  
   return (
     <View style={[styles.card, { backgroundColor: colors.surface }]}>
       <Skeleton width="70%" height={20} borderRadius={4} />
@@ -88,7 +83,7 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
 
 const styles = StyleSheet.create({
   skeleton: {
-    // backgroundColor будет из темы
+    // backgroundColor берётся из темы
   },
   container: {
     padding: 16,
