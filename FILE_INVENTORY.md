@@ -39,7 +39,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | ProgramFormSheet.tsx | модалка создания/редактирования программы | структ. |✅|ARCH-3 ✅ (LEVEL_COLORS), KAV ✅, colors.overlay ✅|
 | ProgramProgressCard.tsx | виджет активной программы на Dashboard | структ. | ARCH-5: color="white" |
 | ActivityCalendar / WeeklyStatsCard / ExerciseProgressCard / PersonalRecordsCard / LastWorkoutCard | виджеты Dashboard | структ. | |
-| SectionHeader / FadeIn / Skeleton / Toast|общие|✅|ARCH-4 ✅ (FadeIn/Skeleton/Toast → Reanimated v3)|| program/PhaseCard.tsx | карточка фазы (DraggableFlatList scrollEnabled=false) | ✅ | |
+| SectionHeader / FadeIn / Skeleton / Toast|общие|✅|ARCH-4 ✅ (FadeIn/Skeleton/Toast → Reanimated v3); ARCH-2 ✅ (ToastProvider удалён)|
 | program/DayCard.tsx | карточка дня (DraggableFlatList scrollEnabled=false) + баблы мышц | ✅ | SEC-3 ✅ |
 | program/sheets/PhaseSettingsSheet.tsx | настройки фазы (на SheetShell) | ✅ | |
 | ExercisePickerSheet.tsx|пикер упражнений (useExercises)|✅|ARCH-1: кастомный оверлей (сортировка); ARCH-5 ✅ (colors.overlay/textTertiary); KAV ✅|
@@ -58,10 +58,10 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 |---|---|---|---|
 | useDashboard.ts | Dashboard (React Query ['dashboard',userId]) | структ. | |
 | usePrograms.ts | список программ (useInfiniteQuery) + мутации | ✅ | deleteMutation(id,userId!) + invalidate dashboard/workouts |
-| useProgramEditor.ts | редактор программы (CRUD/drag&drop/фазы) + syncProgramChanges в save | ✅ | SCALE-5 ✅ разбит |
+| useProgramEditor.ts|редактор программы (CRUD/drag &drop/фазы) + syncProgramChanges в save|✅|SCALE-5 ✅ разбит; ARCH-6 ✅ (handleAddExerciseFromPicker типизирован)|
 | useProgramPhases.ts | фазовая логика редактора (вынесена) | ✅(импорт) | SCALE-5 |
 | useWorkouts.ts | тренировки (React Query) | ✅(импорт) | |
-| useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅)|✅|debounce-автосохранение (500мс) + RPC upsert_workout_logs + flush при размонтировании|| useExercises.ts | справочник (useInfiniteQuery, debounce, фильтры) | структ. | |
+| useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅)|✅|debounce-автосохранение (500мс) + RPC upsert_workout_logs + flush при размонтировании; ARCH-6 ✅ (loadWorkout/loadAlternatives типизированы)|
 | useExerciseDetail.ts | детальное упражнение (staleTime Infinity) | структ. | |
 | useInjuryWarnings.ts | avoid/caution (React Query + memo по warningKey) | ✅ | |
 | useWarmup.ts|авторазминка с учётом травм|✅(импорт)|
@@ -69,7 +69,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | useTimerSettings.ts | настройки таймера (AsyncStorage) | структ. | |
 | useUnitPreferences.ts | единицы веса кг/фунты | ✅(импорт) | |
 | useTheme.tsx | тема | структ. | |
-| useToast.ts | toast (канонический) | структ. | ARCH-2 |
+| useToast.ts|toast (канонический)|✅|ARCH-2 ✅ (канон)|
 | useBodyMetrics.ts | замеры | структ. | |
 
 ## src/services/
@@ -77,17 +77,17 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | Файл | Назначение | Инспект. | Примечание / долг |
 |---|---|---|---|
 | authService.ts | Supabase Auth единый слой | структ. | |
-| historyService.ts|агрегация истории + getWorkoutDetail|✅|SEC-10 ✅|
-| programsService.ts|CRUD программ + активация + syncProgramChanges + getWorkoutProgramInfo + getActiveProgram|✅|activateProgram(+reset), getUserProgramsStatus, deactivateAllPrograms, getActiveProgramId. PERF-1 ✅ (createWorkoutsFromProgram удалён)|
+| historyService.ts|агрегация истории + getWorkoutDetail|✅|SEC-10 ✅; ARCH-6 ✅ (getHistory/getWorkoutDetail типизированы)|
+| programsService.ts|CRUD программ + активация + syncProgramChanges + getWorkoutProgramInfo + getActiveProgram|✅|activateProgram(+reset), getUserProgramsStatus, deactivateAllPrograms, getActiveProgramId. PERF-1 ✅; ARCH-6 ✅ (мапперы типизированы локальными row-интерфейсами)|
 | programSharingService.ts | generateShareCode / importProgramByCode / formatShareCode | ✅ | |
 | workoutService.ts | startProgramWorkout / repeatWorkout | ✅ | |
 | workoutsService.ts | getWorkoutsData (секции по фазам/неделям + прогресс) | ✅ | |
 | dashboardService.ts | агрегация Dashboard (Promise.allSettled) | ✅ | PR-bias + формула калорий *300 (ref-guide 2.C) |
 | profileService.ts | профиль/стат/КБЖУ/PR/травмы (объект + standalone getActiveInjuries/getInjuryWarningRules) | ✅ | |
-| exercisesService.ts | упражнения: список/словари/по ID | структ. | PERF-2 |
+| exercisesService.ts|упражнения: список/словари/по ID|✅|PERF-2 ✅; ARCH-6 ✅ (getExercises/getExercisesByIds/getExerciseRecords типизированы)|
 | goalsService.ts | цели (upsert) | структ. | |
 | metricsService.ts | замеры тела | структ. | |
-| warmupService.ts|генерация разминки|✅|PERF-3
+| warmupService.ts|генерация разминки|✅|PERF-3 ✅; ARCH-6 ✅ (getWarmupAlternatives типизирован)|
 
 ## src/constants/
 

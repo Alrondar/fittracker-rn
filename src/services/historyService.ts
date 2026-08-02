@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import type { Database } from '../types/database.types';
 
 // ============================================================================
 // ПУБЛИЧНЫЕ ТИПЫ (контракт для history.tsx / history/[id].tsx — не менять)
@@ -30,8 +29,9 @@ export interface HistoryData {
 
 // ============================================================================
 // ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any)
+// Локальные интерфейсы отражают ровно то, что уходит в select — это устойчивее
+// к рассинхрону database.types.ts, чем автогенерированные Tables[...]['Row'].
 // ============================================================================
-type WorkoutLogRow = Database['public']['Tables']['workout_logs']['Row'];
 
 /** getHistory: select('id, name, created_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )') */
 interface HistoryLogRow {
@@ -128,7 +128,14 @@ export async function getHistory(userId: string): Promise<HistoryData> {
 // ============================================================================
 // ДЕТАЛИ ТРЕНИРОВКИ (для history/[id].tsx) — SEC-10
 // ============================================================================
-/** getWorkoutDetail: вложенный select с exercises(name) и workout_logs */
+
+/** getWorkoutDetail: вложенный select с exercises(name) и workout_logs(id,set_number,weight_kg,reps) */
+interface WorkoutDetailLogRow {
+  id: string;
+  set_number: number;
+  weight_kg: number | null;
+  reps: number | null;
+}
 interface WorkoutDetailExerciseRow {
   id: string;
   exercise_id: string;
@@ -136,7 +143,7 @@ interface WorkoutDetailExerciseRow {
   target_reps_range: string | null;
   rest_seconds: number | null;
   exercises: { name: string } | null;
-  workout_logs: WorkoutLogRow[] | null;
+  workout_logs: WorkoutDetailLogRow[] | null;
 }
 interface WorkoutDetailRow {
   id: string;

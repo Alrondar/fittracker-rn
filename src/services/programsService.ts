@@ -101,24 +101,92 @@ export interface WorkoutProgramInfo {
 }
 
 // ============================================================================
+// ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any в мапперах)
+// Отражают ровно то, что уходит в select getProgramWithPhases:
+//   *, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )
+// ============================================================================
+interface ProgramRow {
+  id: string;
+  name: string;
+  level: string; // БД хранит строку; домен сужает в mapProgramRow
+  duration: number;
+  description: string | null;
+  schedule: string[] | null;
+  created_by: string | null;
+  created_at: string | null;
+}
+interface ProgramWithPhasesRow extends ProgramRow {
+  program_phases: ProgramPhaseRow[] | null;
+}
+interface ProgramPhaseRow {
+  id: string;
+  program_id: string;
+  phase_number: number;
+  name: string;
+  phase_type: string; // БД хранит строку; домен сужает в mapPhase
+  weeks_count: number;
+  description: string | null;
+  position: number | null;
+  created_at: string | null;
+  program_days: ProgramDayRow[] | null;
+}
+interface ProgramDayRow {
+  id: string;
+  program_id: string;
+  phase_id: string | null;
+  week_number: number;
+  day_number: number;
+  name: string;
+  position: number | null;
+  created_at: string | null;
+  program_exercises: ProgramExerciseRow[] | null;
+}
+interface ProgramExerciseRow {
+  id: string;
+  program_day_id: string;
+  exercise_id: string | null;
+  exercise_name: string;
+  sets: number;
+  reps_range: string;
+  rest_seconds: number;
+  intensity: string; // БД хранит строку; домен сужает в mapExercise
+  position: number;
+  exercises: { primary_muscles: string[] } | null;
+}
+
+// ============================================================================
 // МАППЕРЫ
 // ============================================================================
-function mapExercise(ex: any): ProgramExercise {
+/** programs.Row → Program (типобезопасно, без any). */
+function mapProgramRow(row: ProgramRow): Program {
+  return {
+    id: row.id,
+    name: row.name,
+    level: row.level as Program['level'],
+    duration: row.duration,
+    description: row.description ?? '',
+    schedule: row.schedule ?? [],
+    created_by: row.created_by ?? undefined,
+    created_at: row.created_at ?? undefined,
+  };
+}
+
+function mapExercise(ex: ProgramExerciseRow): ProgramExercise {
   return {
     id: ex.id,
     program_day_id: ex.program_day_id,
-    exercise_id: ex.exercise_id,
+    exercise_id: ex.exercise_id ?? undefined,
     exercise_name: ex.exercise_name,
     sets: ex.sets,
     reps_range: ex.reps_range,
     rest_seconds: ex.rest_seconds,
-    intensity: ex.intensity,
+    intensity: ex.intensity as ProgramExercise['intensity'],
     position: ex.position,
     primary_muscles: ex.exercises?.primary_muscles || [],
   };
 }
 
-function mapDay(day: any): ProgramDay {
+function mapDay(day: ProgramDayRow): ProgramDay {
   return {
     id: day.id,
     program_id: day.program_id,
@@ -126,27 +194,27 @@ function mapDay(day: any): ProgramDay {
     week_number: day.week_number ?? 1,
     day_number: day.day_number,
     name: day.name,
-    position: day.position,
-    created_at: day.created_at,
+    position: day.position ?? undefined,
+    created_at: day.created_at ?? undefined,
     exercises: (day.program_exercises || [])
-      .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+      .sort((a, b) => (a.position || 0) - (b.position || 0))
       .map(mapExercise),
   };
 }
 
-export function mapPhase(phase: any): ProgramPhase {
+export function mapPhase(phase: ProgramPhaseRow): ProgramPhase {
   return {
     id: phase.id,
     program_id: phase.program_id,
     phase_number: phase.phase_number,
     name: phase.name,
-    phase_type: phase.phase_type,
+    phase_type: phase.phase_type as PhaseType,
     weeks_count: phase.weeks_count,
     description: phase.description,
     position: phase.position,
-    created_at: phase.created_at,
+    created_at: phase.created_at ?? undefined,
     days: (phase.program_days || [])
-      .sort((a: any, b: any) => (a.week_number - b.week_number) || (a.day_number - b.day_number))
+      .sort((a, b) => (a.week_number - b.week_number) || (a.day_number - b.day_number))
       .map(mapDay),
   };
 }
@@ -156,7 +224,7 @@ export function mapPhase(phase: any): ProgramPhase {
 // ============================================================================
 export async function getPrograms(filters?: ProgramFilters): Promise<Program[]> {
   let query = supabase.from('programs').select('*').is('created_by', null);
-  if (filters?.level && filters.level.length > 0) query = query.in('level', filters.level as any);
+  if (filters?.level && filters.level.length > 0) query = query.in('level', [...filters.level]);
   if (filters?.search) query = query.ilike('name', `%${filters.search}%`);
   const sortBy = filters?.sortBy || 'date';
   if (sortBy === 'name') query = query.order('name', { ascending: true });
@@ -167,12 +235,12 @@ export async function getPrograms(filters?: ProgramFilters): Promise<Program[]> 
   query = query.range(offset, offset + limit - 1);
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  return (data || []).map(mapProgramRow);
 }
 
 export async function getMyPrograms(userId: string, filters?: ProgramFilters): Promise<Program[]> {
   let query = supabase.from('programs').select('*').eq('created_by', userId);
-  if (filters?.level && filters.level.length > 0) query = query.in('level', filters.level as any);
+  if (filters?.level && filters.level.length > 0) query = query.in('level', [...filters.level]);
   if (filters?.search) query = query.ilike('name', `%${filters.search}%`);
   const sortBy = filters?.sortBy || 'date';
   if (sortBy === 'name') query = query.order('name', { ascending: true });
@@ -183,12 +251,12 @@ export async function getMyPrograms(userId: string, filters?: ProgramFilters): P
   query = query.range(offset, offset + limit - 1);
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  return (data || []).map(mapProgramRow);
 }
 
 export async function createProgram(
   program: Omit<Program, 'id' | 'created_at' | 'phases' | 'days'>,
-  userId: string
+  userId: string,
 ): Promise<Program> {
   // id генерируется на стороне БД (DEFAULT gen_random_uuid()::text).
   const { data, error } = await supabase
@@ -241,8 +309,8 @@ export async function deleteProgram(programId: string, userId: string): Promise<
     .eq('program_id', programId);
   if (days && days.length > 0) {
     const dayIds = days.map((d) => d.id);
-    await supabase.from('program_exercises').delete().in('program_day_id', [...dayIds] as any);
-    await supabase.from('program_days').delete().in('program_id', [programId] as any);
+    await supabase.from('program_exercises').delete().in('program_day_id', dayIds);
+    await supabase.from('program_days').delete().in('program_id', [programId]);
   }
   await supabase.from('program_phases').delete().eq('program_id', programId);
 
@@ -261,7 +329,7 @@ export async function getProgramWithPhases(programId: string): Promise<Program |
   const { data: program, error } = await supabase
     .from('programs')
     .select(
-      `*, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )`
+      `*, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )`,
     )
     .eq('id', programId)
     .single();
@@ -270,24 +338,18 @@ export async function getProgramWithPhases(programId: string): Promise<Program |
     throw error;
   }
   if (!program) return null;
-  const phases: ProgramPhase[] = (program.program_phases || [])
-    .sort((a: any, b: any) => a.phase_number - b.phase_number)
+
+  // Один каст на join-корень: дальше фазы/дни/упражнения типизированы локальными
+  // row-интерфейсами, а корень возврата собирается через mapProgramRow (без any).
+  const programRow = program as unknown as ProgramWithPhasesRow;
+  const phases: ProgramPhase[] = (programRow.program_phases || [])
+    .sort((a, b) => a.phase_number - b.phase_number)
     .map(mapPhase);
   const flatDays = phases.flatMap((p) =>
-    (p.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1)
+    (p.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1),
   );
-  return {
-    id: program.id,
-    name: program.name,
-    level: program.level,
-    duration: program.duration,
-    description: program.description,
-    schedule: program.schedule || [],
-    created_by: program.created_by,
-    created_at: program.created_at,
-    phases,
-    days: flatDays,
-  };
+
+  return { ...mapProgramRow(programRow), phases, days: flatDays };
 }
 
 export const getProgramWithDays = getProgramWithPhases;
@@ -300,13 +362,16 @@ export async function startProgram(programId: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
   const { error: deactivateError } = await supabase
     .from('user_programs')
     .update({ is_active: false })
     .eq('user_id', user.id)
     .eq('is_active', true);
   if (deactivateError) console.warn('Ошибка деактивации:', deactivateError);
+
   await supabase.from('user_programs').delete().eq('user_id', user.id).eq('program_id', programId);
+
   const { error } = await supabase.from('user_programs').insert({
     user_id: user.id,
     program_id: programId,
@@ -336,7 +401,7 @@ export async function getActiveUserProgram(): Promise<UserProgram | null> {
 export async function updateProgramProgress(
   userProgramId: string,
   week: number,
-  day: number
+  day: number,
 ): Promise<void> {
   const { error } = await supabase
     .from('user_programs')
@@ -355,7 +420,7 @@ export async function completeProgram(userProgramId: string): Promise<void> {
 
 export async function advanceProgramProgress(
   userId: string,
-  programId: string
+  programId: string,
 ): Promise<{ phase: number; week: number; day: number; isCompleted: boolean }> {
   const { data: current, error: fetchError } = await supabase
     .from('user_programs')
@@ -370,12 +435,15 @@ export async function advanceProgramProgress(
     if (fetchError.code === 'PGRST116') throw new Error('Активная программа не найдена');
     throw fetchError;
   }
+
   const { data: phases } = await supabase
     .from('program_phases')
     .select('phase_number, weeks_count, program_days ( week_number, day_number )')
     .eq('program_id', programId)
     .order('phase_number', { ascending: true });
-  const orderedPhases = (phases || []).sort((a: any, b: any) => a.phase_number - b.phase_number);
+
+  // Типы a/b/p/d выводятся из supabase-join; any больше не нужен.
+  const orderedPhases = (phases || []).sort((a, b) => a.phase_number - b.phase_number);
   const curPhase = current.current_phase ?? 1;
   const curWeek = current.current_week ?? 1;
   const curDay = current.current_day ?? 1;
@@ -412,14 +480,15 @@ export async function advanceProgramProgress(
     return { phase: 1, week: newWeek, day: newDay, isCompleted: false };
   }
 
-  const phase = orderedPhases.find((p: any) => p.phase_number === curPhase) || orderedPhases[0];
+  const phase = orderedPhases.find((p) => p.phase_number === curPhase) || orderedPhases[0];
   const daysFor = (week: number): number => {
     const all = phase.program_days || [];
-    const inWeek = all.filter((d: any) => d.week_number === week);
+    const inWeek = all.filter((d) => d.week_number === week);
     if (inWeek.length > 0) return inWeek.length;
-    return all.filter((d: any) => d.week_number === 1).length || 1;
+    return all.filter((d) => d.week_number === 1).length || 1;
   };
   const totalDaysThisWeek = daysFor(curWeek);
+
   let newPhase = curPhase;
   let newWeek = curWeek;
   let newDay = curDay + 1;
@@ -429,7 +498,7 @@ export async function advanceProgramProgress(
     if (newWeek > (phase.weeks_count || 1)) {
       newWeek = 1;
       newPhase = curPhase + 1;
-      if (!orderedPhases.some((p: any) => p.phase_number === newPhase)) {
+      if (!orderedPhases.some((p) => p.phase_number === newPhase)) {
         await supabase
           .from('user_programs')
           .update({ is_active: false, completed_at: new Date().toISOString() })
@@ -438,11 +507,13 @@ export async function advanceProgramProgress(
       }
     }
   }
+
   const { error: updateError } = await supabase
     .from('user_programs')
     .update({ current_phase: newPhase, current_week: newWeek, current_day: newDay })
     .eq('id', current.id);
   if (updateError) throw updateError;
+
   return { phase: newPhase, week: newWeek, day: newDay, isCompleted: false };
 }
 
@@ -460,7 +531,7 @@ export async function advanceProgramProgress(
 export async function activateProgram(
   programId: string,
   userId: string,
-  reset: boolean = false
+  reset: boolean = false,
 ): Promise<void> {
   // 1. Деактивируем все программы пользователя.
   const { error: deactivateError } = await supabase
@@ -477,7 +548,6 @@ export async function activateProgram(
     .eq('user_id', userId)
     .eq('program_id', programId)
     .maybeSingle();
-
   if (existing) {
     const update: Record<string, unknown> = { is_active: true };
     if (reset) {
@@ -561,7 +631,8 @@ export async function getUserProgramsStatus(userId: string): Promise<UserProgram
     .select('program_id, is_active, completed_at')
     .eq('user_id', userId);
   if (error) throw error;
-  return (data || []).map((row: any) => ({
+  // row выводится типом supabase из select; any не нужен.
+  return (data || []).map((row) => ({
     program_id: row.program_id,
     is_active: !!row.is_active,
     completed_at: row.completed_at ?? null,
@@ -597,6 +668,7 @@ export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutP
     .eq('id', workoutId)
     .maybeSingle();
   if (error || !workout?.program_id) return null;
+
   const program = Array.isArray(workout.programs) ? workout.programs[0] : workout.programs;
   let phaseName: string | undefined;
   let phaseType: string | undefined;
@@ -624,7 +696,7 @@ export async function getActiveProgram(userId: string) {
   const { data, error } = await supabase
     .from('user_programs')
     .select(
-      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) ) )`
+      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) ) )`,
     )
     .eq('user_id', userId)
     .eq('is_active', true)

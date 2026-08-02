@@ -21,11 +21,11 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | ID | Приоритет | Описание | Статус | Дата / Комментарий |
 |---|---|---|---|---|
 | ARCH-1 | 🟠 | централизация Bottom Sheet на SheetShell|✅|01.08.2026 (DaySettingsSheet, ExerciseSettingsSheet, ScheduleEditorSheet переведены; ExercisePickerSheet, ImportProgramSheet, ShareProgramSheet — кастомный оверлей сохранён)|
-| ARCH-2 | 🟠 | две системы Toast (useToast + мёртвый ToastProvider context) | 🔲 | |
+| ARCH-2 | 🟠 | две системы Toast (useToast + мёртвый ToastProvider context)|✅|01.08.2026 (мёртвый ToastProvider удалён из _layout; канон = hooks/useToast + компонент Toast на экране)|
 | ARCH-3 | 🟡 | дубли маппинга уровень→цвет | ✅ |01.08.2026 (ProgramCard ✅, ProgramFormSheet ✅ — LEVEL_COLORS из semanticCol
-| ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet)|✅|01.08.2026 (FadeIn/Skeleton/Toast → Reanimated v3; SwipeableCard/BottomSheet/ToastProvider/AnimatedButton удалены как мёртвые; grep по маркерам легаси чист)|
+| ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet)|✅|01.08.2026 (FadeIn/Toast/Skeleton → Reanimated v3; ToastProvider/SwipeableCard/BottomSheet удалены как мёртвые; grep по маркерам легаси пуст)|
 | ARCH-5 | 🟡 | хардкод цветов в UI-компонентах|✅|01.08.2026 (ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на colors.overlay/textTertiary/success/warning/error)|
-| ARCH-6 | 🟡 | систематический any в мапперах сервисов | 🔲 | |
+| ARCH-6 | 🟡 | систематический any в мапперах сервисов|✅|01.08.2026 (programsService/exercisesService/warmupService/useWorkoutSession/useProgramEditor/historyService — мапперы типизированы локальными row-интерфейсами / выводом supabase; catch:any оставлены под SEC-9; getList/getString в lib/supabase — вне скоупа)|
 | ARCH-7 | 🟢 | types/index.ts vs types/workout.ts дублирование | 🔲 | |
 | ARCH-8 | 🟢 | противопоказания через keyword-эвристики | 🔲 | |
 
@@ -72,6 +72,6 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 ## Итоговая сводка
 
-Закрыто полностью: SEC-1,2,3,4,5,6,7 · RPC-1,2,3 · SCALE-3,6 · FIT-1..6
+Закрыто полностью: SEC-1,2,4,5,6,10 · RPC-1,2,3 · SCALE-3,6 · ARCH-1,2,3,4,5,6 · PERF-1,2,3,4,5,6 · FIT-1..6
 Частично: SCALE-5, SCALE-7
-Открыто (производительность): нет
+Открыто: SEC-8, SEC-9, ARCH-7, ARCH-8, SCALE-1, SCALE-2, SCALE-4

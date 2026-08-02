@@ -414,7 +414,7 @@ advanceProgramProgress: день → неделя → фаза → заверш�
 - Серверные данные в Zustand: useStore.workouts/logs/alternativesCache
 - Хардкод градиентов: history.tsx (getWorkoutGradient)
 - useWorkoutSession cleanup-эффект на deps (лишний UPDATE) — medium-term
-- RPC save_program_snapshot — атомарное сохранение программы (
+- RPC save_program_snapshot — атомарное сохранение программы (PERF-4/6 закрыто 01.08.2026)
 - dashboardService: PR-bias + формула калорий * 300 vs profileService
 - Превышение 500 строк: goals.tsx, program/[id].tsx, ExerciseCard.tsx, WarmupBlock.tsx
 

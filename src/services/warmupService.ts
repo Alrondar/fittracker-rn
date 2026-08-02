@@ -285,6 +285,10 @@ export const warmupService = {
    * Примечание: двухфазный запрос здесь НЕ применяется — альтернативы грузятся
    * лениво (по одному упражнению, с кэшем в useWarmup), и любая из 20 может
    * стать основной при замене → тяжёлые поля нужны для всех 20.
+   *
+   * ARCH-6: any убран — вывод supabase для этого select типизирован
+   * (все колонки есть в exercises.Row), форма возврата проверена через
+   * явный возвратный тип стрелки вместо подавляющего `as WarmupExercise`.
    */
   async getWarmupAlternatives(
     exerciseId: string,
@@ -299,15 +303,12 @@ export const warmupService = {
         .neq('id', exerciseId)
         .or('category.eq.stretching,can_be_activation.is.true')
         .limit(20);
-
       if (primaryMuscles.length > 0) {
         query = query.overlaps('primary_muscles', primaryMuscles);
       }
-
       const { data, error } = await query;
       if (error || !data) return [];
-
-      return data.map((ex: any) => {
+      return data.map((ex): WarmupExercise => {
         let duration = 30;
         if (ex.settings) {
           const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
@@ -328,7 +329,7 @@ export const warmupService = {
           relevance_score: 0,
           category: ex.category ?? null,
           can_be_activation: ex.can_be_activation ?? false,
-        } as WarmupExercise;
+        };
       });
     } catch (e) {
       console.error('Ошибка загрузки альтернатив разминки:', e);

@@ -124,6 +124,17 @@ export type Database = {
           equipment: { value: string; count: number }[]
         }
       }
+      save_program_snapshot: {
+  Args: {
+    p_program_id: string;
+    p_schedule: Json;
+    p_deleted_phase_ids: Json;
+    p_deleted_day_ids: Json;
+    p_deleted_exercise_ids: Json;
+    p_phases: Json;
+  };
+  Returns: undefined;
+};
     }
     Enums: {
       [_ in never]: never

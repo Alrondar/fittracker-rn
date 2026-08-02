@@ -17,20 +17,31 @@ export interface ExerciseListItem {
   primary_muscles: string[];
   equipment: string[];
   popularity?: number; // количество использований в тренировках (есть только у getExercises)
-  can_be_activation?: boolean; 
+  can_be_activation?: boolean;
 }
 
-export type ExerciseSortBy = 'name-asc' | 'name-desc' | 'popularity';
+   export type ExerciseSortBy = string; // было: 'name-asc' | 'name-desc' | 'popularity'
 
 export interface ExerciseFilters {
   search?: string;
   muscles?: string[];
   categories?: string[];
   equipment?: string[];
-  activationOnly?: boolean; 
+  activationOnly?: boolean;
   sortBy: ExerciseSortBy;
   limit: number;
   offset: number;
+}
+
+/** Локальный тип для Returns RPC search_exercises (ARCH-6: вместо any). */
+interface SearchExerciseRow {
+  id: string;
+  name: string;
+  category: string;
+  primary_muscles: string[];
+  equipment: string[];
+  can_be_activation: boolean;
+  popularity: number;
 }
 
 // Поля для лёгких запросов (список, альтернативы)
@@ -45,26 +56,32 @@ const sanitizeSearch = (s: string): string =>
 /**
  * Постраничный поиск + фильтрация + сортировка через RPC `search_exercises`.
  * «ё» нормализуется в SQL с обеих сторон, популярность считается по workout_exercises.
+ *
+ * ARCH-6: row выводится типом supabase из Returns RPC (primary_muscles/equipment
+ * уже string[]), поэтому getList не нужен — прямой доступ убирает протекание any.
  */
 export async function getExercises(filters: ExerciseFilters): Promise<ExerciseListItem[]> {
   const { data, error } = await supabase.rpc('search_exercises', {
-    q: filters.search ? sanitizeSearch(filters.search) : null,
-    muscle_filter: filters.muscles?.length ? filters.muscles : null,
-    category_filter: filters.categories?.length ? filters.categories : null,
-    equipment_filter: filters.equipment?.length ? filters.equipment : null,
-    activation_filter: filters.activationOnly ? true : null,   // ✅ НОВОЕ
+    q: filters.search ? sanitizeSearch(filters.search) : undefined,
+    muscle_filter: filters.muscles?.length ? filters.muscles : undefined,
+    category_filter: filters.categories?.length ? filters.categories : undefined,
+    equipment_filter: filters.equipment?.length ? filters.equipment : undefined,
+    activation_filter: filters.activationOnly ? true : undefined,
     sort_by: filters.sortBy,
     page_limit: filters.limit,
     page_offset: filters.offset,
   });
   if (error) throw error;
-  return (data || []).map((row: any) => ({
+  // ARCH-6: supabase-js не выводит тип для rpc из-за Exact-проверки Args,
+  // поэтому используем локальный интерфейс + as unknown as (детерминированно).
+  const rows = (data ?? []) as unknown as SearchExerciseRow[];
+  return rows.map((row) => ({
     id: row.id,
     name: row.name,
-    primary_muscles: getList(row, 'primary_muscles'),
-    equipment: getList(row, 'equipment'),
+    primary_muscles: row.primary_muscles ?? [],
+    equipment: row.equipment ?? [],
     popularity: Number(row.popularity) || 0,
-    can_be_activation: row.can_be_activation ?? false,   // ✅ НОВОЕ
+    can_be_activation: row.can_be_activation ?? false,
   }));
 }
 
@@ -134,7 +151,6 @@ export async function getExerciseById(id: string): Promise<ExerciseDetail | null
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-
   return {
     id: data.id,
     name: data.name,
@@ -156,6 +172,9 @@ export async function getExerciseById(id: string): Promise<ExerciseDetail | null
 /**
  * Загрузка списка упражнений по ID (для блока альтернатив).
  * Возвращает лёгкую модель без popularity.
+ *
+ * ARCH-6: row выводится типом supabase из exercises.Row (primary_muscles: string[],
+ * equipment: string[] | null) — прямой доступ вместо getList/`:any`.
  */
 export async function getExercisesByIds(ids: string[]): Promise<ExerciseListItem[]> {
   if (ids.length === 0) return [];
@@ -164,12 +183,11 @@ export async function getExercisesByIds(ids: string[]): Promise<ExerciseListItem
     .select(LIST_FIELDS)
     .in('id', ids);
   if (error) throw error;
-
-  return (data || []).map((row: any) => ({
+  return (data || []).map((row) => ({
     id: row.id,
     name: row.name,
-    primary_muscles: getList(row, 'primary_muscles'),
-    equipment: getList(row, 'equipment'),
+    primary_muscles: row.primary_muscles ?? [],
+    equipment: row.equipment ?? [],
   }));
 }
 
@@ -188,6 +206,26 @@ export interface ExerciseRecords {
   lastPerformedAt: string | null;
 }
 
+// ARCH-6: локальные row-интерфейсы для join-структуры getExerciseRecords
+// (вместо we: any / logs: any[]). Отражают select:
+//   workout_exercises ( id, workouts!inner ( id, finished_at, started_at ), workout_logs ( weight_kg, reps ) )
+interface RecordLogRow {
+  weight_kg: number | null;
+  reps: number | null;
+}
+interface RecordWorkoutRow {
+  id: string;
+  finished_at: string | null;
+  started_at: string | null;
+}
+interface RecordWERow {
+  id: string;
+  // workouts!inner гарантирует строку в рантайме, но вывод supabase-js может дать null —
+  // поэтому доступ через ?. (defense-in-depth, без !-assertion).
+  workouts: RecordWorkoutRow | null;
+  workout_logs: RecordLogRow[] | null;
+}
+
 /**
  * Личные рекорды пользователя по упражнению.
  * Один запрос: workout_exercises → workouts + workout_logs.
@@ -196,7 +234,7 @@ export interface ExerciseRecords {
  */
 export async function getExerciseRecords(
   exerciseId: string,
-  userId: string
+  userId: string,
 ): Promise<ExerciseRecords> {
   const { data, error } = await supabase
     .from('workout_exercises')
@@ -214,25 +252,22 @@ export async function getExerciseRecords(
   let workoutCount = 0;
   let lastPerformedAt: string | null = null;
 
-  (data || []).forEach((we: any) => {
-    const logs: any[] = we.workout_logs || [];
+  const rows = (data ?? []) as unknown as RecordWERow[];
+  rows.forEach((we) => {
+    const logs = we.workout_logs ?? [];
     if (logs.length === 0) return;
-
     // Тренировка считается «выполненной», если есть хоть один записанный подход
     workoutCount += 1;
     const performedAt = we.workouts?.finished_at || we.workouts?.started_at || null;
     if (performedAt && (!lastPerformedAt || performedAt > lastPerformedAt)) {
       lastPerformedAt = performedAt;
     }
-
-    logs.forEach(log => {
+    logs.forEach((log) => {
       const weight = Number(log.weight_kg) || 0;
       const reps = Number(log.reps) || 0;
       if (weight <= 0 && reps <= 0) return;
-
       totalSets += 1;
       totalVolume += weight * reps;
-
       if (weight > 0 && (maxWeight === null || weight > maxWeight)) {
         maxWeight = weight;
         repsAtMaxWeight = reps;
