@@ -37,6 +37,7 @@ Master Refactoring Guide — FitTracker RN
 | ARCH-4|Reanimated v3 vs легаси Animated|FadeIn/Toast/Skeleton переведены на Reanimated v3 (useSharedValue/withTiming/withSpring/withRepeat); ToastProvider/SwipeableCard/BottomSheet удалены как мёртвые — легаси Animated/PanResponder/useNativeDriver в живом коде не осталось (grep чист)|FadeIn.tsx, Toast.tsx, Skeleton.tsx, ToastProvider.tsx 🗑, SwipeableCard.tsx 🗑, BottomSheet.tsx 🗑|
 | ARCH-6|систематический any в мапперах сервисов|programsService/exercisesService/warmupService/useWorkoutSession/useProgramEditor/historyService — мапперы типизированы локальными row-интерфейсами / выводом supabase; catch:any оставлены под SEC-9|programsService.ts, exercisesService.ts, warmupService.ts, useWorkoutSession.ts, useProgramEditor.ts, historyService.ts|
 | ARCH-7|types/index.ts vs types/workout.ts дублирование|types/index.ts удалён как мёртвый (0 импортов по grep); types/workout.ts — единственный источник ExerciseData/AlternativeExercise/SetData|types/index.ts 🗑, types/workout.ts|
+| ARCH-8|противопоказания через keyword-эвристики|уровень 1 → lookup по injury_exercise_warnings; computeExerciseWarnings/warmupService/useInjuryWarnings переключены; matchesContraindication @deprecated|injuries.ts, warmupService.ts, useInjuryWarnings.ts, injuriesService.ts|
 
 Новые зафиксированные факты долга:
 

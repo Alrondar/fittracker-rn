@@ -71,7 +71,7 @@ export const BODY_PARTS: Record<BodyPart, BodyPartConfig> = {
   },
   hip: {
     label: 'бедро',
-    keywords: ['бедро', 'бедр', 'тазобедр', 'бёдрах'],
+    keywords: ['бедро', 'бедр', 'тазобедр', 'бёдрах', 'пахов'],
     muscleGroups: ['ягодичные мышцы', 'большая ягодичная', 'средняя ягодичная', 'приводящие мышцы бедра', 'подвздошно-поясничная', 'бицепс бедра'],
   },
   ankle: {
@@ -91,7 +91,7 @@ export const INJURY_TYPES: Record<InjuryType, InjuryTypeConfig> = {
   strain: { label: 'растяжение', keywords: ['растяжени', 'надрыв'] },
   sprain: { label: 'вывих', keywords: ['вывих', 'растяжени связок'] },
   pain: { label: 'боль', keywords: ['боль', 'болят', 'болит', 'болезнен'] },
-  inflammation: { label: 'воспаление', keywords: ['воспалени'] },
+   inflammation: { label: 'воспаление', keywords: ['воспалени', 'тендинит'] },
   fracture: { label: 'перелом', keywords: ['перелом', 'трещин'] },
   other: { label: 'травма', keywords: ['травм', 'повреждени'] },
 };
@@ -125,8 +125,8 @@ interface ExerciseLike {
 }
 
 /**
- * УРОВЕНЬ 1 (avoid): прямое совпадение противопоказаний упражнения
- * с ключевыми словами травмы.
+ * @deprecated ARCH-8: заменено на lookup по таблице injury_exercise_warnings.
+ * Используйте getExerciseContraindications + computeExerciseWarnings.
  */
 export function matchesContraindication(
   exerciseInjuries: string[],
@@ -158,24 +158,29 @@ export function targetsInjuredMuscle(
 
 /**
  * Полный расчёт предупреждений для списка упражнений.
- * УРОВЕНЬ 1 (avoid) — по противопоказаниям; УРОВЕНЬ 2 (caution) — по правилам из БД.
+ * УРОВЕНЬ 1 (avoid) — по таблице injury_exercise_warnings (lookup вместо keyword-эвристики).
+ * УРОВЕНЬ 2 (caution) — по правилам из БД.
+ *
+ * @param contraindications - результат getExerciseContraindications(exerciseIds)
  */
 export function computeExerciseWarnings(
   exercises: ExerciseLike[],
   injuries: UserInjury[],
   rules: WarningRule[],
+  contraindications: Record<string, Array<{ body_part: string; injury_type: string; level: 'avoid' | 'caution' }>>,
 ): Record<string, InjuryWarning> {
   const warnings: Record<string, InjuryWarning> = {};
-
   for (const ex of exercises) {
-    const exInjuries = ex.injuries || [];
-
+    const exContras = contraindications[ex.id] || [];
     for (const injury of injuries) {
       const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
       const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
 
-      // УРОВЕНЬ 1: прямое противопоказание (КРАСНЫЙ) — максимальный приоритет
-      if (matchesContraindication(exInjuries, injury.body_part, injury.injury_type)) {
+      // УРОВЕНЬ 1: прямое противопоказание (КРАСНЫЙ) — lookup по таблице
+      const hasContra = exContras.some(
+        c => c.body_part === injury.body_part || c.injury_type === injury.injury_type,
+      );
+      if (hasContra) {
         const severityPrefix = injury.severity === 'high' ? '⛔' : '🚫';
         warnings[ex.id] = {
           level: 'avoid',
@@ -201,6 +206,5 @@ export function computeExerciseWarnings(
       }
     }
   }
-
   return warnings;
 }

@@ -893,7 +893,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                   <View style={cardStyles.setInputsRow}>
                     {rowSets.map((set, si) => (
                       <SetInput
-                        key={`w-${si}`}
+                        key={`w-${si}-${unit}`}
                         value={toDisplay(set.weight)}
                         placeholder={weightPlaceholder(unit)}
                         keyboardType="decimal-pad"
@@ -914,7 +914,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                   <View style={cardStyles.setInputsRow}>
                     {rowSets.map((set, si) => (
                       <SetInput
-                        key={`r-${si}`}
+                        key={`r-${si}-${unit}`}
                         value={set.reps}
                         placeholder="повт."
                         keyboardType="number-pad"

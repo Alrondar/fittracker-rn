@@ -508,6 +508,7 @@ export default function WorkoutSessionScreen() {
             data={exercises}
             keyExtractor={(item) => item.workout_exercise_id}
             renderItem={renderItem}
+            extraData={unit}
             ListEmptyComponent={renderEmpty}
             contentContainerStyle={{ paddingBottom: 120 }}
             showsVerticalScrollIndicator={false}

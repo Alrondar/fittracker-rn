@@ -99,7 +99,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | muscleColors.ts / muscleGroups.ts | цвета/группы мышц | ✅(частично) | |
 | equipmentIcons.ts|EQUIPMENT_SVG_MAP|✅|синхронизирован с ICON_MAP (73 файла); дубли по регистру убраны; нормализация через EQUIPMENT_SVG_MAP_LOWER|
 | exerciseCategories.ts | категории упражнений | структ. | |
-| injuries.ts | BODY_PARTS/INJURY_TYPES + computeExerciseWarnings | ✅(импорт) | ARCH-8 |
+| injuries.ts|BODY_PARTS/INJURY_TYPES + computeExerciseWarnings|✅|ARCH-8 ✅ (уровень 1 → lookup по таблице)|
 
 ## src/styles/components/card/
 
