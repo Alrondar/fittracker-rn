@@ -76,7 +76,7 @@ PROMPTS.md — Дополнительные промты для AI-ассист�
 | semanticColors.ts | ProgramCard, ProgramProgressCard, phaseTypes, все компоненты с цветами уровней/фаз |
 | phaseTypes.ts | ProgramProgressCard, workouts.tsx, program/[id].tsx, workout/[id].tsx |
 | muscleColors.ts | MuscleBubbles, EquipmentBubbles, EquipmentIcon |
-| equipmentIcons.ts | EquipmentIcon (⚠️ рассинхрон с ICON_MAP) |
+| equipmentIcons.ts|EquipmentIcon (ICON_MAP синхронизирован, 73 файла)|
 | injuries.ts | useInjuryWarnings, useWarmup, ExerciseCard |
 | database.types.ts | ВСЕ services, все typed-запросы (⚠️ UTF-16 + рассинхрон Functions) |
 
@@ -293,18 +293,16 @@ upsert_workout_logs(p_workout_exercise_id uuid, p_logs jsonb) — создан �
 ### 🎭 Иконки оборудования
 
 Правильный API:
-
-    <EquipmentIcon
-      name="barbell"           // ✅ проп name
-      size={24}
-      primaryMuscles={['chest']}
-    />
-
+<EquipmentIcon
+  name="barbell"           // ✅ проп name
+  size={24}
+  primaryMuscles={['chest']}
+/>
 Неправильный API:
-
-    <EquipmentIcon type="barbell" />  // ❌ пропа type НЕТ
-
+<EquipmentIcon type="barbell" />  // ❌ пропа type НЕТ
 Цвет иконки определяется по первой целевой мышце через getMuscleColor автоматически.
+EQUIPMENT_SVG_MAP ↔ ICON_MAP синхронизированы (73 файла). Dev-time assert в EquipmentIcon.tsx проверяет рассинхрон.
+Нормализация названий: EQUIPMENT_SVG_MAP_LOWER (toLowerCase + trim) в EquipmentIcon.tsx закрывает case-sensitivity из БД.
 
 ### 📐 Отступы и радиусы
 

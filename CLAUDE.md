@@ -289,10 +289,11 @@ advanceProgramProgress: день → неделя → фаза → заверш�
 
 ### Иконки оборудования
 
-    <EquipmentIcon name="barbell" size={24} primaryMuscles={['chest']} />
-    // проп name, НЕ type
-
-Рассинхрон EQUIPMENT_SVG_MAP ↔ ICON_MAP: partner.svg не замаплен, support.svg недостижим.
+<EquipmentIcon name="barbell" size={24} primaryMuscles={['chest']} />
+// проп name, НЕ type
+EQUIPMENT_SVG_MAP ↔ ICON_MAP синхронизированы: 73 SVG-файла замаплены в EquipmentIcon.tsx.
+Dev-time assert (`__DEV__`) в EquipmentIcon.tsx проверяет рассинхрон при загрузке модуля.
+Нормализация названий: EQUIPMENT_SVG_MAP_LOWER (toLowerCase + trim) в EquipmentIcon.tsx закрывает case-sensitivity из БД.
 
 ### Отступы и радиусы
 

@@ -1,3 +1,10 @@
+/**
+ * Типы тренировки (единственный источник типов упражнений для UI).
+ * ARCH-7 закрыт 01.08.2026: types/index.ts удалён как мёртвый (0 импортов).
+ * Все потребители (ExerciseCard, ExerciseSlider, useWorkoutSession, useInjuryWarnings)
+ * импортируют ExerciseData/AlternativeExercise/SetData из этого файла.
+ */
+
 export interface SetData {
   weight: string;
   reps: string;
@@ -21,7 +28,7 @@ export interface ExerciseData {
   rest_seconds: number;
   intensity: string;
   sets: SetData[];
-  reps_range?: string; // ✅ НОВОЕ
+  reps_range?: string;
 }
 
 export interface AlternativeExercise {
@@ -36,5 +43,5 @@ export interface AlternativeExercise {
   risks: string;
   injuries: string[];
   media_url: string | null;
-  reps_range?: string; // ✅ НОВОЕ
+  reps_range?: string;
 }

@@ -50,7 +50,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | ShareProgramSheet.tsx|поделиться программой|✅|ARCH-5 ✅ (colors.overlay)|
 | workout/ExerciseSlider / ExerciseCard / ExerciseInfoAccordion / MuscleBubbles / EquipmentBubbles / TechniqueMediaSlider / WarmupBlock / RestTimer / WorkoutTimer / WorkoutTabs / UnitToggle / ExerciseSettingsModal | компоненты тренировки | структ. | SCALE-5 (ExerciseCard/WarmupBlock) |
 | exercises/CategoryStrip / EquipmentSheet | фильтры справочника | ✅(частично) | EquipmentSheet — хардкод rgba (ARCH-1) |
-| EquipmentIcon.tsx | иконка оборудования | структ. | ARCH-5 (#6B7280?), рассинхрон ICON_MAP (ref-guide 2.F) |
+| EquipmentIcon.tsx|иконка оборудования|✅|ARCH-5 (#6B7280); ICON_MAP синхронизирован с EQUIPMENT_SVG_MAP (73 файла); dev-time assert; EQUIPMENT_SVG_MAP_LOWER|
 
 ## src/hooks/
 
@@ -97,7 +97,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | phaseTypes.ts | типы фаз + getPhaseMeta/getPhaseColor | ✅ | |
 | theme.ts | 5 акцентов × 2 режима, SPACING, BORDER_RADIUS, GRADIENTS | структ. | PERF-5 |
 | muscleColors.ts / muscleGroups.ts | цвета/группы мышц | ✅(частично) | |
-| equipmentIcons.ts | EQUIPMENT_SVG_MAP | структ. | рассинхрон с ICON_MAP (ref-guide 2.F) |
+| equipmentIcons.ts|EQUIPMENT_SVG_MAP|✅|синхронизирован с ICON_MAP (73 файла); дубли по регистру убраны; нормализация через EQUIPMENT_SVG_MAP_LOWER|
 | exerciseCategories.ts | категории упражнений | структ. | |
 | injuries.ts | BODY_PARTS/INJURY_TYPES + computeExerciseWarnings | ✅(импорт) | ARCH-8 |
 
@@ -114,7 +114,8 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | Файл|Назначение|Инспект.|Примечание|
 | ---|---|---|---|
 | database.types.ts|типы Supabase (Tables/Functions/Enums)|✅|синхронизирован с БД (UTF-8, содержит sync_program_changes_to_workouts и upsert_workout_logs)|
-| workout.ts|фабрика стилей карточки тренировки|✅|PERF-5 ✅ (width убран из workoutExerciseCard)|
+| workout.ts|типы тренировки (ExerciseData, AlternativeExercise, SetData)|✅|ARCH-7 ✅ (единственный источник типов упражнений для UI)|
+| index.ts|🗑 удалён 01.08.2026 (ARCH-7)|—|мёртвый (0 импортов), дублировал workout.ts|
 | metrics.ts|замеры|структ.| |
 
 ## src/lib/

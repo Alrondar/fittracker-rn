@@ -36,6 +36,7 @@ Master Refactoring Guide — FitTracker RN
 | ARCH-2|две системы Toast|мёртвый ToastProvider удалён из _layout; осталась одна рабочая система (hooks/useToast + компонент Toast на экране)|_layout.tsx, ToastProvider.tsx 🗑|
 | ARCH-4|Reanimated v3 vs легаси Animated|FadeIn/Toast/Skeleton переведены на Reanimated v3 (useSharedValue/withTiming/withSpring/withRepeat); ToastProvider/SwipeableCard/BottomSheet удалены как мёртвые — легаси Animated/PanResponder/useNativeDriver в живом коде не осталось (grep чист)|FadeIn.tsx, Toast.tsx, Skeleton.tsx, ToastProvider.tsx 🗑, SwipeableCard.tsx 🗑, BottomSheet.tsx 🗑|
 | ARCH-6|систематический any в мапперах сервисов|programsService/exercisesService/warmupService/useWorkoutSession/useProgramEditor/historyService — мапперы типизированы локальными row-интерфейсами / выводом supabase; catch:any оставлены под SEC-9|programsService.ts, exercisesService.ts, warmupService.ts, useWorkoutSession.ts, useProgramEditor.ts, historyService.ts|
+| ARCH-7|types/index.ts vs types/workout.ts дублирование|types/index.ts удалён как мёртвый (0 импортов по grep); types/workout.ts — единственный источник ExerciseData/AlternativeExercise/SetData|types/index.ts 🗑, types/workout.ts|
 
 Новые зафиксированные факты долга:
 
@@ -117,19 +118,15 @@ DaySettingsSheet / ExerciseSettingsSheet (без затемнения) vs Equipm
 
 ProgramCard уровни закрыто (31.07). Остаются: EquipmentIcon #6B7280 → colors.textTertiary; ProgramProgressCard color="white" → colors.textInverse; ExerciseSettingsSheet hex → токены.
 
-### F. Мёртвый код и рассинхрон карт иконок
+### F. Мёртвый код и рассинхрон карт иконок ✅ ЗАКРЫТО (03.08.2026)
 
-EQUIPMENT_SVG_MAP ↔ ICON_MAP разошлись: support.svg замаплен, но недостижим; partner.svg есть в SVG_MAP, но не замаплен (рендерится fallback). Плюс ~12 неиспользуемых SVG. useActiveProgram.ts мёртвый.
-
-Требуемое действие: добавить partner.svg в ICON_MAP, убрать/переиспользовать support.svg, dev-time assert «каждое значение SVG_MAP есть ключом в ICON_MAP», удалить мёртвые ассеты + useActiveProgram.ts.
-
-Пример теста:
-
-    test('every equipment icon reference resolves', () => {
-      Object.values(EQUIPMENT_SVG_MAP).forEach(file => {
-        expect(ICON_MAP[file]).toBeDefined();
-      });
-    });
+- EQUIPMENT_SVG_MAP ↔ ICON_MAP синхронизированы: 73 SVG-файла замаплены в EquipmentIcon.tsx
+- partner.svg и support.svg доступны через ICON_MAP
+- Dev-time assert (`__DEV__`) в EquipmentIcon.tsx проверяет рассинхрон при загрузке модуля
+- useActiveProgram.ts удалён (SCALE-3 ✅)
+- Дубли по регистру в EQUIPMENT_SVG_MAP убраны; нормализация через EQUIPMENT_SVG_MAP_LOWER (toLowerCase + trim)
+- 9 ранее неиспользуемых SVG-ассетов замаплены: ab-bench, battle-ropes, decline-bench, power-rack, push-up-bar, stepper, triceps-curl, trx-trainer, weightlifting-belt
+- Файл push-up bar.svg переименован в push-up-bar.svg (пробел в имени — риск для сборщика)
 
 ### G. Производительность рендера списков (частично 31.07)
 
