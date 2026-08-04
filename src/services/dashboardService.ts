@@ -148,58 +148,21 @@ return Object.values(exerciseMap)
     .slice(0, 3);
 }
 
-function parsePersonalRecordsFromLogs(rows: any[]): DashboardPersonalRecord[] {
-  const prMap: Record<string, DashboardPersonalRecord> = {};
-
-  rows?.forEach((log: any) => {
-    const workoutExercise = Array.isArray(log.workout_exercises)
-      ? log.workout_exercises[0]
-      : log.workout_exercises;
-
-    const workout = Array.isArray(workoutExercise?.workouts)
-      ? workoutExercise.workouts[0]
-      : workoutExercise?.workouts;
-
-    const exerciseId = workoutExercise?.exercise_id;
-
-    if (!exerciseId) return;
-
-    const exerciseName = workoutExercise?.exercises?.name || 'Упражнение';
-    const weight = parseFloat(log.weight_kg) || 0;
-    const reps = parseInt(log.reps) || 0;
-    const recordDate = workout?.created_at || '';
-
-    if (weight <= 0) return;
-
-    if (!prMap[exerciseId] || weight > prMap[exerciseId].maxWeight) {
-      prMap[exerciseId] = {
-        exerciseName,
-        maxWeight: weight,
-        maxReps: reps,
-        recordDate,
-      };
-    }
-  });
-
-  return Object.values(prMap).slice(0, 5);
-}
-
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const [
-    profileResult,
-    activeProgramResult,
-    workoutDatesResult,
-    weeklyStatsResult,
-    lastWorkoutResult,
-    totalWorkoutsResult,
-    recentWorkoutsResult,
-    personalRecordsResult,
-  ] = await Promise.allSettled([
-    supabase
-      .from('profiles')
-      .select('full_name, username')
-      .eq('id', userId)
-      .maybeSingle(),
+const [
+  profileResult,
+  activeProgramResult,
+  workoutDatesResult,
+  weeklyStatsResult,
+  lastWorkoutResult,
+  totalWorkoutsResult,
+  recentWorkoutsResult,
+] = await Promise.allSettled([
+supabase
+  .from('profiles')
+  .select('full_name, username, current_weight_kg')
+  .eq('id', userId)
+  .maybeSingle(),
 
     supabase
       .from('user_programs')
@@ -292,25 +255,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       .order('created_at', { ascending: false })
       .limit(20),
 
-    supabase
-      .from('workout_logs')
-      .select(`
-        weight_kg,
-        reps,
-        workout_exercises!inner (
-          exercise_id,
-          exercises (
-            name
-          ),
-          workouts!inner (
-            user_id,
-            created_at
-          )
-        )
-      `)
-      .eq('workout_exercises.workouts.user_id', userId)
-      .order('weight_kg', { ascending: false })
-      .limit(50),
   ]);
 
   if (__DEV__) {
@@ -335,7 +279,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     warnIfError('lastWorkout', lastWorkoutResult);
     warnIfError('totalWorkouts', totalWorkoutsResult);
     warnIfError('recentWorkouts', recentWorkoutsResult);
-    warnIfError('personalRecords', personalRecordsResult);
   }
 
   let userName = 'Пользователь';
@@ -411,23 +354,35 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       .filter(Boolean);
   }
 
-  let weeklyStats = {
-    workoutsCount: 0,
-    totalVolume: 0,
-    burnedCalories: 0,
-  };
+let weeklyStats = {
+  workoutsCount: 0,
+  totalVolume: 0,
+  burnedCalories: 0,
+};
+if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
+  const workouts = weeklyStatsResult.value.data;
+  const workoutsCount = workouts?.length || 0;
+  const totalVolume = parseVolumeFromWorkouts(workouts);
 
-  if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
-    const workouts = weeklyStatsResult.value.data;
-    const workoutsCount = workouts?.length || 0;
-    const totalVolume = parseVolumeFromWorkouts(workouts);
-
-    weeklyStats = {
-      workoutsCount,
-      totalVolume,
-      burnedCalories: workoutsCount * 300,
-    };
+  // Персонализированная формула калорий (едина с profileService)
+  let userWeight = 70; // fallback
+  if (profileResult.status === 'fulfilled' && profileResult.value.data?.current_weight_kg) {
+    userWeight = parseFloat(profileResult.value.data.current_weight_kg) || 70;
   }
+
+  let burnedCalories = 0;
+  try {
+    burnedCalories = await profileService.getBurnedCalories(userId, userWeight, 7);
+  } catch {
+    burnedCalories = workoutsCount * 300; // graceful fallback
+  }
+
+  weeklyStats = {
+    workoutsCount,
+    totalVolume,
+    burnedCalories,
+  };
+}
 
   let lastWorkout: DashboardLastWorkout | null = null;
 
@@ -474,30 +429,19 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     exerciseProgress = parseExerciseProgress(recentWorkoutsResult.value.data);
   }
 
-  let personalRecords: DashboardPersonalRecord[] = [];
-
-  if (
-    personalRecordsResult.status === 'fulfilled' &&
-    !personalRecordsResult.value.error &&
-    personalRecordsResult.value.data
-  ) {
-    personalRecords = parsePersonalRecordsFromLogs(personalRecordsResult.value.data);
-  }
-
-  if (personalRecords.length === 0) {
-    try {
-      const fallbackRecords = await profileService.getPersonalRecords(userId);
-
-personalRecords = fallbackRecords.map((record) => ({
-  exerciseName: record.name,
-  maxWeight: record.maxWeight,
-  maxReps: record.reps,
-  recordDate: '',
-}));
-    } catch {
-      personalRecords = [];
-    }
-  }
+// PR без bias: переиспользуем корректную группировку из profileService
+let personalRecords: DashboardPersonalRecord[] = [];
+try {
+  const records = await profileService.getPersonalRecords(userId);
+  personalRecords = records.map((record) => ({
+    exerciseName: record.name,
+    maxWeight: record.maxWeight,
+    maxReps: record.reps,
+    recordDate: '',
+  }));
+} catch {
+  personalRecords = [];
+}
 
   return {
     userName,

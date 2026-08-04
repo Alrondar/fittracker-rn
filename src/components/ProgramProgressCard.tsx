@@ -81,9 +81,9 @@ export function ProgramProgressCard({
             style={[styles.startButton, { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
-            <Play size={16} color="white" strokeWidth={2} fill="white" />
-            <Text style={[typography.labelBold, { color: 'white', marginLeft: SPACING.xs }]}>Начать</Text>
-          </TouchableOpacity>
+    <Play size={16} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} />
+    <Text style={[typography.labelBold, { color: colors.textInverse, marginLeft: SPACING.xs }]}>Начать</Text>
+  </TouchableOpacity>
         )}
       </View>
 

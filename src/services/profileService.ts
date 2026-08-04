@@ -145,17 +145,29 @@ async getStats(userId: string): Promise<ProfileStats> {
     );
   },
 
-  async getBurnedCalories(userId: string, userWeight: number): Promise<number> {
-    const today = new Date().toISOString().split('T')[0];
-    const startOfDay = `${today}T00:00:00+00:00`;
-    const endOfDay = `${today}T23:59:59+00:00`;
+async getBurnedCalories(userId: string, userWeight: number, days: number = 1): Promise<number> {
+  let startISO: string;
+  let endISO: string;
 
-    const { data: todayWorkouts } = await supabase
-      .from('workouts')
-      .select('id, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', startOfDay)
-      .lte('created_at', endOfDay);
+  if (days === 1) {
+    // Сохраняем семантику «за сегодня» (от начала дня до конца дня)
+    const today = new Date().toISOString().split('T')[0];
+    startISO = `${today}T00:00:00+00:00`;
+    endISO = `${today}T23:59:59+00:00`;
+  } else {
+    // Для периода — последние N дней
+    const now = new Date();
+    const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    startISO = start.toISOString();
+    endISO = now.toISOString();
+  }
+
+  const { data: todayWorkouts } = await supabase
+    .from('workouts')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .gte('created_at', startISO)
+    .lte('created_at', endISO);
 
     if (!todayWorkouts || todayWorkouts.length === 0) return 0;
 

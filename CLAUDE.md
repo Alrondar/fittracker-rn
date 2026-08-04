@@ -1,6 +1,6 @@
 # FitTracker RN — Инструкции для AI-ассистента
 
-> Срез: 01.08.2026. Статусы задач → TASKS_STATUS.md. Инвентарь → FILE_INVENTORY.md. Детальный рефакторинг → refactoring_guide.md.
+> Срез: 04.08.2026. Статусы задач → TASKS_STATUS.md. Инвентарь → FILE_INVENTORY.md. Детальный рефакторинг → refactoring_guide.md.
 
 ## О проекте
 
@@ -120,7 +120,8 @@ Secret key в проекте НЕ хранится. .env в .gitignore; комм
 - body_metrics: auth.uid() = user_id (ALL)
 - exercises, equipment, exercise_equipment, injury_exercise_warnings: SELECT для всех
 
-ТРЕБУЕТ ПРОВЕРКИ: user_injuries, nutrition_logs — не задокументированы. Выполнить SELECT * FROM pg_policies WHERE tablename IN ('user_injuries','nutrition_logs');
+user_injuries: SELECT/INSERT/UPDATE/DELETE — auth.uid() = user_id
+nutrition_logs: ALL — auth.uid() = user_id
 
 ## Серверная логика (PostgreSQL RPC)
 
@@ -280,10 +281,7 @@ advanceProgramProgress: день → неделя → фаза → заверш�
 
 | Файл | Проблема |
 |---|---|
-| ProgramProgressCard.tsx | color="white" → colors.textInverse |
-| ExerciseSettingsSheet.tsx | #4CAF50/#FFC107/#F44336 → токены |
-| ExercisePickerSheet.tsx | getGroupColor '#6B7280' → colors.textTertiary |
-| Оверлеи шторок | rgba(0,0,0,0.5) → colors.overlay |
+| badge.ts / button.ts / common.ts / dashboard.ts / history.tsx | Разное | 🔲 не добавлять новый |
 
 Правило: не добавлять новый хардкод, постепенно вычищать старый.
 
@@ -409,15 +407,7 @@ Dev-time assert (`__DEV__`) в EquipmentIcon.tsx проверяет рассин
 - Если изменение затрагивает несколько документов → обновить все в одном ответе
 
 ## Известный tech debt
-
-Известный tech debt
-- supabase.from() в UI: history.tsx (выносить в services/ + React Query) — injuries.tsx ✅ через useInjuries, history/[id].tsx ✅ через historyService
-- Серверные данные в Zustand: useStore.workouts/logs/alternativesCache
-- Хардкод градиентов: history.tsx (getWorkoutGradient)
-- useWorkoutSession cleanup-эффект на deps (лишний UPDATE) — medium-term
-- RPC save_program_snapshot — атомарное сохранение программы (PERF-4/6 закрыто 01.08.2026)
-- dashboardService: PR-bias + формула калорий * 300 vs profileService
-- Превышение 500 строк: goals.tsx, program/[id].tsx, ExerciseCard.tsx, WarmupBlock.tsx
+Серверные данные в Zustand: useStore.workouts/logs/alternativesCache
 
 ## ФОРМАТ ОТВЕТА AI (СТРОГО СОБЛЮДАТЬ)
 
@@ -456,4 +446,4 @@ Dev-time assert (`__DEV__`) в EquipmentIcon.tsx проверяет рассин
 - FILE_INVENTORY.md — инвентарь файлов проекта с назначением и пометками долга
 - refactoring_guide.md — Master Refactoring Guide (детальные инструкции с примерами кода)
 
-Последнее обновление: 01.08.2026
+Последнее обновление: 04.08.2026

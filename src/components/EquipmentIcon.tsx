@@ -4,6 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 import { getMuscleColor } from '../constants/muscleColors';
 import { EQUIPMENT_SVG_MAP } from '../constants/equipmentIcons';
+import { useTheme } from '../hooks/useTheme';
 
 // Импорт всех SVG иконок (83 уникальных файла)
 import AbBenchIcon from '../assets/equipment-icons/ab-bench.svg';
@@ -224,13 +225,12 @@ export const EquipmentIcon: React.FC<EquipmentIconProps> = ({
   style,
   scale = 0.85,
 }) => {
-  // Нормализуем имя: trim + toLowerCase, ищем в нижнем индексе
+  const { colors } = useTheme();
   const svgFileName =
     EQUIPMENT_SVG_MAP_LOWER[(name ?? '').trim().toLowerCase()] || 'dumbbell.svg';
   const IconComponent = ICON_MAP[svgFileName];
-
   const iconColor =
-    primaryMuscles.length > 0 ? getMuscleColor(primaryMuscles[0]) : '#6B7280';
+    primaryMuscles.length > 0 ? getMuscleColor(primaryMuscles[0]) : colors.textTertiary;
 
   if (!IconComponent) {
     // Fallback на универсальную иконку

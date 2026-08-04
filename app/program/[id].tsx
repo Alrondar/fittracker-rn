@@ -5,63 +5,46 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
   Share,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Sprout,
   Dumbbell,
   Flame,
-  Clock,
-  Calendar,
   Play,
-  Pencil,
-  X,
   Save,
   Plus,
   TrendingUp,
   Minus,
   TrendingDown,
-  Share2,
 } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useProgramEditor } from '../../src/hooks/useProgramEditor';
-import { SPACING, GRADIENTS, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
-import { FadeIn } from '../../src/components/FadeIn';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { Toast } from '../../src/components/Toast';
 import { useToast } from '../../src/hooks/useToast';
 import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { PhaseCard } from '../../src/components/program/PhaseCard';
-import { ExerciseSettingsSheet } from '../../src/components/program/sheets/ExerciseSettingsSheet';
-import { DaySettingsSheet } from '../../src/components/program/sheets/DaySettingsSheet';
-import { ExercisePickerSheet } from '../../src/components/program/sheets/ExercisePickerSheet';
-import { ScheduleEditorSheet } from '../../src/components/program/sheets/ScheduleEditorSheet';
-import { PhaseSettingsSheet } from '../../src/components/program/sheets/PhaseSettingsSheet';
-import { ShareProgramSheet } from '../../src/components/program/sheets/ShareProgramSheet';
+import { ProgramHero } from '../../src/components/program/ProgramHero';
+import { ProgramFabs } from '../../src/components/program/ProgramFabs';
+import { ProgramDetailModals } from '../../src/components/program/ProgramDetailModals';
 import { generateShareCode, formatShareCode } from '../../src/services/programSharingService';
-import { PhaseType } from '../../src/constants/phaseTypes';
 
-
-// Светлый цвет поверх НЕтемизируемых цветных фонов: статичный hero-градиент
-// (GRADIENTS.hero) и цветные кнопки (colors.success / colors.primary) одинаковы
-// в обеих темах, поэтому текст/иконки на них фиксированно светлые. colors.textInverse
-// сюда НЕ подходит — это токен для текста на surface. Прецедент в проекте:
-// TechniqueMediaSlider рисует лейбл на тёмном скриме тем же '#FFFFFF'.
+// Светлый цвет поверх НЕтемизируемых цветных фонов (кнопки «Сохранить»/«Начать»
+// в футере). Обоснование — см. ProgramHero.tsx.
 const ON_COLOR = '#FFFFFF';
 
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
   const { toast, showToast, hideToast } = useToast();
@@ -249,77 +232,6 @@ export default function ProgramDetailScreen() {
     }).catch(() => {});
   };
 
-  const renderHero = () => (
-    <LinearGradient
-      colors={GRADIENTS.hero}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        paddingTop: SPACING.xl + 10,
-        paddingHorizontal: SPACING.lg,
-        paddingBottom: SPACING.xl,
-      }}
-    >
-      <FadeIn>
-        <Text style={[typography.h3, { color: ON_COLOR, marginBottom: SPACING.sm }]}>
-          {displayProgram.name}
-        </Text>
-        <Text style={[typography.body, { color: ON_COLOR, marginBottom: SPACING.lg, opacity: 0.9 }]}>
-          {displayProgram.description}
-        </Text>
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: SPACING.sm,
-            marginBottom: SPACING.lg,
-          }}
-        >
-          <View style={badgeStyles.metaBadge}>
-            {levelInfo.icon}
-            <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
-          </View>
-          <View style={badgeStyles.metaBadge}>
-            <Clock size={14} color={ON_COLOR} strokeWidth={1.5} />
-            <Text style={badgeStyles.metaBadgeText}>{displayProgram.duration} недель</Text>
-          </View>
-          <View style={badgeStyles.metaBadge}>
-            <Calendar size={14} color={ON_COLOR} strokeWidth={1.5} />
-            <Text style={badgeStyles.metaBadgeText}>{displayProgram.schedule.length} дн/нед</Text>
-          </View>
-        </View>
-        <View style={cardStyles.scheduleBlock}>
-          <View style={cardStyles.scheduleHeader}>
-            <Text
-              style={[
-                typography.caption,
-                { color: ON_COLOR, fontWeight: '600', opacity: 0.9 },
-              ]}
-            >
-              Расписание:
-            </Text>
-            {editMode && (
-              <TouchableOpacity
-                onPress={() => setShowScheduleEditor(true)}
-                style={cardStyles.scheduleEditButton}
-                activeOpacity={0.7}
-              >
-                <Pencil size={16} color={ON_COLOR} strokeWidth={2} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-            {displayProgram.schedule.map((day, idx) => (
-              <View key={idx} style={badgeStyles.dayChip}>
-                <Text style={badgeStyles.dayChipText}>{day}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </FadeIn>
-    </LinearGradient>
-  );
-
   return (
     <SafeAreaView
       style={[commonStyles.container, { backgroundColor: colors.background }]}
@@ -330,7 +242,18 @@ export default function ProgramDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {renderHero()}
+        <ProgramHero
+          programName={displayProgram.name}
+          programDescription={displayProgram.description}
+          duration={displayProgram.duration}
+          schedule={displayProgram.schedule}
+          levelInfo={levelInfo}
+          editMode={editMode}
+          onOpenScheduleEditor={() => setShowScheduleEditor(true)}
+          colors={colors}
+          cardStyles={cardStyles}
+          badgeStyles={badgeStyles}
+        />
 
         {/* ===== Фазы ===== */}
         <View style={{ paddingTop: SPACING.md }}>
@@ -382,6 +305,7 @@ export default function ProgramDetailScreen() {
               onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
             />
           ))}
+
           {/* Добавить фазу (только в режиме редактирования) */}
           {editMode && (
             <TouchableOpacity
@@ -464,57 +388,12 @@ export default function ProgramDetailScreen() {
         </View>
       </View>
 
-      {/* FAB «Поделиться» (только вне режима редактирования) */}
-      {!editMode && (
-        <TouchableOpacity
-          onPress={openShare}
-          style={{
-            position: 'absolute',
-            top: SPACING.xl + 35 + 52,
-            right: SPACING.lg,
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: colors.surface,
-            justifyContent: 'center',
-            alignItems: 'center',
-            elevation: 4,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-          }}
-        >
-          <Share2 size={20} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
-      )}
-
-      {/* FAB редактирования */}
-      <TouchableOpacity
-        onPress={toggleEditMode}
-        style={{
-          position: 'absolute',
-          top: SPACING.xl + 35,
-          right: SPACING.lg,
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: colors.surface,
-          justifyContent: 'center',
-          alignItems: 'center',
-          elevation: 4,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        }}
-      >
-        {editMode ? (
-          <X size={20} color={colors.error} strokeWidth={2} />
-        ) : (
-          <Pencil size={20} color={colors.primary} strokeWidth={2} />
-        )}
-      </TouchableOpacity>
+      <ProgramFabs
+        editMode={editMode}
+        onOpenShare={openShare}
+        onToggleEditMode={toggleEditMode}
+        colors={colors}
+      />
 
       <Toast
         message={toast.message}
@@ -523,125 +402,59 @@ export default function ProgramDetailScreen() {
         onHide={hideToast}
       />
 
-      {/* ===== Модалки ===== */}
-      <Modal
-        visible={showPhaseSettings}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowPhaseSettings(false)}
-      >
-        <PhaseSettingsSheet
-          phase={selectedPhaseIndex >= 0 ? phases[selectedPhaseIndex] : null}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          onSave={(settings) => {
-            if (selectedPhaseIndex >= 0) {
-              updatePhaseSettings(selectedPhaseIndex, settings);
-              showToast('Настройки фазы сохранены (не забудьте сохранить программу)', 'success');
-            }
-            setShowPhaseSettings(false);
-          }}
-          onClose={() => setShowPhaseSettings(false)}
-        />
-      </Modal>
-
-      <Modal
-        visible={showExerciseSettings}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowExerciseSettings(false)}
-      >
-        <ExerciseSettingsSheet
-          exercise={selectedExercise}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          onSave={(params) => {
-            if (selectedExercise && selectedDayIndex >= 0 && selectedExerciseIndex >= 0) {
-              updateExerciseParams(selectedDayIndex, selectedExerciseIndex, params);
-              showToast('Параметры обновлены', 'success');
-            }
-            setShowExerciseSettings(false);
-          }}
-          onClose={() => setShowExerciseSettings(false)}
-        />
-      </Modal>
-
-      <Modal
-        visible={showDaySettings}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowDaySettings(false)}
-      >
-        <DaySettingsSheet
-          day={selectedDay}
-          colors={colors}
-          buttonStyles={buttonStyles}
-onSave={(settings: {
-  name: string;
-  phase_type: PhaseType;
-  weeks_count: number;
-  description: string;
-}) => {            if (selectedDayIndex >= 0) {
-              updateDaySettings(selectedDayIndex, settings);
-              showToast('Настройки дня сохранены', 'success');
-            }
-            setShowDaySettings(false);
-          }}
-          onClose={() => setShowDaySettings(false)}
-        />
-      </Modal>
-
-      {/* Пикер самодостаточен: поиск/фильтры/иконки живёт внутри него.
-          Экран передаёт только колбэк выбора + закрытие + стили. */}
-      <Modal
-        visible={showExercisePicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowExercisePicker(false)}
-      >
-        <ExercisePickerSheet
-          onSelectExercise={handleAddExerciseFromPicker}
-          onClose={() => setShowExercisePicker(false)}
-          colors={colors}
-          badgeStyles={badgeStyles}
-        />
-      </Modal>
-
-      <Modal
-        visible={showScheduleEditor}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowScheduleEditor(false)}
-      >
-        <ScheduleEditorSheet
-          schedule={editedProgram?.schedule || []}
-          onSave={(newSchedule) => {
-            updateSchedule(newSchedule);
-            showToast('Расписание обновлено (не забудьте сохранить программу)', 'success');
-            setShowScheduleEditor(false);
-          }}
-          onClose={() => setShowScheduleEditor(false)}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          badgeStyles={badgeStyles}
-        />
-      </Modal>
-
-      {/* Модалка шаринга по коду */}
-      <Modal
-        visible={showShareModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowShareModal(false)}
-      >
-        <ShareProgramSheet
-          code={shareCode}
-          loading={shareLoading}
-          programName={program.name}
-          onShare={shareViaSystem}
-          onClose={() => setShowShareModal(false)}
-        />
-      </Modal>
+      {/* ===== Модалки (вынесены в ProgramDetailModals) ===== */}
+      <ProgramDetailModals
+        showPhaseSettings={showPhaseSettings}
+        setShowPhaseSettings={setShowPhaseSettings}
+        selectedPhase={selectedPhaseIndex >= 0 ? phases[selectedPhaseIndex] : null}
+        onSavePhaseSettings={(settings) => {
+          if (selectedPhaseIndex >= 0) {
+            updatePhaseSettings(selectedPhaseIndex, settings);
+            showToast('Настройки фазы сохранены (не забудьте сохранить программу)', 'success');
+          }
+          setShowPhaseSettings(false);
+        }}
+        showExerciseSettings={showExerciseSettings}
+        setShowExerciseSettings={setShowExerciseSettings}
+        selectedExercise={selectedExercise}
+        onSaveExerciseParams={(params) => {
+          if (selectedExercise && selectedDayIndex >= 0 && selectedExerciseIndex >= 0) {
+            updateExerciseParams(selectedDayIndex, selectedExerciseIndex, params);
+            showToast('Параметры обновлены', 'success');
+          }
+          setShowExerciseSettings(false);
+        }}
+        showDaySettings={showDaySettings}
+        setShowDaySettings={setShowDaySettings}
+        selectedDay={selectedDay}
+        onSaveDaySettings={(settings) => {
+          if (selectedDayIndex >= 0) {
+            updateDaySettings(selectedDayIndex, settings);
+            showToast('Настройки дня сохранены', 'success');
+          }
+          setShowDaySettings(false);
+        }}
+        showExercisePicker={showExercisePicker}
+        setShowExercisePicker={setShowExercisePicker}
+        onSelectExercise={handleAddExerciseFromPicker}
+        showScheduleEditor={showScheduleEditor}
+        setShowScheduleEditor={setShowScheduleEditor}
+        schedule={editedProgram?.schedule || []}
+        onSaveSchedule={(newSchedule) => {
+          updateSchedule(newSchedule);
+          showToast('Расписание обновлено (не забудьте сохранить программу)', 'success');
+          setShowScheduleEditor(false);
+        }}
+        showShareModal={showShareModal}
+        setShowShareModal={setShowShareModal}
+        shareCode={shareCode}
+        shareLoading={shareLoading}
+        programName={program.name}
+        onShareViaSystem={shareViaSystem}
+        colors={colors}
+        buttonStyles={buttonStyles}
+        badgeStyles={badgeStyles}
+      />
     </SafeAreaView>
   );
 }

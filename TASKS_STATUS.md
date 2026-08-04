@@ -1,6 +1,6 @@
 TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
-Срез: 31.07.2026. Статусы = по факту кода на диске, не по намерениям.
+Срез: 04.08.2026. Статусы = по факту кода на диске, не по намерениям.
 Легенда: ✅ закрыто | 🟡 частично | 🔲 открыто
 
 ## 🔴 Безопасность (SEC)
@@ -14,7 +14,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | SEC-6|🟡|неатомарный DELETE+INSERT workout_logs в saveWorkout|✅|01.08.2026 (RPC upsert_workout_logs: INSERT ON CONFLICT + удаление отсутствующих в одной транзакции)|| SEC-7 | 🟡 | ошибка advanceProgramProgress маскировалась под «Успех» | ✅ | 31.07.2026 (честный Alert + «Повторить/Позже», Haptics.Warning) |
 | SEC-8 | 🟡 | кастомная схема fittracker:// вместо Universal/App Links | 🔲 | |
 | SEC-9 | 🟢 | сырые ошибки Postgres пользователю | 🔲 | единый маппер не создан |
-| SEC-10 | 🟢 | прямые supabase.* в UI|✅|01.08.2026 (history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый через useInjuries)|
+| SEC-10 | 🟢 | прямые supabase.* в UI|✅|04.08.2026 (history.tsx ✅ useHistory; history/[id].tsx ✅ historyService.getWorkoutDetail; injuries.tsx ✅ useInjuries)|
 
 ## 🏗️ Архитектура (ARCH)
 
@@ -24,7 +24,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | ARCH-2 | 🟠 | две системы Toast (useToast + мёртвый ToastProvider context)|✅|01.08.2026 (мёртвый ToastProvider удалён из _layout; канон = hooks/useToast + компонент Toast на экране)|
 | ARCH-3 | 🟡 | дубли маппинга уровень→цвет | ✅ |01.08.2026 (ProgramCard ✅, ProgramFormSheet ✅ — LEVEL_COLORS из semanticCol
 | ARCH-4 | 🟡 | Reanimated v3 vs легаси Animated (FadeIn/Toast/SwipeableCard/BottomSheet)|✅|01.08.2026 (FadeIn/Toast/Skeleton → Reanimated v3; ToastProvider/SwipeableCard/BottomSheet удалены как мёртвые; grep по маркерам легаси пуст)|
-| ARCH-5 | 🟡 | хардкод цветов в UI-компонентах|✅|01.08.2026 (ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на colors.overlay/textTertiary/success/warning/error)|
+| ARCH-5 | 🟡 | хардкод цветов в UI-компонентах | ✅ | 04.08.2026 (ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet, ProgramProgressCard, EquipmentIcon, EquipmentSheet — заменено на colors.overlay/textTertiary/textInverse/success/warning/error) |
 | ARCH-6 | 🟡 | систематический any в мапперах сервисов|✅|01.08.2026 (programsService/exercisesService/warmupService/useWorkoutSession/useProgramEditor/historyService — мапперы типизированы локальными row-интерфейсами / выводом supabase; catch:any оставлены под SEC-9; getList/getString в lib/supabase — вне скоупа)|
 | ARCH-7 | 🟢 | types/index.ts vs types/workout.ts дублирование|✅|01.08.2026 (types/index.ts удалён как мёртвый — 0 импортов; types/workout.ts остался единственным источником ExerciseData/AlternativeExercise/SetData)|
 | ARCH-8 | 🟢 | противопоказания через keyword-эвристики|✅|01.08.2026 (уровень 1 → lookup по injury_exercise_warnings; computeExerciseWarnings/warmupService/useInjuryWarnings переключены; matchesContraindication @deprecated)|
@@ -49,7 +49,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | SCALE-2 | 🟡 | нет Sentry/crash-мониторинга | 🔲 | |
 | SCALE-3 | 🟢 | мёртвый код/ассеты|✅|useActiveProgram.ts удалён|
 | SCALE-4 | 🟢 | секреты/конфиг в 3 местах | 🔲 | |
-| SCALE-5 | 🟡 | модули > 500 строк | 🟡 | useProgramEditor разбит (+useProgramPhases); useWorkoutSession/ExerciseCard/WarmupBlock — нет |
+| SCALE-5 | 🟡 | модули > 500 строк | 🟡 | ✅|04.08.2026 (useProgramEditor разбит; ExerciseCard + WarmupBlock → ExerciseInfoAccordion; WarmupExerciseCard вынесен; program/[id].tsx разбит; goals.tsx разбит на constants/utils/components/steps)|
 | SCALE-6 | 🟡 | RPC не под ревью | ✅ | 29.07.2026 (аудит) |
 | SCALE-7 | 🟢 | дрейф документации | 🟡 | обновлено 31.07.2026 (этот срез) |
 

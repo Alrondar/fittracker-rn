@@ -35,11 +35,11 @@ export function ExerciseSettingsSheet({
     (exercise?.intensity as 'high' | 'medium' | 'low') || 'medium',
   );
 
-  const intensities = [
-    { value: 'low' as const, label: 'Низкая', color: '#4CAF50', icon: TrendingDown },
-    { value: 'medium' as const, label: 'Средняя', color: '#FFC107', icon: Minus },
-    { value: 'high' as const, label: 'Высокая', color: '#F44336', icon: TrendingUp },
-  ];
+const intensities = [
+  { value: 'low' as const, label: 'Низкая', color: colors.success, icon: TrendingDown },
+  { value: 'medium' as const, label: 'Средняя', color: colors.warning, icon: Minus },
+  { value: 'high' as const, label: 'Высокая', color: colors.error, icon: TrendingUp },
+];
 
   return (
     // ✅ KeyboardAvoidingView поднимает панель над клавиатурой на iOS;

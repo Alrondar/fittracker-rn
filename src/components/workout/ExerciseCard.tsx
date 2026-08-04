@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import {
   Settings,
   ChevronRight,
@@ -26,117 +20,17 @@ import { getMuscleColor } from '../../constants/muscleColors';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { TechniqueMediaSlider } from './TechniqueMediaSlider';
 import { ExerciseData, AlternativeExercise, SetData } from '../../types/workout';
-import { useTheme } from '../../hooks/useTheme';
 import {
   WeightUnit,
   weightToDisplay,
   weightFromDisplay,
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
-
+import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
 // Мост к reps_range (поле опционально — компонент компилируется и без него).
 type RepsRangeHolder = { reps_range?: string };
 
 type SectionKey = 'technique' | 'info' | 'benefits' | 'risks' | 'injuries';
-
-function ExpandableBody({
-  expanded,
-  maxHeight,
-  children,
-}: {
-  expanded: boolean;
-  maxHeight: number;
-  children: React.ReactNode;
-}) {
-  const progress = useSharedValue(expanded ? 1 : 0);
-  useEffect(() => {
-    progress.value = withTiming(expanded ? 1 : 0, {
-      duration: 280,
-      easing: Easing.out(Easing.cubic),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded]);
-  const style = useAnimatedStyle(() => ({
-    maxHeight: progress.value * maxHeight,
-    opacity: 0.1 + progress.value * 0.9,
-    transform: [{ translateY: (1 - progress.value) * -6 }],
-  }));
-  return (
-    <Animated.View
-      pointerEvents={expanded ? 'auto' : 'none'}
-      style={[{ overflow: 'hidden' }, style]}
-    >
-      <View
-        style={{
-          paddingTop: SPACING.sm,
-          paddingBottom: SPACING.xs,
-          paddingHorizontal: 2,
-        }}
-      >
-        {children}
-      </View>
-    </Animated.View>
-  );
-}
-
-function InfoAccordion({
-  icon,
-  title,
-  titleColor,
-  expanded,
-  onToggle,
-  maxHeight = 400,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  titleColor: string;
-  expanded: boolean;
-  onToggle: () => void;
-  maxHeight?: number;
-  children: React.ReactNode;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ marginTop: SPACING.sm }}>
-      <TouchableOpacity
-        onPress={onToggle}
-        activeOpacity={0.7}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: SPACING.xs + 2,
-          paddingHorizontal: SPACING.sm,
-          borderRadius: BORDER_RADIUS.md,
-          backgroundColor: colors.surfaceSecondary,
-        }}
-      >
-        {icon}
-        <Text
-          style={[
-            typography.captionSmall,
-            {
-              color: titleColor,
-              fontWeight: '700',
-              marginLeft: 6,
-              flex: 1,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            },
-          ]}
-        >
-          {title}
-        </Text>
-        <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-          <ChevronDown size={14} color={colors.textTertiary} />
-        </View>
-      </TouchableOpacity>
-      <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
-        {children}
-      </ExpandableBody>
-    </View>
-  );
-}
 
 const formatEquipmentName = (name: string) =>
   name.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -523,7 +417,7 @@ export const ExerciseCard = memo(function ExerciseCard({
       )}
 
       {hasTechniqueContent || hasEquipmentContent ? (
-        <InfoAccordion
+        <ExerciseInfoAccordion
           icon={
             hasTechniqueContent ? (
               <BookOpen size={14} color={colors.primary} />
@@ -625,14 +519,14 @@ export const ExerciseCard = memo(function ExerciseCard({
               </Text>
             </>
           ) : null}
-        </InfoAccordion>
+        </ExerciseInfoAccordion>
       ) : null}
 
       {isMain &&
         (exercise.benefits ||
           exercise.risks ||
           exercise.injuries.length > 0) && (
-          <InfoAccordion
+          <ExerciseInfoAccordion
             icon={<ShieldAlert size={14} color={colors.warning} />}
             title="Важно знать"
             titleColor={colors.warning}
@@ -749,13 +643,13 @@ export const ExerciseCard = memo(function ExerciseCard({
                 ))}
               </View>
             ) : null}
-          </InfoAccordion>
+          </ExerciseInfoAccordion>
         )}
 
       {!isMain && (
         <>
           {exercise.benefits ? (
-            <InfoAccordion
+            <ExerciseInfoAccordion
               icon={<Sparkles size={14} color={colors.success} />}
               title="Польза"
               titleColor={colors.success}
@@ -770,10 +664,10 @@ export const ExerciseCard = memo(function ExerciseCard({
               >
                 {exercise.benefits}
               </Text>
-            </InfoAccordion>
+            </ExerciseInfoAccordion>
           ) : null}
           {exercise.risks ? (
-            <InfoAccordion
+            <ExerciseInfoAccordion
               icon={<AlertTriangle size={14} color={colors.warning} />}
               title="Риски"
               titleColor={colors.warning}
@@ -788,10 +682,10 @@ export const ExerciseCard = memo(function ExerciseCard({
               >
                 {exercise.risks}
               </Text>
-            </InfoAccordion>
+            </ExerciseInfoAccordion>
           ) : null}
           {exercise.injuries.length > 0 ? (
-            <InfoAccordion
+            <ExerciseInfoAccordion
               icon={<ShieldAlert size={14} color={colors.error} />}
               title="Противопоказания"
               titleColor={colors.error}
@@ -825,7 +719,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                   </Text>
                 </View>
               ))}
-            </InfoAccordion>
+            </ExerciseInfoAccordion>
           ) : null}
           <TouchableOpacity
             style={[

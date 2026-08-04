@@ -1,6 +1,6 @@
 Master Refactoring Guide — FitTracker RN
 
-ОБНОВЛЕНО 01.08.2026. Исходный аудит — 29.07.2026.
+ОБНОВЛЕНО 04.08.2026. Исходный аудит — 29.07.2026.
 Статусы задач → TASKS_STATUS.md. Инвентарь файлов → FILE_INVENTORY.md.
 Этот guide сохраняет детальный разбор проблем с примерами кода.
 
@@ -18,7 +18,7 @@ Master Refactoring Guide — FitTracker RN
 | FIT-5 | Строка «Следующая: Фаза N, Неделя X» в шапке списка тренировок. | (tabs)/workouts.tsx renderHeader |
 | FIT-6 | Название программы + фаза в шапке тренировки. | (tabs)/workout/[id].tsx (getWorkoutProgramInfo) |
 | ARCH-3 | ProgramCard переведён на единый LEVEL_COLORS (хардкод уровней убран). ProgramFormSheet — НЕ подтверждено. | ProgramCard.tsx |
-| SCALE-5 | useProgramEditor разбит: фазовая логика вынесена в useProgramPhases. | useProgramEditor.ts + useProgramPhases.ts |
+| SCALE-5|useProgramEditor разбит (+useProgramPhases); program/[id].tsx разбит (ProgramHero/Fabs/DetailModals); goals.tsx разбит (constants/goals.ts + utils/macroCalculator.ts + components/goals/GoalsComponents/GoalsStep1/GoalsStep2/GoalsStep3).|useProgramEditor.ts + useProgramPhases.ts + program/ProgramHero.tsx + program/ProgramFabs.tsx + program/ProgramDetailModals.tsx + constants/goals.ts + utils/macroCalculator.ts + components/goals/*|
 | SCALE-7 | Документация актуализирована; команда регенерации типов переведена на --db-url (legacy-ключи отключены). | CLAUDE.md, этот файл |
 | SEC-2|updateSet() не персистит до saveWorkout (краш = потеря тренировки)|debounce 500мс + RPC upsert_workout_logs + flush при размонтировании|useWorkoutSession.ts|
 | SEC-6|неатомарный DELETE+INSERT workout_logs в saveWorkout|RPC upsert_workout_logs: INSERT ON CONFLICT + удаление отсутствующих в одной транзакции|useWorkoutSession.ts|
@@ -49,75 +49,24 @@ Master Refactoring Guide — FitTracker RN
 
 ## Часть 2. Детальная инструкция по переработке
 
-### A. Безопасность и контроль доступа
+### A. Безопасность и контроль доступа ✅ ЗАКРЫТО (04.08.2026)
 
-Файл/Модуль: src/services/injuriesService.ts, src/services/profileService.ts (nutrition_logs).
+RLS для user_injuries (SELECT/INSERT/UPDATE/DELETE по auth.uid() = user_id) и nutrition_logs (ALL по auth.uid() = user_id) подтверждены запросом к pg_policies. Задокументированы в CLAUDE.md.
 
-Текущая проблема: таблицы user_injuries и nutrition_logs отсутствуют в консолидированном списке RLS CLAUDE.md. Либо политики есть, но не задокументированы, либо их нет вовсе.
+### B. Целостность данных при записи (атомарность) ✅ ЗАКРЫТО (04.08.2026)
 
-Требуемое действие: SELECT * FROM pg_policies WHERE tablename IN ('user_injuries','nutrition_logs');. Если нет — завести по образцу body_metrics (ALL по auth.uid() = user_id) и дописать в CLAUDE.md.
+useWorkoutSession: SEC-2/SEC-6 закрыты (debounce + RPC upsert_workout_logs); SEC-7 закрыт 31.07; cleanup-эффект вынесен на пустые deps + ref-зеркала isWorkoutActiveRef/isFinishingRef — лишний UPDATE при смене isFinishing устранён.
+useProgramEditor: PERF-4/PERF-6 закрыты 01.08.2026 (RPC save_program_snapshot).
 
-Пример кода (миграция, если политик нет):
+### C. Корректность бизнес-логики ✅ ЗАКРЫТО (04.08.2026)
 
-    ALTER TABLE user_injuries ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY "Users can manage their own injuries" ON user_injuries
-      FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-    -- аналогично для nutrition_logs
+PR-bias устранён: dashboardService переиспользует profileService.getPersonalRecords (корректная группировка по exercise_id). Формула калорий унифицирована: getBurnedCalories(days=7) вместо workoutsCount*300.
 
-### B. Целостность данных при записи (атомарность)
+### D. Дизайн-система: несогласованность оверлеев шторок (ARCH-1) ✅ ЗАКРЫТО (04.08.2026)
+- EquipmentSheet → colors.overlay; ExercisePickerSheet и ProgramFormSheet уже на colors.overlay; DaySettingsSheet/ExerciseSettingsSheet — без затемнения (осознанное исключение); SheetShell-based и модалки profile.tsx/metrics.tsx — colors.overlay. Централизация на SheetShell не требуется.
 
-Файл/Модуль: src/hooks/useWorkoutSession.ts. Проблемы: SEC-2 (updateSet не персистит), SEC-7 (закрыто 31.07), cleanup-эффект на deps [isWorkoutActive, isFinishing, workoutId] (лишний UPDATE при смене isFinishing).
-
-Требуемое действие: debounce-автосохранение через RPC upsert_workout_logs (закрывает SEC-2 + SEC-6); cleanup вынести в useEffect(() => () => {...}, []) + читать флаги через ref.
-
-Пример бага SEC-7 (старое поведение, до 31.07):
-
-    } catch (progressError: any) {
-      console.error('Ошибка обновления прогресса:', progressError);
-      Alert.alert(
-        'Успех', // ← должно быть честное сообщение + progressError.message
-        `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
-      );
-      router.replace('/(tabs)/history');
-    }
-
-Файл/Модуль: src/hooks/useProgramEditor.ts → saveProgram(). Проблема: PERF-4 (2 запроса на упражнение), PERF-6 (нет транзакции; supabase-js резолвит промис с {error}, Promise.all не прерывается → тихое частичное искажение).
-
-Требуемое действие: свернуть сохранение в один Postgres RPC с транзакцией, принимающий JSON-снапшот дерева программы.
-
-Пример кода (текущее поведение):
-
-    updatePromises.push(Promise.resolve(supabase.rpc('update_exercise_position', {...})));
-    updatePromises.push(Promise.resolve(supabase.from('program_exercises').update({...}).eq('id', exercise.id)));
-    // ...
-    const results = await Promise.all(updatePromises); // не прерывается на ошибке
-    const errors = results.filter((r: any) => r && r.error);
-    if (errors.length > 0) throw errors[0].error; // остальные N-1 успешных мутаций уже применены
-
-### C. Корректность бизнес-логики
-
-Файл/Модуль: src/services/dashboardService.ts. Проблемы: PR-bias (.order('weight_kg', { ascending: false }).limit(50) без группировки по упражнению); разные формулы калорий (дашборд * 300 vs профиль 5.0 * вес * часы).
-
-Требуемое действие: SELECT DISTINCT ON (exercise_id) ... ORDER BY exercise_id, weight_kg DESC или переиспользовать profileService.getPersonalRecords; формулу калорий вынести в один метод и дёргать из дашборда.
-
-### D. Дизайн-система: несогласованность оверлеев шторок (ARCH-1)
-
-DaySettingsSheet / ExerciseSettingsSheet (без затемнения) vs EquipmentSheet / ExercisePickerSheet / ProgramFormSheet (хардкод rgba) vs SheetShell-based и модалки в profile.tsx / metrics.tsx (colors.overlay).
-
-Требуемое действие: централизовать на SheetShell.
-
-Пример кода (что убрать):
-
-    // DaySettingsSheet.tsx / ExerciseSettingsSheet.tsx — нет затемнения:
-    <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-      <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
-      ...
-    // EquipmentSheet.tsx / ExercisePickerSheet.tsx / ProgramFormSheet.tsx — хардкод:
-    backgroundColor: 'rgba(0,0,0,0.5)', // должно быть colors.overlay
-
-### E. Дизайн-система: хардкод цветов (ARCH-5)
-
-ProgramCard уровни закрыто (31.07). Остаются: EquipmentIcon #6B7280 → colors.textTertiary; ProgramProgressCard color="white" → colors.textInverse; ExerciseSettingsSheet hex → токены.
+### E. Дизайн-система: хардкод цветов (ARCH-5) ✅ ЗАКРЫТО (04.08.2026)
+- ProgramCard уровни закрыто (31.07). ProgramProgressCard color="white" → colors.textInverse; ExerciseSettingsSheet hex → colors.success/w
 
 ### F. Мёртвый код и рассинхрон карт иконок ✅ ЗАКРЫТО (03.08.2026)
 
@@ -133,12 +82,10 @@ ProgramCard уровни закрыто (31.07). Остаются: EquipmentIcon
 
 workouts.tsx render* обёрнуты в useCallback (закрыто). history.tsx — проверить.
 
-### H. Нарушение слоя данных в UI (SEC-10 остаток)
+### H. Нарушение слоя данных в UI ✅ ЗАКРЫТО (04.08.2026)
 
-history/[id].tsx — прямой supabase.from('workouts'); при сетевой ошибке catch логирует, пользователь видит то же «не найдена», что и при 404. Требуемое действие: historyService.getWorkoutDetail(id) + различать not-found/error.
+history/[id].tsx → historyService.getWorkoutDetail; history.tsx → useHistory + historyService; injuries.tsx → useInjuries. Прямых supabase.* в UI не осталось.
 
-### I. Излишние разрешения
+### I. Излишние разрешения ✅ ЗАКРЫТО (04.08.2026)
 
-app.json включает RECORD_AUDIO/MODIFY_AUDIO_SETTINGS, но timerSounds.ts только воспроизводит. Требуемое действие: убрать RECORD_AUDIO.
-
-Последнее обновление: 31.07.2026
+RECORD_AUDIO/MODIFY_AUDIO_SETTINGS убраны из app.json.

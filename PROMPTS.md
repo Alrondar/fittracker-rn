@@ -1,6 +1,6 @@
 PROMPTS.md — Дополнительные промты для AI-ассистента
 
-Срез: 01.08.2026. Подключать по требованию, чтобы не раздувать CLAUDE.md.
+Срез: 04.08.2026. Подключать по требованию, чтобы не раздувать CLAUDE.md.
 Основные правила — в CLAUDE.md. Статусы задач — в TASKS_STATUS.md. Инвентарь — в FILE_INVENTORY.md.
 
 ## 🔗 Карта зависимостей модулей
@@ -61,12 +61,13 @@ PROMPTS.md — Дополнительные промты для AI-ассист�
 | (tabs)/programs.tsx | usePrograms, ProgramCard, ImportProgramSheet, getUserProgramsStatus |
 | (tabs)/workouts.tsx | useWorkouts, workoutsService, SectionHeader |
 | (tabs)/workout/[id].tsx | useWorkoutSession, ExerciseSlider, ExerciseCard, WarmupBlock, WorkoutTimer, getWorkoutProgramInfo |
-| (tabs)/program/[id].tsx | useProgramEditor, PhaseCard, DayCard, все sheets/ |
+| (tabs)/program/[id].tsx|useProgramEditor, PhaseCard, ProgramHero, ProgramFabs, ProgramDetailModals, все sheets/|
 | (tabs)/exercises.tsx | useExercises, CategoryStrip, EquipmentSheet |
 | (tabs)/exercise/[id].tsx | useExerciseDetail, TechniqueMediaSlider, MuscleBubbles |
-| (tabs)/history.tsx | ⚠️ tech debt: supabase.from в UI (SEC-10) |
+| (tabs)/history.tsx|useHistory, historyService|
 | (tabs)/history/[id].tsx | ⚠️ tech debt: supabase.from в UI (SEC-10) |
 | (tabs)/profile/settings.tsx | ✅ SEC-10 закрыт (чистый) |
+| (tabs)/profile/goals.tsx|goalsService, metricsService, GoalsStep1/2/3, GoalsComponents, macroCalculator|
 
 ### Константы и типы
 
@@ -282,10 +283,11 @@ upsert_workout_logs(p_workout_exercise_id uuid, p_logs jsonb) — создан �
 | Файл | Проблема | Статус |
 |---|---|---|
 | ProgramCard.tsx | Уровни | ✅ ЗАКРЫТО (LEVEL_COLORS) |
-| ProgramProgressCard.tsx | color="white" | 🔲 → colors.textInverse |
-| ExerciseSettingsSheet.tsx | #4CAF50 / #FFC107 / #F44336 | 🔲 → токены |
-| ExercisePickerSheet.tsx | getGroupColor '#6B7280' | 🔲 → colors.textTertiary |
-| Оверлеи шторок | rgba(0,0,0,0.5) | 🔲 → colors.overlay |
+| ProgramProgressCard.tsx | color="white" | ✅ ЗАКРЫТО (colors.textInverse) |
+| ExerciseSettingsSheet.tsx | #4CAF50 / #FFC107 / #F44336 | ✅ ЗАКРЫТО (colors.success/warning/error) |
+| ExercisePickerSheet.tsx | getGroupColor '#6B7280' | ✅ ЗАКРЫТО (colors.textTertiary) |
+| EquipmentIcon.tsx | #6B7280 fallback | ✅ ЗАКРЫТО (colors.textTertiary) |
+| Оверлеи шторок | rgba(0,0,0,0.5) | ✅ ЗАКРЫТО (EquipmentSheet → colors.overlay) |
 | badge.ts / button.ts / common.ts / dashboard.ts / history.tsx | Разное | 🔲 не добавлять новый |
 
 Правило: не добавлять новый хардкод, постепенно вычищать старый.
@@ -348,4 +350,4 @@ EQUIPMENT_SVG_MAP ↔ ICON_MAP синхронизированы (73 файла).
 - ❌ Новый хардкод сверх зафиксированного долга (ARCH-5)
 - ❌ Дублирование маппингов (уровень→цвет, фаза→цвет) — использовать канонические константы
 
-Последнее обновление: 01.08.2026
+Последнее обновление: 04.08.2026
