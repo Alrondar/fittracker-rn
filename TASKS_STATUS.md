@@ -13,7 +13,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | SEC-5 | 🟠 | сброс пароля без redirectTo | ✅ | 29.07.2026 (sendPasswordReset + deep link) |
 | SEC-6|🟡|неатомарный DELETE+INSERT workout_logs в saveWorkout|✅|01.08.2026 (RPC upsert_workout_logs: INSERT ON CONFLICT + удаление отсутствующих в одной транзакции)|| SEC-7 | 🟡 | ошибка advanceProgramProgress маскировалась под «Успех» | ✅ | 31.07.2026 (честный Alert + «Повторить/Позже», Haptics.Warning) |
 | SEC-8 | 🟡 | кастомная схема fittracker:// вместо Universal/App Links|✅|04.08.2026 (схема в app.json; sendPasswordReset + redirectTo fittracker://reset-password; PASSWORD_RECOVERY в _layout.tsx; Universal/App Links не используются; Redirect URL разрешён в Dashboard)|
-| SEC-9 | 🟢 | |сырые ошибки Postgres пользователю|✅|04.08.2026 (utils/errorMapper.ts mapError; применён в useWorkoutSession/program/[id]/goals; правило: user-facing только через mapError/mapAuthError)|
+| SEC-9 | 🟢 | сырые ошибки Postgres пользователю|✅|04.08.2026 (utils/errorMapper.ts: mapError/extractMessage; применён в useWorkoutSession, program/[id], goals; auth остаётся на mapAuthError)|
 | SEC-10 | 🟢 | прямые supabase.* в UI|✅|04.08.2026 (history.tsx ✅ useHistory; history/[id].tsx ✅ historyService.getWorkoutDetail; injuries.tsx ✅ useInjuries)|
 
 ## 🏗️ Архитектура (ARCH)
@@ -45,10 +45,10 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 | ID | Приоритет | Описание | Статус | Дата / Комментарий |
 |---|---|---|---|---|
-| SCALE-1 | 🟡 | ноль автотестов | 🔲 | |
-| SCALE-2 | 🟡 | нет Sentry/crash-мониторинга | 🔲 | |
+| SCALE-1 | 🟡 | ноль автотестов||🔲|отложено 04.08.2026 (тесты и jest удалены: конфликт типов ~64 ошибки tsc); чистые функции macroCalculator/errorMapper готовы к тестированию|
+| SCALE-2 | 🟡 | нет Sentry/crash-мониторинга|🔲|отложено до первого production-билда: dev в Expo Go (нативный Sentry не работает), DSN нет; eas.json настроен — вернуться при релизе|
 | SCALE-3 | 🟢 | мёртвый код/ассеты|✅|useActiveProgram.ts удалён|
-| SCALE-4 | 🟢 | секреты/конфиг в 3 местах | 🔲 | |
+| SCALE-4 | 🟢 | секреты/конфиг в 3 местах|✅|04.08.2026 (src/lib/config.ts — единый источник через Constants.expoConfig.extra; supabase.ts читает оттуда; app.json — единственный источник истины)|
 | SCALE-5 | 🟡 | модули > 500 строк | ✅|04.08.2026 (useProgramEditor + program/[id].tsx + goals.tsx + ExerciseCard + WarmupBlock разбиты)|
 | SCALE-6 | 🟡 | RPC не под ревью | ✅ | 29.07.2026 (аудит) |
 | SCALE-7 | 🟢 | дрейф документации | 🟡 | обновлено 31.07.2026 (этот срез) |
@@ -72,6 +72,6 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | FIT-6 | Название программы + фаза в шапке тренировки | ✅ | workout/[id].tsx → getWorkoutProgramInfo (React Query) |
 
 ## Итоговая сводка
-Закрыто полностью: SEC-1,2,4,5,6,8,9,10 (+ SEC-10 остаток: Zustand очищен) · RPC-1,2,3 · SCALE-3,5,6 · ARCH-1,2,3,4,5,6,7,8,9 · PERF-1,2,3,4,5,6 · FIT-1..6
+Закрыто полностью: SEC-1,2,4,5,6,8,9,10 (+ SEC-10 остаток: Zustand очищен) · RPC-1,2,3 · SCALE-3,4,5,6 · ARCH-1,2,3,4,5,6,7,8,9 · PERF-1,2,3,4,5,6 · FIT-1..6
 Частично: SCALE-7
-Открыто: SCALE-1, SCALE-2, SCALE-4
+Открыто (отложено): SCALE-1 (автотесты), SCALE-2 (Sentry до production-билда)

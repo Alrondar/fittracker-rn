@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { config } from './config';
 
-// Замени на свои ключи из Flutter проекта!
-const supabaseUrl = 'https://trgiihqqcovidwcqwdkl.supabase.co';
-const supabaseAnonKey = 'sb_publishable_urA0lde-UzaEHI6Et5wB2w_k5L308CK';
+// ✅ SCALE-4: ключи читаются из единого источника (config.ts → app.json → extra)
+// При смене ключа править ТОЛЬКО app.json — все сервисы подхватят автоматически.
+const supabaseUrl = config.supabaseUrl;
+const supabaseAnonKey = config.supabaseAnonKey;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

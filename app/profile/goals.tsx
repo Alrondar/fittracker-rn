@@ -15,7 +15,6 @@ import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
-import { mapError } from '../../src/utils/errorMapper';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { SPACING } from '../../src/constants/theme';
@@ -28,6 +27,7 @@ import {
   type GenderType,
   type PharmaType,
 } from '../../src/services/goalsService';
+import { mapError } from '../../src/utils/errorMapper';
 import { calculateMacros } from '../../src/utils/macroCalculator';
 import { StepDots } from '../../src/components/goals/GoalsComponents';
 import { GoalsStep1 } from '../../src/components/goals/GoalsStep1';

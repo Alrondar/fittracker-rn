@@ -50,8 +50,12 @@ export function mapError(error: unknown): string {
   if (/42703|42883|column .* does not exist|undefined function|syntax error/.test(m)) {
     return 'Сервис временно недоступен. Попробуй позже.';
   }
-  // Не найдено
-  if (/not found|no rows|404|pgrst116/.test(m)) {
+  // Не найдено (включая Supabase .single()/.maybeSingle() на пустой выборке)
+  if (
+    /not found|no rows|404|pgrst116|json object requested|multiple .* rows returned|pgrst114/.test(
+      m,
+    )
+  ) {
     return 'Данные не найдены. Возможно, они были удалены.';
   }
   // Rate limit

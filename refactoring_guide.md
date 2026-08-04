@@ -40,6 +40,7 @@ Master Refactoring Guide — FitTracker RN
 | SEC-10|прямые supabase.* в UI|history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый|
 | SEC-8|кастомная схема fittracker:// вместо Universal/App Links|схема в app.json; sendPasswordReset(email, 'fittracker://reset-password'); PASSWORD_RECOVERY в _layout.tsx; Universal/App Links не используются; Redirect URL fittracker://reset-password разрешён в Dashboard (04.08.2026)|
 | SEC-9|сырые ошибки Postgres пользователю|utils/errorMapper.ts (mapError/extractMessage): сеть/RLS/unique/FK/схема/404/rate-limit → дружелюбные сообщения, сырьё → console.error; применён в useWorkoutSession, program/[id], goals; auth остаётся на mapAuthError|
+| SCALE-1|ноль автотестов|отложено 04.08.2026: тесты и jest удалены (конфликт типов ~64 ошибки tsc); macroCalculator/errorMapper остаются чистыми функциями, готовыми к тестированию|
 
 Новые зафиксированные факты долга:
 

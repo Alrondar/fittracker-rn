@@ -129,7 +129,8 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 
 | Файл | Назначение | Инспект. | Примечание |
 |---|---|---|---|
-| supabase.ts | клиент + хелперы | структ. | SCALE-4 (хардкод ключа) |
+| config.ts|единый источник конфигов (Constants.expoConfig.extra)|✅|SCALE-4 ✅|
+| supabase.ts|клиент + хелперы|✅|SCALE-4 ✅ (читает из config.ts)|
 | timerSounds.ts | WAV-бипы (expo-audio) | структ. | |
 
 ## supabase/ + корень
