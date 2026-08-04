@@ -51,7 +51,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | SCALE-4 | 🟢 | секреты/конфиг в 3 местах|✅|04.08.2026 (src/lib/config.ts — единый источник через Constants.expoConfig.extra; supabase.ts читает оттуда; app.json — единственный источник истины)|
 | SCALE-5 | 🟡 | модули > 500 строк | ✅|04.08.2026 (useProgramEditor + program/[id].tsx + goals.tsx + ExerciseCard + WarmupBlock разбиты)|
 | SCALE-6 | 🟡 | RPC не под ревью | ✅ | 29.07.2026 (аудит) |
-| SCALE-7 | 🟢 | дрейф документации | 🟡 | обновлено 31.07.2026 (этот срез) |
+| SCALE-7 | 🟢 | дрейф документации | 🟢 | дрейф документации|✅|05.08.2026 (структура стабилизирована: ROADMAP.md — планирование, refactoring_guide.md заморожен архивом, TASKS_STATUS/FILE_INVENTORY/CLAUDE/PROMPTS — активные)|
 
 ## 🗄️ Серверная логика (RPC)
 
@@ -69,9 +69,18 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | FIT-3 | Робастное удаление программы (отвязка workouts, удаление user_programs → 0 активных, защита от FK-падения) | ✅ | deleteProgram(id, userId); deleteMutation инвалидирует dashboard/workouts |
 | FIT-4 | Плейсхолдер «Нет активной программы» на Dashboard | ✅ | index.tsx → AppCard + кнопка «Выбрать программу» |
 | FIT-5 | Строка «Следующая: Фаза N, Неделя X» в workouts.tsx | ✅ | renderHeader |
-| FIT-6 | Название программы + фаза в шапке тренировки | ✅ | workout/[id].tsx → getWorkoutProgramInfo (React Query) |
+| FIT-6|Название программы + фаза в шапке тренировки|✅|workout/[id].tsx → getWorkoutProgramInfo (React Query)|
+🤖 AI-тренер (AI) — в плане, roadmap rev.2 Этап 3
+| ID|Приоритет|Описание|Статус|Дата / Комментарий|
+| ---|---|---|---|---|
+| AI-1|🔴|AI-фундамент: Edge Function llm-proxy (ключи серверно), согласие, PII-фильтр|🔲|roadmap 3.1|
+| AI-2|🟡|AI-прогрессия: рекомендации вес/повторы на следующую тренировку|🔲|roadmap 3.2|
+| AI-3|🟡|Чат-коуч: RAG по базе упражнений (pgvector) + хард-фильтры безопасности|🔲|roadmap 3.3|
+| AI-4|🟡|Генератор программ из естественного языка|🔲|roadmap 3.4|
+| AI-5|🟢|Объяснимость разминки/дилоудов|🔲|roadmap 3.5|
 
 ## Итоговая сводка
 Закрыто полностью: SEC-1,2,4,5,6,8,9,10 (+ SEC-10 остаток: Zustand очищен) · RPC-1,2,3 · SCALE-3,4,5,6 · ARCH-1,2,3,4,5,6,7,8,9 · PERF-1,2,3,4,5,6 · FIT-1..6
 Частично: SCALE-7
 Открыто (отложено): SCALE-1 (автотесты), SCALE-2 (Sentry до production-билда)
+В плане (roadmap rev.2): AI-1..5 (Этап 3 «AI-тренер»)
