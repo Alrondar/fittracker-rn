@@ -23,6 +23,7 @@ import {
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useProgramEditor } from '../../src/hooks/useProgramEditor';
+import { mapError } from '../../src/utils/errorMapper';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
@@ -209,19 +210,20 @@ export default function ProgramDetailScreen() {
   const allDays = displayProgram.days || [];
 
   // ===== Действия шаринга (program сужен до non-null) =====
-  const openShare = async () => {
-    setShowShareModal(true);
-    if (shareCode) return;
-    setShareLoading(true);
-    try {
-      const code = await generateShareCode(program.id);
-      setShareCode(code);
-    } catch (e: any) {
-      showToast(e.message || 'Не удалось создать код', 'error');
-    } finally {
-      setShareLoading(false);
-    }
-  };
+const openShare = async () => {
+  setShowShareModal(true);
+  if (shareCode) return;
+  setShareLoading(true);
+  try {
+    const code = await generateShareCode(program.id);
+    setShareCode(code);
+  } catch (e: any) {
+    console.error('[program] generateShareCode:', e);
+    showToast(mapError(e), 'error');
+  } finally {
+    setShareLoading(false);
+  }
+};
 
   const shareViaSystem = () => {
     if (!shareCode) return;

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { ChevronLeft } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { mapError } from '../../src/utils/errorMapper';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { SPACING } from '../../src/constants/theme';
@@ -104,7 +105,8 @@ export default function GoalsScreen() {
       ]);
     },
     onError: (error: Error) => {
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить цели');
+      console.error('[goals] save:', error);
+      Alert.alert('Ошибка', mapError(error));
     },
   });
   const saving = saveMutation.isPending;

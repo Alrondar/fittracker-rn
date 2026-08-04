@@ -7,6 +7,7 @@ import { initSounds, playBeep, playFinishSound } from '../lib/timerSounds';
 import { supabase } from '../lib/supabase';
 import { ExerciseData, AlternativeExercise, SetData } from '../types/workout';
 import { advanceProgramProgress } from '../services/programsService';
+import { mapError } from '../utils/errorMapper';
 
 // ============================================================================
 // ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any в loadWorkout)
@@ -232,11 +233,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         });
 
       setExercises(exercisesData);
-    } catch (error: any) {
-      Alert.alert('Ошибка', error.message || 'Не удалось загрузить тренировку');
-    } finally {
-      setLoading(false);
-    }
+  } catch (error: any) {
+    console.error('[useWorkoutSession] loadWorkout:', error);
+    Alert.alert('Ошибка', mapError(error));
+  } finally {
+    setLoading(false);
+  }
   }, [workoutId]);
 
   useEffect(() => {
@@ -686,7 +688,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               router.replace('/(tabs)/history');
             }
           } catch (error: any) {
-            Alert.alert('Ошибка', error.message || 'Не удалось сохранить тренировку');
+            console.error('[useWorkoutSession] saveWorkout:', error);
+            Alert.alert('Ошибка', mapError(error));
           } finally {
             setSaving(false);
           }

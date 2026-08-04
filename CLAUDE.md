@@ -12,8 +12,7 @@
 - Аутентификация: Supabase Auth (email/password), единый слой src/services/authService.ts
 - Стейт:
   - @tanstack/react-query ^5.101 — ВСЕ серверные данные
-  - zustand ^5 — ТОЛЬКО UI-стейт (isAuthenticated, userId, themePreferences)
-  - В useStore ещё лежат workouts/logs/alternativesCache — tech debt
+  - zustand ^5 — ТОЛЬКО UI-стейт (isAuthenticated, userId)
 - Стилизация: Единая дизайн-система через useTheme() + атомарные UI-компоненты
 - Анимации: react-native-reanimated ^3.16 + react-native-gesture-handler ~2.28
 - Иконки: lucide-react-native ^1.24 + кастомные SVG
@@ -340,7 +339,7 @@ Dev-time assert (`__DEV__`) в EquipmentIcon.tsx проверяет рассин
 - Монтировать слайдеры в свёрнутых аккордеонах
 - gen_random_uuid()::text в program_days.id / program_exercises.id (они uuid)
 - supabase.auth.* в UI (только через authService)
-- Сырые ошибки Postgres пользователю
+- Сырые ошибки Postgres пользователю (user-facing — только mapError/mapAuthError из utils/errorMapper.ts и authService)
 - Неатомарные операции (delete + insert без транзакции)
 - VirtualizedLists в ScrollView без scrollEnabled={false}
 - Дублирующиеся RLS-политики
@@ -407,7 +406,7 @@ Dev-time assert (`__DEV__`) в EquipmentIcon.tsx проверяет рассин
 - Если изменение затрагивает несколько документов → обновить все в одном ответе
 
 ## Известный tech debt
-Серверные данные в Zustand: useStore.workouts/logs/alternativesCache
+(пусто — все зафиксированные долги закрыты)
 
 ## ФОРМАТ ОТВЕТА AI (СТРОГО СОБЛЮДАТЬ)
 

@@ -27,7 +27,6 @@ Master Refactoring Guide — FitTracker RN
 | ARCH-5|хардкод цветов в UI-компонентах|ExercisePickerSheet, ExerciseSettingsSheet, ShareProgramSheet, ImportProgramSheet — заменено на токены|sheets/|
 | PERF-4|двойные запросы на упражнение в saveProgram|RPC save_program_snapshot — 1 запрос вместо N×2|useProgramEditor.ts|
 | PERF-6|нет транзакции в saveProgram|RPC save_program_snapshot — атомарная транзакция|useProgramEditor.ts|
-| SEC-10|прямые supabase.* в UI|history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый|historyService.ts, [id].tsx|
 | ARCH-3|дубли маппинга уровень→цвет|ProgramFormSheet переведён на LEVEL_COLORS из semanticColors.ts|ProgramFormSheet.tsx|
 | PERF-2|клиентский пересчёт getFilterOptions|RPC get_exercise_filter_counts — агрегация на сервере вместо выборки 870+ строк|exercisesService.ts|
 | PERF-3|тяжёлые поля в warmupService.generateWarmup|двухфазный запрос: лёгкий select (80 кандидатов) + тяжёлые тексты только для финальных 7|warmupService.ts|
@@ -38,6 +37,9 @@ Master Refactoring Guide — FitTracker RN
 | ARCH-6|систематический any в мапперах сервисов|programsService/exercisesService/warmupService/useWorkoutSession/useProgramEditor/historyService — мапперы типизированы локальными row-интерфейсами / выводом supabase; catch:any оставлены под SEC-9|programsService.ts, exercisesService.ts, warmupService.ts, useWorkoutSession.ts, useProgramEditor.ts, historyService.ts|
 | ARCH-7|types/index.ts vs types/workout.ts дублирование|types/index.ts удалён как мёртвый (0 импортов по grep); types/workout.ts — единственный источник ExerciseData/AlternativeExercise/SetData|types/index.ts 🗑, types/workout.ts|
 | ARCH-8|противопоказания через keyword-эвристики|уровень 1 → lookup по injury_exercise_warnings; computeExerciseWarnings/warmupService/useInjuryWarnings переключены; matchesContraindication @deprecated|injuries.ts, warmupService.ts, useInjuryWarnings.ts, injuriesService.ts|
+| SEC-10|прямые supabase.* в UI|history/[id].tsx → historyService.getWorkoutDetail; injuries.tsx уже чистый|
+| SEC-8|кастомная схема fittracker:// вместо Universal/App Links|схема в app.json; sendPasswordReset(email, 'fittracker://reset-password'); PASSWORD_RECOVERY в _layout.tsx; Universal/App Links не используются; Redirect URL fittracker://reset-password разрешён в Dashboard (04.08.2026)|
+| SEC-9|сырые ошибки Postgres пользователю|utils/errorMapper.ts (mapError/extractMessage): сеть/RLS/unique/FK/схема/404/rate-limit → дружелюбные сообщения, сырьё → console.error; применён в useWorkoutSession, program/[id], goals; auth остаётся на mapAuthError|
 
 Новые зафиксированные факты долга:
 
@@ -78,9 +80,9 @@ PR-bias устранён: dashboardService переиспользует profileS
 - 9 ранее неиспользуемых SVG-ассетов замаплены: ab-bench, battle-ropes, decline-bench, power-rack, push-up-bar, stepper, triceps-curl, trx-trainer, weightlifting-belt
 - Файл push-up bar.svg переименован в push-up-bar.svg (пробел в имени — риск для сборщика)
 
-### G. Производительность рендера списков (частично 31.07)
+### G. Производительность рендера списков ✅ ЗАКРЫТО (04.08.2026)
 
-workouts.tsx render* обёрнуты в useCallback (закрыто). history.tsx — проверить.
+workouts.tsx render* обёрнуты в useCallback (31.07). history.tsx подтверждён чистым: useHistory + historyService, фабрики через useMemo, FlatList с windowSize.
 
 ### H. Нарушение слоя данных в UI ✅ ЗАКРЫТО (04.08.2026)
 

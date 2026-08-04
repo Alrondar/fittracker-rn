@@ -10,7 +10,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | _layout.tsx | корневой layout: QueryClient, провайдеры, auth-гейт, onAuthStateChange | структ. | |
 | (auth)/_layout.tsx | Stack headerShown:false | структ. | |
 | (auth)/login.tsx | вход/регистрация | структ. | |
-| (auth)/reset-password.tsx | запрос письма сброса | структ. | |
+| (auth)/reset-password.tsx|запрос письма сброса|✅|SEC-8 ✅ (redirectTo fittracker://reset-password)|
 | (auth)/update-password.tsx | смена пароля по recovery | структ. | |
 | (tabs)/_layout.tsx | таб-бар layout | структ. | |
 | (tabs)/index.tsx | Dashboard (useDashboard) + плейсхолдер «нет активной программы» (FIT-4) | ✅ | |
@@ -144,3 +144,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 
 ## src/utils/
 | macroCalculator.ts|расчёт КБЖУ (calculateAge/calculateMacros)|✅|SCALE-5 (вынесено из goals.tsx)|
+| errorMapper.ts|единый маппер user-facing ошибок (mapError/extractMessage)|✅|SEC-9|
+
+## src/store/
+| store/useStore.ts|глобальный UI-стейт (auth)|✅|SEC-10 остаток ✅ (workouts/logs/alternativesCache убраны)|
