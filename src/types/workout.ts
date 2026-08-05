@@ -1,8 +1,7 @@
 /**
  * Типы тренировки (единственный источник типов упражнений для UI).
  * ARCH-7 закрыт 01.08.2026: types/index.ts удалён как мёртвый (0 импортов).
- * Все потребители (ExerciseCard, ExerciseSlider, useWorkoutSession, useInjuryWarnings)
- * импортируют ExerciseData/AlternativeExercise/SetData из этого файла.
+ * Все потребители импортируют ExerciseData/AlternativeExercise/SetData из этого файла.
  */
 
 export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
@@ -15,6 +14,10 @@ export interface SetData {
   rpe?: number | null;
   rir?: number | null;
   difficulty?: Difficulty | null;
+  // FEAT-1.1: данные из последней тренировки для подсказки прогрессии
+  previousWeight?: number | null;
+  previousReps?: number | null;
+  previousRpe?: number | null;
 }
 
 export interface ExerciseData {

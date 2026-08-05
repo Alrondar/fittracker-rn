@@ -26,9 +26,7 @@ import {
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
-// Мост к reps_range (поле опционально — компонент компилируется и без него).
 type RepsRangeHolder = { reps_range?: string };
-
 type SectionKey = 'technique' | 'info' | 'benefits' | 'risks' | 'injuries';
 
 const formatEquipmentName = (name: string) =>
@@ -46,12 +44,12 @@ interface ExerciseCardProps {
     field: 'weight' | 'reps',
     value: string,
   ) => void;
-  // FEAT-7: патч фидбека подхода (rpe → авто-rir/difficulty).
   updateSetFeedback: (
     exIndex: number,
     setIndex: number,
     patch: SetFeedbackPatch,
   ) => void;
+  applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   startRestTimer: (seconds: number) => void;
@@ -80,6 +78,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   alternatives,
   updateSet,
   updateSetFeedback,
+  applyProgression,
   isSetCompleted,
   replaceExercise,
   startRestTimer,
@@ -641,7 +640,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         </>
       )}
 
-      {/* FEAT-7: сетка подходов + фидбек вынесены в SetsGrid (SCALE-5) */}
+      {/* FEAT-7 + FEAT-1.1: сетка подходов + фидбек + прогрессия вынесены в SetsGrid (SCALE-5) */}
       {hasSets && sets.length > 0 && (
         <SetsGrid
           exerciseIndex={exerciseIndex}
@@ -650,6 +649,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           unit={unit}
           updateSet={updateSet}
           updateSetFeedback={updateSetFeedback}
+          applyProgression={applyProgression}
           isSetCompleted={isSetCompleted}
           startRestTimer={startRestTimer}
           colors={colors}

@@ -215,7 +215,7 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
   }, []);
 
   const panGesture = Gesture.Pan()
-    .simultaneousWithExternalGesture(Gesture.Native()) // ✅ РАЗРЕШАЕТ СКРОЛЛ ОДНОВРЕМЕННО
+    .simultaneousWithExternalGesture(Gesture.Native())
     .onUpdate((event) => {
       'worklet';
       const clampedX = Math.max(0, Math.min(event.x, sliderWidth));
@@ -231,13 +231,13 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
       runOnJS(commitValue)(value);
     });
 
-const animatedThumbStyle = useAnimatedStyle(() => ({
-  transform: [{ translateX: translateX.value * stepWidth }],
-}));
+  const animatedThumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value * stepWidth }],
+  }));
 
-const animatedTrackStyle = useAnimatedStyle(() => ({
-  width: translateX.value * stepWidth,
-}));
+  const animatedTrackStyle = useAnimatedStyle(() => ({
+    width: translateX.value * stepWidth,
+  }));
 
   const reset = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -314,39 +314,39 @@ const animatedTrackStyle = useAnimatedStyle(() => ({
                   borderRadius: 2,
                 }}
               />
-{/* Заполненная часть */}
-<Animated.View
-  style={[
-    {
-      position: 'absolute',
-      left: 0,
-      height: 4,
-      backgroundColor: zc,
-      borderRadius: 2,
-    },
-    animatedTrackStyle,
-  ]}
-/>
-{/* Ползунок */}
-<Animated.View
-  style={[
-    {
-      position: 'absolute',
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: zc,
-      borderWidth: 2,
-      borderColor: colors.textInverse,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 5,
-    },
-    animatedThumbStyle,
-  ]}
-/>
+              {/* Заполненная часть */}
+              <Animated.View
+                style={[
+                  {
+                    position: 'absolute',
+                    left: 0,
+                    height: 4,
+                    backgroundColor: zc,
+                    borderRadius: 2,
+                  },
+                  animatedTrackStyle,
+                ]}
+              />
+              {/* Ползунок */}
+              <Animated.View
+                style={[
+                  {
+                    position: 'absolute',
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: zc,
+                    borderWidth: 2,
+                    borderColor: colors.textInverse,
+                    shadowColor: colors.shadow,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 5,
+                  },
+                  animatedThumbStyle,
+                ]}
+              />
             </View>
           </GestureDetector>
         </View>
@@ -415,6 +415,8 @@ interface SetsGridProps {
     setIndex: number,
     patch: SetFeedbackPatch,
   ) => void;
+  // FEAT-1.1: применение прогрессии (+2.5 кг) к первому подходу
+  applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number) => void;
   colors: any;
@@ -423,6 +425,7 @@ interface SetsGridProps {
 
 /**
  * Секция «Подходы»: номера, вес/повторы, FEAT-7 фидбек (чип + кастомный ползунок),
+ * FEAT-1.1 подсказка прогрессии из последней тренировки (превью + кнопка + кастомный вес),
  * кнопка отдыха. Вынесено из ExerciseCard (SCALE-5: карточка > 500 строк).
  */
 export const SetsGrid = memo(function SetsGrid({
@@ -432,12 +435,14 @@ export const SetsGrid = memo(function SetsGrid({
   unit,
   updateSet,
   updateSetFeedback,
+  applyProgression,
   isSetCompleted,
   startRestTimer,
   colors,
   cardStyles,
 }: SetsGridProps) {
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
+  const [showCustomWeight, setShowCustomWeight] = useState(false);
   const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
   const completedSets = sets.filter((s) => isSetCompleted(s)).length;
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
@@ -449,6 +454,31 @@ export const SetsGrid = memo(function SetsGrid({
     feedbackSetIndex !== null && feedbackSetIndex < sets.length
       ? sets[feedbackSetIndex]
       : null;
+
+  // FEAT-1.1: данные из последнего подхода (одинаковы для всех сетов упражнения)
+  const previousWeight = sets[0]?.previousWeight ?? null;
+  const previousReps = sets[0]?.previousReps ?? null;
+  const previousRpe = sets[0]?.previousRpe ?? null;
+
+  // FEAT-1.1: обработчик кнопки "+2.5 кг"
+  const handleProgression = useCallback(() => {
+    if (previousWeight == null) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    applyProgression(exerciseIndex, previousWeight + 2.5);
+  }, [previousWeight, exerciseIndex, applyProgression]);
+
+  // FEAT-1.1: обработчик кастомного веса
+  const handleCustomWeightSubmit = useCallback(
+    (text: string) => {
+      const weight = parseFloat(text);
+      if (!isNaN(weight) && weight > 0) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        applyProgression(exerciseIndex, weight);
+        setShowCustomWeight(false);
+      }
+    },
+    [exerciseIndex, applyProgression],
+  );
 
   return (
     <View
@@ -477,6 +507,120 @@ export const SetsGrid = memo(function SetsGrid({
         </Text>
       </View>
       <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
+        {/* FEAT-1.1: подсказка прогрессии из последней тренировки */}
+        {previousWeight != null && (
+          <View
+            style={{
+              marginBottom: SPACING.sm,
+              padding: SPACING.sm,
+              backgroundColor: colors.primary + '08',
+              borderRadius: BORDER_RADIUS.sm,
+              borderWidth: 1,
+              borderColor: colors.primary + '20',
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: SPACING.sm,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 180 }}>
+                <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textSecondary, marginLeft: SPACING.xs },
+                  ]}
+                >
+                  Прошлый раз:{' '}
+                  <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                    {previousWeight} кг
+                  </Text>
+                  {previousReps != null && (
+                    <>
+                      {' × '}
+                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                        {previousReps}
+                      </Text>
+                    </>
+                  )}
+                  {previousRpe != null && (
+                    <Text style={{ color: colors.textTertiary }}> (RPE {previousRpe})</Text>
+                  )}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleProgression}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 4,
+                  borderRadius: BORDER_RADIUS.sm,
+                  gap: 4,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textInverse, fontWeight: '700' },
+                  ]}
+                >
+                  +2.5 кг
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowCustomWeight(!showCustomWeight)}
+                activeOpacity={0.7}
+                style={{
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 4,
+                  borderRadius: BORDER_RADIUS.sm,
+                  backgroundColor: colors.surfaceSecondary,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Свой вес
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* FEAT-1.1: поле ввода кастомного веса */}
+            {showCustomWeight && (
+              <View style={{ marginTop: SPACING.sm }}>
+                <TextInput
+                  style={{
+                    backgroundColor: colors.surfaceSecondary,
+                    borderRadius: BORDER_RADIUS.sm,
+                    padding: SPACING.sm,
+                    color: colors.textPrimary,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    fontSize: 14,
+                  }}
+                  placeholder="Введите вес в кг"
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                  onSubmitEditing={(e) => handleCustomWeightSubmit(e.nativeEvent.text)}
+                  autoFocus
+                />
+              </View>
+            )}
+          </View>
+        )}
+
         {setRowsConfig.map((rowSize, rowIndex) => {
           const startIndex = setRowsConfig
             .slice(0, rowIndex)

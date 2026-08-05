@@ -81,6 +81,7 @@ export default function WorkoutSessionScreen() {
     loadAlternatives,
     updateSet,
     updateSetFeedback,
+    applyProgression,
     isSetCompleted,
     updateExerciseSettings,
     replaceExercise,
@@ -218,6 +219,7 @@ export default function WorkoutSessionScreen() {
         loadAlternatives={loadAlternatives}
         updateSet={updateSet}
         updateSetFeedback={updateSetFeedback}
+        applyProgression={applyProgression}
         isSetCompleted={isSetCompleted}
         replaceExercise={replaceExercise}
         resetToOriginal={resetToOriginal}
@@ -235,6 +237,7 @@ export default function WorkoutSessionScreen() {
       loadAlternatives,
       updateSet,
       updateSetFeedback,
+      applyProgression,
       isSetCompleted,
       replaceExercise,
       resetToOriginal,
@@ -374,7 +377,7 @@ export default function WorkoutSessionScreen() {
               fontSize: 13,
             }}
           >
-            {avoidCount > 0 ? `${avoidCount}⛔` : ''}
+            {avoidCount > 0 ? `${avoidCount}` : ''}
             {avoidCount > 0 && cautionCount > 0 ? ' ' : ''}
             {cautionCount > 0 ? `${cautionCount}⚠️` : ''}
           </Text>

@@ -15,10 +15,8 @@ import { ExerciseCard } from './ExerciseCard';
 import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
-// PERF-5: модульные SCREEN_WIDTH / CARD_WIDTH УДАЛЕНЫ.
-// Ширина окна читается реактивно через useWindowDimensions() внутри компонента.
-const H_GAP = 16; // промежуток между карточками при свайпе
-const PAD = 16;   // боковой отступ, центрирующий первую/последнюю карточку
+const H_GAP = 16;
+const PAD = 16;
 
 interface ExerciseSliderProps {
   exercise: ExerciseData;
@@ -31,12 +29,12 @@ interface ExerciseSliderProps {
     field: 'weight' | 'reps',
     value: string,
   ) => void;
-  // FEAT-7: сквозной проброс патча фидбека.
   updateSetFeedback: (
     exIndex: number,
     setIndex: number,
     patch: SetFeedbackPatch,
   ) => void;
+  applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
@@ -65,6 +63,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   loadAlternatives,
   updateSet,
   updateSetFeedback,
+  applyProgression,
   isSetCompleted,
   replaceExercise,
   resetToOriginal,
@@ -98,7 +97,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAlts, exercise.id, loadAlternatives]);
 
   useEffect(() => {
@@ -165,6 +163,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             alternatives={alternatives}
             updateSet={updateSet}
             updateSetFeedback={updateSetFeedback}
+            applyProgression={applyProgression}
             isSetCompleted={isSetCompleted}
             replaceExercise={replaceExercise}
             startRestTimer={startRestTimer}
@@ -231,6 +230,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
                 alternatives={alternatives}
                 updateSet={updateSet}
                 updateSetFeedback={updateSetFeedback}
+                applyProgression={applyProgression}
                 isSetCompleted={isSetCompleted}
                 replaceExercise={replaceExercise}
                 startRestTimer={startRestTimer}

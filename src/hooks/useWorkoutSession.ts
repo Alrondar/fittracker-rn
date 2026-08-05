@@ -9,6 +9,9 @@ import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '..
 import { advanceProgramProgress } from '../services/programsService';
 import { mapError } from '../utils/errorMapper';
 
+// ============================================================================
+// ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any в loadWorkout)
+// ============================================================================
 interface SessionExerciseRow {
   id: string;
   name: string;
@@ -40,6 +43,14 @@ interface SessionWorkoutRow {
   finished_at: string | null;
   duration_seconds: number | null;
   workout_exercises: SessionWERow[] | null;
+}
+
+// FEAT-1.1: тип для вложенного select последних логов
+interface RecentLog {
+  weight_kg: number | null;
+  reps: number | null;
+  rpe: number | null;
+  workout_exercises: { exercise_id: string } | null;
 }
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
@@ -227,7 +238,50 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           };
         });
 
-      setExercises(exercisesData);
+      // =========================================================================
+      // FEAT-1.1: Загрузка последних логов для подсказки прогрессии
+      // =========================================================================
+      const exerciseIds = exercisesData.map((e) => e.id);
+      const lastLogByExerciseId = new Map<
+        string,
+        { weight_kg: number | null; reps: number | null; rpe: number | null }
+      >();
+
+      if (exerciseIds.length > 0) {
+        const { data: recentLogs } = await supabase
+          .from('workout_logs')
+          .select('weight_kg, reps, rpe, workout_exercises(exercise_id)')
+          .in('workout_exercises.exercise_id', exerciseIds)
+          .order('created_at', { ascending: false })
+          .limit(300) as { data: RecentLog[] | null; error: any };
+
+        recentLogs?.forEach((log) => {
+          const exId = log.workout_exercises?.exercise_id;
+          if (exId && !lastLogByExerciseId.has(exId)) {
+            lastLogByExerciseId.set(exId, {
+              weight_kg: log.weight_kg,
+              reps: log.reps,
+              rpe: log.rpe,
+            });
+          }
+        });
+      }
+
+      // Внедряем previousWeight/Reps/Rpe в каждый сет
+      const finalExercisesData = exercisesData.map((ex) => {
+        const lastLog = lastLogByExerciseId.get(ex.id);
+        return {
+          ...ex,
+          sets: ex.sets.map((set) => ({
+            ...set,
+            previousWeight: lastLog?.weight_kg ?? null,
+            previousReps: lastLog?.reps ?? null,
+            previousRpe: lastLog?.rpe ?? null,
+          })),
+        };
+      });
+
+      setExercises(finalExercisesData);
     } catch (error: any) {
       console.error('[useWorkoutSession] loadWorkout:', error);
       Alert.alert('Ошибка', mapError(error));
@@ -354,7 +408,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         updated[exerciseIndex] = exercise;
 
         pendingLogsRef.current.set(exercise.workout_exercise_id, sets);
-
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current);
         }
@@ -368,14 +421,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     [flushPendingLogs],
   );
 
-  // ✅ OPTIMIZED: не обновлять, если значение не изменилось
   const updateSetFeedback = useCallback(
     (exerciseIndex: number, setIndex: number, patch: SetFeedbackPatch) => {
       setExercises((prev) => {
         const exercise = prev[exerciseIndex];
         const set = exercise.sets[setIndex];
 
-        // Не обновлять, если значение не изменилось
         if (
           set.rpe === patch.rpe &&
           set.rir === patch.rir &&
@@ -392,7 +443,40 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         updated[exerciseIndex] = newExercise;
 
         pendingLogsRef.current.set(exercise.workout_exercise_id, newSets);
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+        }
+        saveTimerRef.current = setTimeout(() => {
+          flushPendingLogs();
+        }, 500);
 
+        return updated;
+      });
+    },
+    [flushPendingLogs],
+  );
+
+  // =========================================================================
+  // FEAT-1.1: Применение прогрессии (+2.5 кг) к первому подходу
+  // =========================================================================
+  const applyProgression = useCallback(
+    (exerciseIndex: number, newWeight: number) => {
+      setExercises((prev) => {
+        const updated = [...prev];
+        const exercise = { ...updated[exerciseIndex] };
+        const sets = [...exercise.sets];
+
+        if (sets.length > 0) {
+          sets[0] = {
+            ...sets[0],
+            weight: newWeight.toString(),
+          };
+        }
+
+        exercise.sets = sets;
+        updated[exerciseIndex] = exercise;
+
+        pendingLogsRef.current.set(exercise.workout_exercise_id, sets);
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current);
         }
@@ -588,10 +672,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
   const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
-      Alert.alert(
-        'Тренировка не начата',
-        'Нажмите "Начать тренировку" перед завершением',
-      );
+      Alert.alert('Тренировка не начата', 'Нажмите "Начать тренировку" перед завершением');
       return;
     }
 
@@ -610,10 +691,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           onPress: async () => {
             setSaving(true);
             setIsFinishing(true);
-
             try {
               const now = new Date();
-
               if (saveTimerRef.current) {
                 clearTimeout(saveTimerRef.current);
               }
@@ -632,15 +711,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               }
 
               const totalLogs = exercisesRef.current.reduce(
-                (acc, ex) =>
-                  acc + ex.sets.filter((s) => s.weight !== '' || s.reps !== '').length,
+                (acc, ex) => acc + ex.sets.filter((s) => s.weight !== '' || s.reps !== '').length,
                 0,
               );
 
               if (programId && userId) {
                 try {
                   const progress = await advanceProgramProgress(userId, programId);
-
                   if (progress.isCompleted) {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     Alert.alert(
@@ -659,12 +736,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                 } catch (progressError: any) {
                   console.error('Ошибка обновления прогресса:', progressError);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
                   const retryAdvance = async () => {
                     try {
                       const progress = await advanceProgramProgress(userId!, programId!);
                       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
                       if (progress.isCompleted) {
                         Alert.alert(
                           'Программа завершена!',
@@ -681,7 +756,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                       );
                     }
                   };
-
                   Alert.alert(
                     'Тренировка сохранена',
                     `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
@@ -740,6 +814,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     loadAlternatives,
     updateSet,
     updateSetFeedback,
+    applyProgression, // FEAT-1.1
     isSetCompleted,
     updateExerciseSettings,
     replaceExercise,
