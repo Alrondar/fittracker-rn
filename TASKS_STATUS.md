@@ -70,6 +70,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | FIT-4 | Плейсхолдер «Нет активной программы» на Dashboard | ✅ | index.tsx → AppCard + кнопка «Выбрать программу» |
 | FIT-5 | Строка «Следующая: Фаза N, Неделя X» в workouts.tsx | ✅ | renderHeader |
 | FIT-6|Название программы + фаза в шапке тренировки|✅|workout/[id].tsx → getWorkoutProgramInfo (React Query)|
+| FEAT-7 | RPE/RIR feedback: ползунок 1–10 + авто-RIR/difficulty после подхода | ✅ | 05.08.2026 (SetsGrid.tsx + SetFeedbackControl.tsx + utils/rpe.ts; кастомный ползунок на Reanimated + Gesture Handler; патч через updateSetFeedback → debounce-RPC upsert_workout_logs; чип-индикатор в ряду подходов) |
 🤖 AI-тренер (AI) — в плане, roadmap rev.2 Этап 3
 | ID|Приоритет|Описание|Статус|Дата / Комментарий|
 | ---|---|---|---|---|

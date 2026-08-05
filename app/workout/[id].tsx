@@ -80,6 +80,7 @@ export default function WorkoutSessionScreen() {
     handleTimerStop,
     loadAlternatives,
     updateSet,
+    updateSetFeedback,
     isSetCompleted,
     updateExerciseSettings,
     replaceExercise,
@@ -89,7 +90,6 @@ export default function WorkoutSessionScreen() {
     saveWorkout,
   } = useWorkoutSession(id as string, userId);
 
-  // ✅ НОВОЕ: название программы + фаза для шапки (запрос в сервисе, не в UI)
   const { data: workoutProgramInfo } = useQuery({
     queryKey: ['workoutProgramInfo', id],
     queryFn: () => getWorkoutProgramInfo(id as string),
@@ -162,7 +162,9 @@ export default function WorkoutSessionScreen() {
     },
     [],
   );
+
   const closeExerciseSettings = useCallback(() => setSettingsTarget(null), []);
+
   const saveExerciseSettings = useCallback(
     (exerciseIndex: number, setsCount: number, restSeconds: number) => {
       updateExerciseSettings(exerciseIndex, setsCount, restSeconds);
@@ -215,6 +217,7 @@ export default function WorkoutSessionScreen() {
         isReplaced={!!replacements[item.workout_exercise_id]}
         loadAlternatives={loadAlternatives}
         updateSet={updateSet}
+        updateSetFeedback={updateSetFeedback}
         isSetCompleted={isSetCompleted}
         replaceExercise={replaceExercise}
         resetToOriginal={resetToOriginal}
@@ -231,6 +234,7 @@ export default function WorkoutSessionScreen() {
       replacements,
       loadAlternatives,
       updateSet,
+      updateSetFeedback,
       isSetCompleted,
       replaceExercise,
       resetToOriginal,
@@ -247,7 +251,9 @@ export default function WorkoutSessionScreen() {
   const renderEmpty = () => (
     <View style={commonStyles.emptyContainer}>
       <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет упражнений</Text>
+      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
+        Нет упражнений
+      </Text>
       <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
         В этой тренировке пока нет упражнений
       </Text>
@@ -284,7 +290,6 @@ export default function WorkoutSessionScreen() {
         onStart={handleTimerStart}
         onStop={handleTimerStop}
       >
-        {/* Шапка: назад + название программы/фазы + живая пилюля-таймер */}
         <View
           style={[
             commonStyles.navHeader,
@@ -297,8 +302,6 @@ export default function WorkoutSessionScreen() {
           >
             <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
           </TouchableOpacity>
-
-          {/* ✅ НОВОЕ: название программы + фаза (если тренировка из программы) */}
           <View style={{ flex: 1 }}>
             {workoutProgramInfo?.programName ? (
               <>
@@ -325,10 +328,8 @@ export default function WorkoutSessionScreen() {
               </Text>
             )}
           </View>
-
           <WorkoutTimerPill colors={colors} />
         </View>
-
         <WorkoutTimerPanel colors={colors} />
       </WorkoutTimerProvider>
 
@@ -341,7 +342,6 @@ export default function WorkoutSessionScreen() {
         />
       )}
 
-      {/* Баннер травм */}
       {hasWarnings && !showInjuryBanner && activeTab === 'workout' && (
         <TouchableOpacity
           onPress={() => {
@@ -381,7 +381,6 @@ export default function WorkoutSessionScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Раскрывающийся баннер с деталями травм */}
       {showInjuryBanner && (
         <View
           style={{
@@ -455,7 +454,6 @@ export default function WorkoutSessionScreen() {
         </View>
       )}
 
-      {/* ТАБ: РАЗМИНКА */}
       {hasWarmup && activeTab === 'warmup' && (
         <ScrollView
           contentContainerStyle={{ paddingBottom: 120 }}
@@ -481,7 +479,6 @@ export default function WorkoutSessionScreen() {
         </ScrollView>
       )}
 
-      {/* ТАБ: ТРЕНИРОВКА */}
       {(!hasWarmup || activeTab === 'workout') && (
         <>
           <View
@@ -513,12 +510,11 @@ export default function WorkoutSessionScreen() {
             contentContainerStyle={{ paddingBottom: 120 }}
             showsVerticalScrollIndicator={false}
             windowSize={5}
-            removeClippedSubviews={true}
+            removeClippedSubviews={false}
           />
         </>
       )}
 
-      {/* Таймер отдыха */}
       {restTimer !== null && (
         <RestTimer
           timeLeft={restTimeLeft}
@@ -539,7 +535,6 @@ export default function WorkoutSessionScreen() {
         cardStyles={cardStyles}
       />
 
-      {/* Футер с учётом safe area снизу */}
       <View
         style={{
           backgroundColor: colors.surface,

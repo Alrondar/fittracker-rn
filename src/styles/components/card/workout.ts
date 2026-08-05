@@ -82,10 +82,11 @@ export const createWorkoutCardStyles = (colors: any) =>
       flexDirection: 'row',
       gap: 8,
     } as ViewStyle,
-    setNumber: {
-      flex: 1,
-      alignItems: 'center',
-    } as ViewStyle,
+setNumber: {
+  flex: 1,
+  minWidth: 0,
+  alignItems: 'center',
+} as ViewStyle,
     setNumberText: {
       fontSize: 14,
       fontWeight: 'bold',
@@ -95,12 +96,13 @@ export const createWorkoutCardStyles = (colors: any) =>
       gap: 8,
       marginTop: 8,
     } as ViewStyle,
-    setInputContainer: {
-      flex: 1,
-      padding: 8,
-      borderRadius: BORDER_RADIUS.md,
-      alignItems: 'center',
-    } as ViewStyle,
+  setInputContainer: {
+    flex: 1,
+    minWidth: 0,
+    padding: 8,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+  } as ViewStyle,
     setInput: {
       fontSize: 12,
       textAlign: 'center',

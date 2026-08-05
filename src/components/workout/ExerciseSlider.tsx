@@ -12,7 +12,7 @@ import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
-import { ExerciseData, AlternativeExercise, SetData } from '../../types/workout';
+import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
 // PERF-5: модульные SCREEN_WIDTH / CARD_WIDTH УДАЛЕНЫ.
@@ -31,6 +31,12 @@ interface ExerciseSliderProps {
     field: 'weight' | 'reps',
     value: string,
   ) => void;
+  // FEAT-7: сквозной проброс патча фидбека.
+  updateSetFeedback: (
+    exIndex: number,
+    setIndex: number,
+    patch: SetFeedbackPatch,
+  ) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
@@ -41,8 +47,6 @@ interface ExerciseSliderProps {
     bgColor: string;
     icon: React.ReactNode;
   };
-  // ✅ ВОЛНА 3: проброс колбэка открытия общей модалки настроек
-  //    (updateExerciseSettings больше не пробрасывается — модалка на экране).
   onOpenSettings: (
     exerciseIndex: number,
     setsCount: number,
@@ -60,6 +64,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   isReplaced,
   loadAlternatives,
   updateSet,
+  updateSetFeedback,
   isSetCompleted,
   replaceExercise,
   resetToOriginal,
@@ -71,15 +76,11 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   unit,
   warning = null,
 }: ExerciseSliderProps) {
-  // PERF-5: ширина окна реактивна (rotate / iPad Split View / resize).
-  // Раньше CARD_WIDTH считался один раз на уровне модуля и «замерзал».
   const { width: screenWidth } = useWindowDimensions();
-  // Карточка = экран минус симметричные боковые отступы (по 16).
   const cardWidth = screenWidth - 32;
 
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
-  // ВОЛНА 2: тяжёлые карточки альтернатив монтируются в idle-окне либо по жесту.
   const [altsMounted, setAltsMounted] = useState(false);
   const hasAlts = exercise.alternatives.length > 0 || isReplaced;
 
@@ -115,6 +116,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const showPlaceholder = loadingAlts;
   const showPeek = !loadingAlts && hasAlts && !altsMounted;
   const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
+
   const childCount =
     1 +
     (showPlaceholder ? 1 : 0) +
@@ -150,7 +152,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
         decelerationRate="fast"
-        removeClippedSubviews={true}
+        removeClippedSubviews={false}
         onScrollBeginDrag={handleScrollBeginDrag}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
@@ -162,6 +164,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             exerciseIndex={exerciseIndex}
             alternatives={alternatives}
             updateSet={updateSet}
+            updateSetFeedback={updateSetFeedback}
             isSetCompleted={isSetCompleted}
             replaceExercise={replaceExercise}
             startRestTimer={startRestTimer}
@@ -227,6 +230,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
                 exerciseIndex={exerciseIndex}
                 alternatives={alternatives}
                 updateSet={updateSet}
+                updateSetFeedback={updateSetFeedback}
                 isSetCompleted={isSetCompleted}
                 replaceExercise={replaceExercise}
                 startRestTimer={startRestTimer}

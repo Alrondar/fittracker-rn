@@ -5,9 +5,16 @@
  * импортируют ExerciseData/AlternativeExercise/SetData из этого файла.
  */
 
+export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
+
+export type SetFeedbackPatch = Partial<Pick<SetData, 'rpe' | 'rir' | 'difficulty'>>;
+
 export interface SetData {
   weight: string;
   reps: string;
+  rpe?: number | null;
+  rir?: number | null;
+  difficulty?: Difficulty | null;
 }
 
 export interface ExerciseData {

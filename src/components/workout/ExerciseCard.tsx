@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useMemo, memo } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import {
   Settings,
   ChevronRight,
-  ChevronDown,
-  TrendingUp,
-  Clock,
-  RotateCcw,
   AlertTriangle,
   ShieldAlert,
   BookOpen,
   Dumbbell,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -19,14 +16,16 @@ import { createCardStyles } from '../../styles/components/card';
 import { getMuscleColor } from '../../constants/muscleColors';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { TechniqueMediaSlider } from './TechniqueMediaSlider';
-import { ExerciseData, AlternativeExercise, SetData } from '../../types/workout';
-import {
-  WeightUnit,
-  weightToDisplay,
-  weightFromDisplay,
-  weightPlaceholder,
-} from '../../hooks/useUnitPreferences';
 import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
+import { SetsGrid } from './SetsGrid';
+import {
+  ExerciseData,
+  AlternativeExercise,
+  SetData,
+  SetFeedbackPatch,
+} from '../../types/workout';
+import { WeightUnit } from '../../hooks/useUnitPreferences';
+
 // Мост к reps_range (поле опционально — компонент компилируется и без него).
 type RepsRangeHolder = { reps_range?: string };
 
@@ -34,93 +33,6 @@ type SectionKey = 'technique' | 'info' | 'benefits' | 'risks' | 'injuries';
 
 const formatEquipmentName = (name: string) =>
   name.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-
-// Чистая функция вне компонента — не зависит от props/state.
-const getSetRowsConfig = (total: number): number[] => {
-  if (total <= 4) return [total];
-  if (total === 5) return [3, 2];
-  if (total === 6) return [3, 3];
-  if (total === 7) return [4, 3];
-  if (total === 8) return [4, 4];
-  if (total === 9) return [3, 3, 3];
-  if (total === 10) return [4, 3, 3];
-  if (total === 11) return [4, 4, 3];
-  if (total === 12) return [4, 4, 4];
-  return [3];
-};
-
-interface SetInputProps {
-  value: string;
-  placeholder: string;
-  keyboardType: 'decimal-pad' | 'number-pad';
-  completed: boolean;
-  onChangeText: (v: string) => void;
-  colors: any;
-  cardStyles: ReturnType<typeof createCardStyles>;
-}
-
-/**
- * Ввод детерминирован: во время фокуса внешний value игнорируется и наверх ничего
- * не летит — родитель (и весь FlatList) НЕ ре-рендерится на каждый символ.
- * Коммит в стейт — только onBlur. Фон ячейки — по локальному буферу (isFilled),
- * чтобы не было «ввёл, но розовое».
- */
-function SetInput({
-  value,
-  placeholder,
-  keyboardType,
-  completed,
-  onChangeText,
-  colors,
-  cardStyles,
-}: SetInputProps) {
-  const [local, setLocal] = useState(value);
-  const focusedRef = useRef(false);
-  const lastSentRef = useRef(value);
-
-  useEffect(() => {
-    if (focusedRef.current) return;
-    if (value !== lastSentRef.current) {
-      setLocal(value);
-      lastSentRef.current = value;
-    }
-  }, [value]);
-
-  const isFilled = local.trim() !== '';
-
-  return (
-    <View
-      style={[
-        cardStyles.setInputContainer,
-        {
-          backgroundColor:
-            isFilled || completed ? colors.successLight : colors.surfaceSecondary,
-        },
-      ]}
-    >
-      <TextInput
-        style={[cardStyles.setInput, { color: colors.textPrimary }]}
-        placeholder={placeholder}
-        value={local}
-        onChangeText={(v) => {
-          setLocal(v);
-          lastSentRef.current = v;
-          // наверх НЕ пробрасываем во время печати — обрываем каскад ре-рендеров
-        }}
-        onFocus={() => {
-          focusedRef.current = true;
-        }}
-        onBlur={() => {
-          focusedRef.current = false;
-          onChangeText(local); // единственный коммит в родитель
-        }}
-        keyboardType={keyboardType}
-        placeholderTextColor={colors.textTertiary}
-        blurOnSubmit={false}
-      />
-    </View>
-  );
-}
 
 interface ExerciseCardProps {
   exercise: ExerciseData | AlternativeExercise;
@@ -134,6 +46,12 @@ interface ExerciseCardProps {
     field: 'weight' | 'reps',
     value: string,
   ) => void;
+  // FEAT-7: патч фидбека подхода (rpe → авто-rir/difficulty).
+  updateSetFeedback: (
+    exIndex: number,
+    setIndex: number,
+    patch: SetFeedbackPatch,
+  ) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   startRestTimer: (seconds: number) => void;
@@ -143,9 +61,6 @@ interface ExerciseCardProps {
     bgColor: string;
     icon: React.ReactNode;
   };
-  // ✅ ВОЛНА 3: карточка больше не держит модалку — она только просит экран открыть
-  //    единственную общую модалку настроек, передав индекс + текущие параметры.
-  //    updateExerciseSettings УБРАН из пропсов (модалка живёт на экране).
   onOpenSettings: (
     exerciseIndex: number,
     setsCount: number,
@@ -153,7 +68,7 @@ interface ExerciseCardProps {
   ) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
-  unit: WeightUnit; // единица отображения веса (стейт/БД всегда в кг)
+  unit: WeightUnit;
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
 }
 
@@ -164,6 +79,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   exerciseIndex,
   alternatives,
   updateSet,
+  updateSetFeedback,
   isSetCompleted,
   replaceExercise,
   startRestTimer,
@@ -192,7 +108,6 @@ export const ExerciseCard = memo(function ExerciseCard({
     () => getIntensityInfo(intensity),
     [getIntensityInfo, intensity],
   );
-  const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
 
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
@@ -206,16 +121,12 @@ export const ExerciseCard = memo(function ExerciseCard({
     warning?.level === 'avoid'
       ? colors.error
       : warning?.level === 'caution'
-      ? colors.warning
-      : isReplaced
-      ? colors.primary
-      : allSetsDone
-      ? colors.success + '60'
-      : colors.border;
-
-  // Конвертация ТОЛЬКО на границе ввода/вывода. Стейт и БД — всегда кг.
-  const toDisplay = (kgStr: string) => weightToDisplay(kgStr, unit);
-  const fromDisplay = (disp: string) => weightFromDisplay(disp, unit);
+        ? colors.warning
+        : isReplaced
+          ? colors.primary
+          : allSetsDone
+            ? colors.success + '60'
+            : colors.border;
 
   const warningColor = warning?.level === 'avoid' ? colors.error : colors.warning;
 
@@ -240,7 +151,6 @@ export const ExerciseCard = memo(function ExerciseCard({
         >
           {exercise.name}
         </Text>
-
         <View
           style={{
             flexDirection: 'row',
@@ -261,7 +171,6 @@ export const ExerciseCard = memo(function ExerciseCard({
           )}
           {isMain && (
             <TouchableOpacity
-              // ✅ ВОЛНА 3: шестерёнка просит экран открыть общую модалку настроек.
               onPress={() => onOpenSettings(exerciseIndex, sets.length, restSeconds)}
               style={[
                 cardStyles.workoutSettingsButton,
@@ -385,9 +294,7 @@ export const ExerciseCard = memo(function ExerciseCard({
       )}
 
       {exercise.secondary_muscles.length > 0 && (
-        <View
-          style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.md }}
-        >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.md }}>
           {exercise.secondary_muscles.map((m, i) => {
             const c = getMuscleColor(m);
             return (
@@ -523,9 +430,7 @@ export const ExerciseCard = memo(function ExerciseCard({
       ) : null}
 
       {isMain &&
-        (exercise.benefits ||
-          exercise.risks ||
-          exercise.injuries.length > 0) && (
+        (exercise.benefits || exercise.risks || exercise.injuries.length > 0) && (
           <ExerciseInfoAccordion
             icon={<ShieldAlert size={14} color={colors.warning} />}
             title="Важно знать"
@@ -736,103 +641,20 @@ export const ExerciseCard = memo(function ExerciseCard({
         </>
       )}
 
+      {/* FEAT-7: сетка подходов + фидбек вынесены в SetsGrid (SCALE-5) */}
       {hasSets && sets.length > 0 && (
-        <View
-          style={[
-            cardStyles.setsContainer,
-            { backgroundColor: colors.surfaceSecondary, borderWidth: 0 },
-          ]}
-        >
-          <View style={[cardStyles.setsHeader, { backgroundColor: 'transparent' }]}>
-            <TrendingUp size={16} color={colors.primary} strokeWidth={2} />
-            <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>
-              Подходы
-            </Text>
-            <Text
-              style={[
-                typography.captionSmall,
-                {
-                  color: allSetsDone ? colors.success : colors.textTertiary,
-                  fontWeight: '700',
-                  marginLeft: 'auto',
-                },
-              ]}
-            >
-              {allSetsDone ? '✓ ' : ''}
-              {completedSets}/{sets.length}
-            </Text>
-          </View>
-          <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
-            {setRowsConfig.map((rowSize, rowIndex) => {
-              const startIndex = setRowsConfig
-                .slice(0, rowIndex)
-                .reduce((s, n) => s + n, 0);
-              const rowSets = sets.slice(startIndex, startIndex + rowSize);
-              return (
-                <View key={rowIndex} style={cardStyles.setRow}>
-                  <View style={cardStyles.setNumbersRow}>
-                    {rowSets.map((_, si) => (
-                      <View key={si} style={cardStyles.setNumber}>
-                        <Text
-                          style={[
-                            cardStyles.setNumberText,
-                            { color: colors.textPrimary },
-                          ]}
-                        >
-                          {startIndex + si + 1}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                  <View style={cardStyles.setInputsRow}>
-                    {rowSets.map((set, si) => (
-                      <SetInput
-                        key={`w-${si}-${unit}`}
-                        value={toDisplay(set.weight)}
-                        placeholder={weightPlaceholder(unit)}
-                        keyboardType="decimal-pad"
-                        completed={isSetCompleted(set)}
-                        onChangeText={(v) =>
-                          updateSet(
-                            exerciseIndex,
-                            startIndex + si,
-                            'weight',
-                            fromDisplay(v),
-                          )
-                        }
-                        colors={colors}
-                        cardStyles={cardStyles}
-                      />
-                    ))}
-                  </View>
-                  <View style={cardStyles.setInputsRow}>
-                    {rowSets.map((set, si) => (
-                      <SetInput
-                        key={`r-${si}-${unit}`}
-                        value={set.reps}
-                        placeholder="повт."
-                        keyboardType="number-pad"
-                        completed={isSetCompleted(set)}
-                        onChangeText={(v) =>
-                          updateSet(exerciseIndex, startIndex + si, 'reps', v)
-                        }
-                        colors={colors}
-                        cardStyles={cardStyles}
-                      />
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
-            <TouchableOpacity
-              style={[cardStyles.restButton, { backgroundColor: colors.primary }]}
-              onPress={() => startRestTimer(restSeconds)}
-            >
-              <Clock size={16} color={colors.textInverse} strokeWidth={2} />
-              <Text style={cardStyles.restButtonText}>Отдых {restSeconds}с</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <SetsGrid
+          exerciseIndex={exerciseIndex}
+          sets={sets}
+          restSeconds={restSeconds}
+          unit={unit}
+          updateSet={updateSet}
+          updateSetFeedback={updateSetFeedback}
+          isSetCompleted={isSetCompleted}
+          startRestTimer={startRestTimer}
+          colors={colors}
+          cardStyles={cardStyles}
+        />
       )}
     </View>
   );

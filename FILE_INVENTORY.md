@@ -58,6 +58,10 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | goals/GoalsStep1.tsx|шаг «О тебе»|✅|SCALE-5|
 | goals/GoalsStep2.tsx|шаг «Твоя цель» + фармакология|✅|SCALE-5|
 | goals/GoalsStep3.tsx|шаг «Твоя норма»|✅|SCALE-5|
+| SetsGrid.tsx |сетка подходов + чипы RPE + ползунок (SCALE-5, вынесено из ExerciseCard)|✅|	
+FEAT-7; кастомный ползунок на Reanimated + Gesture Handler|
+| SetFeedbackControl.tsx |SetFeedbackChip + SetFeedbackEditor (ползунок RPE 1–10)|✅|	
+FEAT-7; simultaneousWithExternalGesture(Gesture.Native()) для разрешения скроллов|
 
 ## src/hooks/
 
@@ -116,6 +120,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | base/program/workout/exercise/filter/sheet/profile/empty.ts | фабрики стилей по доменам | ✅ |
 | dynamic.ts | динамические генераторы (баблы/обводки) | ✅ |
 
+
 ## src/types/
 
 | Файл|Назначение|Инспект.|Примечание|
@@ -146,6 +151,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 ## src/utils/
 | macroCalculator.ts|расчёт КБЖУ (calculateAge/calculateMacros)|✅|SCALE-5 (вынесено из goals.tsx)|
 | errorMapper.ts|единый маппер user-facing ошибок (mapError/extractMessage)|✅|SEC-9|
+| rpe.ts|утилиты RPE: RPE_DESCRIPTIONS, rpeZone, deriveRir, deriveDifficulty, DIFFICULTY_LABELS|✅|FEAT-7; чистые функции — кандидаты под SCALE-1 тесты|
 
 ## src/store/
 | store/useStore.ts|глобальный UI-стейт (auth)|✅|SEC-10 остаток ✅ (workouts/logs/alternativesCache убраны)|

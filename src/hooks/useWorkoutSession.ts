@@ -5,16 +5,10 @@ import * as Haptics from 'expo-haptics';
 import { useTimerSettings } from './useTimerSettings';
 import { initSounds, playBeep, playFinishSound } from '../lib/timerSounds';
 import { supabase } from '../lib/supabase';
-import { ExerciseData, AlternativeExercise, SetData } from '../types/workout';
+import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../types/workout';
 import { advanceProgramProgress } from '../services/programsService';
 import { mapError } from '../utils/errorMapper';
 
-// ============================================================================
-// ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any в loadWorkout)
-// Отражают ровно то, что уходит в select loadWorkout. Локальные интерфейсы +
-// as unknown as на join-корне — детерминированная компиляция независимо от
-// капризов вывода nullability вложенных select в supabase-js.
-// ============================================================================
 interface SessionExerciseRow {
   id: string;
   name: string;
@@ -50,6 +44,7 @@ interface SessionWorkoutRow {
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
+
   const [workoutName, setWorkoutName] = useState('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -58,11 +53,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [initialTime, setInitialTime] = useState(0);
   const [isFinishing, setIsFinishing] = useState(false);
-  // ✅ НОВОЕ: ref-зеркала флагов. Cleanup-эффект читает актуальные значения
-  //    без пересоздания эффекта → нет лишнего UPDATE при смене isFinishing.
+
   const isWorkoutActiveRef = useRef(false);
   const isFinishingRef = useRef(false);
   const currentTimeRef = useRef<number>(0);
+
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -73,7 +68,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const restEndsAtRef = useRef<number>(0);
   const lastBeepRef = useRef<number>(0);
   const exercisesRef = useRef<ExerciseData[]>([]);
-  // Debounce-механизм для автосохранения логов (SEC-2)
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLogsRef = useRef<Map<string, SetData[]>>(new Map());
 
@@ -81,7 +76,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     exercisesRef.current = exercises;
   }, [exercises]);
 
-  // ✅ НОВОЕ: синхронизация ref-зеркал с состоянием.
   useEffect(() => {
     isWorkoutActiveRef.current = isWorkoutActive;
   }, [isWorkoutActive]);
@@ -90,19 +84,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     isFinishingRef.current = isFinishing;
   }, [isFinishing]);
 
-  // =========================================================================
-  // Атомарное сохранение логов через RPC (SEC-6)
-  // =========================================================================
   const flushPendingLogs = useCallback(async (): Promise<void> => {
     const entries = Array.from(pendingLogsRef.current.entries());
     if (entries.length === 0) return;
 
-    // Очищаем ref сразу, чтобы новые изменения во время запроса не потерялись
     pendingLogsRef.current.clear();
-    const now = new Date();
 
+    const now = new Date();
     for (const [workoutExerciseId, exerciseLogs] of entries) {
-      // Конвертируем локальный формат (строки) в формат RPC (числа/null)
       const formattedLogs = exerciseLogs
         .filter((set) => set.weight !== '' || set.reps !== '')
         .map((set, index) => ({
@@ -110,6 +99,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           weight_kg: set.weight ? parseFloat(set.weight) : null,
           reps: set.reps ? parseInt(set.reps) : null,
           completed_at: now.toISOString(),
+          rpe: set.rpe ?? null,
+          rir: set.rir ?? null,
+          difficulty: set.difficulty ?? null,
         }));
 
       if (formattedLogs.length === 0) continue;
@@ -118,9 +110,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         p_workout_exercise_id: workoutExerciseId,
         p_logs: formattedLogs,
       });
+
       if (error) {
         console.error('[flushPendingLogs] RPC error:', error);
-        // TODO: Добавить retry-логику или Toast-уведомление
       }
     }
   }, []);
@@ -137,12 +129,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
       if (error) throw error;
 
-      // Типизированный join-корень (ARCH-6): дальше поля выводятся локальными типами.
       const workoutRow = workout as unknown as SessionWorkoutRow;
       setWorkoutName(workoutRow.name);
       setProgramId(workoutRow.program_id);
 
-      // Возобновление незавершённой тренировки
       if (workoutRow.started_at && !workoutRow.finished_at) {
         const savedDuration = workoutRow.duration_seconds || 0;
         if (savedDuration > 0) {
@@ -161,21 +151,26 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         }
       }
 
-      // Подгрузка сохранённых логов (для возобновления)
       const workoutExercises = workoutRow.workout_exercises || [];
       const workoutExerciseIds = workoutExercises.map((we) => we.id);
       const logsByWorkoutExercise: Record<
         string,
-        Array<{ set_number: number; weight_kg: number | null; reps: number | null }>
+        Array<{
+          set_number: number;
+          weight_kg: number | null;
+          reps: number | null;
+          rpe: number | null;
+          rir: number | null;
+          difficulty: string | null;
+        }>
       > = {};
 
       if (workoutExerciseIds.length > 0) {
         const { data: logs } = await supabase
           .from('workout_logs')
-          .select('workout_exercise_id, set_number, weight_kg, reps')
+          .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
           .in('workout_exercise_id', workoutExerciseIds);
 
-        // log выводится типом supabase из select; any не нужен.
         logs?.forEach((log) => {
           if (!logsByWorkoutExercise[log.workout_exercise_id]) {
             logsByWorkoutExercise[log.workout_exercise_id] = [];
@@ -184,8 +179,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         });
       }
 
-      // type-guard отбрасывает гипотетические строки без join по exercises
-      // (их не бывает из-за FK, но guard делает exercise не-null без !-assertion).
       const exercisesData = workoutExercises
         .filter(
           (we): we is SessionWERow & { exercises: SessionExerciseRow } => we.exercises != null,
@@ -198,7 +191,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             sets.push({ weight: '', reps: '' });
           }
 
-          // Восстанавливаем сохранённые подходы
           const savedLogs = logsByWorkoutExercise[we.id] || [];
           savedLogs.forEach((log) => {
             const index = log.set_number - 1;
@@ -206,6 +198,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               sets[index] = {
                 weight: log.weight_kg?.toString() || '',
                 reps: log.reps?.toString() || '',
+                rpe: log.rpe,
+                rir: log.rir,
+                difficulty: (log.difficulty as SetData['difficulty']) ?? null,
               };
             }
           });
@@ -233,24 +228,18 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         });
 
       setExercises(exercisesData);
-  } catch (error: any) {
-    console.error('[useWorkoutSession] loadWorkout:', error);
-    Alert.alert('Ошибка', mapError(error));
-  } finally {
-    setLoading(false);
-  }
+    } catch (error: any) {
+      console.error('[useWorkoutSession] loadWorkout:', error);
+      Alert.alert('Ошибка', mapError(error));
+    } finally {
+      setLoading(false);
+    }
   }, [workoutId]);
 
   useEffect(() => {
     loadWorkout();
   }, [loadWorkout]);
 
-  // Сохранение прогресса при размонтировании (если тренировка активна).
-  // Принудительный сброс pending логов + длительности.
-  // ✅ FIXED: пустые deps — cleanup только при размонтировании.
-  //    Флаги читаются через ref → нет лишнего UPDATE при смене isFinishing.
-  //    workoutId из замыкания первого рендера: он из URL и не меняется без
-  //    размонтирования. flushPendingLogs стабилен (пустые deps useCallback).
   useEffect(() => {
     return () => {
       if (restTimerRef.current) {
@@ -259,7 +248,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
-      // Принудительный сброс pending логов при размонтировании (SEC-2)
       flushPendingLogs();
       if (
         isWorkoutActiveRef.current &&
@@ -302,9 +290,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     }
   }, [workoutId]);
 
-  const handleTimerStop = useCallback(() => {
-    // Пауза: isWorkoutActive не меняем
-  }, []);
+  const handleTimerStop = useCallback(() => {}, []);
 
   const loadAlternatives = useCallback(
     async (exerciseId: string, primaryMuscles: string[]) => {
@@ -316,7 +302,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         let query = supabase
           .from('exercises')
           .select(
-            // ⚠️ reps_range УДАЛЁН: колонки нет в exercises (42703) — фикс сломанной загрузки альтернатив.
             `id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, media_url`,
           )
           .neq('id', exerciseId);
@@ -328,7 +313,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         const { data, error } = await query.limit(10);
         if (error) throw error;
 
-        // Плоский select без join → supabase-js выводит тип надёжно; any не нужен.
         const alternatives: AlternativeExercise[] = (data || []).map((ex) => ({
           id: ex.id,
           name: ex.name,
@@ -347,6 +331,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           ...alternativesCacheRef.current,
           [exerciseId]: alternatives,
         };
+
         return alternatives;
       } catch {
         return [];
@@ -355,9 +340,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     [],
   );
 
-  // =========================================================================
-  // Обновление подхода + debounce-автосохранение (SEC-2)
-  // =========================================================================
   const updateSet = useCallback(
     (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
       setExercises((prev) => {
@@ -371,10 +353,46 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         exercise.sets = sets;
         updated[exerciseIndex] = exercise;
 
-        // Добавляем в pending для debounce-сохранения
         pendingLogsRef.current.set(exercise.workout_exercise_id, sets);
 
-        // Сбрасываем предыдущий таймер и устанавливаем новый (500мс)
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+        }
+        saveTimerRef.current = setTimeout(() => {
+          flushPendingLogs();
+        }, 500);
+
+        return updated;
+      });
+    },
+    [flushPendingLogs],
+  );
+
+  // ✅ OPTIMIZED: не обновлять, если значение не изменилось
+  const updateSetFeedback = useCallback(
+    (exerciseIndex: number, setIndex: number, patch: SetFeedbackPatch) => {
+      setExercises((prev) => {
+        const exercise = prev[exerciseIndex];
+        const set = exercise.sets[setIndex];
+
+        // Не обновлять, если значение не изменилось
+        if (
+          set.rpe === patch.rpe &&
+          set.rir === patch.rir &&
+          set.difficulty === patch.difficulty
+        ) {
+          return prev;
+        }
+
+        const updated = [...prev];
+        const newExercise = { ...exercise };
+        const newSets = [...exercise.sets];
+        newSets[setIndex] = { ...set, ...patch };
+        newExercise.sets = newSets;
+        updated[exerciseIndex] = newExercise;
+
+        pendingLogsRef.current.set(exercise.workout_exercise_id, newSets);
+
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current);
         }
@@ -425,7 +443,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       if (!alternative) return;
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
       setExercises((prev) => {
         const updated = [...prev];
         updated[exerciseIndex] = {
@@ -462,22 +479,25 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       if (!exercise) return;
 
       const workoutExerciseId = exercise.workout_exercise_id;
-
-      Alert.alert('Вернуть оригинальное упражнение?', 'Данные подходов будут перезагружены из тренировки', [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Вернуть',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            loadWorkout();
-            setReplacements((prev) => {
-              const updated = { ...prev };
-              delete updated[workoutExerciseId];
-              return updated;
-            });
+      Alert.alert(
+        'Вернуть оригинальное упражнение?',
+        'Данные подходов будут перезагружены из тренировки',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Вернуть',
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              loadWorkout();
+              setReplacements((prev) => {
+                const updated = { ...prev };
+                delete updated[workoutExerciseId];
+                return updated;
+              });
+            },
           },
-        },
-      ]);
+        ],
+      );
     },
     [loadWorkout],
   );
@@ -566,12 +586,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     setIsRestFinished(false);
   }, []);
 
-  // =========================================================================
-  // Завершение тренировки (атомарное сохранение через RPC)
-  // =========================================================================
   const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
-      Alert.alert('Тренировка не начата', 'Нажмите "Начать тренировку" перед завершением');
+      Alert.alert(
+        'Тренировка не начата',
+        'Нажмите "Начать тренировку" перед завершением',
+      );
       return;
     }
 
@@ -580,122 +600,120 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     const secs = durationSeconds % 60;
     const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-    Alert.alert('Завершить тренировку?', `Время тренировки: ${formattedTime}\nВсе данные будут сохранены`, [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Завершить',
-        onPress: async () => {
-          setSaving(true);
-          setIsFinishing(true);
+    Alert.alert(
+      'Завершить тренировку?',
+      `Время тренировки: ${formattedTime}\nВсе данные будут сохранены`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Завершить',
+          onPress: async () => {
+            setSaving(true);
+            setIsFinishing(true);
 
-          try {
-            const now = new Date();
+            try {
+              const now = new Date();
 
-            // 1. Атомарное сохранение всех pending логов через RPC (SEC-6)
-            //    Отменяем таймер и ждём завершения сохранения
-            if (saveTimerRef.current) {
-              clearTimeout(saveTimerRef.current);
-            }
-            await flushPendingLogs();
-
-            // 2. Обновляем статус тренировки
-            const { error: updateError } = await supabase
-              .from('workouts')
-              .update({
-                finished_at: now.toISOString(),
-                duration_seconds: durationSeconds,
-              })
-              .eq('id', workoutId);
-
-            if (updateError) {
-              console.error('Ошибка сохранения времени:', updateError);
-            }
-
-            // Подсчёт сохранённых подходов (для UI)
-            const totalLogs = exercisesRef.current.reduce(
-              (acc, ex) => acc + ex.sets.filter((s) => s.weight !== '' || s.reps !== '').length,
-              0,
-            );
-
-            if (programId && userId) {
-              try {
-                const progress = await advanceProgramProgress(userId, programId);
-
-                if (progress.isCompleted) {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert(
-                    'Программа завершена!',
-                    'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".',
-                  );
-                  router.replace('/(tabs)/programs');
-                } else {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert(
-                    'Тренировка завершена!',
-                    `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`,
-                  );
-                  router.replace('/(tabs)/workouts');
-                }
-              } catch (progressError: any) {
-                // SEC-7: тренировка УЖЕ сохранена выше (finished_at + логи), но
-                // прогресс программы НЕ продвинут. Честно сообщаем об ошибке и даём
-                // повторить — НЕ маскируем сбой под «Успех» и НЕ уходим в историю
-                // как ни в чём не бывало. Данные тренировки не теряются ни при каком исходе.
-                console.error('Ошибка обновления прогресса:', progressError);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
-                const retryAdvance = async () => {
-                  try {
-                    const progress = await advanceProgramProgress(userId!, programId!);
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    if (progress.isCompleted) {
-                      Alert.alert(
-                        'Программа завершена!',
-                        'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».',
-                      );
-                      router.replace('/(tabs)/programs');
-                    } else {
-                      router.replace('/(tabs)/workouts');
-                    }
-                  } catch (e: any) {
-                    Alert.alert(
-                      'Не удалось продвинуть прогресс',
-                      e?.message || 'Прогресс можно продвинуть автоматически при следующей тренировке.',
-                    );
-                  }
-                };
-
-                Alert.alert(
-                  'Тренировка сохранена',
-                  `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
-                    `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
-                  [
-                    {
-                      text: 'Позже',
-                      style: 'cancel',
-                      onPress: () => router.replace('/(tabs)/workouts'),
-                    },
-                    { text: 'Повторить', onPress: retryAdvance },
-                  ],
-                );
+              if (saveTimerRef.current) {
+                clearTimeout(saveTimerRef.current);
               }
-            } else {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert(
-                'Успех',
-                `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`,
+              await flushPendingLogs();
+
+              const { error: updateError } = await supabase
+                .from('workouts')
+                .update({
+                  finished_at: now.toISOString(),
+                  duration_seconds: durationSeconds,
+                })
+                .eq('id', workoutId);
+
+              if (updateError) {
+                console.error('Ошибка сохранения времени:', updateError);
+              }
+
+              const totalLogs = exercisesRef.current.reduce(
+                (acc, ex) =>
+                  acc + ex.sets.filter((s) => s.weight !== '' || s.reps !== '').length,
+                0,
               );
-              router.replace('/(tabs)/history');
+
+              if (programId && userId) {
+                try {
+                  const progress = await advanceProgramProgress(userId, programId);
+
+                  if (progress.isCompleted) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Программа завершена!',
+                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".',
+                    );
+                    router.replace('/(tabs)/programs');
+                  } else {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert(
+                      'Тренировка завершена!',
+                      `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`,
+                    );
+                    router.replace('/(tabs)/workouts');
+                  }
+                } catch (progressError: any) {
+                  console.error('Ошибка обновления прогресса:', progressError);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+
+                  const retryAdvance = async () => {
+                    try {
+                      const progress = await advanceProgramProgress(userId!, programId!);
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+                      if (progress.isCompleted) {
+                        Alert.alert(
+                          'Программа завершена!',
+                          'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».',
+                        );
+                        router.replace('/(tabs)/programs');
+                      } else {
+                        router.replace('/(tabs)/workouts');
+                      }
+                    } catch (e: any) {
+                      Alert.alert(
+                        'Не удалось продвинуть прогресс',
+                        e?.message || 'Прогресс можно продвинуть автоматически при следующей тренировке.',
+                      );
+                    }
+                  };
+
+                  Alert.alert(
+                    'Тренировка сохранена',
+                    `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
+                      `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
+                    [
+                      {
+                        text: 'Позже',
+                        style: 'cancel',
+                        onPress: () => router.replace('/(tabs)/workouts'),
+                      },
+                      { text: 'Повторить', onPress: retryAdvance },
+                    ],
+                  );
+                }
+              } else {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert(
+                  'Успех',
+                  `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`,
+                );
+                router.replace('/(tabs)/history');
+              }
+            } catch (error: any) {
+              console.error('[useWorkoutSession] saveWorkout:', error);
+              Alert.alert('Ошибка', mapError(error));
+            } finally {
+              setSaving(false);
             }
-          } catch (error: any) {
-            console.error('[useWorkoutSession] saveWorkout:', error);
-            Alert.alert('Ошибка', mapError(error));
-          } finally {
-            setSaving(false);
-          }
+          },
         },
-      },
-    ]);
+      ],
+    );
   }, [isWorkoutActive, workoutId, programId, userId, router, flushPendingLogs]);
 
   return {
@@ -721,6 +739,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     handleTimerStop,
     loadAlternatives,
     updateSet,
+    updateSetFeedback,
     isSetCompleted,
     updateExerciseSettings,
     replaceExercise,
