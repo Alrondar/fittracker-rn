@@ -20,6 +20,7 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { profileService } from '../../src/services/profileService';
+import { Clock } from 'lucide-react-native';
 import { sendPasswordReset } from '../../src/services/authService';
 import { useStore } from '../../src/store/useStore';
 import { useTimerSettings } from '../../src/hooks/useTimerSettings';
@@ -496,6 +497,34 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
+
+<View
+  style={[
+    cardStyles.compact,
+    { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+  ]}
+>
+  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <Clock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+      <View style={{ flex: 1 }}>
+        <Text style={[typography.label, { color: colors.textPrimary }]}>Автостарт отдыха</Text>
+        <Text style={[typography.caption, { color: colors.textSecondary }]}>
+          Запускать таймер после последнего подхода автоматически
+        </Text>
+      </View>
+    </View>
+    <Switch
+      value={timerSettings.autoStartRest}
+      onValueChange={(value) => {
+        updateTimerSettings({ autoStartRest: value });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }}
+      trackColor={{ false: colors.border, true: colors.primary }}
+      thumbColor={colors.textInverse}
+    />
+  </View>
+</View>
 
           <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

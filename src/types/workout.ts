@@ -1,9 +1,3 @@
-/**
- * Типы тренировки (единственный источник типов упражнений для UI).
- * ARCH-7 закрыт 01.08.2026: types/index.ts удалён как мёртвый (0 импортов).
- * Все потребители импортируют ExerciseData/AlternativeExercise/SetData из этого файла.
- */
-
 export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
 
 export type SetFeedbackPatch = Partial<Pick<SetData, 'rpe' | 'rir' | 'difficulty'>>;

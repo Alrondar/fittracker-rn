@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, memo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { TrendingUp, Clock, X } from 'lucide-react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -13,6 +13,7 @@ import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import { SetData, SetFeedbackPatch, Difficulty } from '../../types/workout';
+import { useTimerSettings } from '../../hooks/useTimerSettings';
 import {
   WeightUnit,
   weightToDisplay,
@@ -54,13 +55,7 @@ interface SetInputProps {
   cardStyles: ReturnType<typeof createCardStyles>;
 }
 
-/**
- * Ввод детерминирован: во время фокуса внешний value игнорируется и наверх ничего
- * не летит — родитель (и весь FlatList) НЕ ре-рендерится на каждый символ.
- * Коммит в стейт — только onBlur. Фон ячейки — по локальному буферу (isFilled),
- * чтобы не было «ввёл, но розовое».
- */
-function SetInput({
+const SetInput = memo(function SetInput({
   value,
   placeholder,
   keyboardType,
@@ -99,14 +94,13 @@ function SetInput({
         onChangeText={(v) => {
           setLocal(v);
           lastSentRef.current = v;
-          // наверх НЕ пробрасываем во время печати — обрываем каскад ре-рендеров
         }}
         onFocus={() => {
           focusedRef.current = true;
         }}
         onBlur={() => {
           focusedRef.current = false;
-          onChangeText(local); // единственный коммит в родитель
+          onChangeText(local);
         }}
         keyboardType={keyboardType}
         placeholderTextColor={colors.textTertiary}
@@ -114,10 +108,10 @@ function SetInput({
       />
     </View>
   );
-}
+});
 
 // ============================================================================
-// ЧИП RPE (индикатор + открытие ползунка)
+// ЧИП RPE
 // ============================================================================
 interface SetFeedbackChipProps {
   rpe: number | null;
@@ -159,8 +153,7 @@ const SetFeedbackChip = memo(function SetFeedbackChip({
 });
 
 // ============================================================================
-// ПОЛЗУНОК RPE (кастомный, Reanimated + Gesture Handler)
-// Решает конфликт жестов с горизонтальным ScrollView
+// ПОЛЗУНОК RPE
 // ============================================================================
 interface SetFeedbackSliderProps {
   setNumber: number;
@@ -186,7 +179,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
   const sliderWidth = 280;
   const stepWidth = sliderWidth / 9;
 
-  // Синхронизация с внешним значением (восстановлено из БД / сброшено)
   React.useEffect(() => {
     if (rpe != null) {
       setLocal(rpe);
@@ -200,7 +192,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
   };
   const zc = zoneColor(local);
 
-  // JS-функции для вызова из worklet через runOnJS
   const commitValue = useCallback(
     (value: number) => {
       const v = Math.round(value);
@@ -291,7 +282,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
         </TouchableOpacity>
       </View>
 
-      {/* Кастомный ползунок */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
         <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>1</Text>
         <View style={{ flex: 1, height: 40 }}>
@@ -303,7 +293,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
                 justifyContent: 'center',
               }}
             >
-              {/* Трек */}
               <View
                 style={{
                   position: 'absolute',
@@ -314,7 +303,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
                   borderRadius: 2,
                 }}
               />
-              {/* Заполненная часть */}
               <Animated.View
                 style={[
                   {
@@ -327,7 +315,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
                   animatedTrackStyle,
                 ]}
               />
-              {/* Ползунок */}
               <Animated.View
                 style={[
                   {
@@ -353,7 +340,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
         <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>10</Text>
       </View>
 
-      {/* Метки значений */}
       <View
         style={{
           flexDirection: 'row',
@@ -376,7 +362,6 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
         ))}
       </View>
 
-      {/* Живое объяснение */}
       <Text
         style={[
           typography.captionSmall,
@@ -397,6 +382,96 @@ const SetFeedbackSlider = memo(function SetFeedbackSlider({
 });
 
 // ============================================================================
+// SET ROW (вынесен в memo для предотвращения ре-рендеров)
+// ============================================================================
+interface SetRowProps {
+  rowSets: SetData[];
+  startIndex: number;
+  rowIndex: number;
+  exerciseIndex: number;
+  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
+  isSetCompleted: (set: SetData) => boolean;
+  unit: WeightUnit;
+  toDisplay: (kg: string) => string;
+  fromDisplay: (disp: string) => string;
+  colors: any;
+  cardStyles: ReturnType<typeof createCardStyles>;
+  onOpenFeedback: (setIndex: number) => void;
+}
+
+const SetRow = memo(function SetRow({
+  rowSets,
+  startIndex,
+  rowIndex,
+  exerciseIndex,
+  updateSet,
+  isSetCompleted,
+  unit,
+  toDisplay,
+  fromDisplay,
+  colors,
+  cardStyles,
+  onOpenFeedback,
+}: SetRowProps) {
+  return (
+    <View key={rowIndex} style={cardStyles.setRow}>
+      <View style={cardStyles.setNumbersRow}>
+        {rowSets.map((_, si) => (
+          <View key={si} style={cardStyles.setNumber}>
+            <Text style={[cardStyles.setNumberText, { color: colors.textPrimary }]}>
+              {startIndex + si + 1}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <View style={cardStyles.setInputsRow}>
+        {rowSets.map((set, si) => (
+          <SetInput
+            key={`w-${startIndex + si}-${unit}`}
+            value={toDisplay(set.weight)}
+            placeholder={weightPlaceholder(unit)}
+            keyboardType="decimal-pad"
+            completed={isSetCompleted(set)}
+            onChangeText={(v) =>
+              updateSet(exerciseIndex, startIndex + si, 'weight', fromDisplay(v))
+            }
+            colors={colors}
+            cardStyles={cardStyles}
+          />
+        ))}
+      </View>
+      <View style={cardStyles.setInputsRow}>
+        {rowSets.map((set, si) => (
+          <SetInput
+            key={`r-${startIndex + si}-${unit}`}
+            value={set.reps}
+            placeholder="повт."
+            keyboardType="number-pad"
+            completed={isSetCompleted(set)}
+            onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
+            colors={colors}
+            cardStyles={cardStyles}
+          />
+        ))}
+      </View>
+      <View style={cardStyles.setInputsRow}>
+        {rowSets.map((set, si) => (
+          <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0 }}>
+            {isSetCompleted(set) && (
+              <SetFeedbackChip
+                rpe={set.rpe ?? null}
+                onPress={() => onOpenFeedback(startIndex + si)}
+                colors={colors}
+              />
+            )}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+});
+
+// ============================================================================
 // SETS GRID (основной компонент)
 // ============================================================================
 interface SetsGridProps {
@@ -404,18 +479,8 @@ interface SetsGridProps {
   sets: SetData[];
   restSeconds: number;
   unit: WeightUnit;
-  updateSet: (
-    exIndex: number,
-    setIndex: number,
-    field: 'weight' | 'reps',
-    value: string,
-  ) => void;
-  updateSetFeedback: (
-    exIndex: number,
-    setIndex: number,
-    patch: SetFeedbackPatch,
-  ) => void;
-  // FEAT-1.1: применение прогрессии (+2.5 кг) к первому подходу
+  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
+  updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number) => void;
@@ -423,11 +488,6 @@ interface SetsGridProps {
   cardStyles: ReturnType<typeof createCardStyles>;
 }
 
-/**
- * Секция «Подходы»: номера, вес/повторы, FEAT-7 фидбек (чип + кастомный ползунок),
- * FEAT-1.1 подсказка прогрессии из последней тренировки (превью + кнопка + кастомный вес),
- * кнопка отдыха. Вынесено из ExerciseCard (SCALE-5: карточка > 500 строк).
- */
 export const SetsGrid = memo(function SetsGrid({
   exerciseIndex,
   sets,
@@ -444,30 +504,68 @@ export const SetsGrid = memo(function SetsGrid({
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
   const [showCustomWeight, setShowCustomWeight] = useState(false);
   const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
-  const completedSets = sets.filter((s) => isSetCompleted(s)).length;
+
+  
+  // ✅ OPTIMIZED: мемоизация вычислений
+  const completedSets = useMemo(
+    () => sets.filter((s) => isSetCompleted(s)).length,
+    [sets, isSetCompleted],
+  );
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
 
-  const toDisplay = (kgStr: string) => weightToDisplay(kgStr, unit);
-  const fromDisplay = (disp: string) => weightFromDisplay(disp, unit);
+  // FEAT-1.2: автостарт таймера отдыха
+const { settings: timerSettings } = useTimerSettings();
+const restStartedRef = useRef(false);
 
-  const activeSet =
-    feedbackSetIndex !== null && feedbackSetIndex < sets.length
-      ? sets[feedbackSetIndex]
-      : null;
+useEffect(() => {
+  // Сброс флага при смене упражнения
+  restStartedRef.current = false;
+}, [exerciseIndex]);
 
-  // FEAT-1.1: данные из последнего подхода (одинаковы для всех сетов упражнения)
+useEffect(() => {
+  if (
+    allSetsDone &&
+    timerSettings.autoStartRest &&
+    !restStartedRef.current &&
+    restSeconds > 0
+  ) {
+    restStartedRef.current = true;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    startRestTimer(restSeconds);
+  }
+}, [allSetsDone, timerSettings.autoStartRest, restSeconds, startRestTimer]);
+
+  // ✅ OPTIMIZED: стабильные функции конвертации
+  const toDisplay = useCallback(
+    (kgStr: string) => weightToDisplay(kgStr, unit),
+    [unit],
+  );
+  const fromDisplay = useCallback(
+    (disp: string) => weightFromDisplay(disp, unit),
+    [unit],
+  );
+
+  // ✅ OPTIMIZED: мемоизация активного сета
+  const activeSet = useMemo(
+    () =>
+      feedbackSetIndex !== null && feedbackSetIndex < sets.length
+        ? sets[feedbackSetIndex]
+        : null,
+    [feedbackSetIndex, sets],
+  );
+
+  // FEAT-1.1: данные из последнего подхода
   const previousWeight = sets[0]?.previousWeight ?? null;
   const previousReps = sets[0]?.previousReps ?? null;
   const previousRpe = sets[0]?.previousRpe ?? null;
 
-  // FEAT-1.1: обработчик кнопки "+2.5 кг"
+  // ✅ OPTIMIZED: мемоизация обработчиков
   const handleProgression = useCallback(() => {
     if (previousWeight == null) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     applyProgression(exerciseIndex, previousWeight + 2.5);
   }, [previousWeight, exerciseIndex, applyProgression]);
 
-  // FEAT-1.1: обработчик кастомного веса
   const handleCustomWeightSubmit = useCallback(
     (text: string) => {
       const weight = parseFloat(text);
@@ -479,6 +577,10 @@ export const SetsGrid = memo(function SetsGrid({
     },
     [exerciseIndex, applyProgression],
   );
+
+  const handleOpenFeedback = useCallback((setIndex: number) => {
+    setFeedbackSetIndex(setIndex);
+  }, []);
 
   return (
     <View
@@ -507,7 +609,7 @@ export const SetsGrid = memo(function SetsGrid({
         </Text>
       </View>
       <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
-        {/* FEAT-1.1: подсказка прогрессии из последней тренировки */}
+        {/* FEAT-1.1: подсказка прогрессии */}
         {previousWeight != null && (
           <View
             style={{
@@ -586,18 +688,12 @@ export const SetsGrid = memo(function SetsGrid({
                   borderColor: colors.border,
                 }}
               >
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    { color: colors.textSecondary },
-                  ]}
-                >
+                <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
                   Свой вес
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* FEAT-1.1: поле ввода кастомного веса */}
             {showCustomWeight && (
               <View style={{ marginTop: SPACING.sm }}>
                 <TextInput
@@ -621,86 +717,30 @@ export const SetsGrid = memo(function SetsGrid({
           </View>
         )}
 
+        {/* ✅ OPTIMIZED: рендер рядов через вынесенный memo SetRow */}
         {setRowsConfig.map((rowSize, rowIndex) => {
-          const startIndex = setRowsConfig
-            .slice(0, rowIndex)
-            .reduce((s, n) => s + n, 0);
+          const startIndex = setRowsConfig.slice(0, rowIndex).reduce((s, n) => s + n, 0);
           const rowSets = sets.slice(startIndex, startIndex + rowSize);
           return (
-            <View key={rowIndex} style={cardStyles.setRow}>
-              <View style={cardStyles.setNumbersRow}>
-                {rowSets.map((_, si) => (
-                  <View key={si} style={cardStyles.setNumber}>
-                    <Text
-                      style={[
-                        cardStyles.setNumberText,
-                        { color: colors.textPrimary },
-                      ]}
-                    >
-                      {startIndex + si + 1}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <View style={cardStyles.setInputsRow}>
-                {rowSets.map((set, si) => (
-                  <SetInput
-                    key={`w-${startIndex + si}-${unit}`}
-                    value={toDisplay(set.weight)}
-                    placeholder={weightPlaceholder(unit)}
-                    keyboardType="decimal-pad"
-                    completed={isSetCompleted(set)}
-                    onChangeText={(v) =>
-                      updateSet(
-                        exerciseIndex,
-                        startIndex + si,
-                        'weight',
-                        fromDisplay(v),
-                      )
-                    }
-                    colors={colors}
-                    cardStyles={cardStyles}
-                  />
-                ))}
-              </View>
-              <View style={cardStyles.setInputsRow}>
-                {rowSets.map((set, si) => (
-                  <SetInput
-                    key={`r-${startIndex + si}-${unit}`}
-                    value={set.reps}
-                    placeholder="повт."
-                    keyboardType="number-pad"
-                    completed={isSetCompleted(set)}
-                    onChangeText={(v) =>
-                      updateSet(exerciseIndex, startIndex + si, 'reps', v)
-                    }
-                    colors={colors}
-                    cardStyles={cardStyles}
-                  />
-                ))}
-              </View>
-              {/* FEAT-7: чип-индикатор на каждый заполненный подход */}
-              <View style={cardStyles.setInputsRow}>
-                {rowSets.map((set, si) => (
-                  <View
-                    key={`fb-${startIndex + si}`}
-                    style={{ flex: 1, minWidth: 0 }}
-                  >
-                    {isSetCompleted(set) && (
-                      <SetFeedbackChip
-                        rpe={set.rpe ?? null}
-                        onPress={() => setFeedbackSetIndex(startIndex + si)}
-                        colors={colors}
-                      />
-                    )}
-                  </View>
-                ))}
-              </View>
-            </View>
+            <SetRow
+              key={rowIndex}
+              rowSets={rowSets}
+              startIndex={startIndex}
+              rowIndex={rowIndex}
+              exerciseIndex={exerciseIndex}
+              updateSet={updateSet}
+              isSetCompleted={isSetCompleted}
+              unit={unit}
+              toDisplay={toDisplay}
+              fromDisplay={fromDisplay}
+              colors={colors}
+              cardStyles={cardStyles}
+              onOpenFeedback={handleOpenFeedback}
+            />
           );
         })}
 
-        {/* FEAT-7: кастомный ползунок (Reanimated + Gesture Handler) */}
+        {/* FEAT-7: ползунок RPE */}
         {feedbackSetIndex !== null &&
           activeSet !== null &&
           isSetCompleted(activeSet) && (

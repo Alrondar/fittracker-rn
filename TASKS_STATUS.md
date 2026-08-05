@@ -64,7 +64,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 | ID | Описание | Статус | Комментарий |
 |---|---|---|---|
-| FIT-1 | Активация программ (одна активная, бейдж «Текущая», кнопка «Активировать», диалог «начать заново» для завершённых) | ✅ | activateProgram(+reset), getUserProgramsStatus, ProgramCard, programs.tsx |
+| FEAT-1.1|Prefill подходов из последней тренировки + подсказка прогрессии (+2.5 кг)|✅|05.08.2026 (SetsGrid.tsx + useWorkoutSession.ts; загрузка lastLogByExerciseId через вложенный select; SheetShell для ввода веса; applyProgression → debounce-RPC)|
 | FIT-2 | Синхронизация правок программы → будущие тренировки (RPC sync_program_changes_to_workouts) | ✅ | syncProgramChanges вызывается в saveProgram; завершённые/в процессе не трогаются |
 | FIT-3 | Робастное удаление программы (отвязка workouts, удаление user_programs → 0 активных, защита от FK-падения) | ✅ | deleteProgram(id, userId); deleteMutation инвалидирует dashboard/workouts |
 | FIT-4 | Плейсхолдер «Нет активной программы» на Dashboard | ✅ | index.tsx → AppCard + кнопка «Выбрать программу» |

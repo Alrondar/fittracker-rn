@@ -58,10 +58,10 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | goals/GoalsStep1.tsx|шаг «О тебе»|✅|SCALE-5|
 | goals/GoalsStep2.tsx|шаг «Твоя цель» + фармакология|✅|SCALE-5|
 | goals/GoalsStep3.tsx|шаг «Твоя норма»|✅|SCALE-5|
-| SetsGrid.tsx |сетка подходов + чипы RPE + ползунок (SCALE-5, вынесено из ExerciseCard)|✅|	
-FEAT-7; кастомный ползунок на Reanimated + Gesture Handler|
+| SetsGrid.tsx|сетка подходов + чипы RPE + ползунок + прогрессия (SCALE-5)|✅|FEAT-7 + FEAT-1.1; кастомный ползунок на Reanimated + Gesture Handler; SheetShell для ввода веса; SetRow вынесен в memo|
 | SetFeedbackControl.tsx |SetFeedbackChip + SetFeedbackEditor (ползунок RPE 1–10)|✅|	
 FEAT-7; simultaneousWithExternalGesture(Gesture.Native()) для разрешения скроллов|
+
 
 ## src/hooks/
 
@@ -72,7 +72,7 @@ FEAT-7; simultaneousWithExternalGesture(Gesture.Native()) для разреше�
 | useProgramEditor.ts|редактор программы (CRUD/drag &drop/фазы) + syncProgramChanges в save|✅|SCALE-5 ✅ разбит; ARCH-6 ✅ (handleAddExerciseFromPicker типизирован)|
 | useProgramPhases.ts | фазовая логика редактора (вынесена) | ✅(импорт) | SCALE-5 |
 | useWorkouts.ts | тренировки (React Query) | ✅(импорт) | |
-| useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅)| ✅ |debounce-автосохранение (500мс) + RPC upsert_workout_logs + flush при размонтировании; ARCH-6 ✅ (loadWorkout/loadAlternatives типизированы); cleanup на пустых deps + ref (лишний UPDATE устранён)|
+| useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅, FEAT-1.1 ✅)|✅|debounce-автосохранение + RPC upsert_workout_logs + flush при размонтировании; applyProgression для FEAT-1.1; загрузка lastLogByExerciseId через вложенный select|
 | useExerciseDetail.ts | детальное упражнение (staleTime Infinity) | структ. | |
 | useInjuryWarnings.ts | avoid/caution (React Query + memo по warningKey) | ✅ | |
 | useWarmup.ts|авторазминка с учётом травм|✅(импорт)|
@@ -126,7 +126,7 @@ FEAT-7; simultaneousWithExternalGesture(Gesture.Native()) для разреше�
 | Файл|Назначение|Инспект.|Примечание|
 | ---|---|---|---|
 | database.types.ts|типы Supabase (Tables/Functions/Enums)|✅|синхронизирован с БД (UTF-8, содержит sync_program_changes_to_workouts и upsert_workout_logs)|
-| workout.ts|типы тренировки (ExerciseData, AlternativeExercise, SetData)|✅|ARCH-7 ✅ (единственный источник типов упражнений для UI)|
+| workout.ts|типы тренировки (ExerciseData, AlternativeExercise, SetData)|✅|ARCH-7 ✅; FEAT-1.1: добавлены previousWeight/previousReps/previousRpe в SetData|
 | index.ts|🗑 удалён 01.08.2026 (ARCH-7)|—|мёртвый (0 импортов), дублировал workout.ts|
 | metrics.ts|замеры|структ.| |
 

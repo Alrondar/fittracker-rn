@@ -7,14 +7,16 @@ export interface TimerSettings {
   sound: boolean;
   vibration: boolean;
   preBeep: boolean;
-  activationFirst: boolean; // порядок разминки: активация перед растяжкой
+  activationFirst: boolean;
+  autoStartRest: boolean; // FEAT-1.2: автостарт отдыха после последнего подхода
 }
 
 const DEFAULTS: TimerSettings = {
   sound: true,
   vibration: true,
   preBeep: true,
-  activationFirst: false, // по умолчанию сначала растяжка
+  activationFirst: false,
+  autoStartRest: false, // FEAT-1.2: по умолчанию выключено
 };
 
 export function useTimerSettings() {

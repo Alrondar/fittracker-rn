@@ -34,7 +34,7 @@ interface ExerciseSliderProps {
     setIndex: number,
     patch: SetFeedbackPatch,
   ) => void;
-  applyProgression: (exerciseIndex: number, newWeight: number) => void;
+    applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
