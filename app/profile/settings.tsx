@@ -413,28 +413,88 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Bell size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: colors.textPrimary }]}>Напоминания о питании</Text>
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    Напоминания записывать приёмы пищи
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={nutritionReminders}
-                onValueChange={(value) => {
-                  setNutritionReminders(value);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.textInverse}
-              />
+          <View
+        style={[
+          cardStyles.compact,
+          { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+        ]}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Clock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.label, { color: colors.textPrimary }]}>
+                Автостарт после каждого подхода
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Запускать таймер после каждого завершённого подхода
+              </Text>
             </View>
           </View>
+          <Switch
+            value={timerSettings.autoStartAfterEverySet}
+            onValueChange={(value) => {
+              updateTimerSettings({ autoStartAfterEverySet: value });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.textInverse}
+          />
+        </View>
+      </View>
+
+      <View
+        style={[
+          cardStyles.compact,
+          { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+        ]}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Vibrate size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.label, { color: colors.textPrimary }]}>
+                Вибрация до сброса
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Вибрировать каждые 3 сек, пока не сбросишь таймер
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={timerSettings.vibrateUntilDismissed}
+            onValueChange={(value) => {
+              updateTimerSettings({ vibrateUntilDismissed: value });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.textInverse}
+          />
+        </View>
+      </View>
+
+      <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.label, { color: colors.textPrimary }]}>Вибрация</Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Вибросигнал по окончании отдыха
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={timerSettings.vibration}
+            onValueChange={(value) => {
+              updateTimerSettings({ vibration: value });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.textInverse}
+          />
+        </View>
+      </View>
         </View>
 
         {/* Таймер отдыха */}

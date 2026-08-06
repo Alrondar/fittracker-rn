@@ -58,9 +58,9 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | goals/GoalsStep1.tsx|шаг «О тебе»|✅|SCALE-5|
 | goals/GoalsStep2.tsx|шаг «Твоя цель» + фармакология|✅|SCALE-5|
 | goals/GoalsStep3.tsx|шаг «Твоя норма»|✅|SCALE-5|
-| SetsGrid.tsx|сетка подходов + чипы RPE + ползунок + прогрессия (SCALE-5)|✅|FEAT-7 + FEAT-1.1; кастомный ползунок на Reanimated + Gesture Handler; SheetShell для ввода веса; SetRow вынесен в memo|
-| SetFeedbackControl.tsx |SetFeedbackChip + SetFeedbackEditor (ползунок RPE 1–10)|✅|	
-FEAT-7; simultaneousWithExternalGesture(Gesture.Native()) для разрешения скроллов|
+| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1; чип/редактор RPE импортируются из SetFeedbackControl.tsx (инлайн-дубли удалены 05.08.2026); SetRow вынесен в memo |
+| SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала RPE 1–10) | ✅ | FEAT-7 v2 (05.08.2026): драг-ползунок → тапабельная шкала: дефолт 7, кнопка «Готово», закрыт рассинхрон меток (sliderWidth=280) и фризы драга; без Reanimated/GH |
+| RestTimer.tsx | таймер отдыха (круговой SVG + Pill-режим + пресеты) | ✅ | v2 05.08.2026: Pill-режим, пресеты +30/+60, вибрация до сброса, sticky-оверлей в [id].tsx |
 
 
 ## src/hooks/
@@ -77,7 +77,7 @@ FEAT-7; simultaneousWithExternalGesture(Gesture.Native()) для разреше�
 | useInjuryWarnings.ts | avoid/caution (React Query + memo по warningKey) | ✅ | |
 | useWarmup.ts|авторазминка с учётом травм|✅(импорт)|
 | useProfile.ts | профиль (profileService) | ✅ | |
-| useTimerSettings.ts | настройки таймера (AsyncStorage) | структ. | |
+| useTimerSettings.ts|настройки таймера (AsyncStorage)|✅|FEAT-1.2: добавлено поле autoStartRest|
 | useUnitPreferences.ts | единицы веса кг/фунты | ✅(импорт) | |
 | useTheme.tsx | тема | структ. | |
 | useToast.ts|toast (канонический)|✅|ARCH-2 ✅ (канон)|

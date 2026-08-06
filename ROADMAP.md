@@ -56,13 +56,13 @@
 ### Этап 1 — Ядро retention + **данные для AI** (2–4 нед)
 | # | Фича | Ценность | Архитектура / примечания |
 |---|------|----------|--------------------------|
-| 1.1|Prefill подходов из последней тренировки + подсказка прогрессии (+2,5 кг)|✅|05.08.2026: SheetShell + applyProgression; загрузка lastLogByExerciseId; мемоизация SetRow/toDisplay/fromDisplay|
-| 1.2 | Автостарт таймера отдыха после последнего подхода (настройка) | снижение трения | — |
+| 1.1 |Prefill подходов из последней тренировки + подсказка прогрессии (+2,5 кг)|✅|05.08.2026: SheetShell + applyProgression; загрузка lastLogByExerciseId; мемоизация SetRow/toDisplay/fromDisplay|
+| 1.2 |Автостарт таймера отдыха после последнего подхода (настройка)|✅|05.08.2026: v2 — Pill-режим, пресеты +30/+60, вибрация до сброса, sticky-оверлей; автостарт после каждого подхода (опция)|
 | 1.3 | Streak 🔥 на Dashboard (из `workoutDates`) | геймификация дёшево | — |
 | 1.4 | e1RM (Эпли) в PR-карточке и прогрессе | мотивация силовика | — |
 | 1.5 | Plate calculator (визуал блинов) | дифференциатор, виральность | — |
 | 1.6 | CSV-экспорт истории (`Share.share`) | «мои данные — мои» | — |
-| **1.7** | **RPE/RIR feedback**: после каждого рабочего подхода или хотя бы последнего — `rpe: 1-10` / `rir: 0-5` / `difficulty: easy\|moderate\|hard\|max` | **критично для AI-прогрессии**: без этого AI не понимает, была ли нагрузка адекватной | 05.08.2026: ползунок 1–10 + авто-RIR/difficulty; SetsGrid + SetFeedbackControl + utils/rpe; патч через updateSetFeedback → RPC upsert_workout_logs|
+| **1.7** | **RPE/RIR feedback**: после каждого рабочего подхода или хотя бы последнего — `rpe: 1-10` / `rir: 0-5` / `difficulty: easy\|moderate\|hard\|max` | **критично для AI-прогрессии**: без этого AI не понимает, была ли нагрузка адекватной | 05.08.2026: тапабельная шкала 1–10 + авто-RIR/difficulty (v2: заменила драг-ползунок); SetsGrid + SetFeedbackControl + utils/rpe; патч через updateSetFeedback → RPC upsert_workout_logs|
 | **1.8** | **Daily readiness check-in**: перед тренировкой — `sleepHours`, `sleepQuality: 1-5`, `fatigue: 1-5`, `soreness: 1-5`, `stress: 1-5`, `readiness: 1-5` | **AI должен знать состояние сегодня**: если readiness < 3, AI снижает нагрузку или предлагает альтернативу | миграция: `CREATE TABLE daily_readiness (user_id uuid, date date, sleep_hours numeric, sleep_quality smallint, fatigue smallint, soreness smallint, stress smallint, readiness smallint, notes text, created_at timestamptz)`; RLS: `auth.uid() = user_id`; UI: модалка перед стартом тренировки |
 | **1.9** | **Pain flag**: во время тренировки — `painLevel: 0-3`, `painType: sharp\|dull\|pulling\|joint\|muscle`, `bodyPart`, `stopExercise: boolean` | **острая безопасность**: если pain > 0, AI останавливает рекомендацию опасных упражнений, предлагает замены, рекомендует консультацию | миграция: `CREATE TABLE pain_events (id uuid, user_id uuid, workout_id uuid, exercise_id uuid, pain_level smallint, pain_type text, body_part text, stop_exercise boolean, occurred_at timestamptz, notes text)`; RLS: `auth.uid() = user_id`; UI: кнопка «Боль» в `ExerciseCard` |
 

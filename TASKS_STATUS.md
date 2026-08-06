@@ -65,12 +65,14 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | ID | Описание | Статус | Комментарий |
 |---|---|---|---|
 | FEAT-1.1|Prefill подходов из последней тренировки + подсказка прогрессии (+2.5 кг)|✅|05.08.2026 (SetsGrid.tsx + useWorkoutSession.ts; загрузка lastLogByExerciseId через вложенный select; SheetShell для ввода веса; applyProgression → debounce-RPC)|
+| FEAT-1.2|Автостарт таймера отдыха после последнего подхода|✅|05.08.2026 (useTimerSettings.ts + settings.tsx + SetsGrid.tsx; настройка autoStartRest через AsyncStorage; ref-защита от повторного запуска; NotificationFeedbackType.Success)|
+| FEAT-1.2.1 | Pill-режим таймера + пресеты + вибрация до сброса | ✅ | 05.08.2026 (RestTimer.tsx v2 + [id].tsx sticky + useTimerSettings + settings.tsx + SetsGrid.tsx; автостарт после каждого подхода опционально) |
 | FIT-2 | Синхронизация правок программы → будущие тренировки (RPC sync_program_changes_to_workouts) | ✅ | syncProgramChanges вызывается в saveProgram; завершённые/в процессе не трогаются |
 | FIT-3 | Робастное удаление программы (отвязка workouts, удаление user_programs → 0 активных, защита от FK-падения) | ✅ | deleteProgram(id, userId); deleteMutation инвалидирует dashboard/workouts |
 | FIT-4 | Плейсхолдер «Нет активной программы» на Dashboard | ✅ | index.tsx → AppCard + кнопка «Выбрать программу» |
 | FIT-5 | Строка «Следующая: Фаза N, Неделя X» в workouts.tsx | ✅ | renderHeader |
 | FIT-6|Название программы + фаза в шапке тренировки|✅|workout/[id].tsx → getWorkoutProgramInfo (React Query)|
-| FEAT-7 | RPE/RIR feedback: ползунок 1–10 + авто-RIR/difficulty после подхода | ✅ | 05.08.2026 (SetsGrid.tsx + SetFeedbackControl.tsx + utils/rpe.ts; кастомный ползунок на Reanimated + Gesture Handler; патч через updateSetFeedback → debounce-RPC upsert_workout_logs; чип-индикатор в ряду подходов) |
+| FEAT-7 | RPE/RIR feedback: шкала 1–10 + авто-RIR/difficulty после подхода | ✅ | 05.08.2026 (SetsGrid.tsx + SetFeedbackControl.tsx + utils/rpe.ts; патч через updateSetFeedback → debounce-RPC upsert_workout_logs; чип-индикатор в ряду подходов). v2 05.08.2026: драг-ползунок заменён тапабельной шкалой (дефолт 7, явное «Готово», фикс рассинхрона делений и фризов); дубли консолидированы в SetFeedbackControl |
 🤖 AI-тренер (AI) — в плане, roadmap rev.2 Этап 3
 | ID|Приоритет|Описание|Статус|Дата / Комментарий|
 | ---|---|---|---|---|

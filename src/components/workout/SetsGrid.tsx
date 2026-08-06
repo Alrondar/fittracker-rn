@@ -1,18 +1,15 @@
+// src/components/SetsGrid.tsx
+// Сетка подходов + чипы RPE + прогрессия (FEAT-1.1) + автостарт отдыха (FEAT-1.2).
+// 05.08.2026: инлайн-дубли чипа/ползунка удалены — используются SetFeedbackChip
+// и SetFeedbackEditor из SetFeedbackControl.tsx (FEAT-7 v2, тапабельная шкала).
 import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, Clock, X } from 'lucide-react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
+import { TrendingUp, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
-import { SetData, SetFeedbackPatch, Difficulty } from '../../types/workout';
+import { SetData, SetFeedbackPatch } from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import {
   WeightUnit,
@@ -20,13 +17,7 @@ import {
   weightFromDisplay,
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
-import {
-  RPE_DESCRIPTIONS,
-  rpeZone,
-  deriveRir,
-  deriveDifficulty,
-  DIFFICULTY_LABELS,
-} from '../../utils/rpe';
+import { SetFeedbackChip, SetFeedbackEditor } from './SetFeedbackControl';
 
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
@@ -68,7 +59,7 @@ const SetInput = memo(function SetInput({
   const focusedRef = useRef(false);
   const lastSentRef = useRef(value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (focusedRef.current) return;
     if (value !== lastSentRef.current) {
       setLocal(value);
@@ -77,6 +68,7 @@ const SetInput = memo(function SetInput({
   }, [value]);
 
   const isFilled = local.trim() !== '';
+
   return (
     <View
       style={[
@@ -106,277 +98,6 @@ const SetInput = memo(function SetInput({
         placeholderTextColor={colors.textTertiary}
         blurOnSubmit={false}
       />
-    </View>
-  );
-});
-
-// ============================================================================
-// ЧИП RPE
-// ============================================================================
-interface SetFeedbackChipProps {
-  rpe: number | null;
-  onPress: () => void;
-  colors: any;
-}
-
-const SetFeedbackChip = memo(function SetFeedbackChip({
-  rpe,
-  onPress,
-  colors,
-}: SetFeedbackChipProps) {
-  const filled = rpe != null;
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        alignItems: 'center',
-        paddingVertical: 4,
-        borderRadius: BORDER_RADIUS.sm,
-        backgroundColor: filled ? colors.primary + '15' : colors.surfaceSecondary,
-        borderWidth: 1,
-        borderColor: filled ? colors.primary + '40' : colors.border,
-      }}
-    >
-      <Text
-        style={[
-          typography.captionSmall,
-          {
-            color: filled ? colors.primary : colors.textTertiary,
-            fontWeight: '700',
-          },
-        ]}
-      >
-        {filled ? `RPE ${rpe}` : 'RPE?'}
-      </Text>
-    </TouchableOpacity>
-  );
-});
-
-// ============================================================================
-// ПОЛЗУНОК RPE
-// ============================================================================
-interface SetFeedbackSliderProps {
-  setNumber: number;
-  rpe: number | null;
-  rir: number | null;
-  difficulty: Difficulty | null;
-  onChange: (patch: SetFeedbackPatch) => void;
-  onClose: () => void;
-  colors: any;
-}
-
-const SetFeedbackSlider = memo(function SetFeedbackSlider({
-  setNumber,
-  rpe,
-  rir,
-  difficulty,
-  onChange,
-  onClose,
-  colors,
-}: SetFeedbackSliderProps) {
-  const [local, setLocal] = useState<number>(rpe ?? 6);
-  const translateX = useSharedValue((rpe ?? 6) - 1);
-  const sliderWidth = 280;
-  const stepWidth = sliderWidth / 9;
-
-  React.useEffect(() => {
-    if (rpe != null) {
-      setLocal(rpe);
-      translateX.value = rpe - 1;
-    }
-  }, [rpe, translateX]);
-
-  const zoneColor = (v: number): string => {
-    const z = rpeZone(v);
-    return z === 'easy' ? colors.success : z === 'hard' ? colors.warning : colors.error;
-  };
-  const zc = zoneColor(local);
-
-  const commitValue = useCallback(
-    (value: number) => {
-      const v = Math.round(value);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      onChange({ rpe: v, rir: deriveRir(v), difficulty: deriveDifficulty(v) });
-    },
-    [onChange],
-  );
-
-  const updateLocalValue = useCallback((value: number) => {
-    setLocal(value);
-  }, []);
-
-  const panGesture = Gesture.Pan()
-    .simultaneousWithExternalGesture(Gesture.Native())
-    .onUpdate((event) => {
-      'worklet';
-      const clampedX = Math.max(0, Math.min(event.x, sliderWidth));
-      translateX.value = clampedX / stepWidth;
-      const value = Math.round(clampedX / stepWidth) + 1;
-      runOnJS(updateLocalValue)(value);
-    })
-    .onEnd(() => {
-      'worklet';
-      const snappedX = Math.round(translateX.value);
-      translateX.value = withSpring(snappedX);
-      const value = snappedX + 1;
-      runOnJS(commitValue)(value);
-    });
-
-  const animatedThumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value * stepWidth }],
-  }));
-
-  const animatedTrackStyle = useAnimatedStyle(() => ({
-    width: translateX.value * stepWidth,
-  }));
-
-  const reset = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onChange({ rpe: null, rir: null, difficulty: null });
-    translateX.value = 5;
-    setLocal(6);
-  };
-
-  return (
-    <View
-      style={{
-        marginTop: SPACING.sm,
-        padding: SPACING.sm,
-        borderRadius: BORDER_RADIUS.sm,
-        backgroundColor: colors.surfaceSecondary,
-        borderWidth: 1,
-        borderColor: colors.border,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginBottom: SPACING.xs,
-        }}
-      >
-        <Text
-          style={[
-            typography.captionSmall,
-            { color: colors.textSecondary, fontWeight: '700', flex: 1 },
-          ]}
-        >
-          Подход {setNumber} — как далось?
-        </Text>
-        {rpe != null && (
-          <TouchableOpacity
-            onPress={reset}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={{ marginRight: SPACING.sm }}
-          >
-            <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-              Сбросить
-            </Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={onClose}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <X size={14} color={colors.textTertiary} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-        <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>1</Text>
-        <View style={{ flex: 1, height: 40 }}>
-          <GestureDetector gesture={panGesture}>
-            <View
-              style={{
-                width: '100%',
-                height: '100%',
-                justifyContent: 'center',
-              }}
-            >
-              <View
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  height: 4,
-                  backgroundColor: zc + '40',
-                  borderRadius: 2,
-                }}
-              />
-              <Animated.View
-                style={[
-                  {
-                    position: 'absolute',
-                    left: 0,
-                    height: 4,
-                    backgroundColor: zc,
-                    borderRadius: 2,
-                  },
-                  animatedTrackStyle,
-                ]}
-              />
-              <Animated.View
-                style={[
-                  {
-                    position: 'absolute',
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    backgroundColor: zc,
-                    borderWidth: 2,
-                    borderColor: colors.textInverse,
-                    shadowColor: colors.shadow,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 5,
-                  },
-                  animatedThumbStyle,
-                ]}
-              />
-            </View>
-          </GestureDetector>
-        </View>
-        <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>10</Text>
-      </View>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          marginTop: 4,
-          paddingHorizontal: 12,
-        }}
-      >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
-          <Text
-            key={v}
-            style={{
-              fontSize: 9,
-              color: local === v ? zc : colors.textTertiary,
-              fontWeight: local === v ? '700' : '400',
-            }}
-          >
-            {v}
-          </Text>
-        ))}
-      </View>
-
-      <Text
-        style={[
-          typography.captionSmall,
-          { color: colors.textSecondary, marginTop: SPACING.xs, lineHeight: 16 },
-        ]}
-      >
-        {`RPE ${local} — ${RPE_DESCRIPTIONS[local]} · сложность: ${
-          DIFFICULTY_LABELS[difficulty ?? deriveDifficulty(local)]
-        } · RIR ${rir ?? deriveRir(local)}`}
-      </Text>
-      <Text
-        style={[typography.captionSmall, { color: colors.textTertiary, marginTop: 2 }]}
-      >
-        1 — легко · 10 — отказ
-      </Text>
     </View>
   );
 });
@@ -424,6 +145,7 @@ const SetRow = memo(function SetRow({
           </View>
         ))}
       </View>
+
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
           <SetInput
@@ -440,6 +162,7 @@ const SetRow = memo(function SetRow({
           />
         ))}
       </View>
+
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
           <SetInput
@@ -454,6 +177,7 @@ const SetRow = memo(function SetRow({
           />
         ))}
       </View>
+
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
           <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0 }}>
@@ -505,37 +229,47 @@ export const SetsGrid = memo(function SetsGrid({
   const [showCustomWeight, setShowCustomWeight] = useState(false);
   const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
 
-  
-  // ✅ OPTIMIZED: мемоизация вычислений
+  // ✅ Мемоизация вычислений
   const completedSets = useMemo(
     () => sets.filter((s) => isSetCompleted(s)).length,
     [sets, isSetCompleted],
   );
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
 
-  // FEAT-1.2: автостарт таймера отдыха
-const { settings: timerSettings } = useTimerSettings();
-const restStartedRef = useRef(false);
+ // FEAT-1.2: автостарт таймера отдыха
+  const { settings: timerSettings } = useTimerSettings();
+  const restStartedRef = useRef<number>(-1);
 
-useEffect(() => {
-  // Сброс флага при смене упражнения
-  restStartedRef.current = false;
-}, [exerciseIndex]);
+  useEffect(() => {
+    // Сброс флага при смене упражнения
+    restStartedRef.current = -1;
+  }, [exerciseIndex]);
 
-useEffect(() => {
-  if (
-    allSetsDone &&
-    timerSettings.autoStartRest &&
-    !restStartedRef.current &&
-    restSeconds > 0
-  ) {
-    restStartedRef.current = true;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    startRestTimer(restSeconds);
-  }
-}, [allSetsDone, timerSettings.autoStartRest, restSeconds, startRestTimer]);
+  useEffect(() => {
+    const shouldStart =
+      timerSettings.autoStartAfterEverySet ||
+      (timerSettings.autoStartRest && allSetsDone);
 
-  // ✅ OPTIMIZED: стабильные функции конвертации
+    if (
+      shouldStart &&
+      completedSets > 0 &&
+      completedSets !== restStartedRef.current &&
+      restSeconds > 0
+    ) {
+      restStartedRef.current = completedSets;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      startRestTimer(restSeconds);
+    }
+  }, [
+    completedSets,
+    timerSettings.autoStartAfterEverySet,
+    timerSettings.autoStartRest,
+    allSetsDone,
+    restSeconds,
+    startRestTimer,
+  ]);
+
+  // ✅ Стабильные функции конвертации
   const toDisplay = useCallback(
     (kgStr: string) => weightToDisplay(kgStr, unit),
     [unit],
@@ -545,7 +279,7 @@ useEffect(() => {
     [unit],
   );
 
-  // ✅ OPTIMIZED: мемоизация активного сета
+  // ✅ Мемоизация активного сета
   const activeSet = useMemo(
     () =>
       feedbackSetIndex !== null && feedbackSetIndex < sets.length
@@ -559,7 +293,7 @@ useEffect(() => {
   const previousReps = sets[0]?.previousReps ?? null;
   const previousRpe = sets[0]?.previousRpe ?? null;
 
-  // ✅ OPTIMIZED: мемоизация обработчиков
+  // ✅ Мемоизация обработчиков
   const handleProgression = useCallback(() => {
     if (previousWeight == null) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -608,6 +342,7 @@ useEffect(() => {
           {completedSets}/{sets.length}
         </Text>
       </View>
+
       <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
         {/* FEAT-1.1: подсказка прогрессии */}
         {previousWeight != null && (
@@ -629,7 +364,14 @@ useEffect(() => {
                 gap: SPACING.sm,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 180 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  flex: 1,
+                  minWidth: 180,
+                }}
+              >
                 <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
                 <Text
                   style={[
@@ -650,10 +392,14 @@ useEffect(() => {
                     </>
                   )}
                   {previousRpe != null && (
-                    <Text style={{ color: colors.textTertiary }}> (RPE {previousRpe})</Text>
+                    <Text style={{ color: colors.textTertiary }}>
+                      {' '}
+                      (RPE {previousRpe})
+                    </Text>
                   )}
                 </Text>
               </View>
+
               <TouchableOpacity
                 onPress={handleProgression}
                 activeOpacity={0.7}
@@ -676,6 +422,7 @@ useEffect(() => {
                   +2.5 кг
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => setShowCustomWeight(!showCustomWeight)}
                 activeOpacity={0.7}
@@ -717,9 +464,11 @@ useEffect(() => {
           </View>
         )}
 
-        {/* ✅ OPTIMIZED: рендер рядов через вынесенный memo SetRow */}
+        {/* Ряды подходов через вынесенный memo SetRow */}
         {setRowsConfig.map((rowSize, rowIndex) => {
-          const startIndex = setRowsConfig.slice(0, rowIndex).reduce((s, n) => s + n, 0);
+          const startIndex = setRowsConfig
+            .slice(0, rowIndex)
+            .reduce((s, n) => s + n, 0);
           const rowSets = sets.slice(startIndex, startIndex + rowSize);
           return (
             <SetRow
@@ -740,16 +489,14 @@ useEffect(() => {
           );
         })}
 
-        {/* FEAT-7: ползунок RPE */}
+        {/* FEAT-7 v2: редактор RPE (тапабельная шкала, «Готово» = коммит) */}
         {feedbackSetIndex !== null &&
           activeSet !== null &&
           isSetCompleted(activeSet) && (
-            <SetFeedbackSlider
+            <SetFeedbackEditor
               key={feedbackSetIndex}
               setNumber={feedbackSetIndex + 1}
               rpe={activeSet.rpe ?? null}
-              rir={activeSet.rir ?? null}
-              difficulty={activeSet.difficulty ?? null}
               onChange={(patch) =>
                 updateSetFeedback(exerciseIndex, feedbackSetIndex, patch)
               }

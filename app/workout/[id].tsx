@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -519,15 +521,27 @@ export default function WorkoutSessionScreen() {
       )}
 
       {restTimer !== null && (
-        <RestTimer
-          timeLeft={restTimeLeft}
-          total={restTimer}
-          isFinished={isRestFinished}
-          onStop={stopRestTimer}
-          onAdjust={adjustRestTimer}
-          colors={colors}
-          workoutStyles={workoutStyles}
-        />
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              top: undefined, // только снизу
+              bottom: 0,
+              zIndex: 1000,
+              pointerEvents: 'auto',
+            },
+          ]}
+        >
+          <RestTimer
+            timeLeft={restTimeLeft}
+            total={restTimer}
+            isFinished={isRestFinished}
+            onStop={stopRestTimer}
+            onAdjust={adjustRestTimer}
+            colors={colors}
+            workoutStyles={workoutStyles}
+          />
+        </Animated.View>
       )}
 
       <ExerciseSettingsModal

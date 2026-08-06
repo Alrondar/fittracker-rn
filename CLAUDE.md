@@ -163,6 +163,7 @@ can_be_activation (boolean) — тип «Активация» (62 упражне
 media_url — одиночный URL; клиент генерирует пару 0.jpg + 1.jpg
 workout_logs: колонки rpe (smallint 1–10), rir (smallint 0–5), difficulty (text: easy/moderate/hard/max), created_at (timestamptz) — добавлены FEAT-7 (05.08.2026)
 SetData: поля previousWeight/previousReps/previousRpe для FEAT-1.1 (05.08.2026)
+useTimerSettings: поле autoStartRest для FEAT-1.2 (05.08.2026)
 
 workout_logs: колонки rpe (smallint 1–10), rir (smallint 0–5), difficulty (text: easy/moderate/hard/max), created_at (timestamptz) — добавлены FEAT-7 (05.08.2026)
 daily_readiness: таблица для daily readiness check-in (FEAT-1.8, миграция применена 05.08.2026)
