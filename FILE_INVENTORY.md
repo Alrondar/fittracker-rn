@@ -52,6 +52,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | ImportProgramSheet.tsx|импорт программы|✅|ARCH-5 ✅ (colors.overlay)|
 | ShareProgramSheet.tsx|поделиться программой|✅|ARCH-5 ✅ (colors.overlay)|
 | workout/ExerciseSlider / ExerciseCard / ExerciseInfoAccordion / MuscleBubbles / EquipmentBubbles / TechniqueMediaSlider / WarmupBlock / WarmupExerciseCard / RestTimer / WorkoutTimer / WorkoutTabs / UnitToggle / ExerciseSettingsModal|компоненты тренировки|✅|ExerciseCard + WarmupBlock → ExerciseInfoAccordion; WarmupExerciseCard вынесен|
+| ExerciseSlider.tsx | горизонтальный слайдер упражнения (основная + альтернативы) | ✅ | 05.08.2026 (PERF): removeClippedSubviews={true} + stagger-загрузка альтернатив (500мс + index*100мс); lazy-монтаж через InteractionManager |
 | exercises/CategoryStrip / EquipmentSheet | фильтры справочника | ✅ | EquipmentSheet ARCH-5 ✅ (colors.overlay) |
 | EquipmentIcon.tsx|иконка оборудования | ✅ | ARCH-5 ✅ (colors.textTertiary); ICON_MAP синхронизирован с EQUIPMENT_SVG_MAP (73 файла); dev-time assert; EQUIPMENT_SVG_MAP_LOWER | EQUIPMENT_SVG_MAP_LOWER|
 | goals/GoalsComponents.tsx|вспомогательные компоненты (StepDots/CheckMark/GenderCard/SelectableRow/MacroCard)|✅|SCALE-5 (вынесено из goals.tsx)|

@@ -40,6 +40,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | PERF-4 | 🟡 | двойные запросы на упражнение в saveProgram|✅|01.08.2026 (RPC save_program_snapshot — 1 запрос вместо N×2)|
 | PERF-5 | 🟢 | SCREEN_WIDTH не реагирует на Split View |✅|01.08.2026 (ExerciseSlider/WarmupBlock → useWindowDimensions; workoutExerciseCard.width убран из фабрики; мёртвые SwipeableCard/BottomSheet удалены; theme.ts — осознанное исключение для portrait)|
 | PERF-6 | 🟡 | нет транзакции в saveProgram (Promise.all не откатывается)|✅|01.08.2026 (RPC save_program_snapsh
+| PERF-7 | 🟢 | Оптимизация страницы тренировки (TTI + фризы) | ✅ | 05.08.2026 (useWorkoutSession.ts: Promise.all для loadWorkout + flushPendingLogs; [id].tsx: FlatList removeClippedSubviews + батчинг; ExerciseCard.tsx: useMemo на borderColor/completedSets/allSetsDone; ExerciseSlider.tsx: removeClippedSubviews + stagger-загрузка альтернатив) |
 
 ## 📈 Масштабируемость (SCALE)
 

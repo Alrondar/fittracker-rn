@@ -1,3 +1,6 @@
+// app/(tabs)/workout/[id].tsx
+// Сессия тренировки + шапка программы (FIT-6).
+// 05.08.2026 (PERF): FlatList — removeClippedSubviews + батчинг рендера.
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
@@ -7,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
+  InteractionManager,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams } from 'expo-router';
@@ -28,6 +32,7 @@ import * as Haptics from 'expo-haptics';
 import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../src/constants/injuries';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { perfMark, perfSince, useFreezeDetector } from '../../src/utils/perf';
 import { useWorkoutSession } from '../../src/hooks/useWorkoutSession';
 import { useInjuryWarnings } from '../../src/hooks/useInjuryWarnings';
 import { useWarmup } from '../../src/hooks/useWarmup';
@@ -55,14 +60,21 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 
 export default function WorkoutSessionScreen() {
+  useFreezeDetector(); // логирует блокировки JS > 100 мс
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const { unit, setUnit } = useUnitPreferences();
-
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
+
+    // ===== TTI: фиксируем момент первого рендера экрана (однократно) =====
+  const ttiMountedRef = useRef(false);
+  if (!ttiMountedRef.current) {
+    ttiMountedRef.current = true;
+    perfMark('tti:mount');
+  }
 
   const {
     workoutName,
@@ -150,6 +162,20 @@ export default function WorkoutSessionScreen() {
       setActiveTab('workout');
     }
   }, [isWarmupCompleted, warmupExercises.length]);
+
+  // ===== TTI: когда данные пришли → замеряем и ждём "interactive" =====
+const ttiMeasuredRef = useRef(false);
+useEffect(() => {
+  if (loading || ttiMeasuredRef.current) return;
+  ttiMeasuredRef.current = true;
+  perfMark('tti:data-loaded');
+  perfSince('tti:mount', 'TTI: mount → данные');
+  const handle = InteractionManager.runAfterInteractions(() => {
+    perfMark('tti:interactive');
+    perfSince('tti:mount', 'TTI: mount → interactive (полный)');
+  });
+  return () => handle.cancel();
+}, [loading]);
 
   const { avoidCount, cautionCount, hasWarnings } = useMemo(() => {
     const values = Object.values(exerciseWarnings);
@@ -253,16 +279,19 @@ export default function WorkoutSessionScreen() {
     ],
   );
 
-  const renderEmpty = () => (
-    <View style={commonStyles.emptyContainer}>
-      <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
-        Нет упражнений
-      </Text>
-      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        В этой тренировке пока нет упражнений
-      </Text>
-    </View>
+  const renderEmpty = useCallback(
+    () => (
+      <View style={commonStyles.emptyContainer}>
+        <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+        <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
+          Нет упражнений
+        </Text>
+        <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
+          В этой тренировке пока нет упражнений
+        </Text>
+      </View>
+    ),
+    [colors],
   );
 
   if (loading) {
@@ -423,7 +452,11 @@ export default function WorkoutSessionScreen() {
             const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
             const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
             const severityLabel =
-              injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
+              injury.severity === 'high'
+                ? 'высокая'
+                : injury.severity === 'medium'
+                ? 'средняя'
+                : 'низкая';
             return (
               <Text
                 key={index}
@@ -506,26 +539,32 @@ export default function WorkoutSessionScreen() {
             </Text>
             <UnitToggle unit={unit} onChange={setUnit} />
           </View>
-          <FlatList
-            data={exercises}
-            keyExtractor={(item) => item.workout_exercise_id}
-            renderItem={renderItem}
-            extraData={unit}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={{ paddingBottom: 120 }}
-            showsVerticalScrollIndicator={false}
-            windowSize={5}
-            removeClippedSubviews={false}
-          />
+
+          {/* PERF: removeClippedSubviews + батчинг для плавного скролла */}
+<FlatList
+  data={exercises}
+  keyExtractor={(item) => item.workout_exercise_id}
+  renderItem={renderItem}
+  extraData={unit}
+  ListEmptyComponent={renderEmpty}
+  contentContainerStyle={{ paddingBottom: 120 }}
+  showsVerticalScrollIndicator={false}
+  windowSize={5}
+  removeClippedSubviews={true}
+  initialNumToRender={3}
+  maxToRenderPerBatch={2}
+  updateCellsBatchingPeriod={50}
+/>
         </>
       )}
 
+      {/* Sticky-оверлей таймера отдыха (v2 05.08.2026) */}
       {restTimer !== null && (
         <Animated.View
           style={[
             StyleSheet.absoluteFillObject,
             {
-              top: undefined, // только снизу
+              top: undefined,
               bottom: 0,
               zIndex: 1000,
               pointerEvents: 'auto',

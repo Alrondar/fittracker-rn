@@ -1,3 +1,7 @@
+// src/components/workout/ExerciseSlider.tsx
+// 05.08.2026 (PERF):
+//  - P1-A: removeClippedSubviews={true} на горизонтальном ScrollView
+//  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   View,
@@ -12,7 +16,12 @@ import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
-import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../../types/workout';
+import {
+  ExerciseData,
+  AlternativeExercise,
+  SetData,
+  SetFeedbackPatch,
+} from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
 const H_GAP = 16;
@@ -22,7 +31,10 @@ interface ExerciseSliderProps {
   exercise: ExerciseData;
   exerciseIndex: number;
   isReplaced: boolean;
-  loadAlternatives: (id: string, muscles: string[]) => Promise<AlternativeExercise[]>;
+  loadAlternatives: (
+    id: string,
+    muscles: string[],
+  ) => Promise<AlternativeExercise[]>;
   updateSet: (
     exIndex: number,
     setIndex: number,
@@ -34,7 +46,7 @@ interface ExerciseSliderProps {
     setIndex: number,
     patch: SetFeedbackPatch,
   ) => void;
-    applyProgression: (exerciseIndex: number, newWeight: number) => void;
+  applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   replaceExercise: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
@@ -81,23 +93,34 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
   const [altsMounted, setAltsMounted] = useState(false);
+
   const hasAlts = exercise.alternatives.length > 0 || isReplaced;
 
+  // PERF P1-B: stagger-загрузка альтернатив.
+  // Каждая карточка откладывает загрузку на 500мс + exerciseIndex * 100мс,
+  // чтобы не блокировать TTI при одновременном открытии 6-8 карточек.
   useEffect(() => {
     if (!hasAlts) return;
     let alive = true;
-    setLoadingAlts(true);
-    loadAlternatives(exercise.id, exercise.primary_muscles)
-      .then((alts) => {
-        if (alive) setAlternatives(alts);
-      })
-      .finally(() => {
-        if (alive) setLoadingAlts(false);
-      });
+
+    const delay = 500 + exerciseIndex * 100;
+    const timeout = setTimeout(() => {
+      if (!alive) return;
+      setLoadingAlts(true);
+      loadAlternatives(exercise.id, exercise.primary_muscles)
+        .then((alts) => {
+          if (alive) setAlternatives(alts);
+        })
+        .finally(() => {
+          if (alive) setLoadingAlts(false);
+        });
+    }, delay);
+
     return () => {
       alive = false;
+      clearTimeout(timeout);
     };
-  }, [hasAlts, exercise.id, loadAlternatives]);
+  }, [hasAlts, exercise.id, exerciseIndex, loadAlternatives]);
 
   useEffect(() => {
     if (loadingAlts || !hasAlts || altsMounted) return;
@@ -145,12 +168,13 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </TouchableOpacity>
         </View>
       )}
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
         decelerationRate="fast"
-        removeClippedSubviews={false}
+        removeClippedSubviews={true} // PERF P1-A: выгружаем невидимые карточки
         onScrollBeginDrag={handleScrollBeginDrag}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
@@ -175,6 +199,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             warning={warning}
           />
         </View>
+
         {showPlaceholder && (
           <View
             style={{
@@ -192,6 +217,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             </Text>
           </View>
         )}
+
         {showPeek && (
           <View
             style={{
@@ -219,6 +245,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             </Text>
           </View>
         )}
+
         {showAlts &&
           alternatives.map((alt) => (
             <View key={alt.id} style={{ width: cardWidth }}>
