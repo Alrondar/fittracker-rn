@@ -31,8 +31,9 @@ export function perfSince(from: string, label?: string): void {
  * Если JS занят дольше порога — колбэк setInterval опаздывает, логируем.
  */
 export function useFreezeDetector(thresholdMs = 100): void {
-  useEffect(() => {
-    if (!__DEV__) return;
+const FREEZE_IN_RELEASE = true; // ← false перед релизом
+useEffect(() => {
+  if (!__DEV__ && !FREEZE_IN_RELEASE) return;
     let lastTick = Date.now();
     const timer = setInterval(() => {
       const now = Date.now();
