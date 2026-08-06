@@ -1,10 +1,13 @@
-// src/components/SetsGrid.tsx
+// src/components/workout/SetsGrid.tsx
 // Сетка подходов + чипы RPE + прогрессия (FEAT-1.1) + автостарт отдыха (FEAT-1.2).
 // 05.08.2026: инлайн-дубли чипа/ползунка удалены — используются SetFeedbackChip
 // и SetFeedbackEditor из SetFeedbackControl.tsx (FEAT-7 v2, тапабельная шкала).
+// 06.08.2026 (FEAT-1.1 v2): хинт показывает прошлые данные АКТИВНОГО сета (первого
+// незавершённого) и переключается по мере заполнения; прогрессия — чипами
+// +2.5/+5/+10/+15/+20 в активный сет; custom-ввод удалён.
 import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, Clock } from 'lucide-react-native';
+import { TrendingUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -162,7 +165,6 @@ const SetRow = memo(function SetRow({
           />
         ))}
       </View>
-
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
           <SetInput
@@ -177,7 +179,6 @@ const SetRow = memo(function SetRow({
           />
         ))}
       </View>
-
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
           <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0 }}>
@@ -205,7 +206,9 @@ interface SetsGridProps {
   unit: WeightUnit;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
-  applyProgression: (exerciseIndex: number, newWeight: number) => void;
+  // FEAT-1.1 v2: прогрессия пер-сет через updateSet; applyProgression оставлен
+  // в сигнатуре опционально для совместимости с ExerciseCard (не вызывается).
+  applyProgression?: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number) => void;
   colors: any;
@@ -219,14 +222,12 @@ export const SetsGrid = memo(function SetsGrid({
   unit,
   updateSet,
   updateSetFeedback,
-  applyProgression,
   isSetCompleted,
   startRestTimer,
   colors,
   cardStyles,
 }: SetsGridProps) {
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
-  const [showCustomWeight, setShowCustomWeight] = useState(false);
   const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
 
   // ✅ Мемоизация вычислений
@@ -236,7 +237,7 @@ export const SetsGrid = memo(function SetsGrid({
   );
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
 
- // FEAT-1.2: автостарт таймера отдыха
+  // FEAT-1.2: автостарт таймера отдыха
   const { settings: timerSettings } = useTimerSettings();
   const restStartedRef = useRef<number>(-1);
 
@@ -279,7 +280,7 @@ export const SetsGrid = memo(function SetsGrid({
     [unit],
   );
 
-  // ✅ Мемоизация активного сета
+  // ✅ Мемоизация активного сета (для редактора RPE)
   const activeSet = useMemo(
     () =>
       feedbackSetIndex !== null && feedbackSetIndex < sets.length
@@ -288,28 +289,30 @@ export const SetsGrid = memo(function SetsGrid({
     [feedbackSetIndex, sets],
   );
 
-  // FEAT-1.1: данные из последнего подхода
-  const previousWeight = sets[0]?.previousWeight ?? null;
-  const previousReps = sets[0]?.previousReps ?? null;
-  const previousRpe = sets[0]?.previousRpe ?? null;
+  // FEAT-1.1 v2: активный сет = первый незавершённый; хинт показывает ЕГО прошлые
+  // данные и переключается по мере заполнения сетов.
+  const progressionSetIndex = useMemo(() => {
+    const idx = sets.findIndex((s) => !isSetCompleted(s));
+    return idx === -1 ? null : idx;
+  }, [sets, isSetCompleted]);
 
-  // ✅ Мемоизация обработчиков
-  const handleProgression = useCallback(() => {
-    if (previousWeight == null) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    applyProgression(exerciseIndex, previousWeight + 2.5);
-  }, [previousWeight, exerciseIndex, applyProgression]);
+  const progressionSet = progressionSetIndex !== null ? sets[progressionSetIndex] : null;
+  const prevWeight = progressionSet?.previousWeight ?? null;
+  const prevReps = progressionSet?.previousReps ?? null;
+  const prevRpe = progressionSet?.previousRpe ?? null;
 
-  const handleCustomWeightSubmit = useCallback(
-    (text: string) => {
-      const weight = parseFloat(text);
-      if (!isNaN(weight) && weight > 0) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        applyProgression(exerciseIndex, weight);
-        setShowCustomWeight(false);
-      }
+  const PROGRESSION_STEPS = [2.5, 5, 10, 15, 20];
+
+  // ✅ Чип прогрессии применяется к АКТИВНОМУ сету (пер-сет, а не ко всем)
+  const handleProgressionStep = useCallback(
+    (step: number) => {
+      if (progressionSetIndex === null || prevWeight === null) return;
+      const stepKg = parseFloat(fromDisplay(String(step))); // шаг в текущих единицах → кг
+      const newKg = Math.round((prevWeight + stepKg) * 100) / 100;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      updateSet(exerciseIndex, progressionSetIndex, 'weight', String(newKg));
     },
-    [exerciseIndex, applyProgression],
+    [progressionSetIndex, prevWeight, fromDisplay, updateSet, exerciseIndex],
   );
 
   const handleOpenFeedback = useCallback((setIndex: number) => {
@@ -344,8 +347,8 @@ export const SetsGrid = memo(function SetsGrid({
       </View>
 
       <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
-        {/* FEAT-1.1: подсказка прогрессии */}
-        {previousWeight != null && (
+        {/* FEAT-1.1 v2: хинт активного сета + чипы прогрессии */}
+        {progressionSetIndex !== null && prevWeight !== null && (
           <View
             style={{
               marginBottom: SPACING.sm,
@@ -357,118 +360,57 @@ export const SetsGrid = memo(function SetsGrid({
             }}
           >
             <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: SPACING.sm,
-              }}
+              style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm }}
             >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  flex: 1,
-                  minWidth: 180,
-                }}
-              >
-                <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    { color: colors.textSecondary, marginLeft: SPACING.xs },
-                  ]}
-                >
-                  Прошлый раз:{' '}
-                  <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-                    {previousWeight} кг
-                  </Text>
-                  {previousReps != null && (
-                    <>
-                      {' × '}
-                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-                        {previousReps}
-                      </Text>
-                    </>
-                  )}
-                  {previousRpe != null && (
-                    <Text style={{ color: colors.textTertiary }}>
-                      {' '}
-                      (RPE {previousRpe})
-                    </Text>
-                  )}
+              <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
+              <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                Подход {progressionSetIndex + 1} · прошлый раз:{' '}
+                <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                  {toDisplay(String(prevWeight))} {unit}
                 </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={handleProgression}
-                activeOpacity={0.7}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.primary,
-                  paddingHorizontal: SPACING.sm,
-                  paddingVertical: 4,
-                  borderRadius: BORDER_RADIUS.sm,
-                  gap: 4,
-                }}
-              >
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    { color: colors.textInverse, fontWeight: '700' },
-                  ]}
-                >
-                  +2.5 кг
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setShowCustomWeight(!showCustomWeight)}
-                activeOpacity={0.7}
-                style={{
-                  paddingHorizontal: SPACING.sm,
-                  paddingVertical: 4,
-                  borderRadius: BORDER_RADIUS.sm,
-                  backgroundColor: colors.surfaceSecondary,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                  Свой вес
-                </Text>
-              </TouchableOpacity>
+                {prevReps != null && (
+                  <>
+                    {' × '}
+                    <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{prevReps}</Text>
+                  </>
+                )}
+                {prevRpe != null && (
+                  <>
+                    {' · RPE '}
+                    <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{prevRpe}</Text>
+                  </>
+                )}
+              </Text>
             </View>
-
-            {showCustomWeight && (
-              <View style={{ marginTop: SPACING.sm }}>
-                <TextInput
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
+            >
+              {PROGRESSION_STEPS.map((step) => (
+                <TouchableOpacity
+                  key={step}
+                  onPress={() => handleProgressionStep(step)}
+                  activeOpacity={0.7}
                   style={{
-                    backgroundColor: colors.surfaceSecondary,
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 4,
                     borderRadius: BORDER_RADIUS.sm,
-                    padding: SPACING.sm,
-                    color: colors.textPrimary,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    fontSize: 14,
+                    backgroundColor: colors.primary,
                   }}
-                  placeholder="Введите вес в кг"
-                  keyboardType="decimal-pad"
-                  returnKeyType="done"
-                  onSubmitEditing={(e) => handleCustomWeightSubmit(e.nativeEvent.text)}
-                  autoFocus
-                />
-              </View>
-            )}
+                >
+                  <Text
+                    style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
+                  >
+                    +{step} {unit}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
         {/* Ряды подходов через вынесенный memo SetRow */}
         {setRowsConfig.map((rowSize, rowIndex) => {
-          const startIndex = setRowsConfig
-            .slice(0, rowIndex)
-            .reduce((s, n) => s + n, 0);
+          const startIndex = setRowsConfig.slice(0, rowIndex).reduce((s, n) => s + n, 0);
           const rowSets = sets.slice(startIndex, startIndex + rowSize);
           return (
             <SetRow
@@ -490,28 +432,16 @@ export const SetsGrid = memo(function SetsGrid({
         })}
 
         {/* FEAT-7 v2: редактор RPE (тапабельная шкала, «Готово» = коммит) */}
-        {feedbackSetIndex !== null &&
-          activeSet !== null &&
-          isSetCompleted(activeSet) && (
-            <SetFeedbackEditor
-              key={feedbackSetIndex}
-              setNumber={feedbackSetIndex + 1}
-              rpe={activeSet.rpe ?? null}
-              onChange={(patch) =>
-                updateSetFeedback(exerciseIndex, feedbackSetIndex, patch)
-              }
-              onClose={() => setFeedbackSetIndex(null)}
-              colors={colors}
-            />
-          )}
-
-        <TouchableOpacity
-          style={[cardStyles.restButton, { backgroundColor: colors.primary }]}
-          onPress={() => startRestTimer(restSeconds)}
-        >
-          <Clock size={16} color={colors.textInverse} strokeWidth={2} />
-          <Text style={cardStyles.restButtonText}>Отдых {restSeconds}с</Text>
-        </TouchableOpacity>
+        {feedbackSetIndex !== null && activeSet !== null && isSetCompleted(activeSet) && (
+          <SetFeedbackEditor
+            key={feedbackSetIndex}
+            setNumber={feedbackSetIndex + 1}
+            rpe={activeSet.rpe ?? null}
+            onChange={(patch) => updateSetFeedback(exerciseIndex, feedbackSetIndex, patch)}
+            onClose={() => setFeedbackSetIndex(null)}
+            colors={colors}
+          />
+        )}
       </View>
     </View>
   );

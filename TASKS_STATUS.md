@@ -65,9 +65,12 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 | ID | Описание | Статус | Комментарий |
 |---|---|---|---|
-| FEAT-1.1|Prefill подходов из последней тренировки + подсказка прогрессии (+2.5 кг)|✅|05.08.2026 (SetsGrid.tsx + useWorkoutSession.ts; загрузка lastLogByExerciseId через вложенный select; SheetShell для ввода веса; applyProgression → debounce-RPC)|
-| FEAT-1.2|Автостарт таймера отдыха после последнего подхода|✅|05.08.2026 (useTimerSettings.ts + settings.tsx + SetsGrid.tsx; настройка autoStartRest через AsyncStorage; ref-защита от повторного запуска; NotificationFeedbackType.Success)|
+| FEAT-1.1 | Prefill + прогрессия (v2: хинт активного сета, чипы +2.5…+20 пер-сет, без custom-ввода) | ✅ | 06.08.2026 (SetsGrid v2: progressionSetIndex = первый незавершённый; чипы через updateSet пер-сет; вес в текущих единицах) || FEAT-1.2|Автостарт таймера отдыха после последнего подхода|✅|05.08.2026 (useTimerSettings.ts + settings.tsx + SetsGrid.tsx; настройка autoStartRest через AsyncStorage; ref-защита от повторного запуска; NotificationFeedbackType.Success)|
 | FEAT-1.2.1 | Pill-режим таймера + пресеты + вибрация до сброса | ✅ | 05.08.2026 (RestTimer.tsx v2 + [id].tsx sticky + useTimerSettings + settings.tsx + SetsGrid.tsx; автостарт после каждого подхода опционально) |
+| FEAT-1.3 | Стрик 🔥 на Dashboard (недельный, grace-текущая-неделя) | ✅ | 06.08.2026 (utils/streak.ts + dashboardService.streak + StreakCard.tsx; лёгкий запрос всех дат отдельно от 14-дневного календаря) |
+| FEAT-1.4 | e1RM (Epley) в PR-карточке | ✅ | 06.08.2026 (utils/e1rm.ts; profileService.getPersonalRecords: лучший e1RM по всем сетам без новых запросов; PersonalRecordsCard: строка «1RM ≈ N кг» + фикс «Invalid Date») |
+| FEAT-1.5 | Plate-калькулятор (визуал блинов) | 🟡 | 06.08.2026 (utils/plates.ts: жадный расчёт по сторонам; UI — после встраивания) |
+| FEAT-1.6 | CSV-экспорт истории (Share.share) | 🟡 | 06.08.2026 (utils/csv.ts: билдер; сервис/UI — после встраивания) |
 | FIT-2 | Синхронизация правок программы → будущие тренировки (RPC sync_program_changes_to_workouts) | ✅ | syncProgramChanges вызывается в saveProgram; завершённые/в процессе не трогаются |
 | FIT-3 | Робастное удаление программы (отвязка workouts, удаление user_programs → 0 активных, защита от FK-падения) | ✅ | deleteProgram(id, userId); deleteMutation инвалидирует dashboard/workouts |
 | FIT-4 | Плейсхолдер «Нет активной программы» на Dashboard | ✅ | index.tsx → AppCard + кнопка «Выбрать программу» |

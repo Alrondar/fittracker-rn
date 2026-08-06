@@ -109,9 +109,11 @@ export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
           <ChevronDown size={14} color={colors.textTertiary} />
         </View>
       </TouchableOpacity>
-      <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
-        {everOpened ? children : null}
-      </ExpandableBody>
+{everOpened ? (
+  <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
+    {children}
+  </ExpandableBody>
+) : null}
     </View>
   );
 });

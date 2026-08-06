@@ -163,10 +163,6 @@ export default function ExerciseDetailScreen() {
     recordsLoading,
     recordsError,
   } = useExerciseDetail(id as string, userId);
-  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
-
-  const toggleSection = (key: SectionKey) =>
-    setOpenSection(prev => (prev === key ? null : key));
 
   if (loading) return <DetailSkeleton />;
   if (isError) return <ErrorState onRetry={() => refetch()} message={errorMessage} />;
@@ -384,13 +380,11 @@ export default function ExerciseDetailScreen() {
           <FadeIn delay={360}>
             <View style={{ marginTop: SPACING.lg }}>
               {exercise.benefits ? (
-                <ExerciseInfoAccordion
-                  icon={<Sparkles size={14} color={colors.success} />}
-                  title="Польза"
-                  titleColor={colors.success}
-                  expanded={openSection === 'benefits'}
-                  onToggle={() => toggleSection('benefits')}
-                >
+<ExerciseInfoAccordion
+  icon={<Sparkles size={14} color={colors.success} />}
+  title="Польза"
+  titleColor={colors.success}
+>
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.benefits}
                   </Text>
@@ -402,8 +396,6 @@ export default function ExerciseDetailScreen() {
                   icon={<AlertTriangle size={14} color={colors.warning} />}
                   title="Риски"
                   titleColor={colors.warning}
-                  expanded={openSection === 'risks'}
-                  onToggle={() => toggleSection('risks')}
                 >
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.risks}
@@ -416,8 +408,6 @@ export default function ExerciseDetailScreen() {
                   icon={<ShieldAlert size={14} color={colors.error} />}
                   title="Противопоказания"
                   titleColor={colors.error}
-                  expanded={openSection === 'injuries'}
-                  onToggle={() => toggleSection('injuries')}
                 >
                   {exercise.injuries.map((injury, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
@@ -435,8 +425,6 @@ export default function ExerciseDetailScreen() {
                   icon={<SlidersHorizontal size={14} color={colors.primary} />}
                   title="Настройки"
                   titleColor={colors.primary}
-                  expanded={openSection === 'settings'}
-                  onToggle={() => toggleSection('settings')}
                 >
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.settings}

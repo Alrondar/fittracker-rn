@@ -152,17 +152,11 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
   const { width: screenWidth } = useWindowDimensions();
   const altCardWidth = screenWidth * 0.7;
   const progress = useSharedValue(0);
-  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
   // Ленивый монтаж: слайдер техники создаётся только после первого открытия
   const [everOpened, setEverOpened] = useState<Set<SectionKey>>(new Set());
   // Альтернативы разминки (горизонтальный слайдер замен)
   const [alts, setAlts] = useState<WarmupExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
-
-  const toggleSection = useCallback((key: SectionKey) => {
-    setEverOpened((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
-    setOpenSection((prev) => (prev === key ? null : key));
-  }, []);
 
   // Загрузка альтернатив с кэшем на уровне useWarmup.
   // Зависимость от exercise.id: при замене упражнения id меняется → подтянутся
@@ -502,15 +496,10 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             icon={<BookOpen size={13} color={colors.primary} />}
             title="Техника"
             titleColor={colors.primary}
-            expanded={openSection === 'technique'}
-            onToggle={() => toggleSection('technique')}
             maxHeight={TECHNIQUE_MAX_HEIGHT}
           >
             {everOpened.has('technique') && (
-              <TechniqueMediaSlider
-                mediaUrl={exercise.media_url}
-                autoPlay={openSection === 'technique'}
-              />
+<TechniqueMediaSlider mediaUrl={exercise.media_url ?? null} autoPlay />
             )}
             {exercise.technique ? (
               <Text
@@ -531,8 +520,6 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             icon={<Sparkles size={13} color={colors.success} />}
             title="Польза"
             titleColor={colors.success}
-            expanded={openSection === 'benefits'}
-            onToggle={() => toggleSection('benefits')}
           >
             <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
               {exercise.benefits}
@@ -546,8 +533,6 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             icon={<AlertTriangle size={13} color={colors.warning} />}
             title="Риски"
             titleColor={colors.warning}
-            expanded={openSection === 'risks'}
-            onToggle={() => toggleSection('risks')}
           >
             <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
               {exercise.risks}
@@ -561,8 +546,6 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             icon={<ShieldAlert size={13} color={colors.error} />}
             title="Противопоказания"
             titleColor={colors.error}
-            expanded={openSection === 'injuries'}
-            onToggle={() => toggleSection('injuries')}
           >
             {exercise.injuries.map((item, i) => (
               <View

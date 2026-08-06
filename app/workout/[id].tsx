@@ -361,10 +361,13 @@ useEffect(() => {
                 {workoutName}
               </Text>
             )}
-          </View>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+          <UnitToggle unit={unit} onChange={setUnit} />
           <WorkoutTimerPill colors={colors} />
         </View>
-        <WorkoutTimerPanel colors={colors} />
+      </View>
+      <WorkoutTimerPanel colors={colors} />
       </WorkoutTimerProvider>
 
       {hasWarmup && (
@@ -519,27 +522,6 @@ useEffect(() => {
 
       {(!hasWarmup || activeTab === 'workout') && (
         <>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              paddingHorizontal: SPACING.lg,
-              paddingVertical: SPACING.xs,
-              gap: SPACING.sm,
-            }}
-          >
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textSecondary, fontWeight: '600' },
-              ]}
-            >
-              Единицы веса
-            </Text>
-            <UnitToggle unit={unit} onChange={setUnit} />
-          </View>
-
           {/* PERF: removeClippedSubviews + батчинг для плавного скролла */}
 <FlatList
   data={exercises}

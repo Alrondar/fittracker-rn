@@ -591,10 +591,10 @@ recentLogs.forEach((log) => {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
     }
-    restTimerRef.current = setInterval(() => {
-      const msLeft = restEndsAtRef.current - Date.now();
-      const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
-      setRestTimeLeft(secLeft);
+restTimerRef.current = setInterval(() => {
+  const msLeft = restEndsAtRef.current - Date.now();
+  const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
+  setRestTimeLeft((prev) => (prev === secLeft ? prev : secLeft)); // коммит только 1 раз/сек
       if (
         timerSettings.preBeep &&
         secLeft <= 3 &&

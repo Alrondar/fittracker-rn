@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { profileService } from './profileService';
+import { computeStreaks, StreakStats } from '../utils/streak';
+import { roundE1rm } from '../utils/e1rm';
 
 export interface DashboardActiveProgram {
   programId: string;
@@ -42,6 +44,8 @@ export interface DashboardPersonalRecord {
   exerciseName: string;
   maxWeight: number;
   maxReps: number;
+  /** FEAT-1.4: оценочный 1ПМ (Epley) от рекордного сета */
+  e1rm: number;
   recordDate: string;
 }
 
@@ -58,6 +62,8 @@ export interface DashboardData {
   personalRecords: DashboardPersonalRecord[];
   lastWorkout: DashboardLastWorkout | null;
   totalWorkouts: number;
+  /** FEAT-1.3: недельный стрик */
+  streak: StreakStats;
 }
 
 function parseVolumeFromWorkouts(workouts: any[]): number {
@@ -433,24 +439,41 @@ if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
 let personalRecords: DashboardPersonalRecord[] = [];
 try {
   const records = await profileService.getPersonalRecords(userId);
-  personalRecords = records.map((record) => ({
-    exerciseName: record.name,
-    maxWeight: record.maxWeight,
-    maxReps: record.reps,
-    recordDate: '',
-  }));
-} catch {
-  personalRecords = [];
-}
+      personalRecords = records.map((record) => ({
+        exerciseName: record.name,
+        maxWeight: record.maxWeight,
+        maxReps: record.reps,
+        e1rm: roundE1rm(record.e1rm),
+        recordDate: '',
+      }));
+    } catch {
+      personalRecords = [];
+    }
 
-  return {
-    userName,
-    activeProgram,
-    workoutDates,
-    weeklyStats,
-    exerciseProgress,
-    personalRecords,
-    lastWorkout,
-    totalWorkouts,
-  };
+    // FEAT-1.3: стрик по ВСЕЙ истории (workoutDates ограничен 14 днями для календаря)
+    let streak: StreakStats = { current: 0, best: 0, activeThisWeek: false };
+    try {
+      const { data: streakDates } = await supabase
+        .from('workouts')
+        .select('created_at')
+        .eq('user_id', userId)
+        .not('finished_at', 'is', null);
+      streak = computeStreaks(
+        (streakDates ?? []).map((w: { created_at: string | null }) => w.created_at).filter(Boolean) as string[],
+      );
+    } catch {
+      streak = { current: 0, best: 0, activeThisWeek: false };
+    }
+
+    return {
+      userName,
+      activeProgram,
+      workoutDates,
+      weeklyStats,
+      exerciseProgress,
+      personalRecords,
+      lastWorkout,
+      totalWorkouts,
+      streak,
+    };
 }

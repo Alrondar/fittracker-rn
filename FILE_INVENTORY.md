@@ -59,9 +59,10 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | goals/GoalsStep1.tsx|шаг «О тебе»|✅|SCALE-5|
 | goals/GoalsStep2.tsx|шаг «Твоя цель» + фармакология|✅|SCALE-5|
 | goals/GoalsStep3.tsx|шаг «Твоя норма»|✅|SCALE-5|
-| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1; чип/редактор RPE импортируются из SetFeedbackControl.tsx (инлайн-дубли удалены 05.08.2026); SetRow вынесен в memo |
-| SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала RPE 1–10) | ✅ | FEAT-7 v2 (05.08.2026): драг-ползунок → тапабельная шкала: дефолт 7, кнопка «Готово», закрыт рассинхрон меток (sliderWidth=280) и фризы драга; без Reanimated/GH |
+| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1 v2 (06.08.2026): хинт активного сета, чипы +2.5…+20 пер-сет, custom-ввод удалён || SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала RPE 1–10) | ✅ | FEAT-7 v2 (05.08.2026): драг-ползунок → тапабельная шкала: дефолт 7, кнопка «Готово», закрыт рассинхрон меток (sliderWidth=280) и фризы драга; без Reanimated/GH |
 | RestTimer.tsx | таймер отдыха (круговой SVG + Pill-режим + пресеты) | ✅ | v2 05.08.2026: Pill-режим, пресеты +30/+60, вибрация до сброса, sticky-оверлей в [id].tsx |
+| components/dashboard/StreakCard.tsx | карточка стрика (🔥 текущий + 🏆 рекорд) | ✅ | FEAT-1.3 |
+
 
 
 ## src/hooks/
@@ -94,7 +95,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | programSharingService.ts | generateShareCode / importProgramByCode / formatShareCode | ✅ | |
 | workoutService.ts | startProgramWorkout / repeatWorkout | ✅ | |
 | workoutsService.ts | getWorkoutsData (секции по фазам/неделям + прогресс) | ✅ | |
-| dashboardService.ts|агрегация Dashboard (Promise.allSettled)|✅|PR через profileService.getPersonalRecords; калории через getBurnedCalories(7)|| profileService.ts | профиль/стат/КБЖУ/PR/травмы (объект + standalone getActiveInjuries/getInjuryWarningRules) | ✅ | |
+| dashboardService.ts|агрегация Dashboard (Promise.allSettled)|✅|PR через profileService.getPersonalRecords; калории через getBurnedCalories(7)|| profileService.ts | профиль/стат/КБЖУ/PR/травмы (объект + standalone getActiveInjuries/getInjuryWarningRules) + streak (запрос всех дат) + personalRecords.e1rm | ✅ | |
 | exercisesService.ts|упражнения: список/словари/по ID|✅|PERF-2 ✅; ARCH-6 ✅ (getExercises/getExercisesByIds/getExerciseRecords типизированы)|
 | goalsService.ts | цели (upsert) | структ. | |
 | metricsService.ts | замеры тела | структ. | |
@@ -153,6 +154,9 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | macroCalculator.ts|расчёт КБЖУ (calculateAge/calculateMacros)|✅|SCALE-5 (вынесено из goals.tsx)|
 | errorMapper.ts|единый маппер user-facing ошибок (mapError/extractMessage)|✅|SEC-9|
 | rpe.ts|утилиты RPE: RPE_DESCRIPTIONS, rpeZone, deriveRir, deriveDifficulty, DIFFICULTY_LABELS|✅|FEAT-7; чистые функции — кандидаты под SCALE-1 тесты|
+| utils/streak.ts | computeStreaks: недельный стрик (current/best/activeThisWeek), чистые функции | ✅ | FEAT-1.3, кандидат SCALE-1 |
+| utils/e1rm.ts | epley/bestE1rm/roundE1rm, чистые функции | ✅ | FEAT-1.4, кандидат SCALE-1 |
+
 
 ## src/store/
 | store/useStore.ts|глобальный UI-стейт (auth)|✅|SEC-10 остаток ✅ (workouts/logs/alternativesCache убраны)|

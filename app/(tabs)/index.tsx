@@ -18,6 +18,7 @@ import { SPACING, scale, BORDER_RADIUS } from '../../src/constants/theme';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
+import { StreakCard } from '../../src/components/dashboard/StreakCard';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -102,10 +103,17 @@ export default function DashboardScreen() {
               <Hand size={scale(18)} color={colors.primary} strokeWidth={1.8} />
             </View>
           </View>
-          <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>
-        </View>
+        <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>
+      </View>
 
-        {/* ✅ Активная программа ИЛИ плейсхолдер «Выберите программу» */}
+      {/* FEAT-1.3: недельный стрик */}
+      {data.totalWorkouts > 0 && (
+        <View style={styles.section}>
+          <StreakCard streak={data.streak} colors={colors} />
+        </View>
+      )}
+
+      {/* ✅ Активная программа ИЛИ плейсхолдер «Выберите программу» */}
         <View style={styles.section}>
           {data.activeProgram ? (
             <ProgramProgressCard

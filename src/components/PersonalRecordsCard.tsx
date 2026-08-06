@@ -1,3 +1,5 @@
+// src/components/PersonalRecordsCard.tsx
+// FEAT-1.4: строка «1RM ≈ N кг» (e1rm из сервиса); дата — только при непустой recordDate.
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { Trophy } from 'lucide-react-native';
@@ -8,6 +10,8 @@ interface PersonalRecord {
   exerciseName: string;
   maxWeight: number;
   maxReps: number;
+  /** FEAT-1.4: опционально — карточка переживёт отсутствие поля */
+  e1rm?: number;
   recordDate: string;
 }
 
@@ -20,25 +24,28 @@ export function PersonalRecordsCard({ records, colors }: PersonalRecordsCardProp
   if (records.length === 0) return null;
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ru-RU', {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('ru-RU', {
       day: 'numeric',
       month: 'short',
+      year: 'numeric',
     });
   };
 
   return (
-    <View style={{
-      backgroundColor: colors.surface,
-      borderRadius: BORDER_RADIUS.md,
-      padding: SPACING.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-    }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-        <Trophy size={20} color={colors.warning} strokeWidth={2} />
-        <Text style={[typography.h5, { color: colors.textPrimary, marginLeft: SPACING.sm }]}>
-          Личные рекорды
-        </Text>
+    <View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: SPACING.sm,
+          marginBottom: SPACING.md,
+        }}
+      >
+        <Trophy size={18} color={colors.primary} strokeWidth={2} />
+        <Text style={[typography.h5, { color: colors.textPrimary }]}>Личные рекорды</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -46,15 +53,24 @@ export function PersonalRecordsCard({ records, colors }: PersonalRecordsCardProp
           <View
             key={index}
             style={{
-              backgroundColor: colors.primaryLight,
-              borderRadius: BORDER_RADIUS.md,
-              padding: SPACING.md,
+              minWidth: 140,
               marginRight: SPACING.md,
-              minWidth: 120,
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: SPACING.md,
+              alignItems: 'center',
             }}
           >
-            <Trophy size={24} color={colors.primary} strokeWidth={2} style={{ marginBottom: SPACING.sm }} />
-            <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
+            <Trophy size={24} color={colors.primary} strokeWidth={1.8} />
+            <Text
+              style={[
+                typography.caption,
+                { color: colors.textSecondary, marginTop: SPACING.sm, textAlign: 'center' },
+              ]}
+              numberOfLines={2}
+            >
               {record.exerciseName}
             </Text>
             <Text style={[typography.h3, { color: colors.primary, marginTop: SPACING.xs }]}>
@@ -63,9 +79,26 @@ export function PersonalRecordsCard({ records, colors }: PersonalRecordsCardProp
             <Text style={[typography.caption, { color: colors.textSecondary }]}>
               × {record.maxReps} раз
             </Text>
-            <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.xs }]}>
-              {formatDate(record.recordDate)}
-            </Text>
+            {(record.e1rm ?? 0) > 0 && (
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.success, fontWeight: '700', marginTop: 2 },
+                ]}
+              >
+                1RM ≈ {record.e1rm} кг
+              </Text>
+            )}
+            {record.recordDate ? (
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textTertiary, marginTop: SPACING.xs },
+                ]}
+              >
+                {formatDate(record.recordDate)}
+              </Text>
+            ) : null}
           </View>
         ))}
       </ScrollView>
