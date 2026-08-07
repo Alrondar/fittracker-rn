@@ -59,7 +59,8 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | goals/GoalsStep1.tsx|шаг «О тебе»|✅|SCALE-5|
 | goals/GoalsStep2.tsx|шаг «Твоя цель» + фармакология|✅|SCALE-5|
 | goals/GoalsStep3.tsx|шаг «Твоя норма»|✅|SCALE-5|
-| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1 v2 (06.08.2026): хинт активного сета, чипы +2.5…+20 пер-сет, custom-ввод удалён || SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала RPE 1–10) | ✅ | FEAT-7 v2 (05.08.2026): драг-ползунок → тапабельная шкала: дефолт 7, кнопка «Готово», закрыт рассинхрон меток (sliderWidth=280) и фризы драга; без Reanimated/GH |
+| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1 v2 (06.08.2026): хинт активного сета, ччипы пер-сет и по единицам: кг +2.5…+20, lb +5…+45 (реальные номиналы) |
+| SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала RPE 1–10) | ✅ | FEAT-7 v2 (05.08.2026): драг-ползунок → тапабельная шкала: дефолт 7, кнопка «Готово», закрыт рассинхрон меток (sliderWidth=280) и фризы драга; без Reanimated/GH |
 | RestTimer.tsx | таймер отдыха (круговой SVG + Pill-режим + пресеты) | ✅ | v2 05.08.2026: Pill-режим, пресеты +30/+60, вибрация до сброса, sticky-оверлей в [id].tsx |
 | components/dashboard/StreakCard.tsx | карточка стрика (🔥 текущий + 🏆 рекорд) | ✅ | FEAT-1.3 |
 

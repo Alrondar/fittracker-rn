@@ -13,6 +13,7 @@ import {
   Dumbbell,
   Sparkles,
   RotateCcw,
+  HeartPulse,
 } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -54,6 +55,8 @@ interface ExerciseCardProps {
     icon: React.ReactNode;
   };
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
+  /** FEAT-1.9: открыть шторку боли (только основная карточка) */
+  onOpenPain?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
@@ -74,6 +77,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   startRestTimer,
   getIntensityInfo,
   onOpenSettings,
+  onOpenPain,
   colors,
   cardStyles,
   unit,
@@ -134,6 +138,15 @@ export const ExerciseCard = memo(function ExerciseCard({
               <ChevronRight size={16} color={colors.textSecondary} strokeWidth={2} />
             </View>
           )}
+                  {isMain && onOpenPain ? (
+          <TouchableOpacity
+            onPress={() => onOpenPain(exerciseIndex)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ marginRight: SPACING.sm }}
+          >
+            <HeartPulse size={18} color={colors.warning} strokeWidth={2} />
+          </TouchableOpacity>
+        ) : null}
           {isMain && (
             <TouchableOpacity
               onPress={() => onOpenSettings(exerciseIndex, sets.length, restSeconds)}

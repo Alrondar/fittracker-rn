@@ -24,6 +24,7 @@ import {
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
+
 const H_GAP = 16;
 const PAD = 16;
 
@@ -57,11 +58,9 @@ interface ExerciseSliderProps {
     bgColor: string;
     icon: React.ReactNode;
   };
-  onOpenSettings: (
-    exerciseIndex: number,
-    setsCount: number,
-    restSeconds: number,
-  ) => void;
+  onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
+  /** FEAT-1.9: открыть шторку боли (только основная карточка) */
+  onOpenPain?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
@@ -81,7 +80,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
-  onOpenSettings,
+    onOpenSettings,
+  onOpenPain,
   colors,
   cardStyles,
   unit,
@@ -193,6 +193,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             startRestTimer={startRestTimer}
             getIntensityInfo={getIntensityInfo}
             onOpenSettings={onOpenSettings}
+          onOpenPain={onOpenPain}
             colors={colors}
             cardStyles={cardStyles}
             unit={unit}

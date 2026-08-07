@@ -56,6 +56,7 @@ import {
   ExerciseSettingsModal,
   ExerciseSettingsTarget,
 } from '../../src/components/workout/ExerciseSettingsModal';
+import { PainSheet } from '../../src/components/workout/PainSheet';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 
@@ -144,7 +145,11 @@ export default function WorkoutSessionScreen() {
 
   const [showInjuryBanner, setShowInjuryBanner] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
-  const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
+    const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
+  // FEAT-1.9: шторка боли
+  const [painIndex, setPainIndex] = useState<number | null>(null);
+  const openPain = useCallback((exerciseIndex: number) => setPainIndex(exerciseIndex), []);
+  const closePain = useCallback(() => setPainIndex(null), []);
 
   const exercisesRef = useRef(exercises);
   useEffect(() => {
@@ -253,7 +258,8 @@ useEffect(() => {
         resetToOriginal={resetToOriginal}
         startRestTimer={startRestTimer}
         getIntensityInfo={getIntensityInfo}
-        onOpenSettings={openExerciseSettings}
+                onOpenSettings={openExerciseSettings}
+        onOpenPain={openPain}
         colors={colors}
         cardStyles={cardStyles}
         unit={unit}
@@ -272,6 +278,7 @@ useEffect(() => {
       startRestTimer,
       getIntensityInfo,
       openExerciseSettings,
+      openPain,
       colors,
       cardStyles,
       unit,
@@ -565,6 +572,13 @@ useEffect(() => {
         </Animated.View>
       )}
 
+            {/* FEAT-1.9: шторка боли */}
+      <PainSheet
+        exercise={painIndex !== null ? exercises[painIndex] ?? null : null}
+        workoutId={id as string}
+        userId={userId}
+        onClose={closePain}
+      />
       <ExerciseSettingsModal
         target={settingsTarget}
         onClose={closeExerciseSettings}

@@ -301,7 +301,9 @@ export const SetsGrid = memo(function SetsGrid({
   const prevReps = progressionSet?.previousReps ?? null;
   const prevRpe = progressionSet?.previousRpe ?? null;
 
-  const PROGRESSION_STEPS = [2.5, 5, 10, 15, 20];
+  // FEAT-1.1 v2: шаги в текущих единицах — в lb показываем реальные lb-номиналы
+// (конверсия кг-шагов, округлённая до стандартных блинов: 5/10/25/35/45)
+const PROGRESSION_STEPS = unit === 'kg' ? [2.5, 5, 10, 15, 20] : [5, 10, 25, 35, 45];
 
   // ✅ Чип прогрессии применяется к АКТИВНОМУ сету (пер-сет, а не ко всем)
   const handleProgressionStep = useCallback(
