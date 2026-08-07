@@ -1,4 +1,7 @@
 // src/hooks/useWorkoutSession.ts
+// 05.08.2026 (PERF): Promise.all для loadWorkout + параллельный flushPendingLogs.
+// 06.08.2026 (FEAT-1.1 v2): прошлые данные по номеру подхода (prevLogsByExerciseId);
+// recentLogs исключает текущую тренировку.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -52,6 +55,7 @@ interface RecentLog {
   weight_kg: number | null;
   reps: number | null;
   rpe: number | null;
+  set_number: number | null; // FEAT-1.1 v2: маппинг по номеру подхода
   // Supabase типизирует вложенный select как массив, но для many-to-one
   // связи PostgREST может вернуть объект. Нормализуем в месте использования.
   workout_exercises:
@@ -86,7 +90,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const restEndsAtRef = useRef<number>(0);
   const lastBeepRef = useRef<number>(0);
   const exercisesRef = useRef<ExerciseData[]>([]);
-
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLogsRef = useRef<Map<string, SetData[]>>(new Map());
 
@@ -125,7 +128,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           difficulty: set.difficulty ?? null,
         }));
       if (formattedLogs.length === 0) return;
-
       const { error } = await supabase.rpc('upsert_workout_logs', {
         p_workout_exercise_id: workoutExerciseId,
         p_logs: formattedLogs,
@@ -134,7 +136,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         console.error('[flushPendingLogs] RPC error:', error);
       }
     });
-
     await Promise.all(promises);
   }, []);
 
@@ -153,28 +154,22 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         )
         .eq('id', workoutId)
         .single();
-perfSince('load:q1-start', 'Q1: workout + workout_exercises');
+      perfSince('load:q1-start', 'Q1: workout + workout_exercises');
       if (error) throw error;
 
       const workoutRow = workout as unknown as SessionWorkoutRow;
-      setWorkoutName(workoutRow.name);
+      setWorkoutName(workoutRow.name ?? 'Тренировка');
       setProgramId(workoutRow.program_id);
 
+      // Восстановление активной тренировки (начата и не завершена)
       if (workoutRow.started_at && !workoutRow.finished_at) {
-        const savedDuration = workoutRow.duration_seconds || 0;
-        if (savedDuration > 0) {
-          setInitialTime(savedDuration);
-          currentTimeRef.current = savedDuration;
+        const startTime = new Date(workoutRow.started_at);
+        const now = new Date();
+        const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+        if (elapsed > 0 && elapsed < 86400) {
+          setInitialTime(elapsed);
+          currentTimeRef.current = elapsed;
           setIsWorkoutActive(true);
-        } else {
-          const startTime = new Date(workoutRow.started_at);
-          const now = new Date();
-          const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-          if (elapsed > 0 && elapsed < 86400) {
-            setInitialTime(elapsed);
-            currentTimeRef.current = elapsed;
-            setIsWorkoutActive(true);
-          }
         }
       }
 
@@ -184,23 +179,25 @@ perfSince('load:q1-start', 'Q1: workout + workout_exercises');
         .map((we) => we.exercises?.id)
         .filter((id): id is string => !!id);
 
-      // 2. ПАРАЛЛЕЛЬНО грузим текущие логи и lastLogByExerciseId
+      // 2. ПАРАЛЛЕЛЬНО грузим текущие логи и recentLogs
       perfMark('load:q2-start');
       const [logsRes, recentLogsRes] = await Promise.all([
-  workoutExerciseIds.length > 0
-    ? supabase
-        .from('workout_logs')
-        .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
-        .in('workout_exercise_id', workoutExerciseIds)
-    : Promise.resolve({ data: null, error: null }),
-  exerciseIds.length > 0
-    ? supabase
-        .from('workout_logs')
-        .select('weight_kg, reps, rpe, workout_exercises(exercise_id)')
-        .in('workout_exercises.exercise_id', exerciseIds)
-        .order('created_at', { ascending: false })
-        .limit(300)
-        : Promise.resolve({ data: null, error: null }),
+        workoutExerciseIds.length > 0
+          ? supabase
+              .from('workout_logs')
+              .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
+              .in('workout_exercise_id', workoutExerciseIds)
+          : Promise.resolve({ data: null, error: null }),
+        exerciseIds.length > 0
+          ? supabase
+              .from('workout_logs')
+              .select('weight_kg, reps, rpe, set_number, workout_exercises(exercise_id)')
+              .in('workout_exercises.exercise_id', exerciseIds)
+              // исключаем текущую тренировку: «прошлый раз» = прошлая, а не эта сессия
+              .neq('workout_exercises.workout_id', workoutId)
+              .order('created_at', { ascending: false })
+              .limit(300)
+          : Promise.resolve({ data: null, error: null }),
       ]);
       perfSince('load:q2-start', 'Q2: logs + recentLogs (параллельно)');
 
@@ -238,19 +235,20 @@ perfSince('load:q1-start', 'Q1: workout + workout_exercises');
           const savedLogs = logsByWorkoutExercise[we.id] || [];
           savedLogs.forEach((log) => {
             const index = log.set_number - 1;
-            if (index >= 0 && index < sets.length) {
+            if (index >= 0 && index < targetSets) {
               sets[index] = {
-                weight: log.weight_kg?.toString() || '',
-                reps: log.reps?.toString() || '',
-                rpe: log.rpe,
-                rir: log.rir,
+                ...sets[index],
+                weight: log.weight_kg != null ? String(log.weight_kg) : '',
+                reps: log.reps != null ? String(log.reps) : '',
+                rpe: log.rpe ?? null,
+                rir: log.rir ?? null,
                 difficulty: (log.difficulty as SetData['difficulty']) ?? null,
               };
             }
           });
           return {
-            id: exercise.id,
             workout_exercise_id: we.id,
+            id: exercise.id,
             name: exercise.name,
             primary_muscles: exercise.primary_muscles || [],
             secondary_muscles: exercise.secondary_muscles || [],
@@ -261,7 +259,7 @@ perfSince('load:q1-start', 'Q1: workout + workout_exercises');
             risks: exercise.risks || '',
             injuries: exercise.injuries || [],
             alternatives: exercise.alternatives || [],
-            media_url: exercise.media_url || null,
+            media_url: exercise.media_url ?? null,
             target_sets: targetSets,
             rest_seconds: we.rest_seconds ?? 90,
             intensity: we.intensity || 'medium',
@@ -270,38 +268,45 @@ perfSince('load:q1-start', 'Q1: workout + workout_exercises');
           };
         });
 
-      // Обработка recentLogs (lastLogByExerciseId)
-const lastLogByExerciseId = new Map<
-  string,
-  { weight_kg: number | null; reps: number | null; rpe: number | null }
->();
-const recentLogs = (recentLogsRes.data ?? []) as RecentLog[];
-recentLogs.forEach((log) => {
-  const we = log.workout_exercises;
-  const exId = Array.isArray(we) ? we[0]?.exercise_id : we?.exercise_id;
-  if (exId && !lastLogByExerciseId.has(exId)) {
-    lastLogByExerciseId.set(exId, {
-      weight_kg: log.weight_kg,
-      reps: log.reps,
-      rpe: log.rpe,
-    });
-  }
-});
-
-      // Внедряем previousWeight/Reps/Rpe в каждый сет
-      const finalExercisesData = exercisesData.map((ex) => {
-        const lastLog = lastLogByExerciseId.get(ex.id);
-        return {
-          ...ex,
-          sets: ex.sets.map((set) => ({
-            ...set,
-            previousWeight: lastLog?.weight_kg ?? null,
-            previousReps: lastLog?.reps ?? null,
-            previousRpe: lastLog?.rpe ?? null,
-          })),
-        };
+      // Обработка recentLogs: прошлые данные ПО НОМЕРУ ПОДХОДА (FEAT-1.1 v2)
+      const prevLogsByExerciseId = new Map<
+        string,
+        Map<number, { weight_kg: number | null; reps: number | null; rpe: number | null }>
+      >();
+      const recentLogs = (recentLogsRes.data ?? []) as RecentLog[];
+      recentLogs.forEach((log) => {
+        const we = log.workout_exercises;
+        const exId = Array.isArray(we) ? we[0]?.exercise_id : we?.exercise_id;
+        if (!exId || log.set_number == null) return;
+        if (!prevLogsByExerciseId.has(exId)) prevLogsByExerciseId.set(exId, new Map());
+        const bySet = prevLogsByExerciseId.get(exId)!;
+        // запрос отсортирован по created_at DESC → первый лог для (exercise, set_number)
+        // = данные из последней завершённой тренировки
+        if (!bySet.has(log.set_number)) {
+          bySet.set(log.set_number, {
+            weight_kg: log.weight_kg,
+            reps: log.reps,
+            rpe: log.rpe,
+          });
+        }
       });
 
+      // Внедряем previous* в каждый сет по его номеру (сет 1 ← сет 1 прошлой тренировки)
+      const finalExercisesData = exercisesData.map((ex) => {
+        const bySet = prevLogsByExerciseId.get(ex.id);
+        return {
+          ...ex,
+          sets: ex.sets.map((set, i) => {
+            const prev = bySet?.get(i + 1);
+            return {
+              ...set,
+              previousWeight: prev?.weight_kg ?? null,
+              previousReps: prev?.reps ?? null,
+              previousRpe: prev?.rpe ?? null,
+            };
+          }),
+        };
+      });
       setExercises(finalExercisesData);
       perfSince('load:start', 'loadWorkout: итого (запросы + маппинг)');
     } catch (error: any) {
@@ -396,7 +401,7 @@ recentLogs.forEach((log) => {
           benefits: ex.benefits || '',
           risks: ex.risks || '',
           injuries: ex.injuries || [],
-          media_url: ex.media_url || null,
+          media_url: ex.media_url ?? null,
         }));
         alternativesCacheRef.current = {
           ...alternativesCacheRef.current,
@@ -467,7 +472,8 @@ recentLogs.forEach((log) => {
   );
 
   // =========================================================================
-  // FEAT-1.1: Применение прогрессии (+2.5 кг) к первому подходу
+  // FEAT-1.1: применение прогрессии к первому подходу (legacy — SetsGrid v2
+  // использует updateSet пер-сет; оставлено для совместимости сигнатуры)
   // =========================================================================
   const applyProgression = useCallback(
     (exerciseIndex: number, newWeight: number) => {
@@ -505,16 +511,12 @@ recentLogs.forEach((log) => {
       setExercises((prev) => {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
-        const currentSets = exercise.sets;
-        const newSets: SetData[] = [];
-        for (let i = 0; i < newSetsCount; i++) {
-          if (i < currentSets.length) {
-            newSets.push(currentSets[i]);
-          } else {
-            newSets.push({ weight: '', reps: '' });
-          }
+        const sets = [...exercise.sets];
+        while (sets.length < newSetsCount) {
+          sets.push({ weight: '', reps: '' });
         }
-        exercise.sets = newSets;
+        exercise.sets = sets.slice(0, newSetsCount);
+        exercise.target_sets = newSetsCount;
         exercise.rest_seconds = newRestSeconds;
         updated[exerciseIndex] = exercise;
         return updated;
@@ -546,7 +548,6 @@ recentLogs.forEach((log) => {
           risks: alternative.risks,
           injuries: alternative.injuries,
           media_url: alternative.media_url,
-          reps_range: alternative.reps_range ?? updated[exerciseIndex].reps_range,
         };
         return updated;
       });
@@ -591,10 +592,10 @@ recentLogs.forEach((log) => {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
     }
-restTimerRef.current = setInterval(() => {
-  const msLeft = restEndsAtRef.current - Date.now();
-  const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
-  setRestTimeLeft((prev) => (prev === secLeft ? prev : secLeft)); // коммит только 1 раз/сек
+    restTimerRef.current = setInterval(() => {
+      const msLeft = restEndsAtRef.current - Date.now();
+      const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
+      setRestTimeLeft((prev) => (prev === secLeft ? prev : secLeft)); // коммит только 1 раз/сек
       if (
         timerSettings.preBeep &&
         secLeft <= 3 &&
@@ -656,9 +657,8 @@ restTimerRef.current = setInterval(() => {
   const stopRestTimer = useCallback(() => {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
     }
-    restTimerRef.current = null;
-    restEndsAtRef.current = 0;
     setRestTimer(null);
     setRestTimeLeft(0);
     setIsRestFinished(false);
@@ -672,9 +672,7 @@ restTimerRef.current = setInterval(() => {
     const durationSeconds = currentTimeRef.current;
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
-    const formattedTime = `${mins.toString().padStart(2, '0')}:${secs
-      .toString()
-      .padStart(2, '0')}`;
+    const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     Alert.alert(
       'Завершить тренировку?',
       `Время тренировки: ${formattedTime}\nВсе данные будут сохранены`,
@@ -685,39 +683,36 @@ restTimerRef.current = setInterval(() => {
           onPress: async () => {
             setSaving(true);
             setIsFinishing(true);
+            isFinishingRef.current = true;
             try {
-              const now = new Date();
-              if (saveTimerRef.current) {
-                clearTimeout(saveTimerRef.current);
-              }
               await flushPendingLogs();
-              const { error: updateError } = await supabase
+              const { error } = await supabase
                 .from('workouts')
                 .update({
-                  finished_at: now.toISOString(),
+                  finished_at: new Date().toISOString(),
                   duration_seconds: durationSeconds,
                 })
                 .eq('id', workoutId);
-              if (updateError) {
-                console.error('Ошибка сохранения времени:', updateError);
-              }
-              const totalLogs = exercisesRef.current.reduce(
-                (acc, ex) =>
-                  acc + ex.sets.filter((s) => s.weight !== '' || s.reps !== '').length,
-                0,
-              );
+              if (error) throw error;
+
+              let totalLogs = 0;
+              exercisesRef.current.forEach((ex) => {
+                ex.sets.forEach((s) => {
+                  if (s.weight !== '' || s.reps !== '') totalLogs++;
+                });
+              });
+
               if (programId && userId) {
                 try {
                   const progress = await advanceProgramProgress(userId, programId);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   if (progress.isCompleted) {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     Alert.alert(
                       'Программа завершена!',
-                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе "Программы".',
+                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».',
                     );
                     router.replace('/(tabs)/programs');
                   } else {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     Alert.alert(
                       'Тренировка завершена!',
                       `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`,
@@ -751,9 +746,7 @@ restTimerRef.current = setInterval(() => {
                   Alert.alert(
                     'Тренировка сохранена',
                     `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
-                      `Не удалось обновить прогресс программы: ${
-                        progressError?.message || 'неизвестная ошибка'
-                      }.\n\nПовторить обновление прогресса сейчас?`,
+                      `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
                     [
                       {
                         text: 'Позже',
