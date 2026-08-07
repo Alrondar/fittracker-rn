@@ -1,5 +1,5 @@
 // src/services/profileService.ts
-// Профиль, статистика, питание, личные рекорды (FEAT-1.4: e1RM), травмы.
+// Профиль, статистика, питание (день + неделя FEAT-2.1), личные рекорды (FEAT-1.4: e1RM), травмы.
 import { supabase } from '../lib/supabase';
 import { epley } from '../utils/e1rm';
 import { UserInjury, WarningRule } from '../constants/injuries';
@@ -31,6 +31,17 @@ export interface DailyNutrition {
   fats: number;
   carbs: number;
   water_ml: number;
+}
+
+// FEAT-2.1: день недельной агрегации питания
+export interface WeeklyNutritionDay {
+  date: string; // YYYY-MM-DD
+  calories: number;
+  proteins: number;
+  fats: number;
+  carbs: number;
+  water_ml: number;
+  hasLogs: boolean;
 }
 
 export interface PersonalRecord {
@@ -146,6 +157,47 @@ export const profileService = {
       }),
       { calories: 0, proteins: 0, fats: 0, carbs: 0, water_ml: 0 },
     );
+  },
+
+  // FEAT-2.1: недельная агрегация питания (один запрос, группировка по дням на клиенте)
+  async getWeeklyNutrition(userId: string, days: number = 7): Promise<WeeklyNutritionDay[]> {
+    const now = new Date();
+    const startMs = now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
+    const startISO = new Date(startMs).toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('nutrition_logs')
+      .select('log_date, calories, proteins, fats, carbs, water_ml')
+      .eq('user_id', userId)
+      .neq('meal_type', 'workout')
+      .gte('log_date', startISO);
+    if (error) throw error;
+
+    // инициализируем все дни недели, чтобы в графике не было дыр
+    const byDate = new Map<string, WeeklyNutritionDay>();
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startMs + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      byDate.set(d, {
+        date: d,
+        calories: 0,
+        proteins: 0,
+        fats: 0,
+        carbs: 0,
+        water_ml: 0,
+        hasLogs: false,
+      });
+    }
+    (data ?? []).forEach((log) => {
+      const day = byDate.get(log.log_date);
+      if (!day) return;
+      day.hasLogs = true;
+      day.calories += log.calories || 0;
+      day.proteins += log.proteins || 0;
+      day.fats += log.fats || 0;
+      day.carbs += log.carbs || 0;
+      day.water_ml += log.water_ml || 0;
+    });
+    return Array.from(byDate.values());
   },
 
   async getBurnedCalories(
