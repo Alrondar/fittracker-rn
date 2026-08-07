@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+// app/(tabs)/profile/metrics.tsx
+// Замеры тела: текущий вес + изменение, тренд веса (FEAT-2.2), графики замеров
+// с чипами-тумблерами (выбор в AsyncStorage), история, форма по группам
+// (Тело / Руки / Ноги).
+import React, { useState, useEffect, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -21,7 +26,16 @@ import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { SectionHeader } from '../../src/components/SectionHeader';
-import { METRIC_FIELDS, MetricFormData } from '../../src/types/metrics';
+import {
+  METRIC_FIELDS,
+  METRIC_GROUPS,
+  MetricFormData,
+  MetricGroup,
+  MetricKey,
+} from '../../src/types/metrics';
+import { MetricSparkline } from '../../src/components/profile/MetricSparkline';
+import { TrendPoint } from '../../src/utils/trend';
+import { WeightTrendChart } from '../../src/components/profile/WeightTrendChart';
 import {
   ChevronLeft,
   Plus,
@@ -49,18 +63,73 @@ export default function MetricsScreen() {
     isCreating,
   } = useBodyMetrics(userId);
 
+  // FEAT-2.2: точки для графика тренда (только непустой вес)
+  const weightPoints = useMemo(
+    () =>
+      metrics
+        .filter((m) => m.weight_kg != null)
+        .map((m) => ({ date: m.metric_date, weightKg: m.weight_kg as number })),
+    [metrics],
+  );
+
+  // FEAT-2.2: выбор графиков замеров хранится в AsyncStorage
+  const CHARTS_KEY = 'metrics_charts_selected_v1';
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>([]);
+  const [chartsReady, setChartsReady] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(CHARTS_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            setSelectedMetrics(JSON.parse(raw) as MetricKey[]);
+          } catch {
+            setSelectedMetrics(['waist_cm']);
+          }
+        } else {
+          setSelectedMetrics(['waist_cm']);
+        }
+      })
+      .finally(() => setChartsReady(true));
+  }, []);
+
+  const toggleMetric = (key: MetricKey) => {
+    setSelectedMetrics((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      AsyncStorage.setItem(CHARTS_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const sparkFields = METRIC_FIELDS.filter((f) => f.key !== 'weight_kg');
+  const pointsFor = (key: MetricKey): TrendPoint[] =>
+    metrics
+      .filter((m) => m[key] != null)
+      .map((m) => ({ date: m.metric_date, value: m[key] as number }));
+
+  const CHART_COLORS = [colors.primary, colors.success, colors.warning, colors.error];
+
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState<MetricFormData>({
+  const emptyForm = (): MetricFormData => ({
     metric_date: new Date().toISOString().split('T')[0],
     weight_kg: '',
-    waist_cm: '',
+    shoulder_cm: '',
     chest_cm: '',
+    waist_cm: '',
+    abdomen_cm: '',
     hips_cm: '',
-    arm_cm: '',
-    thigh_cm: '',
     neck_cm: '',
+    biceps_left_cm: '',
+    biceps_right_cm: '',
+    forearm_left_cm: '',
+    forearm_right_cm: '',
+    thigh_cm: '',
+    calf_left_cm: '',
+    calf_right_cm: '',
+    arm_cm: '',
     notes: '',
   });
+  const [formData, setFormData] = useState<MetricFormData>(emptyForm);
 
   const handleSave = () => {
     if (!formData.weight_kg) {
@@ -70,17 +139,7 @@ export default function MetricsScreen() {
     createMetric(formData, {
       onSuccess: () => {
         setShowAddModal(false);
-        setFormData({
-          metric_date: new Date().toISOString().split('T')[0],
-          weight_kg: '',
-          waist_cm: '',
-          chest_cm: '',
-          hips_cm: '',
-          arm_cm: '',
-          thigh_cm: '',
-          neck_cm: '',
-          notes: '',
-        });
+        setFormData(emptyForm());
       },
     });
   };
@@ -128,7 +187,7 @@ export default function MetricsScreen() {
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
-      {/* ✅ Шапка с кнопкой назад (ранее отсутствовала — ChevronLeft импортировался зря) */}
+      {/* ✅ Шапка с кнопкой назад */}
       <View
         style={[
           commonStyles.navHeader,
@@ -173,6 +232,62 @@ export default function MetricsScreen() {
             </Text>
           </View>
         </AppCard>
+
+        {/* FEAT-2.2: тренд веса (лёгкий SVG, без chart-библиотек) */}
+        {weightPoints.length > 0 && (
+          <AppCard variant="compact" style={{ marginBottom: SPACING.lg }}>
+            <WeightTrendChart points={weightPoints} />
+          </AppCard>
+        )}
+
+        {/* FEAT-2.2: графики замеров с чипами-тумблерами */}
+        <View style={{ marginBottom: SPACING.xl }}>
+          <SectionHeader title="Графики замеров" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md }}>
+            {sparkFields.map((f) => {
+              const active = selectedMetrics.includes(f.key);
+              return (
+                <TouchableOpacity
+                  key={f.key}
+                  onPress={() => toggleMetric(f.key)}
+                  style={{
+                    paddingHorizontal: SPACING.md,
+                    paddingVertical: SPACING.xs,
+                    borderRadius: BORDER_RADIUS.full,
+                    borderWidth: 1,
+                    borderColor: active ? colors.primary : colors.border,
+                    backgroundColor: active ? colors.primary + '20' : colors.surfaceSecondary,
+                  }}
+                >
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      { color: active ? colors.primary : colors.textSecondary, fontWeight: '600' },
+                    ]}
+                  >
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {chartsReady &&
+            selectedMetrics.map((key, i) => {
+              const field = sparkFields.find((f) => f.key === key);
+              if (!field) return null;
+              const pts = pointsFor(key);
+              if (pts.length === 0) return null;
+              return (
+                <MetricSparkline
+                  key={key}
+                  label={field.label}
+                  unit={field.unit}
+                  color={CHART_COLORS[i % CHART_COLORS.length]}
+                  points={pts}
+                />
+              );
+            })}
+        </View>
 
         {/* Кнопка добавления */}
         <AppButton
@@ -269,7 +384,12 @@ export default function MetricsScreen() {
 
       {/* Модалка добавления замера — обёрнута в KeyboardAvoidingView,
           чтобы поля не уезжали под клавиатуру на iOS */}
-      <Modal visible={showAddModal} animationType="slide" transparent={true} onRequestClose={() => setShowAddModal(false)}>
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddModal(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1 }}
@@ -304,15 +424,28 @@ export default function MetricsScreen() {
                   value={formData.metric_date}
                   onChangeText={(text) => setFormData({ ...formData, metric_date: text })}
                 />
-                {METRIC_FIELDS.map((field) => (
-                  <AppInput
-                    key={field.key}
-                    label={`${field.label} (${field.unit})`}
-                    placeholder="0"
-                    value={formData[field.key as keyof MetricFormData] as string}
-                    onChangeText={(text) => setFormData({ ...formData, [field.key]: text })}
-                    keyboardType="decimal-pad"
-                  />
+                {/* FEAT-2.2: поля по группам (Тело / Руки / Ноги) */}
+                {(Object.keys(METRIC_GROUPS) as MetricGroup[]).map((group) => (
+                  <View key={group}>
+                    <Text
+                      style={[
+                        typography.labelBold,
+                        { color: colors.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs },
+                      ]}
+                    >
+                      {METRIC_GROUPS[group]}
+                    </Text>
+                    {METRIC_FIELDS.filter((f) => f.group === group).map((field) => (
+                      <AppInput
+                        key={field.key}
+                        label={`${field.label} (${field.unit})`}
+                        placeholder="0"
+                        value={formData[field.key]}
+                        onChangeText={(text) => setFormData({ ...formData, [field.key]: text })}
+                        keyboardType="decimal-pad"
+                      />
+                    ))}
+                  </View>
                 ))}
                 <AppInput
                   label="Заметки"

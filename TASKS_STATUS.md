@@ -57,6 +57,7 @@
 | FEAT-1.7 (=FEAT-7) | Данные для AI | 🔴 | RPE/RIR feedback: шкала 1–10 + авто-RIR/difficulty | ✅ | 05.08.2026 — SetsGrid + SetFeedbackControl + utils/rpe.ts; v2 — тапабельная шкала вместо драг-ползунка |
 | FEAT-1.8 | Данные для AI | 🟠 | daily readiness check-in + rule-guard при ≤ 2 | ✅ | 06.08.2026 — readinessService + ReadinessSheet, перехват старта/повтора в Dashboard |
 | FEAT-1.9 | Данные для AI | 🟠 | pain flag + осторожность в user_injuries | ✅ | 06.08.2026 — painService + PainSheet, кнопка HeartPulse в ExerciseCard |
+| FEAT-2.2 | Графики: тренд веса + чипы-тумблеры замеров (спарклайны в своём масштабе, выбор в AsyncStorage) + форма по группам | ✅ | 06.08.2026 (utils/trend.ts, WeightTrendChart, MetricSparkline, metrics.tsx) |
 | UX-1 | UX | 🟢 | разгрузка шапки тренировки (UnitToggle рядом с таймером) | ✅ | 06.08.2026 — workout/[id].tsx |
 | AI-1 | AI | 🔴 | Edge Function llm-proxy, согласие, PII-фильтр | 🔲 | план: ROADMAP.md §3.1 |
 | AI-2 | AI | 🟡 | AI-прогрессия (вес/повторы на след. тренировку) | 🔲 | ROADMAP.md §3.2 |

@@ -5,9 +5,11 @@
 // 06.08.2026 (FEAT-1.1 v2): хинт показывает прошлые данные АКТИВНОГО сета (первого
 // незавершённого) и переключается по мере заполнения; прогрессия — чипами
 // +2.5/+5/+10/+15/+20 в активный сет; custom-ввод удалён.
+// 06.08.2026: чипы в текущих единицах (кг → кг-шаги, lb → реальные lb-номиналы);
+// возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
 import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp } from 'lucide-react-native';
+import { TrendingUp, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -302,8 +304,8 @@ export const SetsGrid = memo(function SetsGrid({
   const prevRpe = progressionSet?.previousRpe ?? null;
 
   // FEAT-1.1 v2: шаги в текущих единицах — в lb показываем реальные lb-номиналы
-// (конверсия кг-шагов, округлённая до стандартных блинов: 5/10/25/35/45)
-const PROGRESSION_STEPS = unit === 'kg' ? [2.5, 5, 10, 15, 20] : [5, 10, 25, 35, 45];
+  // (конверсия кг-шагов, округлённая до стандартных блинов: 5/10/25/35/45)
+  const PROGRESSION_STEPS = unit === 'kg' ? [2.5, 5, 10, 15, 20] : [5, 10, 25, 35, 45];
 
   // ✅ Чип прогрессии применяется к АКТИВНОМУ сету (пер-сет, а не ко всем)
   const handleProgressionStep = useCallback(
@@ -444,6 +446,18 @@ const PROGRESSION_STEPS = unit === 'kg' ? [2.5, 5, 10, 15, 20] : [5, 10, 25, 35,
             colors={colors}
           />
         )}
+
+        {/* FEAT-1.2: ручной старт отдыха — фолбэк, когда автостарт выключен */}
+        <TouchableOpacity
+          style={[cardStyles.restButton, { backgroundColor: colors.primary }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            startRestTimer(restSeconds);
+          }}
+        >
+          <Clock size={16} color={colors.textInverse} strokeWidth={2} />
+          <Text style={cardStyles.restButtonText}>Отдых {restSeconds}с</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

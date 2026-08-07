@@ -23,8 +23,7 @@
 | (tabs)/profile.tsx | профиль | |
 | (tabs)/profile/goals.tsx | цели/макросы | SCALE-5 (goals constants, macroCalculator, GoalsComponents, GoalsStep1-3) |
 | (tabs)/profile/injuries.tsx | травмы | SEC-10 (useInjuries) |
-| (tabs)/profile/metrics.tsx | замеры тела | |
-| (tabs)/profile/settings.tsx | тема/профиль/таймер | SEC-10, FEAT-1.2 |
+| (tabs)/profile/metrics.tsx | замеры тела | ✅ | FEAT-2.2: тренд веса, графики замеров с тумблерами (AsyncStorage), форма по группам Тело/Руки/Ноги |
 | (tabs)/exercise/[id].tsx | детальное упражнение | |
 | (tabs)/program/[id].tsx | редактор программы + шаринг | SCALE-5 (ProgramHero, ProgramFabs, ProgramDetailModals) |
 | (tabs)/workout/[id].tsx | сессия тренировки | UX-1, FEAT-1.9, PERF-7 |
@@ -56,7 +55,7 @@
 | program/sheets/ShareProgramSheet.tsx | шаринг программы | ARCH-5 |
 | workout/ExerciseCard.tsx | карточка упражнения | FEAT-1.9 (HeartPulse, только isMain), PERF-7 |
 | workout/ExerciseSlider.tsx | слайдер «основная + альтернативы» | PERF-7 (removeClippedSubviews, stagger 500 мс + index×100 мс, ленивый монтаж через InteractionManager), FEAT-1.9 (onOpenPain) |
-| workout/SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия | FEAT-7, FEAT-1.1 v2, SCALE-5 |
+| workout/SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия | ✅ | FEAT-7, FEAT-1.1 v2 (чипы по единицам кг/lb), FEAT-1.2 (ручная кнопка «Отдых N с» — фолбэк автостарта), SCALE-5 |
 | workout/SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала 1–10) | FEAT-7 v2 |
 | workout/RestTimer.tsx | таймер отдыха (круговой SVG + Pill + пресеты) | FEAT-1.2 v2 |
 | workout/WorkoutTimer / WorkoutTabs / UnitToggle / ExerciseInfoAccordion / MuscleBubbles / EquipmentBubbles / TechniqueMediaSlider / WarmupBlock / WarmupExerciseCard / ExerciseSettingsModal | компоненты тренировки | SCALE-5 (WarmupExerciseCard вынесен) |
@@ -66,6 +65,10 @@
 | EquipmentIcon.tsx | иконка оборудования | ARCH-5, ARCH-9 (73 файла, dev-assert, EQUIPMENT_SVG_MAP_LOWER) |
 | goals/GoalsComponents.tsx | StepDots/CheckMark/GenderCard/SelectableRow/MacroCard | SCALE-5 |
 | goals/GoalsStep1-3.tsx | шаги «О тебе» / «Твоя цель» + фармакология / «Твоя норма» | SCALE-5 |
+| components/profile/WeightTrendChart.tsx | SVG-график: пунктир сырых замеров + сглаженная линия + точка последнего замера; нейтральный цвет (оценка «хорошо/плохо» — после FEAT-2.3, когда известна цель) | ✅ | FEAT-2.2 |
+| components/profile/MetricSparkline.tsx | спарклайн замера в своём масштабе | ✅ | FEAT-2.2 |
+
+
 
 ## src/hooks/
 
@@ -122,7 +125,7 @@
 | styles/dynamic.ts | динамические генераторы (баблы/обводки) | |
 | types/database.types.ts | типы Supabase | синхронизирован (UTF-8, содержит sync_program_changes_to_workouts, upsert_workout_logs) |
 | types/workout.ts | ExerciseData, AlternativeExercise, SetData, Difficulty, SetFeedbackPatch | ARCH-7 (единственный источник), FEAT-1.1 (previousWeight/Reps/Rpe) |
-| types/metrics.ts | замеры | |
+| utils/trend.ts | buildWeightTrend + buildTrend (generic) | ✅ | FEAT-2.2, кандидат SCALE-1 |
 | lib/config.ts | единый источник конфигов (Constants.expoConfig.extra) | SCALE-4 |
 | lib/supabase.ts | клиент + хелперы (getList/getString) | SCALE-4 |
 | lib/timerSounds.ts | WAV-бипы (expo-audio) | |
@@ -133,6 +136,7 @@
 | utils/e1rm.ts | epley / bestE1rm / roundE1rm | FEAT-1.4, кандидат SCALE-1 |
 | utils/plates.ts | жадный расчёт блинов по сторонам | FEAT-1.5 (UI нет) |
 | utils/csv.ts | билдер CSV | FEAT-1.6 (сервис и UI нет) |
+| utils/trend.ts | buildWeightTrend / movingAverage / linearSlopePerWeek | ✅ | FEAT-2.2, кандидат SCALE-1 |
 | store/useStore.ts | глобальный UI-стейт (auth) | SEC-10 (серверные срезы убраны) |
 
 ## supabase/ и корень
