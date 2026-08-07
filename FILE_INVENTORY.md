@@ -13,7 +13,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | (auth)/reset-password.tsx|запрос письма сброса|✅|SEC-8 ✅ (redirectTo fittracker://reset-password)|
 | (auth)/update-password.tsx | смена пароля по recovery | структ. | |
 | (tabs)/_layout.tsx | таб-бар layout | структ. | |
-| (tabs)/index.tsx | Dashboard (useDashboard) + плейсхолдер «нет активной программы» (FIT-4) | ✅ | |
+| (tabs)/index.tsx | Dashboard | ✅ | FEAT-1.3 (StreakCard); FEAT-1.8 (ReadinessSheet + requireReadiness) |
 | (tabs)/exercises.tsx | справочник упражнений (infinite scroll) | структ. | |
 | (tabs)/history.tsx | история тренировок | ✅|SEC-10 ✅ (useHistory + historyService); градиенты на цветах темы|
 | (tabs)/programs.tsx | список программ + активация + импорт по коду (FIT-1) | ✅ | statusMap/activeProgramId/сортировка |
@@ -26,7 +26,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | (tabs)/profile/metrics.tsx | замеры тела | структ. | |
 | (tabs)/profile/settings.tsx | настройки (тема/профиль/таймер) | ✅ | SEC-10 ✅ (profileService + sendPasswordReset) |
 | (tabs)/program/[id].tsx|редактор программы + шаринг|✅|SCALE-5 ✅ (вынесены ProgramHero/ProgramFabs/ProgramDetailModals)|
-| (tabs)/workout/[id].tsx | сессия тренировки + шапка программы (FIT-6) | ✅ | getWorkoutProgramInfo |
+| (tabs)/workout/[id].tsx | сессия тренировки | ✅ | UX-1: UnitToggle в шапке; FEAT-1.9: painIndex + PainSheet |
 | (tabs)/workout/create.tsx | создание тренировки (programId/repeatId) | ✅ | |
 
 ## src/components/
@@ -52,17 +52,22 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | ImportProgramSheet.tsx|импорт программы|✅|ARCH-5 ✅ (colors.overlay)|
 | ShareProgramSheet.tsx|поделиться программой|✅|ARCH-5 ✅ (colors.overlay)|
 | workout/ExerciseSlider / ExerciseCard / ExerciseInfoAccordion / MuscleBubbles / EquipmentBubbles / TechniqueMediaSlider / WarmupBlock / WarmupExerciseCard / RestTimer / WorkoutTimer / WorkoutTabs / UnitToggle / ExerciseSettingsModal|компоненты тренировки|✅|ExerciseCard + WarmupBlock → ExerciseInfoAccordion; WarmupExerciseCard вынесен|
-| ExerciseSlider.tsx | горизонтальный слайдер упражнения (основная + альтернативы) | ✅ | 05.08.2026 (PERF): removeClippedSubviews={true} + stagger-загрузка альтернатив (500мс + index*100мс); lazy-монтаж через InteractionManager |
+| ExerciseSlider.tsx | горизонтальный слайдер упражнения (основная + альтернативы) | ✅ | 05.08.2026 (PERF): removeClippedSubviews={true} + stagger-загрузка альтернатив (500мс + index*100мс); lazy-монтаж через InteractionManager FEAT-1.9: проброс onOpenPain |
 | exercises/CategoryStrip / EquipmentSheet | фильтры справочника | ✅ | EquipmentSheet ARCH-5 ✅ (colors.overlay) |
 | EquipmentIcon.tsx|иконка оборудования | ✅ | ARCH-5 ✅ (colors.textTertiary); ICON_MAP синхронизирован с EQUIPMENT_SVG_MAP (73 файла); dev-time assert; EQUIPMENT_SVG_MAP_LOWER | EQUIPMENT_SVG_MAP_LOWER|
 | goals/GoalsComponents.tsx|вспомогательные компоненты (StepDots/CheckMark/GenderCard/SelectableRow/MacroCard)|✅|SCALE-5 (вынесено из goals.tsx)|
 | goals/GoalsStep1.tsx|шаг «О тебе»|✅|SCALE-5|
 | goals/GoalsStep2.tsx|шаг «Твоя цель» + фармакология|✅|SCALE-5|
 | goals/GoalsStep3.tsx|шаг «Твоя норма»|✅|SCALE-5|
-| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1 v2 (06.08.2026): хинт активного сета, ччипы пер-сет и по единицам: кг +2.5…+20, lb +5…+45 (реальные номиналы) |
+| SetsGrid.tsx | сетка подходов + чипы RPE + прогрессия (SCALE-5) | ✅ | FEAT-7 + FEAT-1.1 v2 (06.08.2026): хинт активного сета; чипы пер-сет и по единицам (кг +2.5…+20 / lb +5…+45) |
 | SetFeedbackControl.tsx | SetFeedbackChip + SetFeedbackEditor (тапабельная шкала RPE 1–10) | ✅ | FEAT-7 v2 (05.08.2026): драг-ползунок → тапабельная шкала: дефолт 7, кнопка «Готово», закрыт рассинхрон меток (sliderWidth=280) и фризы драга; без Reanimated/GH |
 | RestTimer.tsx | таймер отдыха (круговой SVG + Pill-режим + пресеты) | ✅ | v2 05.08.2026: Pill-режим, пресеты +30/+60, вибрация до сброса, sticky-оверлей в [id].tsx |
 | components/dashboard/StreakCard.tsx | карточка стрика (🔥 текущий + 🏆 рекорд) | ✅ | FEAT-1.3 |
+| ExerciseCard.tsx | карточка упражнения | ✅ | FEAT-1.9: кнопка «Боль» (HeartPulse, только isMain) |
+| PersonalRecordsCard.tsx | виджет PR на Dashboard | ✅ | FEAT-1.4: строка «1RM ≈ N кг»; дата только при непустой recordDate |
+| PainSheet.tsx | шторка боли (Modal + SheetShell): уровень 0–3 / тип / часть тела / тумблеры / заметка | ✅ | FEAT-1.9 |
+| components/dashboard/StreakCard.tsx | карточка стрика (🔥 текущий + 🏆 рекорд) | ✅ | FEAT-1.3 |
+| ReadinessSheet.tsx | чек-ин состояния (Modal + SheetShell): сон/усталость/боль/стресс, readiness = среднее инверсий | ✅ | FEAT-1.8 |
 
 
 
@@ -75,7 +80,7 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | useProgramEditor.ts|редактор программы (CRUD/drag &drop/фазы) + syncProgramChanges в save|✅|SCALE-5 ✅ разбит; ARCH-6 ✅ (handleAddExerciseFromPicker типизирован)|
 | useProgramPhases.ts | фазовая логика редактора (вынесена) | ✅(импорт) | SCALE-5 |
 | useWorkouts.ts | тренировки (React Query) | ✅(импорт) | |
-| useWorkoutSession.ts|сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅, FEAT-1.1 ✅)|✅|debounce-автосохранение + RPC upsert_workout_logs + flush при размонтировании; applyProgression для FEAT-1.1; загрузка lastLogByExerciseId через вложенный select|
+| useWorkoutSession.ts | сессия тренировки (SEC-2 ✅, SEC-6 ✅, SEC-7 ✅, FEAT-1.1 ✅) | ✅ | FEAT-1.1 v2 (06.08.2026): пер-сет маппинг previous* по set_number |
 | useExerciseDetail.ts | детальное упражнение (staleTime Infinity) | структ. | |
 | useInjuryWarnings.ts | avoid/caution (React Query + memo по warningKey) | ✅ | |
 | useWarmup.ts|авторазминка с учётом травм|✅(импорт)|
@@ -96,11 +101,14 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | programSharingService.ts | generateShareCode / importProgramByCode / formatShareCode | ✅ | |
 | workoutService.ts | startProgramWorkout / repeatWorkout | ✅ | |
 | workoutsService.ts | getWorkoutsData (секции по фазам/неделям + прогресс) | ✅ | |
-| dashboardService.ts|агрегация Dashboard (Promise.allSettled)|✅|PR через profileService.getPersonalRecords; калории через getBurnedCalories(7)|| profileService.ts | профиль/стат/КБЖУ/PR/травмы (объект + standalone getActiveInjuries/getInjuryWarningRules) + streak (запрос всех дат) + personalRecords.e1rm | ✅ | |
+| dashboardService.ts | агрегации Dashboard (React Query) | ✅ | FEAT-1.3: streak; FEAT-1.4: personalRecords.e1rm |
 | exercisesService.ts|упражнения: список/словари/по ID|✅|PERF-2 ✅; ARCH-6 ✅ (getExercises/getExercisesByIds/getExerciseRecords типизированы)|
 | goalsService.ts | цели (upsert) | структ. | |
 | metricsService.ts | замеры тела | структ. | |
 | warmupService.ts|генерация разминки|✅|PERF-3 ✅; ARCH-6 ✅ (getWarmupAlternatives типизирован)|
+| profileService.ts | профиль, КБЖУ, травмы, личные рекорды | ✅ | FEAT-1.4: PersonalRecord.e1rm (best Epley по всем сетам) |
+| painService.ts | logPainEvent (pain_events) + addCautionInjury (user_injuries, injury_type 'pain') | ✅ | FEAT-1.9 |
+| readinessService.ts | getToday / upsertToday (daily_readiness) | ✅ | FEAT-1.8 |
 
 ## src/constants/
 
@@ -156,7 +164,8 @@ FILE_INVENTORY.md — Инвентарь файлов проекта с назн
 | errorMapper.ts|единый маппер user-facing ошибок (mapError/extractMessage)|✅|SEC-9|
 | rpe.ts|утилиты RPE: RPE_DESCRIPTIONS, rpeZone, deriveRir, deriveDifficulty, DIFFICULTY_LABELS|✅|FEAT-7; чистые функции — кандидаты под SCALE-1 тесты|
 | utils/streak.ts | computeStreaks: недельный стрик (current/best/activeThisWeek), чистые функции | ✅ | FEAT-1.3, кандидат SCALE-1 |
-| utils/e1rm.ts | epley/bestE1rm/roundE1rm, чистые функции | ✅ | FEAT-1.4, кандидат SCALE-1 |
+| utils/streak.ts | computeStreaks: недельный стрик (current/best/activeThisWeek) | ✅ | FEAT-1.3, кандидат SCALE-1 |
+| utils/e1rm.ts | epley/bestE1rm/roundE1rm | ✅ | FEAT-1.4, кандидат SCALE-1 |
 
 
 ## src/store/

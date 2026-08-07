@@ -65,12 +65,15 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 
 | ID | Описание | Статус | Комментарий |
 |---|---|---|---|
-| FEAT-1.1 | Prefill + прогрессия (v2: хинт активного сета, чипы +2.5…+20 пер-сет, без custom-ввода) | ✅ | 06.08.2026 (SetsGrid v2: progressionSetIndex = первый незавершённый; чипы через updateSet пер-сет; вес в текущих единицах) || FEAT-1.2|Автостарт таймера отдыха после последнего подхода|✅|05.08.2026 (useTimerSettings.ts + settings.tsx + SetsGrid.tsx; настройка autoStartRest через AsyncStorage; ref-защита от повторного запуска; NotificationFeedbackType.Success)|
-| FEAT-1.2.1 | Pill-режим таймера + пресеты + вибрация до сброса | ✅ | 05.08.2026 (RestTimer.tsx v2 + [id].tsx sticky + useTimerSettings + settings.tsx + SetsGrid.tsx; автостарт после каждого подхода опционально) |
-| FEAT-1.3 | Стрик 🔥 на Dashboard (недельный, grace-текущая-неделя) | ✅ | 06.08.2026 (utils/streak.ts + dashboardService.streak + StreakCard.tsx; лёгкий запрос всех дат отдельно от 14-дневного календаря) |
-| FEAT-1.4 | e1RM (Epley) в PR-карточке | ✅ | 06.08.2026 (utils/e1rm.ts; profileService.getPersonalRecords: лучший e1RM по всем сетам без новых запросов; PersonalRecordsCard: строка «1RM ≈ N кг» + фикс «Invalid Date») |
+| FEAT-1.1 | Prefill подходов из последней тренировки + подсказка прогрессии | ✅ | 05.08.2026; v2 06.08.2026: прошлые данные пер-сет (prevLogsByExerciseId по set_number, recentLogs исключает текущую тренировку); хинт активного сета; чипы пер-сет и по единицам: кг +2.5…+20, lb +5…+45; custom-ввод удалён || FEAT-1.2.1 | Pill-режим таймера + пресеты + вибрация до сброса | ✅ | 05.08.2026 (RestTimer.tsx v2 + [id].tsx sticky + useTimerSettings + settings.tsx + SetsGrid.tsx; автостарт после каждого подхода опционально) |
+| FEAT-1.3 | Стрик 🔥 на Dashboard (недельный, grace на текущую неделю) | ✅ | 06.08.2026 (utils/streak.ts + dashboardService.streak + StreakCard.tsx) |
+| FEAT-1.4 | e1RM (Epley) в PR-карточке | ✅ | 06.08.2026 (utils/e1rm.ts; profileService: лучший e1RM по всем сетам; PersonalRecordsCard: «1RM ≈ N кг» + фикс «Invalid Date») |
+| FEAT-1.9 | Pain flag: боль 0–3 + тип + часть тела + stop + caution в user_injuries | ✅ | 06.08.2026 (painService.ts + PainSheet.tsx; кнопка HeartPulse в ExerciseCard; level ≥ 2 → caution по умолчанию) |
 | FEAT-1.5 | Plate-калькулятор (визуал блинов) | 🟡 | 06.08.2026 (utils/plates.ts: жадный расчёт по сторонам; UI — после встраивания) |
 | FEAT-1.6 | CSV-экспорт истории (Share.share) | 🟡 | 06.08.2026 (utils/csv.ts: билдер; сервис/UI — после встраивания) |
+| FEAT-1.8 | Daily readiness check-in (сон/усталость/боль/стресс → readiness 1–5; rule-guard при ≤ 2) | ✅ | 06.08.2026 (readinessService.ts + ReadinessSheet.tsx; перехват handleStartWorkout/handleRepeatWorkout в index.tsx) |
+| FEAT-1.9 | Pain flag: боль 0–3 + тип + часть тела + stop + caution в user_injuries | ✅ | 06.08.2026 (painService.ts + PainSheet.tsx; HeartPulse в ExerciseCard; level ≥ 2 → caution по умолчанию) |
+| UX-1 | Разгрузка экрана тренировки: UnitToggle в шапку рядом с таймером | ✅ | 06.08.2026 ([id].tsx) |
 | FIT-2 | Синхронизация правок программы → будущие тренировки (RPC sync_program_changes_to_workouts) | ✅ | syncProgramChanges вызывается в saveProgram; завершённые/в процессе не трогаются |
 | FIT-3 | Робастное удаление программы (отвязка workouts, удаление user_programs → 0 активных, защита от FK-падения) | ✅ | deleteProgram(id, userId); deleteMutation инвалидирует dashboard/workouts |
 | FIT-4 | Плейсхолдер «Нет активной программы» на Dashboard | ✅ | index.tsx → AppCard + кнопка «Выбрать программу» |
@@ -87,7 +90,7 @@ TASKS_STATUS.md — Сводная таблица задач FitTracker RN
 | AI-5|🟢|Объяснимость разминки/дилоудов|🔲|roadmap 3.5|
 
 ## Итоговая сводка
-Закрыто полностью: SEC-1,2,4,5,6,8,9,10 (+ SEC-10 остаток: Zustand очищен) · RPC-1,2,3 · SCALE-3,4,5,6 · ARCH-1,2,3,4,5,6,7,8,9 · PERF-1,2,3,4,5,6 · FIT-1..6
+Закрыто полностью: SEC-1,2,4,5,6,8,9,10 · RPC-1,2,3 · SCALE-3,4,5,6 · ARCH-1..9 · PERF-1..7 · FIT-1..6 · FEAT-1.1 (+v2),1.2,1.2.1,1.3,1.4,1.8,1.9
 Частично: SCALE-7
 Открыто (отложено): SCALE-1 (автотесты), SCALE-2 (Sentry до production-билда)
 В плане (roadmap rev.2): AI-1..5 (Этап 3 «AI-тренер»)

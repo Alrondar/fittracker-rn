@@ -63,6 +63,8 @@ app/
 | goalsService.ts|Цели (upsert)|
 | metricsService.ts|Замеры тела|
 | warmupService.ts|Авторазминка  (PERF-3 ✅ двухфазный select)|
+| readinessService.ts | getToday / upsertToday (daily_readiness) | FEAT-1.8 |
+| painService.ts | logPainEvent (pain_events) + addCautionInjury (user_injuries) | FEAT-1.9 |
 
 Ключевые хуки
 | Хук|Назначение|
