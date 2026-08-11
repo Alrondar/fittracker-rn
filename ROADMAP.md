@@ -1,14 +1,14 @@
-# ROADMAP.md — продуктовый roadmap FitTracker
+# FitTracker — Product Roadmap
 
 Срез: 11.08.2026
 
-Статусы: `TASKS_STATUS.md`. Архитектура: `CLAUDE.md`. Рецепты и зависимости: `PROMPTS.md`. Продуктовая философия: `PRODUCT_VISION.md`.
+Source of truth: `STATUS.md` — статусы, `CLAUDE.md` — technical rules, `PRODUCT.md` — product/UX principles, `INVENTORY.md` — code map.
 
 ## 0. Новая точка отсчёта
 
-Основной технический аудит SEC / ARCH / PERF / SCALE / RPC в текущем состоянии в основном закрыт. В Git уже есть рабочая tracker-основа: progression/prefill, RPE 1–10, readiness, pain, warm-up, injury warnings, rest timer, history, programs и performance improvements. fileciteturn21file0L2-L2
+Основной технический аудит SEC / ARCH / PERF / SCALE / RPC в текущем состоянии в основном закрыт. В текущем `main` уже есть рабочая tracker-основа: progression/prefill, RPE 1–10, readiness, pain, warm-up, injury warnings, rest timer, history, programs, body metrics/trends и performance improvements.
 
-Roadmap меняется с **AI-first** на **tracker-first + coaching layer**.
+Roadmap меняется с AI-first на:
 
 ```text
 1. Отличный Tracker
@@ -26,95 +26,94 @@ Roadmap меняется с **AI-first** на **tracker-first + coaching layer**
 
 > **FitTracker помогает тебе лучше тренироваться и объясняет свои рекомендации.**
 
-Не цель: «FitTracker знает, как тебе тренироваться».
+Пользователь остаётся главным. Система помогает ему тренироваться, вести дневник, понимать рекомендации и принимать решения.
 
-Пользователь принимает решения. Система помогает ему делать это быстрее и осознаннее.
+## 2. Этап A — Tracker UX 🔴
 
-## 2. Этап A — базовый Tracker UX 🔴
+### A1. Workout
 
-### A1. Workout как главный сценарий
+Цель: во время тренировки пользователь видит только то, что нужно для текущего действия.
 
-Цель: во время тренировки пользователь видит только то, что нужно для текущего подхода.
+- core: exercise → sets → rest → RPE;
+- previous results раскрывать по запросу;
+- recommendation — компактная card/chip;
+- history / technique / warm-up / notes / pain — sheets/modals;
+- alternatives доступны без перегрузки;
+- temporary replacement и program replacement различаются;
+- тяжёлый контент монтируется по требованию;
+- проверить `workout/[id].tsx` на UX и performance.
 
-- разгрузить `workout/[id].tsx`;
-- оставить core: упражнение → sets → rest → RPE;
-- предыдущие результаты раскрывать по запросу;
-- рекомендации показывать компактным coaching card/chip;
-- историю, инструкцию, warm-up, заметки и pain открывать через sheet/modal;
-- альтернативы сделать доступными без перегрузки основного экрана;
-- различать «заменить сегодня» и «заменить в программе»;
-- тяжёлые блоки монтировать по требованию.
+### A2. RPE
 
-### A2. RPE UX
+Канон — одна tappable шкала 1–10.
 
-Канон — одна шкала 1–10. Не возвращаться к нескольким шкалам.
-
-Улучшить понятность:
-- tappable scale;
-- короткая динамическая расшифровка выбранного значения;
+Улучшения:
+- динамическая короткая расшифровка;
 - быстрый skip;
-- настройка частоты запроса RPE;
-- RIR/difficulty остаются производными данными, а не отдельными UX-шкалами.
+- настройка частоты запроса;
+- RIR/difficulty остаются производными значениями, а не отдельными UX-шкалами.
 
-### A3. History / календарь
+### A3. History
 
-History отвечает на вопрос «когда и что я делал».
+History отвечает: «когда и что я делал?»
 
 - календарь с отметками тренировок;
-- список как альтернативное представление;
-- день → детали тренировки;
+- Calendar/List toggle;
+- выбранный день → детали тренировки;
 - не смешивать History с Progress.
 
 ### A4. Progress
 
-Progress отвечает на вопрос «как я меняюсь».
+Progress отвечает: «как я меняюсь?»
 
 - сила;
 - объём;
 - PR/e1RM;
 - body metrics;
 - тренды;
-- будущие coaching insights.
+- coaching insights.
 
 Пока не добавлять отдельную bottom-tab только ради Progress.
 
 ## 3. Этап B — Training Engine 🔴
 
-Все базовые тренерские решения должны работать без AI.
+Базовые тренерские решения должны работать без AI.
 
 ### B1. Progression
 
 - формализовать повышение/сохранение/снижение;
 - учитывать sets/reps/RPE;
-- использовать уже реализованный per-set previous data;
-- хранить структурированные причины рекомендации.
+- использовать per-set previous data;
+- хранить структурированные причины recommendation.
 
-### B2. Context / readiness
+### B2. Context
 
-- readiness остаётся опциональным;
-- не блокировать тренировку без check-in;
-- readiness — дополнительный сигнал;
-- pain и injury constraints имеют более высокий приоритет.
+- readiness — optional signal;
+- отсутствие check-in не блокирует тренировку;
+- pain/injury имеют больший приоритет.
 
 ### B3. Safety
 
-- `injury_exercise_warnings` — hard constraint;
-- pain → caution/замена;
-- AI не может обойти safety layer.
+`injury_exercise_warnings` — hard constraint. AI не может его обойти.
 
 ### B4. Alternatives
 
-- ранжировать альтернативы по оборудованию, мышцам, паттерну и ограничениям;
-- безопасные варианты выше;
-- различать временную замену и изменение программы.
+Ранжировать варианты по:
+- muscle group;
+- movement pattern;
+- equipment;
+- level;
+- injury/pain constraints.
+
+Различать временную замену и изменение программы.
 
 ### B5. Explainability
 
-Каждое существенное системное решение должно иметь структурированное «Почему?» без обязательного LLM.
+Существенные системные решения должны иметь структурированное «Почему?» без обязательного LLM.
 
 ## 4. Этап C — Coaching Layer 🔴
 
-Цель: приложение становится полезнее, не становясь навязчивым.
+Цель: сделать приложение полезнее, не превращая его в навязчивого тренера.
 
 ### C1. Recommendation card
 
@@ -128,28 +127,26 @@ Progress отвечает на вопрос «как я меняюсь».
 
 ### C2. User control
 
-При изменении предложить причины:
+При изменении можно зафиксировать причину:
 - устал;
 - слишком тяжело;
 - боль;
 - хочу легче;
 - другое.
 
-Сохранять принятие/отклонение рекомендации как feedback.
+Acceptance/rejection может использоваться как feedback для системы.
 
 ### C3. Contextual tips
 
 Только при полезном сигнале: progression, recovery, unusual fatigue, PR, deload, consistency.
 
-Не превращать Dashboard/Workout в поток подсказок.
-
 ### C4. Weekly review
 
-Сначала детерминированный summary: тренировки, объём, RPE, PR, pain/readiness signals. LLM для этого не обязателен.
+Сначала deterministic summary: тренировки, объём, RPE, PR, pain/readiness signals. LLM не обязателен.
 
-## 5. Этап D — Programs и Editor 🔴
+## 5. Этап D — Programs / Program Editor 🔴
 
-Programs — каталог и управление программами:
+Programs — полноценный каталог и управление:
 
 ```text
 Programs
@@ -161,88 +158,91 @@ Programs
 
 ### D1. Program Card
 
-Карточка отвечает только на вопрос «что это и что можно сделать».
+Карточка отвечает: «что это и что я могу сделать?»
 
-- готовая: открыть/начать;
-- личная: открыть/редактировать/активировать.
+Готовая: открыть/начать. Личная: открыть/редактировать/активировать.
 
 ### D2. Program Detail
 
-Показывает структуру и контекст, но не обязан одновременно быть редактором.
+Detail отвечает: «как устроена программа и подходит ли она мне?»
+
+Editor отвечает: «как её изменить?»
 
 ### D3. Program Editor
 
-Главная UX-проблема — вложенность и сложность.
+Главный UX-риск — вложенность:
 
 ```text
 Program
   ↓
-Phase/Week
+Phase / Week
   ↓
-Workout
+Workout / Day
   ↓
 Exercise
 ```
 
-Данные сохраняют эту структуру, но UI не показывает все уровни одновременно.
+Данные сохраняют структуру, но UI не показывает все уровни одновременно.
 
-Использовать:
-- ясный текущий контекст;
-- компактную иерархию/breadcrumb;
-- отдельные sheets для настроек;
-- постепенное раскрытие;
-- понятный back/up flow.
+Нужно проверить:
+- `useProgramEditor.ts`;
+- `useProgramPhases.ts`;
+- `program/[id].tsx`;
+- `PhaseCard`;
+- `DayCard`;
+- все editor sheets;
+- drag & drop;
+- save/sync UX;
+- breadcrumb/context.
 
-Отдельно провести глубокий аудит `useProgramEditor.ts`, `program/[id].tsx`, `PhaseCard`, `DayCard` и sheets.
+### D4. Sync
 
-### D4. Sync semantics
-
-Сохранить текущую модель: правки программы синхронизируются только с будущими/не начатыми тренировками.
+Сохранять текущую семантику: изменения программы применяются только к будущим/не начатым тренировкам.
 
 ## 6. Этап E — Optional AI Coach 🟡
 
-AI появляется после того, как Tracker + Training Engine + Coaching Layer уже дают ценность сами по себе.
+AI появляется после того, как Tracker + Engine + Coaching уже дают самостоятельную ценность.
 
-### E1. AI foundation
+### E1. Foundation
 
 - Edge Function `llm-proxy`;
-- серверные ключи;
+- server-side keys;
 - consent;
 - PII filtering;
 - rate limits;
 - model-agnostic adapter.
 
-### E2. AI уточняет нагрузку
+### E2. уточнение нагрузки
 
-Например: пользователь сообщает, что плохо спал, и спрашивает, стоит ли выполнять рекомендованный вес. AI может уточнить рекомендацию на основе контекста. Результат проходит safety/training constraints и подтверждается пользователем.
+AI может уточнить рекомендацию, если пользователь сообщает контекст вроде плохого сна, усталости или необычной нагрузки. Результат проходит Training Engine/Safety и подтверждается пользователем.
 
 ### E3. Explain / Analyze
 
 - почему предложен вес;
 - как идёт прогресс;
-- почему неделя была тяжёлой;
+- почему неделя тяжёлая;
 - что можно изменить.
 
-### E4. Chat Coach
+### E4. Optional Coach chat
 
-Отдельная точка входа, не обязательная для тренировки.
+Отдельная точка входа, не обязательная для workout.
 
 ### E5. Program generation
 
-Только после стабильного Program Editor. LLM предлагает структуру; Training Engine и safety layer проверяют её до сохранения.
+Только после стабильного Editor. LLM предлагает, Engine + Safety проверяют, пользователь подтверждает.
 
-## 7. Этап F — Release / quality 🟠
+## 7. Этап F — Release / Quality 🟠
 
 - production build;
 - Sentry;
-- тесты чистых функций;
-- smoke/regression для workout/program flows;
-- UX performance profiling;
-- store assets/privacy.
+- tests чистых функций;
+- smoke/regression workout/program flows;
+- UX/performance profiling;
+- store/privacy readiness.
 
-## 8. Этап G — расширение 🔵
+## 8. Этап G — Long-term 🔵
 
-После здоровых retention/activation:
+После подтверждения core retention:
 - supersets/drop sets;
 - cardio;
 - notifications;
@@ -250,25 +250,35 @@ AI появляется после того, как Tracker + Training Engine + 
 - social;
 - i18n;
 - Web/PWA;
-- AI video analysis — long-term.
+- AI video analysis.
 
-## 9. Что сознательно НЕ является ближайшим приоритетом
+## 9. Conscious non-priorities
 
 - обязательный AI chat;
 - AI-generated program как основной onboarding;
-- автоматическое молчаливое изменение программы;
+- молчаливое изменение нагрузки/программы;
 - перегруженный Workout dashboard;
 - отдельная вкладка для каждого типа аналитики;
-- social до подтверждения core retention.
+- social до подтверждения core retention;
+- сложные новые workout entities до стабилизации tracker UX.
 
 ## 10. Definition of Done
 
-Feature считается готовой, если:
+Feature готова, если:
+1. core tracker flow не стал медленнее;
+2. основной экран не перегружен;
+3. сложная информация раскрывается по запросу;
+4. понятна граница Tracker / Engine / Coaching / AI;
+5. существенную рекомендацию можно отклонить;
+6. safety rules не зависят от AI;
+7. архитектурные инварианты `CLAUDE.md` соблюдены;
+8. изменённые факты отражены в `STATUS.md` / `INVENTORY.md`.
 
-1. Core tracker flow не стал медленнее.
-2. Основной экран не перегружен.
-3. Сложная информация раскрывается по запросу.
-4. Понятно, что относится к Tracker / Engine / Coaching / AI.
-5. Пользователь может отклонить существенную рекомендацию.
-6. Safety rules не зависят от AI.
-7. Изменение соблюдает архитектурные инварианты из `CLAUDE.md`.
+## 11. Roadmap update rules
+
+- Roadmap содержит план и зависимости, а не детальные статусы.
+- Статус каждой задачи — `STATUS.md`.
+- Расположение кода — `INVENTORY.md`.
+- Архитектурное правило — `CLAUDE.md`.
+- Продуктовое решение — `PRODUCT.md`.
+- Один факт должен иметь одного владельца.
