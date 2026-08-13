@@ -282,15 +282,12 @@ export type Database = {
       exercises: {
         Row: {
           aliases: string[]
-          alternatives: string[] | null
           benefits: string | null
           can_be_activation: boolean
           category: string | null
           created_at: string | null
           difficulty: string | null
-          equipment: string[] | null
           id: string
-          injuries: string[] | null
           media_url: string | null
           movement_pattern: string | null
           name: string
@@ -309,15 +306,12 @@ export type Database = {
         }
         Insert: {
           aliases?: string[]
-          alternatives?: string[] | null
           benefits?: string | null
           can_be_activation?: boolean
           category?: string | null
           created_at?: string | null
           difficulty?: string | null
-          equipment?: string[] | null
           id?: string
-          injuries?: string[] | null
           media_url?: string | null
           movement_pattern?: string | null
           name: string
@@ -336,15 +330,12 @@ export type Database = {
         }
         Update: {
           aliases?: string[]
-          alternatives?: string[] | null
           benefits?: string | null
           can_be_activation?: boolean
           category?: string | null
           created_at?: string | null
           difficulty?: string | null
-          equipment?: string[] | null
           id?: string
-          injuries?: string[] | null
           media_url?: string | null
           movement_pattern?: string | null
           name?: string

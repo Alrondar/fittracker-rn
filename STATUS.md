@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 11.08.2026
+Срез: Срез: 15.08.2026
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -20,12 +20,13 @@
 | ID | Трек | Пр. | Статус | Комментарий |
 |---|---|---:|---|---|
 | SEC-1…SEC-10 | Security | — | ✅ | Основные security-проблемы закрыты |
-| ARCH-1…ARCH-9 | Architecture | — | ✅ | Основные архитектурные проблемы закрыты |
++ | ARCH-1…ARCH-9 | Architecture | — | ✅ | Основные архитектурные проблемы закрыты; ARCH-8 (injury warnings) полностью на normalized tables |
 | PERF-1…PERF-7 | Performance | — | ✅ | Основные проблемы закрыты; Workout остаётся зоной profiling |
 | SCALE-3…SCALE-7 | Scalability | — | ✅ | Основные пункты закрыты |
 | SCALE-1 | Testing | 🟠 | 🔲 | Автотесты отложены; чистые функции готовы к покрытию |
 | SCALE-2 | Monitoring | 🟠 | 🔲 | Sentry до production build |
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
+| DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
 
 ## 3. Existing product baseline
 

@@ -388,19 +388,21 @@ const loadAlternatives = useCallback(
     }
 
     try {
-      // 1. Получаем канонические связи альтернатив.
-const { data: relationships, error: relationshipsError } = await supabase
-  .from('exercise_relationships')
-  .select('target_exercise_id')
-  .eq('source_exercise_id', exerciseId)
-  .eq('status', 'active');
+      // 1. Получаем связи альтернатив из нормализованной таблицы.
+      const { data: relationships, error: relationshipsError } = await supabase
+        .from('exercise_relationships')
+        .select('related_exercise_id, relation_type, status')
+        .eq('exercise_id', exerciseId)
+        .in('status', ['approved', 'suggested'])
+        .order('status', { ascending: true }) // approved < suggested по алфавиту
+        .order('confidence', { ascending: false });
 
       if (relationshipsError) throw relationshipsError;
 
       const alternativeIds = [
         ...new Set(
           (relationships ?? [])
-            .map((row) => row.target_exercise_id)
+            .map((row) => row.related_exercise_id)
             .filter((id): id is string => !!id && id !== exerciseId),
         ),
       ];
@@ -413,8 +415,7 @@ const { data: relationships, error: relationshipsError } = await supabase
         return [];
       }
 
-      // 2. Загружаем только собственные данные упражнений.
-      // equipment / injuries больше НЕ берём из exercises.
+      // 2. Загружаем собственные данные упражнений.
       const { data: exercisesData, error: exercisesError } = await supabase
         .from('exercises')
         .select(
@@ -424,7 +425,7 @@ const { data: relationships, error: relationshipsError } = await supabase
 
       if (exercisesError) throw exercisesError;
 
-      // 3. Получаем normalized reference data для альтернатив.
+      // 3. Получаем normalized reference data.
       const referenceData = await getExerciseReferenceData(alternativeIds);
 
       // 4. Сохраняем порядок из exercise_relationships.

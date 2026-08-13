@@ -40,16 +40,18 @@ export async function getExerciseReferenceData(
 ): Promise<Record<string, ExerciseReferenceData>> {
   if (exerciseIds.length === 0) return {};
 
-  const [equipmentRes, relationshipsRes, warningsRes] = await Promise.all([
+const [equipmentRes, relationshipsRes, warningsRes] = await Promise.all([
     supabase
       .from('exercise_equipment')
       .select('exercise_id, equipment(name)')
       .in('exercise_id', exerciseIds),
+
     supabase
       .from('exercise_relationships')
       .select('exercise_id, related_exercise_id, relation_type, status')
       .in('exercise_id', exerciseIds)
-      .eq('status', 'active'),
+      .in('status', ['approved', 'suggested']),
+
     supabase
       .from('injury_exercise_warnings')
       .select('exercise_id, body_part, injury_type, recommendation, level')

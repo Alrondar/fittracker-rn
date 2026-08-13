@@ -273,6 +273,11 @@ Important migrations include:
 - program-change sync;
 - workout log upsert;
 - other current schema migrations under `supabase/migrations/`.
+Reference data migration (15.08.2026):
+- legacy columns `exercises.equipment`, `exercises.injuries`, `exercises.alternatives` dropped;
+- `search_exercises` and `get_exercise_filter_counts` now use `exercise_equipment` + `equipment` tables;
+- `exerciseReferenceService` is the single source of truth for equipment/injuries/alternatives in runtime;
+- `injury_exercise_warnings` is the hard-constraint source for safety layer (ARCH-8).
 
 Before changing a DB operation, inspect the current migration and generated `database.types.ts`.
 
