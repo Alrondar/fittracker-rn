@@ -1,5 +1,0 @@
-[
-  {
-    "json": "{\"table\": \"data_index\", \"row_counts\": {\"equipment\": 124, \"exercises\": 826, \"session_sets\": 0, \"program_exercises\": 727, \"workout_exercises\": 1597, \"exercise_equipment\": 210, \"injury_exercise_warnings\": 279, \"program_exercises_orphan\": 26, \"injury_exercise_restrictions\": 0, \"program_exercises_with_exercise_id\": 701}, \"generated_at\": \"2026-08-08T08:31:28.572151+00:00\", \"expected_files\": [\"00-data-index.json\", \"01-schema.json\", \"02-rules.md\", \"03-taxonomy.json\", \"04-exercises.json\", \"05-equipment.json\", \"06-exercise-equipment.json\", \"07-usage-summary.json\", \"08-injury-warnings.json\", \"09-relationship-suggestions.json\"]}"
-  }
-]
