@@ -11,6 +11,7 @@ import { initSounds, playBeep, playFinishSound } from '../lib/timerSounds';
 import { supabase } from '../lib/supabase';
 import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../types/workout';
 import { advanceProgramProgress } from '../services/programsService';
+import { getExerciseReferenceData } from '../services/exerciseReferenceService';
 import { mapError } from '../utils/errorMapper';
 import { perfMark, perfSince } from '../utils/perf';
 
@@ -23,12 +24,9 @@ interface SessionExerciseRow {
   primary_muscles: string[] | null;
   secondary_muscles: string[] | null;
   technique: string | null;
-  equipment: string[] | null;
   settings: string | null;
   benefits: string | null;
   risks: string | null;
-  injuries: string[] | null;
-  alternatives: string[] | null;
   media_url: string | null;
 }
 
@@ -149,9 +147,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       perfMark('load:q1-start');
       const { data: workout, error } = await supabase
         .from('workouts')
-        .select(
-          `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, intensity, target_reps_range, exercises ( id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, alternatives, media_url ) )`,
-        )
+.select(
+  `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, intensity, target_reps_range, exercises ( id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url ) )`,
+)
         .eq('id', workoutId)
         .single();
       perfSince('load:q1-start', 'Q1: workout + workout_exercises');
@@ -175,30 +173,34 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
       const workoutExercises = workoutRow.workout_exercises || [];
       const workoutExerciseIds = workoutExercises.map((we) => we.id);
-      const exerciseIds = workoutExercises
-        .map((we) => we.exercises?.id)
-        .filter((id): id is string => !!id);
+const exerciseIds = workoutExercises
+  .map((we) => we.exercises?.id)
+  .filter((id): id is string => !!id);
+
+const referenceDataPromise = getExerciseReferenceData(exerciseIds);
 
       // 2. ПАРАЛЛЕЛЬНО грузим текущие логи и recentLogs
       perfMark('load:q2-start');
-      const [logsRes, recentLogsRes] = await Promise.all([
-        workoutExerciseIds.length > 0
-          ? supabase
-              .from('workout_logs')
-              .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
-              .in('workout_exercise_id', workoutExerciseIds)
-          : Promise.resolve({ data: null, error: null }),
-        exerciseIds.length > 0
-          ? supabase
-              .from('workout_logs')
-              .select('weight_kg, reps, rpe, set_number, workout_exercises(exercise_id)')
-              .in('workout_exercises.exercise_id', exerciseIds)
-              // исключаем текущую тренировку: «прошлый раз» = прошлая, а не эта сессия
-              .neq('workout_exercises.workout_id', workoutId)
-              .order('created_at', { ascending: false })
-              .limit(300)
-          : Promise.resolve({ data: null, error: null }),
-      ]);
+const [logsRes, recentLogsRes, referenceData] = await Promise.all([
+  workoutExerciseIds.length > 0
+    ? supabase
+        .from('workout_logs')
+        .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
+        .in('workout_exercise_id', workoutExerciseIds)
+    : Promise.resolve({ data: null, error: null }),
+
+  exerciseIds.length > 0
+    ? supabase
+        .from('workout_logs')
+        .select('weight_kg, reps, rpe, set_number, workout_exercises(exercise_id)')
+        .in('workout_exercises.exercise_id', exerciseIds)
+        .neq('workout_exercises.workout_id', workoutId)
+        .order('created_at', { ascending: false })
+        .limit(300)
+    : Promise.resolve({ data: null, error: null }),
+
+  referenceDataPromise,
+]);
       perfSince('load:q2-start', 'Q2: logs + recentLogs (параллельно)');
 
       // Обработка logs
@@ -246,20 +248,26 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               };
             }
           });
-          return {
-            workout_exercise_id: we.id,
-            id: exercise.id,
-            name: exercise.name,
-            primary_muscles: exercise.primary_muscles || [],
-            secondary_muscles: exercise.secondary_muscles || [],
-            technique: exercise.technique || '',
-            equipment: exercise.equipment || [],
-            settings: exercise.settings || '',
-            benefits: exercise.benefits || '',
-            risks: exercise.risks || '',
-            injuries: exercise.injuries || [],
-            alternatives: exercise.alternatives || [],
-            media_url: exercise.media_url ?? null,
+const refs = referenceData[exercise.id] ?? {
+  equipment: [],
+  injuries: [],
+  alternativeIds: [],
+};
+
+return {
+  workout_exercise_id: we.id,
+  id: exercise.id,
+  name: exercise.name,
+  primary_muscles: exercise.primary_muscles || [],
+  secondary_muscles: exercise.secondary_muscles || [],
+  technique: exercise.technique || '',
+  equipment: refs.equipment,
+  settings: exercise.settings || '',
+  benefits: exercise.benefits || '',
+  risks: exercise.risks || '',
+  injuries: refs.injuries,
+  alternatives: refs.alternativeIds,
+  media_url: exercise.media_url ?? null,
             target_sets: targetSets,
             rest_seconds: we.rest_seconds ?? 90,
             intensity: we.intensity || 'medium',
@@ -373,47 +381,97 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
   const handleTimerStop = useCallback(() => {}, []);
 
-  const loadAlternatives = useCallback(
-    async (exerciseId: string, primaryMuscles: string[]) => {
-      if (alternativesCacheRef.current[exerciseId]) {
-        return alternativesCacheRef.current[exerciseId];
-      }
-      try {
-        let query = supabase
-          .from('exercises')
-          .select(
-            `id, name, primary_muscles, secondary_muscles, technique, equipment, settings, benefits, risks, injuries, media_url`,
-          )
-          .neq('id', exerciseId);
-        if (primaryMuscles.length > 0) {
-          query = query.overlaps('primary_muscles', primaryMuscles);
-        }
-        const { data, error } = await query.limit(10);
-        if (error) throw error;
-        const alternatives: AlternativeExercise[] = (data || []).map((ex) => ({
-          id: ex.id,
-          name: ex.name,
-          primary_muscles: ex.primary_muscles || [],
-          secondary_muscles: ex.secondary_muscles || [],
-          technique: ex.technique || '',
-          equipment: ex.equipment || [],
-          settings: ex.settings || '',
-          benefits: ex.benefits || '',
-          risks: ex.risks || '',
-          injuries: ex.injuries || [],
-          media_url: ex.media_url ?? null,
-        }));
+const loadAlternatives = useCallback(
+  async (exerciseId: string, _primaryMuscles: string[]) => {
+    if (alternativesCacheRef.current[exerciseId]) {
+      return alternativesCacheRef.current[exerciseId];
+    }
+
+    try {
+      // 1. Получаем канонические связи альтернатив.
+const { data: relationships, error: relationshipsError } = await supabase
+  .from('exercise_relationships')
+  .select('target_exercise_id')
+  .eq('source_exercise_id', exerciseId)
+  .eq('status', 'active');
+
+      if (relationshipsError) throw relationshipsError;
+
+      const alternativeIds = [
+        ...new Set(
+          (relationships ?? [])
+            .map((row) => row.target_exercise_id)
+            .filter((id): id is string => !!id && id !== exerciseId),
+        ),
+      ];
+
+      if (alternativeIds.length === 0) {
         alternativesCacheRef.current = {
           ...alternativesCacheRef.current,
-          [exerciseId]: alternatives,
+          [exerciseId]: [],
         };
-        return alternatives;
-      } catch {
         return [];
       }
-    },
-    [],
-  );
+
+      // 2. Загружаем только собственные данные упражнений.
+      // equipment / injuries больше НЕ берём из exercises.
+      const { data: exercisesData, error: exercisesError } = await supabase
+        .from('exercises')
+        .select(
+          'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url',
+        )
+        .in('id', alternativeIds);
+
+      if (exercisesError) throw exercisesError;
+
+      // 3. Получаем normalized reference data для альтернатив.
+      const referenceData = await getExerciseReferenceData(alternativeIds);
+
+      // 4. Сохраняем порядок из exercise_relationships.
+      const exercisesById = new Map(
+        (exercisesData ?? []).map((exercise) => [exercise.id, exercise]),
+      );
+
+      const alternatives: AlternativeExercise[] = alternativeIds
+        .map((id) => {
+          const ex = exercisesById.get(id);
+          if (!ex) return null;
+
+          const refs = referenceData[id] ?? {
+            equipment: [],
+            injuries: [],
+            alternativeIds: [],
+          };
+
+          return {
+            id: ex.id,
+            name: ex.name,
+            primary_muscles: ex.primary_muscles || [],
+            secondary_muscles: ex.secondary_muscles || [],
+            technique: ex.technique || '',
+            equipment: refs.equipment,
+            settings: ex.settings || '',
+            benefits: ex.benefits || '',
+            risks: ex.risks || '',
+            injuries: refs.injuries,
+            media_url: ex.media_url ?? null,
+          };
+        })
+        .filter((exercise): exercise is AlternativeExercise => exercise !== null);
+
+      alternativesCacheRef.current = {
+        ...alternativesCacheRef.current,
+        [exerciseId]: alternatives,
+      };
+
+      return alternatives;
+    } catch (error) {
+      console.error('[useWorkoutSession] loadAlternatives:', error);
+      return [];
+    }
+  },
+  [],
+);
 
   const updateSet = useCallback(
     (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
