@@ -12,6 +12,7 @@ interface ExerciseCardTechniqueProps {
   technique: string;
   mediaUrl: string | null;
   settingsText: string;
+  defaultExpanded?: boolean;  // ← добавить
   colors: any;
 }
 
@@ -19,6 +20,7 @@ export const ExerciseCardTechnique = memo(function ExerciseCardTechnique({
   technique,
   mediaUrl,
   settingsText,
+  defaultExpanded = false,
   colors,
 }: ExerciseCardTechniqueProps) {
   const hasTechniqueContent = !!(technique || mediaUrl);
@@ -38,6 +40,7 @@ export const ExerciseCardTechnique = memo(function ExerciseCardTechnique({
       title={hasTechniqueContent ? 'Техника выполнения' : 'Настройки'}
       titleColor={colors.primary}
       maxHeight={hasTechniqueContent ? 900 : 400}
+      defaultExpanded={defaultExpanded}
     >
       {hasTechniqueContent && (
         <>

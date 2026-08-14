@@ -144,13 +144,15 @@ export const ExerciseCard = memo(function ExerciseCard({
       )}
 
       {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
-      {showSecondarySections && (
-        <ExerciseCardMuscles
-          primaryMuscles={exercise.primary_muscles}
-          secondaryMuscles={exercise.secondary_muscles}
-          colors={colors}
-        />
-      )}
+{showSecondarySections && (
+  <ExerciseCardTechnique
+    technique={exercise.technique}
+    mediaUrl={mediaUrl}
+    settingsText={settingsText}
+    defaultExpanded={displayMode === 'learn'}  // ← добавить
+    colors={colors}
+  />
+)}
 
       {/* 5. Technique: скрыт в Training mode для основной карточки (PR 4c) */}
       {showSecondarySections && (
@@ -163,14 +165,15 @@ export const ExerciseCard = memo(function ExerciseCard({
       )}
 
       {/* 6. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
-      {displayMode !== 'training' && isMain && (
-        <ExerciseCardKnowledge
-          benefits={exercise.benefits}
-          risks={exercise.risks}
-          injuries={exercise.injuries}
-          colors={colors}
-        />
-      )}
+{displayMode !== 'training' && isMain && (
+  <ExerciseCardKnowledge
+    benefits={exercise.benefits}
+    risks={exercise.risks}
+    injuries={exercise.injuries}
+    defaultExpanded={displayMode === 'learn'}  // ← добавить
+    colors={colors}
+  />
+)}
 
       {/* 7. Alternative content (только альтернативная карточка) */}
       {!isMain && (

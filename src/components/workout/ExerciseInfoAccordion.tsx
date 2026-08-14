@@ -55,8 +55,9 @@ interface ExerciseInfoAccordionProps {
   icon: React.ReactNode;
   title: string;
   titleColor: string;
-  maxHeight?: number;
   children: React.ReactNode;
+  maxHeight?: number;
+  defaultExpanded?: boolean;  // ← добавить
 }
 
 export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
@@ -65,9 +66,10 @@ export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
   titleColor,
   maxHeight = DEFAULT_MAX_HEIGHT,
   children,
+  defaultExpanded = false,
 }: ExerciseInfoAccordionProps) {
   const { colors } = useTheme();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [everOpened, setEverOpened] = useState(false);
 
   const onToggle = useCallback(() => {

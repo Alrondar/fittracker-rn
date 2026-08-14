@@ -11,6 +11,7 @@ interface ExerciseCardKnowledgeProps {
   benefits: string;
   risks: string;
   injuries: string[];
+  defaultExpanded?: boolean;  // ← добавить
   colors: any;
 }
 
@@ -18,6 +19,7 @@ export const ExerciseCardKnowledge = memo(function ExerciseCardKnowledge({
   benefits,
   risks,
   injuries,
+  defaultExpanded = false,
   colors,
 }: ExerciseCardKnowledgeProps) {
   if (!benefits && !risks && injuries.length === 0) return null;
@@ -28,6 +30,7 @@ export const ExerciseCardKnowledge = memo(function ExerciseCardKnowledge({
       title="Важно знать"
       titleColor={colors.warning}
       maxHeight={600}
+      defaultExpanded={defaultExpanded}
     >
       {benefits ? (
         <View style={{ marginBottom: SPACING.sm }}>
