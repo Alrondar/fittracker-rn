@@ -59,6 +59,7 @@ import {
 import { PainSheet } from '../../src/components/workout/PainSheet';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
+import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
 
 export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
@@ -69,6 +70,7 @@ export default function WorkoutSessionScreen() {
   const { unit, setUnit } = useUnitPreferences();
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
+const { mode: displayMode } = useWorkoutDisplayMode();
 
     // ===== TTI: фиксируем момент первого рендера экрана (однократно) =====
   const ttiMountedRef = useRef(false);
@@ -243,48 +245,50 @@ useEffect(() => {
     [colors],
   );
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => (
-      <ExerciseSlider
-        exercise={item}
-        exerciseIndex={index}
-        isReplaced={!!replacements[item.workout_exercise_id]}
-        loadAlternatives={loadAlternatives}
-        updateSet={updateSet}
-        updateSetFeedback={updateSetFeedback}
-        applyProgression={applyProgression}
-        isSetCompleted={isSetCompleted}
-        replaceExercise={replaceExercise}
-        resetToOriginal={resetToOriginal}
-        startRestTimer={startRestTimer}
-        getIntensityInfo={getIntensityInfo}
-                onOpenSettings={openExerciseSettings}
-        onOpenPain={openPain}
-        colors={colors}
-        cardStyles={cardStyles}
-        unit={unit}
-        warning={exerciseWarnings[item.id] || null}
-      />
-    ),
-    [
-      replacements,
-      loadAlternatives,
-      updateSet,
-      updateSetFeedback,
-      applyProgression,
-      isSetCompleted,
-      replaceExercise,
-      resetToOriginal,
-      startRestTimer,
-      getIntensityInfo,
-      openExerciseSettings,
-      openPain,
-      colors,
-      cardStyles,
-      unit,
-      exerciseWarnings,
-    ],
-  );
+const renderItem = useCallback(
+  ({ item, index }: { item: any; index: number }) => (
+    <ExerciseSlider
+      exercise={item}
+      exerciseIndex={index}
+      isReplaced={!!replacements[item.workout_exercise_id]}
+      displayMode={displayMode}
+      loadAlternatives={loadAlternatives}
+      updateSet={updateSet}
+      updateSetFeedback={updateSetFeedback}
+      applyProgression={applyProgression}
+      isSetCompleted={isSetCompleted}
+      replaceExercise={replaceExercise}
+      resetToOriginal={resetToOriginal}
+      startRestTimer={startRestTimer}
+      getIntensityInfo={getIntensityInfo}
+      onOpenSettings={openExerciseSettings}
+      onOpenPain={openPain}
+      colors={colors}
+      cardStyles={cardStyles}
+      unit={unit}
+      warning={exerciseWarnings[item.id] || null}
+    />
+  ),
+  [
+    replacements,
+    displayMode,
+    loadAlternatives,
+    updateSet,
+    updateSetFeedback,
+    applyProgression,
+    isSetCompleted,
+    replaceExercise,
+    resetToOriginal,
+    startRestTimer,
+    getIntensityInfo,
+    openExerciseSettings,
+    openPain,
+    colors,
+    cardStyles,
+    unit,
+    exerciseWarnings,
+  ],
+);
 
   const renderEmpty = useCallback(
     () => (

@@ -49,3 +49,5 @@ export interface AlternativeExercise {
   media_url: string | null;
   reps_range?: string;
 }
+// Display mode для карточек упражнений в тренировке
+export type WorkoutCardDisplayMode = 'training' | 'balanced' | 'learn';

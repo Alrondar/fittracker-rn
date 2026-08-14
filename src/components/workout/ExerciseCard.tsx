@@ -11,6 +11,7 @@ import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
 import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
 import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
 import { AlternativeExerciseContent } from './sections/AlternativeExerciseContent';
+import { WorkoutCardDisplayMode } from '../../types/workout';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -26,6 +27,7 @@ interface ExerciseCardProps {
   isMain: boolean;
   isReplaced: boolean;
   exerciseIndex: number;
+  displayMode: WorkoutCardDisplayMode;
   alternatives: AlternativeExercise[];
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
@@ -54,6 +56,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   isReplaced,
   exerciseIndex,
   alternatives,
+  displayMode,
   updateSet,
   updateSetFeedback,
   applyProgression,

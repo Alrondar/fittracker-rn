@@ -21,10 +21,12 @@ import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
 import { profileService } from '../../src/services/profileService';
 import { Clock } from 'lucide-react-native';
+import { LayoutGrid } from 'lucide-react-native';
 import { sendPasswordReset } from '../../src/services/authService';
 import { useStore } from '../../src/store/useStore';
 import { useTimerSettings } from '../../src/hooks/useTimerSettings';
 import { SectionHeader } from '../../src/components/SectionHeader';
+import { WorkoutDisplayModePicker } from '../../src/components/workout/WorkoutDisplayModePicker';
 import {
   ChevronLeft,
   User,
@@ -384,6 +386,27 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
+
+{/* Режим карточки упражнения (UX-2) */}
+<View
+  style={[
+    cardStyles.compact,
+    { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+  ]}
+>
+  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+    <LayoutGrid size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+    <View style={{ flex: 1 }}>
+      <Text style={[typography.label, { color: colors.textPrimary }]}>
+        Режим карточки упражнения
+      </Text>
+      <Text style={[typography.caption, { color: colors.textSecondary }]}>
+        Сколько информации показывать на тренировке
+      </Text>
+    </View>
+  </View>
+  <WorkoutDisplayModePicker />
+</View>
 
           <View
             style={[

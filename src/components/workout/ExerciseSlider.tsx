@@ -16,6 +16,7 @@ import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
+import { WorkoutCardDisplayMode } from '../../types/workout';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -32,6 +33,7 @@ interface ExerciseSliderProps {
   exercise: ExerciseData;
   exerciseIndex: number;
   isReplaced: boolean;
+  displayMode: WorkoutCardDisplayMode;
   loadAlternatives: (
     id: string,
     muscles: string[],
@@ -71,6 +73,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   exercise,
   exerciseIndex,
   isReplaced,
+  displayMode,
   loadAlternatives,
   updateSet,
   updateSetFeedback,
@@ -185,6 +188,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             isReplaced={isReplaced}
             exerciseIndex={exerciseIndex}
             alternatives={alternatives}
+            displayMode={displayMode} 
             updateSet={updateSet}
             updateSetFeedback={updateSetFeedback}
             applyProgression={applyProgression}
@@ -256,6 +260,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
                 isReplaced={false}
                 exerciseIndex={exerciseIndex}
                 alternatives={alternatives}
+                displayMode={displayMode}
                 updateSet={updateSet}
                 updateSetFeedback={updateSetFeedback}
                 applyProgression={applyProgression}
