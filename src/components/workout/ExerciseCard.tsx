@@ -3,6 +3,8 @@
 // 14.08.2026 (PR 2): split на секции без изменения визуального поведения.
 // 14.08.2026 (PR 3): displayMode prop проброшен.
 // 14.08.2026 (PR 4a): Equipment вынесен из accordion в отдельную секцию.
+// 14.08.2026 (PR 4b): Actions row вынесен из header.
+// 14.08.2026 (PR 4c): видимость секций зависит от displayMode.
 import React, { useMemo, memo } from 'react';
 import { View } from 'react-native';
 import { createCardStyles } from '../../styles/components/card';
@@ -14,6 +16,7 @@ import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
 import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
 import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
 import { AlternativeExerciseContent } from './sections/AlternativeExerciseContent';
+import { ExerciseCardActions } from './sections/ExerciseCardActions';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -46,6 +49,7 @@ interface ExerciseCardProps {
   };
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
   onOpenPain?: (exerciseIndex: number) => void;
+  onOpenAlternatives?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
@@ -68,6 +72,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   getIntensityInfo,
   onOpenSettings,
   onOpenPain,
+  onOpenAlternatives,
   colors,
   cardStyles,
   unit,
@@ -85,6 +90,10 @@ export const ExerciseCard = memo(function ExerciseCard({
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
   const equipment = exercise.equipment ?? [];
+
+  // PR 4c: в Training mode скрываем вторичные секции для основной карточки.
+  // Для альтернативных карточек (!isMain) все секции видны всегда.
+  const showSecondarySections = !(displayMode === 'training' && isMain);
 
   // PERF: единый useMemo вместо пересчёта в рендере
   const { borderColor } = useMemo(() => {
@@ -134,23 +143,27 @@ export const ExerciseCard = memo(function ExerciseCard({
         <ExerciseWarningBanner warning={warning} colors={colors} />
       )}
 
-      {/* 4. Muscles: primary + secondary bubbles */}
-      <ExerciseCardMuscles
-        primaryMuscles={exercise.primary_muscles}
-        secondaryMuscles={exercise.secondary_muscles}
-        colors={colors}
-      />
+      {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
+      {showSecondarySections && (
+        <ExerciseCardMuscles
+          primaryMuscles={exercise.primary_muscles}
+          secondaryMuscles={exercise.secondary_muscles}
+          colors={colors}
+        />
+      )}
 
-      {/* 5. Technique + settings accordion (equipment вынесен) */}
-      <ExerciseCardTechnique
-        technique={exercise.technique}
-        mediaUrl={mediaUrl}
-        settingsText={settingsText}
-        colors={colors}
-      />
+      {/* 5. Technique: скрыт в Training mode для основной карточки (PR 4c) */}
+      {showSecondarySections && (
+        <ExerciseCardTechnique
+          technique={exercise.technique}
+          mediaUrl={mediaUrl}
+          settingsText={settingsText}
+          colors={colors}
+        />
+      )}
 
-      {/* 6. Knowledge accordion (только основная карточка) */}
-      {isMain && (
+      {/* 6. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
+      {displayMode !== 'training' && isMain && (
         <ExerciseCardKnowledge
           benefits={exercise.benefits}
           risks={exercise.risks}
@@ -187,6 +200,17 @@ export const ExerciseCard = memo(function ExerciseCard({
           startRestTimer={startRestTimer}
           colors={colors}
           cardStyles={cardStyles}
+        />
+      )}
+
+      {/* 9. Actions row: "Другие варианты" + "Боль?" (PR 4b) */}
+      {isMain && (
+        <ExerciseCardActions
+          exerciseIndex={exerciseIndex}
+          hasAlternatives={alternatives.length > 0}
+          onOpenPain={onOpenPain}
+          onOpenAlternatives={onOpenAlternatives}
+          colors={colors}
         />
       )}
     </View>
