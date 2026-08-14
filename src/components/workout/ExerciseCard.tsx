@@ -1,22 +1,25 @@
 // src/components/workout/ExerciseCard.tsx
 // Orchestrator карточки упражнения — рендерит вынесенные секции.
 // 14.08.2026 (PR 2): split на секции без изменения визуального поведения.
+// 14.08.2026 (PR 3): displayMode prop проброшен.
+// 14.08.2026 (PR 4a): Equipment вынесен из accordion в отдельную секцию.
 import React, { useMemo, memo } from 'react';
 import { View } from 'react-native';
 import { createCardStyles } from '../../styles/components/card';
 import { SetsGrid } from './SetsGrid';
 import { ExerciseCardHeader } from './sections/ExerciseCardHeader';
+import { ExerciseCardEquipment } from './sections/ExerciseCardEquipment';
 import { ExerciseWarningBanner } from './sections/ExerciseWarningBanner';
 import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
 import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
 import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
 import { AlternativeExerciseContent } from './sections/AlternativeExerciseContent';
-import { WorkoutCardDisplayMode } from '../../types/workout';
 import {
   ExerciseData,
   AlternativeExercise,
   SetData,
   SetFeedbackPatch,
+  WorkoutCardDisplayMode,
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
@@ -27,8 +30,8 @@ interface ExerciseCardProps {
   isMain: boolean;
   isReplaced: boolean;
   exerciseIndex: number;
-  displayMode: WorkoutCardDisplayMode;
   alternatives: AlternativeExercise[];
+  displayMode: WorkoutCardDisplayMode;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
@@ -42,7 +45,6 @@ interface ExerciseCardProps {
     icon: React.ReactNode;
   };
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
-  /** FEAT-1.9: открыть шторку боли (только основная карточка) */
   onOpenPain?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
@@ -105,6 +107,7 @@ export const ExerciseCard = memo(function ExerciseCard({
     <View
       style={[cardStyles.container, cardStyles.workoutExerciseCard, { borderWidth: 1, borderColor }]}
     >
+      {/* 1. Header: название + controls */}
       <ExerciseCardHeader
         exerciseName={exercise.name}
         isMain={isMain}
@@ -120,25 +123,33 @@ export const ExerciseCard = memo(function ExerciseCard({
         cardStyles={cardStyles}
       />
 
+      {/* 2. Equipment: bubbles сразу под header (PR 4a) */}
+      <ExerciseCardEquipment
+        equipment={equipment}
+        primaryMuscles={exercise.primary_muscles}
+      />
+
+      {/* 3. Warning banner (только основная карточка) */}
       {warning && isMain && (
         <ExerciseWarningBanner warning={warning} colors={colors} />
       )}
 
+      {/* 4. Muscles: primary + secondary bubbles */}
       <ExerciseCardMuscles
         primaryMuscles={exercise.primary_muscles}
         secondaryMuscles={exercise.secondary_muscles}
         colors={colors}
       />
 
+      {/* 5. Technique + settings accordion (equipment вынесен) */}
       <ExerciseCardTechnique
         technique={exercise.technique}
         mediaUrl={mediaUrl}
-        equipment={equipment}
         settingsText={settingsText}
-        primaryMuscles={exercise.primary_muscles}
         colors={colors}
       />
 
+      {/* 6. Knowledge accordion (только основная карточка) */}
       {isMain && (
         <ExerciseCardKnowledge
           benefits={exercise.benefits}
@@ -148,6 +159,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         />
       )}
 
+      {/* 7. Alternative content (только альтернативная карточка) */}
       {!isMain && (
         <AlternativeExerciseContent
           benefits={exercise.benefits}
@@ -161,6 +173,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         />
       )}
 
+      {/* 8. SetsGrid (только основная карточка с сетами) */}
       {hasSets && sets.length > 0 && (
         <SetsGrid
           exerciseIndex={exerciseIndex}
