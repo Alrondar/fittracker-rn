@@ -147,6 +147,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
   onReplace,
 }: WarmupExerciseCardProps) {
   const { colors } = useTheme();
+
+  const equipment: string[] = exercise.equipment ?? [];
   // PERF-5: ширина окна реактивна (rotate / iPad Split View / resize).
   // Раньше ALT_CARD_WIDTH считался один раз на уровне модуля и «замерзал».
   const { width: screenWidth } = useWindowDimensions();
@@ -399,8 +401,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
 
         {/* Оборудование: отдельный чип на каждую единицу */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
-          {exercise.equipment.length > 0 ? (
-            exercise.equipment.map((eq, i) => (
+{equipment.length > 0 ? (
+  equipment.map((eq, i) => (
               <View
                 key={`eq-${i}-${eq}`}
                 style={{

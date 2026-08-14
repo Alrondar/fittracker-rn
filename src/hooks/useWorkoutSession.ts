@@ -601,7 +601,7 @@ const loadAlternatives = useCallback(
           primary_muscles: alternative.primary_muscles,
           secondary_muscles: alternative.secondary_muscles,
           technique: alternative.technique,
-          equipment: alternative.equipment,
+          equipment: alternative.equipment ?? [],
           settings: alternative.settings,
           benefits: alternative.benefits,
           risks: alternative.risks,

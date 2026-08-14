@@ -97,7 +97,8 @@ export const ExerciseCard = memo(function ExerciseCard({
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
   const hasTechniqueContent = !!(exercise.technique || mediaUrl);
-  const hasEquipmentContent = exercise.equipment.length > 0 || !!settingsText;
+  const equipment = exercise.equipment ?? [];
+const hasEquipmentContent = equipment.length > 0 || !!settingsText;
 
   // PERF: единый useMemo вместо пересчёта в рендере
   const { allSetsDone, borderColor } = useMemo(() => {
@@ -294,7 +295,7 @@ export const ExerciseCard = memo(function ExerciseCard({
               ) : null}
             </>
           )}
-          {exercise.equipment.length > 0 && (
+          {equipment.length > 0 && (
             <View
               style={{
                 flexDirection: 'row',
@@ -303,7 +304,7 @@ export const ExerciseCard = memo(function ExerciseCard({
                 marginTop: hasTechniqueContent ? SPACING.md : 0,
               }}
             >
-              {exercise.equipment.map((eq, i) => (
+              {equipment.map((eq, i) => (
                 <View
                   key={`eq-${i}`}
                   style={{
@@ -328,7 +329,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           )}
           {settingsText ? (
             <>
-              {(hasTechniqueContent || exercise.equipment.length > 0) && (
+              {(hasTechniqueContent || equipment.length > 0) && (
                 <View style={{ height: 1, backgroundColor: colors.border, marginVertical: SPACING.sm }} />
               )}
               <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
