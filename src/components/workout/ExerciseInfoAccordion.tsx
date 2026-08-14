@@ -1,4 +1,8 @@
-import React, { useEffect } from 'react';
+// src/components/workout/ExerciseInfoAccordion.tsx
+// 05.08.2026 (PERF): аккордеон самодостаточный — expanded/everOpened внутри.
+// Тап НЕ ре-рендерит ExerciseCard/соседей; children — стабильная ссылка,
+// контент не реконсилируется. Ленивый монтаж: свёрнутая секция ничего не монтирует.
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -7,14 +11,10 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { ChevronDown } from 'lucide-react-native';
-
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
-// Лимит высоты раскрытого контента:
-// 400 — обычные секции (баблы, текст)
-// 800 — секция со слайдером техники (передаётся через prop)
 const DEFAULT_MAX_HEIGHT = 400;
 
 function ExpandableBody({
@@ -27,7 +27,6 @@ function ExpandableBody({
   children: React.ReactNode;
 }) {
   const progress = useSharedValue(expanded ? 1 : 0);
-
   useEffect(() => {
     progress.value = withTiming(expanded ? 1 : 0, {
       duration: 280,
@@ -35,18 +34,13 @@ function ExpandableBody({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded]);
-
   const style = useAnimatedStyle(() => ({
     maxHeight: progress.value * maxHeight,
     opacity: 0.1 + progress.value * 0.9,
     transform: [{ translateY: (1 - progress.value) * -6 }],
   }));
-
   return (
     <Animated.View
-      // ✅ КЛЮЧЕВОЕ: свёрнутая секция не должна перехватывать касания.
-      // Иначе слайдер техники (FlatList) внутри свёрнутой секции
-      // перекрывает и блокирует аккордеоны, расположенные ниже.
       pointerEvents={expanded ? 'auto' : 'none'}
       style={[{ overflow: 'hidden' }, style]}
     >
@@ -61,26 +55,25 @@ interface ExerciseInfoAccordionProps {
   icon: React.ReactNode;
   title: string;
   titleColor: string;
-  expanded: boolean;
-  onToggle: () => void;
   maxHeight?: number;
   children: React.ReactNode;
 }
 
-/**
- * Аккордеон без контурной обводки: цветной значок + заголовок + шеврон.
- * Для секций со слайдером техники передавайте maxHeight={800}.
- */
-export function ExerciseInfoAccordion({
+export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
   icon,
   title,
   titleColor,
-  expanded,
-  onToggle,
   maxHeight = DEFAULT_MAX_HEIGHT,
   children,
 }: ExerciseInfoAccordionProps) {
   const { colors } = useTheme();
+  const [expanded, setExpanded] = useState(false);
+  const [everOpened, setEverOpened] = useState(false);
+
+  const onToggle = useCallback(() => {
+    setEverOpened(true);
+    setExpanded((prev) => !prev);
+  }, []);
 
   return (
     <View style={{ marginTop: SPACING.sm }}>
@@ -116,9 +109,11 @@ export function ExerciseInfoAccordion({
           <ChevronDown size={14} color={colors.textTertiary} />
         </View>
       </TouchableOpacity>
-      <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
-        {children}
-      </ExpandableBody>
+{everOpened ? (
+  <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
+    {children}
+  </ExpandableBody>
+) : null}
     </View>
   );
-}
+});

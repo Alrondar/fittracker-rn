@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,33 +12,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import {
-  Activity,
-  AlertTriangle,
-  Beef,
-  Calculator,
-  ChevronLeft,
-  Droplet,
-  Flame,
-  Minus,
-  Pill,
-  Ruler,
-  Save,
-  TrendingDown,
-  TrendingUp,
-  User,
-  Weight,
-  Wheat,
-} from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
-import { BORDER_RADIUS, SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
-import { AppButton } from '../../src/components/ui/AppButton';
-import { AppInput } from '../../src/components/ui/AppInput';
-import { AppCard } from '../../src/components/ui/AppCard';
-import { MACRO_COLORS, PHARMA_COLORS } from '../../src/constants/semanticColors';
+import { SPACING } from '../../src/constants/theme';
 import { metricsService } from '../../src/services/metricsService';
 import {
   getGoalsProfile,
@@ -48,187 +27,12 @@ import {
   type GenderType,
   type PharmaType,
 } from '../../src/services/goalsService';
-
-type IconComponent = typeof Activity;
-type ThemeColors = ReturnType<typeof useTheme>['colors'];
-
-const GOALS: Array<{ value: GoalType; label: string; icon: IconComponent; desc: string }> = [
-  { value: 'lose', label: 'Похудение', icon: TrendingDown, desc: 'Дефицит калорий' },
-  { value: 'maintain', label: 'Поддержание', icon: Minus, desc: 'Баланс калорий' },
-  { value: 'gain', label: 'Набор массы', icon: TrendingUp, desc: 'Профицит калорий' },
-];
-
-const GENDERS: Array<{ value: GenderType; label: string; icon: IconComponent }> = [
-  { value: 'male', label: 'Мужской', icon: User },
-  { value: 'female', label: 'Женский', icon: User },
-];
-
-const ACTIVITY_LEVELS: Array<{ value: number; label: string; desc: string }> = [
-  { value: 1.2, label: 'Минимальная', desc: 'Сидячий образ жизни' },
-  { value: 1.375, label: 'Низкая', desc: '1-2 тренировки/нед' },
-  { value: 1.55, label: 'Средняя', desc: '3-4 тренировки/нед' },
-  { value: 1.725, label: 'Высокая', desc: '5-6 тренировок/нед' },
-  { value: 1.9, label: 'Очень высокая', desc: 'Ежедневные тренировки' },
-];
-
-const PHARMA_TYPES: Array<{
-  value: Exclude<PharmaType, null>;
-  label: string;
-  desc: string;
-  color: string;
-}> = [
-  { value: 'steroids', label: 'Анаболические стероиды', desc: 'Белок ×1.5, калории +10%', color: PHARMA_COLORS.steroids },
-  { value: 'gh', label: 'Гормон роста', desc: 'Жиры -20%', color: PHARMA_COLORS.gh },
-  { value: 'combo', label: 'Комбо (АС + ГР)', desc: 'Белок ×1.5, жиры -20%', color: PHARMA_COLORS.combo },
-];
-
-function StepDots({
-  step,
-  activeColor,
-  inactiveColor,
-}: {
-  step: number;
-  activeColor: string;
-  inactiveColor: string;
-}) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: SPACING.xl, gap: SPACING.sm }}>
-      {[1, 2, 3].map((s) => (
-        <View
-          key={s}
-          style={{
-            width: s === step ? 32 : 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: s === step ? activeColor : inactiveColor,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
-function CheckMark({ backgroundColor, textColor }: { backgroundColor: string; textColor: string }) {
-  return (
-    <View
-      style={{
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={[typography.captionSmall, { color: textColor, fontWeight: '700' }]}>✓</Text>
-    </View>
-  );
-}
-
-function GenderCard({
-  selected,
-  onPress,
-  label,
-  icon: Icon,
-  colors,
-}: {
-  selected: boolean;
-  onPress: () => void;
-  label: string;
-  icon: IconComponent;
-  colors: ThemeColors;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: SPACING.lg,
-        borderColor: selected ? colors.primary : colors.border,
-        borderWidth: 2,
-        backgroundColor: selected ? colors.primary + '15' : colors.surface,
-        borderRadius: BORDER_RADIUS.lg,
-      }}
-    >
-      <Icon size={32} color={selected ? colors.primary : colors.textSecondary} />
-      <Text
-        style={[
-          typography.labelBold,
-          { color: selected ? colors.primary : colors.textSecondary, marginTop: SPACING.sm },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function SelectableRow({
-  selected,
-  onPress,
-  icon: Icon,
-  title,
-  desc,
-  accentColor,
-  colors,
-}: {
-  selected: boolean;
-  onPress: () => void;
-  icon: IconComponent;
-  title: string;
-  desc: string;
-  accentColor: string;
-  colors: ThemeColors;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderColor: selected ? accentColor : colors.border,
-        borderWidth: 2,
-        backgroundColor: selected ? accentColor + '18' : colors.surface,
-        marginBottom: SPACING.sm,
-        padding: SPACING.lg,
-        borderRadius: BORDER_RADIUS.lg,
-      }}
-    >
-      <Icon size={22} color={selected ? accentColor : colors.textSecondary} style={{ marginRight: SPACING.md }} />
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.labelBold, { color: selected ? accentColor : colors.textPrimary }]}>
-          {title}
-        </Text>
-        <Text style={[typography.caption, { color: colors.textSecondary }]}>{desc}</Text>
-      </View>
-      {selected && <CheckMark backgroundColor={accentColor} textColor={colors.textInverse} />}
-    </TouchableOpacity>
-  );
-}
-
-function MacroCard({
-  icon: Icon,
-  value,
-  label,
-  color,
-  colors,
-}: {
-  icon: IconComponent;
-  value: number;
-  label: string;
-  color: string;
-  colors: ThemeColors;
-}) {
-  return (
-    // ✅ variant="compact" без хвостового пробела (иначе строгое сравнение в AppCard не срабатывает)
-    <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', borderColor: color, borderWidth: 2 }}>
-      <Icon size={24} color={color} />
-      <Text style={[typography.h3, { color, marginTop: SPACING.sm }]}>{value}г</Text>
-      <Text style={[typography.caption, { color: colors.textSecondary }]}>{label}</Text>
-    </AppCard>
-  );
-}
+import { mapError } from '../../src/utils/errorMapper';
+import { calculateMacros } from '../../src/utils/macroCalculator';
+import { StepDots } from '../../src/components/goals/GoalsComponents';
+import { GoalsStep1 } from '../../src/components/goals/GoalsStep1';
+import { GoalsStep2 } from '../../src/components/goals/GoalsStep2';
+import { GoalsStep3 } from '../../src/components/goals/GoalsStep3';
 
 export default function GoalsScreen() {
   const router = useRouter();
@@ -301,66 +105,11 @@ export default function GoalsScreen() {
       ]);
     },
     onError: (error: Error) => {
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить цели');
+      console.error('[goals] save:', error);
+      Alert.alert('Ошибка', mapError(error));
     },
   });
   const saving = saveMutation.isPending;
-
-  const calculateAge = (birthDateStr: string): number => {
-    if (!birthDateStr) return 25;
-    const birth = new Date(birthDateStr);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  const calculateMacros = () => {
-    const age = calculateAge(birthDate);
-    const h = parseFloat(height) || 175;
-    const w = parseFloat(weight) || 70;
-    const g = gender || 'male';
-    const activity = activityLevel || 1.55;
-    let bmr: number;
-    if (g === 'male') {
-      bmr = 10 * w + 6.25 * h - 5 * age + 5;
-    } else {
-      bmr = 10 * w + 6.25 * h - 5 * age - 161;
-    }
-    let targetCalories = bmr * activity;
-    if (goal === 'lose') {
-      targetCalories = targetCalories * 0.85;
-    }
-    if (goal === 'gain') {
-      targetCalories = targetCalories * 1.15;
-    }
-    let targetProteins = Math.round(w * 2);
-    let targetFats = Math.round(w * 1);
-    if (usePharma && pharmaType) {
-      if (pharmaType === 'steroids') {
-        targetProteins = Math.min(Math.round(w * 3), 3 * w);
-        targetCalories = targetCalories * 1.1;
-      }
-      if (pharmaType === 'gh') {
-        targetFats = Math.round(targetFats * 0.8);
-      }
-      if (pharmaType === 'combo') {
-        targetProteins = Math.min(Math.round(w * 3), 3 * w);
-        targetFats = Math.round(targetFats * 0.8);
-      }
-    }
-    const proteinCalories = targetProteins * 4;
-    const fatCalories = targetFats * 9;
-    const remainingCalories = Math.max(0, targetCalories - proteinCalories - fatCalories);
-    const targetCarbs = Math.round(remainingCalories / 4);
-    setCalories(Math.round(targetCalories));
-    setProteins(targetProteins);
-    setFats(targetFats);
-    setCarbs(targetCarbs);
-  };
 
   const handleCalculate = () => {
     if (!gender || !height || !weight || !goal || activityLevel === null) {
@@ -372,7 +121,20 @@ export default function GoalsScreen() {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    calculateMacros();
+    const result = calculateMacros({
+      birthDate,
+      height,
+      weight,
+      gender,
+      activityLevel,
+      goal,
+      usePharma,
+      pharmaType,
+    });
+    setCalories(result.calories);
+    setProteins(result.proteins);
+    setFats(result.fats);
+    setCarbs(result.carbs);
     setStep(3);
   };
 
@@ -408,25 +170,13 @@ export default function GoalsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  const macroRatio = useMemo(() => {
-    const total = proteins * 4 + fats * 9 + carbs * 4;
-    if (!total) {
-      return { proteins: 0, fats: 0, carbs: 0 };
-    }
-    return {
-      proteins: Math.round((proteins * 4 / total) * 100),
-      fats: Math.round((fats * 9 / total) * 100),
-      carbs: Math.round((carbs * 4 / total) * 100),
-    };
-  }, [proteins, fats, carbs]);
-
-  const pharmaLabel = PHARMA_TYPES.find((p) => p.value === pharmaType)?.label;
-
   if (!userId) {
     return (
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <View style={commonStyles.center}>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Пользователь не авторизован</Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            Пользователь не авторизован
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -457,286 +207,58 @@ export default function GoalsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
           <StepDots step={step} activeColor={colors.primary} inactiveColor={colors.border} />
 
           {step === 1 && (
-            <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>О тебе</Text>
-              <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
-                Эти данные нужны для расчета нормы калорий
-              </Text>
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>Пол</Text>
-              <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xl }}>
-                {GENDERS.map((g) => (
-                  <GenderCard
-                    key={g.value}
-                    selected={gender === g.value}
-                    onPress={() => {
-                      setGender(g.value);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                    label={g.label}
-                    icon={g.icon}
-                    colors={colors}
-                  />
-                ))}
-              </View>
-              <AppInput label="Дата рождения" placeholder="ГГГГ-ММ-ДД" value={birthDate} onChangeText={setBirthDate} />
-              <AppInput
-                label="Рост (см)"
-                placeholder="175"
-                value={height}
-                onChangeText={setHeight}
-                keyboardType="numeric"
-                icon={<Ruler size={20} color={colors.primary} />}
-              />
-              <AppInput
-                label="Текущий вес (кг)"
-                placeholder="70"
-                value={weight}
-                onChangeText={setWeight}
-                keyboardType="numeric"
-                icon={<Weight size={20} color={colors.primary} />}
-              />
-              <AppButton
-                title="Далее"
-                variant="primary"
-                size="large"
-                onPress={() => {
-                  if (!gender || !height || !weight) {
-                    Alert.alert('Заполни данные', 'Укажи пол, рост и вес');
-                    return;
-                  }
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  setStep(2);
-                }}
-                style={{ marginTop: SPACING.md }}
-              />
-            </>
+            <GoalsStep1
+              gender={gender}
+              onGenderChange={setGender}
+              birthDate={birthDate}
+              onBirthDateChange={setBirthDate}
+              height={height}
+              onHeightChange={setHeight}
+              weight={weight}
+              onWeightChange={setWeight}
+              onNext={() => setStep(2)}
+              colors={colors}
+            />
           )}
 
           {step === 2 && (
-            <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Твоя цель</Text>
-              <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
-                Выбери, чего хочешь достичь
-              </Text>
-              <View style={{ marginBottom: SPACING.xl }}>
-                {GOALS.map((g) => (
-                  <SelectableRow
-                    key={g.value}
-                    selected={goal === g.value}
-                    onPress={() => {
-                      setGoal(g.value);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                    icon={g.icon}
-                    title={g.label}
-                    desc={g.desc}
-                    accentColor={colors.primary}
-                    colors={colors}
-                  />
-                ))}
-              </View>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
-                Уровень активности
-              </Text>
-              <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
-                Сколько тренировок в неделю?
-              </Text>
-              <View style={{ marginBottom: SPACING.xl }}>
-                {ACTIVITY_LEVELS.map((level) => (
-                  <SelectableRow
-                    key={level.value}
-                    selected={activityLevel === level.value}
-                    onPress={() => {
-                      setActivityLevel(level.value);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                    icon={Activity}
-                    title={level.label}
-                    desc={level.desc}
-                    accentColor={colors.primary}
-                    colors={colors}
-                  />
-                ))}
-              </View>
-              <AppCard variant="compact">
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    <Pill size={20} color={usePharma ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.sm }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Использую фармакологию</Text>
-                      <Text style={[typography.caption, { color: colors.textSecondary }]}>АС, ГР или комбо</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    onPress={togglePharma}
-                    style={{
-                      width: 50,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: usePharma ? colors.primary : colors.border,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: colors.textInverse,
-                        transform: [{ translateX: usePharma ? 12 : -12 }],
-                      }}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </AppCard>
-
-              {usePharma && (
-                <>
-                  <Text
-                    style={[
-                      typography.h3,
-                      { color: colors.textPrimary, marginBottom: SPACING.xs, marginTop: SPACING.lg },
-                    ]}
-                  >
-                    Тип фармакологии
-                  </Text>
-                  <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
-                    Выбери, что используешь
-                  </Text>
-                  <View style={{ marginBottom: SPACING.xl }}>
-                    {PHARMA_TYPES.map((p) => (
-                      <SelectableRow
-                        key={p.value}
-                        selected={pharmaType === p.value}
-                        onPress={() => {
-                          setPharmaType(p.value);
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }}
-                        icon={Pill}
-                        title={p.label}
-                        desc={p.desc}
-                        accentColor={p.color}
-                        colors={colors}
-                      />
-                    ))}
-                  </View>
-                  <AppCard
-                    variant="compact"
-                    style={{ borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10' }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                      <AlertTriangle size={20} color={colors.warning} style={{ marginRight: SPACING.sm, marginTop: 2 }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
-                          Важное предупреждение
-                        </Text>
-                        <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
-                          Использование фармакологических препаратов может нанести серьёзный вред здоровью. Расчет КБЖУ с учетом фармакологии является приблизительным. Настоятельно рекомендуем проконсультироваться с врачом перед началом курса.
-                        </Text>
-                      </View>
-                    </View>
-                  </AppCard>
-                </>
-              )}
-
-              <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg }}>
-                <AppButton title="Назад" variant="secondary" size="large" onPress={() => setStep(1)} style={{ flex: 1 }} />
-                <AppButton
-                  title="Рассчитать"
-                  variant="primary"
-                  size="large"
-                  icon={<Calculator size={20} color={colors.textInverse} />}
-                  onPress={handleCalculate}
-                  style={{ flex: 2 }}
-                />
-              </View>
-            </>
+            <GoalsStep2
+              goal={goal}
+              onGoalChange={setGoal}
+              activityLevel={activityLevel}
+              onActivityLevelChange={setActivityLevel}
+              usePharma={usePharma}
+              pharmaType={pharmaType}
+              onTogglePharma={togglePharma}
+              onPharmaTypeChange={setPharmaType}
+              onBack={() => setStep(1)}
+              onCalculate={handleCalculate}
+              colors={colors}
+            />
           )}
 
           {step === 3 && (
-            <>
-              <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>Твоя норма</Text>
-              <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
-                Рекомендуемые значения на день
-              </Text>
-              {usePharma && pharmaType && pharmaLabel && (
-                <AppCard
-                  variant="compact"
-                  style={{ borderColor: colors.warning, borderWidth: 1, backgroundColor: colors.warning + '10', marginBottom: SPACING.lg }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Pill size={16} color={colors.warning} style={{ marginRight: SPACING.sm }} />
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      Расчет с учетом фармакологии: {pharmaLabel}
-                    </Text>
-                  </View>
-                </AppCard>
-              )}
-              <AppCard
-                variant="highlighted"
-                style={{ backgroundColor: colors.primary, marginBottom: SPACING.lg }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
-                  <Flame size={24} color={colors.textInverse} />
-                  <Text style={[typography.h5, { color: colors.textInverse, marginLeft: SPACING.sm }]}>Калории</Text>
-                </View>
-                <Text style={[typography.h1, { color: colors.textInverse, marginBottom: SPACING.xs }]}>{calories}</Text>
-                <Text style={[typography.body, { color: colors.textInverse }]}>ккал / день</Text>
-              </AppCard>
-              <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-                <MacroCard icon={Beef} value={proteins} label="Белки" color={MACRO_COLORS.proteins} colors={colors} />
-                <MacroCard icon={Droplet} value={fats} label="Жиры" color={MACRO_COLORS.fats} colors={colors} />
-                <MacroCard icon={Wheat} value={carbs} label="Углеводы" color={MACRO_COLORS.carbs} colors={colors} />
-              </View>
-              <AppCard variant="compact">
-                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                  Соотношение макросов
-                </Text>
-                <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: SPACING.sm }}>
-                  <View style={{ width: `${macroRatio.proteins}%`, backgroundColor: MACRO_COLORS.proteins }} />
-                  <View style={{ width: `${macroRatio.fats}%`, backgroundColor: MACRO_COLORS.fats }} />
-                  <View style={{ flex: 1, backgroundColor: MACRO_COLORS.carbs }} />
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={[typography.caption, { color: MACRO_COLORS.proteins }]}>Б: {macroRatio.proteins}%</Text>
-                  <Text style={[typography.caption, { color: MACRO_COLORS.fats }]}>Ж: {macroRatio.fats}%</Text>
-                  <Text style={[typography.caption, { color: MACRO_COLORS.carbs }]}>У: {macroRatio.carbs}%</Text>
-                </View>
-              </AppCard>
-              <AppCard variant="compact" style={{ marginTop: SPACING.lg, marginBottom: SPACING.xl }}>
-                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-                  ℹ️ Как рассчитано
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
-                  Использована формула Миффлина-Сан Жеора с учетом твоего пола, возраста, роста, веса и уровня активности.
-                  {goal === 'lose' && ' Для похудения создан дефицит 15%.'}
-                  {goal === 'gain' && ' Для набора массы создан профицит 15%.'}
-                  {' '}Соотношение макросов: белки 2г/кг, жиры 1г/кг, углеводы — остаток калорий.
-                  {usePharma && pharmaType === 'steroids' && ' С учетом АС: белок увеличен до 3г/кг, калории +10%.'}
-                  {usePharma && pharmaType === 'gh' && ' С учетом ГР: жиры снижены на 20%.'}
-                  {usePharma && pharmaType === 'combo' && ' С учетом комбо: белок 3г/кг, жиры -20%.'}
-                </Text>
-              </AppCard>
-              <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                <AppButton title="Изменить" variant="secondary" size="large" onPress={() => setStep(2)} style={{ flex: 1 }} />
-                <AppButton
-                  title={saving ? 'Сохранение...' : 'Сохранить цели'}
-                  variant="primary"
-                  size="large"
-                  loading={saving}
-                  disabled={saving}
-                  icon={!saving ? <Save size={20} color={colors.textInverse} /> : undefined}
-                  onPress={handleSave}
-                  style={{ flex: 2 }}
-                />
-              </View>
-            </>
+            <GoalsStep3
+              calories={calories}
+              proteins={proteins}
+              fats={fats}
+              carbs={carbs}
+              usePharma={usePharma}
+              pharmaType={pharmaType}
+              goal={goal}
+              saving={saving}
+              onBack={() => setStep(2)}
+              onSave={handleSave}
+              colors={colors}
+            />
           )}
         </ScrollView>
       </KeyboardAvoidingView>

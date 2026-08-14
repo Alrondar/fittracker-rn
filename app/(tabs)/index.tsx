@@ -1,23 +1,34 @@
-import { useMemo } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+// app/(tabs)/index.tsx
+// Dashboard: сводка + виджеты. FEAT-1.3 (стрик), FEAT-1.4 (e1RM в PR),
+// FEAT-1.8 (readiness check-in перед стартом тренировки).
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Hand, ListChecks } from 'lucide-react-native';
-import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
+import { useTheme } from '../../src/hooks/useTheme';
 import { useDashboard } from '../../src/hooks/useDashboard';
-import { createDashboardStyles } from '../../src/styles/components/dashboard';
 import { typography } from '../../src/styles/typography';
+import { SPACING, scale } from '../../src/constants/theme';
+import { createDashboardStyles } from '../../src/styles/components/dashboard';
+import { SectionHeader } from '../../src/components/SectionHeader';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { AppCard } from '../../src/components/ui/AppCard';
 import { ActivityCalendar } from '../../src/components/ActivityCalendar';
 import { ProgramProgressCard } from '../../src/components/ProgramProgressCard';
 import { WeeklyStatsCard } from '../../src/components/WeeklyStatsCard';
 import { ExerciseProgressCard } from '../../src/components/ExerciseProgressCard';
 import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
 import { LastWorkoutCard } from '../../src/components/LastWorkoutCard';
-import { SPACING, scale, BORDER_RADIUS } from '../../src/constants/theme';
-import { SectionHeader } from '../../src/components/SectionHeader';
-import { AppButton } from '../../src/components/ui/AppButton';
-import { AppCard } from '../../src/components/ui/AppCard';
+import { StreakCard } from '../../src/components/dashboard/StreakCard';
+import { ReadinessSheet } from '../../src/components/dashboard/ReadinessSheet';
+import { readinessService } from '../../src/services/readinessService';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -26,16 +37,54 @@ export default function DashboardScreen() {
   const styles = useMemo(() => createDashboardStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useDashboard(userId);
 
-  const handleStartWorkout = () => {
-    if (data?.activeProgram) {
-      router.push(`/workout/create?programId=${data.activeProgram.programId}`);
+  // FEAT-1.8: readiness check-in раз в день перед стартом тренировки
+  const [readinessOpen, setReadinessOpen] = useState(false);
+  const pendingStartRef = useRef<(() => void) | null>(null);
+
+  const requireReadiness = useCallback(
+    (action: () => void) => {
+      if (!userId) {
+        action();
+        return;
+      }
+      readinessService
+        .getToday(userId)
+        .then((logged) => {
+          if (logged) {
+            action();
+            return;
+          }
+          pendingStartRef.current = action;
+          setReadinessOpen(true);
+        })
+        .catch(() => action());
+    },
+    [userId],
+  );
+
+  const handleReadinessDone = useCallback((proceed: boolean) => {
+    setReadinessOpen(false);
+    if (proceed && pendingStartRef.current) {
+      const action = pendingStartRef.current;
+      pendingStartRef.current = null;
+      action();
     }
+  }, []);
+
+  const handleStartWorkout = () => {
+    requireReadiness(() => {
+      if (data?.activeProgram) {
+        router.push(`/workout/create?programId=${data.activeProgram.programId}`);
+      }
+    });
   };
 
   const handleRepeatWorkout = () => {
-    if (data?.lastWorkout) {
-      router.push(`/workout/create?repeatId=${data.lastWorkout.id}`);
-    }
+    requireReadiness(() => {
+      if (data?.lastWorkout) {
+        router.push(`/workout/create?repeatId=${data.lastWorkout.id}`);
+      }
+    });
   };
 
   if (!userId) {
@@ -55,9 +104,6 @@ export default function DashboardScreen() {
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-            Загрузка...
-          </Text>
         </View>
       </SafeAreaView>
     );
@@ -66,8 +112,12 @@ export default function DashboardScreen() {
   if (isError || !data) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}>
-          <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}
+        >
+          <Text
+            style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
+          >
             Не удалось загрузить данные
           </Text>
           <AppButton title="Повторить" variant="primary" onPress={() => refetch()} />
@@ -104,6 +154,13 @@ export default function DashboardScreen() {
           </View>
           <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>
         </View>
+
+        {/* FEAT-1.3: недельный стрик */}
+        {data.totalWorkouts > 0 && (
+          <View style={styles.section}>
+            <StreakCard streak={data.streak} colors={colors} />
+          </View>
+        )}
 
         {/* ✅ Активная программа ИЛИ плейсхолдер «Выберите программу» */}
         <View style={styles.section}>
@@ -144,11 +201,7 @@ export default function DashboardScreen() {
                 <Text
                   style={[
                     typography.body,
-                    {
-                      color: colors.textSecondary,
-                      textAlign: 'center',
-                      marginBottom: SPACING.lg,
-                    },
+                    { color: colors.textSecondary, textAlign: 'center', marginBottom: SPACING.lg },
                   ]}
                 >
                   Выберите программу, чтобы начать тренировки
@@ -163,6 +216,7 @@ export default function DashboardScreen() {
           )}
         </View>
 
+        {/* Последняя тренировка */}
         {data.lastWorkout && (
           <View style={styles.section}>
             <LastWorkoutCard
@@ -203,7 +257,7 @@ export default function DashboardScreen() {
               title="Прогресс по упражнениям"
               style={{ paddingHorizontal: 0, paddingTop: 0 }}
             />
-            {data.exerciseProgress.map((exercise) => (
+                        {data.exerciseProgress.map((exercise) => (
               <ExerciseProgressCard
                 key={exercise.exerciseId}
                 exerciseName={exercise.exerciseName}
@@ -217,9 +271,10 @@ export default function DashboardScreen() {
             ))}
           </View>
         )}
-
-        <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* FEAT-1.8: readiness check-in */}
+      <ReadinessSheet visible={readinessOpen} userId={userId} onDone={handleReadinessDone} />
     </SafeAreaView>
   );
 }

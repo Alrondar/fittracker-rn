@@ -163,18 +163,19 @@ export default function ExerciseDetailScreen() {
     recordsLoading,
     recordsError,
   } = useExerciseDetail(id as string, userId);
-  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
-
-  const toggleSection = (key: SectionKey) =>
-    setOpenSection(prev => (prev === key ? null : key));
 
   if (loading) return <DetailSkeleton />;
   if (isError) return <ErrorState onRetry={() => refetch()} message={errorMessage} />;
   if (!exercise) return <NotFoundState onBack={() => router.back()} />;
 
-  const categoryMeta = exercise.category
-    ? EXERCISE_CATEGORIES.find(c => c.value === exercise.category)
-    : undefined;
+const categoryMeta = exercise.category
+  ? EXERCISE_CATEGORIES.find(c => c.value === exercise.category)
+  : undefined;
+
+const injuries = exercise.injuries ?? [];
+const equipment = exercise.equipment ?? [];
+const primaryMuscles = exercise.primary_muscles ?? [];
+const secondaryMuscles = exercise.secondary_muscles ?? [];
   const CategoryIcon = categoryMeta?.icon;
 
   // Акцент экрана — цвет целевой группы мышц
@@ -256,12 +257,12 @@ export default function ExerciseDetailScreen() {
     </Text>
   </View>
 )}
-              <EquipmentBubbles equipment={exercise.equipment} primaryMuscles={exercise.primary_muscles} />
+              <EquipmentBubbles equipment={equipment} primaryMuscles={primaryMuscles} />
             </View>
           </FadeIn>
 
           {/* Целевые и вспомогательные мышцы (акцент — цвет целевой группы) */}
-          {(exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0) ? (
+          {(primaryMuscles.length > 0 || secondaryMuscles.length > 0) ? (
             <FadeIn delay={180}>
               <View
                 style={{
@@ -275,7 +276,7 @@ export default function ExerciseDetailScreen() {
                   marginTop: SPACING.lg,
                 }}
               >
-                {exercise.primary_muscles.length > 0 && (
+                {primaryMuscles.length > 0 && (
                   <>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
                       <Target size={16} color={accentColor} strokeWidth={2} />
@@ -294,10 +295,10 @@ export default function ExerciseDetailScreen() {
                         Целевые мышцы
                       </Text>
                     </View>
-                    <MuscleBubbles primaryMuscles={exercise.primary_muscles} />
+                    <MuscleBubbles primaryMuscles={primaryMuscles} />
                   </>
                 )}
-                {exercise.secondary_muscles.length > 0 && (
+                {secondaryMuscles.length > 0 && (
                   <>
                     <View
                       style={{
@@ -323,7 +324,7 @@ export default function ExerciseDetailScreen() {
                         Вспомогательные
                       </Text>
                     </View>
-                    <MuscleBubbles secondaryMuscles={exercise.secondary_muscles} />
+                   <MuscleBubbles secondaryMuscles={secondaryMuscles} />
                   </>
                 )}
               </View>
@@ -384,13 +385,11 @@ export default function ExerciseDetailScreen() {
           <FadeIn delay={360}>
             <View style={{ marginTop: SPACING.lg }}>
               {exercise.benefits ? (
-                <ExerciseInfoAccordion
-                  icon={<Sparkles size={14} color={colors.success} />}
-                  title="Польза"
-                  titleColor={colors.success}
-                  expanded={openSection === 'benefits'}
-                  onToggle={() => toggleSection('benefits')}
-                >
+<ExerciseInfoAccordion
+  icon={<Sparkles size={14} color={colors.success} />}
+  title="Польза"
+  titleColor={colors.success}
+>
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.benefits}
                   </Text>
@@ -402,8 +401,6 @@ export default function ExerciseDetailScreen() {
                   icon={<AlertTriangle size={14} color={colors.warning} />}
                   title="Риски"
                   titleColor={colors.warning}
-                  expanded={openSection === 'risks'}
-                  onToggle={() => toggleSection('risks')}
                 >
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.risks}
@@ -411,15 +408,13 @@ export default function ExerciseDetailScreen() {
                 </ExerciseInfoAccordion>
               ) : null}
 
-              {exercise.injuries.length > 0 ? (
-                <ExerciseInfoAccordion
-                  icon={<ShieldAlert size={14} color={colors.error} />}
-                  title="Противопоказания"
-                  titleColor={colors.error}
-                  expanded={openSection === 'injuries'}
-                  onToggle={() => toggleSection('injuries')}
-                >
-                  {exercise.injuries.map((injury, idx) => (
+{injuries.length > 0 ? (
+  <ExerciseInfoAccordion
+    icon={<ShieldAlert size={14} color={colors.error} />}
+    title="Противопоказания"
+    titleColor={colors.error}
+  >
+    {injuries.map((injury, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
                       <Text style={[typography.body, { color: colors.error, marginRight: 6 }]}>•</Text>
                       <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22, flex: 1 }]}>
@@ -435,8 +430,6 @@ export default function ExerciseDetailScreen() {
                   icon={<SlidersHorizontal size={14} color={colors.primary} />}
                   title="Настройки"
                   titleColor={colors.primary}
-                  expanded={openSection === 'settings'}
-                  onToggle={() => toggleSection('settings')}
                 >
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.settings}
@@ -451,10 +444,12 @@ export default function ExerciseDetailScreen() {
             <FadeIn delay={420}>
               <View style={{ marginTop: SPACING.xl }}>
 <SectionHeader title="Альтернативные упражнения" count={alternatives.length} style={{ paddingHorizontal: 0, paddingTop: 0 }} />
-                {alternatives.map(alt => {
-                  const altAccent = alt.primary_muscles.length > 0
-                    ? getMuscleColor(alt.primary_muscles[0])
-                    : colors.border;
+{alternatives.map(alt => {
+  const altPrimaryMuscles = alt.primary_muscles ?? [];
+  const altEquipment = alt.equipment ?? [];
+  const altAccent = altPrimaryMuscles.length > 0
+    ? getMuscleColor(altPrimaryMuscles[0])
+    : colors.border;
                   return (
                     <TouchableOpacity
                       key={alt.id}
@@ -486,18 +481,18 @@ export default function ExerciseDetailScreen() {
                           marginRight: SPACING.md,
                         }}
                       >
-                        <EquipmentIcon
-                          name={alt.equipment[0] || 'Тренажер'}
-                          primaryMuscles={alt.primary_muscles}
-                          size={28}
-                          scale={0.9}
+  <EquipmentIcon
+    name={altEquipment[0] || 'Тренажер'}
+    primaryMuscles={altPrimaryMuscles}
+    size={28}
+    scale={0.9}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
                           {alt.name}
                         </Text>
-                        <MuscleBubbles primaryMuscles={alt.primary_muscles.slice(0, 2)} style={{ marginTop: 4 }} />
+                        <MuscleBubbles primaryMuscles={altPrimaryMuscles.slice(0, 2)} style={{ marginTop: 4 }} />
                       </View>
                       <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
                     </TouchableOpacity>

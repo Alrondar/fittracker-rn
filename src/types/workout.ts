@@ -1,6 +1,17 @@
+export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
+
+export type SetFeedbackPatch = Partial<Pick<SetData, 'rpe' | 'rir' | 'difficulty'>>;
+
 export interface SetData {
   weight: string;
   reps: string;
+  rpe?: number | null;
+  rir?: number | null;
+  difficulty?: Difficulty | null;
+  // FEAT-1.1: данные из последней тренировки для подсказки прогрессии
+  previousWeight?: number | null;
+  previousReps?: number | null;
+  previousRpe?: number | null;
 }
 
 export interface ExerciseData {
@@ -21,7 +32,7 @@ export interface ExerciseData {
   rest_seconds: number;
   intensity: string;
   sets: SetData[];
-  reps_range?: string; // ✅ НОВОЕ
+  reps_range?: string;
 }
 
 export interface AlternativeExercise {
@@ -36,5 +47,5 @@ export interface AlternativeExercise {
   risks: string;
   injuries: string[];
   media_url: string | null;
-  reps_range?: string; // ✅ НОВОЕ
+  reps_range?: string;
 }

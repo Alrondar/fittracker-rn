@@ -22,6 +22,8 @@ import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { MacroPieChart } from '../../src/components/profile/MacroPieChart';
+// FEAT-2.1: недельная карточка (создать файл, если ещё нет)
+import { NutritionWeekCard } from '../../src/components/profile/NutritionWeekCard';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { MACRO_COLORS } from '../../src/constants/semanticColors';
 import * as Haptics from 'expo-haptics';
@@ -361,6 +363,13 @@ export default function ProfileScreen() {
                 MACRO_COLORS.water,
               )}
             </AppCard>
+          </View>
+        )}
+
+        {/* FEAT-2.1: неделя питания (тренд отклонения от целей) */}
+        {targets.calories > 0 && (
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+            <NutritionWeekCard userId={userId} targets={targets} />
           </View>
         )}
 

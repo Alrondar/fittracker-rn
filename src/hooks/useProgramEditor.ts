@@ -10,6 +10,7 @@ import {
   ProgramDay,
   ProgramExercise,
 } from '../services/programsService';
+import { ExerciseListItem } from '../services/exercisesService';
 import { useProgramPhases } from './useProgramPhases';
 import * as Haptics from 'expo-haptics';
 
@@ -122,7 +123,7 @@ export function useProgramEditor(programId: string, userId: string | null) {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -163,120 +164,116 @@ export function useProgramEditor(programId: string, userId: string | null) {
   };
 
   // ============================================================================
-  // СОХРАНЕНИЕ (фазовое) + СИНХРОНИЗАЦИЯ С ТРЕНИРОВКАМИ
+  // СОХРАНЕНИЕ (атомарное через RPC) + СИНХРОНИЗАЦИЯ С ТРЕНИРОВКАМИ
   // ============================================================================
-const saveProgram = async () => {
-  setSaving(true);
-  try {
-    if (!editedProgram) return;
-    if (!editedProgram.created_by || editedProgram.created_by !== userId) {
-      throw new Error('Нельзя редактировать чужую программу. Сначала скопируйте её.');
-    }
-
-    // Формируем снапшот дерева программы для RPC
-    const phases = editedProgram.phases || [];
-    const days = editedProgram.days || [];
-
-    const snapshot = {
-      program_id: editedProgram.id,
-      schedule: editedProgram.schedule || [],
-      deleted_phase_ids: deletedPhaseIds,
-      deleted_day_ids: deletedDayIds,
-      deleted_exercise_ids: deletedExerciseIds,
-      phases: phases.map((phase, phaseIndex) => ({
-        id: phase.id,
-        isNew: phase.isNew || false,
-        phase_number: phaseIndex + 1,
-        name: phase.name,
-        phase_type: phase.phase_type,
-        weeks_count: phase.weeks_count,
-        description: phase.description || '',
-        position: phaseIndex + 1,
-        days: days
-          .filter((d) => d.phase_id === phase.id)
-          .map((day, dayIndex) => ({
-            id: day.id,
-            isNew: day.isNew || false,
-            week_number: day.week_number ?? 1,
-            day_number: dayIndex + 1,
-            name: day.name,
-            position: dayIndex + 1,
-            exercises: (day.exercises || []).map((exercise, exIndex) => ({
-              id: exercise.id,
-              isNew: exercise.isNew || false,
-              exercise_id: exercise.exercise_id || null,
-              exercise_name: exercise.exercise_name,
-              sets: exercise.sets,
-              reps_range: exercise.reps_range,
-              rest_seconds: exercise.rest_seconds,
-              intensity: exercise.intensity,
-              position: exIndex + 1,
-            })),
-          })),
-      })),
-    };
-
-    // Один атомарный RPC вместо Promise.all (PERF-4 + PERF-6)
-    const { error } = await supabase.rpc('save_program_snapshot', {
-      p_program_id: snapshot.program_id,
-      p_schedule: snapshot.schedule,
-      p_deleted_phase_ids: snapshot.deleted_phase_ids,
-      p_deleted_day_ids: snapshot.deleted_day_ids,
-      p_deleted_exercise_ids: snapshot.deleted_exercise_ids,
-      p_phases: snapshot.phases,
-    });
-
-    if (error) throw error;
-
-    // Принудительный refetch без кэша
-    const updatedProgram = await getProgramWithDays(editedProgram.id);
-    if (!updatedProgram) {
-      throw new Error('Программа не найдена после сохранения');
-    }
-
-    // Синхронизация правок с будущими тренировками (FIT-2)
+  const saveProgram = async () => {
+    setSaving(true);
     try {
-      const syncResult = await syncProgramChanges(editedProgram.id);
-      if (
-        syncResult.deleted_workouts > 0 ||
-        syncResult.deleted_exercises > 0 ||
-        syncResult.inserted_exercises > 0
-      ) {
+      if (!editedProgram) return;
+      if (!editedProgram.created_by || editedProgram.created_by !== userId) {
+        throw new Error('Нельзя редактировать чужую программу. Сначала скопируйте её.');
+      }
+      // Формируем снапшот дерева программы для RPC
+      const phases = editedProgram.phases || [];
+      const days = editedProgram.days || [];
+      const snapshot = {
+        program_id: editedProgram.id,
+        schedule: editedProgram.schedule || [],
+        deleted_phase_ids: deletedPhaseIds,
+        deleted_day_ids: deletedDayIds,
+        deleted_exercise_ids: deletedExerciseIds,
+        phases: phases.map((phase, phaseIndex) => ({
+          id: phase.id,
+          isNew: phase.isNew || false,
+          phase_number: phaseIndex + 1,
+          name: phase.name,
+          phase_type: phase.phase_type,
+          weeks_count: phase.weeks_count,
+          description: phase.description || '',
+          position: phaseIndex + 1,
+          days: days
+            .filter((d) => d.phase_id === phase.id)
+            .map((day, dayIndex) => ({
+              id: day.id,
+              isNew: day.isNew || false,
+              week_number: day.week_number ?? 1,
+              day_number: dayIndex + 1,
+              name: day.name,
+              position: dayIndex + 1,
+              exercises: (day.exercises || []).map((exercise, exIndex) => ({
+                id: exercise.id,
+                isNew: exercise.isNew || false,
+                exercise_id: exercise.exercise_id || null,
+                exercise_name: exercise.exercise_name,
+                sets: exercise.sets,
+                reps_range: exercise.reps_range,
+                rest_seconds: exercise.rest_seconds,
+                intensity: exercise.intensity,
+                position: exIndex + 1,
+              })),
+            })),
+        })),
+      };
+      // Один атомарный RPC вместо Promise.all (PERF-4 + PERF-6)
+      const { error } = await supabase.rpc('save_program_snapshot', {
+        p_program_id: snapshot.program_id,
+        p_schedule: snapshot.schedule,
+        p_deleted_phase_ids: snapshot.deleted_phase_ids,
+        p_deleted_day_ids: snapshot.deleted_day_ids,
+        p_deleted_exercise_ids: snapshot.deleted_exercise_ids,
+        p_phases: snapshot.phases,
+      });
+      if (error) throw error;
+
+      // Принудительный refetch без кэша
+      const updatedProgram = await getProgramWithDays(editedProgram.id);
+      if (!updatedProgram) {
+        throw new Error('Программа не найдена после сохранения');
+      }
+
+      // Синхронизация правок с будущими тренировками (FIT-2)
+      try {
+        const syncResult = await syncProgramChanges(editedProgram.id);
+        if (
+          syncResult.deleted_workouts > 0 ||
+          syncResult.deleted_exercises > 0 ||
+          syncResult.inserted_exercises > 0
+        ) {
+          Alert.alert(
+            'Синхронизация завершена',
+            `Будущие тренировки обновлены:\n` +
+              `• Удалено тренировок: ${syncResult.deleted_workouts}\n` +
+              `• Обновлено тренировок: ${syncResult.updated_workouts}\n` +
+              `• Удалено упражнений: ${syncResult.deleted_exercises}\n` +
+              `• Добавлено упражнений: ${syncResult.inserted_exercises}`,
+            [{ text: 'OK' }],
+          );
+        }
+      } catch (syncError: any) {
+        console.error('[saveProgram] Sync failed:', syncError);
         Alert.alert(
-          'Синхронизация завершена',
-          `Будущие тренировки обновлены:\n` +
-            `• Удалено тренировок: ${syncResult.deleted_workouts}\n` +
-            `• Обновлено тренировок: ${syncResult.updated_workouts}\n` +
-            `• Удалено упражнений: ${syncResult.deleted_exercises}\n` +
-            `• Добавлено упражнений: ${syncResult.inserted_exercises}`,
-          [{ text: 'OK' }]
+          'Предупреждение',
+          'Программа сохранена, но не удалось синхронизировать изменения с будущими тренировками.\n\n' +
+            'Будущие тренировки могут содержать устаревшие данные.\n\n' +
+            'Ошибка: ' + (syncError.message || 'неизвестная ошибка'),
+          [{ text: 'OK' }],
         );
       }
-    } catch (syncError: any) {
-      console.error('[saveProgram] Sync failed:', syncError);
-      Alert.alert(
-        'Предупреждение',
-        'Программа сохранена, но не удалось синхронизировать изменения с будущими тренировками.\n\n' +
-          'Будущие тренировки могут содержать устаревшие данные.\n\n' +
-          'Ошибка: ' + (syncError.message || 'неизвестная ошибка'),
-        [{ text: 'OK' }]
-      );
-    }
 
-    setProgram(updatedProgram);
-    setEditedProgram(updatedProgram);
-    setDeletedPhaseIds([]);
-    setDeletedDayIds([]);
-    setDeletedExerciseIds([]);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setEditMode(false);
-  } catch (error: any) {
-    console.error('Ошибка saveProgram:', error);
-    Alert.alert('Ошибка', error.message || 'Не удалось сохранить программу');
-  } finally {
-    setSaving(false);
-  }
-};
+      setProgram(updatedProgram);
+      setEditedProgram(updatedProgram);
+      setDeletedPhaseIds([]);
+      setDeletedDayIds([]);
+      setDeletedExerciseIds([]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setEditMode(false);
+    } catch (error: any) {
+      console.error('Ошибка saveProgram:', error);
+      Alert.alert('Ошибка', error.message || 'Не удалось сохранить программу');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // ============================================================================
   // ДНИ / УПРАЖНЕНИЯ (плоский индекс — обратная совместимость)
@@ -348,11 +345,13 @@ const saveProgram = async () => {
     ]);
   };
 
-  const handleAddExerciseFromPicker = async (exercise: any) => {
+  // ARCH-6: exercise типизирован как ExerciseListItem (выход пикера),
+  // newExercise — как ProgramExercise (все поля сходятся без кастов).
+  const handleAddExerciseFromPicker = async (exercise: ExerciseListItem) => {
     if (selectedDayIndex < 0 || !editedProgram || !editedProgram.days) return;
     const day = editedProgram.days[selectedDayIndex];
     const currentExercises = day.exercises || [];
-    const newExercise: any = {
+    const newExercise: ProgramExercise = {
       id: genRandomUUID(),
       program_day_id: day.id,
       exercise_id: exercise.id,

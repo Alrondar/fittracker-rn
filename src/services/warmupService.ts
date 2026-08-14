@@ -1,10 +1,11 @@
 import { supabase } from '../lib/supabase';
 import {
   UserInjury,
-  matchesContraindication,
   targetsInjuredMuscle,
   BODY_PART_LABELS,
 } from '../constants/injuries';
+import { getExerciseContraindications } from './injuriesService';
+import { getExerciseReferenceData } from './exerciseReferenceService';
 
 export interface WarmupExercise {
   id: string;
@@ -52,9 +53,10 @@ const SEVERITY_PENALTY: Record<string, number> = { medium: 5, low: 2 };
  * Лёгкие поля для этапа скоринга/фильтрации.
  * Тяжёлые тексты (technique/benefits/risks/media_url) НЕ тянем на 80 кандидатов —
  * они нужны только финальным 7 упражнениям (PERF-3).
+ * injuries остаётся — нужен для финального WarmupExercise (отображение противопоказаний в UI).
  */
 const WARMUP_LIGHT_FIELDS =
-  'id, name, primary_muscles, secondary_muscles, equipment, injuries, settings, category, can_be_activation';
+  'id, name, primary_muscles, secondary_muscles, settings, category, can_be_activation';
 
 /**
  * Кандидат после скоринга — без тяжёлых текстовых полей.
@@ -98,6 +100,9 @@ export const warmupService = {
    *
    * PERF-3: двухфазный запрос — лёгкий select для 80 кандидатов (скоринг/фильтрация),
    * затем тяжёлые поля (technique/benefits/risks/media_url) только для финальных 7.
+   *
+   * ARCH-8: уровень 1 (avoid) — lookup по таблице injury_exercise_warnings
+   * вместо keyword-эвристики matchesContraindication.
    */
   async generateWarmup(
     mainExercises: Array<{
@@ -136,12 +141,29 @@ export const warmupService = {
         .limit(80);
       if (error || !candidates) return { exercises: [], excludedByInjury: [] };
 
+      // ARCH-8: lookup противопоказаний по таблице (уровень 1) вместо keyword-эвристики.
+      // Загружаем один раз для всех кандидатов, только если есть активные травмы.
+const candidateIds = candidates.map(c => c.id);
+
+const referenceData = await getExerciseReferenceData(candidateIds);
+
+const contraindications =
+  activeInjuries.length > 0
+    ? await getExerciseContraindications(candidateIds)
+    : {};
+
       // 3. Ранжирование + фильтрация по травмам (на лёгких полях)
       const exclusionCounts: Record<string, number> = {};
       const scored: WarmupCandidate[] = [];
       for (const ex of candidates) {
-        const exMuscles = [
-          ...(ex.primary_muscles || []),
+  const refs = referenceData[ex.id] ?? {
+    equipment: [],
+    injuries: [],
+    alternativeIds: [],
+  };
+
+  const exMuscles = [
+    ...(ex.primary_muscles || []),
           ...(ex.secondary_muscles || []),
         ].map(m => m.toLowerCase());
         let score = exMuscles.reduce((sum, m) => sum + (muscleScores[m] || 0), 0);
@@ -149,7 +171,7 @@ export const warmupService = {
 
         // Бонус за активацию (зависит от типа оборудования)
         if (ex.can_be_activation) {
-          if (isMachineEquipment(ex.equipment || [])) {
+          if (isMachineEquipment(refs.equipment)) {
             if (strengthFocused) score += 3; // тренажёры — приоритет в силовые дни
           } else {
             score += 2; // резинки / собственный вес — всегда уместны
@@ -159,9 +181,13 @@ export const warmupService = {
         // Фильтрация по травмам
         let excluded = false;
         let penalty = 0;
+        const exContras = contraindications[ex.id] || [];
         for (const injury of activeInjuries) {
-          // Уровень 1: прямое противопоказание → исключаем
-          if (matchesContraindication(ex.injuries || [], injury.body_part, injury.injury_type)) {
+          // Уровень 1: прямое противопоказание → исключаем (lookup по таблице)
+          const hasContra = exContras.some(
+            c => c.body_part === injury.body_part || c.injury_type === injury.injury_type,
+          );
+          if (hasContra) {
             excluded = true;
             exclusionCounts[injury.body_part] = (exclusionCounts[injury.body_part] || 0) + 1;
             break;
@@ -185,19 +211,18 @@ export const warmupService = {
           const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
           if (match) duration = parseInt(match[1]);
         }
-
-        scored.push({
-          id: ex.id,
-          name: ex.name,
-          injuries: ex.injuries || [],
-          equipment: ex.equipment || [],
-          primary_muscles: ex.primary_muscles || [],
-          secondary_muscles: ex.secondary_muscles || [],
-          duration_seconds: duration,
-          relevance_score: score,
-          category: ex.category ?? null,
-          can_be_activation: ex.can_be_activation ?? false,
-        });
+scored.push({
+  id: ex.id,
+  name: ex.name,
+  injuries: refs.injuries,
+  equipment: refs.equipment,
+  primary_muscles: ex.primary_muscles || [],
+  secondary_muscles: ex.secondary_muscles || [],
+  duration_seconds: duration,
+  relevance_score: score,
+  category: ex.category ?? null,
+  can_be_activation: ex.can_be_activation ?? false,
+});
       }
 
       // 4. Сбалансированный отбор: не более MAX_ACTIVATION активаций
@@ -207,7 +232,6 @@ export const warmupService = {
       const activationSelected = activationPool.slice(0, MAX_ACTIVATION);
       const stretchingSelected = stretchingPool.slice(0, WARMUP_TOTAL - activationSelected.length);
       let selected = [...stretchingSelected, ...activationSelected];
-
       // Если растяжки не хватило — добираем лучшей активацией сверх лимита
       if (selected.length < WARMUP_TOTAL) {
         const usedIds = new Set(selected.map(e => e.id));
@@ -268,7 +292,6 @@ export const warmupService = {
           can_be_activation: c.can_be_activation,
         };
       });
-
       return { exercises, excludedByInjury };
     } catch (e) {
       console.error('Ошибка генерации разминки:', e);
@@ -286,53 +309,66 @@ export const warmupService = {
    * лениво (по одному упражнению, с кэшем в useWarmup), и любая из 20 может
    * стать основной при замене → тяжёлые поля нужны для всех 20.
    */
-  async getWarmupAlternatives(
-    exerciseId: string,
-    primaryMuscles: string[],
-  ): Promise<WarmupExercise[]> {
-    try {
-      let query = supabase
-        .from('exercises')
-        .select(
-          'id, name, technique, benefits, risks, injuries, equipment, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation',
-        )
-        .neq('id', exerciseId)
-        .or('category.eq.stretching,can_be_activation.is.true')
-        .limit(20);
+async getWarmupAlternatives(
+  exerciseId: string,
+  primaryMuscles: string[],
+): Promise<WarmupExercise[]> {
+  try {
+    let query = supabase
+      .from('exercises')
+      .select(
+        'id, name, technique, benefits, risks, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation',
+      )
+      .neq('id', exerciseId)
+      .or('category.eq.stretching,can_be_activation.is.true')
+      .limit(20);
 
-      if (primaryMuscles.length > 0) {
-        query = query.overlaps('primary_muscles', primaryMuscles);
+    if (primaryMuscles.length > 0) {
+      query = query.overlaps('primary_muscles', primaryMuscles);
+    }
+
+    const { data, error } = await query;
+
+    if (error || !data) return [];
+
+    const referenceData = await getExerciseReferenceData(
+      data.map((ex) => ex.id),
+    );
+
+    return data.map((ex): WarmupExercise => {
+      let duration = 30;
+
+      if (ex.settings) {
+        const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
+        if (match) duration = parseInt(match[1], 10);
       }
 
-      const { data, error } = await query;
-      if (error || !data) return [];
+      const refs = referenceData[ex.id] ?? {
+        equipment: [],
+        injuries: [],
+        alternativeIds: [],
+      };
 
-      return data.map((ex: any) => {
-        let duration = 30;
-        if (ex.settings) {
-          const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
-          if (match) duration = parseInt(match[1]);
-        }
-        return {
-          id: ex.id,
-          name: ex.name,
-          technique: ex.technique || '',
-          benefits: ex.benefits || '',
-          risks: ex.risks || '',
-          injuries: ex.injuries || [],
-          equipment: ex.equipment || [],
-          media_url: ex.media_url || null,
-          primary_muscles: ex.primary_muscles || [],
-          secondary_muscles: ex.secondary_muscles || [],
-          duration_seconds: duration,
-          relevance_score: 0,
-          category: ex.category ?? null,
-          can_be_activation: ex.can_be_activation ?? false,
-        } as WarmupExercise;
-      });
-    } catch (e) {
-      console.error('Ошибка загрузки альтернатив разминки:', e);
-      return [];
-    }
+      return {
+        id: ex.id,
+        name: ex.name,
+        technique: ex.technique || '',
+        benefits: ex.benefits || '',
+        risks: ex.risks || '',
+        injuries: refs.injuries,
+        equipment: refs.equipment,
+        media_url: ex.media_url || null,
+        primary_muscles: ex.primary_muscles || [],
+        secondary_muscles: ex.secondary_muscles || [],
+        duration_seconds: duration,
+        relevance_score: 0,
+        category: ex.category ?? null,
+        can_be_activation: ex.can_be_activation ?? false,
+      };
+    });
+  } catch (e) {
+    console.error('Ошибка загрузки альтернатив разминки:', e);
+    return [];
+  }
   },
 };

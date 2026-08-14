@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -11,6 +11,15 @@ import { useStore } from '../src/store/useStore';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { SPACING } from '../src/constants/theme';
+
+if (Platform.OS !== 'web' && __DEV__) {
+  // Заглушаем ошибку keep-awake в dev-режиме
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (args[0]?.includes?.('Unable to activate keep awake')) return;
+    originalError.apply(console, args);
+  };
+}
 
 // QueryClient создаётся ВНЕ компонента (правило CLAUDE.md)
 const queryClient = new QueryClient({

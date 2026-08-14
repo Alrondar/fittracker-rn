@@ -1,3 +1,6 @@
+// app/(tabs)/workout/[id].tsx
+// Сессия тренировки + шапка программы (FIT-6).
+// 05.08.2026 (PERF): FlatList — removeClippedSubviews + батчинг рендера.
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
@@ -6,7 +9,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
+  InteractionManager,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +32,7 @@ import * as Haptics from 'expo-haptics';
 import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../src/constants/injuries';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { perfMark, perfSince, useFreezeDetector } from '../../src/utils/perf';
 import { useWorkoutSession } from '../../src/hooks/useWorkoutSession';
 import { useInjuryWarnings } from '../../src/hooks/useInjuryWarnings';
 import { useWarmup } from '../../src/hooks/useWarmup';
@@ -49,18 +56,26 @@ import {
   ExerciseSettingsModal,
   ExerciseSettingsTarget,
 } from '../../src/components/workout/ExerciseSettingsModal';
+import { PainSheet } from '../../src/components/workout/PainSheet';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 
 export default function WorkoutSessionScreen() {
+  useFreezeDetector(); // логирует блокировки JS > 100 мс
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const { unit, setUnit } = useUnitPreferences();
-
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
+
+    // ===== TTI: фиксируем момент первого рендера экрана (однократно) =====
+  const ttiMountedRef = useRef(false);
+  if (!ttiMountedRef.current) {
+    ttiMountedRef.current = true;
+    perfMark('tti:mount');
+  }
 
   const {
     workoutName,
@@ -80,6 +95,8 @@ export default function WorkoutSessionScreen() {
     handleTimerStop,
     loadAlternatives,
     updateSet,
+    updateSetFeedback,
+    applyProgression,
     isSetCompleted,
     updateExerciseSettings,
     replaceExercise,
@@ -89,7 +106,6 @@ export default function WorkoutSessionScreen() {
     saveWorkout,
   } = useWorkoutSession(id as string, userId);
 
-  // ✅ НОВОЕ: название программы + фаза для шапки (запрос в сервисе, не в UI)
   const { data: workoutProgramInfo } = useQuery({
     queryKey: ['workoutProgramInfo', id],
     queryFn: () => getWorkoutProgramInfo(id as string),
@@ -129,7 +145,11 @@ export default function WorkoutSessionScreen() {
 
   const [showInjuryBanner, setShowInjuryBanner] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
-  const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
+    const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
+  // FEAT-1.9: шторка боли
+  const [painIndex, setPainIndex] = useState<number | null>(null);
+  const openPain = useCallback((exerciseIndex: number) => setPainIndex(exerciseIndex), []);
+  const closePain = useCallback(() => setPainIndex(null), []);
 
   const exercisesRef = useRef(exercises);
   useEffect(() => {
@@ -148,6 +168,20 @@ export default function WorkoutSessionScreen() {
     }
   }, [isWarmupCompleted, warmupExercises.length]);
 
+  // ===== TTI: когда данные пришли → замеряем и ждём "interactive" =====
+const ttiMeasuredRef = useRef(false);
+useEffect(() => {
+  if (loading || ttiMeasuredRef.current) return;
+  ttiMeasuredRef.current = true;
+  perfMark('tti:data-loaded');
+  perfSince('tti:mount', 'TTI: mount → данные');
+  const handle = InteractionManager.runAfterInteractions(() => {
+    perfMark('tti:interactive');
+    perfSince('tti:mount', 'TTI: mount → interactive (полный)');
+  });
+  return () => handle.cancel();
+}, [loading]);
+
   const { avoidCount, cautionCount, hasWarnings } = useMemo(() => {
     const values = Object.values(exerciseWarnings);
     const avoid = values.filter((w) => w.level === 'avoid').length;
@@ -162,7 +196,9 @@ export default function WorkoutSessionScreen() {
     },
     [],
   );
+
   const closeExerciseSettings = useCallback(() => setSettingsTarget(null), []);
+
   const saveExerciseSettings = useCallback(
     (exerciseIndex: number, setsCount: number, restSeconds: number) => {
       updateExerciseSettings(exerciseIndex, setsCount, restSeconds);
@@ -215,12 +251,15 @@ export default function WorkoutSessionScreen() {
         isReplaced={!!replacements[item.workout_exercise_id]}
         loadAlternatives={loadAlternatives}
         updateSet={updateSet}
+        updateSetFeedback={updateSetFeedback}
+        applyProgression={applyProgression}
         isSetCompleted={isSetCompleted}
         replaceExercise={replaceExercise}
         resetToOriginal={resetToOriginal}
         startRestTimer={startRestTimer}
         getIntensityInfo={getIntensityInfo}
-        onOpenSettings={openExerciseSettings}
+                onOpenSettings={openExerciseSettings}
+        onOpenPain={openPain}
         colors={colors}
         cardStyles={cardStyles}
         unit={unit}
@@ -231,12 +270,15 @@ export default function WorkoutSessionScreen() {
       replacements,
       loadAlternatives,
       updateSet,
+      updateSetFeedback,
+      applyProgression,
       isSetCompleted,
       replaceExercise,
       resetToOriginal,
       startRestTimer,
       getIntensityInfo,
       openExerciseSettings,
+      openPain,
       colors,
       cardStyles,
       unit,
@@ -244,14 +286,19 @@ export default function WorkoutSessionScreen() {
     ],
   );
 
-  const renderEmpty = () => (
-    <View style={commonStyles.emptyContainer}>
-      <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет упражнений</Text>
-      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        В этой тренировке пока нет упражнений
-      </Text>
-    </View>
+  const renderEmpty = useCallback(
+    () => (
+      <View style={commonStyles.emptyContainer}>
+        <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+        <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
+          Нет упражнений
+        </Text>
+        <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
+          В этой тренировке пока нет упражнений
+        </Text>
+      </View>
+    ),
+    [colors],
   );
 
   if (loading) {
@@ -284,7 +331,6 @@ export default function WorkoutSessionScreen() {
         onStart={handleTimerStart}
         onStop={handleTimerStop}
       >
-        {/* Шапка: назад + название программы/фазы + живая пилюля-таймер */}
         <View
           style={[
             commonStyles.navHeader,
@@ -297,8 +343,6 @@ export default function WorkoutSessionScreen() {
           >
             <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
           </TouchableOpacity>
-
-          {/* ✅ НОВОЕ: название программы + фаза (если тренировка из программы) */}
           <View style={{ flex: 1 }}>
             {workoutProgramInfo?.programName ? (
               <>
@@ -324,12 +368,13 @@ export default function WorkoutSessionScreen() {
                 {workoutName}
               </Text>
             )}
-          </View>
-
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+          <UnitToggle unit={unit} onChange={setUnit} />
           <WorkoutTimerPill colors={colors} />
         </View>
-
-        <WorkoutTimerPanel colors={colors} />
+      </View>
+      <WorkoutTimerPanel colors={colors} />
       </WorkoutTimerProvider>
 
       {hasWarmup && (
@@ -341,7 +386,6 @@ export default function WorkoutSessionScreen() {
         />
       )}
 
-      {/* Баннер травм */}
       {hasWarnings && !showInjuryBanner && activeTab === 'workout' && (
         <TouchableOpacity
           onPress={() => {
@@ -374,14 +418,13 @@ export default function WorkoutSessionScreen() {
               fontSize: 13,
             }}
           >
-            {avoidCount > 0 ? `${avoidCount}⛔` : ''}
+            {avoidCount > 0 ? `${avoidCount}` : ''}
             {avoidCount > 0 && cautionCount > 0 ? ' ' : ''}
             {cautionCount > 0 ? `${cautionCount}⚠️` : ''}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Раскрывающийся баннер с деталями травм */}
       {showInjuryBanner && (
         <View
           style={{
@@ -419,7 +462,11 @@ export default function WorkoutSessionScreen() {
             const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
             const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
             const severityLabel =
-              injury.severity === 'high' ? 'высокая' : injury.severity === 'medium' ? 'средняя' : 'низкая';
+              injury.severity === 'high'
+                ? 'высокая'
+                : injury.severity === 'medium'
+                ? 'средняя'
+                : 'низкая';
             return (
               <Text
                 key={index}
@@ -455,7 +502,6 @@ export default function WorkoutSessionScreen() {
         </View>
       )}
 
-      {/* ТАБ: РАЗМИНКА */}
       {hasWarmup && activeTab === 'warmup' && (
         <ScrollView
           contentContainerStyle={{ paddingBottom: 120 }}
@@ -481,55 +527,58 @@ export default function WorkoutSessionScreen() {
         </ScrollView>
       )}
 
-      {/* ТАБ: ТРЕНИРОВКА */}
       {(!hasWarmup || activeTab === 'workout') && (
         <>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              paddingHorizontal: SPACING.lg,
-              paddingVertical: SPACING.xs,
-              gap: SPACING.sm,
-            }}
-          >
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textSecondary, fontWeight: '600' },
-              ]}
-            >
-              Единицы веса
-            </Text>
-            <UnitToggle unit={unit} onChange={setUnit} />
-          </View>
-          <FlatList
-            data={exercises}
-            keyExtractor={(item) => item.workout_exercise_id}
-            renderItem={renderItem}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={{ paddingBottom: 120 }}
-            showsVerticalScrollIndicator={false}
-            windowSize={5}
-            removeClippedSubviews={true}
-          />
+          {/* PERF: removeClippedSubviews + батчинг для плавного скролла */}
+<FlatList
+  data={exercises}
+  keyExtractor={(item) => item.workout_exercise_id}
+  renderItem={renderItem}
+  extraData={unit}
+  ListEmptyComponent={renderEmpty}
+  contentContainerStyle={{ paddingBottom: 120 }}
+  showsVerticalScrollIndicator={false}
+  windowSize={5}
+  removeClippedSubviews={true}
+  initialNumToRender={3}
+  maxToRenderPerBatch={2}
+  updateCellsBatchingPeriod={50}
+/>
         </>
       )}
 
-      {/* Таймер отдыха */}
+      {/* Sticky-оверлей таймера отдыха (v2 05.08.2026) */}
       {restTimer !== null && (
-        <RestTimer
-          timeLeft={restTimeLeft}
-          total={restTimer}
-          isFinished={isRestFinished}
-          onStop={stopRestTimer}
-          onAdjust={adjustRestTimer}
-          colors={colors}
-          workoutStyles={workoutStyles}
-        />
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              top: undefined,
+              bottom: 0,
+              zIndex: 1000,
+              pointerEvents: 'auto',
+            },
+          ]}
+        >
+          <RestTimer
+            timeLeft={restTimeLeft}
+            total={restTimer}
+            isFinished={isRestFinished}
+            onStop={stopRestTimer}
+            onAdjust={adjustRestTimer}
+            colors={colors}
+            workoutStyles={workoutStyles}
+          />
+        </Animated.View>
       )}
 
+            {/* FEAT-1.9: шторка боли */}
+      <PainSheet
+        exercise={painIndex !== null ? exercises[painIndex] ?? null : null}
+        workoutId={id as string}
+        userId={userId}
+        onClose={closePain}
+      />
       <ExerciseSettingsModal
         target={settingsTarget}
         onClose={closeExerciseSettings}
@@ -538,7 +587,6 @@ export default function WorkoutSessionScreen() {
         cardStyles={cardStyles}
       />
 
-      {/* Футер с учётом safe area снизу */}
       <View
         style={{
           backgroundColor: colors.surface,
