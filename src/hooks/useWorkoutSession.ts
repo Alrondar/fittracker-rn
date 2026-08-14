@@ -32,11 +32,11 @@ interface SessionExerciseRow {
 
 interface SessionWERow {
   id: string;
+  exercise_id: string;
   target_sets: number | null;
   rest_seconds: number | null;
   intensity: string | null;
   target_reps_range: string | null;
-  exercises: SessionExerciseRow | null;
 }
 
 interface SessionWorkoutRow {
@@ -140,21 +140,37 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   // P0-A: ПАРАЛЛЕЛЬНАЯ загрузка (было: последовательные await)
   // ============================================================================
+  console.log('[useWorkoutSession] LOAD START', workoutId);
   const loadWorkout = useCallback(async () => {
     perfMark('load:start');
     try {
       // 1. Загружаем workout и workout_exercises
       perfMark('load:q1-start');
-      const { data: workout, error } = await supabase
-        .from('workouts')
-.select(
-  `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, target_sets, rest_seconds, intensity, target_reps_range, exercises ( id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url ) )`,
-)
-        .eq('id', workoutId)
-        .single();
+const { data: workout, error } = await supabase
+  .from('workouts')
+  .select(`
+    name,
+    program_id,
+    started_at,
+    finished_at,
+    duration_seconds,
+    workout_exercises (
+      id,
+      exercise_id,
+      target_sets,
+      rest_seconds,
+      intensity,
+      target_reps_range
+    )
+  `)
+  .eq('id', workoutId)
+  .single();
       perfSince('load:q1-start', 'Q1: workout + workout_exercises');
       if (error) throw error;
-
+console.log('[useWorkoutSession] WORKOUT RESULT', {
+  workout,
+  error,
+});
       const workoutRow = workout as unknown as SessionWorkoutRow;
       setWorkoutName(workoutRow.name ?? 'Тренировка');
       setProgramId(workoutRow.program_id);
@@ -171,11 +187,33 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         }
       }
 
-      const workoutExercises = workoutRow.workout_exercises || [];
-      const workoutExerciseIds = workoutExercises.map((we) => we.id);
+const workoutExercises = workoutRow.workout_exercises || [];
+const workoutExerciseIds = workoutExercises.map((we) => we.id);
+
 const exerciseIds = workoutExercises
-  .map((we) => we.exercises?.id)
+  .map((we) => we.exercise_id)
   .filter((id): id is string => !!id);
+
+const { data: exerciseRows, error: exerciseError } = await supabase
+  .from('exercises')
+  .select(`
+    id,
+    name,
+    primary_muscles,
+    secondary_muscles,
+    technique,
+    settings,
+    benefits,
+    risks,
+    media_url
+  `)
+  .in('id', exerciseIds);
+
+if (exerciseError) throw exerciseError;
+
+const exercisesById = new Map(
+  (exerciseRows ?? []).map((exercise) => [exercise.id, exercise]),
+);
 
 const referenceDataPromise = getExerciseReferenceData(exerciseIds);
 
@@ -222,59 +260,84 @@ const [logsRes, recentLogsRes, referenceData] = await Promise.all([
         logsByWorkoutExercise[log.workout_exercise_id].push(log);
       });
 
-      const exercisesData = workoutExercises
-        .filter(
-          (we): we is SessionWERow & { exercises: SessionExerciseRow } =>
-            we.exercises != null,
-        )
-        .map((we) => {
-          const exercise = we.exercises;
-          const targetSets = we.target_sets ?? 3;
-          const sets: SetData[] = [];
-          for (let i = 0; i < targetSets; i++) {
-            sets.push({ weight: '', reps: '' });
-          }
-          const savedLogs = logsByWorkoutExercise[we.id] || [];
-          savedLogs.forEach((log) => {
-            const index = log.set_number - 1;
-            if (index >= 0 && index < targetSets) {
-              sets[index] = {
-                ...sets[index],
-                weight: log.weight_kg != null ? String(log.weight_kg) : '',
-                reps: log.reps != null ? String(log.reps) : '',
-                rpe: log.rpe ?? null,
-                rir: log.rir ?? null,
-                difficulty: (log.difficulty as SetData['difficulty']) ?? null,
-              };
-            }
-          });
-const refs = referenceData[exercise.id] ?? {
-  equipment: [],
-  injuries: [],
-  alternativeIds: [],
-};
+console.log(
+  '[useWorkoutSession] workoutExercises:',
+  workoutExercises,
+);
 
-return {
-  workout_exercise_id: we.id,
-  id: exercise.id,
-  name: exercise.name,
-  primary_muscles: exercise.primary_muscles || [],
-  secondary_muscles: exercise.secondary_muscles || [],
-  technique: exercise.technique || '',
-  equipment: refs.equipment,
-  settings: exercise.settings || '',
-  benefits: exercise.benefits || '',
-  risks: exercise.risks || '',
-  injuries: refs.injuries,
-  alternatives: refs.alternativeIds,
-  media_url: exercise.media_url ?? null,
-            target_sets: targetSets,
-            rest_seconds: we.rest_seconds ?? 90,
-            intensity: we.intensity || 'medium',
-            sets,
-            reps_range: we.target_reps_range || undefined,
-          };
-        });
+console.log(
+  '[useWorkoutSession] exercisesById:',
+  Array.from(exercisesById.entries()),
+);
+      
+const exercisesData: ExerciseData[] = workoutExercises
+  .map((we): ExerciseData | null => {
+    const exercise = exercisesById.get(we.exercise_id);
+
+    if (!exercise) {
+      console.warn(
+        '[useWorkoutSession] Exercise not found:',
+        we.exercise_id,
+      );
+      return null;
+    }
+
+    const targetSets = we.target_sets ?? 3;
+    const sets: SetData[] = [];
+
+    for (let i = 0; i < targetSets; i++) {
+      sets.push({
+        weight: '',
+        reps: '',
+      });
+    }
+
+    const savedLogs = logsByWorkoutExercise[we.id] || [];
+
+    savedLogs.forEach((log) => {
+      const index = log.set_number - 1;
+
+      if (index >= 0 && index < targetSets) {
+        sets[index] = {
+          ...sets[index],
+          weight: log.weight_kg != null ? String(log.weight_kg) : '',
+          reps: log.reps != null ? String(log.reps) : '',
+          rpe: log.rpe ?? null,
+          rir: log.rir ?? null,
+          difficulty:
+            (log.difficulty as SetData['difficulty']) ?? null,
+        };
+      }
+    });
+
+    const refs = referenceData[exercise.id] ?? {
+      equipment: [],
+      injuries: [],
+      alternativeIds: [],
+    };
+
+    return {
+      workout_exercise_id: we.id,
+      id: exercise.id,
+      name: exercise.name,
+      primary_muscles: exercise.primary_muscles || [],
+      secondary_muscles: exercise.secondary_muscles || [],
+      technique: exercise.technique || '',
+      equipment: refs.equipment,
+      settings: exercise.settings || '',
+      benefits: exercise.benefits || '',
+      risks: exercise.risks || '',
+      injuries: refs.injuries,
+      alternatives: refs.alternativeIds,
+      media_url: exercise.media_url ?? null,
+      target_sets: targetSets,
+      rest_seconds: we.rest_seconds ?? 90,
+      intensity: we.intensity || 'medium',
+      sets,
+      reps_range: we.target_reps_range || undefined,
+    };
+  })
+  .filter((exercise): exercise is ExerciseData => exercise !== null);
 
       // Обработка recentLogs: прошлые данные ПО НОМЕРУ ПОДХОДА (FEAT-1.1 v2)
       const prevLogsByExerciseId = new Map<

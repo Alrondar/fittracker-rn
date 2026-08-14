@@ -105,6 +105,8 @@ export const EQUIPMENT_SVG_MAP: Record<string, string> = {
   'Покрышка': 'tire.svg',
   'Боксерский мешок': 'heavy-bag.svg',
   'Боевые канаты': 'battle-ropes.svg',
+  'Цепи': 'chains.svg',
+  'Плинты': 'plyo-boxes.svg',
 
   // === Аксессуары и разное ===
   'Платформа': 'platform.svg',
@@ -124,6 +126,15 @@ export const EQUIPMENT_SVG_MAP: Record<string, string> = {
   'Адаптер': 'adapter.svg',
   'Атлетический пояс': 'weightlifting-belt.svg',
   'Упоры для отжиманий': 'push-up-bar.svg',
+  'Конус': 'cone.svg',
+  'Полотенце': 'towel.svg',
+  'Шлейка для мышц шеи': 'neck-harness.svg',
+  'Упор для штанги': 'barbell-support.svg',
+
+  // === Доступны в ICON_MAP, но пока не подтверждены в каталоге ===
+  // 'Bosu': 'bosu.svg',
+  // 'Велосипед': 'bicycle.svg',
+  // 'W-гриф': 'w-bar.svg',
 
   // === Универсальный fallback ===
   'Тренажер': 'Frame.svg',
