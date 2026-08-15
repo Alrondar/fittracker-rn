@@ -1,10 +1,7 @@
 // src/components/workout/ExerciseCard.tsx
 // Orchestrator карточки упражнения — рендерит вынесенные секции.
-// 14.08.2026 (PR 2): split на секции без изменения визуального поведения.
-// 14.08.2026 (PR 3): displayMode prop проброшен.
-// 14.08.2026 (PR 4a): Equipment вынесен из accordion в отдельную секцию.
-// 14.08.2026 (PR 4b): Actions row вынесен из header.
-// 14.08.2026 (PR 4c): видимость секций зависит от displayMode.
+// PR 2: split на секции. PR 3: displayMode. PR 4a: Equipment. PR 4b: Actions.
+// PR 4c: видимость по displayMode. PR 4d: defaultExpanded для Learn mode.
 import React, { useMemo, memo } from 'react';
 import { View } from 'react-native';
 import { createCardStyles } from '../../styles/components/card';
@@ -16,7 +13,6 @@ import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
 import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
 import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
 import { AlternativeExerciseContent } from './sections/AlternativeExerciseContent';
-import { ExerciseCardActions } from './sections/ExerciseCardActions';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -91,9 +87,10 @@ export const ExerciseCard = memo(function ExerciseCard({
   const settingsText = exercise.settings || '';
   const equipment = exercise.equipment ?? [];
 
-  // PR 4c: в Training mode скрываем вторичные секции для основной карточки.
-  // Для альтернативных карточек (!isMain) все секции видны всегда.
-  const showSecondarySections = !(displayMode === 'training' && isMain);
+// PR 4c: в Training mode скрываем мышцы и knowledge для основной карточки,
+// но техника остаётся доступной всегда (safety: правильная техника = безопасность).
+// Для альтернативных карточек (!isMain) все секции видны всегда.
+const hideSecondaryInTraining = displayMode === 'training' && isMain;
 
   // PERF: единый useMemo вместо пересчёта в рендере
   const { borderColor } = useMemo(() => {
@@ -116,21 +113,23 @@ export const ExerciseCard = memo(function ExerciseCard({
     <View
       style={[cardStyles.container, cardStyles.workoutExerciseCard, { borderWidth: 1, borderColor }]}
     >
-      {/* 1. Header: название + controls */}
-      <ExerciseCardHeader
-        exerciseName={exercise.name}
-        isMain={isMain}
-        hasAlternatives={alternatives.length > 0}
-        exerciseIndex={exerciseIndex}
-        setsCount={sets.length}
-        restSeconds={restSeconds}
-        repsRange={repsRange}
-        intensityInfo={intensityInfo}
-        onOpenSettings={onOpenSettings}
-        onOpenPain={onOpenPain}
-        colors={colors}
-        cardStyles={cardStyles}
-      />
+      {/* 1. Header: название + Settings + repsRange + intensity */}
+<ExerciseCardHeader
+  exerciseName={exercise.name}
+  isMain={isMain}
+  exerciseIndex={exerciseIndex}
+  setsCount={sets.length}
+  restSeconds={restSeconds}
+  repsRange={repsRange}
+  intensityInfo={intensityInfo}
+  hasAlternatives={alternatives.length > 0}
+  alternativesCount={alternatives.length}
+  onOpenSettings={onOpenSettings}
+  onOpenPain={onOpenPain}
+  onOpenAlternatives={onOpenAlternatives}
+  colors={colors}
+  cardStyles={cardStyles}
+/>
 
       {/* 2. Equipment: bubbles сразу под header (PR 4a) */}
       <ExerciseCardEquipment
@@ -144,36 +143,33 @@ export const ExerciseCard = memo(function ExerciseCard({
       )}
 
       {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
-{showSecondarySections && (
-  <ExerciseCardTechnique
-    technique={exercise.technique}
-    mediaUrl={mediaUrl}
-    settingsText={settingsText}
-    defaultExpanded={displayMode === 'learn'}  // ← добавить
-    colors={colors}
-  />
-)}
-
-      {/* 5. Technique: скрыт в Training mode для основной карточки (PR 4c) */}
-      {showSecondarySections && (
-        <ExerciseCardTechnique
-          technique={exercise.technique}
-          mediaUrl={mediaUrl}
-          settingsText={settingsText}
+      {!hideSecondaryInTraining && (
+        <ExerciseCardMuscles
+          primaryMuscles={exercise.primary_muscles}
+          secondaryMuscles={exercise.secondary_muscles}
           colors={colors}
         />
       )}
 
+      {/* 5. Technique: доступна во ВСЕХ режимах (safety), включая Training (PR 4f) */}
+      <ExerciseCardTechnique
+        technique={exercise.technique}
+        mediaUrl={mediaUrl}
+        settingsText={settingsText}
+        defaultExpanded={displayMode === 'learn'}
+        colors={colors}
+      />
+
       {/* 6. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
-{displayMode !== 'training' && isMain && (
-  <ExerciseCardKnowledge
-    benefits={exercise.benefits}
-    risks={exercise.risks}
-    injuries={exercise.injuries}
-    defaultExpanded={displayMode === 'learn'}  // ← добавить
-    colors={colors}
-  />
-)}
+      {displayMode !== 'training' && isMain && (
+        <ExerciseCardKnowledge
+          benefits={exercise.benefits}
+          risks={exercise.risks}
+          injuries={exercise.injuries}
+          defaultExpanded={displayMode === 'learn'}
+          colors={colors}
+        />
+      )}
 
       {/* 7. Alternative content (только альтернативная карточка) */}
       {!isMain && (
@@ -203,17 +199,6 @@ export const ExerciseCard = memo(function ExerciseCard({
           startRestTimer={startRestTimer}
           colors={colors}
           cardStyles={cardStyles}
-        />
-      )}
-
-      {/* 9. Actions row: "Другие варианты" + "Боль?" (PR 4b) */}
-      {isMain && (
-        <ExerciseCardActions
-          exerciseIndex={exerciseIndex}
-          hasAlternatives={alternatives.length > 0}
-          onOpenPain={onOpenPain}
-          onOpenAlternatives={onOpenAlternatives}
-          colors={colors}
         />
       )}
     </View>
