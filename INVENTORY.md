@@ -1,8 +1,46 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 11.08.2026
+Срез: 16.08.2026 (feature/workout-ux-rework)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
+
+## 0. Navigation: where to look for what
+
+Этот раздел помогает находить код с MCP или без. Первичный источник — code search; здесь — направления и поисковые шаблоны.
+
+| Что ищем | Где искать |
+|---|---|
+| Экраны/роуты | `app/`, табы — `app/(tabs)/` (Expo Router, file-based) |
+| Компоненты фич | `src/components/<feature>/`: `workout/`, `program/`, `dashboard/`, `exercises/`, `profile/` |
+| Shared UI | `src/components/ui/` (`AppButton`, `AppCard`, `SheetShell`, `Skeleton`, …) |
+| Хуки | `src/hooks/`, feature-подпапки (`hooks/workout/`, `hooks/program/`, …) |
+| Supabase boundary | `src/services/` (единственное место для `supabase.from/auth/rpc`) |
+| Тема/токены/константы | `src/constants/` (`theme.ts`, `semanticColors.ts`, `phaseTypes.ts`, `injuries.ts`, …) |
+| Чистые утилиты | `src/utils/` |
+| Типы | `src/types/` (`database.types.ts` — generated, не редактируется вручную) |
+| Схема/RPC/migrations | `supabase/migrations/` |
+| Expo config | `app.config.ts` + `src/lib/config.ts` |
+
+### Search patterns
+
+Типовые запросы для code search / grep:
+
+- **Потребители компонента/хука**: `from '.*<name>'` или `import.*<name>` в `src/` и `app/`.
+- **Нарушения Supabase boundary**: `supabase.from(` и `supabase.auth.` вне `src/services/` и root auth flow.
+- **RPC вызовы**: `rpc('` в `src/services/`.
+- **React Query**: `useQuery|useMutation|useInfiniteQuery|queryOptions` в `src/hooks/`, `src/services/`.
+- **Hardcoded colors**: `#[0-9a-fA-F]{3,8}`, `rgba?(` в `src/` вне `src/constants/`.
+- **Использование темы**: `useTheme(`.
+- **Анимации**: `useSharedValue|useAnimatedStyle|withTiming|withSpring`.
+- **Migrations таблиц/RPC**: поиск в `supabase/migrations/` + проверка в `types/database.types.ts`.
+
+### Без MCP
+
+Этот файл и таблица выше дают направление. Не выдумывать содержимое файлов: запросить у пользователя текущий файл или явно пометить предположение. Роли, blast-radius, грабли — в разделах ниже.
+
+### С MCP
+
+Code search — первичный источник фактов; этот файл — вторичный. Поиск потребителей перед изменением обязателен (CLAUDE.md §10).
 
 ## 1. Screen map
 
@@ -31,7 +69,7 @@
 `app/(tabs)/workout/[id].tsx`
 
 Main components:
-- `src/components/workout/ExerciseCard.tsx`
+- `src/components/workout/ExerciseCard.tsx` — thin orchestrator, рендерит секции по displayMode
 - `ExerciseSlider.tsx`
 - `SetsGrid.tsx`
 - `SetFeedbackControl.tsx`
@@ -44,9 +82,23 @@ Main components:
 - `WarmupBlock`
 - `WarmupExerciseCard`
 - `PainSheet`
+- `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
+- `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles
+- `sections/ExerciseWarningBanner.tsx` — caution/avoid warning
+- `sections/ExerciseCardEquipment.tsx` — EquipmentBubbles (вынесено из accordion)
+- `sections/ExerciseCardMuscles.tsx` — primary/secondary muscle bubbles
+- `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
+- `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion
+- `sections/ExerciseCardActions.tsx` — «Боль» + «Другие варианты» bubbles
+- `sections/AlternativeExerciseContent.tsx` — контент альтернативной карточки
 
 Main hooks/services:
-- `useWorkoutSession.ts`
+- `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
+- `workout/useWorkoutSession.types.ts` — внутренние типы join-структур
+- `workout/useWorkoutSession.mapper.ts` — чистые функции маппинга
+- `workout/useWorkoutSession.rest.ts` — rest timer логика
+- `workout/useWorkoutSession.loader.ts` — загрузка workout + alternatives
+- `useWorkoutDisplayMode.ts` — display mode preference (AsyncStorage persist)
 - `useInjuryWarnings.ts`
 - `useWarmup.ts`
 - `useTimerSettings.ts`
@@ -57,6 +109,7 @@ Main hooks/services:
 
 UX audit focus:
 - progressive disclosure;
+- display modes (training/balanced/learn);
 - amount of information visible per exercise;
 - alternative exercise access;
 - temporary vs program replacement;
@@ -211,7 +264,7 @@ Important components:
 |---|---|
 | `useProgramEditor` | program/[id], phases/cards, programsService |
 | `useProgramPhases` | useProgramEditor |
-| `useWorkoutSession` | workout/[id], ExerciseCard, SetsGrid, SetFeedbackControl, WorkoutTimer |
+| useWorkoutSession | workout/[id], ExerciseCard, SetsGrid, SetFeedbackControl, WorkoutTimer; thin wrapper над workout/useWorkoutSession.* модулями |
 | `usePrograms` | programs, program/[id], dashboard/workouts |
 | `useWorkouts` | workouts |
 | `useDashboard` | Dashboard |
@@ -311,6 +364,8 @@ Assume entire UI is affected.
 
 Inspect all workout components and `useWorkoutSession` before changing exports.
 
+Расположение кода — code search (MCP); INVENTORY.md — роли, blast-radius и грабли.
+
 ## 12. Current known implementation notes
 
 - RPE is already tappable 1–10; do not reintroduce draggable RPE as default.
@@ -320,6 +375,12 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - PainSheet and ReadinessSheet exist.
 - WeightTrendChart and MetricSparkline exist.
 - Program editing is already split into multiple components/sheets, but the UX hierarchy remains a major audit target.
+- **Display modes (training/balanced/learn)** реализованы через `useWorkoutDisplayMode` + `WorkoutDisplayModePicker` в settings (feature branch).
+- **ExerciseCard разбит на секции** в `sections/`; порядок секций зависит от displayMode.
+- **Equipment вынесен из accordion** в отдельную секцию `ExerciseCardEquipment`.
+- **Technique accordion доступна во всех display modes** (safety: правильная техника = безопасность).
+- **Media/slider content монтируется только при раскрытии accordion** (CLAUDE.md §8).
+- **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль», «Другие варианты») справа.
 
 ## 13. Inventory maintenance
 

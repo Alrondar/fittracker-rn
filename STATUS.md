@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: Срез: 15.08.2026
+Срез: 16.08.2026 (feature/workout-ux-rework)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -20,13 +20,15 @@
 | ID | Трек | Пр. | Статус | Комментарий |
 |---|---|---:|---|---|
 | SEC-1…SEC-10 | Security | — | ✅ | Основные security-проблемы закрыты |
-+ | ARCH-1…ARCH-9 | Architecture | — | ✅ | Основные архитектурные проблемы закрыты; ARCH-8 (injury warnings) полностью на normalized tables |
+| ARCH-1…ARCH-9 | Architecture | — | ✅ | Основные архитектурные проблемы закрыты; ARCH-8 (injury warnings) полностью на normalized tables |
 | PERF-1…PERF-7 | Performance | — | ✅ | Основные проблемы закрыты; Workout остаётся зоной profiling |
 | SCALE-3…SCALE-7 | Scalability | — | ✅ | Основные пункты закрыты |
 | SCALE-1 | Testing | 🟠 | 🔲 | Автотесты отложены; чистые функции готовы к покрытию |
 | SCALE-2 | Monitoring | 🟠 | 🔲 | Sentry до production build |
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
+| PERF-8…PERF-10 | Performance/Design | 🟠 | 🔲 | См. секции 12 и 13: baseline метрик, аудит длинных списков, React Query audit |
+| DS-1 | Design system | 🟠 | 🔲 | Аудит токенов/типографики/spacing/states перед Этапом H (ROADMAP) |
 
 ## 3. Existing product baseline
 
@@ -49,21 +51,26 @@
 | FEAT-1.9 | Safety | ✅ | pain sheet + injury caution |
 | FEAT-2.2 | Progress | ✅ | WeightTrendChart + MetricSparkline + body metrics |
 | UX-1 | Workout | ✅ | header разгружен, UnitToggle рядом с timer |
+| UX-14 | Workout | ✅ | header variant D: Settings справа от названия, metadata слева, actions-bubbles справа |
 
 ## 4. Current UX work — Tracker
 
+> Срез: работа в feature branch `feature/workout-ux-rework` (не смержена в main).
+
 | ID | Пр. | Статус | Цель |
-|---|---:|---|---|
-| UX-2 | 🔴 | 🔲 | полный аудит `workout/[id].tsx` и progressive disclosure |
-| UX-3 | 🔴 | 🔲 | context sheets: history / technique / warm-up / pain / notes |
-| UX-4 | 🔴 | 🔲 | доступные alternatives без перегрузки |
-| UX-5 | 🔴 | 🔲 | temporary vs program replacement |
+| --- | --- | --- | --- |
+| UX-2 | 🔴 | 🟡 | полный аудит workout/[id].tsx и progressive disclosure — **выполнено**: display modes + секционная структура; остаток: PR5–PR9 |
+| UX-3 | 🔴 | 🟡 | context sheets: history / technique / warm-up / pain / notes — **частично**: technique/pain через accordions; history/warm-up/notes sheets открыты |
+| UX-4 | 🔴 | 🟡 | доступные alternatives без перегрузки — **частично**: slider + text affordance; облегчённая AlternativeExerciseCard открыта |
+| UX-5 | 🔴 | 🟡 | temporary vs program replacement — **частично**: temporary визуально отделён; program replacement — отдельный сценарий (не начат) |
 | UX-6 | 🟠 | 🔲 | динамическая расшифровка RPE + быстрый skip |
 | UX-7 | 🟠 | 🔲 | настройка частоты запроса RPE |
-| UX-8 | 🟠 | 🔲 | lazy mount тяжёлого контента |
+| UX-8 | 🟠 | ✅ | lazy mount тяжёлого контента — media/slider монтируется только при раскрытии accordion; stagger в ExerciseSlider |
 | UX-9 | 🟠 | 🔲 | History calendar с отметками |
 | UX-10 | 🟠 | 🔲 | Calendar/List toggle + day details |
 | UX-11 | 🟠 | 🔲 | Progress как отдельная mental model, не History |
+| UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
+| UX-13 | 🟠 | 🟡 | секционная структура ExerciseCard + вынос Equipment из accordion — выполнено; остаток: подзаголовки в «Техника выполнения» (код готов, не применён) |
 
 ## 5. Training Engine
 
@@ -129,11 +136,42 @@
 - сложные новые workout-сущности до стабилизации core tracker UX;
 - HealthKit/Google Fit до подтверждения core retention.
 
-## 11. Update rule
+## 11. Active feature branches
+
+Активные WIP-ветки с работой, ещё не смерженной в `main`. Детали по задачам — в соответствующих секциях §4–§9; здесь — сводка.
+
+| Ветка | Область | Основные ID |
+|---|---|---|
+| `feature/workout-ux-rework` | Tracker UX | UX-2…UX-13 |
+
+После merge ветки строка удаляется; соответствующие ID в §4–§9 закрываются.
+
+## 12. Performance metrics
+
+Baseline — после первого замера (REL-5 / PERF-9). Любая оптимизация начинается с измерения, а не с предположения.
+
+| Метрика | Цель | Текущее |
+|---|---|---|
+| Dashboard cold start → interactive | baseline после первого замера | не измерено |
+| Mount workout screen (`workout/[id].tsx`) | baseline после первого замера | не измерено |
+| Set logging (tap → save) | no dropped frames | не измерено |
+| Scroll списка упражнений (pagination 40/page) | no dropped frames | не измерено |
+
+## 13. Open technical debt (design / performance)
+
+| ID | Пр. | Статус | Цель |
+|---|---:|---|---|
+| PERF-8 | 🟠 | 🔲 | Baseline-метрики workout screen и logging (см. секцию 12) |
+| PERF-9 | 🟡 | 🔲 | Аудит длинных списков (exercises, history): применимость виртуализации/FlashList |
+| PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
+| DS-1 | 🟠 | 🔲 | Аудит design system: шкала типографики/spacing, состояния, тёмная тема — перед Этапом H (ROADMAP) |
+
+## 14. Update rule
 
 После изменения кода:
 1. закрыть/изменить соответствующий ID;
 2. добавить новый ID, если работа появилась впервые;
 3. не копировать сюда архитектурные правила — они принадлежат `CLAUDE.md`;
 4. не копировать сюда карту файлов — она принадлежит `INVENTORY.md`;
-5. дату среза обновлять при существенном изменении статуса.
+5. дату среза обновлять при существенном изменении статуса;
+6. Performance metrics обновляются после каждого замера (секция 12).

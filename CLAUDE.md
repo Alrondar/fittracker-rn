@@ -1,25 +1,33 @@
 # FitTracker RN — Development Guide
 
-Срез: 11.08.2026
+Срез: 16.08.2026
 
 ## 0. Source of truth
 
 В репозитории используются пять рабочих документов:
 
 | Файл | Владелец информации |
-|---|---|
-| `CLAUDE.md` | технические правила, архитектура, security, performance |
-| `PRODUCT.md` | продуктовая философия и UX-инварианты |
-| `ROADMAP.md` | последовательность работы |
-| `STATUS.md` | фактический статус задач |
-| `INVENTORY.md` | карта файлов, экранов и зависимостей |
+| --- | --- |
+| CLAUDE.md | технические правила, архитектура, security, performance |
+| PRODUCT.md | продуктовая философия и UX-инварианты |
+| ROADMAP.md | последовательность работы |
+| STATUS.md | фактический статус задач |
+| INVENTORY.md | карта кода, роли экранов, blast-radius, известные грабли |
 
 Не создавать отдельные документы для тех же тем без необходимости. Архивный `refactoring_guide.md` не обновлять.
+
+### Код через MCP
+
+Агент имеет доступ к локальным файлам проекта. Код — источник фактов (файлы, RPC, поля схемы, сигнатуры); документы — источник правил и решений.
+
+- Перед изменением файл читается, его потребители ищутся code search'ом.
+- При конфликте документа и кода побеждает код; документ исправляется в том же изменении.
+- Карта кода, роли экранов, blast-radius и грабли принадлежат INVENTORY.md (единственный владелец); в остальные документы списки из кода не копируются — вместо них указатель, где проверять.
 
 ## 1. Стек
 
 | Слой | Решение |
-|---|---|
+| --- | --- |
 | Язык | TypeScript ~5.9, strict |
 | Runtime | Expo SDK ~54, React Native 0.81.5, React 19.1 |
 | Navigation | Expo Router ~6, file-based |
@@ -32,15 +40,15 @@
 
 ## 2. Архитектурные инварианты
 
-1. Server data хранится только через React Query.
-2. `supabase.from()` и `supabase.auth.*` запрещены в UI; запросы идут через `src/services/`.
-3. Auth — единый `authService.ts`; auth redirects контролирует root `_layout.tsx`.
-4. Profile создаётся DB trigger `handle_new_user`; `ensureProfile` идempotent.
-5. Config — `src/lib/config.ts`, значения приходят из Expo config.
-6. User-facing errors — `mapError/extractMessage` или `mapAuthError`.
-7. Файл не должен разрастаться выше 500 строк; при >450 сначала рассмотреть split.
-8. `database.types.ts` должен соответствовать текущей схеме.
-9. Новая логика не должна ломать persistence, safety или program-sync semantics.
+- Server data хранится только через React Query.
+- `supabase.from()` и `supabase.auth.*` запрещены в UI; запросы идут через `src/services/`.
+- Auth — единый `authService.ts`; auth redirects контролирует root `_layout.tsx`.
+- Profile создаётся DB trigger `handle_new_user`; `ensureProfile` идемпотентен.
+- Config — `src/lib/config.ts`, значения приходят из Expo config.
+- User-facing errors — `mapError/extractMessage` или `mapAuthError`.
+- Файл не должен разрастаться выше 500 строк; при >450 сначала рассмотреть split.
+- `database.types.ts` должен соответствовать текущей схеме.
+- Новая логика не должна ломать persistence, safety или program-sync semantics.
 
 ## 3. Data / Security
 
@@ -49,10 +57,10 @@
 Основные RLS группы:
 
 | Таблицы | Правило |
-|---|---|
+| --- | --- |
 | user-owned tables | `auth.uid() = user_id` |
-| `profiles` | `auth.uid() = id` |
-| `programs` | seeded readable; private — owner |
+| profiles | `auth.uid() = id` |
+| programs | seeded readable; private — owner |
 | program/workout children | доступ через owner relationship |
 | exercise reference tables | read access |
 
@@ -66,9 +74,11 @@
 - Transactional operations — внутри одного RPC, не через client `Promise.all`.
 - Новая RPC создаётся в `supabase/migrations` и требует проверки generated types.
 
-Ключевые RPC: `copy_program_for_user`, `create_workouts_for_program`, `sync_program_changes_to_workouts`, `generate_share_code`, `search_exercises`, `get_exercise_filter_counts`, `save_program_snapshot`, `upsert_workout_logs`, `update_day_position`, `update_exercise_position`, `handle_new_user`.
+Полный актуальный список RPC — `supabase/migrations` и `types/database.types.ts` (проверять через MCP, не по документам). Ориентиры: program sync (`sync_program_changes_to_workouts`), upfront workout creation (`create_workouts_for_program`), program copy (`copy_program_for_user`), логи (`upsert_workout_logs`), profile bootstrap (`handle_new_user`).
 
 ## 4. Важные schema constraints
+
+Это известные грабли схемы; перед работой со схемой сверяться с `types/database.types.ts` и `supabase/migrations`.
 
 - `exercises` не имеет `description`.
 - `profiles` не имеет `email`.
@@ -80,14 +90,13 @@
 
 ## 5. Training model
 
-```text
 programs
-  → program_phases
-    → program_days
-      → program_exercises
-```
+→ program_phases
+→ program_days
+→ program_exercises
 
 Workout lifecycle:
+
 - upfront creation через `create_workouts_for_program`;
 - точечное создание через `workoutService.startProgramWorkout`;
 - repeat через `workoutService.repeatWorkout`;
@@ -100,10 +109,11 @@ Program changes синхронизируются только с будущим�
 Подробная продуктовая модель — `PRODUCT.md`.
 
 Core principles:
+
 - Tracker first;
 - progressive disclosure;
 - workout logging важнее аналитики;
-- RPE — одна tappable шкала 1–10;
+- РPE — одна tappable шкала 1–10;
 - readiness — optional signal;
 - alternatives доступны без перегрузки workout;
 - temporary replacement и program replacement — разные операции;
@@ -115,41 +125,53 @@ Core principles:
 
 Канон:
 
-```tsx
+```ts
 const { colors } = useTheme();
 style={{ backgroundColor: colors.primary }}
 ```
 
-Использовать semantic tokens: `primary`, `textPrimary`, `textSecondary`, `textTertiary`, `textInverse`, `overlay`, `error`, `warning`, `success`, `LEVEL_COLORS`, `getMuscleColor`, `getPhaseColor`.
+Использовать semantic tokens: primary, textPrimary, textSecondary, textTertiary, textInverse, overlay, error, warning, success, LEVEL_COLORS, getMuscleColor, getPhaseColor.
 
 Не добавлять hardcoded colors. Spacing/radius — canonical constants.
 
+Визуальные правила и дизайн-скилл — `PRODUCT.md §3.1–3.5`.
+
 ## 8. Performance
 
-1. Не вкладывать VirtualizedList в ScrollView; исключение — DraggableFlatList с `scrollEnabled={false}`.
-2. QueryClient создаётся вне компонента.
-3. List cards — `React.memo`; callbacks — `useCallback`.
-4. Не тянуть тяжёлые данные в списки.
-5. `useWindowDimensions()` вместо `Dimensions.get('window')`, кроме осознанного theme exception.
-6. Reanimated `.value` — в worklet/animated style; JS commit — через `runOnJS`.
-7. Gesture Handler — `simultaneousWithExternalGesture(Gesture.Native())` при необходимости.
-8. Не монтировать media/slider content в collapsed accordion.
-9. Не логировать в animation/onScroll/gesture loops.
-10. Workout screen — приоритетная зона performance profiling.
+- Не вкладывать VirtualizedList в ScrollView; исключение — DraggableFlatList с scrollEnabled={false}.
+- QueryClient создаётся вне компонента.
+- List cards — React.memo; callbacks — useCallback.
+- Не тянуть тяжёлые данные в списки.
+- useWindowDimensions() вместо Dimensions.get('window'), кроме осознанного theme exception.
+- Reanimated .value — в worklet/animated style; JS commit — через runOnJS.
+- Gesture Handler — simultaneousWithExternalGesture(Gesture.Native()) при необходимости.
+- Не монтировать media/slider content в collapsed accordion.
+- Не логировать в animation/onScroll/gesture loops.
+- Workout screen — приоритетная зона performance profiling.
+
+### Performance gate (перед завершением задачи, затрагивающей UI или данные)
+
+- Нет новых источников re-render в core flow: карточки списков — `React.memo`, хэндлеры — `useCallback`, нет новых inline-объектов/массивов в props мемоизированных детей.
+- Тяжёлый контент (media, slider, charts, pickers) монтируется только при открытии.
+- Новые server data — через React Query; запросы сгруппированы/вложены, без N+1.
+- Списки: стабильные keys, нет `Math.random()` в keyExtractor, `VirtualizedList` не внутри `ScrollView`.
+- Reanimated: `.value` в worklet/animated style; JS-эффекты — через `runOnJS`; нет логирования в циклах анимаций.
+- Для изменений `workout/[id].tsx` и `useWorkoutSession` — явно оценить mount/render impact в описании задачи.
 
 ## 9. Anti-patterns
 
 Запрещено:
+
 - server data в Zustand;
 - Supabase напрямую из UI;
 - N+1 вместо вложенных queries/RPC;
-- `Math.random()` в keyExtractor;
-- RN `Image`;
+- Math.random() в keyExtractor;
+- RN Image;
 - LayoutAnimation в New Architecture;
 - raw DB errors пользователю;
 - неатомарные delete+insert для транзакционных операций;
 - duplicate RLS;
-- insecure `SECURITY DEFINER`;
+- insecure SECURITY DEFINER;
 - secrets/service-role keys в client code/git;
 - LLM keys на клиенте;
 - AI bypass injury/safety rules;
@@ -160,18 +182,20 @@ style={{ backgroundColor: colors.primary }}
 
 Перед изменением:
 
-1. Работать с актуальным `main`.
-2. Найти потребителей изменяемого файла — `INVENTORY.md` и code search.
-3. Проверить размер файла и текущий статус — `STATUS.md`.
-4. Проверить продуктовый intent — `PRODUCT.md`.
-5. Для RPC проверить migration + RLS + generated types.
-6. Для Program Editor проверить sync semantics.
-7. Для Workout проверить mount/render/performance impact.
-8. После изменения обновить `STATUS.md` / `INVENTORY.md`, если фактическое состояние изменилось.
+- Работать с актуальным main.
+- Прочитать изменяемый файл и найти потребителей code search'ом через MCP — первичный источник.
+- INVENTORY.md — роль экрана, blast-radius, известные грабли (вторичный источник).
+- Проверить текущий статус задачи — STATUS.md.
+- Проверить продуктовый intent — PRODUCT.md.
+- Для RPC проверить migration + RLS + generated types.
+- Для Program Editor проверить sync semantics.
+- Для Workout проверить mount/render/performance impact.
+- После изменения обновить STATUS.md / INVENTORY.md, если изменились статус, роль, blast-radius или грабли. Если по ходу работы обнаружен конфликт документа с кодом — исправить документ в этом же изменении.
+- Перед завершением обязательно: `tsc --noEmit` и `eslint` (см. §14).
 
 ## 11. Database types
 
-Legacy `--project-id` / `--linked` не использовать. Для текущего Supabase использовать pooler connection string и генерировать UTF-8 types. Пароль не вставлять в чат или git. После генерации проверить RPC в `database.types.ts` и `tsc --noEmit`.
+Legacy --project-id / --linked не использовать. Для текущего Supabase использовать pooler connection string и генерировать UTF-8 types. Пароль не вставлять в чат или git. После генерации проверить RPC в database.types.ts и tsc --noEmit.
 
 ## 12. AI rules
 
@@ -194,6 +218,7 @@ LLM keys — только server/Edge Function. AI foundation требует con
 ## 13. При технической работе
 
 Проверять:
+
 - state architecture;
 - Supabase boundary;
 - UI/design tokens;
@@ -202,4 +227,53 @@ LLM keys — только server/Edge Function. AI foundation требует con
 - loading/error/empty/null states;
 - сохранение существующего функционала.
 
-Документация обновляется в пяти source-of-truth файлах; один факт должен иметь одного владельца.
+Документация обновляется в пяти source-of-truth файлах; один факт должен иметь одного владельца. Факты о коде не документируются — они читаются через MCP; документируются только правила, решения, роли и грабли.
+
+## 14. Agent workflow: spec → code → review
+
+Любое существенное изменение проходит три стадии. Детали для агента — в `AGENTS.md`; здесь — технические gates.
+
+### UI/UX задача
+
+1. **Spec без кода**: user goal, уровни информации L1/L2 (PRODUCT.md §3.2), состояния (loading/error/empty/data), варианты (minimal / balanced).
+2. **Подтверждение spec** пользователем (или явное «делай»).
+3. **Реализация**: существующие компоненты/токены, lazy mount, минимальный diff.
+4. **Review**: PRODUCT.md §3.1–3.5, performance gate §8, обновление STATUS.md / INVENTORY.md.
+
+### Кодовая задача
+
+1. **Читаем файл**, ищем потребителей через code search (MCP). Без MCP — карта зависимостей в INVENTORY.md; предположения обязаны быть явно помечены.
+2. **План impact и риски**: re-render, mount cost, запросы, sync/safety semantics.
+3. **Минимальный diff**; файл >450 строк — рассмотреть split.
+4. **Review**: инварианты §2, антипаттерны §9, performance gate §8.
+
+### Обязательные проверки перед «готово»
+
+- `tsc --noEmit` проходит.
+- `eslint` проходит; новые нарушения недопустимы.
+- loading / error / empty / null states обработаны.
+- Существующий функционал не сломан.
+- STATUS.md / INVENTORY.md обновлены, если изменились статус / роль / blast-radius; drift документа исправлен в том же изменении.
+
+## 15. Навигация (без MCP и с MCP)
+
+### Без MCP
+
+Агент не должен выдумывать содержимое файлов. Порядок:
+
+1. Прочитать `AGENTS.md` — порядок чтения.
+2. `PRODUCT.md` — продуктовый intent; §3.1–3.5 — дизайн-скилл.
+3. `CLAUDE.md` — инварианты §2, performance §8, workflow §14.
+4. `INVENTORY.md` — роли, blast-radius, **секция «§0 Navigation» даёт карту директорий и поисковые шаблоны**.
+5. `STATUS.md` — статус задачи; §12 — метрики; §13 — tech debt.
+6. Запросить текущие файлы у пользователя, явно пометить предположения.
+
+### С MCP
+
+Код — первичный источник фактов. Перед любым изменением:
+
+- прочитать файл;
+- найти потребителей code search'ом;
+- проверить RPC в `supabase/migrations/` и `types/database.types.ts`.
+
+Поисковые шаблоны — в `INVENTORY.md §0`.
