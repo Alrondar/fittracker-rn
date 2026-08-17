@@ -1,6 +1,6 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 17.08.2026 (feature/workout-ux-rework)
+Срез: 18.08.2026 (feature/workout-ux-rework)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -83,7 +83,7 @@ Main components:
 - `WarmupExerciseCard`
 - `PainSheet`
 - `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
-- `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль», «Альтернативы») с PR6 pain affordance
+- `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») с PR6 pain affordance
 - `sections/ExerciseWarningBanner.tsx` — caution/avoid warning
 - `sections/ExerciseCardEquipment.tsx` — EquipmentBubbles (вынесено из accordion)
 - `sections/ExerciseCardMuscles.tsx` — primary/secondary muscle bubbles
@@ -379,7 +379,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Equipment вынесен из accordion** в отдельную секцию `ExerciseCardEquipment`.
 - **Technique accordion доступна во всех display modes** (safety: правильная техника = безопасность).
 - **Media/slider content монтируется только при раскрытии accordion** (CLAUDE.md §8).
-- **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль», «Альтернативы») справа (PR6: «Боль» → «⚠ Боль отмечена» при наличии записи в pain_events).
+- **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») справа.
 - AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety до принятия решения); Техника выполнения — lazy-mount аккордеон через ExerciseCardTechnique; Противопоказания рендерятся только при наличии записей в injury_exercise_warnings.
 - **Pain persistent state (PR6)**: `painState` в `ExerciseData` маппится из `pain_events`; `ExerciseCardHeader` показывает «⚠ Боль отмечена» при наличии записи; `PainSheet` делает prefill + upsert/delete через `savePainState`/`clearPainState` в `useWorkoutSession`. UNIQUE constraint на `(user_id, workout_id, exercise_id)` предотвращает дубли.
 

@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 17.08.2026 (feature/workout-ux-rework)
+Срез: 18.08.2026 (feature/workout-ux-rework)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -48,7 +48,7 @@
 | FEAT-1.6 | History | 🟡 | CSV builder есть, service/UI отложены |
 | FEAT-1.7 | Tracker | ✅ | RPE 1–10, tappable scale — канон |
 | FEAT-1.8 | Context | ✅ | optional daily readiness |
-| FEAT-1.9 | Safety | ✅ | pain sheet + injury caution |
+| FEAT-1.9 | Safety | ✅ | pain sheet + injury caution + persistent state (PR6): prefill из pain_events, upsert/delete, «Боль прошла», visual affordance «⚠ Боль отмечена» |
 | FEAT-2.2 | Progress | ✅ | WeightTrendChart + MetricSparkline + body metrics |
 | UX-1 | Workout | ✅ | header разгружен, UnitToggle рядом с timer |
 | UX-14 | Workout | ✅ | header variant D: Settings справа от названия, metadata слева, actions-bubbles справа |
@@ -60,7 +60,7 @@
 | ID | Пр. | Статус | Цель |
 | --- | --- | --- | --- |
 | UX-2 | 🔴 | 🟡 | полный аудит workout/[id].tsx и progressive disclosure — **выполнено**: display modes + секционная структура; остаток: PR5–PR9 |
-| UX-3 | 🔴 | 🟡 | context sheets: history / technique / warm-up / pain / notes — **частично**: technique/pain через accordions; history/warm-up/notes sheets открыты |
+| UX-3 | 🔴 | 🟡 | context sheets: history / technique / warm-up / pain / notes —  частично : technique через accordions, pain persistent state с prefill и delete (PR6); остаток: history/warm-up/notes sheets |
 | UX-4 | 🔴 | ✅ |доступные alternatives без перегрузки —  выполнено : slider + text affordance + облегчённая AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания видимы сразу, Техника в lazy-mount аккордеоне|
 | UX-5 | 🔴 | 🟡 | temporary vs program replacement — **частично**: temporary визуально отделён; program replacement — отдельный сценарий (не начат) |
 | UX-6 | 🟠 | 🔲 | динамическая расшифровка RPE + быстрый skip |
