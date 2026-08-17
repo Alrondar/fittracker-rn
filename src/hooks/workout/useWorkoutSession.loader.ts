@@ -3,6 +3,7 @@
 import { supabase } from '../../lib/supabase';
 import { AlternativeExercise } from '../../types/workout';
 import { getExerciseReferenceData } from '../../services/exerciseReferenceService';
+import { painService, PainEvent } from '../../services/painService';
 import {
   SessionWorkoutRow,
   SessionExerciseRow,
@@ -29,6 +30,8 @@ export interface WorkoutSessionData {
     string,
     { equipment: string[]; injuries: string[]; alternativeIds: string[] }
   >;
+  // PR6: pain events для prefill PainSheet и visual affordance «Боль отмечена»
+  painEvents: PainEvent[];
 }
 
 /**
@@ -64,10 +67,11 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
 
   if (exerciseError) throw exerciseError;
 
-  // 3. ПАРАЛЛЕЛЬНО грузим logs + recentLogs + referenceData
+  // 3. ПАРАЛЛЕЛЬНО грузим logs + recentLogs + referenceData + pain events (PR6)
   const referenceDataPromise = getExerciseReferenceData(exerciseIds);
+  const painEventsPromise = painService.getPainEventsForWorkout(workoutId);
 
-  const [logsRes, recentLogsRes, referenceData] = await Promise.all([
+  const [logsRes, recentLogsRes, referenceData, painEvents] = await Promise.all([
     workoutExerciseIds.length > 0
       ? supabase
           .from('workout_logs')
@@ -84,6 +88,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
           .limit(300)
       : Promise.resolve({ data: null, error: null }),
     referenceDataPromise,
+    painEventsPromise,
   ]);
 
   // 4. Группируем logs по workout_exercise_id
@@ -101,6 +106,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
     logsByWorkoutExercise,
     recentLogs: (recentLogsRes.data ?? []) as RecentLog[],
     referenceData,
+    painEvents,
   };
 }
 

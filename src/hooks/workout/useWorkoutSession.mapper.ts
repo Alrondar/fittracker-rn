@@ -1,6 +1,7 @@
 // src/hooks/workout/useWorkoutSession.mapper.ts
 // Чистые функции маппинга для useWorkoutSession
-import { ExerciseData, SetData } from '../../types/workout';
+import { ExerciseData, ExercisePainState, SetData } from '../../types/workout';
+import { PainEvent } from '../../services/painService';
 import { SessionWERow, SessionExerciseRow, RecentLog } from './useWorkoutSession.types';
 
 interface ReferenceDataMap {
@@ -19,15 +20,16 @@ interface LogRow {
   rir: number | null;
   difficulty: string | null;
 }
-
 /**
- * Строит ExerciseData[] из workout_exercises + exercises + logs + referenceData
+ * Строит ExerciseData[] из workout_exercises + exercises + logs + referenceData.
+ * PR6: painStateByExerciseId опционально — содержит per-exercise pain state.
  */
 export function buildExercisesData(
   workoutExercises: SessionWERow[],
   exercisesById: Map<string, SessionExerciseRow>,
   logsByWorkoutExercise: Record<string, LogRow[]>,
   referenceData: ReferenceDataMap,
+  painStateByExerciseId: Map<string, ExercisePainState> = new Map(),
 ): ExerciseData[] {
   return workoutExercises
     .map((we): ExerciseData | null => {
@@ -83,6 +85,8 @@ export function buildExercisesData(
         intensity: we.intensity || 'medium',
         sets,
         reps_range: we.target_reps_range || undefined,
+        // PR6: pain state из pain_events для этого упражнения (если есть)
+        painState: painStateByExerciseId.get(exercise.id) ?? null,
       };
     })
     .filter((exercise): exercise is ExerciseData => exercise !== null);
@@ -146,4 +150,25 @@ export function injectPreviousData(
       }),
     };
   });
+}
+/**
+ * PR6: строит Map exercise_id → ExercisePainState из PainEvent[].
+ * Берёт первый (самый свежий) event для каждого exercise_id —
+ * getPainEventsForWorkout сортирует по occurred_at DESC,
+ * поэтому первый найденный для exercise_id = актуальный.
+ */
+export function buildPainStateMap(painEvents: PainEvent[]): Map<string, ExercisePainState> {
+  const map = new Map<string, ExercisePainState>();
+  for (const event of painEvents) {
+    if (!event.exercise_id) continue;
+    if (map.has(event.exercise_id)) continue; // берём первый (самый свежий)
+    map.set(event.exercise_id, {
+      painLevel: event.pain_level,
+      painType: event.pain_type,
+      bodyPart: event.body_part,
+      stopExercise: event.stop_exercise,
+      notes: event.notes,
+    });
+  }
+  return map;
 }

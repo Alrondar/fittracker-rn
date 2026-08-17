@@ -41,7 +41,7 @@ import { getWorkoutProgramInfo } from '../../src/services/programsService';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
-import { SetData } from '../../src/types/workout';
+import { SetData, ExercisePainState } from '../../src/types/workout';
 import { RestTimer } from '../../src/components/workout/RestTimer';
 import {
   WorkoutTimerProvider,
@@ -103,6 +103,8 @@ const { mode: displayMode } = useWorkoutDisplayMode();
     updateExerciseSettings,
     replaceExercise,
     resetToOriginal,
+    savePainState,
+    clearPainState,
     startRestTimer,
     stopRestTimer,
     saveWorkout,
@@ -152,6 +154,20 @@ const { mode: displayMode } = useWorkoutDisplayMode();
   const [painIndex, setPainIndex] = useState<number | null>(null);
   const openPain = useCallback((exerciseIndex: number) => setPainIndex(exerciseIndex), []);
   const closePain = useCallback(() => setPainIndex(null), []);
+
+  // PR6: обёртки для PainSheet — привязывают save/clear к текущему painIndex
+  const savePainForCurrent = useCallback(
+    async (painState: ExercisePainState) => {
+      if (painIndex === null) return;
+      await savePainState(painIndex, painState);
+    },
+    [painIndex, savePainState],
+  );
+
+  const clearPainForCurrent = useCallback(async () => {
+    if (painIndex === null) return;
+    await clearPainState(painIndex);
+  }, [painIndex, clearPainState]);
 
   const exercisesRef = useRef(exercises);
   useEffect(() => {
@@ -577,12 +593,15 @@ const renderItem = useCallback(
       )}
 
             {/* FEAT-1.9: шторка боли */}
-      <PainSheet
-        exercise={painIndex !== null ? exercises[painIndex] ?? null : null}
-        workoutId={id as string}
-        userId={userId}
-        onClose={closePain}
-      />
+         {/* FEAT-1.9 + PR6: шторка боли с prefill и upsert/delete */}
+   <PainSheet
+     exercise={painIndex !== null ? exercises[painIndex] ?? null : null}
+     workoutId={id as string}
+     userId={userId}
+     onClose={closePain}
+     onSavePain={savePainForCurrent}
+     onClearPain={clearPainForCurrent}
+   />
       <ExerciseSettingsModal
         target={settingsTarget}
         onClose={closeExerciseSettings}

@@ -1,6 +1,7 @@
 // src/components/workout/PainSheet.tsx
 // FEAT-1.9: шторка «Боль во время упражнения»: уровень 0–3, тип, часть тела,
 // stop-тумблер, осторожность в профиль травм, заметка.
+// PR6 (Scope 2): prefill из существующей записи боли + «Боль прошла» для удаления.
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -10,7 +11,7 @@ import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { BODY_PARTS, BODY_PART_LABELS, BodyPart, targetsInjuredMuscle } from '../../constants/injuries';
 import { painService, PainType } from '../../services/painService';
-import { ExerciseData } from '../../types/workout';
+import { ExerciseData, ExercisePainState } from '../../types/workout';
 
 const PAIN_TYPES: { key: PainType; label: string }[] = [
   { key: 'sharp', label: 'острая' },
@@ -82,9 +83,12 @@ interface PainSheetProps {
   workoutId: string;
   userId: string | null;
   onClose: () => void;
+  // PR6: делегирование upsert/delete в useWorkoutSession (оптимистичное обновление)
+  onSavePain?: (painState: ExercisePainState) => Promise<void>;
+  onClearPain?: () => Promise<void>;
 }
 
-export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetProps) {
+export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, onClearPain }: PainSheetProps) {
   const { colors } = useTheme();
   const [painLevel, setPainLevel] = useState(0);
   const [painType, setPainType] = useState<PainType | null>(null);
@@ -94,19 +98,37 @@ export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetPro
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // сброс формы + префилл части тела при открытии
+  // PR6: prefill из существующей записи боли (exercise.painState) или сброс + prefill bodyPart
   useEffect(() => {
     if (exercise) {
-      setPainLevel(0);
-      setPainType(null);
-      setStopExercise(false);
-      setAddCaution(false);
-      setNotes('');
-      const pre =
-        (Object.keys(BODY_PARTS) as BodyPart[]).find((bp) =>
-          targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp),
-        ) ?? null;
-      setBodyPart(pre);
+      const ps = exercise.painState;
+      if (ps) {
+        // Есть запись боли — prefill формы
+        setPainLevel(ps.painLevel);
+        setPainType((ps.painType as PainType) ?? null);
+        setStopExercise(ps.stopExercise);
+        setNotes(ps.notes ?? '');
+        setAddCaution(false); // caution — одноразовое действие, не prefill
+        setBodyPart(
+          (ps.bodyPart as BodyPart) ??
+            (Object.keys(BODY_PARTS) as BodyPart[]).find((bp) =>
+              targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp),
+            ) ??
+            null,
+        );
+      } else {
+        // Нет записи — сброс + prefill bodyPart по мышцам
+        setPainLevel(0);
+        setPainType(null);
+        setStopExercise(false);
+        setAddCaution(false);
+        setNotes('');
+        const pre =
+          (Object.keys(BODY_PARTS) as BodyPart[]).find((bp) =>
+            targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp),
+          ) ?? null;
+        setBodyPart(pre);
+      }
     }
   }, [exercise]);
 
@@ -114,16 +136,28 @@ export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetPro
     if (!exercise || !userId) return;
     setSaving(true);
     try {
-      await painService.logPainEvent({
-        userId,
-        workoutId,
-        exerciseId: exercise.id,
-        painLevel,
-        painType: painLevel > 0 ? painType : null,
-        bodyPart,
-        stopExercise,
-        notes: notes.trim() ? notes.trim() : null,
-      });
+      // PR6: делегируем upsert в useWorkoutSession (оптимистичное обновление + откат)
+      if (onSavePain) {
+        await onSavePain({
+          painLevel,
+          painType: painLevel > 0 ? painType : null,
+          bodyPart,
+          stopExercise,
+          notes: notes.trim() ? notes.trim() : null,
+        });
+      } else {
+        // Fallback: прямой вызов (обратная совместимость)
+        await painService.upsertPainEvent({
+          userId,
+          workoutId,
+          exerciseId: exercise.id,
+          painLevel,
+          painType: painLevel > 0 ? painType : null,
+          bodyPart,
+          stopExercise,
+          notes: notes.trim() ? notes.trim() : null,
+        });
+      }
       if (addCaution && bodyPart && painLevel >= 2) {
         await painService.addCautionInjury(
           userId,
@@ -142,7 +176,26 @@ export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetPro
     } finally {
       setSaving(false);
     }
-  }, [exercise, userId, workoutId, painLevel, painType, bodyPart, stopExercise, addCaution, notes, onClose]);
+  }, [exercise, userId, workoutId, painLevel, painType, bodyPart, stopExercise, addCaution, notes, onClose, onSavePain]);
+
+  // PR6: «Боль прошла» — удалить запись боли
+  const handleClear = useCallback(async () => {
+    if (!exercise || !userId) return;
+    setSaving(true);
+    try {
+      if (onClearPain) {
+        await onClearPain();
+      } else {
+        await painService.deletePainEvent(userId, workoutId, exercise.id);
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onClose();
+    } catch (e: any) {
+      Alert.alert('Ошибка', e?.message || 'Не удалось удалить запись');
+    } finally {
+      setSaving(false);
+    }
+  }, [exercise, userId, workoutId, onClose, onClearPain]);
 
   const levelColor = (v: number) =>
     v === 0 ? colors.success : v === 1 ? colors.primary : v === 2 ? colors.warning : colors.error;
@@ -248,6 +301,7 @@ export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetPro
             </View>
 
             <ToggleRow label="Завершить это упражнение" value={stopExercise} onChange={setStopExercise} colors={colors} />
+
             {painLevel >= 2 && bodyPart && (
               <ToggleRow
                 label="Добавить осторожность в профиль травм"
@@ -276,6 +330,29 @@ export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetPro
               onChangeText={setNotes}
             />
 
+            {/* PR6: «Боль прошла» — видна только при наличии записи боли */}
+            {exercise.painState && (
+              <TouchableOpacity
+                onPress={handleClear}
+                disabled={saving}
+                style={{
+                  marginTop: SPACING.md,
+                  paddingVertical: SPACING.md,
+                  borderRadius: BORDER_RADIUS.lg,
+                  borderWidth: 1,
+                  borderColor: colors.success,
+                  backgroundColor: 'transparent',
+                  alignItems: 'center',
+                }}
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.success} size="small" />
+                ) : (
+                  <Text style={[typography.button, { color: colors.success }]}>Боль прошла</Text>
+                )}
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               onPress={handleSave}
               disabled={saving}
@@ -290,7 +367,9 @@ export function PainSheet({ exercise, workoutId, userId, onClose }: PainSheetPro
               {saving ? (
                 <ActivityIndicator color={colors.textInverse} size="small" />
               ) : (
-                <Text style={[typography.button, { color: colors.textInverse }]}>Отметить</Text>
+                <Text style={[typography.button, { color: colors.textInverse }]}>
+                  {exercise.painState ? 'Обновить' : 'Отметить'}
+                </Text>
               )}
             </TouchableOpacity>
           </>

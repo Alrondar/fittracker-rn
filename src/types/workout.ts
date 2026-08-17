@@ -14,6 +14,15 @@ export interface SetData {
   previousRpe?: number | null;
 }
 
+// PR6: per-exercise pain state из pain_events (для prefill в PainSheet + visual affordance).
+export interface ExercisePainState {
+  painLevel: number; // 0–3
+  painType: string | null; // PainType как string (чтобы не зависеть от painService)
+  bodyPart: string | null;
+  stopExercise: boolean;
+  notes: string | null;
+}
+
 export interface ExerciseData {
   id: string;
   workout_exercise_id: string;
@@ -33,6 +42,8 @@ export interface ExerciseData {
   intensity: string;
   sets: SetData[];
   reps_range?: string;
+  // PR6: pain state из pain_events (null = не отмечено в этой тренировке)
+  painState?: ExercisePainState | null;
 }
 
 export interface AlternativeExercise {

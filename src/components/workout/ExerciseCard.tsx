@@ -2,6 +2,7 @@
 // Orchestrator карточки упражнения — рендерит вынесенные секции.
 // PR 2: split на секции. PR 3: displayMode. PR 4a: Equipment. PR 4b: Actions.
 // PR 4c: видимость по displayMode. PR 4d: defaultExpanded для Learn mode.
+// PR6: проброс hasPainRecord в ExerciseCardActions.
 import React, { useMemo, memo } from 'react';
 import { View } from 'react-native';
 import { createCardStyles } from '../../styles/components/card';
@@ -86,10 +87,13 @@ export const ExerciseCard = memo(function ExerciseCard({
   const settingsText = exercise.settings || '';
   const equipment = exercise.equipment ?? [];
 
-// PR 4c: в Training mode скрываем мышцы и knowledge для основной карточки,
-// но техника остаётся доступной всегда (safety: правильная техника = безопасность).
-// Для альтернативных карточек (!isMain) все секции видны всегда.
-const hideSecondaryInTraining = displayMode === 'training' && isMain;
+  // PR 4c: в Training mode скрываем мышцы и knowledge для основной карточки,
+  // но техника остаётся доступной всегда (safety: правильная техника = безопасность).
+  // Для альтернативных карточек (!isMain) все секции видны всегда.
+  const hideSecondaryInTraining = displayMode === 'training' && isMain;
+
+  // PR6: есть ли запись боли в pain_events для этого упражнения — для visual affordance в header
+  const hasPainRecord = !!((exercise as ExerciseData).painState);
 
   // PERF: единый useMemo вместо пересчёта в рендере
   const { borderColor } = useMemo(() => {
@@ -99,12 +103,12 @@ const hideSecondaryInTraining = displayMode === 'training' && isMain;
       warning?.level === 'avoid'
         ? colors.error
         : warning?.level === 'caution'
-        ? colors.warning
-        : isReplaced
-        ? colors.primary
-        : done
-        ? colors.success + '60'
-        : colors.border;
+          ? colors.warning
+          : isReplaced
+            ? colors.primary
+            : done
+              ? colors.success + '60'
+              : colors.border;
     return { borderColor: border };
   }, [sets, isSetCompleted, hasSets, isReplaced, warning?.level, colors]);
 
@@ -113,22 +117,23 @@ const hideSecondaryInTraining = displayMode === 'training' && isMain;
       style={[cardStyles.container, cardStyles.workoutExerciseCard, { borderWidth: 1, borderColor }]}
     >
       {/* 1. Header: название + Settings + repsRange + intensity */}
-<ExerciseCardHeader
-  exerciseName={exercise.name}
-  isMain={isMain}
-  exerciseIndex={exerciseIndex}
-  setsCount={sets.length}
-  restSeconds={restSeconds}
-  repsRange={repsRange}
-  intensityInfo={intensityInfo}
-  hasAlternatives={alternatives.length > 0}
-  alternativesCount={alternatives.length}
-  onOpenSettings={onOpenSettings}
-  onOpenPain={onOpenPain}
-  onOpenAlternatives={onOpenAlternatives}
-  colors={colors}
-  cardStyles={cardStyles}
-/>
+      <ExerciseCardHeader
+        exerciseName={exercise.name}
+        isMain={isMain}
+        exerciseIndex={exerciseIndex}
+        setsCount={sets.length}
+        restSeconds={restSeconds}
+        repsRange={repsRange}
+        intensityInfo={intensityInfo}
+        hasAlternatives={alternatives.length > 0}
+        alternativesCount={alternatives.length}
+        hasPainRecord={hasPainRecord}
+        onOpenSettings={onOpenSettings}
+        onOpenPain={onOpenPain}
+        onOpenAlternatives={onOpenAlternatives}
+        colors={colors}
+        cardStyles={cardStyles}
+      />
 
       {/* 2. Equipment: bubbles сразу под header (PR 4a) */}
       <ExerciseCardEquipment

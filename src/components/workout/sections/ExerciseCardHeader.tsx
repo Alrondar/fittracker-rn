@@ -26,6 +26,7 @@ interface ExerciseCardHeaderProps {
   intensityInfo: { label: string; color: string; bgColor: string; icon: React.ReactNode };
   hasAlternatives: boolean;
   alternativesCount: number;
+  hasPainRecord?: boolean; // PR6: есть запись боли в pain_events — для visual affordance
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
   onOpenPain?: (exerciseIndex: number) => void;
   onOpenAlternatives?: (exerciseIndex: number) => void;
@@ -43,6 +44,7 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
   intensityInfo,
   hasAlternatives,
   alternativesCount,
+  hasPainRecord = false,
   onOpenSettings,
   onOpenPain,
   onOpenAlternatives,
@@ -131,18 +133,32 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
         {/* Bubbles справа (только основная карточка) */}
         {isMain && (onOpenPain || hasAlternatives) && (
           <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
-            {/* Боль — кнопка-bubble */}
+            {/* Боль — кнопка-bubble. PR6: при наличии записи — warning tint + «⚠ Боль отмечена» */}
             {onOpenPain && (
               <TouchableOpacity
                 onPress={() => onOpenPain(exerciseIndex)}
-                style={bubbleStyle}
+                style={
+                  hasPainRecord
+                    ? {
+                        ...bubbleStyle,
+                        backgroundColor: colors.warning + '15',
+                        borderColor: colors.warning,
+                      }
+                    : bubbleStyle
+                }
                 activeOpacity={0.7}
               >
                 <HeartPulse size={14} color={colors.warning} strokeWidth={2} />
                 <Text
-                  style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '600' }]}
+                  style={[
+                    typography.captionSmall,
+                    {
+                      color: hasPainRecord ? colors.warning : colors.textPrimary,
+                      fontWeight: '600',
+                    },
+                  ]}
                 >
-                  Боль
+                  {hasPainRecord ? '⚠ Боль отмечена' : 'Боль'}
                 </Text>
               </TouchableOpacity>
             )}

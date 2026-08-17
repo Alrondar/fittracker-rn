@@ -9,8 +9,15 @@ import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../lib/supabase';
-import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../types/workout';
+import {
+  ExerciseData,
+  AlternativeExercise,
+  SetData,
+  SetFeedbackPatch,
+  ExercisePainState,
+} from '../types/workout';
 import { advanceProgramProgress } from '../services/programsService';
+import { painService, PainType } from '../services/painService';
 import { mapError } from '../utils/errorMapper';
 import { perfMark, perfSince } from '../utils/perf';
 import { useWorkoutSessionRest } from './workout/useWorkoutSession.rest';
@@ -19,6 +26,7 @@ import {
   buildExercisesData,
   buildPrevLogsByExerciseId,
   injectPreviousData,
+  buildPainStateMap,
 } from './workout/useWorkoutSession.mapper';
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
@@ -113,7 +121,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const data = await fetchWorkoutSession(workoutId);
       perfSince('load:q1-start', 'Q1: workout + exercises + logs (параллельно)');
 
-      const { workoutRow, exerciseRows, logsByWorkoutExercise, recentLogs, referenceData } = data;
+        const {
+    workoutRow,
+    exerciseRows,
+    logsByWorkoutExercise,
+    recentLogs,
+    referenceData,
+    painEvents,
+  } = data;
 
       setWorkoutName(workoutRow.name ?? 'Тренировка');
       setProgramId(workoutRow.program_id);
@@ -133,13 +148,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const workoutExercises = workoutRow.workout_exercises || [];
       const exercisesById = new Map(exerciseRows.map((ex) => [ex.id, ex]));
 
-      // Маппинг через вынесенные чистые функции
-      const exercisesData = buildExercisesData(
-        workoutExercises,
-        exercisesById,
-        logsByWorkoutExercise,
-        referenceData,
-      );
+   // Маппинг через вынесенные чистые функции
+   // PR6: pain state по exercise_id — для prefill PainSheet и visual affordance
+   const painStateMap = buildPainStateMap(painEvents);
+   const exercisesData = buildExercisesData(
+     workoutExercises,
+     exercisesById,
+     logsByWorkoutExercise,
+     referenceData,
+     painStateMap,
+   );
 
       const prevLogsByExerciseId = buildPrevLogsByExerciseId(recentLogs);
       const finalExercisesData = injectPreviousData(exercisesData, prevLogsByExerciseId);
@@ -409,6 +427,78 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     [loadWorkout],
   );
 
+// ============================================================================
+// PR6: PAIN STATE (upsert / delete + оптимистичное локальное обновление)
+// ============================================================================
+const savePainState = useCallback(
+  async (exerciseIndex: number, painState: ExercisePainState) => {
+    const exercise = exercisesRef.current[exerciseIndex];
+    if (!exercise || !userId) return;
+
+    const previousPainState = exercise.painState ?? null;
+
+    // Оптимистичное обновление — bubble сразу показывает «Боль отмечена»
+    setExercises((prev) => {
+      const updated = [...prev];
+      updated[exerciseIndex] = { ...updated[exerciseIndex], painState };
+      return updated;
+    });
+
+    try {
+      await painService.upsertPainEvent({
+        userId,
+        workoutId,
+        exerciseId: exercise.id,
+        painLevel: painState.painLevel,
+        painType: (painState.painType as PainType | null) ?? null,
+        bodyPart: painState.bodyPart,
+        stopExercise: painState.stopExercise,
+        notes: painState.notes,
+      });
+    } catch (error) {
+      console.error('[useWorkoutSession] savePainState:', error);
+      // Откат к предыдущему состоянию
+      setExercises((prev) => {
+        const updated = [...prev];
+        updated[exerciseIndex] = { ...updated[exerciseIndex], painState: previousPainState };
+        return updated;
+      });
+      Alert.alert('Ошибка', mapError(error));
+    }
+  },
+  [userId, workoutId],
+);
+
+const clearPainState = useCallback(
+  async (exerciseIndex: number) => {
+    const exercise = exercisesRef.current[exerciseIndex];
+    if (!exercise || !userId) return;
+
+    const previousPainState = exercise.painState ?? null;
+
+    // Оптимистичное обновление — bubble возвращается к «Боль?»
+    setExercises((prev) => {
+      const updated = [...prev];
+      updated[exerciseIndex] = { ...updated[exerciseIndex], painState: null };
+      return updated;
+    });
+
+    try {
+      await painService.deletePainEvent(userId, workoutId, exercise.id);
+    } catch (error) {
+      console.error('[useWorkoutSession] clearPainState:', error);
+      // Откат к предыдущему состоянию
+      setExercises((prev) => {
+        const updated = [...prev];
+        updated[exerciseIndex] = { ...updated[exerciseIndex], painState: previousPainState };
+        return updated;
+      });
+      Alert.alert('Ошибка', mapError(error));
+    }
+  },
+  [userId, workoutId],
+);
+
   // ============================================================================
   // SAVE WORKOUT
   // ============================================================================
@@ -561,10 +651,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     applyProgression,
     isSetCompleted,
     updateExerciseSettings,
-    replaceExercise,
-    resetToOriginal,
-    startRestTimer,
-    stopRestTimer,
-    saveWorkout,
-  };
+replaceExercise,
+resetToOriginal,
+savePainState,
+clearPainState,
+startRestTimer,
+stopRestTimer,
+saveWorkout,
+};
 }
