@@ -451,6 +451,7 @@ export default function SettingsScreen() {
             paddingVertical: SPACING.sm,
             borderRadius: BORDER_RADIUS.sm,
             alignItems: 'center',
+            justifyContent: 'center',
             backgroundColor: rpeSettings.prompt === prompt ? colors.primary : 'transparent',
           },
         ]}
@@ -460,11 +461,13 @@ export default function SettingsScreen() {
         }}
       >
         <Text
+          numberOfLines={1}
           style={[
             typography.caption,
             {
               color: rpeSettings.prompt === prompt ? colors.textInverse : colors.textSecondary,
               fontWeight: rpeSettings.prompt === prompt ? '600' : '400',
+              textAlign: 'center',
             },
           ]}
         >

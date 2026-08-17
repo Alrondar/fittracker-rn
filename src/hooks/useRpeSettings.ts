@@ -17,8 +17,8 @@ const DEFAULTS: RpeSettings = {
 };
 
 export const RPE_PROMPT_LABELS: Record<RpePrompt, string> = {
-  'always': 'В каждом подходе',
-  'last-set': 'Только в последнем',
+  'always': 'Всегда',
+  'last-set': 'Последний',
   'off': 'Выкл',
 };
 

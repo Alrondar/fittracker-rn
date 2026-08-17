@@ -104,7 +104,8 @@ Main hooks/services:
 - `useInjuryWarnings.ts`
 - `useWarmup.ts`
 - `useTimerSettings.ts`
-- `useUnitPreferences.ts`
+`useUnitPreferences.ts`
+`useRpeSettings.ts` — RPE prompt frequency (always/last-set/off, AsyncStorage persist)
 - `workoutService.ts`
 - `warmupService.ts`
 - `painService.ts`
@@ -389,6 +390,8 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **workout/[id].tsx split (PR8)**: WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo; showInjuryBanner state инкапсулирован в WorkoutInjuryBanner; файл уменьшен с ~673 до ~400 строк (CLAUDE.md §2).
 - **Knowledge disclosure cleanup (PR7)**: ExerciseCardKnowledge использует SectionSubheading из ExerciseCardTechnique; единообразие подзаголовков между «Техника выполнения» и «Важно знать»; lazy mount через everOpened в ExerciseInfoAccordion.
 - **UX-3 decision (закрыто)**: warm-up реализован через вкладку WorkoutTabs + WarmupBlock (useWarmup), отдельного sheet не требуется. History per-exercise частично закрыт per-set previous data в SetsGrid (FEAT-1.1) + вкладка History с деталями тренировок (historyService.getWorkoutDetail). Notes отложены — нет таблицы exercise_notes, не подтверждена потребность; вернуться после сбора feedback от пользователей.
+- **RPE frequency settings (UX-7)**: useRpeSettings — 3 опции (always / last-set default / off); SetsGrid проверяет predicate shouldShowRpeChip: уже введённые значения (rpe != null) показываются всегда, новые запросы — по настройке. Picker в profile/settings.tsx с segmented control и живым описанием.
+- **RPE quick-skip (UX-6)**: SetFeedbackEditor показывает кнопку «Пропустить» когда rpe == null (без onChange, просто onClose); при rpe != null — «Сбросить» (с onChange). Дефолт 7 — типичный рабочий RPE.
 
 ## 13. Inventory maintenance
 
