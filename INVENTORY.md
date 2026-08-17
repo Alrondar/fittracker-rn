@@ -1,6 +1,6 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 16.08.2026 (feature/workout-ux-rework)
+Срез: 17.08.2026 (feature/workout-ux-rework)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -90,7 +90,7 @@ Main components:
 - `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
 - `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion
 - `sections/ExerciseCardActions.tsx` — «Боль» + «Другие варианты» bubbles
-- `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): summary + CTA + accordion «Подробнее»
+- `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне
 
 Main hooks/services:
 - `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
@@ -381,6 +381,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Technique accordion доступна во всех display modes** (safety: правильная техника = безопасность).
 - **Media/slider content монтируется только при раскрытии accordion** (CLAUDE.md §8).
 - **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль», «Другие варианты») справа.
+- AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety до принятия решения); Техника выполнения — lazy-mount аккордеон через ExerciseCardTechnique; Противопоказания рендерятся только при наличии записей в injury_exercise_warnings.
 
 ## 13. Inventory maintenance
 
