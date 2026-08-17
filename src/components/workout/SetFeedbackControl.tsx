@@ -112,11 +112,18 @@ export const SetFeedbackEditor = memo(function SetFeedbackEditor({
     onClose();
   }, [selected, onChange, onClose]);
 
-  const handleReset = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onChange({ rpe: null, rir: null, difficulty: null });
-    onClose();
-  }, [onChange, onClose]);
+const handleReset = useCallback(() => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  onChange({ rpe: null, rir: null, difficulty: null });
+  onClose();
+}, [onChange, onClose]);
+
+// UX-6: быстрый skip — закрыть без сохранения (без onChange).
+// Видна только когда редактор открыт с пустым RPE.
+const handleSkip = useCallback(() => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  onClose();
+}, [onClose]);
 
   return (
     <View
@@ -217,7 +224,7 @@ export const SetFeedbackEditor = memo(function SetFeedbackEditor({
           gap: SPACING.sm,
         }}
       >
-        {rpe != null && (
+        {rpe != null ? (
           <TouchableOpacity
             onPress={handleReset}
             style={{
@@ -235,6 +242,26 @@ export const SetFeedbackEditor = memo(function SetFeedbackEditor({
               ]}
             >
               Сбросить
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={handleSkip}
+            style={{
+              paddingVertical: SPACING.sm,
+              paddingHorizontal: SPACING.sm,
+              borderRadius: BORDER_RADIUS.sm,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textTertiary, fontWeight: '600' },
+              ]}
+            >
+              Пропустить
             </Text>
           </TouchableOpacity>
         )}

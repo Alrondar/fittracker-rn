@@ -25,6 +25,11 @@ import { LayoutGrid } from 'lucide-react-native';
 import { sendPasswordReset } from '../../src/services/authService';
 import { useStore } from '../../src/store/useStore';
 import { useTimerSettings } from '../../src/hooks/useTimerSettings';
+import {
+  useRpeSettings,
+  RPE_PROMPT_LABELS,
+  RPE_PROMPT_DESCRIPTIONS,
+} from '../../src/hooks/useRpeSettings';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { WorkoutDisplayModePicker } from '../../src/components/workout/WorkoutDisplayModePicker';
 import {
@@ -56,6 +61,7 @@ export default function SettingsScreen() {
     useTheme();
   const { userId } = useStore();
   const { settings: timerSettings, updateSettings: updateTimerSettings } = useTimerSettings();
+  const { settings: rpeSettings, updateSettings: updateRpeSettings } = useRpeSettings();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -406,6 +412,67 @@ export default function SettingsScreen() {
     </View>
   </View>
   <WorkoutDisplayModePicker />
+</View>
+
+{/* UX-7: частота запроса RPE */}
+<View
+  style={[
+    cardStyles.compact,
+    { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+  ]}
+>
+  <View style={{ marginBottom: SPACING.sm }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+      <LayoutGrid size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+      <View style={{ flex: 1 }}>
+        <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+          Частота запроса RPE
+        </Text>
+        <Text style={[typography.caption, { color: colors.textSecondary }]}>
+          {RPE_PROMPT_DESCRIPTIONS[rpeSettings.prompt]}
+        </Text>
+      </View>
+    </View>
+  </View>
+  <View
+    style={{
+      flexDirection: 'row',
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.md,
+      padding: 4,
+    }}
+  >
+    {(['always', 'last-set', 'off'] as const).map((prompt) => (
+      <TouchableOpacity
+        key={prompt}
+        style={[
+          {
+            flex: 1,
+            paddingVertical: SPACING.sm,
+            borderRadius: BORDER_RADIUS.sm,
+            alignItems: 'center',
+            backgroundColor: rpeSettings.prompt === prompt ? colors.primary : 'transparent',
+          },
+        ]}
+        onPress={() => {
+          updateRpeSettings({ prompt });
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
+      >
+        <Text
+          style={[
+            typography.caption,
+            {
+              color: rpeSettings.prompt === prompt ? colors.textInverse : colors.textSecondary,
+              fontWeight: rpeSettings.prompt === prompt ? '600' : '400',
+            },
+          ]}
+        >
+          {RPE_PROMPT_LABELS[prompt]}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
 </View>
 
           <View
