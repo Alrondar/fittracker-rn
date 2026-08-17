@@ -25,7 +25,7 @@ interface ExerciseCardTechniqueProps {
 }
 
 /** Подзаголовок внутри секции — иконка + label, как в «Важно знать». */
-function SectionSubheading({
+export function SectionSubheading({
   icon,
   label,
   color,

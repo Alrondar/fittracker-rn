@@ -12,7 +12,6 @@ import { ExerciseWarningBanner } from './sections/ExerciseWarningBanner';
 import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
 import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
 import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
-import { AlternativeExerciseContent } from './sections/AlternativeExerciseContent';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -168,20 +167,6 @@ const hideSecondaryInTraining = displayMode === 'training' && isMain;
           injuries={exercise.injuries}
           defaultExpanded={displayMode === 'learn'}
           colors={colors}
-        />
-      )}
-
-      {/* 7. Alternative content (только альтернативная карточка) */}
-      {!isMain && (
-        <AlternativeExerciseContent
-          benefits={exercise.benefits}
-          risks={exercise.risks}
-          injuries={exercise.injuries}
-          exerciseId={exercise.id}
-          exerciseIndex={exerciseIndex}
-          replaceExercise={replaceExercise}
-          colors={colors}
-          cardStyles={cardStyles}
         />
       )}
 

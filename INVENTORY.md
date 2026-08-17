@@ -90,7 +90,7 @@ Main components:
 - `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
 - `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion
 - `sections/ExerciseCardActions.tsx` — «Боль» + «Другие варианты» bubbles
-- `sections/AlternativeExerciseContent.tsx` — контент альтернативной карточки
+- `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): summary + CTA + accordion «Подробнее»
 
 Main hooks/services:
 - `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже

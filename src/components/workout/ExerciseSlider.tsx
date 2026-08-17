@@ -17,6 +17,7 @@ import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
 import { WorkoutCardDisplayMode } from '../../types/workout';
+import { AlternativeExerciseCard } from './AlternativeExerciseCard';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -251,31 +252,18 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
 
-        {showAlts &&
-          alternatives.map((alt) => (
-            <View key={alt.id} style={{ width: cardWidth }}>
-              <ExerciseCard
-                exercise={alt}
-                isMain={false}
-                isReplaced={false}
-                exerciseIndex={exerciseIndex}
-                alternatives={alternatives}
-                displayMode={displayMode}
-                updateSet={updateSet}
-                updateSetFeedback={updateSetFeedback}
-                applyProgression={applyProgression}
-                isSetCompleted={isSetCompleted}
-                replaceExercise={replaceExercise}
-                startRestTimer={startRestTimer}
-                getIntensityInfo={getIntensityInfo}
-                onOpenSettings={onOpenSettings}
-                colors={colors}
-                cardStyles={cardStyles}
-                unit={unit}
-                warning={null}
-              />
-            </View>
-          ))}
+{showAlts &&
+  alternatives.map((alt) => (
+    <View key={alt.id} style={{ width: cardWidth }}>
+      <AlternativeExerciseCard
+        exercise={alt}
+        exerciseIndex={exerciseIndex}
+        replaceExercise={replaceExercise}
+        colors={colors}
+        cardStyles={cardStyles}
+      />
+    </View>
+  ))}
       </ScrollView>
     </View>
   );

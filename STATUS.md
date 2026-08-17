@@ -61,7 +61,7 @@
 | --- | --- | --- | --- |
 | UX-2 | 🔴 | 🟡 | полный аудит workout/[id].tsx и progressive disclosure — **выполнено**: display modes + секционная структура; остаток: PR5–PR9 |
 | UX-3 | 🔴 | 🟡 | context sheets: history / technique / warm-up / pain / notes — **частично**: technique/pain через accordions; history/warm-up/notes sheets открыты |
-| UX-4 | 🔴 | 🟡 | доступные alternatives без перегрузки — **частично**: slider + text affordance; облегчённая AlternativeExerciseCard открыта |
+| UX-4 | 🔴 | ✅ |доступные alternatives без перегрузки —  выполнено : slider + text affordance + облегчённая AlternativeExerciseCard (PR5); (альтернативы без перегрузки реализованы)|
 | UX-5 | 🔴 | 🟡 | temporary vs program replacement — **частично**: temporary визуально отделён; program replacement — отдельный сценарий (не начат) |
 | UX-6 | 🟠 | 🔲 | динамическая расшифровка RPE + быстрый skip |
 | UX-7 | 🟠 | 🔲 | настройка частоты запроса RPE |
@@ -70,7 +70,7 @@
 | UX-10 | 🟠 | 🔲 | Calendar/List toggle + day details |
 | UX-11 | 🟠 | 🔲 | Progress как отдельная mental model, не History |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
-| UX-13 | 🟠 | 🟡 | секционная структура ExerciseCard + вынос Equipment из accordion — выполнено; остаток: подзаголовки в «Техника выполнения» (код готов, не применён) |
+| UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки в «Техника выполнения» (PR4/PR5)  (секционная структура завершена) |
 
 ## 5. Training Engine
 
