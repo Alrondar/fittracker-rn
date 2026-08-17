@@ -90,6 +90,9 @@ Main components:
 - `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
 - `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion
 - `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне
+- `WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle, TimerPill/Panel (PR8)
+- `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
+- `WorkoutScreenFooter.tsx` — «Начать тренировку» / «Завершить» с LinearGradient (PR8)
 
 Main hooks/services:
 - `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
@@ -315,6 +318,7 @@ Important components:
 | `utils/plates.ts` | plate calculation logic; UI pending |
 | `utils/csv.ts` | CSV builder; service/UI pending |
 | `utils/errorMapper.ts` | user-facing error mapping |
+| `utils/intensityInfo.tsx` |getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | `utils/macroCalculator.ts` | macro calculations |
 
 ## 10. Database / migrations
@@ -382,6 +386,8 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») справа.
 - AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety до принятия решения); Техника выполнения — lazy-mount аккордеон через ExerciseCardTechnique; Противопоказания рендерятся только при наличии записей в injury_exercise_warnings.
 - **Pain persistent state (PR6)**: `painState` в `ExerciseData` маппится из `pain_events`; `ExerciseCardHeader` показывает «⚠ Боль отмечена» при наличии записи; `PainSheet` делает prefill + upsert/delete через `savePainState`/`clearPainState` в `useWorkoutSession`. UNIQUE constraint на `(user_id, workout_id, exercise_id)` предотвращает дубли.
+- **Pain persistent state (PR6)**: painService.getPainEventsForWorkout загружает pain_events при fetchWorkoutSession; painState маппится в ExerciseData через buildPainStateMap; savePainState/clearPainState с оптимистичным обновлением + откат; PainSheet prefill из painState + «Боль прошла» для delete; visual affordance «⚠ Боль отмечена» в header bubble; UNIQUE constraint (user_id, workout_id, exercise_id) предотвращает дубли.
+- **workout/[id].tsx split (PR8)**: WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo; showInjuryBanner state инкапсулирован в WorkoutInjuryBanner; файл уменьшен с ~673 до ~400 строк (CLAUDE.md §2).
 
 ## 13. Inventory maintenance
 

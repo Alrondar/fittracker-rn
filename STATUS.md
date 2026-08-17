@@ -60,7 +60,7 @@
 | ID | Пр. | Статус | Цель |
 | --- | --- | --- | --- |
 | UX-2 | 🔴 | 🟡 | полный аудит workout/[id].tsx и progressive disclosure — **выполнено**: display modes + секционная структура; остаток: PR5–PR9 |
-| UX-3 | 🔴 | 🟡 | context sheets: history / technique / warm-up / pain / notes —  частично : technique через accordions, pain persistent state с prefill и delete (PR6); остаток: history/warm-up/notes sheets |
+| UX-3 | 🔴 | 🟡 | ccontext sheets: history / technique / warm-up / pain / notes —  частично : technique через accordions, pain persistent state с prefill и delete (PR6); остаток: history/warm-up/notes sheets |
 | UX-4 | 🔴 | ✅ |доступные alternatives без перегрузки —  выполнено : slider + text affordance + облегчённая AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания видимы сразу, Техника в lazy-mount аккордеоне|
 | UX-5 | 🔴 | 🟡 | temporary vs program replacement — **частично**: temporary визуально отделён; program replacement — отдельный сценарий (не начат) |
 | UX-6 | 🟠 | 🔲 | динамическая расшифровка RPE + быстрый skip |
