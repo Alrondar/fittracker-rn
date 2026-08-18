@@ -1,9 +1,19 @@
 // src/services/progressService.ts
-// Progress hub: агрегированные данные для ответа на «Как я меняюсь?»
-// Переиспользует существующие данные из profileService + dashboardService.
-// Добавляет: объём по неделям (8 недель) + PR timeline с датами.
+// Progress hub: агрегированные данные для ответа «Как я меняюсь?» (PRODUCT.md §11).
+// Колонки сверены с types/database.types.ts (18.08.2026):
+// - workout_exercises НЕ имеет exercise_name — имена только через embed exercises(name);
+// - workout_logs.completed_at существует;
+// - дата замера в body_metrics — metric_date;
+// - skip = finished_at + skipped_at (FIT-7) → исключаем через .is('skipped_at', null).
+// Нигде в сервисе нет .in()-цепочек (источник 400 Bad Request) — только вложенные
+// embed-запросы по FK (паттерн, доказанный в runtime).
+// UI не ходит в supabase напрямую — только через этот сервис (CLAUDE.md §2).
+//
+// TEMP(tracing): console.log '[progress] ...' — временная трассировка для диагностики;
+// снять после подтверждения зелёного рантайма.
 import { supabase } from '../lib/supabase';
 import { epley } from '../utils/e1rm';
+import { computeStreaks } from '../utils/streak';
 import { profileService, PersonalRecord } from './profileService';
 
 export interface WeeklyVolume {
@@ -17,9 +27,26 @@ export interface PersonalRecordWithDate extends PersonalRecord {
   recordDate: string; // ISO date
 }
 
+export interface StrengthPoint {
+  weekStart: string; // YYYY-MM-DD (понедельник)
+  e1rm: number;
+}
+
+export interface StrengthSeries {
+  exerciseName: string;
+  points: StrengthPoint[];
+}
+
+export interface WeightPoint {
+  date: string; // YYYY-MM-DD (metric_date)
+  weightKg: number;
+}
+
 export interface ProgressData {
   weeklyVolume: WeeklyVolume[]; // последние 8 недель
-  personalRecords: PersonalRecordWithDate[]; // top 5 с датами
+  personalRecords: PersonalRecordWithDate[]; // top-5 с датами
+  strengthTrend: StrengthSeries[]; // top-3 упражнения по e1RM
+  weightTrend: WeightPoint[]; // замеры веса за 8 недель
   totalWorkouts: number;
   totalVolume: number;
   currentStreak: number;
@@ -27,21 +54,35 @@ export interface ProgressData {
 }
 
 /**
- * Получить данные для Progress hub.
- * Переиспользует profileService.getPersonalRecords + getStats.
- * Добавляет: объём по неделям + даты рекордов.
+ * Данные для Progress hub.
+ * Core-блоки (stats/volume/streak): ошибка → error-state с меткой источника.
+ * Опциональные блоки (personalRecords временно, strength/weight постоянно):
+ * ошибка → блок деградирует в [], экран живёт; причина — в console.error (Metro).
  */
 export async function getProgressData(userId: string): Promise<ProgressData> {
-  const [stats, personalRecords, weeklyVolume, streakData] = await Promise.all([
-    profileService.getStats(userId),
-    getPersonalRecordsWithDates(userId),
-    getWeeklyVolume(userId, 8),
-    getStreakData(userId),
+  console.log('[progress] fetch start'); // TEMP(tracing)
+
+  const [stats, weeklyVolume, streakData] = await Promise.all([
+    required('stats', profileService.getStats(userId)),
+    required('weeklyVolume', getWeeklyVolume(userId, 8)),
+    required('streak', getStreakData(userId)),
   ]);
+
+  // personalRecords временно optional: экран не роняем, причину видим в логах.
+  // Вернуть в required после подтверждения зелёного рантайма.
+  const [personalRecords, strengthTrend, weightTrend] = await Promise.all([
+    optional('personalRecords', getPersonalRecordsWithDates(userId), []),
+    optional('strengthTrend', getStrengthTrend(userId, 8), []),
+    optional('weightTrend', getWeightTrend(userId, 8), []),
+  ]);
+
+  console.log('[progress] fetch done'); // TEMP(tracing)
 
   return {
     weeklyVolume,
     personalRecords,
+    strengthTrend,
+    weightTrend,
     totalWorkouts: stats.totalWorkouts,
     totalVolume: stats.totalVolume,
     currentStreak: streakData.current,
@@ -49,43 +90,61 @@ export async function getProgressData(userId: string): Promise<ProgressData> {
   };
 }
 
+const errDetail = (e: any) =>
+  `${e?.message ?? e} | code=${e?.code ?? ''} | details=${e?.details ?? ''} | hint=${e?.hint ?? ''}`;
+
+/** Core-блок: логирует ok/FAILED и пробрасывает ошибку с меткой источника. */
+async function required<T>(label: string, p: Promise<T>): Promise<T> {
+  try {
+    const v = await p;
+    console.log(`[progress] ${label} ok`); // TEMP(tracing)
+    return v;
+  } catch (e: any) {
+    console.error(`[progress] ${label} FAILED:`, errDetail(e)); // TEMP(tracing)
+    throw new Error(`progress:${label}: ${e?.message ?? e}`);
+  }
+}
+
+/** Опциональный блок: деградирует в fallback, причина — в console.error. */
+async function optional<T>(label: string, p: Promise<T>, fallback: T): Promise<T> {
+  try {
+    const v = await p;
+    console.log(`[progress] ${label} ok`); // TEMP(tracing)
+    return v;
+  } catch (e: any) {
+    console.error(`[progress] ${label} FAILED:`, errDetail(e)); // TEMP(tracing)
+    return fallback;
+  }
+}
+
 /**
- * Объём тренировок по неделям (последние N недель).
- * Группировка на клиенте для простоты (не RPC).
+ * Объём тренировок по неделям (окно N недель, последний bucket = текущая неделя).
+ * Группировка по понедельникам на клиенте.
  */
 async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVolume[]> {
   const now = new Date();
-  // Окно из N недель, где ПОСЛЕДНИЙ bucket = текущая неделя.
-  // Старая формула `now - weeks*7d` сдвигала окно на неделю назад — сегодняшние
-  // тренировки не попадали в chart и в блок регулярности.
   const startMs = now.getTime() - (weeks - 1) * 7 * 24 * 60 * 60 * 1000;
   const startISO = new Date(startMs).toISOString();
 
-  const { data: workouts } = await supabase
+  const { data: workouts, error } = await supabase
     .from('workouts')
     .select('created_at, workout_exercises (workout_logs (weight_kg, reps))')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
+    .is('skipped_at', null) // FIT-7: пропуски не считаем
     .gte('created_at', startISO)
     .order('created_at', { ascending: true });
 
+  if (error) throw error;
   if (!workouts || workouts.length === 0) return [];
 
-  // Группируем по неделям (понедельник как начало)
   const byWeek = new Map<string, { volume: number; count: number }>();
-  workouts.forEach((workout: any) => {
-    const date = new Date(workout.created_at);
-    // Находим понедельник этой недели
-    const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, ...
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(date);
-    monday.setDate(date.getDate() + mondayOffset);
-    const weekStart = monday.toISOString().split('T')[0];
 
+  workouts.forEach((workout: any) => {
+    const weekStart = getMondayISO(new Date(workout.created_at));
     if (!byWeek.has(weekStart)) {
       byWeek.set(weekStart, { volume: 0, count: 0 });
     }
-
     const week = byWeek.get(weekStart)!;
     week.count += 1;
 
@@ -102,12 +161,9 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
   const result: WeeklyVolume[] = [];
   for (let i = 0; i < weeks; i++) {
     const weekStart = new Date(startMs + i * 7 * 24 * 60 * 60 * 1000);
-    const mondayOffset = weekStart.getDay() === 0 ? -6 : 1 - weekStart.getDay();
-    weekStart.setDate(weekStart.getDate() + mondayOffset);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
-
+    const weekStartStr = getMondayISO(weekStart);
     const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setDate(weekEnd.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
 
     const data = byWeek.get(weekStartStr) || { volume: 0, count: 0 };
@@ -118,74 +174,63 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
       workoutsCount: data.count,
     });
   }
-
   return result;
 }
 
 /**
- * PR с датами рекордов (когда был установлен).
- * Расширяет profileService.getPersonalRecords датами.
+ * PR с датами рекордов (top-5 по весу).
+ * Один вложенный запрос: имена — embed exercises(name), без цепочки .in(),
+ * которая давала 400 Bad Request.
  */
-async function getPersonalRecordsWithDates(
-  userId: string,
-): Promise<PersonalRecordWithDate[]> {
-  const { data: userWorkouts } = await supabase
+async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
+  const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('id, created_at')
+    .select(
+      'created_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at))',
+    )
     .eq('user_id', userId);
 
-  if (!userWorkouts || userWorkouts.length === 0) return [];
-  const workoutIds = userWorkouts.map((w) => w.id);
-  const workoutDateMap = new Map(userWorkouts.map((w) => [w.id, w.created_at]));
-
-  const { data: workoutExercises } = await supabase
-    .from('workout_exercises')
-    .select('id, exercise_id, workout_id')
-    .in('workout_id', workoutIds);
-
-  if (!workoutExercises || workoutExercises.length === 0) return [];
-  const exerciseIds = [...new Set(workoutExercises.map((we) => we.exercise_id))];
-  const workoutExerciseIds = workoutExercises.map((we) => we.id);
-
-  const { data: exercises } = await supabase
-    .from('exercises')
-    .select('id, name')
-    .in('id', exerciseIds);
-  const exerciseNameMap = new Map(exercises?.map((e) => [e.id, e.name]) || []);
-
-  const { data: logs } = await supabase
-    .from('workout_logs')
-    .select('workout_exercise_id, weight_kg, reps, completed_at')
-    .in('workout_exercise_id', workoutExerciseIds);
+  if (error) throw error;
+  if (!workouts || workouts.length === 0) return [];
 
   const exerciseRecords: Record<string, PersonalRecordWithDate> = {};
-  logs?.forEach((log: any) => {
-    const workoutExercise = workoutExercises.find((we) => we.id === log.workout_exercise_id);
-    if (!workoutExercise) return;
-    const exerciseId = workoutExercise.exercise_id;
-    const exerciseName = exerciseNameMap.get(exerciseId);
-    if (!exerciseName) return;
-    const weight = parseFloat(log.weight_kg) || 0;
-    const reps = parseInt(log.reps) || 0;
-    const setE1rm = epley(weight, reps);
-    const workoutDate = workoutDateMap.get(workoutExercise.workout_id) || log.completed_at;
 
-    const existing = exerciseRecords[exerciseId];
-    if (!existing || weight > existing.maxWeight) {
-      exerciseRecords[exerciseId] = {
-        name: exerciseName,
-        maxWeight: weight,
-        reps,
-        e1rm: Math.max(setE1rm, existing?.e1rm ?? 0),
-        recordDate: workoutDate,
-      };
-    } else if (setE1rm > existing.e1rm) {
-      existing.e1rm = setE1rm;
-      // Обновляем дату, если новый e1RM рекорд
-      if (setE1rm > existing.e1rm) {
-        existing.recordDate = workoutDate;
-      }
-    }
+  workouts.forEach((workout: any) => {
+    const workoutDate = workout.created_at ?? '';
+    workout.workout_exercises?.forEach((we: any) => {
+      const exerciseId = we.exercise_id;
+      const exerciseName = we.exercises?.name;
+      if (!exerciseId || !exerciseName) return;
+
+      we.workout_logs?.forEach((log: any) => {
+        const weight = parseFloat(log.weight_kg) || 0;
+        const reps = parseInt(log.reps) || 0;
+        if (weight <= 0 || reps <= 0) return;
+
+        const setE1rm = epley(weight, reps);
+        const recordDate = workoutDate || log.completed_at || '';
+
+        const existing = exerciseRecords[exerciseId];
+        if (!existing) {
+          exerciseRecords[exerciseId] = {
+            name: exerciseName,
+            maxWeight: weight,
+            reps,
+            e1rm: setE1rm,
+            recordDate,
+          };
+        } else {
+          if (weight > existing.maxWeight) {
+            existing.maxWeight = weight;
+            existing.reps = reps;
+          }
+          if (setE1rm > existing.e1rm) {
+            existing.e1rm = setE1rm;
+            existing.recordDate = recordDate;
+          }
+        }
+      });
+    });
   });
 
   return Object.values(exerciseRecords)
@@ -195,24 +240,116 @@ async function getPersonalRecordsWithDates(
 }
 
 /**
- * Streak data (current + best).
- * Переиспользует логику из utils/streak.ts.
+ * Тренд e1RM по неделям для top-3 упражнений (по количеству недель с данными).
+ * Отвечает на «Становлюсь ли я сильнее?». Точка тренда = лучший e1RM за неделю.
+ * Один вложенный запрос (embed exercises(name)), без .in().
  */
-async function getStreakData(
-  userId: string,
-): Promise<{ current: number; best: number }> {
-  const { data: workouts } = await supabase
+async function getStrengthTrend(userId: string, weeks: number): Promise<StrengthSeries[]> {
+  const startMs = Date.now() - (weeks - 1) * 7 * 24 * 60 * 60 * 1000;
+  const startISO = new Date(startMs).toISOString();
+
+  const { data: workouts, error } = await supabase
+    .from('workouts')
+    .select('created_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps))')
+    .eq('user_id', userId)
+    .not('finished_at', 'is', null)
+    .is('skipped_at', null)
+    .gte('created_at', startISO);
+
+  if (error) throw error;
+  if (!workouts || workouts.length === 0) return [];
+
+  // exercise name → weekStart → e1RM[]
+  const exerciseWeeks = new Map<string, Map<string, number[]>>();
+
+  workouts.forEach((workout: any) => {
+    const weekStart = getMondayISO(new Date(workout.created_at));
+    workout.workout_exercises?.forEach((we: any) => {
+      const name = we.exercises?.name;
+      if (!name) return;
+      we.workout_logs?.forEach((log: any) => {
+        const weight = parseFloat(log.weight_kg) || 0;
+        const reps = parseInt(log.reps) || 0;
+        if (weight <= 0 || reps <= 0) return;
+
+        if (!exerciseWeeks.has(name)) exerciseWeeks.set(name, new Map());
+        const weekMap = exerciseWeeks.get(name)!;
+        if (!weekMap.has(weekStart)) weekMap.set(weekStart, []);
+        weekMap.get(weekStart)!.push(epley(weight, reps));
+      });
+    });
+  });
+
+  // Top-3 упражнения по количеству недель с данными
+  const ranked = [...exerciseWeeks.entries()]
+    .map(([name, weekMap]) => ({ name, weekCount: weekMap.size }))
+    .sort((a, b) => b.weekCount - a.weekCount)
+    .slice(0, 3);
+
+  return ranked.map(({ name }) => ({
+    exerciseName: name,
+    points: [...exerciseWeeks.get(name)!.entries()]
+      .map(([weekStart, e1rms]) => ({ weekStart, e1rm: Math.max(...e1rms) }))
+      .sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
+  }));
+}
+
+/**
+ * Тренд веса за последние N недель (body_metrics.metric_date).
+ * Отвечает на «Как меняется моё тело?».
+ */
+async function getWeightTrend(userId: string, weeks: number): Promise<WeightPoint[]> {
+  const startMs = Date.now() - weeks * 7 * 24 * 60 * 60 * 1000;
+  // metric_date — date (YYYY-MM-DD): сравниваем с date-only строкой
+  const startDate = new Date(startMs).toISOString().split('T')[0];
+
+  const { data: metrics, error } = await supabase
+    .from('body_metrics')
+    .select('metric_date, weight_kg')
+    .eq('user_id', userId)
+    .not('weight_kg', 'is', null)
+    .gte('metric_date', startDate)
+    .order('metric_date', { ascending: true });
+
+  if (error) throw error;
+  if (!metrics || metrics.length === 0) return [];
+
+  return metrics.map((m: any) => ({
+    date: m.metric_date,
+    weightKg: parseFloat(m.weight_kg) || 0,
+  }));
+}
+
+/**
+ * Streak (current + best) через utils/streak.ts.
+ */
+async function getStreakData(userId: string): Promise<{ current: number; best: number }> {
+  const { data: workouts, error } = await supabase
     .from('workouts')
     .select('created_at')
     .eq('user_id', userId)
-    .not('finished_at', 'is', null);
+    .not('finished_at', 'is', null)
+    .is('skipped_at', null);
 
+  if (error) throw error;
   if (!workouts || workouts.length === 0) {
     return { current: 0, best: 0 };
   }
 
-  const dates = workouts.map((w) => w.created_at);
-  const { computeStreaks } = await import('../utils/streak');
+  const dates = workouts.map((w) => w.created_at).filter((d): d is string => !!d);
+  if (dates.length === 0) return { current: 0, best: 0 };
+
   const streak = computeStreaks(dates);
   return { current: streak.current, best: streak.best };
+}
+
+// ===== Helpers =====
+
+/** Понедельник недели данной даты, YYYY-MM-DD. */
+function getMondayISO(date: Date): string {
+  const d = new Date(date);
+  const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, ...
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  d.setDate(d.getDate() + mondayOffset);
+  return d.toISOString().split('T')[0];
 }

@@ -61,6 +61,7 @@ Code search — первичный источник фактов; этот фа�
 | `app/(tabs)/profile/injuries.tsx` | injuries | `useInjuries`, injury warnings |
 | `app/(tabs)/profile/metrics.tsx` | body metrics | `useBodyMetrics`, trend charts |
 | `app/(tabs)/profile/settings.tsx` | settings | timer/theme/unit/profile settings |
+| `app/profile/progress.tsx` |Progress hub (UX-11): «Как я меняюсь?»|useProgress, progressService|
 
 ## 2. Highest-priority UX surfaces
 
@@ -235,22 +236,27 @@ Current behavior:
 ## 5. Profile / Context
 
 Screens:
-- `profile.tsx`
-- `profile/goals.tsx`
-- `profile/injuries.tsx`
-- `profile/metrics.tsx`
-- `profile/settings.tsx`
+`profile.tsx`
+`profile/goals.tsx`
+`profile/injuries.tsx`
+`profile/metrics.tsx`
+`profile/settings.tsx`
+`profile/progress.tsx` — Progress hub (UX-11)
 
 Dependencies:
-- `useProfile.ts`
-- `useBodyMetrics.ts`
-- `useInjuries.ts`
-- `goalsService.ts`
-- `metricsService.ts`
-- `profileService.ts`
-- `macroCalculator.ts`
-- `WeightTrendChart.tsx`
-- `MetricSparkline.tsx`
+`useProfile.ts`
+`useBodyMetrics.ts`
+`useInjuries.ts`
+`useProgress.ts`
+`goalsService.ts`
+`metricsService.ts`
+`profileService.ts`
+`progressService.ts`
+`macroCalculator.ts`
+`WeightTrendChart.tsx`
+`MetricSparkline.tsx`
+`progress/ProgressStatsCards.tsx`
+`progress/VolumeTrendChart.tsx`
 
 ## 6. Shared UI
 
@@ -291,6 +297,7 @@ Important components:
 | `useUnitPreferences` | UnitToggle, ExerciseCard, SetsGrid |
 | `useTheme` | all UI |
 | `useToast` | all screens |
+| `useProgress` |profile/progress|
 
 ## 8. Service dependency map
 
@@ -309,6 +316,7 @@ Important components:
 | `warmupService` | useWarmup |
 | `readinessService` | ReadinessSheet/Dashboard |
 | `painService` | PainSheet/ExerciseCard |
+| `progressService` |useProgress, profile/progress|
 
 ## 9. Core types / constants / utilities
 
@@ -406,6 +414,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Program replacement (UX-5 Feature 1)**: replaceExerciseInProgram в programsService — 7 шагов (workout → workout_exercise → program_day → program_exercise → UPDATE program_exercises + exercise_name → UPDATE текущей workout_exercises.exercise_id для защиты от orphaned row в sync → syncProgramChanges). Alert в workout/[id].tsx через handleReplaceChoice: 3 кнопки при наличии программы (Отмена / Только сегодня / В программе destructive) или мгновенная temp-замена для ad-hoc тренировок. Rollback при ошибке sync (например, seeded программы с created_by IS NULL).
 - **Sync safety insight (UX-5 Feature 1)**: RPC sync_program_changes_to_workouts удаляет workout_exercises с exercise_id, которого нет в program_exercises (orphaned by exercise_id). Поэтому перед вызовом sync обязательно обновляем текущую workout_exercises.exercise_id — иначе для не начатых тренировок sync пересоздал бы строку с новым id и осиротил бы pending workout_logs.
 - **History calendar (UX-9/UX-10)**: workoutDates вычисляются локально из HistoryWorkout.created_at через useMemo — ноль новых запросов, данные уже загружены getHistory. HistoryCalendar: навигация от самого раннего месяца с тренировками до текущего (в будущее нельзя), неделя с понедельника, точки на днях с тренировками. Тап по дню → DaySummaryCard (SheetShell) со списком тренировок дня; несколько тренировок в день поддерживаются. Выбор вида Calendar/List персистится в AsyncStorage (useHistoryView), default — Calendar. Пропущенные тренировки (skipped_at) в календаре НЕ отображаются — Вариант A, консистентно с FIT-7: History = фактически выполненное (historyService фильтрует по наличию логов).
+- **Progress hub (UX-11)**: app/profile/progress.tsx — единый экран «Как я меняюсь?» (PRODUCT.md §11). Compact-итоги (тр/тонны/стрик) → Сила (e1RM top-3 по неделям) → Объём (8 недель) → Вес (metric_date, delta) → PR top-5 с датами → регулярность одной строкой (вычисляется из weeklyVolume, ноль новых запросов). Грабли progressService: workout_exercises НЕ имеет exercise_name — имена только через embed exercises(name); цепочки .in() давали 400 Bad Request — только вложенные embed-запросы; skip-тренировки (finished_at + skipped_at, FIT-7) исключаем через .is('skipped_at', null); окно weeklyVolume: startMs = now - (weeks-1)*7d, последний bucket = текущая неделя.
 
 ## 13. Inventory maintenance
 
