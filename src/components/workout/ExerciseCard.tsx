@@ -35,7 +35,6 @@ interface ExerciseCardProps {
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  replaceExercise: (exIndex: number, altId: string) => void;
   startRestTimer: (seconds: number) => void;
   getIntensityInfo: (intensity: string) => {
     label: string;
@@ -63,7 +62,6 @@ export const ExerciseCard = memo(function ExerciseCard({
   updateSetFeedback,
   applyProgression,
   isSetCompleted,
-  replaceExercise,
   startRestTimer,
   getIntensityInfo,
   onOpenSettings,

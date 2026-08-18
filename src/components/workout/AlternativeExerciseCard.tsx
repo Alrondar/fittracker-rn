@@ -17,7 +17,8 @@ import { AlternativeExercise } from '../../types/workout';
 interface AlternativeExerciseCardProps {
   exercise: AlternativeExercise;
   exerciseIndex: number;
-  replaceExercise: (exIndex: number, altId: string) => void;
+  // UX-5 Feature 1: запрос на замену — caller выбирает тип (temp vs program)
+  onRequestReplace: (exIndex: number, altId: string) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
 }
@@ -51,7 +52,7 @@ function BlockHeading({
 export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   exercise,
   exerciseIndex,
-  replaceExercise,
+  onRequestReplace,
   colors,
   cardStyles,
 }: AlternativeExerciseCardProps) {
@@ -166,7 +167,7 @@ const hasInjuries = exercise.injuries.length > 0;
             marginBottom: SPACING.md,
           },
         ]}
-        onPress={() => replaceExercise(exerciseIndex, exercise.id)}
+        onPress={() => onRequestReplace(exerciseIndex, exercise.id)}
       >
         <RotateCcw size={16} color={colors.primary} strokeWidth={2} />
         <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>

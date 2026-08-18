@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   InteractionManager,
+  Alert,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams } from 'expo-router';
@@ -87,7 +88,9 @@ export default function WorkoutSessionScreen() {
     applyProgression,
     isSetCompleted,
     updateExerciseSettings,
+    programId,
     replaceExercise,
+    replaceExerciseInProgram,
     resetToOriginal,
     savePainState,
     clearPainState,
@@ -215,6 +218,39 @@ export default function WorkoutSessionScreen() {
     [colors],
   );
 
+  // UX-5 Feature 1: выбор типа замены (temp vs program)
+  // - Без программы: только временная замена (без выбора).
+  // - С программой: Alert с 3 кнопками — Отмена / Только сегодня / В программе.
+  //   «В программе» помечен destructive для визуального различения (PRODUCT.md §3.3).
+  //   Для готовых (seeded) программ replaceExerciseInProgram упадёт
+  //   («Program not found» из RPC) → rollback + Alert с объяснением.
+  const handleReplaceChoice = useCallback(
+    (exerciseIndex: number, alternativeId: string) => {
+      if (!programId) {
+        // Ad-hoc тренировка — только временная замена, без выбора
+        replaceExercise(exerciseIndex, alternativeId);
+        return;
+      }
+      Alert.alert(
+        'Заменить упражнение?',
+        'Только сегодня — замена в этой тренировке.\nВ программе — замена также в будущих тренировках программы.',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Только сегодня',
+            onPress: () => replaceExercise(exerciseIndex, alternativeId),
+          },
+          {
+            text: 'В программе',
+            style: 'destructive',
+            onPress: () => replaceExerciseInProgram(exerciseIndex, alternativeId),
+          },
+        ],
+      );
+    },
+    [programId, replaceExercise, replaceExerciseInProgram],
+  );
+
   const renderItem = useCallback(
     ({ item, index }: { item: any; index: number }) => (
       <ExerciseSlider
@@ -227,7 +263,7 @@ export default function WorkoutSessionScreen() {
         updateSetFeedback={updateSetFeedback}
         applyProgression={applyProgression}
         isSetCompleted={isSetCompleted}
-        replaceExercise={replaceExercise}
+        onRequestReplace={handleReplaceChoice}
         resetToOriginal={resetToOriginal}
         startRestTimer={startRestTimer}
         getIntensityInfo={getIntensityInfo}
@@ -247,7 +283,7 @@ export default function WorkoutSessionScreen() {
       updateSetFeedback,
       applyProgression,
       isSetCompleted,
-      replaceExercise,
+      handleReplaceChoice,
       resetToOriginal,
       startRestTimer,
       getIntensityInfo,

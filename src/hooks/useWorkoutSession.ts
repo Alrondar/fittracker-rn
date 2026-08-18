@@ -16,7 +16,10 @@ import {
   SetFeedbackPatch,
   ExercisePainState,
 } from '../types/workout';
-import { advanceProgramProgress } from '../services/programsService';
+import {
+  advanceProgramProgress,
+  replaceExerciseInProgram,
+} from '../services/programsService';
 import { painService, PainType } from '../services/painService';
 import { mapError } from '../utils/errorMapper';
 import { perfMark, perfSince } from '../utils/perf';
@@ -391,8 +394,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         ...prev,
         [exercise.workout_exercise_id]: alternativeId,
       }));
-
-      Alert.alert('Заменено', `${exercise.name} → ${alternative.name}`);
+      // Alert убран: при наличии программы Alert показывает handleReplaceChoice
+      // (UX-5 Feature 1) в [id].tsx; при отсутствии программы — действие настолько
+      // лёгкое, что подтверждение не требуется (haptic + мгновенная замена).
     },
     [loadAlternatives],
   );
@@ -426,6 +430,78 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     },
     [loadWorkout],
   );
+
+// ============================================================================
+// UX-5 Feature 1: PROGRAM REPLACEMENT (permanent)
+// ============================================================================
+/**
+ * Заменить упражнение в программе — обновляет program_exercises + sync будущих тренировок.
+ * Локальное обновление (текущая тренировка) выполняется тем же update'ом exercises,
+ * что и temporary replacement. При ошибке сервиса — ROLLBACK локального состояния
+ * (программа не изменилась, UI должен показывать оригинал).
+ */
+const replaceExerciseInProgramCb = useCallback(
+  async (exerciseIndex: number, alternativeId: string) => {
+    const exercise = exercisesRef.current[exerciseIndex];
+    if (!exercise || !programId) return;
+
+    const alternatives = await loadAlternatives(exercise.id, exercise.primary_muscles);
+    const alternative = alternatives.find((item) => item.id === alternativeId);
+    if (!alternative) return;
+
+    // Snapshot для rollback при ошибке сервиса
+    const previousExercise = { ...exercise };
+
+    // 1. Локальное (оптимистичное) обновление — как temporary
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setExercises((prev) => {
+      const updated = [...prev];
+      updated[exerciseIndex] = {
+        ...updated[exerciseIndex],
+        id: alternative.id,
+        name: alternative.name,
+        primary_muscles: alternative.primary_muscles,
+        secondary_muscles: alternative.secondary_muscles,
+        technique: alternative.technique,
+        equipment: alternative.equipment ?? [],
+        settings: alternative.settings,
+        benefits: alternative.benefits,
+        risks: alternative.risks,
+        injuries: alternative.injuries,
+        media_url: alternative.media_url,
+      };
+      return updated;
+    });
+
+    // 2. Программная замена (persistent + sync будущих тренировок)
+    try {
+      await replaceExerciseInProgram(
+        workoutId,
+        exercise.workout_exercise_id,
+        alternative.id,
+        alternative.name,
+      );
+      Alert.alert(
+        'Заменено в программе',
+        `${previousExercise.name} → ${alternative.name}\n\nИзменение применено к будущим тренировкам программы.`,
+      );
+    } catch (error) {
+      console.error('[useWorkoutSession] replaceExerciseInProgram:', error);
+      // Rollback локального состояния — программа не изменилась
+      setExercises((prev) => {
+        const updated = [...prev];
+        updated[exerciseIndex] = previousExercise;
+        return updated;
+      });
+      Alert.alert(
+        'Не удалось изменить программу',
+        'Программа не была изменена. Возможно, это готовая программа — только личные программы доступны для редактирования.',
+      );
+    }
+  },
+  [programId, workoutId, loadAlternatives],
+);
+
 
 // ============================================================================
 // PR6: PAIN STATE (upsert / delete + оптимистичное локальное обновление)
@@ -651,8 +727,9 @@ const clearPainState = useCallback(
     applyProgression,
     isSetCompleted,
     updateExerciseSettings,
-replaceExercise,
-resetToOriginal,
+    replaceExercise,
+    replaceExerciseInProgram: replaceExerciseInProgramCb,
+    resetToOriginal,
 savePainState,
 clearPainState,
 startRestTimer,

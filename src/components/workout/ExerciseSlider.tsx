@@ -52,7 +52,8 @@ interface ExerciseSliderProps {
   ) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  replaceExercise: (exIndex: number, altId: string) => void;
+  // UX-5 Feature 1: запрос замены (caller выбирает temp vs program)
+  onRequestReplace: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
   startRestTimer: (seconds: number) => void;
   getIntensityInfo: (intensity: string) => {
@@ -80,7 +81,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   updateSetFeedback,
   applyProgression,
   isSetCompleted,
-  replaceExercise,
+  onRequestReplace,
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
@@ -194,7 +195,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             updateSetFeedback={updateSetFeedback}
             applyProgression={applyProgression}
             isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
             startRestTimer={startRestTimer}
             getIntensityInfo={getIntensityInfo}
             onOpenSettings={onOpenSettings}
@@ -258,7 +258,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
       <AlternativeExerciseCard
         exercise={alt}
         exerciseIndex={exerciseIndex}
-        replaceExercise={replaceExercise}
+        onRequestReplace={onRequestReplace}
         colors={colors}
         cardStyles={cardStyles}
       />
