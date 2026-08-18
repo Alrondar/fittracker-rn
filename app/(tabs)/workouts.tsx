@@ -1,9 +1,25 @@
-import { useCallback } from 'react';
-import { View, Text, SectionList, RefreshControl, TouchableOpacity } from 'react-native';
+import { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  SectionList,
+  RefreshControl,
+  TouchableOpacity,
+  Modal,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { ClipboardList, Dumbbell, Check, Clock, ChevronRight } from 'lucide-react-native';
+import {
+  ClipboardList,
+  Dumbbell,
+  Check,
+  Clock,
+  ChevronRight,
+  SkipForward,
+} from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
@@ -13,14 +29,17 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
 
-type WorkoutStatus = 'completed' | 'next' | 'in_progress' | 'upcoming';
+type WorkoutStatus = 'completed' | 'skipped' | 'next' | 'in_progress' | 'upcoming';
 
 function getWorkoutStatus(w: any, activeProgram: ActiveProgram | null): WorkoutStatus {
+  // UX-5 Feature 2: пропуск — отдельный статус (skipped_at заполнен)
+  if (w.skipped_at) return 'skipped';
   if (w.finished_at) return 'completed';
   if (
     activeProgram &&
@@ -42,12 +61,16 @@ export default function WorkoutsScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-  const { data, isPending, isFetching, refetch } = useWorkouts(userId);
+  const { data, isPending, isFetching, refetch, skip } = useWorkouts(userId);
   const activeProgram = data?.activeProgram ?? null;
   const sections = data?.sections ?? [];
   const progress = data?.progress ?? { completed: 0, total: 0 };
   const loading = isPending;
   const refreshing = isFetching && !isPending;
+
+  // UX-5 Feature 2: skip workout
+  const [skipTarget, setSkipTarget] = useState<{ id: string; name: string } | null>(null);
+  const [skipping, setSkipping] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,6 +91,24 @@ export default function WorkoutsScreen() {
     [router],
   );
 
+  // UX-5 Feature 2: пропуск тренировки (sequential + retry, паттерн saveWorkout)
+  const handleSkip = useCallback(async () => {
+    if (!skipTarget || !activeProgram) return;
+    setSkipping(true);
+    try {
+      await skip(skipTarget.id, activeProgram.programId);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSkipTarget(null);
+    } catch (error: any) {
+      Alert.alert('Не удалось пропустить', error?.message || 'Попробуйте ещё раз', [
+        { text: 'Отмена', style: 'cancel' },
+        { text: 'Повторить', onPress: () => handleSkip() },
+      ]);
+    } finally {
+      setSkipping(false);
+    }
+  }, [skipTarget, activeProgram, skip]);
+
   // ===== Шапка: прогресс программы + «Следующая» =====
   const renderHeader = useCallback(() => {
     if (!activeProgram) return null;
@@ -80,15 +121,12 @@ export default function WorkoutsScreen() {
     const phaseMeta = currentPhaseObj ? getPhaseMeta(currentPhaseObj.phase_type) : null;
     const PhaseIcon = phaseMeta?.icon;
     const progressPct = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
-
     return (
       <View style={{ padding: SPACING.lg, paddingBottom: 0 }}>
         <AppCard variant="default">
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
             {activeProgram.name}
           </Text>
-
-          {/* ✅ НОВОЕ: «Следующая: Фаза N, Неделя X» (только при активной программе) */}
           <View
             style={{
               flexDirection: 'row',
@@ -110,7 +148,6 @@ export default function WorkoutsScreen() {
             </Text>
             <ChevronRight size={12} color={colors.primary} strokeWidth={2.5} />
           </View>
-
           {currentPhaseObj && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
               <View
@@ -135,7 +172,6 @@ export default function WorkoutsScreen() {
               </Text>
             </View>
           )}
-
           <View style={{ marginTop: SPACING.md }}>
             <View
               style={{
@@ -189,23 +225,37 @@ export default function WorkoutsScreen() {
       const phaseColor = getPhaseColor(section.phaseType, colors);
       const phaseMeta = getPhaseMeta(section.phaseType);
       const PhaseIcon = phaseMeta.icon;
+
       const borderColor =
         status === 'next'
           ? colors.primary
           : status === 'in_progress'
-            ? colors.warning
-            : status === 'completed'
-              ? colors.success + '60'
-              : colors.border;
+          ? colors.warning
+          : status === 'completed'
+          ? colors.success + '60'
+          : colors.border;
+
+      // UX-5 Feature 2: long press только для «Следующая» (скоуп подтверждён)
+      const handleLongPress = () => {
+        if (status !== 'next') return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setSkipTarget({ id: item.id, name: item.name });
+      };
+
       return (
         <FadeIn>
-          <TouchableOpacity onPress={() => navigateToWorkout(item.id)} activeOpacity={0.85}>
+          <TouchableOpacity
+            onPress={() => navigateToWorkout(item.id)}
+            onLongPress={handleLongPress}
+            delayLongPress={500}
+            activeOpacity={0.85}
+          >
             <AppCard
               variant="compact"
               style={{
                 borderColor,
                 borderWidth: status === 'next' ? 1.5 : 1,
-                opacity: status === 'upcoming' ? 0.7 : 1,
+                opacity: status === 'upcoming' ? 0.7 : status === 'skipped' ? 0.6 : 1,
                 marginHorizontal: SPACING.lg,
               }}
             >
@@ -238,6 +288,15 @@ export default function WorkoutsScreen() {
                     icon={<Check size={12} color={colors.success} strokeWidth={2} />}
                   >
                     Выполнена
+                  </AppBadge>
+                )}
+                {status === 'skipped' && (
+                  <AppBadge
+                    variant="default"
+                    size="small"
+                    icon={<SkipForward size={12} color={colors.textSecondary} strokeWidth={2} />}
+                  >
+                    Пропущена
                   </AppBadge>
                 )}
                 {status === 'in_progress' && (
@@ -326,6 +385,78 @@ export default function WorkoutsScreen() {
           }
         />
       )}
+
+      {/* UX-5 Feature 2: skip workout — bottom sheet с подтверждением */}
+      <Modal
+        transparent
+        visible={!!skipTarget}
+        animationType="slide"
+        onRequestClose={() => !skipping && setSkipTarget(null)}
+      >
+        <SheetShell
+          title="Пропустить тренировку?"
+          onClose={() => !skipping && setSkipTarget(null)}
+        >
+          {skipTarget && (
+            <>
+              <Text
+                style={[
+                  typography.body,
+                  { color: colors.textPrimary, fontWeight: '600', marginBottom: SPACING.xs },
+                ]}
+              >
+                {skipTarget.name}
+              </Text>
+              <Text
+                style={[
+                  typography.bodySmall,
+                  { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.lg },
+                ]}
+              >
+                Программа перейдёт к следующему дню. Подходы не будут записаны. Это действие нельзя
+                отменить.
+              </Text>
+              <TouchableOpacity
+                onPress={handleSkip}
+                disabled={skipping}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.sm,
+                  paddingVertical: SPACING.md,
+                  borderRadius: BORDER_RADIUS.lg,
+                  backgroundColor: colors.warning,
+                  marginBottom: SPACING.sm,
+                }}
+              >
+                {skipping ? (
+                  <ActivityIndicator color={colors.textInverse} size="small" />
+                ) : (
+                  <>
+                    <SkipForward size={18} color={colors.textInverse} strokeWidth={2} />
+                    <Text style={[typography.button, { color: colors.textInverse }]}>
+                      Пропустить тренировку
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setSkipTarget(null)}
+                disabled={skipping}
+                style={{
+                  alignItems: 'center',
+                  paddingVertical: SPACING.md,
+                  borderRadius: BORDER_RADIUS.lg,
+                  backgroundColor: colors.surfaceSecondary,
+                }}
+              >
+                <Text style={[typography.button, { color: colors.textSecondary }]}>Отмена</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </SheetShell>
+      </Modal>
     </SafeAreaView>
   );
 }

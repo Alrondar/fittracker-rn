@@ -1,6 +1,6 @@
 # FitTracker — Product Roadmap
 
-Срез: 11.08.2026
+Срез: 16.08.2026
 
 Source of truth: `STATUS.md` — статусы, `CLAUDE.md` — technical rules, `PRODUCT.md` — product/UX principles, `INVENTORY.md` — code map.
 
@@ -21,6 +21,8 @@ Roadmap меняется с AI-first на:
         ↓
 5. Расширение продукта
 ```
+
+Design polish (Stage H) и performance measurement (Stage I) — параллельные этапы, которые стартуют после стабилизации core Tracker UX.
 
 ## 1. Product North Star
 
@@ -238,11 +240,58 @@ AI может уточнить рекомендацию, если пользов
 - tests чистых функций;
 - smoke/regression workout/program flows;
 - UX/performance profiling;
-- store/privacy readiness.
+- store/privacy readiness;
+- quality gates: `tsc --noEmit` + `eslint` mandatory (CLAUDE.md §14).
 
-## 8. Этап G — Long-term 🔵
+## 8. Этап H — Design system polish 🟠
 
-После подтверждения core retention:
+Стартует после стабилизации tracker UX (A). Цель — довести визуальную часть до уровня продуктовой модели, не ломая существующую design system.
+
+### H1. Visual audit
+
+Аудит по `PRODUCT.md §3.1–3.5`: hierarchy, состояния (loading/error/empty), spacing, тёмная тема. Решение о переходе на новый UI kit — **только после H**, если текущей design system недостаточно.
+
+### H2. Workout surfaces
+
+- Recommendation card hierarchy (COACH-1).
+- RPE clarity (UX-6/7).
+- Остаток progressive disclosure (UX-2…UX-5).
+
+### H3. Program surfaces
+
+Detail / Editor mental models (PROG-1…PROG-7).
+
+### H4. Accessibility basics
+
+- Dynamic Type;
+- contrast ratios (WCAG 2.1 AA);
+- tap targets ≥ 44pt;
+- VoiceOver/TalkBack sanity checks.
+
+## 9. Этап I — Performance and measurement 🟠
+
+Стартует параллельно с H после стабилизации A.
+
+### I1. Baseline metrics
+
+Снять первые метрики (`STATUS.md §12`): cold start, workout screen mount, set logging, list scroll. Без метрик оптимизация — догадка.
+
+### I2. Profiling
+
+Профилирование workout flow после UX-изменений; исправление регрессий (связано с REL-5).
+
+### I3. Long lists audit
+
+Применимость виртуализации/FlashList в длинных списках (PERF-9).
+
+### I4. Quality gates
+
+`tsc --noEmit` + `eslint` обязательны перед «готово» (`CLAUDE.md §14`).
+
+## 10. Этап G — Long-term 🔵
+
+После подтверждения core retention **и прохождения этапов H/I**:
+
 - supersets/drop sets;
 - cardio;
 - notifications;
@@ -252,7 +301,7 @@ AI может уточнить рекомендацию, если пользов
 - Web/PWA;
 - AI video analysis.
 
-## 9. Conscious non-priorities
+## 11. Conscious non-priorities
 
 - обязательный AI chat;
 - AI-generated program как основной onboarding;
@@ -260,9 +309,10 @@ AI может уточнить рекомендацию, если пользов
 - перегруженный Workout dashboard;
 - отдельная вкладка для каждого типа аналитики;
 - social до подтверждения core retention;
-- сложные новые workout entities до стабилизации tracker UX.
+- сложные новые workout entities до стабилизации tracker UX;
+- новый UI kit до прохождения этапа H (если текущей design system достаточно).
 
-## 10. Definition of Done
+## 12. Definition of Done
 
 Feature готова, если:
 1. core tracker flow не стал медленнее;
@@ -272,9 +322,11 @@ Feature готова, если:
 5. существенную рекомендацию можно отклонить;
 6. safety rules не зависят от AI;
 7. архитектурные инварианты `CLAUDE.md` соблюдены;
-8. изменённые факты отражены в `STATUS.md` / `INVENTORY.md`.
+8. `tsc --noEmit` и `eslint` проходят;
+9. изменённые факты отражены в `STATUS.md` / `INVENTORY.md`;
+10. UI-изменения сверены с `PRODUCT.md §3.1–3.5`.
 
-## 11. Roadmap update rules
+## 13. Roadmap update rules
 
 - Roadmap содержит план и зависимости, а не детальные статусы.
 - Статус каждой задачи — `STATUS.md`.

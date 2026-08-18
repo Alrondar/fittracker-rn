@@ -16,6 +16,7 @@ import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import { SetData, SetFeedbackPatch } from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
+import { useRpeSettings } from '../../hooks/useRpeSettings';
 import {
   WeightUnit,
   weightToDisplay,
@@ -123,6 +124,8 @@ interface SetRowProps {
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   onOpenFeedback: (setIndex: number) => void;
+  // UX-7: predicate для показа чипа RPE (already-filled всегда показываются)
+  shouldShowRpeChip: (set: SetData, setIndex: number) => boolean;
 }
 
 const SetRow = memo(function SetRow({
@@ -138,6 +141,7 @@ const SetRow = memo(function SetRow({
   colors,
   cardStyles,
   onOpenFeedback,
+  shouldShowRpeChip,
 }: SetRowProps) {
   return (
     <View key={rowIndex} style={cardStyles.setRow}>
@@ -184,7 +188,7 @@ const SetRow = memo(function SetRow({
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
           <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0 }}>
-            {isSetCompleted(set) && (
+            {shouldShowRpeChip(set, startIndex + si) && (
               <SetFeedbackChip
                 rpe={set.rpe ?? null}
                 onPress={() => onOpenFeedback(startIndex + si)}
@@ -229,6 +233,28 @@ export const SetsGrid = memo(function SetsGrid({
   colors,
   cardStyles,
 }: SetsGridProps) {
+  // UX-7: настройка частоты запроса RPE
+  const { settings: rpeSettings } = useRpeSettings();
+
+  // UX-7: predicate для показа чипа RPE.
+  // Уже введённое значение (rpe != null) — показываем всегда (filled style).
+  // Новый запрос (rpe == null) — зависит от prompt:
+  //   always   — во всех completed сетах
+  //   last-set — только в последнем сете
+  //   off      — не показывать (уже введённые остаются)
+  const shouldShowRpeChip = useCallback(
+    (set: SetData, setIndex: number): boolean => {
+      if (set.rpe != null) return true;
+      if (!isSetCompleted(set)) return false;
+      const prompt = rpeSettings.prompt;
+      if (prompt === 'off') return false;
+      if (prompt === 'always') return true;
+      if (prompt === 'last-set') return setIndex === sets.length - 1;
+      return true;
+    },
+    [rpeSettings.prompt, sets.length, isSetCompleted],
+  );
+
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
   const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
 
@@ -431,6 +457,7 @@ export const SetsGrid = memo(function SetsGrid({
               colors={colors}
               cardStyles={cardStyles}
               onOpenFeedback={handleOpenFeedback}
+              shouldShowRpeChip={shouldShowRpeChip}
             />
           );
         })}

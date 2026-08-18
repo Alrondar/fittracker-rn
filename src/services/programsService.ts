@@ -659,6 +659,172 @@ export async function syncProgramChanges(programId: string): Promise<SyncProgram
 }
 
 // ============================================================================
+// PROGRAM EXERCISE REPLACEMENT (UX-5 Feature 1)
+// ============================================================================
+
+/**
+ * UX-5 Feature 1: Заменить упражнение в программе (постоянная замена).
+ *
+ * Алгоритм:
+ * 1. Разрешить workout → program_id + phase/week/day.
+ * 2. Разрешить workout_exercise → position + old exercise_id (для fallback-матчинга).
+ * 3. Найти program_day по цепочке с fallback'ами (зеркалит startProgramWorkout).
+ * 4. Найти program_exercise: сначала по (day, position), затем по (day, old exercise_id).
+ * 5. UPDATE program_exercises: exercise_id + exercise_name.
+ * 6. UPDATE текущей workout_exercises: exercise_id = новый — чтобы sync не пересоздал
+ *    строку и не осиротил pending workout_logs (для не начатых тренировок sync иначе
+ *    удалил бы старое упражнение как orphaned по exercise_id и вставил новое с новым id).
+ * 7. syncProgramChanges(program_id) — распространить на будущие тренировки.
+ *
+ * Ограничения RPC sync_program_changes_to_workouts:
+ * - SECURITY DEFINER с проверкой programs.created_by = auth.uid().
+ * - Для готовых (seeded) программ с created_by IS NULL вызов упадёт с
+ *   "Program not found". Caller должен обрабатывать ошибку и сообщать пользователю,
+ *   что программа недоступна для редактирования.
+ */
+export async function replaceExerciseInProgram(
+  workoutId: string,
+  workoutExerciseId: string,
+  newExerciseId: string,
+  newExerciseName: string,
+): Promise<void> {
+  // 1. Workout context
+  const { data: workout, error: workoutError } = await supabase
+    .from('workouts')
+    .select('program_id, phase_number, week_number, day_index')
+    .eq('id', workoutId)
+    .maybeSingle();
+
+  if (workoutError) throw workoutError;
+  if (!workout || !workout.program_id) {
+    throw new Error('Тренировка не привязана к программе');
+  }
+
+  const { program_id, phase_number, week_number, day_index } = workout;
+
+  // 2. Текущая строка workout_exercise — position + old exercise_id для fallback-матчинга
+  const { data: workoutExercise, error: weError } = await supabase
+    .from('workout_exercises')
+    .select('position, exercise_id')
+    .eq('id', workoutExerciseId)
+    .maybeSingle();
+
+  if (weError) throw weError;
+  if (!workoutExercise) throw new Error('Упражнение тренировки не найдено');
+
+  // 3. Найти program_day по цепочке (зеркалит startProgramWorkout)
+  const phaseNumber = phase_number ?? 1;
+  const weekNumber = week_number ?? 1;
+  const dayNumber = day_index ?? 1;
+
+  const { data: phase } = await supabase
+    .from('program_phases')
+    .select('id')
+    .eq('program_id', program_id)
+    .eq('phase_number', phaseNumber)
+    .limit(1)
+    .maybeSingle();
+
+  let dayId: string | null = null;
+  if (phase) {
+    const { data: exactDay } = await supabase
+      .from('program_days')
+      .select('id')
+      .eq('phase_id', phase.id)
+      .eq('week_number', weekNumber)
+      .eq('day_number', dayNumber)
+      .limit(1)
+      .maybeSingle();
+    dayId = exactDay?.id ?? null;
+
+    if (!dayId) {
+      const { data: templateDay } = await supabase
+        .from('program_days')
+        .select('id')
+        .eq('phase_id', phase.id)
+        .eq('week_number', 1)
+        .eq('day_number', dayNumber)
+        .limit(1)
+        .maybeSingle();
+      dayId = templateDay?.id ?? null;
+    }
+  }
+
+  if (!dayId) {
+    const { data: programDay } = await supabase
+      .from('program_days')
+      .select('id')
+      .eq('program_id', program_id)
+      .eq('week_number', weekNumber)
+      .eq('day_number', dayNumber)
+      .limit(1)
+      .maybeSingle();
+    dayId = programDay?.id ?? null;
+  }
+
+  if (!dayId) {
+    const { data: fallbackDay } = await supabase
+      .from('program_days')
+      .select('id')
+      .eq('program_id', program_id)
+      .eq('day_number', dayNumber)
+      .limit(1)
+      .maybeSingle();
+    dayId = fallbackDay?.id ?? null;
+  }
+
+  if (!dayId) throw new Error('День программы не найден');
+
+  // 4. program_exercise: match by position (primary), fallback by old exercise_id
+  let programExerciseId: string | null = null;
+  if (workoutExercise.position != null) {
+    const { data } = await supabase
+      .from('program_exercises')
+      .select('id')
+      .eq('program_day_id', dayId)
+      .eq('position', workoutExercise.position)
+      .limit(1)
+      .maybeSingle();
+    programExerciseId = data?.id ?? null;
+  }
+  if (!programExerciseId && workoutExercise.exercise_id) {
+    const { data } = await supabase
+      .from('program_exercises')
+      .select('id')
+      .eq('program_day_id', dayId)
+      .eq('exercise_id', workoutExercise.exercise_id)
+      .limit(1)
+      .maybeSingle();
+    programExerciseId = data?.id ?? null;
+  }
+  if (!programExerciseId) throw new Error('Упражнение в программе не найдено');
+
+  // 5. Update program_exercises (колонки: exercise_name + exercise_id; primary_muscles
+  // в program_exercises нет — подтягивается через JOIN с exercises таблицей)
+  const { error: peErr } = await supabase
+    .from('program_exercises')
+    .update({ exercise_id: newExerciseId, exercise_name: newExerciseName })
+    .eq('id', programExerciseId);
+
+  if (peErr) throw peErr;
+
+  // 6. Update текущей workout_exercises.exercise_id — чтобы sync не пересоздал строку.
+  // Критично для не начатых тренировок: sync удаляет workout_exercises, у которых
+  // exercise_id не совпадает ни с одним program_exercise (orphaned by exercise_id),
+  // и вставляет новый с новым id → osиротил бы pending workout_logs.
+  const { error: weUpdErr } = await supabase
+    .from('workout_exercises')
+    .update({ exercise_id: newExerciseId })
+    .eq('id', workoutExerciseId);
+
+  if (weUpdErr) throw weUpdErr;
+
+  // 7. Sync будущих тренировок. Для готовых (seeded) программ может упасть —
+  // см. комментарий в начале функции.
+  await syncProgramChanges(program_id);
+}
+
+// ============================================================================
 // ИНФО О ПРОГРАММЕ ДЛЯ ТРЕНИРОВКИ (шапка workout/[id])
 // ============================================================================
 export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutProgramInfo | null> {

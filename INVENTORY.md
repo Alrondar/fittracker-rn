@@ -1,8 +1,46 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 11.08.2026
+Срез: 18.08.2026 (feature/workout-ux-rework)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
+
+## 0. Navigation: where to look for what
+
+Этот раздел помогает находить код с MCP или без. Первичный источник — code search; здесь — направления и поисковые шаблоны.
+
+| Что ищем | Где искать |
+|---|---|
+| Экраны/роуты | `app/`, табы — `app/(tabs)/` (Expo Router, file-based) |
+| Компоненты фич | `src/components/<feature>/`: `workout/`, `program/`, `dashboard/`, `exercises/`, `profile/` |
+| Shared UI | `src/components/ui/` (`AppButton`, `AppCard`, `SheetShell`, `Skeleton`, …) |
+| Хуки | `src/hooks/`, feature-подпапки (`hooks/workout/`, `hooks/program/`, …) |
+| Supabase boundary | `src/services/` (единственное место для `supabase.from/auth/rpc`) |
+| Тема/токены/константы | `src/constants/` (`theme.ts`, `semanticColors.ts`, `phaseTypes.ts`, `injuries.ts`, …) |
+| Чистые утилиты | `src/utils/` |
+| Типы | `src/types/` (`database.types.ts` — generated, не редактируется вручную) |
+| Схема/RPC/migrations | `supabase/migrations/` |
+| Expo config | `app.config.ts` + `src/lib/config.ts` |
+
+### Search patterns
+
+Типовые запросы для code search / grep:
+
+- **Потребители компонента/хука**: `from '.*<name>'` или `import.*<name>` в `src/` и `app/`.
+- **Нарушения Supabase boundary**: `supabase.from(` и `supabase.auth.` вне `src/services/` и root auth flow.
+- **RPC вызовы**: `rpc('` в `src/services/`.
+- **React Query**: `useQuery|useMutation|useInfiniteQuery|queryOptions` в `src/hooks/`, `src/services/`.
+- **Hardcoded colors**: `#[0-9a-fA-F]{3,8}`, `rgba?(` в `src/` вне `src/constants/`.
+- **Использование темы**: `useTheme(`.
+- **Анимации**: `useSharedValue|useAnimatedStyle|withTiming|withSpring`.
+- **Migrations таблиц/RPC**: поиск в `supabase/migrations/` + проверка в `types/database.types.ts`.
+
+### Без MCP
+
+Этот файл и таблица выше дают направление. Не выдумывать содержимое файлов: запросить у пользователя текущий файл или явно пометить предположение. Роли, blast-radius, грабли — в разделах ниже.
+
+### С MCP
+
+Code search — первичный источник фактов; этот файл — вторичный. Поиск потребителей перед изменением обязателен (CLAUDE.md §10).
 
 ## 1. Screen map
 
@@ -23,6 +61,7 @@
 | `app/(tabs)/profile/injuries.tsx` | injuries | `useInjuries`, injury warnings |
 | `app/(tabs)/profile/metrics.tsx` | body metrics | `useBodyMetrics`, trend charts |
 | `app/(tabs)/profile/settings.tsx` | settings | timer/theme/unit/profile settings |
+| `app/profile/progress.tsx` |Progress hub (UX-11): «Как я меняюсь?»|useProgress, progressService|
 
 ## 2. Highest-priority UX surfaces
 
@@ -31,7 +70,7 @@
 `app/(tabs)/workout/[id].tsx`
 
 Main components:
-- `src/components/workout/ExerciseCard.tsx`
+- `src/components/workout/ExerciseCard.tsx` — thin orchestrator, рендерит секции по displayMode
 - `ExerciseSlider.tsx`
 - `SetsGrid.tsx`
 - `SetFeedbackControl.tsx`
@@ -44,19 +83,37 @@ Main components:
 - `WarmupBlock`
 - `WarmupExerciseCard`
 - `PainSheet`
+- `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
+- `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») с PR6 pain affordance
+- `sections/ExerciseWarningBanner.tsx` — caution/avoid warning
+- `sections/ExerciseCardEquipment.tsx` — EquipmentBubbles (вынесено из accordion)
+- `sections/ExerciseCardMuscles.tsx` — primary/secondary muscle bubbles
+- `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
+- `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion; подзаголовки через SectionSubheading (PR7)
+- `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне
+- `WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle, TimerPill/Panel (PR8)
+- `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
+- `WorkoutScreenFooter.tsx` — «Начать тренировку» / «Завершить» с LinearGradient (PR8)
 
 Main hooks/services:
-- `useWorkoutSession.ts`
+- `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
+- `workout/useWorkoutSession.types.ts` — внутренние типы join-структур
+- `workout/useWorkoutSession.mapper.ts` — чистые функции маппинга
+- `workout/useWorkoutSession.rest.ts` — rest timer логика
+- `workout/useWorkoutSession.loader.ts` — загрузка workout + alternatives
+- `useWorkoutDisplayMode.ts` — display mode preference (AsyncStorage persist)
 - `useInjuryWarnings.ts`
 - `useWarmup.ts`
 - `useTimerSettings.ts`
-- `useUnitPreferences.ts`
+`useUnitPreferences.ts`
+`useRpeSettings.ts` — RPE prompt frequency (always/last-set/off, AsyncStorage persist)
 - `workoutService.ts`
 - `warmupService.ts`
 - `painService.ts`
 
 UX audit focus:
 - progressive disclosure;
+- display modes (training/balanced/learn);
 - amount of information visible per exercise;
 - alternative exercise access;
 - temporary vs program replacement;
@@ -106,19 +163,27 @@ UX audit focus:
 
 ### History
 
-`app/(tabs)/history.tsx`
-
+`app/(tabs)/history.tsx` — Calendar/List toggle (UX-9/UX-10)
 `app/(tabs)/history/[id].tsx`
 
-Main dependencies:
-- `useHistory.ts`
-- `historyService.ts`
+Main components:
 
-Planned UX direction:
-- Calendar with workout marks;
-- List alternative;
-- selected day → workout details;
-- keep Progress as separate mental model.
+`history/HistoryCalendar.tsx` — месяц с отметками тренировок, навигация по месяцам, выбор дня (UX-9)
+`history/DaySummaryCard.tsx` — sheet выбранного дня через SheetShell, тап по тренировке → детали (UX-9, L2)
+`history/HistoryViewToggle.tsx` — segmented control Calendar/List (UX-10)
+
+Main dependencies:
+
+`useHistory.ts`
+`useHistoryView.ts` — persist выбора Calendar/List (AsyncStorage, default calendar)
+`historyService.ts`
+
+UX direction (реализовано UX-9/UX-10):
+
+Calendar with workout marks ✅;
+List alternative ✅;
+selected day → workout details ✅;
+keep Progress as separate mental model (UX-11 открыт).
 
 ## 3. Dashboard
 
@@ -171,22 +236,27 @@ Current behavior:
 ## 5. Profile / Context
 
 Screens:
-- `profile.tsx`
-- `profile/goals.tsx`
-- `profile/injuries.tsx`
-- `profile/metrics.tsx`
-- `profile/settings.tsx`
+`profile.tsx`
+`profile/goals.tsx`
+`profile/injuries.tsx`
+`profile/metrics.tsx`
+`profile/settings.tsx`
+`profile/progress.tsx` — Progress hub (UX-11)
 
 Dependencies:
-- `useProfile.ts`
-- `useBodyMetrics.ts`
-- `useInjuries.ts`
-- `goalsService.ts`
-- `metricsService.ts`
-- `profileService.ts`
-- `macroCalculator.ts`
-- `WeightTrendChart.tsx`
-- `MetricSparkline.tsx`
+`useProfile.ts`
+`useBodyMetrics.ts`
+`useInjuries.ts`
+`useProgress.ts`
+`goalsService.ts`
+`metricsService.ts`
+`profileService.ts`
+`progressService.ts`
+`macroCalculator.ts`
+`WeightTrendChart.tsx`
+`MetricSparkline.tsx`
+`progress/ProgressStatsCards.tsx`
+`progress/VolumeTrendChart.tsx`
 
 ## 6. Shared UI
 
@@ -211,14 +281,15 @@ Important components:
 |---|---|
 | `useProgramEditor` | program/[id], phases/cards, programsService |
 | `useProgramPhases` | useProgramEditor |
-| `useWorkoutSession` | workout/[id], ExerciseCard, SetsGrid, SetFeedbackControl, WorkoutTimer |
+| useWorkoutSession | workout/[id], ExerciseCard, SetsGrid, SetFeedbackControl, WorkoutTimer; thin wrapper над workout/useWorkoutSession.* модулями |
 | `usePrograms` | programs, program/[id], dashboard/workouts |
 | `useWorkouts` | workouts |
 | `useDashboard` | Dashboard |
 | `useExercises` / `useExerciseDetail` | exercise screens |
 | `useInjuryWarnings` | useWarmup, ExerciseCard, workout |
 | `useWarmup` | WarmupBlock, workout |
-| `useHistory` | history |
+| `useHistory` |history|
+| `useHistoryView` |history|
 | `useInjuries` | injuries |
 | `useProfile` | profile/settings |
 | `useBodyMetrics` | metrics |
@@ -226,6 +297,7 @@ Important components:
 | `useUnitPreferences` | UnitToggle, ExerciseCard, SetsGrid |
 | `useTheme` | all UI |
 | `useToast` | all screens |
+| `useProgress` |profile/progress|
 
 ## 8. Service dependency map
 
@@ -244,6 +316,7 @@ Important components:
 | `warmupService` | useWarmup |
 | `readinessService` | ReadinessSheet/Dashboard |
 | `painService` | PainSheet/ExerciseCard |
+| `progressService` |useProgress, profile/progress|
 
 ## 9. Core types / constants / utilities
 
@@ -263,6 +336,7 @@ Important components:
 | `utils/plates.ts` | plate calculation logic; UI pending |
 | `utils/csv.ts` | CSV builder; service/UI pending |
 | `utils/errorMapper.ts` | user-facing error mapping |
+| `utils/intensityInfo.tsx` |getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | `utils/macroCalculator.ts` | macro calculations |
 
 ## 10. Database / migrations
@@ -311,6 +385,8 @@ Assume entire UI is affected.
 
 Inspect all workout components and `useWorkoutSession` before changing exports.
 
+Расположение кода — code search (MCP); INVENTORY.md — роли, blast-radius и грабли.
+
 ## 12. Current known implementation notes
 
 - RPE is already tappable 1–10; do not reintroduce draggable RPE as default.
@@ -320,6 +396,25 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - PainSheet and ReadinessSheet exist.
 - WeightTrendChart and MetricSparkline exist.
 - Program editing is already split into multiple components/sheets, but the UX hierarchy remains a major audit target.
+- **Display modes (training/balanced/learn)** реализованы через `useWorkoutDisplayMode` + `WorkoutDisplayModePicker` в settings (feature branch).
+- **ExerciseCard разбит на секции** в `sections/`; порядок секций зависит от displayMode.
+- **Equipment вынесен из accordion** в отдельную секцию `ExerciseCardEquipment`.
+- **Technique accordion доступна во всех display modes** (safety: правильная техника = безопасность).
+- **Media/slider content монтируется только при раскрытии accordion** (CLAUDE.md §8).
+- **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») 
+справа.
+- AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety до принятия решения); Техника выполнения — lazy-mount аккордеон через ExerciseCardTechnique; Противопоказания рендерятся только при наличии записей в injury_exercise_warnings.
+- **Pain persistent state (PR6)**: painService.getPainEventsForWorkout загружает pain_events при fetchWorkoutSession; painState маппится в ExerciseData через buildPainStateMap; savePainState/clearPainState с оптимистичным обновлением + откат; PainSheet prefill из painState + «Боль прошла» для delete; visual affordance «⚠ Боль отмечена» в header bubble; UNIQUE constraint (user_id, workout_id, exercise_id) предотвращает дубли.
+- **workout/[id].tsx split (PR8)**: WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo; showInjuryBanner state инкапсулирован в WorkoutInjuryBanner; файл уменьшен с ~673 до ~400 строк (CLAUDE.md §2).
+- **Knowledge disclosure cleanup (PR7)**: ExerciseCardKnowledge использует SectionSubheading из ExerciseCardTechnique; единообразие подзаголовков между «Техника выполнения» и «Важно знать»; lazy mount через everOpened в ExerciseInfoAccordion.
+- **UX-3 decision (закрыто)**: warm-up реализован через вкладку WorkoutTabs + WarmupBlock (useWarmup), отдельного sheet не требуется. History per-exercise частично закрыт per-set previous data в SetsGrid (FEAT-1.1) + вкладка History с деталями тренировок (historyService.getWorkoutDetail). Notes отложены — нет таблицы exercise_notes, не подтверждена потребность; вернуться после сбора feedback от пользователей.
+- **RPE frequency settings (UX-7)**: useRpeSettings — 3 опции (always / last-set default / off); SetsGrid проверяет predicate shouldShowRpeChip: уже введённые значения (rpe != null) показываются всегда, новые запросы — по настройке. Picker в profile/settings.tsx с segmented control и живым описанием.
+- **RPE quick-skip (UX-6)**: SetFeedbackEditor показывает кнопку «Пропустить» когда rpe == null (без onChange, просто onClose); при rpe != null — «Сбросить» (с onChange). Дефолт 7 — типичный рабочий RPE.
+- **Skip workout (FIT-7)**: пропуск = finished_at + skipped_at заполнены, started_at NULL, подходов нет. onlyCurrentDay: пропускается только тренировка, на которую указывает прогресс-поинтер user_programs (day→week→phase не рассинхронизируется). advanceProgramProgress вызывается sequential с retry (паттерн saveWorkout). Пропуск не попадает в History (historyService фильтрует по наличию логов). Программа без active program — пропуск недоступен.
+- **Program replacement (UX-5 Feature 1)**: replaceExerciseInProgram в programsService — 7 шагов (workout → workout_exercise → program_day → program_exercise → UPDATE program_exercises + exercise_name → UPDATE текущей workout_exercises.exercise_id для защиты от orphaned row в sync → syncProgramChanges). Alert в workout/[id].tsx через handleReplaceChoice: 3 кнопки при наличии программы (Отмена / Только сегодня / В программе destructive) или мгновенная temp-замена для ad-hoc тренировок. Rollback при ошибке sync (например, seeded программы с created_by IS NULL).
+- **Sync safety insight (UX-5 Feature 1)**: RPC sync_program_changes_to_workouts удаляет workout_exercises с exercise_id, которого нет в program_exercises (orphaned by exercise_id). Поэтому перед вызовом sync обязательно обновляем текущую workout_exercises.exercise_id — иначе для не начатых тренировок sync пересоздал бы строку с новым id и осиротил бы pending workout_logs.
+- **History calendar (UX-9/UX-10)**: workoutDates вычисляются локально из HistoryWorkout.created_at через useMemo — ноль новых запросов, данные уже загружены getHistory. HistoryCalendar: навигация от самого раннего месяца с тренировками до текущего (в будущее нельзя), неделя с понедельника, точки на днях с тренировками. Тап по дню → DaySummaryCard (SheetShell) со списком тренировок дня; несколько тренировок в день поддерживаются. Выбор вида Calendar/List персистится в AsyncStorage (useHistoryView), default — Calendar. Пропущенные тренировки (skipped_at) в календаре НЕ отображаются — Вариант A, консистентно с FIT-7: History = фактически выполненное (historyService фильтрует по наличию логов).
+- **Progress hub (UX-11)**: app/profile/progress.tsx — единый экран «Как я меняюсь?» (PRODUCT.md §11). Compact-итоги (тр/тонны/стрик) → Сила (e1RM top-3 по неделям) → Объём (8 недель) → Вес (metric_date, delta) → PR top-5 с датами → регулярность одной строкой (вычисляется из weeklyVolume, ноль новых запросов). Грабли progressService: workout_exercises НЕ имеет exercise_name — имена только через embed exercises(name); цепочки .in() давали 400 Bad Request — только вложенные embed-запросы; skip-тренировки (finished_at + skipped_at, FIT-7) исключаем через .is('skipped_at', null); окно weeklyVolume: startMs = now - (weeks-1)*7d, последний bucket = текущая неделя.
 
 ## 13. Inventory maintenance
 

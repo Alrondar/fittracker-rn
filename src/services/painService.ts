@@ -1,5 +1,7 @@
 // src/services/painService.ts
-// FEAT-1.9: флаг боли во время тренировки + замыкание на систему травм.
+// FEAT-1.9 + PR6 (Scope 2): флаг боли во время тренировки + замыкание на систему травм.
+// PR6: upsert-семантика (один pain event на упражнение на тренировку на пользователя),
+// чтение events для prefill, delete для «Боль прошла».
 import { supabase } from '../lib/supabase';
 
 export type PainType = 'sharp' | 'dull' | 'pulling' | 'joint' | 'muscle';
@@ -15,20 +17,78 @@ export interface PainEventInput {
   notes?: string | null;
 }
 
+/** Структура, возвращаемая из pain_events — для prefill в PainSheet. */
+export interface PainEvent {
+  id: string;
+  exercise_id: string; // PR6: для маппинга в painState per exercise
+  pain_level: number;
+  pain_type: PainType | null;
+  body_part: string | null;
+  stop_exercise: boolean;
+  notes: string | null;
+  occurred_at: string;
+}
+
 export const painService = {
-  /** Запись события боли (pain_events) — вход для AI-фильтров (ROADMAP 3.3). */
-  async logPainEvent(input: PainEventInput): Promise<void> {
-    const { error } = await supabase.from('pain_events').insert({
-      user_id: input.userId,
-      workout_id: input.workoutId,
-      exercise_id: input.exerciseId,
-      pain_level: input.painLevel,
-      pain_type: input.painType,
-      body_part: input.bodyPart,
-      stop_exercise: input.stopExercise,
-      notes: input.notes ?? null,
-      occurred_at: new Date().toISOString(),
-    });
+  /**
+   * PR6: Получить все pain events для текущей тренировки.
+   * Фильтр по workout_id; user_id — через RLS.
+   */
+async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
+  const { data, error } = await supabase
+    .from('pain_events')
+    .select(
+      'id, exercise_id, pain_level, pain_type, body_part, stop_exercise, notes, occurred_at',
+      )
+      .eq('workout_id', workoutId)
+      .order('occurred_at', { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []) as PainEvent[];
+  },
+
+  /**
+   * PR6: Upsert события боли.
+   * Использует UNIQUE constraint (user_id, workout_id, exercise_id).
+   * Повторное сохранение обновляет существующую запись, не создаёт дубль.
+   */
+  async upsertPainEvent(input: PainEventInput): Promise<void> {
+    const { error } = await supabase.from('pain_events').upsert(
+      {
+        user_id: input.userId,
+        workout_id: input.workoutId,
+        exercise_id: input.exerciseId,
+        pain_level: input.painLevel,
+        pain_type: input.painType,
+        body_part: input.bodyPart,
+        stop_exercise: input.stopExercise,
+        notes: input.notes ?? null,
+        occurred_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'user_id,workout_id,exercise_id',
+        ignoreDuplicates: false,
+      },
+    );
+    if (error) throw error;
+  },
+
+  /**
+   * PR6: Удалить pain event для упражнения в тренировке («Боль прошла»).
+   * Фильтр по трём полям — защита от случайного удаления чужих записей.
+   */
+  async deletePainEvent(
+    userId: string,
+    workoutId: string,
+    exerciseId: string,
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('pain_events')
+      .delete()
+      .eq('user_id', userId)
+      .eq('workout_id', workoutId)
+      .eq('exercise_id', exerciseId);
+
     if (error) throw error;
   },
 
