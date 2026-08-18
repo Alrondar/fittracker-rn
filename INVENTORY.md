@@ -384,7 +384,8 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Equipment вынесен из accordion** в отдельную секцию `ExerciseCardEquipment`.
 - **Technique accordion доступна во всех display modes** (safety: правильная техника = безопасность).
 - **Media/slider content монтируется только при раскрытии accordion** (CLAUDE.md §8).
-- **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») справа.
+- **Header variant D**: Settings справа от названия, metadata слева, actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») 
+справа.
 - AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety до принятия решения); Техника выполнения — lazy-mount аккордеон через ExerciseCardTechnique; Противопоказания рендерятся только при наличии записей в injury_exercise_warnings.
 - **Pain persistent state (PR6)**: painService.getPainEventsForWorkout загружает pain_events при fetchWorkoutSession; painState маппится в ExerciseData через buildPainStateMap; savePainState/clearPainState с оптимистичным обновлением + откат; PainSheet prefill из painState + «Боль прошла» для delete; visual affordance «⚠ Боль отмечена» в header bubble; UNIQUE constraint (user_id, workout_id, exercise_id) предотвращает дубли.
 - **workout/[id].tsx split (PR8)**: WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo; showInjuryBanner state инкапсулирован в WorkoutInjuryBanner; файл уменьшен с ~673 до ~400 строк (CLAUDE.md §2).
@@ -392,6 +393,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **UX-3 decision (закрыто)**: warm-up реализован через вкладку WorkoutTabs + WarmupBlock (useWarmup), отдельного sheet не требуется. History per-exercise частично закрыт per-set previous data в SetsGrid (FEAT-1.1) + вкладка History с деталями тренировок (historyService.getWorkoutDetail). Notes отложены — нет таблицы exercise_notes, не подтверждена потребность; вернуться после сбора feedback от пользователей.
 - **RPE frequency settings (UX-7)**: useRpeSettings — 3 опции (always / last-set default / off); SetsGrid проверяет predicate shouldShowRpeChip: уже введённые значения (rpe != null) показываются всегда, новые запросы — по настройке. Picker в profile/settings.tsx с segmented control и живым описанием.
 - **RPE quick-skip (UX-6)**: SetFeedbackEditor показывает кнопку «Пропустить» когда rpe == null (без onChange, просто onClose); при rpe != null — «Сбросить» (с onChange). Дефолт 7 — типичный рабочий RPE.
+- **Skip workout (FIT-7)**: пропуск = finished_at + skipped_at заполнены, started_at NULL, подходов нет. onlyCurrentDay: пропускается только тренировка, на которую указывает прогресс-поинтер user_programs (day→week→phase не рассинхронизируется). advanceProgramProgress вызывается sequential с retry (паттерн saveWorkout). Пропуск не попадает в History (historyService фильтрует по наличию логов). Программа без active program — пропуск недоступен.
 
 ## 13. Inventory maintenance
 

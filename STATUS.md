@@ -40,6 +40,7 @@
 | FIT-4 | Dashboard | ✅ | выбор программы при отсутствии active program |
 | FIT-5 | Workouts | ✅ | следующая фаза/неделя |
 | FIT-6 | Workout | ✅ | program + phase context |
+| FIT-7 | Workouts | ✅ |пропуск тренировки программы: long press на «Следующая» → подтверждение, skipped_at + advanceProgramProgress, бейдж «Пропущена», в историю не попадает|
 | FEAT-1.1 | Tracker | ✅ | per-set previous data + progression chips |
 | FEAT-1.2 | Tracker | ✅ | rest timer + auto-start |
 | FEAT-1.3 | Tracker | ✅ | streak |
@@ -62,7 +63,7 @@
 | UX-2 | 🔴 | ✅ | пполный аудит workout/[id].tsx и progressive disclosure — выполнено: display modes + секционная структура + AlternativeExerciseCard (PR5) + pain persistent state (PR6) + knowledge subheadings (PR7) + split workout/[id].tsx (PR8) |
 | UX-3 | 🔴 | ✅ | context sheets: history / technique / warm-up / pain / notes —  закрыто : technique через accordion с подзаголовками (PR7), pain persistent state с prefill и delete (PR6), warm-up через вкладку WorkoutTabs + WarmupBlock, history — per-set previous data + вкладка History с деталями тренировок; notes отложены (нет таблицы, не подтверждена потребность) |
 | UX-4 | 🔴 | ✅ | доступные alternatives без перегрузки — выполнено: slider + text affordance + облегчённая AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания видимы сразу, Техника в lazy-mount аккордеоне |
-| UX-5 | 🔴 | 🟡 | temporary vs program replacement — **частично**: temporary визуально отделён; program replacement — отдельный сценарий (не начат) |
+| UX-5 | 🔴 | 🟡 | temporary vs program replacement — частично: temporary визуально отделён, пропуск тренировки программы готов (FIT-7); program replacement — в работе |
 | UX-6 | 🟠 | ✅ | |динамическая расшифровка RPE + быстрый skip — выполнено: «RPE N — description» в SetFeedbackEditor (FEAT-7 v2), кнопка «Пропустить» в редакторе (UX-6) |
 | UX-7 | 🟠 | ✅ | |настройка частоты запроса RPE — выполнено: useRpeSettings (always/last-set/off), picker в settings, conditional rendering чипа в SetsGrid (UX-7) |
 | UX-8 | 🟠 | ✅ | lazy mount тяжёлого контента — media/slider монтируется только при раскрытии accordion; stagger в ExerciseSlider |
