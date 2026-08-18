@@ -46,6 +46,7 @@ import {
   Zap,
   Award,
   Ruler,
+  TrendingUp,
 } from 'lucide-react-native';
 
 // Фиксированная палитра рангов (золото/серебро/бронза) — семантика медалей,
@@ -441,6 +442,35 @@ export default function ProfileScreen() {
         {/* Быстрые действия */}
         <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
           <SectionHeader title="Быстрые действия" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+          {/* UX-11: Progress hub — единый экран «Как я меняюсь?» (сила, объём, PR, тренды) */}
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: BORDER_RADIUS.md,
+              padding: SPACING.md,
+              marginBottom: SPACING.sm,
+              borderColor: colors.border,
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/profile/progress');
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <TrendingUp size={20} color={colors.success} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.h5, { color: colors.textPrimary }]}>Мой прогресс</Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Тренды, объём, рекорды
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={{
               backgroundColor: colors.surface,
