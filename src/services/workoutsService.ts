@@ -67,11 +67,11 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
     phases,
   };
 
-  // 2. Тренировки программы (со статусами)
+  // 2. Тренировки программы (со статусами) — UX-5 Feature 2: +skipped_at
   const { data: workouts, error: workError } = await supabase
     .from('workouts')
     .select(
-      'id, name, description, program_id, phase_number, week_number, day_index, created_at, started_at, finished_at, duration_seconds'
+      'id, name, description, program_id, phase_number, week_number, day_index, created_at, started_at, finished_at, duration_seconds, skipped_at'
     )
     .eq('user_id', userId)
     .eq('program_id', userProgram.program_id)
@@ -89,7 +89,6 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
   // 4. Секции по (фаза, неделя)
   const phaseMap = new Map<number, any>(phases.map((p: any) => [p.phase_number, p]));
   const groups = new Map<string, any[]>();
-
   list.forEach((w) => {
     const key = `${w.phase_number ?? 1}-${w.week_number ?? 1}`;
     if (!groups.has(key)) groups.set(key, []);
@@ -114,4 +113,30 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
     sections,
     progress: { completed, total: list.length },
   };
+}
+
+/**
+ * UX-5 Feature 2: Пропустить тренировку программы.
+ * Sequential: 1) update workouts (finished_at + skipped_at) → 2) advanceProgramProgress.
+ * Паттерн saveWorkout: sequential + retry при ошибке advance.
+ */
+export async function skipWorkout(
+  workoutId: string,
+  userId: string,
+  programId: string,
+): Promise<void> {
+  const { error: updateError } = await supabase
+    .from('workouts')
+    .update({
+      finished_at: new Date().toISOString(),
+      skipped_at: new Date().toISOString(),
+    })
+    .eq('id', workoutId)
+    .eq('user_id', userId);
+
+  if (updateError) throw updateError;
+
+  // advanceProgramProgress — из programsService (dynamic import для избежания circular dependency)
+  const { advanceProgramProgress } = await import('./programsService');
+  await advanceProgramProgress(userId, programId);
 }

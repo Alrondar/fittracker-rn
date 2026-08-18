@@ -16,6 +16,8 @@ import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
+import { WorkoutCardDisplayMode } from '../../types/workout';
+import { AlternativeExerciseCard } from './AlternativeExerciseCard';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -32,6 +34,7 @@ interface ExerciseSliderProps {
   exercise: ExerciseData;
   exerciseIndex: number;
   isReplaced: boolean;
+  displayMode: WorkoutCardDisplayMode;
   loadAlternatives: (
     id: string,
     muscles: string[],
@@ -49,7 +52,8 @@ interface ExerciseSliderProps {
   ) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  replaceExercise: (exIndex: number, altId: string) => void;
+  // UX-5 Feature 1: запрос замены (caller выбирает temp vs program)
+  onRequestReplace: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
   startRestTimer: (seconds: number) => void;
   getIntensityInfo: (intensity: string) => {
@@ -71,12 +75,13 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   exercise,
   exerciseIndex,
   isReplaced,
+  displayMode,
   loadAlternatives,
   updateSet,
   updateSetFeedback,
   applyProgression,
   isSetCompleted,
-  replaceExercise,
+  onRequestReplace,
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
@@ -185,11 +190,11 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             isReplaced={isReplaced}
             exerciseIndex={exerciseIndex}
             alternatives={alternatives}
+            displayMode={displayMode} 
             updateSet={updateSet}
             updateSetFeedback={updateSetFeedback}
             applyProgression={applyProgression}
             isSetCompleted={isSetCompleted}
-            replaceExercise={replaceExercise}
             startRestTimer={startRestTimer}
             getIntensityInfo={getIntensityInfo}
             onOpenSettings={onOpenSettings}
@@ -247,30 +252,18 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
 
-        {showAlts &&
-          alternatives.map((alt) => (
-            <View key={alt.id} style={{ width: cardWidth }}>
-              <ExerciseCard
-                exercise={alt}
-                isMain={false}
-                isReplaced={false}
-                exerciseIndex={exerciseIndex}
-                alternatives={alternatives}
-                updateSet={updateSet}
-                updateSetFeedback={updateSetFeedback}
-                applyProgression={applyProgression}
-                isSetCompleted={isSetCompleted}
-                replaceExercise={replaceExercise}
-                startRestTimer={startRestTimer}
-                getIntensityInfo={getIntensityInfo}
-                onOpenSettings={onOpenSettings}
-                colors={colors}
-                cardStyles={cardStyles}
-                unit={unit}
-                warning={null}
-              />
-            </View>
-          ))}
+{showAlts &&
+  alternatives.map((alt) => (
+    <View key={alt.id} style={{ width: cardWidth }}>
+      <AlternativeExerciseCard
+        exercise={alt}
+        exerciseIndex={exerciseIndex}
+        onRequestReplace={onRequestReplace}
+        colors={colors}
+        cardStyles={cardStyles}
+      />
+    </View>
+  ))}
       </ScrollView>
     </View>
   );

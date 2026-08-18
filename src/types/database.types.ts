@@ -1072,6 +1072,7 @@ export type Database = {
           name: string
           phase_number: number | null
           program_id: string | null
+          skipped_at: string | null
           started_at: string | null
           updated_at: string | null
           user_id: string
@@ -1088,6 +1089,7 @@ export type Database = {
           name: string
           phase_number?: number | null
           program_id?: string | null
+          skipped_at?: string | null
           started_at?: string | null
           updated_at?: string | null
           user_id: string
@@ -1104,6 +1106,7 @@ export type Database = {
           name?: string
           phase_number?: number | null
           program_id?: string | null
+          skipped_at?: string | null
           started_at?: string | null
           updated_at?: string | null
           user_id?: string

@@ -1,40 +1,28 @@
 // src/components/workout/ExerciseCard.tsx
-// 05.08.2026 (PERF): состояние раскрытия аккордеонов перенесено в ExerciseInfoAccordion.
-// Тап по секции не ре-рендерит карточку → нет каскада и фризов. completedSets/
-// allSetsDone/borderColor в useMemo. Контент секций монтируется лениво (в аккордеоне).
+// Orchestrator карточки упражнения — рендерит вынесенные секции.
+// PR 2: split на секции. PR 3: displayMode. PR 4a: Equipment. PR 4b: Actions.
+// PR 4c: видимость по displayMode. PR 4d: defaultExpanded для Learn mode.
+// PR6: проброс hasPainRecord в ExerciseCardActions.
 import React, { useMemo, memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import {
-  Settings,
-  ChevronRight,
-  AlertTriangle,
-  ShieldAlert,
-  BookOpen,
-  Dumbbell,
-  Sparkles,
-  RotateCcw,
-  HeartPulse,
-} from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { typography } from '../../styles/typography';
+import { View } from 'react-native';
 import { createCardStyles } from '../../styles/components/card';
-import { getMuscleColor } from '../../constants/muscleColors';
-import { EquipmentIcon } from '../EquipmentIcon';
-import { TechniqueMediaSlider } from './TechniqueMediaSlider';
-import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
 import { SetsGrid } from './SetsGrid';
+import { ExerciseCardHeader } from './sections/ExerciseCardHeader';
+import { ExerciseCardEquipment } from './sections/ExerciseCardEquipment';
+import { ExerciseWarningBanner } from './sections/ExerciseWarningBanner';
+import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
+import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
+import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
 import {
   ExerciseData,
   AlternativeExercise,
   SetData,
   SetFeedbackPatch,
+  WorkoutCardDisplayMode,
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
 type RepsRangeHolder = { reps_range?: string };
-
-const formatEquipmentName = (name: string) =>
-  name.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 interface ExerciseCardProps {
   exercise: ExerciseData | AlternativeExercise;
@@ -42,11 +30,11 @@ interface ExerciseCardProps {
   isReplaced: boolean;
   exerciseIndex: number;
   alternatives: AlternativeExercise[];
+  displayMode: WorkoutCardDisplayMode;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  replaceExercise: (exIndex: number, altId: string) => void;
   startRestTimer: (seconds: number) => void;
   getIntensityInfo: (intensity: string) => {
     label: string;
@@ -55,8 +43,8 @@ interface ExerciseCardProps {
     icon: React.ReactNode;
   };
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
-  /** FEAT-1.9: открыть шторку боли (только основная карточка) */
   onOpenPain?: (exerciseIndex: number) => void;
+  onOpenAlternatives?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
@@ -69,15 +57,16 @@ export const ExerciseCard = memo(function ExerciseCard({
   isReplaced,
   exerciseIndex,
   alternatives,
+  displayMode,
   updateSet,
   updateSetFeedback,
   applyProgression,
   isSetCompleted,
-  replaceExercise,
   startRestTimer,
   getIntensityInfo,
   onOpenSettings,
   onOpenPain,
+  onOpenAlternatives,
   colors,
   cardStyles,
   unit,
@@ -88,365 +77,103 @@ export const ExerciseCard = memo(function ExerciseCard({
   const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
   const intensity = hasSets ? (exercise as ExerciseData).intensity : 'medium';
   const repsRange = (exercise as RepsRangeHolder).reps_range;
-
   const intensityInfo = useMemo(
     () => getIntensityInfo(intensity),
     [getIntensityInfo, intensity],
   );
-
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
-  const hasTechniqueContent = !!(exercise.technique || mediaUrl);
   const equipment = exercise.equipment ?? [];
-const hasEquipmentContent = equipment.length > 0 || !!settingsText;
+
+  // PR 4c: в Training mode скрываем мышцы и knowledge для основной карточки,
+  // но техника остаётся доступной всегда (safety: правильная техника = безопасность).
+  // Для альтернативных карточек (!isMain) все секции видны всегда.
+  const hideSecondaryInTraining = displayMode === 'training' && isMain;
+
+  // PR6: есть ли запись боли в pain_events для этого упражнения — для visual affordance в header
+  const hasPainRecord = !!((exercise as ExerciseData).painState);
 
   // PERF: единый useMemo вместо пересчёта в рендере
-  const { allSetsDone, borderColor } = useMemo(() => {
+  const { borderColor } = useMemo(() => {
     const completed = sets.filter((s) => isSetCompleted(s)).length;
     const done = hasSets && sets.length > 0 && completed === sets.length;
     const border =
       warning?.level === 'avoid'
         ? colors.error
         : warning?.level === 'caution'
-        ? colors.warning
-        : isReplaced
-        ? colors.primary
-        : done
-        ? colors.success + '60'
-        : colors.border;
-    return { allSetsDone: done, borderColor: border };
+          ? colors.warning
+          : isReplaced
+            ? colors.primary
+            : done
+              ? colors.success + '60'
+              : colors.border;
+    return { borderColor: border };
   }, [sets, isSetCompleted, hasSets, isReplaced, warning?.level, colors]);
-
-  const warningColor = warning?.level === 'avoid' ? colors.error : colors.warning;
 
   return (
     <View
       style={[cardStyles.container, cardStyles.workoutExerciseCard, { borderWidth: 1, borderColor }]}
     >
-      {/* Шапка */}
-      <View
-        style={[
-          cardStyles.workoutExerciseHeader,
-          { flexDirection: 'column', alignItems: 'stretch', gap: SPACING.sm },
-        ]}
-      >
-        <Text style={[cardStyles.workoutExerciseName, { color: colors.textPrimary }]} numberOfLines={2}>
-          {exercise.name}
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.xs }}>
-          {isMain && alternatives.length > 0 && (
-            <View style={[cardStyles.workoutSwipeIcon, { backgroundColor: colors.surfaceSecondary }]}>
-              <ChevronRight size={16} color={colors.textSecondary} strokeWidth={2} />
-            </View>
-          )}
-                  {isMain && onOpenPain ? (
-          <TouchableOpacity
-            onPress={() => onOpenPain(exerciseIndex)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={{ marginRight: SPACING.sm }}
-          >
-            <HeartPulse size={18} color={colors.warning} strokeWidth={2} />
-          </TouchableOpacity>
-        ) : null}
-          {isMain && (
-            <TouchableOpacity
-              onPress={() => onOpenSettings(exerciseIndex, sets.length, restSeconds)}
-              style={[cardStyles.workoutSettingsButton, { backgroundColor: colors.surfaceSecondary }]}
-            >
-              <Settings size={18} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
-          )}
-          {!!repsRange && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.surfaceSecondary,
-                paddingHorizontal: SPACING.sm,
-                paddingVertical: 4,
-                borderRadius: BORDER_RADIUS.full,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700' }]}>
-                {repsRange} повт.
-              </Text>
-            </View>
-          )}
-          <View style={[cardStyles.workoutIntensityBadge, { backgroundColor: intensityInfo.bgColor }]}>
-            {intensityInfo.icon}
-            <Text style={[cardStyles.workoutIntensityText, { color: intensityInfo.color }]}>
-              {intensityInfo.label}
-            </Text>
-          </View>
-        </View>
-      </View>
+      {/* 1. Header: название + Settings + repsRange + intensity */}
+      <ExerciseCardHeader
+        exerciseName={exercise.name}
+        isMain={isMain}
+        exerciseIndex={exerciseIndex}
+        setsCount={sets.length}
+        restSeconds={restSeconds}
+        repsRange={repsRange}
+        intensityInfo={intensityInfo}
+        hasAlternatives={alternatives.length > 0}
+        alternativesCount={alternatives.length}
+        hasPainRecord={hasPainRecord}
+        onOpenSettings={onOpenSettings}
+        onOpenPain={onOpenPain}
+        onOpenAlternatives={onOpenAlternatives}
+        colors={colors}
+        cardStyles={cardStyles}
+      />
 
+      {/* 2. Equipment: bubbles сразу под header (PR 4a) */}
+      <ExerciseCardEquipment
+        equipment={equipment}
+        primaryMuscles={exercise.primary_muscles}
+      />
+
+      {/* 3. Warning banner (только основная карточка) */}
       {warning && isMain && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            backgroundColor: warningColor + '15',
-            borderColor: warningColor,
-            borderWidth: 1,
-            borderRadius: BORDER_RADIUS.sm,
-            padding: SPACING.sm,
-            marginBottom: SPACING.md,
-          }}
-        >
-          <ShieldAlert
-            size={16}
-            color={warningColor}
-            strokeWidth={2}
-            style={{ marginRight: SPACING.xs, marginTop: 1 }}
-          />
-          <Text style={{ color: warningColor, flex: 1, fontSize: 12, fontWeight: '600', lineHeight: 16 }}>
-            {warning.message}
-          </Text>
-        </View>
+        <ExerciseWarningBanner warning={warning} colors={colors} />
       )}
 
-      {exercise.primary_muscles.length > 0 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 6,
-            marginBottom: exercise.secondary_muscles.length > 0 ? 6 : SPACING.md,
-          }}
-        >
-          {exercise.primary_muscles.map((m, i) => {
-            const c = getMuscleColor(m);
-            return (
-              <View
-                key={`p-${i}`}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: c + '1A',
-                  borderWidth: 1,
-                  borderColor: c + '55',
-                  paddingHorizontal: SPACING.sm,
-                  paddingVertical: 3,
-                  borderRadius: BORDER_RADIUS.full,
-                }}
-              >
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c, marginRight: 5 }} />
-                <Text style={[typography.captionSmall, { color: c, fontWeight: '700' }]}>{m}</Text>
-              </View>
-            );
-          })}
-        </View>
+      {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
+      {!hideSecondaryInTraining && (
+        <ExerciseCardMuscles
+          primaryMuscles={exercise.primary_muscles}
+          secondaryMuscles={exercise.secondary_muscles}
+          colors={colors}
+        />
       )}
 
-      {exercise.secondary_muscles.length > 0 && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: SPACING.md }}>
-          {exercise.secondary_muscles.map((m, i) => {
-            const c = getMuscleColor(m);
-            return (
-              <View
-                key={`s-${i}`}
-                style={{
-                  backgroundColor: colors.surfaceSecondary,
-                  borderWidth: 1,
-                  borderColor: c + '40',
-                  paddingHorizontal: SPACING.sm,
-                  paddingVertical: 3,
-                  borderRadius: BORDER_RADIUS.full,
-                }}
-              >
-                <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>
-                  {m}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
+      {/* 5. Technique: доступна во ВСЕХ режимах (safety), включая Training (PR 4f) */}
+      <ExerciseCardTechnique
+        technique={exercise.technique}
+        mediaUrl={mediaUrl}
+        settingsText={settingsText}
+        defaultExpanded={displayMode === 'learn'}
+        colors={colors}
+      />
+
+      {/* 6. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
+      {displayMode !== 'training' && isMain && (
+        <ExerciseCardKnowledge
+          benefits={exercise.benefits}
+          risks={exercise.risks}
+          injuries={exercise.injuries}
+          defaultExpanded={displayMode === 'learn'}
+          colors={colors}
+        />
       )}
 
-      {/* Аккордеоны: состояние раскрытия теперь внутри ExerciseInfoAccordion */}
-      {hasTechniqueContent || hasEquipmentContent ? (
-        <ExerciseInfoAccordion
-          icon={
-            hasTechniqueContent ? (
-              <BookOpen size={14} color={colors.primary} />
-            ) : (
-              <Dumbbell size={14} color={colors.primary} />
-            )
-          }
-          title={hasTechniqueContent ? 'Техника выполнения' : 'Оборудование и настройки'}
-          titleColor={colors.primary}
-          maxHeight={hasTechniqueContent ? 900 : 400}
-        >
-          {hasTechniqueContent && (
-            <>
-              <TechniqueMediaSlider mediaUrl={mediaUrl} autoPlay />
-              {exercise.technique ? (
-                <Text
-                  style={[
-                    typography.bodySmall,
-                    { color: colors.textSecondary, lineHeight: 18, marginTop: SPACING.sm },
-                  ]}
-                >
-                  {exercise.technique}
-                </Text>
-              ) : null}
-            </>
-          )}
-          {equipment.length > 0 && (
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: 8,
-                marginTop: hasTechniqueContent ? SPACING.md : 0,
-              }}
-            >
-              {equipment.map((eq, i) => (
-                <View
-                  key={`eq-${i}`}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    backgroundColor: colors.surfaceSecondary,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    paddingHorizontal: SPACING.md,
-                    paddingVertical: 6,
-                    borderRadius: BORDER_RADIUS.full,
-                  }}
-                >
-                  <EquipmentIcon name={eq} size={32} primaryMuscles={exercise.primary_muscles} />
-                  <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>
-                    {formatEquipmentName(eq)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-          {settingsText ? (
-            <>
-              {(hasTechniqueContent || equipment.length > 0) && (
-                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: SPACING.sm }} />
-              )}
-              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-                {settingsText}
-              </Text>
-            </>
-          ) : null}
-        </ExerciseInfoAccordion>
-      ) : null}
-
-      {isMain && (exercise.benefits || exercise.risks || exercise.injuries.length > 0) && (
-        <ExerciseInfoAccordion
-          icon={<ShieldAlert size={14} color={colors.warning} />}
-          title="Важно знать"
-          titleColor={colors.warning}
-          maxHeight={600}
-        >
-          {exercise.benefits ? (
-            <View style={{ marginBottom: SPACING.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                <Sparkles size={12} color={colors.success} />
-                <Text style={[typography.captionSmall, { color: colors.success, fontWeight: '700' }]}>
-                  Польза
-                </Text>
-              </View>
-              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-                {exercise.benefits}
-              </Text>
-            </View>
-          ) : null}
-          {exercise.risks ? (
-            <View style={{ marginBottom: SPACING.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                <AlertTriangle size={12} color={colors.warning} />
-                <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
-                  Риски
-                </Text>
-              </View>
-              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-                {exercise.risks}
-              </Text>
-            </View>
-          ) : null}
-          {exercise.injuries.length > 0 ? (
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                <ShieldAlert size={12} color={colors.error} />
-                <Text style={[typography.captionSmall, { color: colors.error, fontWeight: '700' }]}>
-                  Противопоказания
-                </Text>
-              </View>
-              {exercise.injuries.map((inj, i) => (
-                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
-                  <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
-                  <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, flex: 1 }]}>
-                    {inj}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </ExerciseInfoAccordion>
-      )}
-
-      {!isMain && (
-        <>
-          {exercise.benefits ? (
-            <ExerciseInfoAccordion
-              icon={<Sparkles size={14} color={colors.success} />}
-              title="Польза"
-              titleColor={colors.success}
-            >
-              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-                {exercise.benefits}
-              </Text>
-            </ExerciseInfoAccordion>
-          ) : null}
-          {exercise.risks ? (
-            <ExerciseInfoAccordion
-              icon={<AlertTriangle size={14} color={colors.warning} />}
-              title="Риски"
-              titleColor={colors.warning}
-            >
-              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-                {exercise.risks}
-              </Text>
-            </ExerciseInfoAccordion>
-          ) : null}
-          {exercise.injuries.length > 0 ? (
-            <ExerciseInfoAccordion
-              icon={<ShieldAlert size={14} color={colors.error} />}
-              title="Противопоказания"
-              titleColor={colors.error}
-            >
-              {exercise.injuries.map((inj, i) => (
-                <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
-                  <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
-                  <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18, flex: 1 }]}>
-                    {inj}
-                  </Text>
-                </View>
-              ))}
-            </ExerciseInfoAccordion>
-          ) : null}
-          <TouchableOpacity
-            style={[
-              cardStyles.replaceButton,
-              { borderColor: colors.primary, backgroundColor: colors.primaryLight },
-            ]}
-            onPress={() => replaceExercise(exerciseIndex, exercise.id)}
-          >
-            <RotateCcw size={16} color={colors.primary} strokeWidth={2} />
-            <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>Заменить на это</Text>
-          </TouchableOpacity>
-        </>
-      )}
-
+      {/* 8. SetsGrid (только основная карточка с сетами) */}
       {hasSets && sets.length > 0 && (
         <SetsGrid
           exerciseIndex={exerciseIndex}

@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { View, Text, SectionList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { View, Text, SectionList, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -9,7 +9,7 @@ import { Clock, Calendar, Trophy } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useHistory } from '../../src/hooks/useHistory';
-import type { HistorySection } from '../../src/services/historyService';
+import type { HistorySection, HistoryWorkout } from '../../src/services/historyService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -17,18 +17,28 @@ import { AppCard } from '../../src/components/ui/AppCard';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
+import { useHistoryView } from '../../src/hooks/useHistoryView';
+import { HistoryCalendar } from '../../src/components/history/HistoryCalendar';
+import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
+import { HistoryViewToggle } from '../../src/components/history/HistoryViewToggle';
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
 
-  const { data, isPending, isFetching, refetch } = useHistory(userId);
+const { data, isPending, isFetching, isError, refetch } = useHistory(userId);
 
   const sections = data?.sections ?? [];
   const monthlyStats = data?.monthlyStats ?? { totalWorkouts: 0, totalVolume: 0, bestWorkout: 0 };
   const loading = isPending;
   const refreshing = isFetching && !isPending;
+
+  // UX-10: переключатель Calendar/List (выбор сохраняется в AsyncStorage)
+  const { view, setHistoryView } = useHistoryView();
+
+  // UX-9: выбранный день для sheet (YYYY-MM-DD)
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   // Обновляем историю при каждом возврате на вкладку
   useFocusEffect(
@@ -41,6 +51,32 @@ export default function HistoryScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     refetch();
   }, [refetch]);
+
+  // UX-9: плоский список тренировок + даты для календаря.
+  // Вычисляются локально из уже загруженных данных — ноль новых запросов (PRODUCT.md §15).
+  const flatWorkouts = useMemo(
+    () => sections.reduce<HistoryWorkout[]>((acc, s) => acc.concat(s.data), []),
+    [sections],
+  );
+
+  const workoutDates = useMemo(() => {
+    const set = new Set<string>();
+    flatWorkouts.forEach((w) => {
+      const d = new Date(w.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate(),
+      ).padStart(2, '0')}`;
+      set.add(key);
+    });
+    return set;
+  }, [flatWorkouts]);
+
+  const handleDayPress = useCallback((dateKey: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedDay(dateKey);
+  }, []);
+
+  const closeDaySheet = useCallback(() => setSelectedDay(null), []);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -97,6 +133,11 @@ export default function HistoryScreen() {
         <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>Твои достижения и прогресс</Text>
       </View>
 
+      {/* UX-10: переключатель Calendar/List */}
+      <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.md }}>
+        <HistoryViewToggle view={view} onChange={setHistoryView} colors={colors} />
+      </View>
+
       {!loading && monthlyStats.totalWorkouts > 0 && (
         <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
@@ -123,10 +164,30 @@ export default function HistoryScreen() {
         </View>
       )}
 
-      {loading ? (
-        <ListSkeleton count={4} />
-      ) : (
-        <SectionList
+  {view === 'calendar' ? (
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: 100 }}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+      }
+    >
+      <View style={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm }}>
+        <HistoryCalendar
+          workoutDates={workoutDates}
+          selectedDay={selectedDay}
+          onDayPress={handleDayPress}
+          colors={colors}
+          loading={loading}
+          error={isError}
+          onRetry={refetch}
+        />
+      </View>
+    </ScrollView>
+  ) : loading ? (
+    <ListSkeleton count={4} />
+  ) : (
+    <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
           renderSectionHeader={renderSectionHeader}
@@ -183,9 +244,17 @@ export default function HistoryScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           contentContainerStyle={{ paddingBottom: SPACING.lg }}
-          stickySectionHeadersEnabled={true}
-        />
-      )}
-    </SafeAreaView>
+      stickySectionHeadersEnabled={true}
+    />
+  )}
+
+  {/* UX-9: sheet выбранного дня (L2) */}
+  <DaySummaryCard
+    selectedDay={selectedDay}
+    workouts={flatWorkouts}
+    onClose={closeDaySheet}
+    colors={colors}
+  />
+</SafeAreaView>
   );
 }
