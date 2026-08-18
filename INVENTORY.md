@@ -397,7 +397,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - WeightTrendChart and MetricSparkline exist.
 - Program editing is already split into multiple components/sheets, but the UX hierarchy remains a major audit target.
 - **Display modes (training/balanced/learn)** реализованы через `useWorkoutDisplayMode` + `WorkoutDisplayModePicker` в settings (feature branch).
-- **ExerciseCard разбит на секции** в `sections/`; порядок секций зависит от displayMode.
+- **ExerciseCard разбит на секции в `sections/`**; порядок секций: Header → Equipment → Warning → [Muscles] → SetsGrid → Technique → [Knowledge]. SetsGrid — главный рабочий блок, всегда выше справочной информации (Technique/Knowledge). Muscles/Knowledge скрыты в training mode.
 - **Equipment вынесен из accordion** в отдельную секцию `ExerciseCardEquipment`.
 - **Technique accordion доступна во всех display modes** (safety: правильная техника = безопасность).
 - **Media/slider content монтируется только при раскрытии accordion** (CLAUDE.md §8).

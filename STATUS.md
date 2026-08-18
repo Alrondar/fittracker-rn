@@ -71,7 +71,7 @@
 | UX-10 | 🟠 | ✅ | Calendar/List toggle + day details — выполнено: HistoryViewToggle segmented control + useHistoryView (persist в AsyncStorage, default calendar); list view сохранён без изменений; day details: тап по дню → DaySummaryCard → history/[id] |
 | UX-11 | 🟠 | ✅ | Progress hub «Как я меняюсь?»: compact-итоги + e1RM-тренд (top-3) + объём (8 нед.) + вес + PR с датами + регулярность строкой; entry из profile.tsx, без bottom-tab (PRODUCT.md §11) |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
-| UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7)|
+| UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
 ## 5. Training Engine
 
 | ID | Пр. | Статус | Цель |

@@ -144,51 +144,48 @@ export const ExerciseCard = memo(function ExerciseCard({
         <ExerciseWarningBanner warning={warning} colors={colors} />
       )}
 
-      {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
-      {!hideSecondaryInTraining && (
-        <ExerciseCardMuscles
-          primaryMuscles={exercise.primary_muscles}
-          secondaryMuscles={exercise.secondary_muscles}
-          colors={colors}
-        />
-      )}
-
-      {/* 5. Technique: доступна во ВСЕХ режимах (safety), включая Training (PR 4f) */}
-      <ExerciseCardTechnique
-        technique={exercise.technique}
-        mediaUrl={mediaUrl}
-        settingsText={settingsText}
-        defaultExpanded={displayMode === 'learn'}
-        colors={colors}
-      />
-
-      {/* 6. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
-      {displayMode !== 'training' && isMain && (
-        <ExerciseCardKnowledge
-          benefits={exercise.benefits}
-          risks={exercise.risks}
-          injuries={exercise.injuries}
-          defaultExpanded={displayMode === 'learn'}
-          colors={colors}
-        />
-      )}
-
-      {/* 8. SetsGrid (только основная карточка с сетами) */}
-      {hasSets && sets.length > 0 && (
-        <SetsGrid
-          exerciseIndex={exerciseIndex}
-          sets={sets}
-          restSeconds={restSeconds}
-          unit={unit}
-          updateSet={updateSet}
-          updateSetFeedback={updateSetFeedback}
-          applyProgression={applyProgression}
-          isSetCompleted={isSetCompleted}
-          startRestTimer={startRestTimer}
-          colors={colors}
-          cardStyles={cardStyles}
-        />
-      )}
-    </View>
-  );
+         {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
+   {!hideSecondaryInTraining && (
+     <ExerciseCardMuscles
+       primaryMuscles={exercise.primary_muscles}
+       secondaryMuscles={exercise.secondary_muscles}
+       colors={colors}
+     />
+   )}
+   {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК */}
+   {hasSets && sets.length > 0 && (
+     <SetsGrid
+       exerciseIndex={exerciseIndex}
+       sets={sets}
+       restSeconds={restSeconds}
+       unit={unit}
+       updateSet={updateSet}
+       updateSetFeedback={updateSetFeedback}
+       applyProgression={applyProgression}
+       isSetCompleted={isSetCompleted}
+       startRestTimer={startRestTimer}
+       colors={colors}
+       cardStyles={cardStyles}
+     />
+   )}
+   {/* 6. Technique: доступна во ВСЕХ режимах (safety), включая Training (PR 4f) */}
+   <ExerciseCardTechnique
+     technique={exercise.technique}
+     mediaUrl={mediaUrl}
+     settingsText={settingsText}
+     defaultExpanded={displayMode === 'learn'}
+     colors={colors}
+   />
+   {/* 7. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
+   {displayMode !== 'training' && isMain && (
+     <ExerciseCardKnowledge
+       benefits={exercise.benefits}
+       risks={exercise.risks}
+       injuries={exercise.injuries}
+       defaultExpanded={displayMode === 'learn'}
+       colors={colors}
+     />
+   )}
+ </View>
+);
 });
