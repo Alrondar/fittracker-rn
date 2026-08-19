@@ -92,7 +92,7 @@
 | ENG-2 | 🔴 | ✅ | structured reasons для recommendations — выполнено: explainProgression (input/signal/conclusion факты по reason.code), тап по recommendation → inline-блок «Почему?» + «Скрыть» (session-local); детерминированно без LLM (ROADMAP B5); persistence причин — COACH-3 |
 | ENG-3 | 🔴 | 🔲 | readiness как optional signal |
 | ENG-4 | 🔴 | ✅ | safety precedence: pain/injury > recommendation > AI — выполнено: applySafetyPrecedence (4 правила: PAIN_STOPPED/INJURY_AVOID suppress → no_data; PAIN_RECORDED/INJURY_CAUTION downgrade increase → hold); visual: safety-downgrade в warning color, chip highlight выключен; engine никогда не обходит injury_exercise_warnings (PRODUCT.md §8) |
-| ENG-5 | 🔴 | 🔲 | ranking exercise alternatives — данные готовы: бэкфилл movement_pattern для strength/olympic (143/149 заполнено, 14 новых значений: elbow_flexion/extension, shoulder_raise, calf_raise, wrist_forearm, knee_flexion/extension, hip_abduction/adduction/extension, shrug, lateral_flexion, isometric_hold, olympic_pull), миграция 20260819_backfill_movement_pattern; осталось: engine rankAlternatives + fetchAlternatives (добавить movement_pattern/difficulty в select) + ExerciseSlider excludedCount |
+| ENG-5 | 🔴 | ✅ | ranking exercise alternatives — выполнено: rankAlternatives (hard exclusion по injury_exercise_warnings + targetsInjuredMuscle severity high; scoring: мышцы/pattern/equipment/difficulty/pain/injury load + relation_type bonuses: regression +5 при recovery, progression −3 при боли); fetchAlternatives добавляет movement_pattern/difficulty в select; ExerciseSlider подпись excludedCount + empty state; AlternativeExerciseCard бейджи Прогрессия/Упрощение/Вариант (PRODUCT.md §4.4) |
 | ENG-6 | 🟠 | 🔲 | deterministic weekly summary |
 
 ## 6. Coaching Layer

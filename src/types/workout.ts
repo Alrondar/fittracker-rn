@@ -59,6 +59,8 @@ export interface AlternativeExercise {
   injuries: string[];
   media_url: string | null;
   reps_range?: string;
+  /** ENG-5: тип связи для бейджа (↗ прогрессия / ↘ упрощение / вариант). */
+  relation_type?: 'variation' | 'alternative' | 'regression' | 'progression' | null;
 }
 // Display mode для карточек упражнений в тренировке
 export type WorkoutCardDisplayMode = 'training' | 'balanced' | 'learn';

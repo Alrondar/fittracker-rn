@@ -2,6 +2,7 @@
 // 05.08.2026 (PERF):
 //  - P1-A: removeClippedSubviews={true} на горизонтальном ScrollView
 //  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
+// ENG-5: ранжирование альтернатив + подпись excludedCount
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   View,
@@ -25,10 +26,22 @@ import {
   SetFeedbackPatch,
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
-
+import { AlternativeSourceInput } from '../../engine/alternatives';
+import type { FetchAlternativesResult } from '../../hooks/workout/useWorkoutSession.loader';
 
 const H_GAP = 16;
 const PAD = 16;
+
+/** ENG-5: плюрализация «N вариант скрыт / варианта скрыто / вариантов скрыто». */
+function formatExcluded(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} вариант скрыт`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${count} варианта скрыто`;
+  }
+  return `${count} вариантов скрыто`;
+}
 
 interface ExerciseSliderProps {
   exercise: ExerciseData;
@@ -37,8 +50,8 @@ interface ExerciseSliderProps {
   displayMode: WorkoutCardDisplayMode;
   loadAlternatives: (
     id: string,
-    muscles: string[],
-  ) => Promise<AlternativeExercise[]>;
+    source: AlternativeSourceInput,
+  ) => Promise<FetchAlternativesResult>;
   updateSet: (
     exIndex: number,
     setIndex: number,
@@ -85,7 +98,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
-    onOpenSettings,
+  onOpenSettings,
   onOpenPain,
   colors,
   cardStyles,
@@ -96,6 +109,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const cardWidth = screenWidth - 32;
 
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
+  const [excludedCount, setExcludedCount] = useState(0); // ENG-5: скрытые травмами
   const [loadingAlts, setLoadingAlts] = useState(false);
   const [altsMounted, setAltsMounted] = useState(false);
 
@@ -107,14 +121,23 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   useEffect(() => {
     if (!hasAlts) return;
     let alive = true;
-
     const delay = 500 + exerciseIndex * 100;
+
     const timeout = setTimeout(() => {
       if (!alive) return;
       setLoadingAlts(true);
-      loadAlternatives(exercise.id, exercise.primary_muscles)
-        .then((alts) => {
-          if (alive) setAlternatives(alts);
+      // ENG-5: контекст для ранжирования (мышцы/оборудование/боль)
+      loadAlternatives(exercise.id, {
+        primaryMuscles: exercise.primary_muscles,
+        secondaryMuscles: exercise.secondary_muscles,
+        equipment: exercise.equipment,
+        hasPain: !!exercise.painState,
+      })
+        .then((result) => {
+          if (alive) {
+            setAlternatives(result.alternatives);
+            setExcludedCount(result.excludedCount);
+          }
         })
         .finally(() => {
           if (alive) setLoadingAlts(false);
@@ -142,12 +165,16 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const showPlaceholder = loadingAlts;
   const showPeek = !loadingAlts && hasAlts && !altsMounted;
   const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
+  // ENG-5: все альтернативы скрыты травмами → объясняем вместо пустоты
+  const showAllExcluded =
+    !loadingAlts && altsMounted && alternatives.length === 0 && excludedCount > 0;
 
   const childCount =
     1 +
     (showPlaceholder ? 1 : 0) +
     (showPeek ? 1 : 0) +
-    (showAlts ? alternatives.length : 0);
+    (showAlts ? alternatives.length : 0) +
+    (showAllExcluded ? 1 : 0);
 
   const snapOffsets = useMemo(
     () => Array.from({ length: childCount }, (_, i) => i * (cardWidth + H_GAP)),
@@ -190,7 +217,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             isReplaced={isReplaced}
             exerciseIndex={exerciseIndex}
             alternatives={alternatives}
-            displayMode={displayMode} 
+            displayMode={displayMode}
             updateSet={updateSet}
             updateSetFeedback={updateSetFeedback}
             applyProgression={applyProgression}
@@ -198,7 +225,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             startRestTimer={startRestTimer}
             getIntensityInfo={getIntensityInfo}
             onOpenSettings={onOpenSettings}
-          onOpenPain={onOpenPain}
+            onOpenPain={onOpenPain}
             colors={colors}
             cardStyles={cardStyles}
             unit={unit}
@@ -252,19 +279,58 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
 
-{showAlts &&
-  alternatives.map((alt) => (
-    <View key={alt.id} style={{ width: cardWidth }}>
-      <AlternativeExerciseCard
-        exercise={alt}
-        exerciseIndex={exerciseIndex}
-        onRequestReplace={onRequestReplace}
-        colors={colors}
-        cardStyles={cardStyles}
-      />
-    </View>
-  ))}
+        {showAlts &&
+          alternatives.map((alt) => (
+            <View key={alt.id} style={{ width: cardWidth }}>
+              <AlternativeExerciseCard
+                exercise={alt}
+                exerciseIndex={exerciseIndex}
+                onRequestReplace={onRequestReplace}
+                colors={colors}
+                cardStyles={cardStyles}
+              />
+            </View>
+          ))}
+
+        {showAllExcluded && (
+          <View
+            style={{
+              width: cardWidth,
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: SPACING.sm,
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: BORDER_RADIUS.lg,
+              paddingHorizontal: SPACING.lg,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                fontWeight: '600',
+                textAlign: 'center',
+              }}
+            >
+              Все варианты замен скрыты из-за травм и противопоказаний
+            </Text>
+          </View>
+        )}
       </ScrollView>
+
+      {/* ENG-5: подпись о скрытых вариантах (когда есть показанные) */}
+      {showAlts && excludedCount > 0 && (
+        <Text
+          style={{
+            color: colors.textTertiary,
+            fontSize: 11,
+            marginTop: SPACING.xs,
+            paddingHorizontal: PAD,
+          }}
+        >
+          {formatExcluded(excludedCount)} из-за травм и противопоказаний
+        </Text>
+      )}
     </View>
   );
 });
