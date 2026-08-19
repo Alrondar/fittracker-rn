@@ -393,6 +393,36 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       });
       break;
   }
+  // 2.5. ENG-4: SAFETY OVERRIDE — если recommendation подавлена или downgraded
+  // из-за pain/injury, добавляем сигнал с warning emphasis.
+  const safetyOverride = (result as ProgressionResult & {
+    safetyOverride?: SafetyOverride | null;
+  }).safetyOverride;
+  if (safetyOverride) {
+    let signalText: string;
+    switch (safetyOverride.code) {
+      case 'PAIN_STOPPED':
+        signalText = 'Пользователь прекратил упражнение из-за боли';
+        break;
+      case 'INJURY_AVOID':
+        signalText = 'Противопоказание (injury_exercise_warnings)';
+        break;
+      case 'PAIN_RECORDED':
+        signalText = 'В этой тренировке отмечена боль в упражнении';
+        break;
+      case 'INJURY_CAUTION':
+        signalText = 'Травма требует остороности (injury_exercise_warnings)';
+        break;
+      default:
+        signalText = 'Safety constraint';
+    }
+    items.push({
+      kind: 'signal',
+      label: 'Безопасность',
+      value: signalText,
+      emphasis: 'warning',
+    });
+  }
 
   // 3. CONCLUSION — рекомендация
   const repsPart = suggestedReps != null ? ` × ${suggestedReps}` : '';
@@ -434,4 +464,109 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
   }
 
   return items;
+}
+// ============================================================================
+// ENG-4: SAFETY PRECEDENCE (pain/injury > recommendation)
+// PRODUCT.md §8: injury/pain constraints → training constraints →
+// recommendation → AI. Engine не может рекомендовать повышение, если
+// отмечена боль или есть травма-ограничение.
+// ============================================================================
+
+export interface SafetyContext {
+  /** painState != null в этом упражнении текущей тренировки */
+  hasPain: boolean;
+  /** painState.stopExercise === true — пользователь прекратил из-за боли */
+  stopExercise: boolean;
+  /** warning.level из useInjuryWarnings (injury_exercise_warnings hard constraint) */
+  warningLevel: 'avoid' | 'caution' | null;
+}
+
+export interface SafetyOverride {
+  code: string;
+  ruText: string;
+}
+
+/**
+ * Применяет safety precedence к базовой рекомендации.
+ * Чистая функция, O(1), без side effects.
+ *
+ * Порядок приоритета (первое совпадение — результат):
+ *   1. stopExercise      → suppress (no_data)   · PAIN_STOPPED
+ *   2. warning='avoid'   → suppress (no_data)   · INJURY_AVOID
+ *   3. hasPain + increase → downgrade to hold   · PAIN_RECORDED
+ *   4. caution + increase → downgrade to hold   · INJURY_CAUTION
+ *   5. иначе → base result unchanged
+ *
+ * Возвращает новый объект (не мутирует input).
+ */
+export function applySafetyPrecedence(
+  base: ProgressionResult,
+  safety: SafetyContext | null,
+): ProgressionResult & { safetyOverride?: SafetyOverride | null } {
+  if (!safety) return { ...base, safetyOverride: null };
+
+  // 1. Suppression cases → hide recommendation entirely
+  if (safety.stopExercise) {
+    return {
+      action: 'no_data',
+      suggestedWeight: null,
+      suggestedReps: null,
+      reason: base.reason,
+      safetyOverride: {
+        code: 'PAIN_STOPPED',
+        ruText: 'Прекращено из-за боли — рекомендация отключена',
+      },
+    };
+  }
+
+  if (safety.warningLevel === 'avoid') {
+    return {
+      action: 'no_data',
+      suggestedWeight: null,
+      suggestedReps: null,
+      reason: base.reason,
+      safetyOverride: {
+        code: 'INJURY_AVOID',
+        ruText: 'Упражнение противопоказано — рекомендация отключена',
+      },
+    };
+  }
+
+  // 2. Downgrade cases: increase → hold (conservative)
+  if (base.action === 'increase') {
+    if (safety.hasPain) {
+      const holdWeight = base.reason.factors.lastWeight;
+      return {
+        action: 'hold',
+        suggestedWeight: holdWeight,
+        suggestedReps: base.reason.factors.targetRange
+          ? base.reason.factors.targetRange.max
+          : null,
+        reason: base.reason,
+        safetyOverride: {
+          code: 'PAIN_RECORDED',
+          ruText: 'Отмечена боль — фиксируем вес',
+        },
+      };
+    }
+
+    if (safety.warningLevel === 'caution') {
+      const holdWeight = base.reason.factors.lastWeight;
+      return {
+        action: 'hold',
+        suggestedWeight: holdWeight,
+        suggestedReps: base.reason.factors.targetRange
+          ? base.reason.factors.targetRange.max
+          : null,
+        reason: base.reason,
+        safetyOverride: {
+          code: 'INJURY_CAUTION',
+          ruText: 'Осторожно с травмой — фиксируем вес',
+        },
+      };
+    }
+  }
+
+  // 3. No override: base result unchanged
+  return { ...base, safetyOverride: null };
 }
