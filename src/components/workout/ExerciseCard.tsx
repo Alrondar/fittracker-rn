@@ -152,12 +152,14 @@ export const ExerciseCard = memo(function ExerciseCard({
        colors={colors}
      />
    )}
-   {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК */}
+   {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК.
+     * ENG-1: проброс repsRange для детерминированной прогрессии. */}
    {hasSets && sets.length > 0 && (
      <SetsGrid
        exerciseIndex={exerciseIndex}
        sets={sets}
        restSeconds={restSeconds}
+       repsRange={repsRange}
        unit={unit}
        updateSet={updateSet}
        updateSetFeedback={updateSetFeedback}

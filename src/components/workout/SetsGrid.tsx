@@ -9,7 +9,7 @@
 // возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
 import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, Clock } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Minus, Target, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -24,6 +24,7 @@ import {
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip, SetFeedbackEditor } from './SetFeedbackControl';
+import { calculateProgression, ProgressionResult } from '../../engine/progression';
 
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
@@ -209,6 +210,8 @@ interface SetsGridProps {
   exerciseIndex: number;
   sets: SetData[];
   restSeconds: number;
+  /** ENG-1: диапазон повторов для прогрессии. null = no target (fallback to RPE only). */
+  repsRange?: string | null;
   unit: WeightUnit;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
@@ -225,6 +228,7 @@ export const SetsGrid = memo(function SetsGrid({
   exerciseIndex,
   sets,
   restSeconds,
+  repsRange,
   unit,
   updateSet,
   updateSetFeedback,
@@ -345,6 +349,32 @@ export const SetsGrid = memo(function SetsGrid({
     [progressionSetIndex, prevWeight, fromDisplay, updateSet, exerciseIndex],
   );
 
+  // ============================================================================
+  // ENG-1: детерминированная рекомендация прогрессии
+  // ============================================================================
+  const recommendation = useMemo<ProgressionResult | null>(() => {
+    if (sets.length === 0) return null;
+    return calculateProgression({ sets, repsRange: repsRange ?? null });
+  }, [sets, repsRange]);
+
+  // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase
+  const highlightedChip: number | null =
+    recommendation?.action === 'increase' ? (unit === 'kg' ? 2.5 : 5) : null;
+
+  // Иконка + цвет рекомендации
+  const recommendationIcon =
+    recommendation?.action === 'increase'
+      ? Target
+      : recommendation?.action === 'decrease'
+        ? TrendingDown
+        : Minus;
+  const recommendationColor =
+    recommendation?.action === 'increase'
+      ? colors.success
+      : recommendation?.action === 'decrease'
+        ? colors.warning
+        : colors.primary;
+
   const handleOpenFeedback = useCallback((setIndex: number) => {
     setFeedbackSetIndex(setIndex);
   }, []);
@@ -412,28 +442,58 @@ export const SetsGrid = memo(function SetsGrid({
                 )}
               </Text>
             </View>
+            {/* ENG-1: one-liner recommendation перед чипами прогрессии */}
+            {recommendation && recommendation.action !== 'no_data' && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginTop: SPACING.xs,
+                }}
+              >
+                {React.createElement(recommendationIcon, {
+                  size: 14,
+                  color: recommendationColor,
+                  strokeWidth: 2,
+                })}
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: recommendationColor, fontWeight: '700', flex: 1 },
+                  ]}
+                >
+                  {recommendation.reason.ruText}
+                </Text>
+              </View>
+            )}
             <View
               style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
             >
-              {PROGRESSION_STEPS.map((step) => (
-                <TouchableOpacity
-                  key={step}
-                  onPress={() => handleProgressionStep(step)}
-                  activeOpacity={0.7}
-                  style={{
-                    paddingHorizontal: SPACING.sm,
-                    paddingVertical: 4,
-                    borderRadius: BORDER_RADIUS.sm,
-                    backgroundColor: colors.primary,
-                  }}
-                >
-                  <Text
-                    style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
+              {PROGRESSION_STEPS.map((step) => {
+                const isHighlighted = step === highlightedChip;
+                return (
+                  <TouchableOpacity
+                    key={step}
+                    onPress={() => handleProgressionStep(step)}
+                    activeOpacity={0.7}
+                    style={{
+                      paddingHorizontal: SPACING.sm,
+                      paddingVertical: 4,
+                      borderRadius: BORDER_RADIUS.sm,
+                      backgroundColor: isHighlighted ? colors.success : colors.primary,
+                      borderWidth: isHighlighted ? 1 : 0,
+                      borderColor: isHighlighted ? colors.success : 'transparent',
+                    }}
                   >
-                    +{step} {unit}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
+                    >
+                      +{step} {unit}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )}

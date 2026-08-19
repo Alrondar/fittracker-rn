@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 18.08.2026 (feature/workout-ux-rework)
+Срез: 19.08.2026
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -72,11 +72,23 @@
 | UX-11 | 🟠 | ✅ | Progress hub «Как я меняюсь?»: compact-итоги + e1RM-тренд (top-3) + объём (8 нед.) + вес + PR с датами + регулярность строкой; entry из profile.tsx, без bottom-tab (PRODUCT.md §11) |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
 | UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
+
+### Остаточные аудиты экранов (из архивного `UX_AUDIT_PLAN.md`, Этап H)
+
+Экраны, не покрываемые другими секциями §4–§9. Ветка `feature/workout-ux-rework` закрыта полностью (UX-2…UX-13); ниже — остаток по архивному UX_AUDIT_PLAN.
+
+| ID | Пр. | Статус | Цель |
+|---|---:|---|---|
+| AUDIT-1 | 🟠 | 🔲 | аудит Dashboard (`index.tsx`): Today first, fast start, compact insights, readiness optional; без AI-перегрузки (PRODUCT.md §12) |
+| AUDIT-2 | 🟡 | 🔲 | аудит Exercise Detail (`exercise/[id].tsx`): техника, оборудование, мышцы, alternatives, связь с workout |
+| AUDIT-3 | 🟡 | 🔲 | аудит библиотеки Exercises (`exercises.tsx`): поиск, фильтры, infinite scroll (PERF-9) |
+| AUDIT-4 | 🟡 | 🔲 | аудит Profile/Goals/Injuries/Metrics: зачем данные и что реально используется (PRODUCT.md §15 product test) |
+
 ## 5. Training Engine
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| ENG-1 | 🔴 | 🔲 | формализовать progression rules |
+| ENG-1 | 🔴 | ✅ | формализовать progression rules — выполнено: src/engine/progression.ts, 8 правил (increase/hold/decrease/no_data), structured reason codes, live recompute в SetsGrid, chip highlight; фундамент для ENG-2 и COACH-1 |
 | ENG-2 | 🔴 | 🔲 | structured reasons для recommendations |
 | ENG-3 | 🔴 | 🔲 | readiness как optional signal |
 | ENG-4 | 🔴 | 🔲 | safety precedence: pain/injury > recommendation > AI |
@@ -142,7 +154,7 @@
 
 | Ветка | Область | Основные ID |
 |---|---|---|
-| `feature/workout-ux-rework` | Tracker UX | UX-2…UX-13 |
+
 
 После merge ветки строка удаляется; соответствующие ID в §4–§9 закрываются.
 
@@ -165,6 +177,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-9 | 🟡 | 🔲 | Аудит длинных списков (exercises, history): применимость виртуализации/FlashList |
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
 | DS-1 | 🟠 | 🔲 | Аудит design system: шкала типографики/spacing, состояния, тёмная тема — перед Этапом H (ROADMAP) |
+| LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: 65 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
 
 ## 14. Update rule
 

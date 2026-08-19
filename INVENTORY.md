@@ -338,6 +338,8 @@ Important components:
 | `utils/errorMapper.ts` | user-facing error mapping |
 | `utils/intensityInfo.tsx` |getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | `utils/macroCalculator.ts` | macro calculations |
+| `utils/intensityInfo.tsx` |getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
+| `engine/progression.ts` |calculateProgression: детерминированные правила прогрессии (ENG-1)|
 
 ## 10. Database / migrations
 
@@ -415,6 +417,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Sync safety insight (UX-5 Feature 1)**: RPC sync_program_changes_to_workouts удаляет workout_exercises с exercise_id, которого нет в program_exercises (orphaned by exercise_id). Поэтому перед вызовом sync обязательно обновляем текущую workout_exercises.exercise_id — иначе для не начатых тренировок sync пересоздал бы строку с новым id и осиротил бы pending workout_logs.
 - **History calendar (UX-9/UX-10)**: workoutDates вычисляются локально из HistoryWorkout.created_at через useMemo — ноль новых запросов, данные уже загружены getHistory. HistoryCalendar: навигация от самого раннего месяца с тренировками до текущего (в будущее нельзя), неделя с понедельника, точки на днях с тренировками. Тап по дню → DaySummaryCard (SheetShell) со списком тренировок дня; несколько тренировок в день поддерживаются. Выбор вида Calendar/List персистится в AsyncStorage (useHistoryView), default — Calendar. Пропущенные тренировки (skipped_at) в календаре НЕ отображаются — Вариант A, консистентно с FIT-7: History = фактически выполненное (historyService фильтрует по наличию логов).
 - **Progress hub (UX-11)**: app/profile/progress.tsx — единый экран «Как я меняюсь?» (PRODUCT.md §11). Compact-итоги (тр/тонны/стрик) → Сила (e1RM top-3 по неделям) → Объём (8 недель) → Вес (metric_date, delta) → PR top-5 с датами → регулярность одной строкой (вычисляется из weeklyVolume, ноль новых запросов). Грабли progressService: workout_exercises НЕ имеет exercise_name — имена только через embed exercises(name); цепочки .in() давали 400 Bad Request — только вложенные embed-запросы; skip-тренировки (finished_at + skipped_at, FIT-7) исключаем через .is('skipped_at', null); окно weeklyVolume: startMs = now - (weeks-1)*7d, последний bucket = текущая неделя.
+- **Progression rules (ENG-1)**: src/engine/progression.ts — чистая функция calculateProgression({sets, repsRange, stepKg}). 8 правил в порядке приоритета: MAX_EFFORT (RPE 10 → decrease), READY_TO_PROGRESS (allAtMax + RPE ≤ 7 → increase), ALL_MAX_REPS (allAtMax без RPE → increase), HIGH_RPE_HOLD (RPE ≥ 9), CONSOLIDATE (allAtMin), OVERREACHED (allBelowMin → decrease), MISSED_REPS (anyBelowMin), INCONCLUSIVE (fallback hold). Reason codes machine-readable (ENG-2/B5 foundation). SetsGrid рендерит one-liner recommendation + подсвечивает smallest chip при increase. Данные: previous session (SetData.previousWeight/Reps/Rpe) + текущие завершённые сеты (live recompute). repsRange парсится из ExerciseData.reps_range. Step: 2.5 кг / 5 lb.
 
 ## 13. Inventory maintenance
 
