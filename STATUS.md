@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 19.08.2026
+Срез: 19.08.2026 (main)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -89,7 +89,7 @@
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
 | ENG-1 | 🔴 | ✅ | формализовать progression rules — выполнено: src/engine/progression.ts, 8 правил (increase/hold/decrease/no_data), structured reason codes, live recompute в SetsGrid, chip highlight; фундамент для ENG-2 и COACH-1 |
-| ENG-2 | 🔴 | 🔲 | structured reasons для recommendations |
+| ENG-2 | 🔴 | ✅ | structured reasons для recommendations — выполнено: explainProgression (input/signal/conclusion факты по reason.code), тап по recommendation → inline-блок «Почему?» + «Скрыть» (session-local); детерминированно без LLM (ROADMAP B5); persistence причин — COACH-3 |
 | ENG-3 | 🔴 | 🔲 | readiness как optional signal |
 | ENG-4 | 🔴 | 🔲 | safety precedence: pain/injury > recommendation > AI |
 | ENG-5 | 🔴 | 🔲 | ranking exercise alternatives |

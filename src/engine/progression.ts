@@ -231,3 +231,207 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+// ============================================================================
+// ENG-2: STRUCTURED REASONS (объяснения «Почему?»)
+// ============================================================================
+
+/**
+ * Элемент структурированного объяснения.
+ * UI форматирует поля в читаемый вид, engine отдаёт сырые данные.
+ * - input: факт о предыдущей тренировке (вес × повторы × RPE)
+ * - signal: что учли (RPE, диапазон повторов, все/часть сетов)
+ * - conclusion: рекомендация (вес × повторы)
+ */
+export type ExplanationItemKind = 'input' | 'signal' | 'conclusion';
+
+export interface ExplanationItem {
+  kind: ExplanationItemKind;
+  /** Короткий label для UI («Прошлый результат», «RPE», «Диапазон») */
+  label: string;
+  /** Значение в формате, готовом к отображению. Для веса — `${X} кг`. */
+  value: string;
+  /** Визуальный акцент: соответствует semantic color в UI */
+  emphasis?: 'success' | 'warning' | 'primary' | 'default';
+}
+
+/**
+ * Строит структурированное объяснение рекомендации из ProgressionResult.
+ * Чистая функция: принимает result, возвращает массив ExplanationItem.
+ *
+ * Pattern: input (прошлый результат) → signal (что учли) → conclusion (рекомендация).
+ */
+export function explainProgression(result: ProgressionResult): ExplanationItem[] {
+  const { action, reason, suggestedWeight, suggestedReps } = result;
+  const { lastWeight, lastReps, lastRpe, targetRange } = reason.factors;
+  const items: ExplanationItem[] = [];
+
+  // 1. INPUT — прошлый результат (если есть)
+  if (lastWeight != null && lastReps != null) {
+    let inputText = `${lastWeight} кг × ${lastReps}`;
+    if (lastRpe != null) inputText += ` · RPE ${lastRpe}`;
+    items.push({ kind: 'input', label: 'Прошлый результат', value: inputText });
+  } else {
+    items.push({
+      kind: 'input',
+      label: 'История',
+      value: 'нет предыдущих тренировок',
+      emphasis: 'default',
+    });
+  }
+
+  // 2. SIGNAL — что учли (по коду)
+  switch (reason.code) {
+    case 'NO_HISTORY':
+      items.push({
+        kind: 'signal',
+        label: 'Данные',
+        value: 'нет истории для расчёта прогрессии',
+        emphasis: 'default',
+      });
+      break;
+
+    case 'MAX_EFFORT':
+      items.push({
+        kind: 'signal',
+        label: 'RPE',
+        value: `${lastRpe} — полный отказ (0 в запасе)`,
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'READY_TO_PROGRESS':
+      if (targetRange) {
+        items.push({
+          kind: 'signal',
+          label: 'Диапазон',
+          value: `все повторы на верхней границе (${targetRange.min}–${targetRange.max})`,
+          emphasis: 'success',
+        });
+      }
+      if (lastRpe != null) {
+        items.push({
+          kind: 'signal',
+          label: 'RPE',
+          value: `${lastRpe} — низкий (≥3 в запасе)`,
+          emphasis: 'success',
+        });
+      }
+      break;
+
+    case 'ALL_MAX_REPS':
+      if (targetRange) {
+        items.push({
+          kind: 'signal',
+          label: 'Диапазон',
+          value: `все повторы на верхней границе (${targetRange.min}–${targetRange.max})`,
+          emphasis: 'success',
+        });
+      }
+      items.push({
+        kind: 'signal',
+        label: 'RPE',
+        value: 'не записан',
+        emphasis: 'default',
+      });
+      break;
+
+    case 'HIGH_RPE_HOLD':
+      items.push({
+        kind: 'signal',
+        label: 'RPE',
+        value: `${lastRpe} — высокий (1 в запасе)`,
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'CONSOLIDATE':
+      if (targetRange) {
+        items.push({
+          kind: 'signal',
+          label: 'Диапазон',
+          value: `все повторы в диапазоне (${targetRange.min}–${targetRange.max})`,
+          emphasis: 'success',
+        });
+      } else if (lastRpe != null) {
+        items.push({
+          kind: 'signal',
+          label: 'RPE',
+          value: `${lastRpe} — уверенное выполнение`,
+          emphasis: 'success',
+        });
+      }
+      break;
+
+    case 'OVERREACHED':
+      if (targetRange) {
+        items.push({
+          kind: 'signal',
+          label: 'Диапазон',
+          value: `все повторы ниже цели (${targetRange.min}–${targetRange.max})`,
+          emphasis: 'warning',
+        });
+      }
+      break;
+
+    case 'MISSED_REPS':
+      if (targetRange) {
+        items.push({
+          kind: 'signal',
+          label: 'Диапазон',
+          value: `часть повторов ниже цели (${targetRange.min}–${targetRange.max})`,
+          emphasis: 'warning',
+        });
+      }
+      break;
+
+    case 'INCONCLUSIVE':
+      items.push({
+        kind: 'signal',
+        label: 'Данные',
+        value: 'недостаточно для уверенной рекомендации',
+        emphasis: 'default',
+      });
+      break;
+  }
+
+  // 3. CONCLUSION — рекомендация
+  const repsPart = suggestedReps != null ? ` × ${suggestedReps}` : '';
+  if (action === 'no_data') {
+    items.push({
+      kind: 'conclusion',
+      label: 'Рекомендация',
+      value: 'используй программный вес',
+      emphasis: 'primary',
+    });
+  } else if (action === 'increase' && suggestedWeight != null) {
+    items.push({
+      kind: 'conclusion',
+      label: 'Рекомендуем',
+      value: `${suggestedWeight} кг${repsPart}`,
+      emphasis: 'success',
+    });
+  } else if (action === 'decrease' && suggestedWeight != null) {
+    items.push({
+      kind: 'conclusion',
+      label: 'Снизить до',
+      value: `${suggestedWeight} кг${repsPart}`,
+      emphasis: 'warning',
+    });
+  } else if (suggestedWeight != null) {
+    items.push({
+      kind: 'conclusion',
+      label: 'Закрепить',
+      value: `${suggestedWeight} кг${repsPart}`,
+      emphasis: 'primary',
+    });
+  } else {
+    items.push({
+      kind: 'conclusion',
+      label: 'Рекомендация',
+      value: 'используй текущий вес',
+      emphasis: 'primary',
+    });
+  }
+
+  return items;
+}

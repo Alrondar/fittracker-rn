@@ -9,7 +9,7 @@
 // возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
 import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, TrendingDown, Minus, Target, Clock } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Minus, Target, Clock, ChevronDown, EyeOff } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -17,6 +17,7 @@ import { createCardStyles } from '../../styles/components/card';
 import { SetData, SetFeedbackPatch } from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings } from '../../hooks/useRpeSettings';
+
 import {
   WeightUnit,
   weightToDisplay,
@@ -24,7 +25,12 @@ import {
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip, SetFeedbackEditor } from './SetFeedbackControl';
-import { calculateProgression, ProgressionResult } from '../../engine/progression';
+import {
+  calculateProgression,
+  explainProgression,
+  ProgressionResult,
+  ExplanationItem,
+} from '../../engine/progression';
 
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
@@ -375,6 +381,35 @@ export const SetsGrid = memo(function SetsGrid({
         ? colors.warning
         : colors.primary;
 
+  // ============================================================================
+  // ENG-2: structured reasons — expand/collapse + dismiss
+  // ============================================================================
+  const [expanded, setExpanded] = useState(false);
+  // dismissed — скрывает recommendation на сессию (не persist — COACH-3 territory)
+  const [dismissed, setDismissed] = useState(false);
+
+  // Reset expand/dismiss state when exercise changes
+  useEffect(() => {
+    setExpanded(false);
+    setDismissed(false);
+  }, [exerciseIndex]);
+
+  const explanationItems = useMemo<ExplanationItem[]>(() => {
+    if (!recommendation || recommendation.action === 'no_data') return [];
+    return explainProgression(recommendation);
+  }, [recommendation]);
+
+  const toggleExpanded = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExpanded((v) => !v);
+  }, []);
+
+  const handleDismiss = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDismissed(true);
+    setExpanded(false);
+  }, []);
+
   const handleOpenFeedback = useCallback((setIndex: number) => {
     setFeedbackSetIndex(setIndex);
   }, []);
@@ -442,29 +477,127 @@ export const SetsGrid = memo(function SetsGrid({
                 )}
               </Text>
             </View>
-            {/* ENG-1: one-liner recommendation перед чипами прогрессии */}
-            {recommendation && recommendation.action !== 'no_data' && (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  marginTop: SPACING.xs,
-                }}
-              >
-                {React.createElement(recommendationIcon, {
-                  size: 14,
-                  color: recommendationColor,
-                  strokeWidth: 2,
-                })}
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    { color: recommendationColor, fontWeight: '700', flex: 1 },
-                  ]}
+            {/* ENG-2: one-liner recommendation + expandable «Почему?» */}
+            {recommendation && recommendation.action !== 'no_data' && !dismissed && (
+              <View style={{ marginTop: SPACING.xs }}>
+                {/* Tap target: one-liner + chevron → expand/collapse */}
+                <TouchableOpacity
+                  onPress={toggleExpanded}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingVertical: 4,
+                  }}
                 >
-                  {recommendation.reason.ruText}
-                </Text>
+                  {React.createElement(recommendationIcon, {
+                    size: 14,
+                    color: recommendationColor,
+                    strokeWidth: 2,
+                  })}
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      { color: recommendationColor, fontWeight: '700', flex: 1 },
+                    ]}
+                  >
+                    {recommendation.reason.ruText}
+                  </Text>
+                  <ChevronDown
+                    size={14}
+                    color={colors.textTertiary}
+                    strokeWidth={2}
+                    style={{
+                      transform: [{ rotate: expanded ? '180deg' : '0deg' }],
+                    }}
+                  />
+                </TouchableOpacity>
+
+                {/* Expanded: structured facts + Dismiss */}
+                {expanded && (
+                  <View
+                    style={{
+                      marginTop: SPACING.xs,
+                      paddingTop: SPACING.sm,
+                      paddingLeft: SPACING.sm,
+                      borderLeftWidth: 2,
+                      borderLeftColor: recommendationColor + '60',
+                    }}
+                  >
+                    {explanationItems.map((item, idx) => {
+                      const color =
+                        item.emphasis === 'success'
+                          ? colors.success
+                          : item.emphasis === 'warning'
+                            ? colors.warning
+                            : item.emphasis === 'primary'
+                              ? colors.primary
+                              : colors.textSecondary;
+                      const isConclusion = item.kind === 'conclusion';
+                      return (
+                        <View
+                          key={idx}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'flex-start',
+                            gap: 6,
+                            marginBottom: 4,
+                          }}
+                        >
+                          <Text
+                            style={[
+                              typography.captionSmall,
+                              {
+                                color: colors.textTertiary,
+                                fontWeight: '600',
+                                minWidth: 90,
+                              },
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                          <Text
+                            style={[
+                              typography.captionSmall,
+                              {
+                                color,
+                                fontWeight: isConclusion ? '700' : '400',
+                                flex: 1,
+                              },
+                            ]}
+                          >
+                            {item.value}
+                          </Text>
+                        </View>
+                      );
+                    })}
+
+                    {/* Dismiss button */}
+                    <TouchableOpacity
+                      onPress={handleDismiss}
+                      activeOpacity={0.7}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        marginTop: SPACING.xs,
+                        paddingVertical: 2,
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      <EyeOff size={12} color={colors.textTertiary} strokeWidth={2} />
+                      <Text
+                        style={[
+                          typography.captionSmall,
+                          { color: colors.textTertiary, fontWeight: '500' },
+                        ]}
+                      >
+                        Скрыть
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             )}
             <View
