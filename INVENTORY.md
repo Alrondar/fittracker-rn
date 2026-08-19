@@ -1,6 +1,6 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 18.08.2026 (feature/workout-ux-rework)
+Срез: 19.08.2026 (main)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -354,6 +354,9 @@ Reference data migration (15.08.2026):
 - `search_exercises` and `get_exercise_filter_counts` now use `exercise_equipment` + `equipment` tables;
 - `exerciseReferenceService` is the single source of truth for equipment/injuries/alternatives in runtime;
 - `injury_exercise_warnings` is the hard-constraint source for safety layer (ARCH-8).
+-`20260819_backfill_movement_pattern (ENG-5 prep)`: 15 idempotent UPDATE rules заполняют 143/149 strength/olympic упражнений 14 новыми значениями movement_pattern (TEXT, без ENUM); 6 честных NULL в strength (баланс, баттл-ропы, гибриды), 80 stretching/cardio NULL намеренно не тронуты;
+-other current schema migrations under `supabase/migrations/`.
+
 
 Before changing a DB operation, inspect the current migration and generated `database.types.ts`.
 
