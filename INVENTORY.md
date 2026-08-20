@@ -364,6 +364,7 @@ Reference data migration (15.08.2026):
 - `injury_exercise_warnings` is the hard-constraint source for safety layer (ARCH-8).
 -`20260819_backfill_movement_pattern (ENG-5 prep)`: 15 idempotent UPDATE rules заполняют 143/149 strength/olympic упражнений 14 новыми значениями movement_pattern (TEXT, без ENUM); 6 честных NULL в strength (баланс, баттл-ропы, гибриды), 80 stretching/cardio NULL намеренно не тронуты;
 -`20260820_recommendation_feedback (COACH-3)`: таблица recommendation_feedback для записи acceptance/rejection feedback; upsert по UNIQUE(user_id, workout_id, exercise_id, set_number); RLS auth.uid() = user_id;
+-`20260820_drop_unused_session_tables (ARCH-10)`: удаление экспериментальных таблиц `workout_sessions` и `session_sets` (0 строк данных, 0 упоминаний в коде). `workout_logs` зафиксирован как единственный source of truth для подходов;
 -other current schema migrations under `supabase/migrations/`.
 
 

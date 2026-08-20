@@ -21,6 +21,7 @@
 |---|---|---:|---|---|
 | SEC-1…SEC-10 | Security | — | ✅ | Основные security-проблемы закрыты |
 | ARCH-1…ARCH-9 | Architecture | — | ✅ | Основные архитектурные проблемы закрыты; ARCH-8 (injury warnings) полностью на normalized tables |
+| ARCH-10 | Architecture | — | ✅ | Аудит и очистка workout data flow: удалены неиспользуемые таблицы `workout_sessions` и `session_sets`; `workout_logs` зафиксирован как единственный source of truth для подходов |
 | PERF-1…PERF-7 | Performance | — | ✅ | Основные проблемы закрыты; Workout остаётся зоной profiling |
 | SCALE-3…SCALE-7 | Scalability | — | ✅ | Основные пункты закрыты |
 | SCALE-1 | Testing | 🟠 | 🔲 | Автотесты отложены; чистые функции готовы к покрытию |

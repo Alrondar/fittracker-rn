@@ -51,7 +51,7 @@ export default function DashboardScreen() {
            weeklyData.insights.find(i => i.severity === 'positive') ?? null;
   }, [weeklyData?.insights]);
 
-  const readinessWarning = readiness !== null && readiness < 3;
+  const readinessWarning = readiness != null && readiness < 3;
 
   // FEAT-1.8: readiness check-in раз в день перед стартом тренировки
   const [readinessOpen, setReadinessOpen] = useState(false);
