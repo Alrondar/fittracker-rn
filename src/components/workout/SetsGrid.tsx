@@ -7,9 +7,9 @@
 // +2.5/+5/+10/+15/+20 в активный сет; custom-ввод удалён.
 // 06.08.2026: чипы в текущих единицах (кг → кг-шаги, lb → реальные lb-номиналы);
 // возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
-import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, TrendingDown, Minus, Target, Clock, ChevronDown, EyeOff } from 'lucide-react-native';
+import { TrendingUp, Clock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -37,6 +37,7 @@ import {
   ReadinessContext,
   ReadinessOverride,
 } from '../../engine/progression';
+import { RecommendationCard } from './RecommendationCard';
 
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
@@ -395,12 +396,7 @@ export const SetsGrid = memo(function SetsGrid({
   // Suppressed (no_data) — не рендерится.
   // ENG-3/ENG-4: любой системный override (safety ИЛИ readiness) использует warning color
   const isSystemDowngrade = !!(recommendation?.safetyOverride || recommendation?.readinessOverride);
-  const recommendationIcon =
-    recommendation?.action === 'increase'
-      ? Target
-      : recommendation?.action === 'decrease'
-        ? TrendingDown
-        : Minus;
+  // (удалено — иконку действия рендерит RecommendationCard)
   const recommendationColor = isSystemDowngrade
     ? colors.warning
     : recommendation?.action === 'increase'
@@ -410,16 +406,20 @@ export const SetsGrid = memo(function SetsGrid({
         : colors.primary;
 
   // ============================================================================
-  // ENG-2: structured reasons — expand/collapse + dismiss
+  // ENG-2 + COACH-1: recommendation UX — expand / dismiss / chips-open state
   // ============================================================================
   const [expanded, setExpanded] = useState(false);
   // dismissed — скрывает recommendation на сессию (не persist — COACH-3 territory)
   const [dismissed, setDismissed] = useState(false);
+  // COACH-1: chips are hidden by default and revealed by the "Изменить" button
+  // inside the RecommendationCard. Reduces L1 noise (PRODUCT.md §3.3).
+  const [chipsOpen, setChipsOpen] = useState(false);
 
-  // Reset expand/dismiss state when exercise changes
+  // Reset expand/dismiss/chipsOpen state when exercise changes
   useEffect(() => {
     setExpanded(false);
     setDismissed(false);
+    setChipsOpen(false);
   }, [exerciseIndex]);
 
   const explanationItems = useMemo<ExplanationItem[]>(() => {
@@ -436,7 +436,57 @@ export const SetsGrid = memo(function SetsGrid({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDismissed(true);
     setExpanded(false);
+    setChipsOpen(false);
   }, []);
+
+  // COACH-1: «Изменить» toggles visibility of progression chips (they are the
+  // manual weight-adjustment tool). Chips hidden by default — lower L1 noise.
+  const handleChipsToggle = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setChipsOpen((v) => !v);
+  }, []);
+
+  // COACH-1: «Принять» writes suggestedWeight (+ suggestedReps if provided)
+  // into the first incomplete set (progressionSetIndex). Uses the existing
+  // updateSet mutation + scheduleFlush chain — no new server call,
+  // no new prop drilling. After the set fills, the recommendation naturally
+  // recomputes for the next incomplete set (per-set progression, FEAT-1.1 v2).
+  const handleAccept = useCallback(() => {
+    if (
+      progressionSetIndex === null ||
+      !recommendation ||
+      recommendation.action === 'no_data' ||
+      recommendation.suggestedWeight == null
+    ) {
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Weight: engine returns kg (storage unit) → write directly to set.weight
+    // (set.weight stores kg regardless of display unit; flushPendingLogs
+    // parses it as weight_kg).
+    updateSet(
+      exerciseIndex,
+      progressionSetIndex,
+      'weight',
+      String(recommendation.suggestedWeight),
+    );
+    if (recommendation.suggestedReps != null) {
+      updateSet(
+        exerciseIndex,
+        progressionSetIndex,
+        'reps',
+        String(recommendation.suggestedReps),
+      );
+    }
+    // Close chips to reduce noise after acceptance; card stays visible until
+    // the next set's recommendation is computed.
+    setChipsOpen(false);
+  }, [
+    progressionSetIndex,
+    recommendation,
+    exerciseIndex,
+    updateSet,
+  ]);
 
   const handleOpenFeedback = useCallback((setIndex: number) => {
     setFeedbackSetIndex(setIndex);
@@ -505,159 +555,55 @@ export const SetsGrid = memo(function SetsGrid({
                 )}
               </Text>
             </View>
-            {/* ENG-2: one-liner recommendation + expandable «Почему?» */}
+            {/* COACH-1: Recommendation Card (replaces ENG-2 one-liner + expandable) */}
             {recommendation && recommendation.action !== 'no_data' && !dismissed && (
-              <View style={{ marginTop: SPACING.xs }}>
-                {/* Tap target: one-liner + chevron → expand/collapse */}
-                <TouchableOpacity
-                  onPress={toggleExpanded}
-                  activeOpacity={0.7}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    paddingVertical: 4,
-                  }}
-                >
-                  {React.createElement(recommendationIcon, {
-                    size: 14,
-                    color: recommendationColor,
-                    strokeWidth: 2,
-                  })}
-                                                      <Text
-                    style={[
-                      typography.captionSmall,
-                      { color: recommendationColor, fontWeight: '700', flex: 1 },
-                    ]}
-                  >
-                    {recommendation.safetyOverride?.ruText ??
-                      recommendation.readinessOverride?.ruText ??
-                      recommendation.reason.ruText}
-                  </Text>
-                  <ChevronDown
-                    size={14}
-                    color={colors.textTertiary}
-                    strokeWidth={2}
-                    style={{
-                      transform: [{ rotate: expanded ? '180deg' : '0deg' }],
-                    }}
-                  />
-                </TouchableOpacity>
-
-                {/* Expanded: structured facts + Dismiss */}
-                {expanded && (
-                  <View
-                    style={{
-                      marginTop: SPACING.xs,
-                      paddingTop: SPACING.sm,
-                      paddingLeft: SPACING.sm,
-                      borderLeftWidth: 2,
-                      borderLeftColor: recommendationColor + '60',
-                    }}
-                  >
-                    {explanationItems.map((item, idx) => {
-                      const color =
-                        item.emphasis === 'success'
-                          ? colors.success
-                          : item.emphasis === 'warning'
-                            ? colors.warning
-                            : item.emphasis === 'primary'
-                              ? colors.primary
-                              : colors.textSecondary;
-                      const isConclusion = item.kind === 'conclusion';
-                      return (
-                        <View
-                          key={idx}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'flex-start',
-                            gap: 6,
-                            marginBottom: 4,
-                          }}
-                        >
-                          <Text
-                            style={[
-                              typography.captionSmall,
-                              {
-                                color: colors.textTertiary,
-                                fontWeight: '600',
-                                minWidth: 90,
-                              },
-                            ]}
-                          >
-                            {item.label}
-                          </Text>
-                          <Text
-                            style={[
-                              typography.captionSmall,
-                              {
-                                color,
-                                fontWeight: isConclusion ? '700' : '400',
-                                flex: 1,
-                              },
-                            ]}
-                          >
-                            {item.value}
-                          </Text>
-                        </View>
-                      );
-                    })}
-
-                    {/* Dismiss button */}
-                    <TouchableOpacity
-                      onPress={handleDismiss}
-                      activeOpacity={0.7}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 4,
-                        marginTop: SPACING.xs,
-                        paddingVertical: 2,
-                        alignSelf: 'flex-start',
-                      }}
-                    >
-                      <EyeOff size={12} color={colors.textTertiary} strokeWidth={2} />
-                      <Text
-                        style={[
-                          typography.captionSmall,
-                          { color: colors.textTertiary, fontWeight: '500' },
-                        ]}
-                      >
-                        Скрыть
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
+            <RecommendationCard
+            recommendation={recommendation}
+            explanationItems={explanationItems}
+            accentColor={recommendationColor}
+            colors={colors}
+            toDisplay={toDisplay}
+            unit={unit}
+            expanded={expanded}
+            onToggleExpand={toggleExpanded}
+            onAccept={handleAccept}
+            onChange={handleChipsToggle}
+            onDismiss={handleDismiss}
+            acceptDisabled={progressionSetIndex === null}
+            chipsOpen={chipsOpen}
+            />
             )}
+            {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить" */}
+            {chipsOpen && (
             <View
-              style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
             >
-              {PROGRESSION_STEPS.map((step) => {
-                const isHighlighted = step === highlightedChip;
-                return (
-                  <TouchableOpacity
-                    key={step}
-                    onPress={() => handleProgressionStep(step)}
-                    activeOpacity={0.7}
-                    style={{
-                      paddingHorizontal: SPACING.sm,
-                      paddingVertical: 4,
-                      borderRadius: BORDER_RADIUS.sm,
-                      backgroundColor: isHighlighted ? colors.success : colors.primary,
-                      borderWidth: isHighlighted ? 1 : 0,
-                      borderColor: isHighlighted ? colors.success : 'transparent',
-                    }}
-                  >
-                    <Text
-                      style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
+            {PROGRESSION_STEPS.map((step) => {
+            const isHighlighted = step === highlightedChip;
+            return (
+            <TouchableOpacity
+            key={step}
+                onPress={() => handleProgressionStep(step)}
+                activeOpacity={0.7}
+              style={{
+                paddingHorizontal: SPACING.sm,
+                paddingVertical: 4,
+                borderRadius: BORDER_RADIUS.sm,
+              backgroundColor: isHighlighted ? colors.success : colors.primary,
+                borderWidth: isHighlighted ? 1 : 0,
+                  borderColor: isHighlighted ? colors.success : 'transparent',
+                  }}
                     >
-                      +{step} {unit}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                  <Text
+                    style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
+                >
+                +{step} {unit}
+            </Text>
+            </TouchableOpacity>
+            );
+            })}
             </View>
+            )}
           </View>
         )}
 
