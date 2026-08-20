@@ -28,6 +28,7 @@ import {
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import { AlternativeSourceInput } from '../../engine/alternatives';
 import type { FetchAlternativesResult } from '../../hooks/workout/useWorkoutSession.loader';
+import type { ReadinessContext } from '../../engine/progression';
 
 const H_GAP = 16;
 const PAD = 16;
@@ -82,6 +83,8 @@ interface ExerciseSliderProps {
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
+  /** ENG-3: today readiness context (optional signal). */
+  readinessContext?: ReadinessContext | null;
 }
 
 export const ExerciseSlider = memo(function ExerciseSlider({
@@ -104,6 +107,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   cardStyles,
   unit,
   warning = null,
+  readinessContext = null,
 }: ExerciseSliderProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
@@ -148,7 +152,20 @@ export const ExerciseSlider = memo(function ExerciseSlider({
       alive = false;
       clearTimeout(timeout);
     };
-  }, [hasAlts, exercise.id, exerciseIndex, loadAlternatives]);
+    // ENG-5: muscles/equipment/painState читаются в эффекте (source для ранжирования).
+    // Ссылки стабильны при вводе подходов (spread сохраняет), меняются при замене
+    // упражнения (id) или записи боли → корректно включаем в deps.
+  }, [
+    hasAlts,
+    exercise.id,
+    exerciseIndex,
+    loadAlternatives,
+    exercise.primary_muscles,
+    exercise.secondary_muscles,
+    exercise.equipment,
+    exercise.painState,
+    readinessContext,
+  ]);
 
   useEffect(() => {
     if (loadingAlts || !hasAlts || altsMounted) return;
@@ -226,10 +243,11 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             getIntensityInfo={getIntensityInfo}
             onOpenSettings={onOpenSettings}
             onOpenPain={onOpenPain}
-            colors={colors}
+                        colors={colors}
             cardStyles={cardStyles}
             unit={unit}
             warning={warning}
+            readinessContext={readinessContext}
           />
         </View>
 

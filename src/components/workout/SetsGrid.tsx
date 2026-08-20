@@ -29,10 +29,13 @@ import {
   calculateProgression,
   explainProgression,
   applySafetyPrecedence,
+  applyReadinessContext,
   ProgressionResult,
   ExplanationItem,
   SafetyContext,
   SafetyOverride,
+  ReadinessContext,
+  ReadinessOverride,
 } from '../../engine/progression';
 
 // Чистая функция вне компонента — не зависит от props/state.
@@ -223,6 +226,8 @@ interface SetsGridProps {
   repsRange?: string | null;
   /** ENG-4: safety context (pain/injury). Engine применяет precedence к рекомендации. */
   safetyContext?: SafetyContext | null;
+  /** ENG-3: readiness context (optional signal). Применяется после safety. */
+  readinessContext?: ReadinessContext | null;
   unit: WeightUnit;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
@@ -241,6 +246,7 @@ export const SetsGrid = memo(function SetsGrid({
   restSeconds,
   repsRange,
   safetyContext,
+  readinessContext,
   unit,
   updateSet,
   updateSetFeedback,
@@ -367,11 +373,14 @@ export const SetsGrid = memo(function SetsGrid({
   // ============================================================================
   const recommendation = useMemo<(ProgressionResult & {
     safetyOverride?: SafetyOverride | null;
+    readinessOverride?: ReadinessOverride | null;
   }) | null>(() => {
     if (sets.length === 0) return null;
     const base = calculateProgression({ sets, repsRange: repsRange ?? null });
-    return applySafetyPrecedence(base, safetyContext ?? null);
-  }, [sets, repsRange, safetyContext]);
+    const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
+    // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
+    return applyReadinessContext(afterSafety, readinessContext ?? null);
+  }, [sets, repsRange, safetyContext, readinessContext]);
 
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
   // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)
@@ -384,14 +393,15 @@ export const SetsGrid = memo(function SetsGrid({
   // ENG-4: при safety override (downgrade increase → hold) используем warning color,
   // чтобы визуально отделить от обычного hold (CONSOLIDATE/HIGH_RPE_HOLD).
   // Suppressed (no_data) — не рендерится.
-  const isSafetyDowngrade = !!recommendation?.safetyOverride;
+  // ENG-3/ENG-4: любой системный override (safety ИЛИ readiness) использует warning color
+  const isSystemDowngrade = !!(recommendation?.safetyOverride || recommendation?.readinessOverride);
   const recommendationIcon =
     recommendation?.action === 'increase'
       ? Target
       : recommendation?.action === 'decrease'
         ? TrendingDown
         : Minus;
-  const recommendationColor = isSafetyDowngrade
+  const recommendationColor = isSystemDowngrade
     ? colors.warning
     : recommendation?.action === 'increase'
       ? colors.success
@@ -514,13 +524,15 @@ export const SetsGrid = memo(function SetsGrid({
                     color: recommendationColor,
                     strokeWidth: 2,
                   })}
-                                    <Text
+                                                      <Text
                     style={[
                       typography.captionSmall,
                       { color: recommendationColor, fontWeight: '700', flex: 1 },
                     ]}
                   >
-                    {recommendation.safetyOverride?.ruText ?? recommendation.reason.ruText}
+                    {recommendation.safetyOverride?.ruText ??
+                      recommendation.readinessOverride?.ruText ??
+                      recommendation.reason.ruText}
                   </Text>
                   <ChevronDown
                     size={14}

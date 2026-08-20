@@ -47,6 +47,7 @@ import { WorkoutScreenFooter } from '../../src/components/workout/WorkoutScreenF
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
+import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
 
 export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
@@ -107,6 +108,14 @@ export default function WorkoutSessionScreen() {
   });
 
   const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
+
+  // ENG-3: today readiness (1-5) — optional signal для recommendation engine.
+  // null (check-in не сделан) не блокирует и не меняет recommendation (PRODUCT.md §7).
+  const { data: todayReadiness } = useTodayReadiness(userId);
+  const readinessContext = useMemo(
+    () => ({ readiness: todayReadiness ?? null }),
+    [todayReadiness],
+  );
 
   const warmupSource = useMemo(
     () =>
@@ -273,6 +282,7 @@ export default function WorkoutSessionScreen() {
         cardStyles={cardStyles}
         unit={unit}
         warning={exerciseWarnings[item.id] || null}
+        readinessContext={readinessContext}
       />
     ),
     [
@@ -293,6 +303,7 @@ export default function WorkoutSessionScreen() {
       cardStyles,
       unit,
       exerciseWarnings,
+      readinessContext,
     ],
   );
 

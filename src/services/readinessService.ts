@@ -25,6 +25,23 @@ export const readinessService = {
     return !!data;
   },
 
+  /**
+   * ENG-3: значение readiness за сегодня (1-5) или null, если запись не сделана.
+   * null означает «данные отсутствуют» — readiness не должен менять рекомендацию
+   * (PRODUCT.md §7: отсутствие check-in не блокирует и не переписывает программу).
+   */
+  async getTodayReadiness(userId: string): Promise<number | null> {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('daily_readiness')
+      .select('readiness')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.readiness ?? null;
+  },
+
   /** Insert или update за сегодня (не зависит от наличия unique-констрейнта). */
   async upsertToday(userId: string, input: ReadinessInput): Promise<void> {
     const today = new Date().toISOString().split('T')[0];

@@ -23,6 +23,7 @@ import {
   WorkoutCardDisplayMode,
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
+import type { ReadinessContext } from '../../engine/progression';
 
 type RepsRangeHolder = { reps_range?: string };
 
@@ -51,6 +52,8 @@ interface ExerciseCardProps {
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
+  /** ENG-3: today readiness context (optional signal, PRODUCT.md §7). */
+  readinessContext?: ReadinessContext | null;
 }
 
 export const ExerciseCard = memo(function ExerciseCard({
@@ -73,9 +76,15 @@ export const ExerciseCard = memo(function ExerciseCard({
   cardStyles,
   unit,
   warning = null,
+  readinessContext = null,
 }: ExerciseCardProps) {
   const hasSets = 'sets' in exercise;
-  const sets = hasSets ? (exercise as ExerciseData).sets : [];
+  // cleanup: sets через useMemo — условная [] не должна пересоздаваться каждый
+  // рендер (от sets зависит borderColor useMemo).
+  const sets = useMemo(
+    () => (hasSets ? (exercise as ExerciseData).sets : []),
+    [hasSets, exercise],
+  );
   const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
   const intensity = hasSets ? (exercise as ExerciseData).intensity : 'medium';
   const repsRange = (exercise as RepsRangeHolder).reps_range;
@@ -179,6 +188,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           restSeconds={restSeconds}
           repsRange={repsRange}
           safetyContext={safetyContext}
+          readinessContext={readinessContext}
           unit={unit}
           updateSet={updateSet}
           updateSetFeedback={updateSetFeedback}

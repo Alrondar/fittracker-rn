@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 19.08.2026 (main)
+Срез: 20.08.2026 (main)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -56,7 +56,7 @@
 
 ## 4. Current UX work — Tracker
 
-> Срез: работа в feature branch `feature/workout-ux-rework` (не смержена в main).
+> Срез: Ветка `feature/workout-ux-rework` смержена в main; все ID закрыты.
 
 | ID | Пр. | Статус | Цель |
 | --- | --- | --- | --- |
@@ -90,10 +90,10 @@
 |---|---:|---|---|
 | ENG-1 | 🔴 | ✅ | формализовать progression rules — выполнено: src/engine/progression.ts, 8 правил (increase/hold/decrease/no_data), structured reason codes, live recompute в SetsGrid, chip highlight; фундамент для ENG-2 и COACH-1 |
 | ENG-2 | 🔴 | ✅ | structured reasons для recommendations — выполнено: explainProgression (input/signal/conclusion факты по reason.code), тап по recommendation → inline-блок «Почему?» + «Скрыть» (session-local); детерминированно без LLM (ROADMAP B5); persistence причин — COACH-3 |
-| ENG-3 | 🔴 | 🔲 | readiness как optional signal |
+| ENG-3 | 🔴 | ✅ | readiness как optional signal — выполнено: applyReadinessContext (readiness 1–2 + base increase → downgrade до hold, LOW_READINESS; null = no-op по PRODUCT.md §7); применяется после applySafetyPrecedence (PRODUCT.md §8); useTodayReadiness (React Query, 1h); проброс workout/[id] → ExerciseSlider → ExerciseCard → SetsGrid; «Почему?» расширен readiness-сигналом |
 | ENG-4 | 🔴 | ✅ | safety precedence: pain/injury > recommendation > AI — выполнено: applySafetyPrecedence (4 правила: PAIN_STOPPED/INJURY_AVOID suppress → no_data; PAIN_RECORDED/INJURY_CAUTION downgrade increase → hold); visual: safety-downgrade в warning color, chip highlight выключен; engine никогда не обходит injury_exercise_warnings (PRODUCT.md §8) |
-| ENG-5 | 🔴 | ✅ | ranking exercise alternatives — выполнено: rankAlternatives (hard exclusion по injury_exercise_warnings + targetsInjuredMuscle severity high; scoring: мышцы/pattern/equipment/difficulty/pain/injury load + relation_type bonuses: regression +5 при recovery, progression −3 при боли); fetchAlternatives добавляет movement_pattern/difficulty в select; ExerciseSlider подпись excludedCount + empty state; AlternativeExerciseCard бейджи Прогрессия/Упрощение/Вариант (PRODUCT.md §4.4) |
-| ENG-6 | 🟠 | ✅ | deterministic weekly summary — выполнено (data layer): engine/weeklySummary.ts (buildWeeklyInsights, 9 правил, machine-readable codes), weeklySummaryService.getWeeklySummary (3 параллельных запроса + pre-week PR query, skip-тренировки исключены), useWeeklySummary (React Query, 5 min); детерминированно без LLM (ROADMAP C4); UI — COACH-5 |
+| ENG-5 | 🔴 | ✅ | ranking exercise alternatives — выполнено: engine/alternatives.ts rankAlternatives (hard exclusion: avoid-противопоказания при совпадении с травмой + targetsInjuredMuscle severity high; scoring: мышцы +2/+1, pattern +3, оборудование +2/−1, уровень −3/−2, боль в группе −3, injury medium/low −5/−2; relation-type: regression +5 при боли/травме, −1 без, progression −3 при боли); fetchAlternatives: movement_pattern/difficulty в select + relationTypeMap; ExerciseSlider: подпись «N скрыто из-за травм» + all-excluded state; AlternativeExerciseCard: бейджи Прогрессия/Упрощение/Вариант; данные: бэкфилл 20260819 |
+| ENG-6 | 🟠 | ✅ | deterministic weekly summary — выполнено (data layer): engine/weeklySummary.ts (buildWeeklyInsights, 9 детерминированных правил), weeklySummaryService.getWeeklySummary (3 параллельных запроса + pre-week PR query), useWeeklySummary (React Query, 5 min); без LLM (ROADMAP C4); UI — COACH-5 |
 
 ## 6. Coaching Layer
 

@@ -90,7 +90,7 @@ Main components:
 - `sections/ExerciseCardMuscles.tsx` — primary/secondary muscle bubbles
 - `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
 - `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion; подзаголовки через SectionSubheading (PR7)
-- `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне
+`AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне; ENG-5: бейджи relation_type (Прогрессия/Упрощение/Вариант)
 - `WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle, TimerPill/Panel (PR8)
 - `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
 - `WorkoutScreenFooter.tsx` — «Начать тренировку» / «Завершить» с LinearGradient (PR8)
@@ -298,7 +298,8 @@ Important components:
 | `useTheme` | all UI |
 | `useToast` | all screens |
 | `useProgress` |profile/progress|
-| `useWeeklySummary` |UI-потребитель появится в COACH-5 (weekly review)|
+| `useTodayReadiness`|workout/[id] (ENG-3 readiness context)|
+| `useWeeklySummary`|UI-потребитель появится в COACH-5 (weekly review)|
 
 ## 8. Service dependency map
 
@@ -318,7 +319,7 @@ Important components:
 | `readinessService` | ReadinessSheet/Dashboard |
 | `painService` | PainSheet/ExerciseCard |
 | `progressService` |useProgress, profile/progress|
-| `weeklySummaryService`|useWeeklySummary (ENG-6); UI-потребитель — COACH-5|
+| `weeklySummaryService`|useWeeklySummary (ENG-6); UI — COACH-5|
 
 ## 9. Core types / constants / utilities
 
@@ -341,10 +342,9 @@ Important components:
 | `utils/intensityInfo.tsx` |getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | `utils/macroCalculator.ts` | macro calculations |
 | `utils/intensityInfo.tsx` |getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
-| `engine/progression.ts` |calculateProgression: правила прогрессии (ENG-1); explainProgression: structured reasons (ENG-2); applySafetyPrecedence: pain/injury > recommendation (ENG-4). Чистые функции, директория — задел Phase B|
-| `engine/alternatives.ts` |rankAlternatives: ранжирование альтернатив (ENG-5) — hard exclusion по injury + scoring (мышцы/pattern/equipment/difficulty/pain/injury load/relation_type). Relation-type bonuses: regression +5 при recovery, progression −3 при боли|
-| `engine/alternatives.ts`|rankAlternatives: ранжирование альтернатив (ENG-5) — hard exclusion по injury + scoring (мышцы/pattern/equipment/difficulty/pain/injury load/relation_type)|
-| `engine/weeklySummary.ts`|buildWeeklyInsights: детерминированные инсайты недели (ENG-6); типы WeeklySummaryData/WeeklyInsight/WeeklySummaryResult. Чистая функция, без React/Supabase|
+| `engine/progression.ts` |calculateProgression (ENG-1); explainProgression (ENG-2); applySafetyPrecedence (ENG-4); applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety). Чистые функции|
+| `engine/alternatives.ts` |rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция|
+| `engine/weeklySummary.ts` |buildWeeklyInsights (ENG-6): 9 детерминированных инсайтов недели; типы WeeklySummaryData/Insight. Чистая функция|
 
 ## 10. Database / migrations
 
@@ -430,6 +430,9 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Safety precedence (ENG-4)**: src/engine/progression.ts — applySafetyPrecedence(base, safety) применяет PRODUCT.md §8 priority: injury/pain constraints > training constraints > recommendation > AI. 4 правила в порядке приоритета: stopExercise → PAIN_STOPPED (suppress, no_data); warning.level=avoid → INJURY_AVOID (suppress); hasPain + base.increase → PAIN_RECORDED (downgrade to hold); warning.level=caution + base.increase → INJURY_CAUTION (downgrade to hold). SetsGrid получает safetyContext из ExerciseCard (painState + warning.level, стабильная ссылка через useMemo). Safety downgrade визуально отделён: warning color + выключенный chip highlight (не предлагаем +2.5 при боли). Injury_exercise_warnings hard constraint — Engine никогда не обходит. ExerciseWarningBanner на L1 не затронут — показывает причину параллельно.
 - **Alternatives ranking (ENG-5)**: src/engine/alternatives.ts — rankAlternatives(candidates, source, activeInjuries, contraindications) применяет PRODUCT.md §4.4 приоритет: мышечная группа (+2 primary / +1 secondary), movement_pattern (+3 при совпадении, NULL = нет сигнала), оборудование (+2 совпадение / −1 несовпадение), уровень (−3 beginner→advanced, −2 advanced→beginner), боль в группе источника (−3), нагрузка на травму medium/low (−5/−2). Hard exclusion (PRODUCT.md §8, ARCH-8): injury_exercise_warnings level=avoid при совпадении с активной травмой; targetsInjuredMuscle severity high. Relation-type bonuses: regression +5 при hasPain/activeInjuries (recovery-friendly), −1 без; progression −3 при hasPain (не предлагаем усложнение при боли). Бейджи в AlternativeExerciseCard: «↗ Прогрессия» (primary color) / «↘ Упрощение» (warning) / «Вариант» (neutral); alternative = default без бейджа (PRODUCT.md §3.1 один акцент на блок). fetchAlternatives добавляет movement_pattern/difficulty в select (один запрос); activeInjuries — один запрос на сессию через ref. Progression-boost при ENG-1 increase отложен до COACH-1 (нужен единый recommendation-контекст; иначе инвалидация кэша при live recompute в SetsGrid).
 - **Weekly summary (ENG-6)**: getWeeklySummary(userId, weekOffset) агрегирует неделю локально — 3 параллельных запроса (workouts+logs, pain_events, daily_readiness) + один pre-week запрос workout_logs для PR-detection (PR = e1rm недели > pre-week best, только при наличии baseline — «первый раз в упражнении» рекордом не считается). Skip-тренировки исключены через .is('skipped_at','null') (FIT-7); имена упражнений через embed exercises(name) (workout_exercises не имеет exercise_name — грабля progressService). Инсайты срабатывают только при выполненном условии: VOLUME_UP/DOWN/STABLE (±10% к прошлой неделе), NEW_PR, PAIN_SPIKE (≥3 событий или ≥2 в одной зоне), LOW/HIGH_READINESS (среднее <3 / ≥4.5 при ≥3 записях), HIGH_RPE_WEEK (средний RPE ≥8.5 при ≥5 сетах), CONSISTENT_WEEK (≥4 тренировок). UI — COACH-5.
+- **Alternatives ranking (ENG-5)**: engine/alternatives.ts — rankAlternatives(candidates, source, activeInjuries, contraindications). Hard exclusion зеркалит warmupService (ARCH-8, два уровня): avoid-противопоказание при совпадении с активной травмой; targetsInjuredMuscle severity high. Scoring: PRIMARY_MATCH +2/мышца, SECONDARY_MATCH +1, PATTERN_MATCH +3 (только когда оба movement_pattern известны — NULL = честный «нет сигнала»), EQUIPMENT_MATCH +2 / MISMATCH −1, LEVEL_JUMP −3 (beginner→advanced) / LEVEL_DROP −2, PAIN_ON_SOURCE_GROUP −3, INJURY_MEDIUM −5 / LOW −2. Relation-type: regression +5 при hasPain/activeInjuries, −1 без; progression −3 при hasPain. Progression-boost при ENG-1 increase отложен до COACH-1 (иначе инвалидация кэша при live recompute). fetchAlternatives: движение/difficulty в том же select (+exerciseId источника), relationTypeMap из exercise_relationships (первая связь по status/confidence), противопоказания — только при активных травмах, activeInjuries — один запрос на сессию (ref).
+- **Weekly summary (ENG-6)**: getWeeklySummary(userId, weekOffset) — 3 параллельных запроса на неделю (workouts+logs, pain_events, daily_readiness) + один pre-week запрос для PR-detection (PR = e1rm недели > pre-week best, только при наличии baseline). Skip-тренировки исключены через .is('skipped_at','null') (FIT-7); имена через embed exercises(name). Инсайты срабатывают только при выполненном условии: VOLUME_UP/DOWN/STABLE (±10%), NEW_PR, PAIN_SPIKE (≥3 или ≥2 в одной зоне), LOW/HIGH_READINESS (<3 / ≥4.5 при ≥3 записях), HIGH_RPE_WEEK (≥8.5 при ≥5 сетах), CONSISTENT_WEEK (≥4). UI — COACH-5.
+- **Readiness in engine (ENG-3)**: applyReadinessContext применяется в SetsGrid цепочкой base → applySafetyPrecedence → applyReadinessContext. Приоритет PRODUCT.md §8 закреплён порядком + guard'ом: если safetyOverride установлен — readiness no-op. Правила: readiness null (нет check-in) → no-op (§7); readiness 1–2 + base increase → hold с readinessOverride LOW_READINESS; readiness 3–5 → no-op. Визуально system downgrade (safety или readiness) делит warning color; текст one-liner: safetyOverride ?? readinessOverride ?? reason.ruText. useTodayReadiness: staleTime 1h; данные собираются ReadinessSheet (FEAT-1.8).
 
 ## 13. Inventory maintenance
 

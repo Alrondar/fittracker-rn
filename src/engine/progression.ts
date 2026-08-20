@@ -424,6 +424,19 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
     });
   }
 
+  // 2.6. ENG-3: READINESS OVERRIDE — low readiness + base increase → hold
+  const readinessOverride = (result as ProgressionResult & {
+    readinessOverride?: ReadinessOverride | null;
+  }).readinessOverride;
+  if (readinessOverride) {
+    items.push({
+      kind: 'signal',
+      label: 'Readiness',
+      value: readinessOverride.ruText,
+      emphasis: 'warning',
+    });
+  }
+
   // 3. CONCLUSION — рекомендация
   const repsPart = suggestedReps != null ? ` × ${suggestedReps}` : '';
   if (action === 'no_data') {
@@ -569,4 +582,69 @@ export function applySafetyPrecedence(
 
   // 3. No override: base result unchanged
   return { ...base, safetyOverride: null };
+}
+// ============================================================================
+// ENG-3: READINESS CONTEXT (optional signal, PRODUCT.md §7)
+// Readiness влияет на recommendation, но:
+//   - отсутствие check-in (null) НЕ меняет recommendation;
+//   - боль/травма имеют больший приоритет (PRODUCT.md §8).
+// Применяется ПОСЛЕ applySafetyPrecedence: если safety уже подавила
+// recommendation или downgraded её, readiness — no-op.
+// ============================================================================
+
+export interface ReadinessContext {
+  /** Значение readiness за сегодня (1-5). null = check-in не сделан → no-op. */
+  readiness: number | null;
+}
+
+export interface ReadinessOverride {
+  code: string;
+  ruText: string;
+}
+
+/**
+ * Применяет readiness-контекст к рекомендации, уже прошедшей safety.
+ * Чистая функция, O(1).
+ *
+ * Правила:
+ *   - Если safetyOverride уже установлен → no-op (PRODUCT.md §8: боль > усталость)
+ *   - readiness == null (check-in не сделан) → no-op (PRODUCT.md §7: не gate)
+ *   - readiness 1-2 + base action=increase → downgrade to hold, код LOW_READINESS
+ *   - readiness 3-5 → no-op (базовые правила ENG-1 уже решают)
+ *
+ * Возвращает новый объект (не мутирует input).
+ */
+export function applyReadinessContext(
+  input: ProgressionResult & { safetyOverride?: SafetyOverride | null },
+  readiness: ReadinessContext | null,
+): ProgressionResult & {
+  safetyOverride?: SafetyOverride | null;
+  readinessOverride?: ReadinessOverride | null;
+} {
+  // Safety уже подавил или downgraded — readiness не вмешивается
+  if (input.safetyOverride) {
+    return { ...input, readinessOverride: null };
+  }
+  // No context / no check-in today — readiness не блокирует и не меняет (§7)
+  if (!readiness || readiness.readiness == null) {
+    return { ...input, readinessOverride: null };
+  }
+  // Readiness 1-2 (низкая готовность) + базовый increase → downgrade до hold
+  if (readiness.readiness <= 2 && input.action === 'increase') {
+    const holdWeight = input.reason.factors.lastWeight;
+    return {
+      ...input,
+      action: 'hold',
+      suggestedWeight: holdWeight,
+      suggestedReps: input.reason.factors.targetRange
+        ? input.reason.factors.targetRange.max
+        : null,
+      readinessOverride: {
+        code: 'LOW_READINESS',
+        ruText: `Низкая готовность (${readiness.readiness} из 5) — фиксируем вес`,
+      },
+    };
+  }
+  // Readiness 3-5: no-op
+  return { ...input, readinessOverride: null };
 }
