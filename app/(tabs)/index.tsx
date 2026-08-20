@@ -28,7 +28,10 @@ import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
 import { LastWorkoutCard } from '../../src/components/LastWorkoutCard';
 import { StreakCard } from '../../src/components/dashboard/StreakCard';
 import { ReadinessSheet } from '../../src/components/dashboard/ReadinessSheet';
+import { ContextInsightCard } from '../../src/components/dashboard/ContextInsightCard';
 import { readinessService } from '../../src/services/readinessService';
+import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
+import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -36,6 +39,19 @@ export default function DashboardScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createDashboardStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useDashboard(userId);
+  
+  // COACH-4: Contextual tips
+  const { data: weeklyData } = useWeeklySummary(userId, 0);
+  const { data: readiness } = useTodayReadiness(userId);
+
+  const topInsight = useMemo(() => {
+    if (!weeklyData?.insights) return null;
+    // Приоритет: warning > positive
+    return weeklyData.insights.find(i => i.severity === 'warning') ?? 
+           weeklyData.insights.find(i => i.severity === 'positive') ?? null;
+  }, [weeklyData?.insights]);
+
+  const readinessWarning = readiness !== null && readiness < 3;
 
   // FEAT-1.8: readiness check-in раз в день перед стартом тренировки
   const [readinessOpen, setReadinessOpen] = useState(false);
@@ -161,6 +177,11 @@ export default function DashboardScreen() {
             <StreakCard streak={data.streak} colors={colors} />
           </View>
         )}
+
+        {/* COACH-4: Contextual insight (L1) */}
+        <View style={styles.section}>
+          <ContextInsightCard insight={topInsight} readinessWarning={readinessWarning} />
+        </View>
 
         {/* ✅ Активная программа ИЛИ плейсхолдер «Выберите программу» */}
         <View style={styles.section}>

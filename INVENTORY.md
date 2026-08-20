@@ -445,3 +445,7 @@ When adding/removing/renaming a meaningful screen, hook, service, shared compone
 2. update `STATUS.md` if task status changed;
 3. do not copy technical rules from `CLAUDE.md` here;
 4. do not copy product decisions from `PRODUCT.md` here.
+
+### Recent additions (COACH-4 / COACH-5)
+- `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
+- `src/components/progress/WeeklyReviewBlock.tsx` — COACH-5: weekly review UI в Progress hub
