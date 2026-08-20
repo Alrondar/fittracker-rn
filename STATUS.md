@@ -41,7 +41,7 @@
 | FIT-5 | Workouts | ✅ | следующая фаза/неделя |
 | FIT-6 | Workout | ✅ | program + phase context |
 | FIT-7 | Workouts | ✅ |пропуск тренировки программы: long press на «Следующая» → подтверждение, skipped_at + advanceProgramProgress, бейдж «Пропущена», в историю не попадает|
-| FEAT-1.1 | Tracker | ✅ | per-set previous data + progression chips |
+| FEAT-1.1 | Tracker | ✅ | per-set previous data + progression chips; chips ручной корректировки доступны через «Изменить» в RecommendationCard (COACH-1) |
 | FEAT-1.2 | Tracker | ✅ | rest timer + auto-start |
 | FEAT-1.3 | Tracker | ✅ | streak |
 | FEAT-1.4 | Progress | ✅ | e1RM / PR |
@@ -99,7 +99,7 @@
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| COACH-1 | 🔴 | 🔲 | Recommendation card: Accept / Change / Why |
+| COACH-1 | 🔴 | 🔲 | Recommendation card: Accept / Change / Why — выполнено: `RecommendationCard` в `SetsGrid`: suggested weight × reps как primary, «Принять»/«Изменить» как secondary, collapsible «Почему?» как tertiary; progression chips скрыты до «Изменить»; Accept пишет suggestedWeight/suggestedReps в первый незавершённый сет через существующий `updateSet`; «Скрыть» session-local без persistence; safety/readiness overrides используют warning color и не подсвечивают increase-chip. Причина изменения/отклонения и feedback — COACH-3| |
 | COACH-2 | 🔴 | 🔲 | structured reasons |
 | COACH-3 | 🟠 | 🔲 | acceptance/rejection feedback |
 | COACH-4 | 🟠 | 🔲 | contextual tips без спама |
