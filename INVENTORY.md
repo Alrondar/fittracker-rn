@@ -1,6 +1,6 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 19.08.2026 (main)
+Срез: 20.08.2026 (main)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -294,6 +294,7 @@ Important components:
 | `useInjuries` | injuries |
 | `useProfile` | profile/settings |
 | `useBodyMetrics` | metrics |
+| `useRecommendationFeedback` | SetsGrid (COACH-3: fire-and-forget запись accepted/rejected + причина). `userId` автоматически берётся из `useStore`, чтобы не передавать его через цепочку пропсов. |
 | `useTimerSettings` | RestTimer/settings |
 | `useUnitPreferences` | UnitToggle, ExerciseCard, SetsGrid |
 | `useTheme` | all UI |
@@ -319,6 +320,7 @@ Important components:
 | `warmupService` | useWarmup |
 | `readinessService` | ReadinessSheet/Dashboard |
 | `painService` | PainSheet/ExerciseCard |
+| `recommendationFeedbackService` | SetsGrid (COACH-3: inline-чипы причин после «Скрыть») |
 | `progressService` |useProgress, profile/progress|
 | `weeklySummaryService`|useWeeklySummary (ENG-6); UI — COACH-5|
 
@@ -361,6 +363,7 @@ Reference data migration (15.08.2026):
 - `exerciseReferenceService` is the single source of truth for equipment/injuries/alternatives in runtime;
 - `injury_exercise_warnings` is the hard-constraint source for safety layer (ARCH-8).
 -`20260819_backfill_movement_pattern (ENG-5 prep)`: 15 idempotent UPDATE rules заполняют 143/149 strength/olympic упражнений 14 новыми значениями movement_pattern (TEXT, без ENUM); 6 честных NULL в strength (баланс, баттл-ропы, гибриды), 80 stretching/cardio NULL намеренно не тронуты;
+-`20260820_recommendation_feedback (COACH-3)`: таблица recommendation_feedback для записи acceptance/rejection feedback; upsert по UNIQUE(user_id, workout_id, exercise_id, set_number); RLS auth.uid() = user_id;
 -other current schema migrations under `supabase/migrations/`.
 
 
@@ -402,7 +405,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 
 - RPE is already tappable 1–10; do not reintroduce draggable RPE as default.
 - ExerciseSlider already uses lazy mounting/performance safeguards.
-- SetsGrid contains per-set previous data; progression chips are hidden by default and revealed by RecommendationCard «Изменить» (COACH-1).
+- SetsGrid contains per-set previous data; progression chips are hidden by default and revealed by RecommendationCard «Изменить» (COACH-1). COACH-3: после «Скрыть» inline-чипы причин (устал/слишком тяжело/боль/хочу легче/другое) + пропустить; запись через useRecommendationFeedback (fire-and-forget, ошибки глотаются тихо). Таблица recommendation_feedback (upsert по user+workout+exercise+set). `useRecommendationFeedback` автоматически берёт `userId` из `useStore`, что устраняет необходимость пробрасывать его через пропсы компонента.
 - RestTimer has auto-start and manual fallback.
 - PainSheet and ReadinessSheet exist.
 - WeightTrendChart and MetricSparkline exist.

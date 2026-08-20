@@ -283,9 +283,11 @@ export default function WorkoutSessionScreen() {
         unit={unit}
         warning={exerciseWarnings[item.id] || null}
         readinessContext={readinessContext}
+        workoutId={id as string}
       />
     ),
     [
+      id,
       replacements,
       displayMode,
       loadAlternatives,

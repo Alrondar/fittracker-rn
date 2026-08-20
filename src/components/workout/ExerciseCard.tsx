@@ -54,6 +54,8 @@ interface ExerciseCardProps {
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
   /** ENG-3: today readiness context (optional signal, PRODUCT.md §7). */
   readinessContext?: ReadinessContext | null;
+  // COACH-3: идентификаторы для записи feedback (пробрасываются в SetsGrid).
+  workoutId: string;
 }
 
 export const ExerciseCard = memo(function ExerciseCard({
@@ -77,6 +79,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   unit,
   warning = null,
   readinessContext = null,
+  workoutId,
 }: ExerciseCardProps) {
   const hasSets = 'sets' in exercise;
   // cleanup: sets через useMemo — условная [] не должна пересоздаваться каждый
@@ -180,7 +183,8 @@ export const ExerciseCard = memo(function ExerciseCard({
 
       {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК.
           ENG-1: проброс repsRange для детерминированной прогрессии.
-          ENG-4: проброс safetyContext (pain/injury) для safety precedence в engine. */}
+          ENG-4: проброс safetyContext (pain/injury) для safety precedence в engine.
+          COACH-3: проброс workoutId + exercise.id для записи feedback. */}
       {hasSets && sets.length > 0 && (
         <SetsGrid
           exerciseIndex={exerciseIndex}
@@ -197,6 +201,8 @@ export const ExerciseCard = memo(function ExerciseCard({
           startRestTimer={startRestTimer}
           colors={colors}
           cardStyles={cardStyles}
+          workoutId={workoutId}
+          exerciseId={exercise.id}
         />
       )}
 
