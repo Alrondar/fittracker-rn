@@ -93,7 +93,7 @@
 | ENG-3 | 🔴 | 🔲 | readiness как optional signal |
 | ENG-4 | 🔴 | ✅ | safety precedence: pain/injury > recommendation > AI — выполнено: applySafetyPrecedence (4 правила: PAIN_STOPPED/INJURY_AVOID suppress → no_data; PAIN_RECORDED/INJURY_CAUTION downgrade increase → hold); visual: safety-downgrade в warning color, chip highlight выключен; engine никогда не обходит injury_exercise_warnings (PRODUCT.md §8) |
 | ENG-5 | 🔴 | ✅ | ranking exercise alternatives — выполнено: rankAlternatives (hard exclusion по injury_exercise_warnings + targetsInjuredMuscle severity high; scoring: мышцы/pattern/equipment/difficulty/pain/injury load + relation_type bonuses: regression +5 при recovery, progression −3 при боли); fetchAlternatives добавляет movement_pattern/difficulty в select; ExerciseSlider подпись excludedCount + empty state; AlternativeExerciseCard бейджи Прогрессия/Упрощение/Вариант (PRODUCT.md §4.4) |
-| ENG-6 | 🟠 | 🔲 | deterministic weekly summary |
+| ENG-6 | 🟠 | ✅ | deterministic weekly summary — выполнено (data layer): engine/weeklySummary.ts (buildWeeklyInsights, 9 правил, machine-readable codes), weeklySummaryService.getWeeklySummary (3 параллельных запроса + pre-week PR query, skip-тренировки исключены), useWeeklySummary (React Query, 5 min); детерминированно без LLM (ROADMAP C4); UI — COACH-5 |
 
 ## 6. Coaching Layer
 
