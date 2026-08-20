@@ -11,7 +11,7 @@ export function epley(weight: number, reps: number): number {
 
 /** Лучший e1RM по набору сетов (0, если валидных сетов нет). */
 export function bestE1rm(
-  sets: ReadonlyArray<{ weight: number | null; reps: number | null }>,
+  sets: readonly { weight: number | null; reps: number | null }[],
 ): number {
   let max = 0;
   for (const s of sets) {

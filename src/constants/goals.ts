@@ -10,31 +10,31 @@ import type { GoalType, GenderType, PharmaType } from '../services/goalsService'
 
 export type IconComponent = typeof Activity;
 
-export const GOALS: Array<{
+export const GOALS: {
   value: GoalType;
   label: string;
   icon: IconComponent;
   desc: string;
-}> = [
+}[] = [
   { value: 'lose', label: 'Похудение', icon: TrendingDown, desc: 'Дефицит калорий' },
   { value: 'maintain', label: 'Поддержание', icon: Minus, desc: 'Баланс калорий' },
   { value: 'gain', label: 'Набор массы', icon: TrendingUp, desc: 'Профицит калорий' },
 ];
 
-export const GENDERS: Array<{
+export const GENDERS: {
   value: GenderType;
   label: string;
   icon: IconComponent;
-}> = [
+}[] = [
   { value: 'male', label: 'Мужской', icon: User },
   { value: 'female', label: 'Женский', icon: User },
 ];
 
-export const ACTIVITY_LEVELS: Array<{
+export const ACTIVITY_LEVELS: {
   value: number;
   label: string;
   desc: string;
-}> = [
+}[] = [
   { value: 1.2, label: 'Минимальная', desc: 'Сидячий образ жизни' },
   { value: 1.375, label: 'Низкая', desc: '1-2 тренировки/нед' },
   { value: 1.55, label: 'Средняя', desc: '3-4 тренировки/нед' },
@@ -42,12 +42,12 @@ export const ACTIVITY_LEVELS: Array<{
   { value: 1.9, label: 'Очень высокая', desc: 'Ежедневные тренировки' },
 ];
 
-export const PHARMA_TYPES: Array<{
+export const PHARMA_TYPES: {
   value: Exclude<PharmaType, null>;
   label: string;
   desc: string;
   color: string;
-}> = [
+}[] = [
   {
     value: 'steroids',
     label: 'Анаболические стероиды',

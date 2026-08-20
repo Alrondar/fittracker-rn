@@ -27,7 +27,7 @@ function mondayIndex(input: Date): number {
 }
 
 export function computeStreaks(
-  workoutDates: ReadonlyArray<string | Date>,
+  workoutDates: readonly (string | Date)[],
   now: Date = new Date(),
 ): StreakStats {
   if (workoutDates.length === 0) return { current: 0, best: 0, activeThisWeek: false };

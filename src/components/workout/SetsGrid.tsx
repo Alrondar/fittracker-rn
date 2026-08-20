@@ -42,7 +42,7 @@ import { RecommendationCard } from './RecommendationCard';
 
 // COACH-3: фиксированный набор причин отклонения (ROADMAP C2).
 // Коды — machine-readable (для аналитики), лейблы — user-facing.
-const REJECTION_REASONS: Array<{ code: UserRejectionReason; label: string }> = [
+const REJECTION_REASONS: { code: UserRejectionReason; label: string }[] = [
   { code: 'tired', label: 'устал' },
   { code: 'too_heavy', label: 'слишком тяжело' },
   { code: 'pain', label: 'боль' },

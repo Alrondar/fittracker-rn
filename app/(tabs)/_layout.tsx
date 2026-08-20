@@ -40,8 +40,8 @@ export default function TabsLayout() {
             options={{ title: 'Справочник' }}
           />
           <Tabs.Screen
-            name="history"
-            options={{ title: 'История' }}
+            name="progress"
+            options={{ title: 'Прогресс' }}
           />
           <Tabs.Screen
             name="profile"

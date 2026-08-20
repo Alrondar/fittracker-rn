@@ -64,18 +64,18 @@ interface WorkoutWeekRow {
   id: string;
   created_at: string;
   duration_seconds: number | null;
-  workout_exercises: Array<{
+  workout_exercises: {
     id: string;
     exercise_id: string;
     exercises: { name: string } | { name: string }[] | null;
-    workout_logs: Array<{
+    workout_logs: {
       set_number: number;
       weight_kg: number | string | null;
       reps: number | null;
       rpe: number | null;
       completed_at: string | null;
-    }>;
-  }> | null;
+    }[];
+  }[] | null;
 }
 
 interface PainWeekRow {

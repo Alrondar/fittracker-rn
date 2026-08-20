@@ -49,8 +49,8 @@ Code search — первичный источник фактов; этот фа�
 | `app/(tabs)/index.tsx` | Dashboard / Today | `useDashboard`, dashboard services/widgets, readiness |
 | `app/(tabs)/programs.tsx` | каталог программ | `usePrograms`, ProgramCard, import |
 | `app/(tabs)/workouts.tsx` | список/план тренировок | `useWorkouts`, phases/weeks |
-| `app/(tabs)/history.tsx` | история | `useHistory`, historyService |
-| `app/(tabs)/history/[id].tsx` | детали тренировки | historyService.getWorkoutDetail |
+| `app/(tabs)/progress.tsx` | Мой прогресс (объединён с History) | `useHistory`, `useProgress`, 4 режима: Обзор/Календарь/История/Аналитика |
+| `app/(tabs)/progress/[id].tsx` | Workout Report (детали тренировки) | `historyService.getWorkoutDetail`, мышцы, сводка, подходы |
 | `app/(tabs)/exercises.tsx` | exercise library | `useExercises`, filters, pagination |
 | `app/(tabs)/exercise/[id].tsx` | exercise detail | `useExerciseDetail` |
 | `app/(tabs)/program/[id].tsx` | Program Detail + Editor | `useProgramEditor`, phases, days, sheets |
@@ -61,7 +61,7 @@ Code search — первичный источник фактов; этот фа�
 | `app/(tabs)/profile/injuries.tsx` | injuries | `useInjuries`, injury warnings |
 | `app/(tabs)/profile/metrics.tsx` | body metrics | `useBodyMetrics`, trend charts |
 | `app/(tabs)/profile/settings.tsx` | settings | timer/theme/unit/profile settings |
-| `app/profile/progress.tsx` |Progress hub (UX-11): «Как я меняюсь?»|useProgress, progressService|
+| `app/profile/progress.tsx` | **УДАЛЁН**: функциональность перенесена в `app/(tabs)/progress.tsx` |
 
 ## 2. Highest-priority UX surfaces
 
@@ -289,8 +289,9 @@ Important components:
 | `useExercises` / `useExerciseDetail` | exercise screens |
 | `useInjuryWarnings` | useWarmup, ExerciseCard, workout |
 | `useWarmup` | WarmupBlock, workout |
-| `useHistory` |history|
-| `useHistoryView` |history|
+| `useHistory` | `progress` (режим История/Календарь) |
+| `useHistoryView` | `progress` (режим История/Календарь) |
+| `useProgress` | `progress` (режим Аналитика/Обзор) |
 | `useInjuries` | injuries |
 | `useProfile` | profile/settings |
 | `useBodyMetrics` | metrics |
@@ -312,7 +313,7 @@ Important components:
 | `workoutService` | workout/create |
 | `workoutsService` | workouts/useWorkouts |
 | `dashboardService` | Dashboard/useDashboard |
-| `historyService` | history/useHistory/history detail |
+| `historyService` | `progress` (список тренировок, Workout Report, мышцы) |
 | `profileService` | profile/settings/injuries |
 | `authService` | root auth flow + auth screens |
 | `exercisesService` | exercise library/detail |
@@ -321,7 +322,7 @@ Important components:
 | `readinessService` | ReadinessSheet/Dashboard |
 | `painService` | PainSheet/ExerciseCard |
 | `recommendationFeedbackService` | SetsGrid (COACH-3: inline-чипы причин после «Скрыть») |
-| `progressService` |useProgress, profile/progress|
+| `progressService` | `useProgress`, `progress` (режим Аналитика/Обзор) |
 | `weeklySummaryService`|useWeeklySummary (ENG-6); UI — COACH-5|
 
 ## 9. Core types / constants / utilities

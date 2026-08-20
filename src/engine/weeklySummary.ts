@@ -34,7 +34,7 @@ export interface WeeklySummaryData {
   /** Агрегация pain_events за неделю. */
   pain: {
     count: number;
-    bodyParts: Array<{ bodyPart: string; count: number }>;
+    bodyParts: { bodyPart: string; count: number }[];
   };
 
   /** Агрегация daily_readiness (только rows с readiness != null). */
@@ -46,7 +46,7 @@ export interface WeeklySummaryData {
   };
 
   /** Новые личные рекорды недели (e1rm недели > pre-week best e1rm для того же упражнения). */
-  prs: Array<{
+  prs: {
     exerciseId: string;
     exerciseName: string;
     /** Максимальный вес в кг (округлённый) в неделю, где установлен PR. */
@@ -55,7 +55,7 @@ export interface WeeklySummaryData {
     e1rm: number;
     /** ISO datetime PR-сета. */
     date: string;
-  }>;
+  }[];
 }
 
 export interface WeeklyInsight {

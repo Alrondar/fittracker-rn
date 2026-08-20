@@ -101,16 +101,17 @@ function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
 export async function getHistory(userId: string): Promise<HistoryData> {
   const { data, error } = await supabase
     .from('workouts')
-    .select('id, name, created_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )')
+    .select('id, name, created_at, finished_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as HistoryWorkoutRow[];
+  const rows = (data ?? []) as unknown as (HistoryWorkoutRow & { finished_at: string | null })[];
 
+  // Включаем завершённые тренировки (finished_at IS NOT NULL), даже если логов нет (например, пропуск или пустая тренировка)
   const completed: HistoryWorkout[] = rows
-    .filter((w) => (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0))
+    .filter((w) => w.finished_at !== null || (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0))
     .map((w) => ({
       id: w.id,
       name: w.name,
@@ -135,6 +136,9 @@ interface WorkoutDetailLogRow {
   set_number: number;
   weight_kg: number | null;
   reps: number | null;
+  rpe: number | null;
+  rir: number | null;
+  difficulty: string | null;
 }
 interface WorkoutDetailExerciseRow {
   id: string;
@@ -142,7 +146,7 @@ interface WorkoutDetailExerciseRow {
   target_sets: number | null;
   target_reps_range: string | null;
   rest_seconds: number | null;
-  exercises: { name: string } | null;
+  exercises: { name: string; primary_muscles: string[] | null; secondary_muscles: string[] | null } | null;
   workout_logs: WorkoutDetailLogRow[] | null;
 }
 interface WorkoutDetailRow {
@@ -162,12 +166,17 @@ export interface WorkoutDetailLog {
   set_number: number;
   weight_kg: number | null;
   reps: number | null;
+  rpe: number | null;
+  rir: number | null;
+  difficulty: string | null;
 }
 
 export interface WorkoutDetailExercise {
   id: string;
   exercise_id: string;
   exercise_name: string;
+  primary_muscles: string[] | null;
+  secondary_muscles: string[] | null;
   target_sets: number | null;
   target_reps_range: string | null;
   rest_seconds: number | null;
@@ -198,7 +207,7 @@ export async function getWorkoutDetail(
     .from('workouts')
     .select(
       `id, name, created_at, finished_at, duration_seconds, program_id, week_number, day_index,
-       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name ), workout_logs ( id, set_number, weight_kg, reps ) )`,
+       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name, primary_muscles, secondary_muscles ), workout_logs ( id, set_number, weight_kg, reps, rpe, rir, difficulty ) )`,
     )
     .eq('id', workoutId)
     .maybeSingle();
@@ -221,6 +230,8 @@ export async function getWorkoutDetail(
     id: we.id,
     exercise_id: we.exercise_id,
     exercise_name: we.exercises?.name || 'Неизвестное упражнение',
+    primary_muscles: we.exercises?.primary_muscles || null,
+    secondary_muscles: we.exercises?.secondary_muscles || null,
     target_sets: we.target_sets,
     target_reps_range: we.target_reps_range,
     rest_seconds: we.rest_seconds,
@@ -231,6 +242,9 @@ export async function getWorkoutDetail(
         set_number: log.set_number,
         weight_kg: log.weight_kg,
         reps: log.reps,
+        rpe: log.rpe,
+        rir: log.rir,
+        difficulty: log.difficulty,
       })),
   }));
 

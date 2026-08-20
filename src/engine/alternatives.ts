@@ -92,7 +92,7 @@ export function rankAlternatives(
   candidates: AlternativeCandidate[],
   source: AlternativeSourceContext,
   activeInjuries: UserInjury[],
-  contraindications: Record<string, Array<{ body_part: string; injury_type: string }>>,
+  contraindications: Record<string, { body_part: string; injury_type: string }[]>,
 ): RankAlternativesResult {
   const ordered: RankedAlternative[] = [];
   let excludedCount = 0;

@@ -474,14 +474,14 @@ export default function WorkoutSessionScreen() {
 
       {/* PR8: footer вынесен в WorkoutScreenFooter */}
       <WorkoutScreenFooter
-        isWorkoutActive={isWorkoutActive}
-        saving={saving}
-        onStart={() => setIsWorkoutActive(true)}
-        onFinish={saveWorkout}
-        colors={colors}
-        gradients={gradients}
-        insetsBottom={insets.bottom}
-      />
+  isWorkoutActive={isWorkoutActive}
+  saving={saving}
+  onStart={handleTimerStart}  // ✅ Теперь записывает started_at
+  onFinish={saveWorkout}
+  colors={colors}
+  gradients={gradients}
+  insetsBottom={insets.bottom}
+/>
     </SafeAreaView>
   );
 }

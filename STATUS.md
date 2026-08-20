@@ -70,7 +70,7 @@
 | UX-8 | 🟠 | ✅ | lazy mount тяжёлого контента — media/slider монтируется только при раскрытии accordion; stagger в ExerciseSlider |
 | UX-9 | 🟠 | ✅ | History calendar с отметками — выполнено: HistoryCalendar (месяц, навигация, точки, тап по дню → DaySummaryCard через SheetShell); даты вычисляются локально из уже загруженных данных (ноль новых запросов); пропущенные тренировки не отображаются (Вариант A, консистентно с FIT-7) |
 | UX-10 | 🟠 | ✅ | Calendar/List toggle + day details — выполнено: HistoryViewToggle segmented control + useHistoryView (persist в AsyncStorage, default calendar); list view сохранён без изменений; day details: тап по дню → DaySummaryCard → history/[id] |
-| UX-11 | 🟠 | ✅ | Progress hub «Как я меняюсь?»: compact-итоги + e1RM-тренд (top-3) + объём (8 нед.) + вес + PR с датами + регулярность строкой; entry из profile.tsx, без bottom-tab (PRODUCT.md §11) |
+| UX-11 | 🟠 | ✅ | **Мой прогресс** (объединён с History): 4 режима (Обзор, Календарь, История, Аналитика); Workout Report с мышцами, объёмом, подходами и RPE; entry из bottom-tab (PRODUCT.md §10–11 обновлён) |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
 | UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
 
@@ -80,8 +80,9 @@
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| AUDIT-1 | 🟠 | 🔲 | аудит Dashboard (`index.tsx`): Today first, fast start, compact insights, readiness optional; без AI-перегрузки (PRODUCT.md §12) |
+| AUDIT-1 | 🟠 | ✅ | **Dashboard упрощён**: убрана лишняя аналитика (календарь, weekly stats, exercise progress, PR, last workout); добавлена прямая ссылка на «Мой прогресс»; фокус на Today-first (PRODUCT.md §12) |
 | AUDIT-2 | 🟡 | 🔲 | аудит Exercise Detail (`exercise/[id].tsx`): техника, оборудование, мышцы, alternatives, связь с workout |
+| AUDIT-5 | 🟠 | ✅ | **Workout Report**: создан `app/(tabs)/progress/[id].tsx` с детальной сводкой (время, объём, подходы, ср. RPE), задействованными мышцами и списком упражнений с логами |
 | AUDIT-3 | 🟡 | 🔲 | аудит библиотеки Exercises (`exercises.tsx`): поиск, фильтры, infinite scroll (PERF-9) |
 | AUDIT-4 | 🟡 | 🔲 | аудит Profile/Goals/Injuries/Metrics: зачем данные и что реально используется (PRODUCT.md §15 product test) |
 
@@ -178,7 +179,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-9 | 🟡 | 🔲 | Аудит длинных списков (exercises, history): применимость виртуализации/FlashList |
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
 | DS-1 | 🟠 | 🔲 | Аудит design system: шкала типографики/spacing, состояния, тёмная тема — перед Этапом H (ROADMAP) |
-| LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: 65 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
+| LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: ~74 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
 
 ## 14. Update rule
 

@@ -26,14 +26,14 @@ export interface WorkoutSessionData {
   exerciseRows: SessionExerciseRow[];
   logsByWorkoutExercise: Record<
     string,
-    Array<{
+    {
       set_number: number;
       weight_kg: number | null;
       reps: number | null;
       rpe: number | null;
       rir: number | null;
       difficulty: string | null;
-    }>
+    }[]
   >;
   recentLogs: RecentLog[];
   referenceData: Record<
