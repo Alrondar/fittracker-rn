@@ -65,7 +65,7 @@ export function DashboardNutritionCard({ daily, targets, onOpenModal }: Dashboar
               Цели не заданы
             </Text>
           </View>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/profile/goals')}>
+          <TouchableOpacity onPress={() => router.push('/profile/goals')}>
             <Text style={[typography.body, { color: colors.primary }]}>Задать</Text>
           </TouchableOpacity>
         </View>

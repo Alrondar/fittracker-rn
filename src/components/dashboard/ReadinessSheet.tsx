@@ -8,6 +8,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { readinessService } from '../../services/readinessService';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SCALE = [1, 2, 3, 4, 5];
 
@@ -73,6 +74,7 @@ export function ReadinessSheet({ visible, userId, onDone }: ReadinessSheetProps)
   const [soreness, setSoreness] = useState(3);
   const [stress, setStress] = useState(3);
   const [saving, setSaving] = useState(false);
+const queryClient = useQueryClient();
 
   // готовность: качество сна + инверсии усталости/боли/стресса
   const readiness = Math.round(
@@ -97,6 +99,11 @@ export function ReadinessSheet({ visible, userId, onDone }: ReadinessSheetProps)
         readiness,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // AUDIT-6: инвалидация кэша, чтобы StatusCard и ContextInsightCard
+      // обновились сразу после сохранения check-in.
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: ['todayReadiness', userId] });
+      }
       if (readiness <= 2) {
         Alert.alert(
           'Готовность низкая',

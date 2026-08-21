@@ -1,7 +1,6 @@
 // src/components/history/DaySummaryCard.tsx
 // UX-9 L2: детали выбранного дня — bottom sheet через канонический SheetShell.
 // Несколько тренировок в один день показываются списком (repeat/ad-hoc).
-// Тап по тренировке → детали (L3, history/[id]).
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -49,7 +48,7 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
     (id: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onClose();
-      router.push(`/history/${id}`);
+      router.push(`/progress/${id}`);
     },
     [onClose, router],
   );
