@@ -192,7 +192,10 @@ keep Progress as separate mental model (UX-11 открыт).
 
 Components:
 - `dashboard/StreakCard.tsx`
-- `ActivityCalendar`
+- `dashboard/DashboardNutritionCard.tsx` (AUDIT-1: L1-summary питания, 2 страницы (swipe + точки): кольца + 🔥 burned / недельная таблица lazy; «+» → NutritionAddModal, state модалки в `index.tsx`)
+- `dashboard/CircularNutritionChart.tsx` (AUDIT-1: SVG-кольца — макросы-сегменты снаружи / калории / вода внутри при >0; центр: ккал + осталось + 🔥-бейдж)
+- `dashboard/NutritionWeekTable.tsx` (AUDIT-1: стр. 2 карточки — таблица КБЖУ+вода за 7 дней; lazy mount после первого свайпа, performance gate §8)
+- `dashboard/NutritionAddModal.tsx` (AUDIT-1: L2-модалка ввода приёма пищи: meal type picker + КБЖУ+вода; `Modal` + `SheetShell`)- - - - `ActivityCalendar`
 - `WeeklyStatsCard`
 - `ExerciseProgressCard`
 - `PersonalRecordsCard`
@@ -297,7 +300,9 @@ Important components:
 | `useUnitPreferences` | UnitToggle, ExerciseCard, SetsGrid |
 | `useTheme` | all UI |
 | `useToast` | all screens |
-
+| `useDailyNutrition` |Dashboard (AUDIT-1)|
+| `useWeeklyNutrition` |NutritionWeekCard (profile), NutritionWeekTable (Dashboard, AUDIT-1)|
+| `useBurnedCalories` |DashboardNutritionCard (AUDIT-1: 🔥-бейдж)|
 | `useTodayReadiness`|workout/[id] (ENG-3 readiness context)|
 | `useWeeklySummary`|UI-потребитель появится в COACH-5 (weekly review)|
 
@@ -311,7 +316,7 @@ Important components:
 | `workoutsService` | workouts/useWorkouts |
 | `dashboardService` | Dashboard/useDashboard |
 | `historyService` | `app/(tabs)/history.tsx`, `app/(tabs)/progress.tsx` (RecentWorkouts: duration, program_name, avg_rpe), `app/(tabs)/progress/[id].tsx` (Workout Report) |
-| `profileService` | profile/settings/injuries |
+| `profileService` | profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories) |
 | `authService` | root auth flow + auth screens |
 | `exercisesService` | exercise library/detail |
 | `goalsService` / `metricsService` | goals/metrics |
@@ -436,6 +441,8 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Alternatives ranking (ENG-5)**: engine/alternatives.ts — rankAlternatives(candidates, source, activeInjuries, contraindications). Hard exclusion зеркалит warmupService (ARCH-8, два уровня): avoid-противопоказание при совпадении с активной травмой; targetsInjuredMuscle severity high. Scoring: PRIMARY_MATCH +2/мышца, SECONDARY_MATCH +1, PATTERN_MATCH +3 (только когда оба movement_pattern известны — NULL = честный «нет сигнала»), EQUIPMENT_MATCH +2 / MISMATCH −1, LEVEL_JUMP −3 (beginner→advanced) / LEVEL_DROP −2, PAIN_ON_SOURCE_GROUP −3, INJURY_MEDIUM −5 / LOW −2. Relation-type: regression +5 при hasPain/activeInjuries, −1 без; progression −3 при hasPain. Progression-boost при ENG-1 increase отложен: после COACH-1 нужна отдельная реализация/решение, чтобы не инвалидировать кэш alternatives при live recompute. (иначе инвалидация кэша при live recompute). fetchAlternatives: движение/difficulty в том же select (+exerciseId источника), relationTypeMap из exercise_relationships (первая связь по status/confidence), противопоказания — только при активных травмах, activeInjuries — один запрос на сессию (ref).
 - **Weekly summary (ENG-6)**: getWeeklySummary(userId, weekOffset) — 3 параллельных запроса на неделю (workouts+logs, pain_events, daily_readiness) + один pre-week запрос для PR-detection (PR = e1rm недели > pre-week best, только при наличии baseline). Skip-тренировки исключены через .is('skipped_at','null') (FIT-7); имена через embed exercises(name). Инсайты срабатывают только при выполненном условии: VOLUME_UP/DOWN/STABLE (±10%), NEW_PR, PAIN_SPIKE (≥3 или ≥2 в одной зоне), LOW/HIGH_READINESS (<3 / ≥4.5 при ≥3 записях), HIGH_RPE_WEEK (≥8.5 при ≥5 сетах), CONSISTENT_WEEK (≥4). UI — COACH-5.
 - **Readiness in engine (ENG-3)**: applyReadinessContext применяется в SetsGrid цепочкой base → applySafetyPrecedence → applyReadinessContext. Приоритет PRODUCT.md §8 закреплён порядком + guard'ом: если safetyOverride установлен — readiness no-op. Правила: readiness null (нет check-in) → no-op (§7); readiness 1–2 + base increase → hold с readinessOverride LOW_READINESS; readiness 3–5 → no-op. Визуально system downgrade (safety или readiness) делит warning color; текст one-liner в RecommendationCard: safetyOverride ?? readinessOverride ?? reason.ruText. useTodayReadiness: staleTime 1h; данные собираются ReadinessSheet (FEAT-1.8).
+- **Burned calories (AUDIT-1)**: profileService.getBurnedCalories(userId, days) сам читает вес из profiles и возвращает number | null (null — вес не задан, UI скрывает 🔥-бейдж, не выдумывая данные). Feature существует только на Dashboard; из профиля блок удалён. dashboardService coerces null → 0 для недельной статистики.
+- **SheetShell принимает visible?: boolean (false → null)**. Модалки Dashboard (ReadinessSheet, DaySummaryCard, NutritionAddModal) рендерятся в конце экрана вне ScrollView — рендер внутри ScrollView ломает overlay (грабля AUDIT-1).
 
 ## 13. Inventory maintenance
 

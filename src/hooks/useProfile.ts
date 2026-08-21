@@ -7,9 +7,8 @@ export function useProfile(userId: string | null) {
   const [userData, setUserData] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<ProfileStats>({ totalWorkouts: 0, totalPrograms: 0, totalVolume: 0 });
   const [targets, setTargets] = useState<NutritionTargets>({ calories: 0, proteins: 0, fats: 0, carbs: 0 });
-  const [todayNutrition, setTodayNutrition] = useState<DailyNutrition>({ calories: 0, proteins: 0, fats: 0, carbs: 0, water_ml: 0 });
-  const [burnedCalories, setBurnedCalories] = useState(0);
-  const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
+const [todayNutrition, setTodayNutrition] = useState<DailyNutrition>({ calories: 0, proteins: 0, fats: 0, carbs: 0, water_ml: 0 });
+const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,11 +32,6 @@ export function useProfile(userId: string | null) {
       setTargets(targetsData);
       setTodayNutrition(nutrition);
       setPersonalRecords(records);
-
-      if (profile.weight) {
-        const burned = await profileService.getBurnedCalories(userId, profile.weight);
-        setBurnedCalories(burned);
-      }
     } catch (e) {
       console.error('Ошибка загрузки профиля:', e);
     } finally {
@@ -54,6 +48,7 @@ export function useProfile(userId: string | null) {
         fats: parseInt(data.fats) || 0,
         carbs: parseInt(data.carbs) || 0,
         water_ml: parseInt(data.water_ml) || 0,
+        meal_type: 'meal', // общий ввод из профиля без выбора приёма пищи
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const updated = await profileService.getDailyNutrition(userId);
@@ -68,7 +63,6 @@ export function useProfile(userId: string | null) {
     stats,
     targets,
     todayNutrition,
-    burnedCalories,
     personalRecords,
     loading,
     refresh: loadAllData,

@@ -378,7 +378,7 @@ if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
 
   let burnedCalories = 0;
   try {
-    burnedCalories = await profileService.getBurnedCalories(userId, userWeight, 7);
+    burnedCalories = (await profileService.getBurnedCalories(userId, 7)) ?? 0;
   } catch {
     burnedCalories = workoutsCount * 300; // graceful fallback
   }

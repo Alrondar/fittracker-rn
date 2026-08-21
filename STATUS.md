@@ -80,7 +80,7 @@
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| AUDIT-1 | 🟠 | ✅ | **Dashboard упрощён**: убрана лишняя аналитика (календарь, weekly stats, exercise progress, PR, last workout); добавлена прямая ссылка на «Мой прогресс»; фокус на Today-first (PRODUCT.md §12) |
+| AUDIT-1 | 🟠 | ✅ | **Dashboard упрощён и дополнен**: фокус на Today-first; L1-summary питания — карточка с 2 страницами (swipe + тапабельные точки): стр. 1 — 3 концентрических кольца (внешнее — макросы сегментами пропорционально целям, среднее — калории, внутреннее — вода только при >0) + 🔥 сожжённые калории в центре + модалка быстрого ввода (state в index.tsx, рендер вне ScrollView); стр. 2 — lazy-таблица КБЖУ+вода за неделю; сожжённые калории перенесены с профиля на Dashboard (getBurnedCalories достаёт вес из profiles сам, null при отсутствии веса — бейдж скрыт); блок «Коротко о неделе» (insights); readiness остаётся optional (PRODUCT.md §12) |
 | AUDIT-2 | 🟡 | 🔲 | аудит Exercise Detail (`exercise/[id].tsx`): техника, оборудование, мышцы, alternatives, связь с workout |
 | AUDIT-5 | 🟠 | ✅ | **Workout Report**: создан `app/(tabs)/progress/[id].tsx` с детальной сводкой (время, объём, подходы, ср. RPE), задействованными мышцами и списком упражнений с логами |
 | AUDIT-3 | 🟡 | 🔲 | аудит библиотеки Exercises (`exercises.tsx`): поиск, фильтры, infinite scroll (PERF-9) |
