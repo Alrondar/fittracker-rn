@@ -1,391 +1,568 @@
 // app/(tabs)/progress.tsx
-// UX-11: "Мой прогресс" — единый экран ответа «Что произошло с моими тренировками и как я меняюсь?» (PRODUCT.md §10).
-// 4 режима: Обзор, Календарь, История, Аналитика.
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
+//
+// Progress hub — отвечает на вопрос «Как я меняюсь?».
+// History отвечает «когда и что я делал?» (отдельный таб).
+//
+// Правила:
+// - UI не обращается к Supabase напрямую — данные через useProgress/useHistory;
+// - один спокойный экран без режимов; секции скрываются при отсутствии данных;
+// - длинная история не рендерится: последние тренировки ограничены slice(0, 5).
+
+import React, { useCallback, useMemo } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { CalendarDays, List, BarChart2, TrendingUp } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { Activity, Award, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useHistory } from '../../src/hooks/useHistory';
 import { useProgress } from '../../src/hooks/useProgress';
-import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppCard } from '../../src/components/ui/AppCard';
-import { HistoryCalendar } from '../../src/components/history/HistoryCalendar';
-import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
-import { WeeklyReviewBlock } from '../../src/components/progress/WeeklyReviewBlock';
+import { ProgressHero } from '../../src/components/progress/ProgressHero';
+import { ProgressStats } from '../../src/components/progress/ProgressStats';
+import { ProgressInsights } from '../../src/components/progress/ProgressInsights';
+import { RecentWorkouts } from '../../src/components/progress/RecentWorkouts';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
 import { VolumeTrendChart } from '../../src/components/progress/VolumeTrendChart';
 import { WeightTrendRow } from '../../src/components/progress/WeightTrendRow';
-import { Skeleton } from '../../src/components/Skeleton';
 import type { HistoryWorkout } from '../../src/services/historyService';
-
-type ProgressView = 'overview' | 'calendar' | 'list' | 'analytics';
-
-const VIEWS: { id: ProgressView; label: string; Icon: any }[] = [
-  { id: 'overview', label: 'Обзор', Icon: TrendingUp },
-  { id: 'calendar', label: 'Календарь', Icon: CalendarDays },
-  { id: 'list', label: 'История', Icon: List },
-  { id: 'analytics', label: 'Аналитика', Icon: BarChart2 },
-];
+import { useState } from 'react';
 
 export default function ProgressScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-  const { data: historyData, isPending: isHistoryPending, isFetching: isHistoryFetching, refetch: refetchHistory } = useHistory(userId);
-  const { data: progressData, isPending: isProgressPending, refetch: refetchProgress } = useProgress(userId);
-  const { data: weeklyData, isPending: isWeeklyPending } = useWeeklySummary(userId, 0);
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
 
-  const [view, setView] = useState<ProgressView>('overview');
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const {
+    data: historyData,
+    isPending: isHistoryPending,
+    isFetching: isHistoryFetching,
+    refetch: refetchHistory,
+  } = useHistory(userId);
+
+  const {
+    data: progressData,
+    isPending: isProgressPending,
+    isFetching: isProgressFetching,
+    refetch: refetchProgress,
+  } = useProgress(userId);
+
+  // ------------------------------------------------------------------
+  // Derived data (все вычисления — здесь, не в JSX)
+  // ------------------------------------------------------------------
 
   const flatWorkouts = useMemo(
-    () => (historyData?.sections ?? []).reduce((acc, s) => acc.concat(s.data), [] as HistoryWorkout[]),
-    [historyData?.sections]
+    () =>
+      (historyData?.sections ?? []).reduce(
+        (acc, section) => acc.concat(section.data),
+        [] as HistoryWorkout[],
+      ),
+    [historyData?.sections],
   );
 
-  const workoutDates = useMemo(() => {
-    const set = new Set<string>();
-    flatWorkouts.forEach((w: HistoryWorkout) => {
-      const d = new Date(w.created_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      set.add(key);
-    });
-    return set;
-  }, [flatWorkouts]);
+  const recentWorkouts = useMemo(
+    () =>
+      [...flatWorkouts]
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+        .slice(0, 5),
+    [flatWorkouts],
+  );
+
+  const currentWeek = useMemo(() => {
+    const current = progressData?.weeklyVolume?.at(-1);
+    return {
+      workoutsCount: current?.workoutsCount ?? 0,
+      volume: current?.volume ?? 0,
+    };
+  }, [progressData?.weeklyVolume]);
+
+  const previousWeek = useMemo(() => {
+    const weeks = progressData?.weeklyVolume ?? [];
+    if (weeks.length < 2) return null;
+    return weeks[weeks.length - 2];
+  }, [progressData?.weeklyVolume]);
+
+  const weeklyWorkoutDelta = useMemo(() => {
+    if (!previousWeek) return null;
+    return currentWeek.workoutsCount - previousWeek.workoutsCount;
+  }, [currentWeek.workoutsCount, previousWeek]);
+
+  // Текущий максимум e1RM по упражнениям из топ-3 (список под графиком силы).
+  const strengthTop = useMemo(() => {
+    const series = progressData?.strengthTrend ?? [];
+    return series
+      .filter((s) => s.points.length > 0)
+      .map((s) => {
+        const best = s.points.reduce(
+          (m, p) => (p.e1rm > m.e1rm ? p : m),
+          s.points[0],
+        );
+        return { name: s.exerciseName, e1rm: best.e1rm };
+      });
+  }, [progressData?.strengthTrend]);
+
+  const strengthTrend = progressData?.strengthTrend ?? [];
+  const weightTrend = progressData?.weightTrend ?? [];
+  const personalRecords = progressData?.personalRecords ?? [];
+  const topRecords = personalRecords.slice(0, 3);
+
+  const hasStrength = strengthTrend.length > 0;
+  const hasWeight = weightTrend.length >= 2;
+  const hasRecords = topRecords.length > 0;
+
+  // ------------------------------------------------------------------
+  // Callbacks
+  // ------------------------------------------------------------------
 
   const onRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    refetchHistory();
-    refetchProgress();
+    void Promise.all([refetchHistory(), refetchProgress()]);
   }, [refetchHistory, refetchProgress]);
 
-  const handleDayPress = useCallback((dateKey: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedDay(dateKey);
-  }, []);
+  const openWorkout = useCallback(
+    (workoutId: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push(`/progress/${workoutId}`);
+    },
+    [router],
+  );
 
-  const closeDaySheet = useCallback(() => setSelectedDay(null), []);
+  // ------------------------------------------------------------------
+  // States
+  // ------------------------------------------------------------------
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return 'Сегодня';
-    if (days === 1) return 'Вчера';
-    if (days < 7) return `${days} дн. назад`;
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-  };
+  const isLoading = isHistoryPending || isProgressPending;
+  const isEmpty =
+    flatWorkouts.length === 0 && (progressData?.totalWorkouts ?? 0) === 0;
 
-  if (isHistoryPending || isProgressPending) {
+  if (!userId) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-            Загрузка прогресса...
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
+            Пользователь не авторизован
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const isEmpty =
-    (historyData?.sections.length ?? 0) === 0 &&
-    (progressData?.totalWorkouts ?? 0) === 0;
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, marginTop: SPACING.md },
+            ]}
+          >
+            Загружаем твой прогресс…
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (isEmpty) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}>
-          <Text style={[typography.h4, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
-            Пока нет данных
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: SPACING.xl,
+          }}
+        >
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: colors.primary + '15',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <TrendingUp size={28} color={colors.primary} />
+          </View>
+          <Text
+            style={[
+              typography.h4,
+              { color: colors.textPrimary, textAlign: 'center', marginTop: SPACING.lg },
+            ]}
+          >
+            Твой прогресс начнётся здесь
           </Text>
-          <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}>
-            Завершите первую тренировку, чтобы увидеть свой прогресс здесь
+          <Text
+            style={[
+              typography.body,
+              {
+                color: colors.textSecondary,
+                textAlign: 'center',
+                marginTop: SPACING.sm,
+                maxWidth: 320,
+              },
+            ]}
+          >
+            Заверши первую тренировку — и здесь появятся объём, сила и динамика
+            результатов.
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // ------------------------------------------------------------------
+  // Data
+  // ------------------------------------------------------------------
+
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={commonStyles.header}>
-        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>Мой прогресс</Text>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
+      <View
+        style={{
+          paddingHorizontal: SPACING.lg,
+          paddingTop: SPACING.sm,
+          paddingBottom: SPACING.md,
+        }}
+      >
+        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
+          Прогресс
+        </Text>
         <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
-          Что произошло и как я меняюсь
+          Как меняются твои тренировки и результаты
         </Text>
       </View>
 
-      {/* Segmented Control */}
-      <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.md }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            backgroundColor: colors.surfaceSecondary,
-            borderRadius: BORDER_RADIUS.md,
-            padding: 4,
-          }}
-        >
-          {VIEWS.map(({ id, label, Icon }) => {
-            const active = view === id;
-            return (
-              <TouchableOpacity
-                key={id}
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 4,
-                  paddingVertical: SPACING.sm,
-                  borderRadius: BORDER_RADIUS.sm,
-                  backgroundColor: active ? colors.primary : 'transparent',
-                }}
-                onPress={() => {
-                  setView(id);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Icon size={16} color={active ? colors.textInverse : colors.textSecondary} strokeWidth={2} />
-                <Text
-                  style={[
-                    typography.caption,
-                    {
-                      color: active ? colors.textInverse : colors.textSecondary,
-                      fontWeight: active ? '600' : '400',
-                    },
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: SPACING.lg,
+          paddingBottom: SPACING.xl * 2,
+        }}
         refreshControl={
-          <RefreshControl refreshing={isHistoryFetching} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={(isHistoryFetching || isProgressFetching) && !isLoading}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
       >
-        {/* РЕЖИМ: ОБЗОР */}
-        {view === 'overview' && (
-          <View style={{ paddingHorizontal: SPACING.lg }}>
-            {/* 4 большие метрики */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.xl }}>
-              <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', paddingVertical: SPACING.md }}>
-                <Text style={[typography.h3, { color: colors.primary }]}>
-                  {progressData?.totalWorkouts ?? 0}
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 4 }]}>тренировок</Text>
-              </AppCard>
-              <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', paddingVertical: SPACING.md }}>
-                <Text style={[typography.h3, { color: colors.success }]}>
-                  {((progressData?.totalVolume ?? 0) / 1000).toFixed(1)}т
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 4 }]}>объём</Text>
-              </AppCard>
-              <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', paddingVertical: SPACING.md }}>
-                <Text style={[typography.h3, { color: colors.warning }]}>
-                  {progressData?.currentStreak ?? 0}
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 4 }]}>дней стрик</Text>
-              </AppCard>
-              <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', paddingVertical: SPACING.md }}>
-                <Text style={[typography.h3, { color: colors.textPrimary }]}>
-                  {historyData?.monthlyStats.totalWorkouts ?? 0}
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 4 }]}>в этом мес.</Text>
-              </AppCard>
-            </View>
+        <ProgressHero
+          totalWorkouts={progressData?.totalWorkouts ?? 0}
+          currentStreak={progressData?.currentStreak ?? 0}
+          weeklyWorkoutDelta={weeklyWorkoutDelta}
+          currentWeekVolume={currentWeek.volume}
+          previousWeekVolume={previousWeek?.volume ?? null}
+        />
 
-            {/* Что изменилось */}
-            {isWeeklyPending ? (
-              <Skeleton width="100%" height={120} borderRadius={BORDER_RADIUS.lg} />
-            ) : weeklyData ? (
-              <WeeklyReviewBlock insights={weeklyData.insights} workoutsCount={weeklyData.current.workoutsCount} />
-            ) : null}
-          </View>
-        )}
+        <ProgressStats
+          totalWorkouts={progressData?.totalWorkouts ?? 0}
+          totalVolume={progressData?.totalVolume ?? 0}
+          currentStreak={progressData?.currentStreak ?? 0}
+          bestStreak={progressData?.bestStreak ?? 0}
+        />
 
-        {/* РЕЖИМ: КАЛЕНДАРЬ */}
-        {view === 'calendar' && (
-          <View style={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm }}>
-            {/* Monthly Stats */}
-            <AppCard variant="compact" style={{ marginBottom: SPACING.lg }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={[typography.h4, { color: colors.primary }]}>
-                    {historyData?.monthlyStats.totalWorkouts ?? 0}
-                  </Text>
-                  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>тренировок</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={[typography.h4, { color: colors.success }]}>
-                    {((historyData?.monthlyStats.totalVolume ?? 0) / 1000).toFixed(1)}т
-                  </Text>
-                  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>объём</Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                  <Text style={[typography.h4, { color: colors.warning }]}>
-                    {Math.round(historyData?.monthlyStats.bestWorkout ?? 0)}
-                  </Text>
-                  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>лучшая</Text>
-                </View>
-              </View>
-            </AppCard>
+        <ProgressInsights
+          weeklyVolume={progressData?.weeklyVolume ?? []}
+          strengthTrend={strengthTrend}
+          weightTrend={weightTrend}
+          personalRecords={personalRecords}
+        />
 
-            <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-              Показаны только завершённые тренировки
-            </Text>
-            <HistoryCalendar
-              workoutDates={workoutDates}
-              selectedDay={selectedDay}
-              onDayPress={handleDayPress}
-              colors={colors}
-              loading={isHistoryPending}
-              error={false}
-              onRetry={refetchHistory}
-            />
-          </View>
-        )}
+        {/* Активность: прозрачный заголовок + собственная карточка графика
+            (без AppCard — убираем «карточку в карточке») */}
+        <View style={{ marginBottom: SPACING.lg }}>
+          <SectionTitle
+            accent={colors.success}
+            icon={<Activity size={18} color={colors.success} />}
+            title="Активность"
+            subtitle="Объём за последние недели"
+          />
+          <VolumeTrendChart weeklyVolume={progressData?.weeklyVolume ?? []} />
+        </View>
 
-        {/* РЕЖИМ: ИСТОРИЯ */}
-        {view === 'list' && (
-          <View style={{ paddingHorizontal: SPACING.lg }}>
-            {flatWorkouts.map((item: HistoryWorkout, index: number) => (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  router.push(`/progress/${item.id}`);
-                }}
-                activeOpacity={0.8}
-                style={{ marginBottom: SPACING.md }}
+        {/* Сила: заголовок один — внутри StrengthTrendChart */}
+{hasStrength ? (
+  <View style={{ marginBottom: SPACING.lg }}>
+    <SectionTitle
+      accent={colors.primary}
+      icon={<TrendingUp size={18} color={colors.primary} />}
+      title="Сила"
+      subtitle="Расчётный 1ПМ (e1RM)"
+    />
+    {/* Селектор упражнений */}
+    {strengthTop.length > 1 && (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ marginBottom: SPACING.md, gap: SPACING.sm }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={() => setSelectedExercise(null)}
+          style={{
+            paddingHorizontal: SPACING.md,
+            paddingVertical: SPACING.xs,
+            borderRadius: BORDER_RADIUS.full,
+            backgroundColor: selectedExercise === null ? colors.primary : colors.surface,
+            borderWidth: 1,
+            borderColor: selectedExercise === null ? colors.primary : colors.border,
+          }}
+        >
+          <Text
+            style={[
+              typography.captionSmall,
+              {
+                color: selectedExercise === null ? colors.textInverse : colors.textSecondary,
+                fontWeight: '600',
+              },
+            ]}
+          >
+            Все
+          </Text>
+        </TouchableOpacity>
+        {strengthTop.map((item) => {
+          const isSelected = selectedExercise === item.name;
+          return (
+            <TouchableOpacity
+              key={item.name}
+              activeOpacity={0.75}
+              onPress={() => setSelectedExercise(item.name)}
+              style={{
+                paddingHorizontal: SPACING.md,
+                paddingVertical: SPACING.xs,
+                borderRadius: BORDER_RADIUS.full,
+                backgroundColor: isSelected ? colors.primary : colors.surface,
+                borderWidth: 1,
+                borderColor: isSelected ? colors.primary : colors.border,
+              }}
+            >
+              <Text
+                numberOfLines={1}
+                style={[
+                  typography.captionSmall,
+                  {
+                    color: isSelected ? colors.textInverse : colors.textSecondary,
+                    fontWeight: '600',
+                  },
+                ]}
               >
-                <View
-                  style={{
-                    padding: SPACING.lg,
-                    borderRadius: BORDER_RADIUS.lg,
-                    backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.sm }}>
-                    <Text style={[typography.h4, { color: colors.textPrimary, flex: 1, marginRight: SPACING.md }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      {formatDate(item.created_at)}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={[typography.h3, { color: colors.textPrimary }]}>{item.sets}</Text>
-                      <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>подходов</Text>
-                    </View>
-                    <View style={{ width: 1, height: 30, marginHorizontal: SPACING.sm, backgroundColor: colors.border }} />
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={[typography.h3, { color: colors.textPrimary }]}>{Math.round(item.volume)}</Text>
-                      <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>кг</Text>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* РЕЖИМ: АНАЛИТИКА */}
-        {view === 'analytics' && (
-          <View style={{ paddingHorizontal: SPACING.lg }}>
-            {progressData?.strengthTrend && progressData.strengthTrend.length > 0 && (
-              <AppCard style={{ marginBottom: SPACING.lg }}>
-                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                  Сила (e1RM)
-                </Text>
-                <View style={{ paddingHorizontal: SPACING.sm }}>
-                  <StrengthTrendChart series={progressData.strengthTrend} />
-                </View>
-              </AppCard>
-            )}
-            
-            <AppCard style={{ marginBottom: SPACING.lg }}>
-              <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                Объём по неделям
+                {item.name}
               </Text>
-              <View style={{ paddingHorizontal: SPACING.sm }}>
-                <VolumeTrendChart weeklyVolume={progressData?.weeklyVolume ?? []} />
-              </View>
-            </AppCard>
-            
-            {progressData?.weightTrend && progressData.weightTrend.length >= 2 && (
-              <AppCard style={{ marginBottom: SPACING.lg }}>
-                <WeightTrendRow weightTrend={progressData.weightTrend} />
-              </AppCard>
-            )}
-            
-            {progressData?.personalRecords && progressData.personalRecords.length > 0 && (
-              <AppCard>
-                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-                  🏆 Личные рекорды
-                </Text>
-                {progressData.personalRecords.map((pr, idx) => (
-                  <View
-                    key={pr.name ?? idx}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingVertical: SPACING.sm,
-                      borderBottomWidth: idx < progressData.personalRecords.length - 1 ? StyleSheet.hairlineWidth : 0,
-                      borderBottomColor: colors.border,
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]}>
-                        {pr.name}
-                      </Text>
-                      <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: 2 }]}>
-                        {pr.recordDate ? new Date(pr.recordDate).toLocaleDateString('ru-RU') : ''}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[typography.h4, { color: colors.primary }]}>
-                        {pr.maxWeight} кг
-                      </Text>
-                      <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                        {pr.reps} повт.
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </AppCard>
-            )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    )}
+    <AppCard>
+      <StrengthTrendChart
+        series={strengthTrend}
+        selectedExerciseName={selectedExercise ?? undefined}
+      />
+    </AppCard>
+  </View>
+) : (
+          <View style={{ marginBottom: SPACING.lg }}>
+            <SectionTitle
+              accent={colors.primary}
+              icon={<TrendingUp size={18} color={colors.primary} />}
+              title="Сила"
+              subtitle="Расчётный 1ПМ (e1RM)"
+            />
+            <View
+              style={{
+                padding: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              <Text
+                style={[
+                  typography.body,
+                  { color: colors.textPrimary, marginBottom: SPACING.xs },
+                ]}
+              >
+                Продолжай фиксировать веса и повторения
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Здесь появится график силы (e1RM) по твоим основным упражнениям.
+              </Text>
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textTertiary, marginTop: SPACING.sm, fontStyle: 'italic' },
+                ]}
+              >
+                e1RM — расчётный одноповторный максимум по формуле Эпли: вес × (1 +
+                повторы / 30).
+              </Text>
+            </View>
           </View>
         )}
-      </ScrollView>
 
-      {/* Sheet выбранного дня */}
-      <DaySummaryCard
-        selectedDay={selectedDay}
-        workouts={flatWorkouts}
-        onClose={closeDaySheet}
-        colors={colors}
-      />
+        {/* Вес: заголовок живёт внутри WeightTrendRow */}
+        {hasWeight && (
+          <View style={{ marginBottom: SPACING.lg }}>
+            <WeightTrendRow weightTrend={weightTrend} />
+          </View>
+        )}
+
+        {/* Личные рекорды */}
+{hasRecords && (
+  <View style={{ marginBottom: SPACING.lg }}>
+    <SectionTitle
+      accent={colors.warning}
+      icon={<Award size={18} color={colors.warning} />}
+      title="Личные рекорды"
+      subtitle="Твои лучшие результаты"
+    />
+    {topRecords.map((record) => (
+      <View
+        key={record.name}
+        style={{
+          backgroundColor: colors.warning + '15',
+          borderRadius: BORDER_RADIUS.lg,
+          borderWidth: 1,
+          borderColor: colors.warning + '40',
+          padding: SPACING.md,
+          marginBottom: SPACING.sm,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: colors.warning + '25',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: SPACING.md,
+          }}
+        >
+          <Award size={20} color={colors.warning} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={[typography.labelBold, { color: colors.textPrimary }]}
+          >
+            {record.name}
+          </Text>
+          {!!record.recordDate && (
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textTertiary, marginTop: 2 },
+              ]}
+            >
+              {new Date(record.recordDate).toLocaleDateString('ru-RU')}
+            </Text>
+          )}
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text
+            style={[
+              typography.h3,
+              { color: colors.warning, fontWeight: '700' },
+            ]}
+          >
+            {record.maxWeight}
+          </Text>
+          <Text
+            style={[
+              typography.captionSmall,
+              { color: colors.textSecondary },
+            ]}
+          >
+            кг × {record.reps}
+          </Text>
+        </View>
+      </View>
+    ))}
+  </View>
+)}
+
+        <RecentWorkouts workouts={recentWorkouts} onPress={openWorkout} />
+      </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/** Прозрачный заголовок секции с иконкой — без фоновой подложки. */
+function SectionTitle({
+  accent,
+  icon,
+  title,
+  subtitle,
+}: {
+  accent: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: accent + '1A',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: SPACING.sm,
+        }}
+      >
+        {icon}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{title}</Text>
+        {!!subtitle && (
+          <Text
+            style={[
+              typography.captionSmall,
+              { color: colors.textSecondary, marginTop: 2 },
+            ]}
+          >
+            {subtitle}
+          </Text>
+        )}
+      </View>
+    </View>
   );
 }

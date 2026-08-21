@@ -7,7 +7,6 @@ import { Scale } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
-import { SectionHeader } from '../SectionHeader';
 import { WeightPoint } from '../../services/progressService';
 
 interface Props {
@@ -25,7 +24,27 @@ export function WeightTrendRow({ weightTrend }: Props) {
 
   return (
     <View>
-      <SectionHeader title="Вес тела" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+  <View
+    style={{
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.warning + '1A',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: SPACING.sm,
+    }}
+  >
+    <Scale size={18} color={colors.warning} />
+  </View>
+  <View style={{ flex: 1 }}>
+    <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Вес</Text>
+    <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
+      Последние измерения
+    </Text>
+  </View>
+</View>
       <View
         style={{
           backgroundColor: colors.surface,

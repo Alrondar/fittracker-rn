@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 20.08.2026 (main)
+Срез: 21.08.2026 (main)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -70,7 +70,7 @@
 | UX-8 | 🟠 | ✅ | lazy mount тяжёлого контента — media/slider монтируется только при раскрытии accordion; stagger в ExerciseSlider |
 | UX-9 | 🟠 | ✅ | History calendar с отметками — выполнено: HistoryCalendar (месяц, навигация, точки, тап по дню → DaySummaryCard через SheetShell); даты вычисляются локально из уже загруженных данных (ноль новых запросов); пропущенные тренировки не отображаются (Вариант A, консистентно с FIT-7) |
 | UX-10 | 🟠 | ✅ | Calendar/List toggle + day details — выполнено: HistoryViewToggle segmented control + useHistoryView (persist в AsyncStorage, default calendar); list view сохранён без изменений; day details: тап по дню → DaySummaryCard → history/[id] |
-| UX-11 | 🟠 | ✅ | **Мой прогресс** (объединён с History): 4 режима (Обзор, Календарь, История, Аналитика); Workout Report с мышцами, объёмом, подходами и RPE; entry из bottom-tab (PRODUCT.md §10–11 обновлён) |
+| UX-11 | 🟠 | ✅ | **Progress hub** (отдельный bottom-tab, единый экран «Как я меняюсь?»): убраны 4 режима; последовательный поток: Hero → Stats → Insights → Activity → Strength (с интерактивным селектором упражнений и explainability e1RM) → Weight → PR (в виде карточек-достижений) → RecentWorkouts (детерминированный градиент, program_name, duration, avg_rpe); History вынесен в отдельную ментальную модель (PRODUCT.md §11). |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
 | UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
 

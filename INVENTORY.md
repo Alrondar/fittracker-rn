@@ -49,7 +49,7 @@ Code search — первичный источник фактов; этот фа�
 | `app/(tabs)/index.tsx` | Dashboard / Today | `useDashboard`, dashboard services/widgets, readiness |
 | `app/(tabs)/programs.tsx` | каталог программ | `usePrograms`, ProgramCard, import |
 | `app/(tabs)/workouts.tsx` | список/план тренировок | `useWorkouts`, phases/weeks |
-| `app/(tabs)/progress.tsx` | Мой прогресс (объединён с History) | `useHistory`, `useProgress`, 4 режима: Обзор/Календарь/История/Аналитика |
+| `app/(tabs)/progress.tsx` | Progress hub («Как я меняюсь?») | `useHistory`, `useProgress`, `useWeeklySummary`; единый экран: Hero → Stats → Insights → Activity → Strength → Weight → PR → RecentWorkouts |
 | `app/(tabs)/progress/[id].tsx` | Workout Report (детали тренировки) | `historyService.getWorkoutDetail`, мышцы, сводка, подходы |
 | `app/(tabs)/exercises.tsx` | exercise library | `useExercises`, filters, pagination |
 | `app/(tabs)/exercise/[id].tsx` | exercise detail | `useExerciseDetail` |
@@ -237,27 +237,24 @@ Current behavior:
 ## 5. Profile / Context
 
 Screens:
-`profile.tsx`
-`profile/goals.tsx`
-`profile/injuries.tsx`
-`profile/metrics.tsx`
-`profile/settings.tsx`
-`profile/progress.tsx` — Progress hub (UX-11)
+- `app/(tabs)/profile.tsx`
+- `app/(tabs)/profile/goals.tsx`
+- `app/(tabs)/profile/injuries.tsx`
+- `app/(tabs)/profile/metrics.tsx`
+- `app/(tabs)/profile/settings.tsx`
+
+*(Progress hub перенесён в отдельный bottom-tab: `app/(tabs)/progress.tsx`, см. раздел 1)*
 
 Dependencies:
-`useProfile.ts`
-`useBodyMetrics.ts`
-`useInjuries.ts`
-`useProgress.ts`
-`goalsService.ts`
-`metricsService.ts`
-`profileService.ts`
-`progressService.ts`
-`macroCalculator.ts`
-`WeightTrendChart.tsx`
-`MetricSparkline.tsx`
-`progress/ProgressStatsCards.tsx`
-`progress/VolumeTrendChart.tsx`
+- `useProfile.ts`
+- `useBodyMetrics.ts`
+- `useInjuries.ts`
+- `goalsService.ts`
+- `metricsService.ts`
+- `profileService.ts`
+- `macroCalculator.ts`
+- `WeightTrendChart.tsx`
+- `MetricSparkline.tsx`
 
 ## 6. Shared UI
 
@@ -289,9 +286,9 @@ Important components:
 | `useExercises` / `useExerciseDetail` | exercise screens |
 | `useInjuryWarnings` | useWarmup, ExerciseCard, workout |
 | `useWarmup` | WarmupBlock, workout |
-| `useHistory` | `progress` (режим История/Календарь) |
-| `useHistoryView` | `progress` (режим История/Календарь) |
-| `useProgress` | `progress` (режим Аналитика/Обзор) |
+| `useHistory` | `app/(tabs)/history.tsx`, `app/(tabs)/progress.tsx` (RecentWorkouts) |
+| `useHistoryView` | `app/(tabs)/history.tsx` |
+| `useProgress` | `app/(tabs)/progress.tsx` (Progress hub) |
 | `useInjuries` | injuries |
 | `useProfile` | profile/settings |
 | `useBodyMetrics` | metrics |
@@ -300,7 +297,7 @@ Important components:
 | `useUnitPreferences` | UnitToggle, ExerciseCard, SetsGrid |
 | `useTheme` | all UI |
 | `useToast` | all screens |
-| `useProgress` |profile/progress|
+
 | `useTodayReadiness`|workout/[id] (ENG-3 readiness context)|
 | `useWeeklySummary`|UI-потребитель появится в COACH-5 (weekly review)|
 
@@ -313,7 +310,7 @@ Important components:
 | `workoutService` | workout/create |
 | `workoutsService` | workouts/useWorkouts |
 | `dashboardService` | Dashboard/useDashboard |
-| `historyService` | `progress` (список тренировок, Workout Report, мышцы) |
+| `historyService` | `app/(tabs)/history.tsx`, `app/(tabs)/progress.tsx` (RecentWorkouts: duration, program_name, avg_rpe), `app/(tabs)/progress/[id].tsx` (Workout Report) |
 | `profileService` | profile/settings/injuries |
 | `authService` | root auth flow + auth screens |
 | `exercisesService` | exercise library/detail |
@@ -430,7 +427,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Program replacement (UX-5 Feature 1)**: replaceExerciseInProgram в programsService — 7 шагов (workout → workout_exercise → program_day → program_exercise → UPDATE program_exercises + exercise_name → UPDATE текущей workout_exercises.exercise_id для защиты от orphaned row в sync → syncProgramChanges). Alert в workout/[id].tsx через handleReplaceChoice: 3 кнопки при наличии программы (Отмена / Только сегодня / В программе destructive) или мгновенная temp-замена для ad-hoc тренировок. Rollback при ошибке sync (например, seeded программы с created_by IS NULL).
 - **Sync safety insight (UX-5 Feature 1)**: RPC sync_program_changes_to_workouts удаляет workout_exercises с exercise_id, которого нет в program_exercises (orphaned by exercise_id). Поэтому перед вызовом sync обязательно обновляем текущую workout_exercises.exercise_id — иначе для не начатых тренировок sync пересоздал бы строку с новым id и осиротил бы pending workout_logs.
 - **History calendar (UX-9/UX-10)**: workoutDates вычисляются локально из HistoryWorkout.created_at через useMemo — ноль новых запросов, данные уже загружены getHistory. HistoryCalendar: навигация от самого раннего месяца с тренировками до текущего (в будущее нельзя), неделя с понедельника, точки на днях с тренировками. Тап по дню → DaySummaryCard (SheetShell) со списком тренировок дня; несколько тренировок в день поддерживаются. Выбор вида Calendar/List персистится в AsyncStorage (useHistoryView), default — Calendar. Пропущенные тренировки (skipped_at) в календаре НЕ отображаются — Вариант A, консистентно с FIT-7: History = фактически выполненное (historyService фильтрует по наличию логов).
-- **Progress hub (UX-11)**: app/profile/progress.tsx — единый экран «Как я меняюсь?» (PRODUCT.md §11). Compact-итоги (тр/тонны/стрик) → Сила (e1RM top-3 по неделям) → Объём (8 недель) → Вес (metric_date, delta) → PR top-5 с датами → регулярность одной строкой (вычисляется из weeklyVolume, ноль новых запросов). Грабли progressService: workout_exercises НЕ имеет exercise_name — имена только через embed exercises(name); цепочки .in() давали 400 Bad Request — только вложенные embed-запросы; skip-тренировки (finished_at + skipped_at, FIT-7) исключаем через .is('skipped_at', null); окно weeklyVolume: startMs = now - (weeks-1)*7d, последний bucket = текущая неделя.
+- **Progress hub (UX-11)**: `app/(tabs)/progress.tsx` — отдельный bottom-tab, единый экран «Как я меняюсь?» (PRODUCT.md §11). Последовательный поток: Hero → Stats → Insights → Activity → Strength (с интерактивным селектором упражнений и explainability e1RM) → Weight → PR → RecentWorkouts. Карточки RecentWorkouts используют детерминированный градиент (на основе RPE) и показывают program_name, duration, volume, sets, avg_rpe. Грабли: `workout_exercises` не имеет `exercise_name` (только через embed); skip-тренировки (FIT-7) исключаем через `.is('skipped_at', null)`.
 - **Progression rules (ENG-1)**: src/engine/progression.ts — чистая функция calculateProgression({sets, repsRange, stepKg}). 8 правил в порядке приоритета: MAX_EFFORT (RPE 10 → decrease), READY_TO_PROGRESS (allAtMax + RPE ≤ 7 → increase), ALL_MAX_REPS (allAtMax без RPE → increase), HIGH_RPE_HOLD (RPE ≥ 9), CONSOLIDATE (allAtMin), OVERREACHED (allBelowMin → decrease), MISSED_REPS (anyBelowMin), INCONCLUSIVE (fallback hold). Reason codes machine-readable (ENG-2/B5 foundation). SetsGrid рендерит one-liner recommendation + подсвечивает smallest chip при increase. Данные: previous session (SetData.previousWeight/Reps/Rpe) + текущие завершённые сеты (live recompute). repsRange парсится из ExerciseData.reps_range. Step: 2.5 кг / 5 lb.
 - **Progression engine (ENG-1/ENG-2)**: src/engine/progression.ts — чистые функции без React/Supabase. calculateProgression: 8 правил по приоритету, данные = previous session (SetData.previousWeight/Reps/Rpe) + завершённые сеты текущей сессии (live recompute). explainProgression: массив ExplanationItem (input/signal/conclusion) по reason.code — engine отдаёт сырые данные, UI форматирует. SetsGrid: RecommendationCard c one-liner reason/override в header; тап → expanded «Почему?» + «Скрыть» (dismissed локально; persistence отложен до COACH-3). Директория src/engine/ — архитектурный задел для B2 readiness, B4 alternatives ranking, B5 explainability.
 - **Safety precedence (ENG-4)**: src/engine/progression.ts — applySafetyPrecedence(base, safety) применяет PRODUCT.md §8 priority: injury/pain constraints > training constraints > recommendation > AI. 4 правила в порядке приоритета: stopExercise → PAIN_STOPPED (suppress, no_data); warning.level=avoid → INJURY_AVOID (suppress); hasPain + base.increase → PAIN_RECORDED (downgrade to hold); warning.level=caution + base.increase → INJURY_CAUTION (downgrade to hold). SetsGrid получает safetyContext из ExerciseCard (painState + warning.level, стабильная ссылка через useMemo). Safety downgrade визуально отделён: warning color + выключенный chip highlight (не предлагаем +2.5 при боли). Injury_exercise_warnings hard constraint — Engine никогда не обходит. ExerciseWarningBanner на L1 не затронут — показывает причину параллельно.
@@ -448,6 +445,10 @@ When adding/removing/renaming a meaningful screen, hook, service, shared compone
 3. do not copy technical rules from `CLAUDE.md` here;
 4. do not copy product decisions from `PRODUCT.md` here.
 
-### Recent additions (COACH-4 / COACH-5)
+### Recent additions (COACH-4 / COACH-5 / UX-11)
 - `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
-- `src/components/progress/WeeklyReviewBlock.tsx` — COACH-5: weekly review UI в Progress hub
+- `src/components/progress/ProgressHero.tsx` — UX-11: главный ответ «Что сейчас происходит с моим прогрессом?»
+- `src/components/progress/ProgressStats.tsx` — UX-11: 3 ключевых показателя (тренировки, объём, серия)
+- `src/components/progress/ProgressInsights.tsx` — UX-11: детерминированные инсайты (сила, объём, вес, PR) без AI
+- `src/components/progress/RecentWorkouts.tsx` — UX-11: последние 3–5 тренировок с информативными карточками (детерминированный градиент, program_name, duration, avg_rpe)
+- `src/components/progress/StrengthTrendChart.tsx` — UX-11: тренд e1RM с интерактивным селектором упражнений и explainability

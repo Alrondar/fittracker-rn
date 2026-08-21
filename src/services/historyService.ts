@@ -9,6 +9,9 @@ export interface HistoryWorkout {
   created_at: string;
   volume: number;
   sets: number;
+  duration_seconds: number | null;
+  program_name: string | null;
+  avg_rpe: number | null;
 }
 
 export interface HistorySection {
@@ -29,14 +32,14 @@ export interface HistoryData {
 
 // ============================================================================
 // ВНУТРЕННИЕ ТИПЫ JOIN-СТРУКТУР (ARCH-6: вместо any)
-// Локальные интерфейсы отражают ровно то, что уходит в select — это устойчивее
-// к рассинхрону database.types.ts, чем автогенерированные Tables[...]['Row'].
 // ============================================================================
 
-/** getHistory: select('id, name, created_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )') */
+/** getHistory: select('id, name, created_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe ) )')
+ *  program_id хранится без FK на programs — имена программ дозапрашиваем отдельным батч-запросом, чтобы не падать с PGRST200. */
 interface HistoryLogRow {
   weight_kg: number | null;
   reps: number | null;
+  rpe: number | null;
 }
 interface HistoryExerciseRow {
   id: string;
@@ -46,6 +49,9 @@ interface HistoryWorkoutRow {
   id: string;
   name: string;
   created_at: string;
+  finished_at: string | null;
+  duration_seconds: number | null;
+  program_id: string | null;
   workout_exercises: HistoryExerciseRow[] | null;
 }
 
@@ -65,6 +71,21 @@ function calculateSets(workout: HistoryWorkoutRow): number {
     sets += ex.workout_logs?.length || 0;
   });
   return sets;
+}
+
+function calculateAvgRpe(workout: HistoryWorkoutRow): number | null {
+  let sum = 0;
+  let count = 0;
+  (workout.workout_exercises ?? []).forEach((ex) => {
+    (ex.workout_logs ?? []).forEach((log) => {
+      if (log.rpe != null) {
+        sum += Number(log.rpe);
+        count += 1;
+      }
+    });
+  });
+  if (count === 0) return null;
+  return Math.round((sum / count) * 10) / 10;
 }
 
 function groupByMonth(workouts: HistoryWorkout[]): HistorySection[] {
@@ -101,23 +122,51 @@ function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
 export async function getHistory(userId: string): Promise<HistoryData> {
   const { data, error } = await supabase
     .from('workouts')
-    .select('id, name, created_at, finished_at, workout_exercises ( id, workout_logs ( weight_kg, reps ) )')
+.select(
+  'id, name, created_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe ) )',
+    )
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as (HistoryWorkoutRow & { finished_at: string | null })[];
+  const rows = (data ?? []) as unknown as HistoryWorkoutRow[];
 
-  // Включаем завершённые тренировки (finished_at IS NOT NULL), даже если логов нет (например, пропуск или пустая тренировка)
+  // Батч-запрос имён программ: собираем уникальные program_id и одним запросом
+  // вытаскиваем name. Ошибка здесь не должна ронять всю историю — ловим локально.
+  const programIds = Array.from(
+    new Set(rows.map((r) => r.program_id).filter((v): v is string => !!v)),
+  );
+  let programNames: Record<string, string> = {};
+  if (programIds.length > 0) {
+    try {
+      const { data: programRows, error: programsError } = await supabase
+        .from('programs')
+        .select('id, name')
+        .in('id', programIds);
+      if (!programsError && programRows) {
+        programNames = Object.fromEntries(programRows.map((p) => [p.id, p.name]));
+      }
+    } catch {
+      // ignore — history должна жить даже если programs недоступны
+    }
+  }
+
   const completed: HistoryWorkout[] = rows
-    .filter((w) => w.finished_at !== null || (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0))
+    .filter(
+      (w) =>
+        w.finished_at !== null ||
+        (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0),
+    )
     .map((w) => ({
       id: w.id,
       name: w.name,
       created_at: w.created_at,
       volume: calculateVolume(w),
       sets: calculateSets(w),
+      duration_seconds: w.duration_seconds ?? null,
+      program_name: w.program_id ? (programNames[w.program_id] ?? null) : null,
+      avg_rpe: calculateAvgRpe(w),
     }));
 
   return {
@@ -128,6 +177,7 @@ export async function getHistory(userId: string): Promise<HistoryData> {
 
 // ============================================================================
 // ДЕТАЛИ ТРЕНИРОВКИ (для history/[id].tsx) — SEC-10
+// Остальной код без изменений (сохраняем существующий контракт).
 // ============================================================================
 
 /** getWorkoutDetail: вложенный select с exercises(name) и workout_logs(id,set_number,weight_kg,reps) */
@@ -212,7 +262,6 @@ export async function getWorkoutDetail(
     .eq('id', workoutId)
     .maybeSingle();
 
-  // Различаем "не найдено" и "сетевая ошибка"
   if (error) {
     if (error.code === 'PGRST116') {
       return { data: null, error: { notFound: true, message: 'Тренировка не найдена' } };
