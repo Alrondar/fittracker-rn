@@ -197,6 +197,7 @@ Components:
 - `dashboard/CircularNutritionChart.tsx` (AUDIT-1: SVG-кольца — макросы-сегменты снаружи / калории / вода внутри при >0; центр: ккал + осталось + 🔥-бейдж)
 - `dashboard/NutritionWeekTable.tsx` (AUDIT-1: стр. 2 карточки — таблица КБЖУ+вода за 7 дней; lazy mount после первого свайпа, performance gate §8)
 - `dashboard/NutritionAddModal.tsx` (AUDIT-1: L2-модалка ввода приёма пищи: meal type picker + КБЖУ+вода; `Modal` + `SheetShell`)
+- `dashboard/NutritionLogListModal.tsx` (NUTRI-2: L2-модалка списка записей за день: тап → редактирование, удаление с подтверждением; SheetShell)
 - `dashboard/StatusCard.tsx` (AUDIT-6: «Состояние сегодня» — readiness мини-кольцо + tappable pips 1–5 (haptics), чипы активных травм (SEVERITY_COLORS, tap → `/profile/injuries`), «⚠ Боль сегодня», строка-следствие; owns ReadinessSheet)
 - `dashboard/ContextInsightCard.tsx` (COACH-4: компактный инсайт L1)
 - `ActivityCalendar`
@@ -312,6 +313,7 @@ Important components:
 | `useTodayReadiness`|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4)|
 | `useWeeklySummary`|Dashboard («Коротко о неделе», COACH-4/COACH-5) + Progress hub|
 | `useTodayPain`|StatusCard (AUDIT-6: «⚠ Боль сегодня»)|
+| `useNutritionLogs` |NutritionLogListModal (NUTRI-2: CRUD записей за день, инвалидация daily/weekly/burned)|
 
 ## 8. Service dependency map
 
@@ -449,8 +451,10 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Weekly summary (ENG-6)**: getWeeklySummary(userId, weekOffset) — 3 параллельных запроса на неделю (workouts+logs, pain_events, daily_readiness) + один pre-week запрос для PR-detection (PR = e1rm недели > pre-week best, только при наличии baseline). Skip-тренировки исключены через .is('skipped_at','null') (FIT-7); имена через embed exercises(name). Инсайты срабатывают только при выполненном условии: VOLUME_UP/DOWN/STABLE (±10%), NEW_PR, PAIN_SPIKE (≥3 или ≥2 в одной зоне), LOW/HIGH_READINESS (<3 / ≥4.5 при ≥3 записях), HIGH_RPE_WEEK (≥8.5 при ≥5 сетах), CONSISTENT_WEEK (≥4). UI — COACH-5.
 - **Readiness in engine (ENG-3)**: applyReadinessContext применяется в SetsGrid цепочкой base → applySafetyPrecedence → applyReadinessContext. Приоритет PRODUCT.md §8 закреплён порядком + guard'ом: если safetyOverride установлен — readiness no-op. Правила: readiness null (нет check-in) → no-op (§7); readiness 1–2 + base increase → hold с readinessOverride LOW_READINESS; readiness 3–5 → no-op. Визуально system downgrade (safety или readiness) делит warning color; текст one-liner в RecommendationCard: safetyOverride ?? readinessOverride ?? reason.ruText. useTodayReadiness: staleTime 1h; данные собираются ReadinessSheet (FEAT-1.8).
 - **Burned calories (AUDIT-1)**: profileService.getBurnedCalories(userId, days) сам читает вес из profiles и возвращает number | null (null — вес не задан, UI скрывает 🔥-бейдж, не выдумывая данные). Feature существует только на Dashboard; из профиля блок удалён. dashboardService coerces null → 0 для недельной статистики.
-- **SheetShell принимает visible?: boolean (false → null)**. Модалки Dashboard (ReadinessSheet, DaySummaryCard, NutritionAddModal) рендерятся в конце экрана вне ScrollView — рендер внутри ScrollView ломает overlay (грабля AUDIT-1).
+- **SheetShell принимает visible?: boolean (false → null)**. Модалки Dashboard (ReadinessSheet, DaySummaryCard, NutritionAddModal, NutritionLogListModal) рендерятся в конце экрана вне ScrollView — рендер внутри ScrollView ломает overlay (грабля AUDIT-1).
 - **StatusCard (AUDIT-6)**: readiness мини-кольцо (SVG, consistency с `CircularNutritionChart`) + 5 pips для quick-set через `readinessService.upsertToday` с null-полями (не выдумываем данные); haptics на tap. Чипы травм: ≤2 + «+N», tap → `/profile/injuries` (href без `(tabs)` — route group не входит в URL). Строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8): боль/травма → «Замены и нагрузка учтут ограничения», иначе readiness ≤ 2 → «Сегодня без повышения нагрузки», иначе «Нагрузка по плану». Травмы и readiness — независимые сигналы (травма руки не снижает готовность ног); `injury_exercise_warnings` — hard constraint на уровне тренировки. ReadinessSheet инвалидирует `['todayReadiness', userId]` после сохранения; quick-set также инвалидирует — кэш не stale. «⚠ Боль сегодня» — информационный чип (не кликабельный, отдельного экрана боли нет; боль фиксируется per-exercise через PainSheet).
+- **src/components/dashboard/NutritionLogListModal.tsx** — NUTRI-2: список/редактирование/удаление записей питания за день
+- **src/hooks/useNutritionLogs.ts** — NUTRI-2: React Query список + мутации, инвалидация питания и сожжённых калорий
 
 ## 13. Inventory maintenance
 

@@ -44,6 +44,20 @@ export interface WeeklyNutritionDay {
   hasLogs: boolean;
 }
 
+// NUTRI-2: запись питания для CRUD
+export interface NutritionLog {
+  id: string;
+  user_id: string;
+  log_date: string;
+  meal_type: string;
+  calories: number;
+  proteins: number;
+  fats: number;
+  carbs: number;
+  water_ml: number;
+  created_at: string;
+}
+
 export interface PersonalRecord {
   name: string;
   maxWeight: number;
@@ -54,7 +68,9 @@ export interface PersonalRecord {
 
 export const profileService = {
   async getProfileData(userId: string): Promise<ProfileData> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     // maybeSingle: если профиля ещё нет — вернёт null без ошибки PGRST116
     const { data: profileData } = await supabase
@@ -65,7 +81,10 @@ export const profileService = {
 
     return {
       email: user?.email || '',
-      username: profileData?.username || user?.email?.split('@')[0] || 'Пользователь',
+      username:
+        profileData?.username ||
+        user?.email?.split('@')[0] ||
+        'Пользователь',
       fullName: profileData?.full_name || null,
       avatarUrl: profileData?.avatar_url || null,
       weight: profileData?.current_weight_kg
@@ -81,6 +100,7 @@ export const profileService = {
       .from('profiles')
       .update({ full_name: fullName })
       .eq('id', userId);
+
     if (error) throw error;
   },
 
@@ -98,15 +118,20 @@ export const profileService = {
 
     let totalVolume = 0;
     let totalWorkouts = 0;
+
     workouts?.forEach((workout: any) => {
       const hasLogs = workout.workout_exercises?.some(
         (ex: any) => ex.workout_logs?.length > 0,
       );
+
       if (hasLogs) {
         totalWorkouts++;
+
         workout.workout_exercises?.forEach((ex: any) => {
           ex.workout_logs?.forEach((log: any) => {
-            totalVolume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
+            totalVolume +=
+              (parseFloat(log.weight_kg) || 0) *
+              (parseInt(log.reps) || 0);
           });
         });
       }
@@ -137,6 +162,7 @@ export const profileService = {
 
   async getDailyNutrition(userId: string): Promise<DailyNutrition> {
     const today = new Date().toISOString().split('T')[0];
+
     const { data } = await supabase
       .from('nutrition_logs')
       .select('calories, proteins, fats, carbs, water_ml')
@@ -145,8 +171,15 @@ export const profileService = {
       .neq('meal_type', 'workout');
 
     if (!data || data.length === 0) {
-      return { calories: 0, proteins: 0, fats: 0, carbs: 0, water_ml: 0 };
+      return {
+        calories: 0,
+        proteins: 0,
+        fats: 0,
+        carbs: 0,
+        water_ml: 0,
+      };
     }
+
     return data.reduce(
       (acc, log) => ({
         calories: acc.calories + (log.calories || 0),
@@ -155,14 +188,25 @@ export const profileService = {
         carbs: acc.carbs + (log.carbs || 0),
         water_ml: acc.water_ml + (log.water_ml || 0),
       }),
-      { calories: 0, proteins: 0, fats: 0, carbs: 0, water_ml: 0 },
+      {
+        calories: 0,
+        proteins: 0,
+        fats: 0,
+        carbs: 0,
+        water_ml: 0,
+      },
     );
   },
 
-  // FEAT-2.1: недельная агрегация питания (один запрос, группировка по дням на клиенте)
-  async getWeeklyNutrition(userId: string, days: number = 7): Promise<WeeklyNutritionDay[]> {
+  // FEAT-2.1: недельная агрегация питания
+  // один запрос, группировка по дням на клиенте
+  async getWeeklyNutrition(
+    userId: string,
+    days: number = 7,
+  ): Promise<WeeklyNutritionDay[]> {
     const now = new Date();
-    const startMs = now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
+    const startMs =
+      now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
     const startISO = new Date(startMs).toISOString().split('T')[0];
 
     const { data, error } = await supabase
@@ -171,12 +215,19 @@ export const profileService = {
       .eq('user_id', userId)
       .neq('meal_type', 'workout')
       .gte('log_date', startISO);
+
     if (error) throw error;
 
-    // инициализируем все дни недели, чтобы в графике не было дыр
+    // Инициализируем все дни недели, чтобы в графике не было дыр.
     const byDate = new Map<string, WeeklyNutritionDay>();
+
     for (let i = 0; i < days; i++) {
-      const d = new Date(startMs + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const d = new Date(
+        startMs + i * 24 * 60 * 60 * 1000,
+      )
+        .toISOString()
+        .split('T')[0];
+
       byDate.set(d, {
         date: d,
         calories: 0,
@@ -187,9 +238,12 @@ export const profileService = {
         hasLogs: false,
       });
     }
+
     (data ?? []).forEach((log) => {
       const day = byDate.get(log.log_date);
+
       if (!day) return;
+
       day.hasLogs = true;
       day.calories += log.calories || 0;
       day.proteins += log.proteins || 0;
@@ -197,81 +251,128 @@ export const profileService = {
       day.carbs += log.carbs || 0;
       day.water_ml += log.water_ml || 0;
     });
+
     return Array.from(byDate.values());
   },
 
-// AUDIT-1: сожжённые калории за период. Вес берётся из profiles внутри сервиса
-// (feature убран из профиля, остаётся только на Dashboard).
-// Возвращает null, если вес в профиле не задан — UI скрывает 🔥-бейдж, не выдумывая данные.
-async getBurnedCalories(userId: string, days: number = 1): Promise<number | null> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('current_weight_kg')
-    .eq('id', userId)
-    .maybeSingle();
-  const userWeight = profile?.current_weight_kg
-    ? parseFloat(profile.current_weight_kg)
-    : null;
-  if (!userWeight) return null;
+  // AUDIT-1 / NUTRI-1:
+  // сожжённые калории за период.
+  // Вес берётся из profiles внутри сервиса.
+  // Возвращает null, если вес в профиле не задан.
+  async getBurnedCalories(
+    userId: string,
+    days: number = 1,
+  ): Promise<number | null> {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('current_weight_kg')
+      .eq('id', userId)
+      .maybeSingle();
 
-  let startISO: string;
-  let endISO: string;
-  if (days === 1) {
-    // Сохраняем семантику «за сегодня» (от начала дня до конца дня)
-    const today = new Date().toISOString().split('T')[0];
-    startISO = `${today}T00:00:00+00:00`;
-    endISO = `${today}T23:59:59+00:00`;
-  } else {
-    // Для периода — последние N дней
-    const now = new Date();
-    const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    startISO = start.toISOString();
-    endISO = now.toISOString();
-  }
-  const { data: periodWorkouts } = await supabase
-    .from('workouts')
-    .select('id, created_at')
-    .eq('user_id', userId)
-    .gte('created_at', startISO)
-    .lte('created_at', endISO);
-  if (!periodWorkouts || periodWorkouts.length === 0) return 0;
-  const workoutIds = periodWorkouts.map((w) => w.id);
-  // ✅ Устранён N+1: один запрос всех логов за период вместо запроса на каждую тренировку
-  const { data: logs } = await supabase
-    .from('workout_logs')
-    .select('completed_at, workout_exercises!inner (workout_id)')
-    .in('workout_exercises.workout_id', workoutIds)
-    .order('completed_at', { ascending: true });
-  const logsByWorkout = new Map<string, number[]>();
-  logs?.forEach((log: any) => {
-    const workoutId = log.workout_exercises?.workout_id;
-    if (!workoutId) return;
-    const t = new Date(log.completed_at).getTime();
-    if (!logsByWorkout.has(workoutId)) logsByWorkout.set(workoutId, []);
-    logsByWorkout.get(workoutId)!.push(t);
-  });
-  let totalBurned = 0;
-  logsByWorkout.forEach((times) => {
-    if (times.length >= 2) {
-      const firstLog = Math.min(...times);
-      const lastLog = Math.max(...times);
-      const durationHours = Math.max(0, (lastLog - firstLog) / 1000 / 3600);
-      totalBurned += 5.0 * userWeight * durationHours;
+    const userWeight = profile?.current_weight_kg
+      ? parseFloat(profile.current_weight_kg)
+      : null;
+
+    if (!userWeight) return null;
+
+    let startISO: string;
+    let endISO: string;
+
+    if (days === 1) {
+      const today = new Date().toISOString().split('T')[0];
+
+      startISO = `${today}T00:00:00+00:00`;
+      endISO = `${today}T23:59:59+00:00`;
     } else {
-      // Fallback: тренировка без логов ≈ 45 минут
-      totalBurned += 5.0 * userWeight * (45 / 60);
-    }
-  });
-  return Math.round(totalBurned);
-},
+      const now = new Date();
+      const start = new Date(
+        now.getTime() - days * 24 * 60 * 60 * 1000,
+      );
 
-  async getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
+      startISO = start.toISOString();
+      endISO = now.toISOString();
+    }
+
+    // NUTRI-1:
+    // Используем finished_at — фактическое время завершения тренировки,
+    // а не created_at.
+    //
+    // Учитываем только завершённые тренировки.
+    const { data: periodWorkouts } = await supabase
+      .from('workouts')
+      .select('id, finished_at')
+      .eq('user_id', userId)
+      .not('finished_at', 'is', null)
+      .gte('finished_at', startISO)
+      .lte('finished_at', endISO);
+
+    if (!periodWorkouts || periodWorkouts.length === 0) {
+      return 0;
+    }
+
+    const workoutIds = periodWorkouts.map((w) => w.id);
+
+    // Устранён N+1: один запрос всех логов за период.
+    const { data: logs } = await supabase
+      .from('workout_logs')
+      .select(
+        'completed_at, workout_exercises!inner (workout_id)',
+      )
+      .in('workout_exercises.workout_id', workoutIds)
+      .order('completed_at', { ascending: true });
+
+    const logsByWorkout = new Map<string, number[]>();
+
+    logs?.forEach((log: any) => {
+      const workoutId = log.workout_exercises?.workout_id;
+
+      if (!workoutId) return;
+
+      const t = new Date(log.completed_at).getTime();
+
+      if (!logsByWorkout.has(workoutId)) {
+        logsByWorkout.set(workoutId, []);
+      }
+
+      logsByWorkout.get(workoutId)!.push(t);
+    });
+
+    let totalBurned = 0;
+
+    logsByWorkout.forEach((times) => {
+      if (times.length >= 2) {
+        const firstLog = Math.min(...times);
+        const lastLog = Math.max(...times);
+
+        const durationHours = Math.max(
+          0,
+          (lastLog - firstLog) / 1000 / 3600,
+        );
+
+        totalBurned +=
+          5.0 * userWeight * durationHours;
+      } else {
+        // Fallback: тренировка без логов ≈ 45 минут.
+        totalBurned +=
+          5.0 * userWeight * (45 / 60);
+      }
+    });
+
+    return Math.round(totalBurned);
+  },
+
+  async getPersonalRecords(
+    userId: string,
+  ): Promise<PersonalRecord[]> {
     const { data: userWorkouts } = await supabase
       .from('workouts')
       .select('id')
       .eq('user_id', userId);
 
-    if (!userWorkouts || userWorkouts.length === 0) return [];
+    if (!userWorkouts || userWorkouts.length === 0) {
+      return [];
+    }
+
     const workoutIds = userWorkouts.map((w) => w.id);
 
     const { data: workoutExercises } = await supabase
@@ -279,15 +380,28 @@ async getBurnedCalories(userId: string, days: number = 1): Promise<number | null
       .select('id, exercise_id')
       .in('workout_id', workoutIds);
 
-    if (!workoutExercises || workoutExercises.length === 0) return [];
-    const exerciseIds = [...new Set(workoutExercises.map((we) => we.exercise_id))];
-    const workoutExerciseIds = workoutExercises.map((we) => we.id);
+    if (!workoutExercises || workoutExercises.length === 0) {
+      return [];
+    }
+
+    const exerciseIds = [
+      ...new Set(
+        workoutExercises.map((we) => we.exercise_id),
+      ),
+    ];
+
+    const workoutExerciseIds = workoutExercises.map(
+      (we) => we.id,
+    );
 
     const { data: exercises } = await supabase
       .from('exercises')
       .select('id, name')
       .in('id', exerciseIds);
-    const exerciseNameMap = new Map(exercises?.map((e) => [e.id, e.name]) || []);
+
+    const exerciseNameMap = new Map(
+      exercises?.map((e) => [e.id, e.name]) || [],
+    );
 
     const { data: logs } = await supabase
       .from('workout_logs')
@@ -295,61 +409,157 @@ async getBurnedCalories(userId: string, days: number = 1): Promise<number | null
       .in('workout_exercise_id', workoutExerciseIds)
       .order('weight_kg', { ascending: false });
 
-    const exerciseRecords: Record<string, PersonalRecord> = {};
+    const exerciseRecords: Record<
+      string,
+      PersonalRecord
+    > = {};
+
     logs?.forEach((log: any) => {
       const workoutExercise = workoutExercises.find(
-        (we) => we.id === log.workout_exercise_id,
+        (we) =>
+          we.id === log.workout_exercise_id,
       );
+
       if (!workoutExercise) return;
-      const exerciseId = workoutExercise.exercise_id;
-      const exerciseName = exerciseNameMap.get(exerciseId);
+
+      const exerciseId =
+        workoutExercise.exercise_id;
+
+      const exerciseName =
+        exerciseNameMap.get(exerciseId);
+
       if (!exerciseName) return;
-      const weight = parseFloat(log.weight_kg) || 0;
-      const reps = parseInt(log.reps) || 0;
+
+      const weight =
+        parseFloat(log.weight_kg) || 0;
+
+      const reps =
+        parseInt(log.reps) || 0;
+
       const setE1rm = epley(weight, reps);
-      const existing = exerciseRecords[exerciseId];
+
+      const existing =
+        exerciseRecords[exerciseId];
+
       if (!existing || weight > existing.maxWeight) {
         exerciseRecords[exerciseId] = {
           name: exerciseName,
           maxWeight: weight,
           reps,
-          // лучший e1RM по всем сетам: лёгкий многоповторный сет может дать больше
-          e1rm: Math.max(setE1rm, existing?.e1rm ?? 0),
+          e1rm: Math.max(
+            setE1rm,
+            existing?.e1rm ?? 0,
+          ),
         };
-      } else if (setE1rm > existing.e1rm) {
+      } else if (
+        setE1rm > existing.e1rm
+      ) {
         existing.e1rm = setE1rm;
       }
     });
 
     return Object.values(exerciseRecords)
-      .filter((record) => record.maxWeight > 0)
-      .sort((a, b) => b.maxWeight - a.maxWeight)
+      .filter(
+        (record) => record.maxWeight > 0,
+      )
+      .sort(
+        (a, b) =>
+          b.maxWeight - a.maxWeight,
+      )
       .slice(0, 5);
   },
 
   async saveNutritionLog(
     userId: string,
-    data: { calories: number; proteins: number; fats: number; carbs: number; water_ml: number; meal_type: string },
+    data: {
+      calories: number;
+      proteins: number;
+      fats: number;
+      carbs: number;
+      water_ml: number;
+      meal_type: string;
+    },
   ): Promise<void> {
-    const today = new Date().toISOString().split('T')[0];
-    const { error } = await supabase.from('nutrition_logs').insert({
-      user_id: userId,
-      log_date: today,
-      ...data,
-    });
+    const today =
+      new Date().toISOString().split('T')[0];
+
+    const { error } = await supabase
+      .from('nutrition_logs')
+      .insert({
+        user_id: userId,
+        log_date: today,
+        ...data,
+      });
+
+    if (error) throw error;
+  },
+
+  // NUTRI-2: CRUD записей питания за день.
+  async getNutritionLogs(
+    userId: string,
+    date?: string,
+  ): Promise<NutritionLog[]> {
+    const logDate =
+      date ||
+      new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('nutrition_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('log_date', logDate)
+      .neq('meal_type', 'workout')
+      .order('created_at', {
+        ascending: false,
+      });
+
+    if (error) throw error;
+
+    return (data || []) as NutritionLog[];
+  },
+
+  async updateNutritionLog(
+    id: string,
+    data: Partial<
+      Omit<
+        NutritionLog,
+        'id' | 'user_id' | 'created_at'
+      >
+    >,
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('nutrition_logs')
+      .update(data)
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async deleteNutritionLog(
+    id: string,
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('nutrition_logs')
+      .delete()
+      .eq('id', id);
+
     if (error) throw error;
   },
 };
 
 // ============================================================================
-// ТРАВМЫ — standalone-функции (для useInjuryWarnings и warmupService)
+// ТРАВМЫ — standalone-функции
 // ============================================================================
 
 /** Активные травмы пользователя (все, кроме полностью восстановленных). */
-export async function getActiveInjuries(userId: string): Promise<UserInjury[]> {
+export async function getActiveInjuries(
+  userId: string,
+): Promise<UserInjury[]> {
   const { data, error } = await supabase
     .from('user_injuries')
-    .select('body_part, injury_type, severity')
+    .select(
+      'body_part, injury_type, severity',
+    )
     .eq('user_id', userId)
     .neq('status', 'recovered');
 
@@ -359,13 +569,18 @@ export async function getActiveInjuries(userId: string): Promise<UserInjury[]> {
 }
 
 /**
- * Правила предупреждений (body_part → muscle_group → рекомендация).
- * Таблица может отсутствовать — возвращаем пустой список, не роняем.
+ * Правила предупреждений
+ * (body_part → muscle_group → рекомендация).
+ * Таблица может отсутствовать — возвращаем пустой список.
  */
-export async function getInjuryWarningRules(): Promise<WarningRule[]> {
+export async function getInjuryWarningRules(): Promise<
+  WarningRule[]
+> {
   const { data, error } = await supabase
     .from('injury_exercise_warnings')
-    .select('body_part, muscle_group, recommendation');
+    .select(
+      'body_part, muscle_group, recommendation',
+    );
 
   if (error) return [];
 
