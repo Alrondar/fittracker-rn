@@ -5,7 +5,6 @@ import {
   SectionList,
   RefreshControl,
   TouchableOpacity,
-  Modal,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -387,16 +386,11 @@ export default function WorkoutsScreen() {
       )}
 
       {/* UX-5 Feature 2: skip workout — bottom sheet с подтверждением */}
-      <Modal
-        transparent
+      <SheetShell
         visible={!!skipTarget}
-        animationType="slide"
-        onRequestClose={() => !skipping && setSkipTarget(null)}
+        title="Пропустить тренировку?"
+        onClose={() => !skipping && setSkipTarget(null)}
       >
-        <SheetShell
-          title="Пропустить тренировку?"
-          onClose={() => !skipping && setSkipTarget(null)}
-        >
           {skipTarget && (
             <>
               <Text
@@ -454,9 +448,8 @@ export default function WorkoutsScreen() {
                 <Text style={[typography.button, { color: colors.textSecondary }]}>Отмена</Text>
               </TouchableOpacity>
             </>
-          )}
-        </SheetShell>
-      </Modal>
+            )}
+            </SheetShell>
     </SafeAreaView>
   );
 }

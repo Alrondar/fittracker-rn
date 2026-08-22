@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Modal,
   FlatList,
   Switch,
 } from 'react-native';
@@ -31,6 +30,7 @@ import {
   RPE_PROMPT_DESCRIPTIONS,
 } from '../../src/hooks/useRpeSettings';
 import { SectionHeader } from '../../src/components/SectionHeader';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 import { WorkoutDisplayModePicker } from '../../src/components/workout/WorkoutDisplayModePicker';
 import {
   ChevronLeft,
@@ -780,46 +780,19 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Модальное окно выбора цветовой схемы */}
-      <Modal
+      {/* Sheet выбора цветовой схемы (INVENTORY §6: SheetShell паттерн) */}
+      <SheetShell
         visible={showThemeModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowThemeModal(false)}
+        title="Выберите цветовую схему"
+        onClose={() => setShowThemeModal(false)}
       >
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-          <View
-            style={{
-              backgroundColor: colors.background,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              maxHeight: '80%',
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: SPACING.xl,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border,
-              }}
-            >
-              <Text style={[typography.h3, { color: colors.textPrimary }]}>Выберите цветовую схему</Text>
-              <TouchableOpacity onPress={() => setShowThemeModal(false)}>
-                <Text style={[typography.buttonSmall, { color: colors.primary }]}>Закрыть</Text>
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={availableAccents}
-              renderItem={renderThemeOption}
-              keyExtractor={(item) => item.key}
-              contentContainerStyle={{ padding: SPACING.lg }}
-            />
-          </View>
-        </View>
-      </Modal>
+        <FlatList
+          data={availableAccents}
+          renderItem={renderThemeOption}
+          keyExtractor={(item) => item.key}
+          scrollEnabled={false}
+        />
+      </SheetShell>
     </SafeAreaView>
   );
 }

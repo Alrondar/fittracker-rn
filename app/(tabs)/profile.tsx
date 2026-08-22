@@ -5,9 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -25,6 +22,7 @@ import { MacroPieChart } from '../../src/components/profile/MacroPieChart';
 // FEAT-2.1: недельная карточка (создать файл, если ещё нет)
 import { NutritionWeekCard } from '../../src/components/profile/NutritionWeekCard';
 import { SectionHeader } from '../../src/components/SectionHeader';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 import { MACRO_COLORS } from '../../src/constants/semanticColors';
 import * as Haptics from 'expo-haptics';
 import {
@@ -414,89 +412,55 @@ const {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Модалка питания — обёрнута в KeyboardAvoidingView, чтобы поля не уходили под клавиатуру */}
-      <Modal
+      {/* Sheet питания (INVENTORY §6: SheetShell паттерн) */}
+      <SheetShell
         visible={showNutritionSheet}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowNutritionSheet(false)}
+        title="Добавить приём пищи"
+        onClose={() => setShowNutritionSheet(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-        >
-          <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-            <View
-              style={{
-                backgroundColor: colors.background,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                maxHeight: '70%',
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: SPACING.xl,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <Text style={[typography.h3, { color: colors.textPrimary }]}>Добавить приём пищи</Text>
-                <TouchableOpacity onPress={() => setShowNutritionSheet(false)}>
-                  <X size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
-                <AppInput
-                  label="Калории (ккал)"
-                  placeholder="0"
-                  value={inputCalories}
-                  onChangeText={setInputCalories}
-                  keyboardType="numeric"
-                />
-                <AppInput
-                  label="Белки (г)"
-                  placeholder="0"
-                  value={inputProteins}
-                  onChangeText={setInputProteins}
-                  keyboardType="numeric"
-                />
-                <AppInput
-                  label="Жиры (г)"
-                  placeholder="0"
-                  value={inputFats}
-                  onChangeText={setInputFats}
-                  keyboardType="numeric"
-                />
-                <AppInput
-                  label="Углеводы (г)"
-                  placeholder="0"
-                  value={inputCarbs}
-                  onChangeText={setInputCarbs}
-                  keyboardType="numeric"
-                />
-                <AppInput
-                  label="Вода (мл)"
-                  placeholder="0"
-                  value={inputWater}
-                  onChangeText={setInputWater}
-                  keyboardType="numeric"
-                />
-                <AppButton
-                  title="Сохранить"
-                  variant="primary"
-                  size="large"
-                  onPress={handleSaveNutrition}
-                  style={{ marginTop: SPACING.md }}
-                />
-              </ScrollView>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        <AppInput
+          label="Калории (ккал)"
+          placeholder="0"
+          value={inputCalories}
+          onChangeText={setInputCalories}
+          keyboardType="numeric"
+        />
+        <AppInput
+          label="Белки (г)"
+          placeholder="0"
+          value={inputProteins}
+          onChangeText={setInputProteins}
+          keyboardType="numeric"
+        />
+        <AppInput
+          label="Жиры (г)"
+          placeholder="0"
+          value={inputFats}
+          onChangeText={setInputFats}
+          keyboardType="numeric"
+        />
+        <AppInput
+          label="Углеводы (г)"
+          placeholder="0"
+          value={inputCarbs}
+          onChangeText={setInputCarbs}
+          keyboardType="numeric"
+        />
+        <AppInput
+          label="Вода (мл)"
+          placeholder="0"
+          value={inputWater}
+          onChangeText={setInputWater}
+          keyboardType="numeric"
+        />
+        <AppButton
+          title="Сохранить"
+          variant="primary"
+          size="large"
+          onPress={handleSaveNutrition}
+          style={{ marginTop: SPACING.md }}
+        />
+      </SheetShell>
     </SafeAreaView>
   );
 }

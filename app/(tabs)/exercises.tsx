@@ -27,9 +27,10 @@ import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
 
-// Цвет группы мышц — из единых констант
-const getGroupColor = (groupName: string): string =>
-  MUSCLE_COLORS[groupName.toLowerCase()] || '#6B7280';
+// Цвет группы мышц — из единых констант (fallback — semantic token)
+// getGroupColor теперь принимает colors для fallback
+const getGroupColor = (groupName: string, colors: any): string =>
+  MUSCLE_COLORS[groupName.toLowerCase()] || colors.textSecondary;
 
 // ===== Мемоизированная строка списка =====
 interface ExerciseRowProps {
@@ -253,6 +254,12 @@ export default function ExercisesScreen() {
 
   const groupNames = Object.keys(MUSCLE_GROUPS);
 
+  // Memoized group color getter with theme fallback
+  const getGroupColorForTheme = useCallback(
+    (groupName: string): string => getGroupColor(groupName, colors),
+    [colors],
+  );
+
   return (
     <SafeAreaView
       style={[commonStyles.container, { backgroundColor: colors.background }]}
@@ -393,7 +400,7 @@ export default function ExercisesScreen() {
             const muscles = MUSCLE_GROUPS[groupName];
             const isActive = activeGroup === groupName;
             const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
-            const groupColor = getGroupColor(groupName);
+            const groupColor = getGroupColorForTheme(groupName);
             return (
               <TouchableOpacity
                 key={groupName}

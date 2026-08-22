@@ -6,7 +6,6 @@ import {
   RefreshControl,
   TouchableOpacity,
   TextInput,
-  Modal,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -469,13 +468,8 @@ export default function ProgramsScreen() {
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
-      {/* Модалка формы */}
-      <Modal
-        visible={showCreateModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCreateModal(false)}
-      >
+      {/* Sheet формы (INVENTORY §6: SheetShell паттерн) */}
+      {showCreateModal && (
         <ProgramFormSheet
           editingProgram={editingProgram}
           formName={formName}
@@ -493,15 +487,10 @@ export default function ProgramsScreen() {
           cardStyles={cardStyles}
           buttonStyles={buttonStyles}
         />
-      </Modal>
+      )}
 
-      {/* Модалка импорта по коду */}
-      <Modal
-        visible={showImportModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowImportModal(false)}
-      >
+      {/* Sheet импорта по коду */}
+      {showImportModal && (
         <ImportProgramSheet
           code={importCode}
           onChangeCode={(v) => {
@@ -513,7 +502,7 @@ export default function ProgramsScreen() {
           onImport={handleImport}
           onClose={() => setShowImportModal(false)}
         />
-      </Modal>
+      )}
     </SafeAreaView>
   );
 }

@@ -26,8 +26,6 @@ import { PhaseCard } from '../../../src/components/program/PhaseCard';
 import { ProgramHero } from '../../../src/components/program/ProgramHero';
 import { ProgramEditorModals } from '../../../src/components/program/ProgramEditorModals';
 
-const ON_COLOR = '#FFFFFF';
-
 export default function ProgramEditScreen() {
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
@@ -155,11 +153,11 @@ export default function ProgramEditScreen() {
           }}
         >
           {saving ? (
-            <ActivityIndicator color={ON_COLOR} size="small" />
+            <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
             <>
-              <Save size={18} color={ON_COLOR} strokeWidth={2} />
-              <Text style={[typography.labelBold, { color: ON_COLOR }]}>Сохранить</Text>
+              <Save size={18} color={colors.textInverse} strokeWidth={2} />
+              <Text style={[typography.labelBold, { color: colors.textInverse }]}>Сохранить</Text>
             </>
           )}
         </TouchableOpacity>

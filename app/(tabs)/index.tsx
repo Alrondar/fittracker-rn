@@ -791,7 +791,7 @@ export default function DashboardScreen() {
                   }}
                   onPress={() =>
                     router.push(
-                      '/profile/progress',
+                      '/(tabs)/progress',
                     )
                   }
                 >

@@ -10,9 +10,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +23,7 @@ import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { SectionHeader } from '../../src/components/SectionHeader';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 import {
   METRIC_FIELDS,
   METRIC_GROUPS,
@@ -382,93 +380,58 @@ export default function MetricsScreen() {
         )}
       </ScrollView>
 
-      {/* Модалка добавления замера — обёрнута в KeyboardAvoidingView,
-          чтобы поля не уезжали под клавиатуру на iOS */}
-      <Modal
+      {/* Sheet добавления замера (INVENTORY §6: SheetShell паттерн) */}
+      <SheetShell
         visible={showAddModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowAddModal(false)}
+        title="Новый замер"
+        onClose={() => setShowAddModal(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-        >
-          <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-            <View
-              style={{
-                backgroundColor: colors.background,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                maxHeight: '85%',
-              }}
+        <AppInput
+          label="Дата"
+          value={formData.metric_date}
+          onChangeText={(text) => setFormData({ ...formData, metric_date: text })}
+        />
+        {/* FEAT-2.2: поля по группам (Тело / Руки / Ноги) */}
+        {(Object.keys(METRIC_GROUPS) as MetricGroup[]).map((group) => (
+          <View key={group}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs },
+              ]}
             >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: SPACING.xl,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <Text style={[typography.h3, { color: colors.textPrimary }]}>Новый замер</Text>
-                <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                  <X size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
-                <AppInput
-                  label="Дата"
-                  value={formData.metric_date}
-                  onChangeText={(text) => setFormData({ ...formData, metric_date: text })}
-                />
-                {/* FEAT-2.2: поля по группам (Тело / Руки / Ноги) */}
-                {(Object.keys(METRIC_GROUPS) as MetricGroup[]).map((group) => (
-                  <View key={group}>
-                    <Text
-                      style={[
-                        typography.labelBold,
-                        { color: colors.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs },
-                      ]}
-                    >
-                      {METRIC_GROUPS[group]}
-                    </Text>
-                    {METRIC_FIELDS.filter((f) => f.group === group).map((field) => (
-                      <AppInput
-                        key={field.key}
-                        label={`${field.label} (${field.unit})`}
-                        placeholder="0"
-                        value={formData[field.key]}
-                        onChangeText={(text) => setFormData({ ...formData, [field.key]: text })}
-                        keyboardType="decimal-pad"
-                      />
-                    ))}
-                  </View>
-                ))}
-                <AppInput
-                  label="Заметки"
-                  placeholder="Самочувствие, условия замера..."
-                  value={formData.notes}
-                  onChangeText={(text) => setFormData({ ...formData, notes: text })}
-                  multiline
-                  style={{ minHeight: 80, textAlignVertical: 'top' }}
-                />
-                <AppButton
-                  title={isCreating ? 'Сохранение...' : 'Сохранить замер'}
-                  variant="primary"
-                  size="large"
-                  loading={isCreating}
-                  disabled={isCreating}
-                  onPress={handleSave}
-                  style={{ marginTop: SPACING.md }}
-                />
-              </ScrollView>
-            </View>
+              {METRIC_GROUPS[group]}
+            </Text>
+            {METRIC_FIELDS.filter((f) => f.group === group).map((field) => (
+              <AppInput
+                key={field.key}
+                label={`${field.label} (${field.unit})`}
+                placeholder="0"
+                value={formData[field.key]}
+                onChangeText={(text) => setFormData({ ...formData, [field.key]: text })}
+                keyboardType="decimal-pad"
+              />
+            ))}
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        ))}
+        <AppInput
+          label="Заметки"
+          placeholder="Самочувствие, условия замера..."
+          value={formData.notes}
+          onChangeText={(text) => setFormData({ ...formData, notes: text })}
+          multiline
+          style={{ minHeight: 80, textAlignVertical: 'top' }}
+        />
+        <AppButton
+          title={isCreating ? 'Сохранение...' : 'Сохранить замер'}
+          variant="primary"
+          size="large"
+          loading={isCreating}
+          disabled={isCreating}
+          onPress={handleSave}
+          style={{ marginTop: SPACING.md }}
+        />
+      </SheetShell>
     </SafeAreaView>
   );
 }
