@@ -1,6 +1,7 @@
 # FitTracker — Current Status
 
 Срез: 22.08.2026 (main)
+Срез: 22.08.2026 (main)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -85,6 +86,7 @@
 | AUDIT-5 | 🟠 | ✅ | **Workout Report**: создан `app/(tabs)/progress/[id].tsx` с детальной сводкой (время, объём, подходы, ср. RPE), задействованными мышцами и списком упражнений с логами |
 | AUDIT-3 | 🟡 | 🔲 | аудит библиотеки Exercises (`exercises.tsx`): поиск, фильтры, infinite scroll (PERF-9) |
 | AUDIT-4 | 🟡 | 🔲 | аудит Profile/Goals/Injuries/Metrics: зачем данные и что реально используется (PRODUCT.md §15 product test) |
+| AUDIT-6 | 🟠 | ✅ | **Блок «Состояние сегодня»** (`StatusCard`): readiness — мини-кольцо (consistency с `CircularNutritionChart`) + 5 tappable pips (quick-set с haptics, `ReadinessSheet` — детальный check-in); чипы активных травм (`SEVERITY_COLORS`, tap → `/profile/injuries`) + информационный чип «⚠ Боль сегодня» (`painService.getPainEventsToday`); строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8); `ReadinessSheet` встроен в `StatusCard` и инвалидирует `['todayReadiness', userId]` после сохранения; травмы и readiness — независимые сигналы, травмы не переписывают самооценку |
 | AUDIT-6 | 🟠 | ✅ | **Блок «Состояние сегодня»** (`StatusCard`): readiness — мини-кольцо (consistency с `CircularNutritionChart`) + 5 tappable pips (quick-set с haptics, `ReadinessSheet` — детальный check-in); чипы активных травм (`SEVERITY_COLORS`, tap → `/profile/injuries`) + информационный чип «⚠ Боль сегодня» (`painService.getPainEventsToday`); строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8); `ReadinessSheet` встроен в `StatusCard` и инвалидирует `['todayReadiness', userId]` после сохранения; травмы и readiness — независимые сигналы, травмы не переписывают самооценку |
 
 ## 5. Training Engine
