@@ -339,7 +339,7 @@ const {
             }}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/profile/progress');
+              router.push('/profile/metrics');
             }}
           >
 
