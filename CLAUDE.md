@@ -148,6 +148,7 @@ style={{ backgroundColor: colors.primary }}
 - Не монтировать media/slider content в collapsed accordion.
 - Не логировать в animation/onScroll/gesture loops.
 - Workout screen — приоритетная зона performance profiling.
+- Длинные списки (сотни элементов, напр. каталог упражнений) — `@shopify/flash-list`; короткие и горизонтальные списки — `FlatList`.
 
 ### Performance gate (перед завершением задачи, затрагивающей UI или данные)
 

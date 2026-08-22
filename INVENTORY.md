@@ -242,7 +242,8 @@ Current behavior:
 - infinite pagination 40/page;
 - server-side filters;
 - debounce search;
-- dictionaries with long stale time.
+- dictionaries with long stale time;
+- main list: FlashList (PERF-9); horizontal category strip — plain FlatList.
 
 ## 5. Profile / Context
 
@@ -455,6 +456,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **StatusCard (AUDIT-6)**: readiness мини-кольцо (SVG, consistency с `CircularNutritionChart`) + 5 pips для quick-set через `readinessService.upsertToday` с null-полями (не выдумываем данные); haptics на tap. Чипы травм: ≤2 + «+N», tap → `/profile/injuries` (href без `(tabs)` — route group не входит в URL). Строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8): боль/травма → «Замены и нагрузка учтут ограничения», иначе readiness ≤ 2 → «Сегодня без повышения нагрузки», иначе «Нагрузка по плану». Травмы и readiness — независимые сигналы (травма руки не снижает готовность ног); `injury_exercise_warnings` — hard constraint на уровне тренировки. ReadinessSheet инвалидирует `['todayReadiness', userId]` после сохранения; quick-set также инвалидирует — кэш не stale. «⚠ Боль сегодня» — информационный чип (не кликабельный, отдельного экрана боли нет; боль фиксируется per-exercise через PainSheet).
 - **src/components/dashboard/NutritionLogListModal.tsx** — NUTRI-2: список/редактирование/удаление записей питания за день
 - **src/hooks/useNutritionLogs.ts** — NUTRI-2: React Query список + мутации, инвалидация питания и сожжённых калорий
+- **Exercise library (PERF-9)**: основной список в `app/(tabs)/exercises.tsx` — FlashList 2.x (`@shopify/flash-list`). Грабли: в 2.x удалён проп `estimatedItemSize` (был в 1.x) — не добавлять, упадёт tsc. `windowSize`/`removeClippedSubviews` — пропы FlatList, FlashList их не принимает. Горизонтальная полоса групп мышц намеренно оставлена на FlatList (короткий список, ~10–15 элементов).
 
 ## 13. Inventory maintenance
 

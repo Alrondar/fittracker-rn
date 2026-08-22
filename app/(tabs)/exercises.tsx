@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
 import * as Haptics from 'expo-haptics';
 import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame, Zap } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -551,21 +552,19 @@ export default function ExercisesScreen() {
       ) : isError && exercises.length === 0 ? (
         renderError()
       ) : (
-        <FlatList
-          data={exercises}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
-          contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          windowSize={7}
-          removeClippedSubviews={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-          }
-        />
+    <FlashList
+      data={exercises}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
+      contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
+      ListEmptyComponent={renderEmpty}
+      ListFooterComponent={renderFooter}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+      }
+    />
       )}
 
       {/* Шкаф оборудования */}
