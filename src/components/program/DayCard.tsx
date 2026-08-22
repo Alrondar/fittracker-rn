@@ -6,7 +6,6 @@ import {
   GripVertical,
   Settings,
   Trash2,
-  Clock,
   Plus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -182,7 +181,6 @@ export function DayCard({
               keyExtractor={(item: ProgramExercise) => item.id}
               renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
                 const exIndex = exercises.indexOf(exercise as ProgramExercise);
-                const intensityInfo = getIntensityInfo(exercise.intensity);
                 const muscles = (exercise as MusclesHolder).primary_muscles || [];
                 return (
                   <ScaleDecorator>
@@ -204,18 +202,6 @@ export function DayCard({
                             <Text style={cardStyles.dayCardExerciseMetaText}>
                               {exercise.sets} × {exercise.reps_range}
                             </Text>
-                            <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
-                              {intensityInfo.icon}
-                              <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>
-                                {intensityInfo.label}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={cardStyles.dayCardExerciseRest}>
-                            <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                            <Text style={cardStyles.dayCardExerciseRestText}>
-                              Отдых: {exercise.rest_seconds} сек
-                            </Text>
                           </View>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -233,7 +219,6 @@ export function DayCard({
             />
           ) : (
             exercises.map((exercise: ProgramExercise, exIndex: number) => {
-              const intensityInfo = getIntensityInfo(exercise.intensity);
               const muscles = (exercise as MusclesHolder).primary_muscles || [];
               return (
                 <View key={exercise.id} style={cardStyles.dayCardExerciseRow}>
@@ -255,18 +240,6 @@ export function DayCard({
                       <View style={cardStyles.dayCardExerciseMeta}>
                         <Text style={cardStyles.dayCardExerciseMetaText}>
                           {exercise.sets} × {exercise.reps_range}
-                        </Text>
-                        <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
-                          {intensityInfo.icon}
-                          <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>
-                            {intensityInfo.label}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={cardStyles.dayCardExerciseRest}>
-                        <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                        <Text style={cardStyles.dayCardExerciseRestText}>
-                          Отдых: {exercise.rest_seconds} сек
                         </Text>
                       </View>
                     </TouchableOpacity>

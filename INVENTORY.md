@@ -1,6 +1,6 @@
 # FitTracker — Code & Screen Inventory
 
-Срез: 20.08.2026 (main)
+Срез: 22.08.2026 (main)
 
 Этот файл отвечает только на вопросы **«где находится код?»**, **«что он делает?»** и **«что затронет изменение?»**. Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -53,7 +53,8 @@ Code search — первичный источник фактов; этот фа�
 | `app/(tabs)/progress/[id].tsx` | Workout Report (детали тренировки) | `historyService.getWorkoutDetail`, мышцы, сводка, подходы |
 | `app/(tabs)/exercises.tsx` | exercise library | `useExercises`, filters, pagination |
 | `app/(tabs)/exercise/[id].tsx` | exercise detail | `useExerciseDetail` |
-| `app/(tabs)/program/[id].tsx` | Program Detail + Editor | `useProgramEditor`, phases, days, sheets |
+| `app/(tabs)/program/[id].tsx` | Program Detail (просмотр) | `useProgramEditor` (read-only), phases, days, `ProgramDetailModals` |
+| `app/program/[id]/edit.tsx` | Program Editor (редактирование) | `useProgramEditor` (mutations), `ProgramEditorModals`, breadcrumb, save/cancel flow |
 | `app/(tabs)/workout/[id].tsx` | active workout | `useWorkoutSession`, ExerciseCard, SetsGrid, RestTimer, Warmup, Pain |
 | `app/(tabs)/workout/create.tsx` | create/repeat workout | workoutService |
 | `app/(tabs)/profile.tsx` | profile | `useProfile` |
@@ -156,21 +157,20 @@ UX audit focus:
 - ready-made vs personal programs;
 - Program Card;
 - Detail vs Editor mental model;
-- Program → Phase/Week → Workout/Day → Exercise hierarchy;
-- context/breadcrumb;
+- Program → Phase/Week → Workout/Day → Exercise hierarchy (✅ упрощена: строка упражнения в редакторе показывает только название, мышцы и подходы; детали вынесены в sheet);
+- context/breadcrumb (✅ добавлен в edit.tsx);
 - save/sync semantics;
 - drag & drop;
-- sheet complexity.
+- sheet complexity (🟡 остаток: замена Modal на SheetShell).
 
 ### History
 
 `app/(tabs)/history.tsx` — Calendar/List toggle (UX-9/UX-10)
-`app/(tabs)/history/[id].tsx`
 
 Main components:
 
 `history/HistoryCalendar.tsx` — месяц с отметками тренировок, навигация по месяцам, выбор дня (UX-9)
-`history/DaySummaryCard.tsx` — sheet выбранного дня через SheetShell, тап по тренировке → детали (UX-9, L2)
+`history/DaySummaryCard.tsx` — sheet выбранного дня через SheetShell, тап по тренировке → Workout Report (L3, `progress/[id]`) (UX-9)
 `history/HistoryViewToggle.tsx` — segmented control Calendar/List (UX-10)
 
 Main dependencies:
@@ -195,7 +195,10 @@ Components:
 - `dashboard/DashboardNutritionCard.tsx` (AUDIT-1: L1-summary питания, 2 страницы (swipe + точки): кольца + 🔥 burned / недельная таблица lazy; «+» → NutritionAddModal, state модалки в `index.tsx`)
 - `dashboard/CircularNutritionChart.tsx` (AUDIT-1: SVG-кольца — макросы-сегменты снаружи / калории / вода внутри при >0; центр: ккал + осталось + 🔥-бейдж)
 - `dashboard/NutritionWeekTable.tsx` (AUDIT-1: стр. 2 карточки — таблица КБЖУ+вода за 7 дней; lazy mount после первого свайпа, performance gate §8)
-- `dashboard/NutritionAddModal.tsx` (AUDIT-1: L2-модалка ввода приёма пищи: meal type picker + КБЖУ+вода; `Modal` + `SheetShell`)- - - - `ActivityCalendar`
+- `dashboard/NutritionAddModal.tsx` (AUDIT-1: L2-модалка ввода приёма пищи: meal type picker + КБЖУ+вода; `Modal` + `SheetShell`)
+- `dashboard/StatusCard.tsx` (AUDIT-6: «Состояние сегодня» — readiness мини-кольцо + tappable pips 1–5 (haptics), чипы активных травм (SEVERITY_COLORS, tap → `/profile/injuries`), «⚠ Боль сегодня», строка-следствие; owns ReadinessSheet)
+- `dashboard/ContextInsightCard.tsx` (COACH-4: компактный инсайт L1)
+- `ActivityCalendar`
 - `WeeklyStatsCard`
 - `ExerciseProgressCard`
 - `PersonalRecordsCard`
@@ -207,6 +210,8 @@ Hooks/services:
 - `useDashboard.ts`
 - `dashboardService.ts`
 - `readinessService.ts`
+- `useDailyNutrition` / `useWeeklyNutrition` / `useBurnedCalories` (AUDIT-1)
+- `useTodayReadiness` / `useInjuries` / `useTodayPain` (AUDIT-6)
 
 UX focus:
 - Today first;
@@ -292,7 +297,7 @@ Important components:
 | `useHistory` | `app/(tabs)/history.tsx`, `app/(tabs)/progress.tsx` (RecentWorkouts) |
 | `useHistoryView` | `app/(tabs)/history.tsx` |
 | `useProgress` | `app/(tabs)/progress.tsx` (Progress hub) |
-| `useInjuries` | injuries |
+| `useInjuries` | injuries + StatusCard (AUDIT-6: чипы активных травм) |
 | `useProfile` | profile/settings |
 | `useBodyMetrics` | metrics |
 | `useRecommendationFeedback` | SetsGrid (COACH-3: fire-and-forget запись accepted/rejected + причина). `userId` автоматически берётся из `useStore`, чтобы не передавать его через цепочку пропсов. |
@@ -303,8 +308,9 @@ Important components:
 | `useDailyNutrition` |Dashboard (AUDIT-1)|
 | `useWeeklyNutrition` |NutritionWeekCard (profile), NutritionWeekTable (Dashboard, AUDIT-1)|
 | `useBurnedCalories` |DashboardNutritionCard (AUDIT-1: 🔥-бейдж)|
-| `useTodayReadiness`|workout/[id] (ENG-3 readiness context)|
-| `useWeeklySummary`|UI-потребитель появится в COACH-5 (weekly review)|
+| `useTodayReadiness`|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4)|
+| `useWeeklySummary`|Dashboard («Коротко о неделе», COACH-4/COACH-5) + Progress hub|
+| `useTodayPain`|StatusCard (AUDIT-6: «⚠ Боль сегодня»)|
 
 ## 8. Service dependency map
 
@@ -321,8 +327,8 @@ Important components:
 | `exercisesService` | exercise library/detail |
 | `goalsService` / `metricsService` | goals/metrics |
 | `warmupService` | useWarmup |
-| `readinessService` | ReadinessSheet/Dashboard |
-| `painService` | PainSheet/ExerciseCard |
+| `readinessService` | ReadinessSheet (owns StatusCard, AUDIT-6) + quick-set pips StatusCard |
+| `painService` | PainSheet/ExerciseCard + StatusCard (AUDIT-6: getPainEventsToday) |
 | `recommendationFeedbackService` | SetsGrid (COACH-3: inline-чипы причин после «Скрыть») |
 | `progressService` | `useProgress`, `progress` (режим Аналитика/Обзор) |
 | `weeklySummaryService`|useWeeklySummary (ENG-6); UI — COACH-5|
@@ -443,6 +449,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 - **Readiness in engine (ENG-3)**: applyReadinessContext применяется в SetsGrid цепочкой base → applySafetyPrecedence → applyReadinessContext. Приоритет PRODUCT.md §8 закреплён порядком + guard'ом: если safetyOverride установлен — readiness no-op. Правила: readiness null (нет check-in) → no-op (§7); readiness 1–2 + base increase → hold с readinessOverride LOW_READINESS; readiness 3–5 → no-op. Визуально system downgrade (safety или readiness) делит warning color; текст one-liner в RecommendationCard: safetyOverride ?? readinessOverride ?? reason.ruText. useTodayReadiness: staleTime 1h; данные собираются ReadinessSheet (FEAT-1.8).
 - **Burned calories (AUDIT-1)**: profileService.getBurnedCalories(userId, days) сам читает вес из profiles и возвращает number | null (null — вес не задан, UI скрывает 🔥-бейдж, не выдумывая данные). Feature существует только на Dashboard; из профиля блок удалён. dashboardService coerces null → 0 для недельной статистики.
 - **SheetShell принимает visible?: boolean (false → null)**. Модалки Dashboard (ReadinessSheet, DaySummaryCard, NutritionAddModal) рендерятся в конце экрана вне ScrollView — рендер внутри ScrollView ломает overlay (грабля AUDIT-1).
+- **StatusCard (AUDIT-6)**: readiness мини-кольцо (SVG, consistency с `CircularNutritionChart`) + 5 pips для quick-set через `readinessService.upsertToday` с null-полями (не выдумываем данные); haptics на tap. Чипы травм: ≤2 + «+N», tap → `/profile/injuries` (href без `(tabs)` — route group не входит в URL). Строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8): боль/травма → «Замены и нагрузка учтут ограничения», иначе readiness ≤ 2 → «Сегодня без повышения нагрузки», иначе «Нагрузка по плану». Травмы и readiness — независимые сигналы (травма руки не снижает готовность ног); `injury_exercise_warnings` — hard constraint на уровне тренировки. ReadinessSheet инвалидирует `['todayReadiness', userId]` после сохранения; quick-set также инвалидирует — кэш не stale. «⚠ Боль сегодня» — информационный чип (не кликабельный, отдельного экрана боли нет; боль фиксируется per-exercise через PainSheet).
 
 ## 13. Inventory maintenance
 
@@ -452,8 +459,16 @@ When adding/removing/renaming a meaningful screen, hook, service, shared compone
 3. do not copy technical rules from `CLAUDE.md` here;
 4. do not copy product decisions from `PRODUCT.md` here.
 
-### Recent additions (COACH-4 / COACH-5 / UX-11)
+### Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 - `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
+- `src/components/dashboard/StatusCard.tsx` — AUDIT-6: «Состояние сегодня» (readiness мини-кольцо + tappable pips, чипы травм, «⚠ Боль сегодня»)
+- `src/components/dashboard/CircularNutritionChart.tsx` — AUDIT-1: SVG-кольца питания
+- `src/components/dashboard/NutritionWeekTable.tsx` — AUDIT-1: недельная таблица КБЖУ+вода (стр. 2 pager)
+- `src/components/dashboard/NutritionAddModal.tsx` — AUDIT-1: L2-модалка ввода приёма пищи
+- `src/hooks/useDailyNutrition.ts` — AUDIT-1: daily + targets для Dashboard
+- `src/hooks/useWeeklyNutrition.ts` — AUDIT-1: недельная агрегация питания (также для NutritionWeekCard в профиле)
+- `src/hooks/useBurnedCalories.ts` — AUDIT-1: 🔥-бейдж в центре диаграммы
+- `src/hooks/useTodayPain.ts` — AUDIT-6: «⚠ Боль сегодня»
 - `src/components/progress/ProgressHero.tsx` — UX-11: главный ответ «Что сейчас происходит с моим прогрессом?»
 - `src/components/progress/ProgressStats.tsx` — UX-11: 3 ключевых показателя (тренировки, объём, серия)
 - `src/components/progress/ProgressInsights.tsx` — UX-11: детерминированные инсайты (сила, объём, вес, PR) без AI

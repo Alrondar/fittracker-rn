@@ -21,13 +21,17 @@ const genRandomUUID = () =>
     return v.toString(16);
   });
 
-export function useProgramEditor(programId: string, userId: string | null) {
+export function useProgramEditor(
+  programId: string,
+  userId: string | null,
+  initialEditMode = false,
+) {
   const router = useRouter();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(initialEditMode);
   const [editedProgram, setEditedProgram] = useState<Program | null>(null);
   const [deletedExerciseIds, setDeletedExerciseIds] = useState<string[]>([]);
   const [deletedDayIds, setDeletedDayIds] = useState<string[]>([]);
@@ -232,32 +236,13 @@ export function useProgramEditor(programId: string, userId: string | null) {
       }
 
       // Синхронизация правок с будущими тренировками (FIT-2)
+      let syncInfo = null;
       try {
-        const syncResult = await syncProgramChanges(editedProgram.id);
-        if (
-          syncResult.deleted_workouts > 0 ||
-          syncResult.deleted_exercises > 0 ||
-          syncResult.inserted_exercises > 0
-        ) {
-          Alert.alert(
-            'Синхронизация завершена',
-            `Будущие тренировки обновлены:\n` +
-              `• Удалено тренировок: ${syncResult.deleted_workouts}\n` +
-              `• Обновлено тренировок: ${syncResult.updated_workouts}\n` +
-              `• Удалено упражнений: ${syncResult.deleted_exercises}\n` +
-              `• Добавлено упражнений: ${syncResult.inserted_exercises}`,
-            [{ text: 'OK' }],
-          );
-        }
+        syncInfo = await syncProgramChanges(editedProgram.id);
       } catch (syncError: any) {
         console.error('[saveProgram] Sync failed:', syncError);
-        Alert.alert(
-          'Предупреждение',
-          'Программа сохранена, но не удалось синхронизировать изменения с будущими тренировками.\n\n' +
-            'Будущие тренировки могут содержать устаревшие данные.\n\n' +
-            'Ошибка: ' + (syncError.message || 'неизвестная ошибка'),
-          [{ text: 'OK' }],
-        );
+        // Не блокируем сохранение, но возвращаем ошибку для отображения Toast
+        throw new Error(`Программа сохранена, но ошибка синхронизации: ${syncError.message}`);
       }
 
       setProgram(updatedProgram);
