@@ -5,7 +5,7 @@
 // Техника выполнения — аккордеон с lazy mount (CLAUDE.md §8).
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { RotateCcw, Sparkles, ShieldAlert, AlertTriangle } from 'lucide-react-native';
+import { RotateCcw, Sparkles, ShieldAlert, AlertTriangle, TrendingUp, TrendingDown, Shuffle } from 'lucide-react-native';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
@@ -74,12 +74,74 @@ const hasInjuries = exercise.injuries.length > 0;
       <Text
         style={[
           cardStyles.workoutExerciseName,
-          { color: colors.textPrimary, marginBottom: SPACING.sm },
+          { color: colors.textPrimary, marginBottom: SPACING.xs },
         ]}
         numberOfLines={2}
       >
         {exercise.name}
       </Text>
+
+      {/* ENG-5: бейдж типа замены (L1 — пользователь сразу видит семантику варианта) */}
+      {exercise.relation_type === 'progression' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 4,
+            backgroundColor: colors.primary + '15',
+            paddingHorizontal: SPACING.sm,
+            paddingVertical: 3,
+            borderRadius: SPACING.sm,
+            marginBottom: SPACING.sm,
+          }}
+        >
+          <TrendingUp size={12} color={colors.primary} strokeWidth={2} />
+          <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+            Прогрессия
+          </Text>
+        </View>
+      )}
+      {exercise.relation_type === 'regression' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 4,
+            backgroundColor: colors.warning + '15',
+            paddingHorizontal: SPACING.sm,
+            paddingVertical: 3,
+            borderRadius: SPACING.sm,
+            marginBottom: SPACING.sm,
+          }}
+        >
+          <TrendingDown size={12} color={colors.warning} strokeWidth={2} />
+          <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
+            Упрощение
+          </Text>
+        </View>
+      )}
+      {exercise.relation_type === 'variation' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 4,
+            backgroundColor: colors.surfaceSecondary,
+            paddingHorizontal: SPACING.sm,
+            paddingVertical: 3,
+            borderRadius: SPACING.sm,
+            marginBottom: SPACING.sm,
+          }}
+        >
+          <Shuffle size={12} color={colors.textSecondary} strokeWidth={2} />
+          <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>
+            Вариант
+          </Text>
+        </View>
+      )}
 
       {/* Summary: мышцы */}
       {(exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0) && (

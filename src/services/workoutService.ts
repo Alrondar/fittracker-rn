@@ -141,19 +141,20 @@ export async function startProgramWorkout(
   const workoutName = day.name || `${program?.name || 'Тренировка'} — День ${dayNumber}`;
 
   // ✅ Сначала создаём тренировку и получаем реальный id — никакого плейсхолдера ''
-  const { data: newWorkout, error: insertWorkoutError } = await supabase
-    .from('workouts')
-    .insert({
-      user_id: userId,
-      program_id: programId,
-      name: workoutName,
-      phase_number: phaseNumber,
-      week_number: weekNumber,
-      day_index: dayNumber,
-      created_at: new Date().toISOString(),
-    })
-    .select('id')
-    .single();
+const { data: newWorkout, error: insertWorkoutError } = await supabase
+  .from('workouts')
+  .insert({
+    user_id: userId,
+    program_id: programId,
+    name: workoutName,
+    phase_number: phaseNumber,
+    week_number: weekNumber,
+    day_index: dayNumber,
+    created_at: new Date().toISOString(),
+    started_at: new Date().toISOString(),
+  })
+  .select('id')
+  .single();
 
   if (insertWorkoutError) throw insertWorkoutError;
 
@@ -206,20 +207,21 @@ export async function repeatWorkout(
 
   if (sourceWorkoutError) throw sourceWorkoutError;
 
-  const { data: newWorkout, error: insertWorkoutError } = await supabase
-    .from('workouts')
-    .insert({
-      user_id: userId,
-      name: sourceWorkout.name,
-      description: sourceWorkout.description,
-      program_id: null,
-      phase_number: null,
-      week_number: null,
-      day_index: null,
-      created_at: new Date().toISOString(),
-    })
-    .select('id')
-    .single();
+const { data: newWorkout, error: insertWorkoutError } = await supabase
+  .from('workouts')
+  .insert({
+    user_id: userId,
+    name: sourceWorkout.name,
+    description: sourceWorkout.description,
+    program_id: null,
+    phase_number: null,
+    week_number: null,
+    day_index: null,
+    created_at: new Date().toISOString(),
+    started_at: new Date().toISOString(),
+  })
+  .select('id')
+  .single();
 
   if (insertWorkoutError) throw insertWorkoutError;
 

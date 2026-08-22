@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -777,50 +777,53 @@ export type Database = {
         }
         Relationships: []
       }
-      session_sets: {
+      recommendation_feedback: {
         Row: {
+          applied_weight: number | null
+          created_at: string
+          decision: string
+          engine_action: string
+          engine_reason_code: string
           exercise_id: string
           id: string
-          is_warmup: boolean | null
-          reps: number | null
-          rpe: number | null
-          session_id: string
-          weight_kg: number | null
+          set_number: number
+          suggested_reps: number | null
+          suggested_weight: number | null
+          user_id: string
+          user_reason_code: string | null
+          workout_id: string
         }
         Insert: {
+          applied_weight?: number | null
+          created_at?: string
+          decision: string
+          engine_action: string
+          engine_reason_code: string
           exercise_id: string
           id?: string
-          is_warmup?: boolean | null
-          reps?: number | null
-          rpe?: number | null
-          session_id: string
-          weight_kg?: number | null
+          set_number: number
+          suggested_reps?: number | null
+          suggested_weight?: number | null
+          user_id: string
+          user_reason_code?: string | null
+          workout_id: string
         }
         Update: {
+          applied_weight?: number | null
+          created_at?: string
+          decision?: string
+          engine_action?: string
+          engine_reason_code?: string
           exercise_id?: string
           id?: string
-          is_warmup?: boolean | null
-          reps?: number | null
-          rpe?: number | null
-          session_id?: string
-          weight_kg?: number | null
+          set_number?: number
+          suggested_reps?: number | null
+          suggested_weight?: number | null
+          user_id?: string
+          user_reason_code?: string | null
+          workout_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "session_sets_exercise_id_fkey"
-            columns: ["exercise_id"]
-            isOneToOne: false
-            referencedRelation: "exercises"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_sets_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "workout_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_injuries: {
         Row: {
@@ -1014,48 +1017,6 @@ export type Database = {
             columns: ["workout_exercise_id"]
             isOneToOne: false
             referencedRelation: "workout_exercises"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      workout_sessions: {
-        Row: {
-          finished_at: string | null
-          id: string
-          notes: string | null
-          started_at: string
-          user_id: string
-          workout_id: string | null
-        }
-        Insert: {
-          finished_at?: string | null
-          id?: string
-          notes?: string | null
-          started_at?: string
-          user_id: string
-          workout_id?: string | null
-        }
-        Update: {
-          finished_at?: string | null
-          id?: string
-          notes?: string | null
-          started_at?: string
-          user_id?: string
-          workout_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "workout_sessions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workout_sessions_workout_id_fkey"
-            columns: ["workout_id"]
-            isOneToOne: false
-            referencedRelation: "workouts"
             referencedColumns: ["id"]
           },
         ]

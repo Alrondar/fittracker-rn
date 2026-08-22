@@ -108,7 +108,7 @@ export async function getExerciseContraindications(
 ): Promise<
   Record<
     string,
-    Array<{ body_part: string; injury_type: string; level: 'avoid' | 'caution' }>
+    { body_part: string; injury_type: string; level: 'avoid' | 'caution' }[]
   >
 > {
   if (exerciseIds.length === 0) return {};
@@ -123,7 +123,7 @@ export async function getExerciseContraindications(
 
   const result: Record<
     string,
-    Array<{ body_part: string; injury_type: string; level: 'avoid' | 'caution' }>
+    { body_part: string; injury_type: string; level: 'avoid' | 'caution' }[]
   > = {};
 
   (data || []).forEach((row) => {

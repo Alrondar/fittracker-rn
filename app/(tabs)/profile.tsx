@@ -43,7 +43,6 @@ import {
   Wheat,
   Plus,
   X,
-  Zap,
   Award,
   Ruler,
   TrendingUp,
@@ -57,16 +56,15 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-  const {
-    userData,
-    stats,
-    targets,
-    todayNutrition,
-    burnedCalories,
-    personalRecords,
-    loading,
-    saveNutrition,
-  } = useProfile(userId);
+const {
+  userData,
+  stats,
+  targets,
+  todayNutrition,
+  personalRecords,
+  loading,
+  saveNutrition,
+} = useProfile(userId);
 
   const [showNutritionSheet, setShowNutritionSheet] = useState(false);
   const [inputCalories, setInputCalories] = useState('');
@@ -258,122 +256,6 @@ export default function ProfileScreen() {
           </AppCard>
         </View>
 
-        {/* Сожжённые калории */}
-        {burnedCalories > 0 && (
-          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
-            <AppCard
-              variant="compact"
-              style={{
-                borderColor: MACRO_COLORS.burned,
-                borderWidth: 1,
-                backgroundColor: MACRO_COLORS.burned + '10',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
-                <Zap size={20} color={MACRO_COLORS.burned} />
-                <Text
-                  style={[
-                    typography.labelBold,
-                    { color: colors.textPrimary, marginLeft: SPACING.sm },
-                  ]}
-                >
-                  Сожжено на тренировке
-                </Text>
-              </View>
-              <Text style={[typography.h2, { color: MACRO_COLORS.burned, marginBottom: SPACING.xs }]}>
-                {burnedCalories}{' '}
-                <Text style={[typography.body, { color: colors.textSecondary }]}>ккал</Text>
-              </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Рассчитано автоматически по длительности и весу
-              </Text>
-            </AppCard>
-          </View>
-        )}
-
-        {/* Трекер КБЖУ */}
-        {targets.calories > 0 && (
-          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: SPACING.md,
-              }}
-            >
-              <Text style={[typography.h4, { color: colors.textPrimary }]}>Питание сегодня</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowNutritionSheet(true);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                style={{ padding: SPACING.sm }}
-              >
-                <Plus size={20} color={colors.primary} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            <AppCard variant="compact">
-              {(todayNutrition.proteins > 0 ||
-                todayNutrition.fats > 0 ||
-                todayNutrition.carbs > 0) && (
-                <MacroPieChart
-                  proteins={todayNutrition.proteins}
-                  fats={todayNutrition.fats}
-                  carbs={todayNutrition.carbs}
-                />
-              )}
-              {renderProgressBar(
-                <Flame size={18} color={MACRO_COLORS.calories} />,
-                'Калории',
-                todayNutrition.calories,
-                targets.calories,
-                'ккал',
-                MACRO_COLORS.calories,
-              )}
-              {renderProgressBar(
-                <Beef size={18} color={MACRO_COLORS.proteins} />,
-                'Белки',
-                todayNutrition.proteins,
-                targets.proteins,
-                'г',
-                MACRO_COLORS.proteins,
-              )}
-              {renderProgressBar(
-                <Droplet size={18} color={MACRO_COLORS.fats} />,
-                'Жиры',
-                todayNutrition.fats,
-                targets.fats,
-                'г',
-                MACRO_COLORS.fats,
-              )}
-              {renderProgressBar(
-                <Wheat size={18} color={MACRO_COLORS.carbs} />,
-                'Углеводы',
-                todayNutrition.carbs,
-                targets.carbs,
-                'г',
-                MACRO_COLORS.carbs,
-              )}
-              {renderProgressBar(
-                <Droplet size={18} color={MACRO_COLORS.water} />,
-                'Вода',
-                todayNutrition.water_ml,
-                2500,
-                'мл',
-                MACRO_COLORS.water,
-              )}
-            </AppCard>
-          </View>
-        )}
-
-        {/* FEAT-2.1: неделя питания (тренд отклонения от целей) */}
-        {targets.calories > 0 && (
-          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
-            <NutritionWeekCard userId={userId} targets={targets} />
-          </View>
-        )}
-
         {/* Личные рекорды */}
         {personalRecords.length > 0 && (
           <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
@@ -460,34 +342,7 @@ export default function ProfileScreen() {
               router.push('/profile/progress');
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <TrendingUp size={20} color={colors.success} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typography.h5, { color: colors.textPrimary }]}>Мой прогресс</Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  Тренды, объём, рекорды
-                </Text>
-              </View>
-            </View>
-            <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: BORDER_RADIUS.md,
-              padding: SPACING.md,
-              marginBottom: SPACING.sm,
-              borderColor: colors.border,
-              borderWidth: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/profile/metrics');
-            }}
-          >
+
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Ruler size={20} color={colors.primary} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
               <View style={{ flex: 1 }}>

@@ -148,51 +148,42 @@ export const createSheetCardStyles = (colors: any) =>
       paddingHorizontal: SPACING.md,
       paddingBottom: SPACING.md,
     } as ViewStyle,
-    dayCardExerciseRow: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      paddingVertical: SPACING.sm,
-    } as ViewStyle,
-    dayCardExerciseContent: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: SPACING.sm,
-    } as ViewStyle,
-    dayCardExerciseGrip: {
-      paddingTop: SPACING.xs,
-    } as ViewStyle,
-    dayCardExerciseTouchable: {
-      flex: 1,
-    } as ViewStyle,
-    dayCardExerciseName: {
-      ...typography.labelBold,
-      color: colors.textPrimary,
-      marginBottom: SPACING.xs,
-      lineHeight: 18,
-    } as TextStyle,
-    dayCardExerciseMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: SPACING.sm,
-      marginBottom: SPACING.xs,
-    } as ViewStyle,
-    dayCardExerciseMetaText: {
-      ...typography.bodySmall,
-      color: colors.textSecondary,
-      fontWeight: '500',
-    } as TextStyle,
-    dayCardExerciseRest: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    } as ViewStyle,
-    dayCardExerciseRestText: {
-      ...typography.captionSmall,
-      color: colors.textSecondary,
-    } as TextStyle,
-    dayCardExerciseDelete: {
-      padding: SPACING.sm,
-    } as ViewStyle,
+dayCardExerciseItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: SPACING.sm,
+  padding: SPACING.md,
+  backgroundColor: colors.surfaceSecondary,
+  borderRadius: BORDER_RADIUS.md,
+  marginBottom: SPACING.xs,
+} as ViewStyle,
+dayCardExerciseItemGrip: {
+  paddingVertical: SPACING.xs,
+} as ViewStyle,
+dayCardExerciseItemBody: {
+  flex: 1,
+} as ViewStyle,
+dayCardExerciseItemName: {
+  ...typography.labelBold,
+  color: colors.textPrimary,
+  lineHeight: 20,
+  marginBottom: 2,
+} as TextStyle,
+dayCardExerciseSchemePill: {
+  paddingHorizontal: SPACING.md,
+  paddingVertical: SPACING.sm,
+  borderRadius: BORDER_RADIUS.md,
+  backgroundColor: colors.surface,
+  borderWidth: 1,
+  borderColor: colors.border,
+} as ViewStyle,
+dayCardExerciseSchemePillText: {
+  ...typography.labelBold,
+  color: colors.primary,
+} as TextStyle,
+dayCardExerciseDeleteButton: {
+  padding: SPACING.sm,
+} as ViewStyle,
     dayCardAddButton: {
       flexDirection: 'row',
       alignItems: 'center',

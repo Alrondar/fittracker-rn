@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 
 interface AppCardProps {
   children: React.ReactNode;
   variant?: 'default' | 'compact' | 'highlighted';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }
 

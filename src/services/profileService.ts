@@ -200,67 +200,70 @@ export const profileService = {
     return Array.from(byDate.values());
   },
 
-  async getBurnedCalories(
-    userId: string,
-    userWeight: number,
-    days: number = 1,
-  ): Promise<number> {
-    let startISO: string;
-    let endISO: string;
-    if (days === 1) {
-      // Сохраняем семантику «за сегодня» (от начала дня до конца дня)
-      const today = new Date().toISOString().split('T')[0];
-      startISO = `${today}T00:00:00+00:00`;
-      endISO = `${today}T23:59:59+00:00`;
+// AUDIT-1: сожжённые калории за период. Вес берётся из profiles внутри сервиса
+// (feature убран из профиля, остаётся только на Dashboard).
+// Возвращает null, если вес в профиле не задан — UI скрывает 🔥-бейдж, не выдумывая данные.
+async getBurnedCalories(userId: string, days: number = 1): Promise<number | null> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('current_weight_kg')
+    .eq('id', userId)
+    .maybeSingle();
+  const userWeight = profile?.current_weight_kg
+    ? parseFloat(profile.current_weight_kg)
+    : null;
+  if (!userWeight) return null;
+
+  let startISO: string;
+  let endISO: string;
+  if (days === 1) {
+    // Сохраняем семантику «за сегодня» (от начала дня до конца дня)
+    const today = new Date().toISOString().split('T')[0];
+    startISO = `${today}T00:00:00+00:00`;
+    endISO = `${today}T23:59:59+00:00`;
+  } else {
+    // Для периода — последние N дней
+    const now = new Date();
+    const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    startISO = start.toISOString();
+    endISO = now.toISOString();
+  }
+  const { data: periodWorkouts } = await supabase
+    .from('workouts')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .gte('created_at', startISO)
+    .lte('created_at', endISO);
+  if (!periodWorkouts || periodWorkouts.length === 0) return 0;
+  const workoutIds = periodWorkouts.map((w) => w.id);
+  // ✅ Устранён N+1: один запрос всех логов за период вместо запроса на каждую тренировку
+  const { data: logs } = await supabase
+    .from('workout_logs')
+    .select('completed_at, workout_exercises!inner (workout_id)')
+    .in('workout_exercises.workout_id', workoutIds)
+    .order('completed_at', { ascending: true });
+  const logsByWorkout = new Map<string, number[]>();
+  logs?.forEach((log: any) => {
+    const workoutId = log.workout_exercises?.workout_id;
+    if (!workoutId) return;
+    const t = new Date(log.completed_at).getTime();
+    if (!logsByWorkout.has(workoutId)) logsByWorkout.set(workoutId, []);
+    logsByWorkout.get(workoutId)!.push(t);
+  });
+  let totalBurned = 0;
+  logsByWorkout.forEach((times) => {
+    if (times.length >= 2) {
+      const firstLog = Math.min(...times);
+      const lastLog = Math.max(...times);
+      const durationHours = Math.max(0, (lastLog - firstLog) / 1000 / 3600);
+      totalBurned += 5.0 * userWeight * durationHours;
     } else {
-      // Для периода — последние N дней
-      const now = new Date();
-      const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-      startISO = start.toISOString();
-      endISO = now.toISOString();
+      // Fallback: тренировка без логов ≈ 45 минут
+      totalBurned += 5.0 * userWeight * (45 / 60);
     }
-
-    const { data: periodWorkouts } = await supabase
-      .from('workouts')
-      .select('id, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', startISO)
-      .lte('created_at', endISO);
-
-    if (!periodWorkouts || periodWorkouts.length === 0) return 0;
-    const workoutIds = periodWorkouts.map((w) => w.id);
-
-    // ✅ Устранён N+1: один запрос всех логов за период вместо запроса на каждую тренировку
-    const { data: logs } = await supabase
-      .from('workout_logs')
-      .select('completed_at, workout_exercises!inner (workout_id)')
-      .in('workout_exercises.workout_id', workoutIds)
-      .order('completed_at', { ascending: true });
-
-    const logsByWorkout = new Map<string, number[]>();
-    logs?.forEach((log: any) => {
-      const workoutId = log.workout_exercises?.workout_id;
-      if (!workoutId) return;
-      const t = new Date(log.completed_at).getTime();
-      if (!logsByWorkout.has(workoutId)) logsByWorkout.set(workoutId, []);
-      logsByWorkout.get(workoutId)!.push(t);
-    });
-
-    let totalBurned = 0;
-    logsByWorkout.forEach((times) => {
-      if (times.length >= 2) {
-        const firstLog = Math.min(...times);
-        const lastLog = Math.max(...times);
-        const durationHours = Math.max(0, (lastLog - firstLog) / 1000 / 3600);
-        totalBurned += 5.0 * userWeight * durationHours;
-      } else {
-        // Fallback: тренировка без логов ≈ 45 минут
-        totalBurned += 5.0 * userWeight * (45 / 60);
-      }
-    });
-
-    return Math.round(totalBurned);
-  },
+  });
+  return Math.round(totalBurned);
+},
 
   async getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
     const { data: userWorkouts } = await supabase
@@ -326,13 +329,12 @@ export const profileService = {
 
   async saveNutritionLog(
     userId: string,
-    data: { calories: number; proteins: number; fats: number; carbs: number; water_ml: number },
+    data: { calories: number; proteins: number; fats: number; carbs: number; water_ml: number; meal_type: string },
   ): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: userId,
       log_date: today,
-      meal_type: 'manual',
       ...data,
     });
     if (error) throw error;

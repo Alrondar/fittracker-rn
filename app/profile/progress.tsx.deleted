@@ -24,12 +24,16 @@ import { PersonalRecordsCard } from '../../src/components/PersonalRecordsCard';
 import { VolumeTrendChart } from '../../src/components/progress/VolumeTrendChart';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
 import { WeightTrendRow } from '../../src/components/progress/WeightTrendRow';
+import { WeeklyReviewBlock } from '../../src/components/progress/WeeklyReviewBlock';
+import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
+import { Skeleton } from '../../src/components/Skeleton';
 
 export default function ProgressScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
   const { data, isPending, isError, error, refetch } = useProgress(userId);
+  const { data: weeklyData, isPending: isWeeklyPending } = useWeeklySummary(userId, 0);
 
   // Маппинг PersonalRecordWithDate → контракт PersonalRecordsCard
   const records = (data?.personalRecords ?? []).map((r) => ({
@@ -200,6 +204,22 @@ export default function ProgressScreen() {
             </View>
           )}
         </View>
+
+        {/* COACH-5: Weekly Review Block */}
+        {isWeeklyPending ? (
+          <View style={{ marginTop: SPACING.xl }}>
+            <Skeleton width="100%" height={120} borderRadius={BORDER_RADIUS.lg} />
+          </View>
+        ) : (
+          weeklyData && (
+            <View style={{ marginTop: SPACING.xl }}>
+              <WeeklyReviewBlock
+                insights={weeklyData.insights}
+                workoutsCount={weeklyData.current.workoutsCount}
+              />
+            </View>
+          )
+        )}
 
         {/* 📈 Сила — главный ответ на «Становлюсь ли я сильнее?» */}
         {data.strengthTrend.length > 0 && (

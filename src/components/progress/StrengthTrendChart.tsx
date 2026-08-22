@@ -1,13 +1,16 @@
 // src/components/progress/StrengthTrendChart.tsx
 // Тренд e1RM по неделям для top-3 упражнений.
 // Отвечает на «Становлюсь ли я сильнее?»
+//
+// Поддерживает фильтрацию по одному упражнению (prop selectedExerciseName),
+// чтобы progress.tsx мог показать интерактивный селектор.
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
-import { SectionHeader } from '../SectionHeader';
 import { StrengthSeries } from '../../services/progressService';
+import { TrendingUp } from 'lucide-react-native';
 
 const LINE_COLORS = ['#6C5CE7', '#00B894', '#FDCB6E'];
 
@@ -18,17 +21,73 @@ function formatShort(dateStr: string): string {
 
 interface Props {
   series: StrengthSeries[];
+  /** Если передано — показать только это упражнение (для селектора в progress.tsx). */
+  selectedExerciseName?: string;
 }
 
-export function StrengthTrendChart({ series }: Props) {
+export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
   const { colors } = useTheme();
   const chartWidth = Dimensions.get('window').width - SPACING.lg * 4;
 
+  // Фильтрация: если выбрано конкретное упражнение — показываем только его.
+  const filtered = selectedExerciseName
+    ? series.filter((s) => s.exerciseName === selectedExerciseName)
+    : series;
+
   if (series.length === 0) return null;
+
+  // После фильтрации ничего не осталось — честный fallback, а не пустой экран.
+  if (filtered.length === 0) {
+    return (
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          borderRadius: BORDER_RADIUS.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: SPACING.md,
+        }}
+      >
+        <Text
+          style={[
+            typography.caption,
+            { color: colors.textTertiary, fontStyle: 'italic', textAlign: 'center' },
+          ]}
+        >
+          Нет данных для выбранного упражнения
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View>
-      <SectionHeader title="Сила (e1RM)" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: colors.primary + '1A',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: SPACING.sm,
+          }}
+        >
+          <TrendingUp size={18} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Сила</Text>
+          <Text
+            style={[
+              typography.captionSmall,
+              { color: colors.textSecondary, marginTop: 2 },
+            ]}
+          >
+            Расчётный 1ПМ (e1RM)
+          </Text>
+        </View>
+      </View>
       <View
         style={{
           backgroundColor: colors.surface,
@@ -38,9 +97,14 @@ export function StrengthTrendChart({ series }: Props) {
           padding: SPACING.md,
         }}
       >
-        {series.map((s, idx) => (
-          <View key={s.exerciseName} style={{ marginBottom: idx < series.length - 1 ? SPACING.lg : 0 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
+        {filtered.map((s, idx) => (
+          <View
+            key={s.exerciseName}
+            style={{ marginBottom: idx < filtered.length - 1 ? SPACING.lg : 0 }}
+          >
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}
+            >
               <View
                 style={{
                   width: 10,
@@ -50,7 +114,9 @@ export function StrengthTrendChart({ series }: Props) {
                   marginRight: SPACING.xs,
                 }}
               />
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>{s.exerciseName}</Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                {s.exerciseName}
+              </Text>
             </View>
             <MiniLineChart
               points={s.points.map((p) => p.e1rm)}
@@ -83,11 +149,46 @@ function MiniLineChart({
   const { colors } = useTheme();
   const height = 60;
 
-  if (points.length < 2) {
+  if (points.length === 0) {
     return (
-      <Text style={[typography.caption, { color: colors.textTertiary, fontStyle: 'italic' }]}>
+      <Text
+        style={[
+          typography.caption,
+          { color: colors.textTertiary, fontStyle: 'italic' },
+        ]}
+      >
         Недостаточно данных для тренда
       </Text>
+    );
+  }
+
+  if (points.length === 1) {
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: SPACING.xs,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs }}>
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: color,
+            }}
+          />
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>
+            Первый замер
+          </Text>
+        </View>
+        <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+          {points[0].toFixed(1)} кг
+        </Text>
+      </View>
     );
   }
 
@@ -143,9 +244,15 @@ function MiniLineChart({
         })}
       </View>
       {/* Labels */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-        <Text style={[typography.overline, { color: colors.textTertiary }]}>{labels[0]}</Text>
-        <Text style={[typography.overline, { color: colors.textTertiary }]}>{labels[labels.length - 1]}</Text>
+      <View
+        style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}
+      >
+        <Text style={[typography.overline, { color: colors.textTertiary }]}>
+          {labels[0]}
+        </Text>
+        <Text style={[typography.overline, { color: colors.textTertiary }]}>
+          {labels[labels.length - 1]}
+        </Text>
       </View>
       {/* Delta */}
       {points.length >= 2 && (
@@ -153,7 +260,12 @@ function MiniLineChart({
           <Text
             style={[
               typography.overline,
-              { color: points[points.length - 1] >= points[0] ? colors.success : colors.error },
+              {
+                color:
+                  points[points.length - 1] >= points[0]
+                    ? colors.success
+                    : colors.error,
+              },
             ]}
           >
             {points[points.length - 1] >= points[0] ? '↑' : '↓'}{' '}

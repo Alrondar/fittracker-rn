@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Trophy, Dumbbell, BookOpen, Clock, User } from 'lucide-react-native';
+import { Home, Trophy, Dumbbell, BookOpen, Activity, User } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
@@ -89,8 +89,8 @@ function getTabIcon(routeName: string, color: string) {
       return <Dumbbell size={size} color={color} strokeWidth={strokeWidth} />;
     case 'exercises':
       return <BookOpen size={size} color={color} strokeWidth={strokeWidth} />;
-    case 'history':
-      return <Clock size={size} color={color} strokeWidth={strokeWidth} />;
+    case 'progress':
+      return <Activity size={size} color={color} strokeWidth={strokeWidth} />;
     case 'profile':
       return <User size={size} color={color} strokeWidth={strokeWidth} />;
     default:

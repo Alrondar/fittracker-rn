@@ -6,18 +6,16 @@ import {
   GripVertical,
   Settings,
   Trash2,
-  Clock,
   Plus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import { FadeIn } from '../FadeIn';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
 import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
 import { getMuscleColor } from '../../constants/muscleColors';
 import { typography } from '../../styles/typography';
-import { BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 
 // Мост к данным мышц из join exercises. Локальный опциональный тип: компонент
 // компилируется и работает ДО того, как primary_muscles придёт из БД.
@@ -84,7 +82,6 @@ function ExerciseMuscles({ muscles, colors }: { muscles: string[]; colors: any }
 interface DayCardProps {
   day: ProgramDay;
   dayIndex: number;
-  getIntensityInfo: (intensity: string) => { label: string; color: string; icon: React.ReactNode };
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   badgeStyles: ReturnType<typeof createBadgeStyles>;
@@ -95,14 +92,12 @@ interface DayCardProps {
   onExerciseSettings: (exerciseIndex: number) => void;
   onAddExercise: () => void;
   onRemoveExercise: (exerciseIndex: number) => void;
-  updateExerciseParams: (dayIndex: number, exerciseIndex: number, params: any) => void;
   onExerciseDragEnd?: (data: ProgramExercise[]) => void;
 }
 
 export function DayCard({
   day,
   dayIndex,
-  getIntensityInfo,
   colors,
   cardStyles,
   badgeStyles,
@@ -113,11 +108,61 @@ export function DayCard({
   onExerciseSettings,
   onAddExercise,
   onRemoveExercise,
-  updateExerciseParams,
   onExerciseDragEnd,
 }: DayCardProps) {
   const [expanded, setExpanded] = useState(false);
   const exercises = day.exercises || [];
+
+  // Единый рендер строки упражнения — используется и в DraggableFlatList, и в map.
+  // Вариант B: каждое упражнение — собственная карточка, схема подходов×повторы
+  // как пилюля справа (главный визуальный акцент, PRODUCT.md §3.3).
+  const renderExerciseItem = ({
+    exercise,
+    exIndex,
+    drag,
+    isDragging,
+  }: {
+    exercise: ProgramExercise;
+    exIndex: number;
+    drag?: () => void;
+    isDragging?: boolean;
+  }) => {
+    const muscles = (exercise as MusclesHolder).primary_muscles || [];
+    return (
+      <View style={[cardStyles.dayCardExerciseItem, { opacity: isDragging ? 0.5 : 1 }]}>
+        {editMode && onExerciseDragEnd && (
+          <TouchableOpacity onPressIn={drag} style={cardStyles.dayCardExerciseItemGrip}>
+            <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={cardStyles.dayCardExerciseItemBody}
+          onPress={() => editMode && onExerciseSettings(exIndex)}
+          activeOpacity={editMode ? 0.7 : 1}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+            <Text style={[cardStyles.dayCardExerciseItemName, { flex: 1 }]} numberOfLines={2}>
+              {exercise.exercise_name}
+            </Text>
+            <View style={cardStyles.dayCardExerciseSchemePill}>
+              <Text style={cardStyles.dayCardExerciseSchemePillText}>
+                {exercise.sets} × {exercise.reps_range}
+              </Text>
+            </View>
+          </View>
+          <ExerciseMuscles muscles={muscles} colors={colors} />
+        </TouchableOpacity>
+        {editMode && (
+          <TouchableOpacity
+            onPress={() => onRemoveExercise(exIndex)}
+            style={cardStyles.dayCardExerciseDeleteButton}
+          >
+            <Trash2 size={16} color={colors.error} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={[cardStyles.dayCardContainer, { opacity: isActive ? 0.5 : 1 }]}>
@@ -175,114 +220,33 @@ export function DayCard({
       {/* Тело дня (список упражнений) */}
       {expanded && (
         <View style={cardStyles.dayCardExercisesContainer}>
-          {editMode && onExerciseDragEnd ? (
-            <DraggableFlatList
-              data={exercises}
-              onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
-              keyExtractor={(item: ProgramExercise) => item.id}
-              renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
-                const exIndex = exercises.indexOf(exercise as ProgramExercise);
-                const intensityInfo = getIntensityInfo(exercise.intensity);
-                const muscles = (exercise as MusclesHolder).primary_muscles || [];
-                return (
-                  <ScaleDecorator>
-                    <View style={[cardStyles.dayCardExerciseRow, { opacity: isExerciseActive ? 0.5 : 1 }]}>
-                      <View style={cardStyles.dayCardExerciseContent}>
-                        <TouchableOpacity onPressIn={drag} style={cardStyles.dayCardExerciseGrip}>
-                          <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={cardStyles.dayCardExerciseTouchable}
-                          onPress={() => onExerciseSettings(exIndex)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={cardStyles.dayCardExerciseName} numberOfLines={2}>
-                            {exercise.exercise_name}
-                          </Text>
-                          <ExerciseMuscles muscles={muscles} colors={colors} />
-                          <View style={cardStyles.dayCardExerciseMeta}>
-                            <Text style={cardStyles.dayCardExerciseMetaText}>
-                              {exercise.sets} × {exercise.reps_range}
-                            </Text>
-                            <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
-                              {intensityInfo.icon}
-                              <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>
-                                {intensityInfo.label}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={cardStyles.dayCardExerciseRest}>
-                            <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                            <Text style={cardStyles.dayCardExerciseRestText}>
-                              Отдых: {exercise.rest_seconds} сек
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => onRemoveExercise(exIndex)}
-                          style={cardStyles.dayCardExerciseDelete}
-                        >
-                          <Trash2 size={16} color={colors.error} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </ScaleDecorator>
-                );
-              }}
-              scrollEnabled={false}
-            />
-          ) : (
-            exercises.map((exercise: ProgramExercise, exIndex: number) => {
-              const intensityInfo = getIntensityInfo(exercise.intensity);
-              const muscles = (exercise as MusclesHolder).primary_muscles || [];
-              return (
-                <View key={exercise.id} style={cardStyles.dayCardExerciseRow}>
-                  <View style={cardStyles.dayCardExerciseContent}>
-                    {editMode && (
-                      <View style={cardStyles.dayCardExerciseGrip}>
-                        <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
-                      </View>
-                    )}
-                    <TouchableOpacity
-                      style={cardStyles.dayCardExerciseTouchable}
-                      onPress={() => editMode && onExerciseSettings(exIndex)}
-                      activeOpacity={editMode ? 0.7 : 1}
-                    >
-                      <Text style={cardStyles.dayCardExerciseName} numberOfLines={2}>
-                        {exercise.exercise_name}
-                      </Text>
-                      <ExerciseMuscles muscles={muscles} colors={colors} />
-                      <View style={cardStyles.dayCardExerciseMeta}>
-                        <Text style={cardStyles.dayCardExerciseMetaText}>
-                          {exercise.sets} × {exercise.reps_range}
-                        </Text>
-                        <View style={[badgeStyles.intensityBadge, { backgroundColor: intensityInfo.color + '20' }]}>
-                          {intensityInfo.icon}
-                          <Text style={[badgeStyles.intensityText, { color: intensityInfo.color }]}>
-                            {intensityInfo.label}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={cardStyles.dayCardExerciseRest}>
-                        <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                        <Text style={cardStyles.dayCardExerciseRestText}>
-                          Отдых: {exercise.rest_seconds} сек
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    {editMode && (
-                      <TouchableOpacity
-                        onPress={() => onRemoveExercise(exIndex)}
-                        style={cardStyles.dayCardExerciseDelete}
-                      >
-                        <Trash2 size={16} color={colors.error} strokeWidth={2} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
+            {editMode && onExerciseDragEnd ? (
+              <DraggableFlatList
+                data={exercises}
+                onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
+                keyExtractor={(item: ProgramExercise) => item.id}
+                renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
+                  const exIndex = exercises.indexOf(exercise as ProgramExercise);
+                  return (
+                    <ScaleDecorator>
+                      {renderExerciseItem({
+                        exercise: exercise as ProgramExercise,
+                        exIndex,
+                        drag,
+                        isDragging: isExerciseActive,
+                      })}
+                    </ScaleDecorator>
+                  );
+                }}
+                scrollEnabled={false}
+              />
+            ) : (
+              exercises.map((exercise: ProgramExercise, exIndex: number) => (
+                <View key={exercise.id}>
+                  {renderExerciseItem({ exercise, exIndex })}
                 </View>
-              );
-            })
-          )}
+              ))
+            )}
           {editMode && (
             <TouchableOpacity onPress={onAddExercise} style={cardStyles.dayCardAddButton}>
               <Plus size={16} color={colors.primary} strokeWidth={2} />

@@ -167,7 +167,7 @@ export function computeExerciseWarnings(
   exercises: ExerciseLike[],
   injuries: UserInjury[],
   rules: WarningRule[],
-  contraindications: Record<string, Array<{ body_part: string; injury_type: string; level: 'avoid' | 'caution' }>>,
+  contraindications: Record<string, { body_part: string; injury_type: string; level: 'avoid' | 'caution' }[]>,
 ): Record<string, InjuryWarning> {
   const warnings: Record<string, InjuryWarning> = {};
   for (const ex of exercises) {

@@ -14,29 +14,22 @@ import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 interface SheetShellProps {
-  /** Заголовок. Если не передан — шапка с крестиком не рисуется. */
+  visible?: boolean;
   title?: string;
-  /** Закрытие по тапу на затемнение и по крестику. */
   onClose: () => void;
-  /** Доп. отступ сверху панели (например, под кастомный контент вместо title). */
   keyboardVerticalOffset?: number;
   children: React.ReactNode;
 }
 
-/**
- * Единая оболочка для всех bottom-sheet модалок.
- *
- * Внутри НЕ должно быть «голых» текстовых строк — всё в <Text>.
- * Затемнение, tap-to-close, панель, заголовок, ScrollView, клавиатура —
- * всё здесь; формы компонентов (PhaseSettings/DaySettings/ExerciseSettings/...)
- * кладут только поля ввода и кнопки.
- */
 export function SheetShell({
+  visible = true,
   title,
   onClose,
   keyboardVerticalOffset = 0,
   children,
 }: SheetShellProps) {
+  if (!visible) return null;
+
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -46,9 +39,7 @@ export function SheetShell({
       keyboardVerticalOffset={keyboardVerticalOffset}
       style={{ flex: 1 }}
     >
-      {/* Затемнение на весь экран (colors.overlay — без хардкода rgba). */}
       <View style={{ flex: 1, backgroundColor: colors.overlay }}>
-        {/* Тап по затемнению закрывает; прозрачный, занимает всё место над панелью. */}
         <TouchableOpacity
           style={{ flex: 1 }}
           activeOpacity={1}
@@ -60,12 +51,9 @@ export function SheetShell({
             backgroundColor: colors.surface,
             borderTopLeftRadius: BORDER_RADIUS.xl,
             borderTopRightRadius: BORDER_RADIUS.xl,
-            // Не вылезать за верх на низких экранах / landscape клавиатуры.
             maxHeight: '92%',
           }}
         >
-          {/* Фиксированная шапка: заголовок + крестик. Рисуем только если передан title.
-              ВАЖНО: весь видимый текст — внутри <Text>. */}
           {title ? (
             <View
               style={{
@@ -89,9 +77,6 @@ export function SheetShell({
             </View>
           ) : null}
 
-          {/* Скроллируемая форма: прокрутка + авто-прокрутка к полю над клавиатурой.
-              keyboardShouldPersistTaps="handled" — кнопка «Сохранить» срабатывает
-              прямо с открытой клавиатурой, без её закрытия. */}
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}

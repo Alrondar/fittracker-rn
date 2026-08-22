@@ -116,7 +116,7 @@ function RootLayoutContent() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="workout/[id]" />
-        <Stack.Screen name="history/[id]" />
+        <Stack.Screen name="progress/[id]" />
       </Stack>
 
       <ThemedStatusBar />

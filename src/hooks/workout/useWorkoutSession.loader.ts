@@ -3,7 +3,17 @@
 import { supabase } from '../../lib/supabase';
 import { AlternativeExercise } from '../../types/workout';
 import { getExerciseReferenceData } from '../../services/exerciseReferenceService';
+import { getExerciseContraindications } from '../../services/injuriesService';
 import { painService, PainEvent } from '../../services/painService';
+import { UserInjury, targetsInjuredMuscle } from '../../constants/injuries';
+import {
+  rankAlternatives,
+  AlternativeCandidate,
+  AlternativeSourceInput,
+  AlternativeSourceContext,
+  ExerciseDifficulty,
+  RelationType,
+} from '../../engine/alternatives';
 import {
   SessionWorkoutRow,
   SessionExerciseRow,
@@ -16,14 +26,14 @@ export interface WorkoutSessionData {
   exerciseRows: SessionExerciseRow[];
   logsByWorkoutExercise: Record<
     string,
-    Array<{
+    {
       set_number: number;
       weight_kg: number | null;
       reps: number | null;
       rpe: number | null;
       rir: number | null;
       difficulty: string | null;
-    }>
+    }[]
   >;
   recentLogs: RecentLog[];
   referenceData: Record<
@@ -78,6 +88,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
           .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
           .in('workout_exercise_id', workoutExerciseIds)
       : Promise.resolve({ data: null, error: null }),
+
     exerciseIds.length > 0
       ? supabase
           .from('workout_logs')
@@ -87,6 +98,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
           .order('created_at', { ascending: false })
           .limit(300)
       : Promise.resolve({ data: null, error: null }),
+
     referenceDataPromise,
     painEventsPromise,
   ]);
@@ -110,11 +122,31 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
   };
 }
 
+// ============================================================================
+// ENG-5: ALTERNATIVES WITH RANKING
+// ============================================================================
+
+/** ENG-5: результат загрузки альтернатив + число скрытых травмами. */
+export interface FetchAlternativesResult {
+  alternatives: AlternativeExercise[];
+  excludedCount: number;
+}
+
 /**
- * Загружает альтернативы для упражнения.
- * Возвращает AlternativeExercise[] в порядке из exercise_relationships.
+ * Загружает альтернативы для упражнения и ранжирует детерминированно (ENG-5).
+ * Порядок: score desc; при равенстве — исходный порядок exercise_relationships
+ * (approved > suggested > confidence). Исключения по травмам — два уровня,
+ * зеркалят warmupService (ARCH-8).
+ *
+ * @param exerciseId - ID исходного упражнения
+ * @param source - контекст источника для ранжирования
+ * @param activeInjuries - активные травмы пользователя
  */
-export async function fetchAlternatives(exerciseId: string): Promise<AlternativeExercise[]> {
+export async function fetchAlternatives(
+  exerciseId: string,
+  source: AlternativeSourceInput,
+  activeInjuries: UserInjury[],
+): Promise<FetchAlternativesResult> {
   // 1. Получаем связи альтернатив из нормализованной таблицы
   const { data: relationships, error: relationshipsError } = await supabase
     .from('exercise_relationships')
@@ -134,31 +166,76 @@ export async function fetchAlternatives(exerciseId: string): Promise<Alternative
     ),
   ];
 
-  if (alternativeIds.length === 0) return [];
+  if (alternativeIds.length === 0) return { alternatives: [], excludedCount: 0 };
 
-  // 2. Загружаем собственные данные упражнений
+  // ENG-5: тип связи по кандидату. Запрос уже отсортирован (status, confidence) —
+  // при дублях берём первую (наилучшую) связь. null = тип не указан (честный пропуск).
+  const relationTypeMap = new Map<string, RelationType | null>();
+  for (const row of relationships ?? []) {
+    const id = row.related_exercise_id as string;
+    if (!relationTypeMap.has(id)) {
+      relationTypeMap.set(id, (row.relation_type ?? null) as RelationType | null);
+    }
+  }
+
+  // 2. Загружаем данные упражнений + исходное упражнение:
+  //    movement_pattern/difficulty нужны для ранжирования ENG-5 (один запрос).
+  const allIds = [...alternativeIds, exerciseId];
   const { data: exercisesData, error: exercisesError } = await supabase
     .from('exercises')
     .select(
-      'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url',
+      'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url, movement_pattern, difficulty',
     )
-    .in('id', alternativeIds);
+    .in('id', allIds);
 
   if (exercisesError) throw exercisesError;
 
-  // 3. Получаем normalized reference data
+  // 3. Получаем normalized reference data (equipment, injuries, alternativeIds)
   const referenceData = await getExerciseReferenceData(alternativeIds);
 
-  // 4. Сохраняем порядок из exercise_relationships
   const exercisesById = new Map(
     (exercisesData ?? []).map((exercise) => [exercise.id, exercise]),
   );
 
-  const alternatives: AlternativeExercise[] = alternativeIds
+  // 4. ENG-5: контекст источника (pattern/difficulty из того же запроса)
+  const sourceRow = exercisesById.get(exerciseId);
+  const sourceContext: AlternativeSourceContext = {
+    ...source,
+    movementPattern: sourceRow?.movement_pattern ?? null,
+    difficulty: (sourceRow?.difficulty ?? null) as ExerciseDifficulty | null,
+  };
+
+  // 5. ENG-5: кандидаты для ранжирования
+  const candidates: AlternativeCandidate[] = alternativeIds
     .map((id) => {
       const ex = exercisesById.get(id);
       if (!ex) return null;
-      const refs = referenceData[id] ?? {
+      const refs = referenceData[id] ?? { equipment: [], injuries: [], alternativeIds: [] };
+      return {
+        id: ex.id,
+        primary_muscles: ex.primary_muscles || [],
+        secondary_muscles: ex.secondary_muscles || [],
+        equipment: refs.equipment,
+        movement_pattern: ex.movement_pattern ?? null,
+        difficulty: (ex.difficulty ?? null) as ExerciseDifficulty | null,
+        relationType: relationTypeMap.get(ex.id) ?? null,
+      };
+    })
+    .filter((c): c is AlternativeCandidate => c !== null);
+
+  // 6. ENG-5: противопоказания — только при активных травмах (паттерн warmupService)
+  const contraindications =
+    activeInjuries.length > 0 ? await getExerciseContraindications(alternativeIds) : {};
+
+  // 7. ENG-5: ранжирование (чистая функция engine)
+  const ranking = rankAlternatives(candidates, sourceContext, activeInjuries, contraindications);
+
+  // 8. Маппинг в ранжированном порядке (только не исключённые)
+  const alternatives: AlternativeExercise[] = ranking.ordered
+    .map((ranked): AlternativeExercise | null => {
+      const ex = exercisesById.get(ranked.id);
+      if (!ex) return null;
+      const refs = referenceData[ranked.id] ?? {
         equipment: [],
         injuries: [],
         alternativeIds: [],
@@ -175,9 +252,10 @@ export async function fetchAlternatives(exerciseId: string): Promise<Alternative
         risks: ex.risks || '',
         injuries: refs.injuries,
         media_url: ex.media_url ?? null,
+        relation_type: relationTypeMap.get(ex.id) ?? null,
       };
     })
     .filter((exercise): exercise is AlternativeExercise => exercise !== null);
 
-  return alternatives;
+  return { alternatives, excludedCount: ranking.excludedCount };
 }

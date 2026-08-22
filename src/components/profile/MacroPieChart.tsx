@@ -37,7 +37,7 @@ export function MacroPieChart({ proteins, fats, carbs }: MacroPieChartProps) {
     return `M 50 50 L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
   };
 
-  let currentAngle = 0;
+  const currentAngle = 0;
   const proteinAngle = (proteinPercent / 100) * 360;
   const fatAngle = (fatPercent / 100) * 360;
   const carbAngle = (carbPercent / 100) * 360;

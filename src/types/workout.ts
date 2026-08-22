@@ -59,6 +59,20 @@ export interface AlternativeExercise {
   injuries: string[];
   media_url: string | null;
   reps_range?: string;
+  /** ENG-5: тип связи для бейджа (↗ прогрессия / ↘ упрощение / вариант). */
+  relation_type?: 'variation' | 'alternative' | 'regression' | 'progression' | null;
 }
 // Display mode для карточек упражнений в тренировке
 export type WorkoutCardDisplayMode = 'training' | 'balanced' | 'learn';
+
+// COACH-3: acceptance/rejection feedback для рекомендаций прогрессии.
+// Зеркалит типы из recommendationFeedbackService для UI-layer без прямой зависимости.
+export type RecommendationDecision = 'accepted' | 'rejected' | 'changed';
+
+/** Пользовательская причина отклонения (ROADMAP C2, фиксированный набор). */
+export type UserRejectionReason =
+  | 'tired'
+  | 'too_heavy'
+  | 'pain'
+  | 'want_easier'
+  | 'other';

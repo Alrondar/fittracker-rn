@@ -82,7 +82,7 @@ const isMachineEquipment = (equipment: string[]): boolean =>
   });
 
 /** Силовая ли тренировка (по оборудованию основных упражнений) */
-const isStrengthFocused = (mainExercises: Array<{ equipment?: string[] }>): boolean =>
+const isStrengthFocused = (mainExercises: { equipment?: string[] }[]): boolean =>
   mainExercises.some(ex =>
     (ex.equipment || []).some(eq => {
       const lower = eq.toLowerCase();
@@ -105,12 +105,12 @@ export const warmupService = {
    * вместо keyword-эвристики matchesContraindication.
    */
   async generateWarmup(
-    mainExercises: Array<{
+    mainExercises: {
       id: string;
       primary_muscles: string[];
       secondary_muscles: string[];
       equipment?: string[];
-    }>,
+    }[],
     activeInjuries: UserInjury[] = [],
     activationFirst: boolean = false,
   ): Promise<WarmupGenerationResult> {

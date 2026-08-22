@@ -7,16 +7,18 @@
 // +2.5/+5/+10/+15/+20 в активный сет; custom-ввод удалён.
 // 06.08.2026: чипы в текущих единицах (кг → кг-шаги, lb → реальные lb-номиналы);
 // возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
-import React, { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, Clock } from 'lucide-react-native';
+import { TrendingUp, Clock, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
-import { SetData, SetFeedbackPatch } from '../../types/workout';
+import { SetData, SetFeedbackPatch, UserRejectionReason } from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings } from '../../hooks/useRpeSettings';
+import { useRecommendationFeedback } from '../../hooks/useRecommendationFeedback';
+
 import {
   WeightUnit,
   weightToDisplay,
@@ -24,6 +26,37 @@ import {
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip, SetFeedbackEditor } from './SetFeedbackControl';
+import {
+  calculateProgression,
+  explainProgression,
+  applySafetyPrecedence,
+  applyReadinessContext,
+  ProgressionResult,
+  ExplanationItem,
+  SafetyContext,
+  SafetyOverride,
+  ReadinessContext,
+  ReadinessOverride,
+} from '../../engine/progression';
+import { RecommendationCard } from './RecommendationCard';
+
+// COACH-3: фиксированный набор причин отклонения (ROADMAP C2).
+// Коды — machine-readable (для аналитики), лейблы — user-facing.
+const REJECTION_REASONS: { code: UserRejectionReason; label: string }[] = [
+  { code: 'tired', label: 'устал' },
+  { code: 'too_heavy', label: 'слишком тяжело' },
+  { code: 'pain', label: 'боль' },
+  { code: 'want_easier', label: 'хочу легче' },
+  { code: 'other', label: 'другое' },
+];
+
+// COACH-3: состояние prompt-а причины отклонения.
+// 'idle' — ничего не спрашиваем; 'reasonPrompt' — показываем чипы причин;
+// 'resolved' — ответ записан, prompt скрыт.
+type FeedbackState =
+  | { status: 'idle' }
+  | { status: 'reasonPrompt' }
+  | { status: 'resolved' };
 
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
@@ -209,6 +242,12 @@ interface SetsGridProps {
   exerciseIndex: number;
   sets: SetData[];
   restSeconds: number;
+  /** ENG-1: диапазон повторов для прогрессии. null = no target (fallback to RPE only). */
+  repsRange?: string | null;
+  /** ENG-4: safety context (pain/injury). Engine применяет precedence к рекомендации. */
+  safetyContext?: SafetyContext | null;
+  /** ENG-3: readiness context (optional signal). Применяется после safety. */
+  readinessContext?: ReadinessContext | null;
   unit: WeightUnit;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
@@ -219,12 +258,18 @@ interface SetsGridProps {
   startRestTimer: (seconds: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
+  // COACH-3: идентификаторы для записи feedback (пробрасываются из ExerciseCard).
+  workoutId: string;
+  exerciseId: string;
 }
 
 export const SetsGrid = memo(function SetsGrid({
   exerciseIndex,
   sets,
   restSeconds,
+  repsRange,
+  safetyContext,
+  readinessContext,
   unit,
   updateSet,
   updateSetFeedback,
@@ -232,7 +277,11 @@ export const SetsGrid = memo(function SetsGrid({
   startRestTimer,
   colors,
   cardStyles,
+  workoutId,
+  exerciseId,
 }: SetsGridProps) {
+  // COACH-3: fire-and-forget запись feedback (ошибки глотаются тихо).
+  const { submitFeedback } = useRecommendationFeedback();
   // UX-7: настройка частоты запроса RPE
   const { settings: rpeSettings } = useRpeSettings();
 
@@ -345,6 +394,213 @@ export const SetsGrid = memo(function SetsGrid({
     [progressionSetIndex, prevWeight, fromDisplay, updateSet, exerciseIndex],
   );
 
+  // ============================================================================
+  // ENG-1: детерминированная рекомендация прогрессии
+  // ENG-4: safety precedence (pain/injury > recommendation)
+  // ============================================================================
+  const recommendation = useMemo<(ProgressionResult & {
+    safetyOverride?: SafetyOverride | null;
+    readinessOverride?: ReadinessOverride | null;
+  }) | null>(() => {
+    if (sets.length === 0) return null;
+    const base = calculateProgression({ sets, repsRange: repsRange ?? null });
+    const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
+    // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
+    return applyReadinessContext(afterSafety, readinessContext ?? null);
+  }, [sets, repsRange, safetyContext, readinessContext]);
+
+  // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
+  // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)
+  const highlightedChip: number | null =
+    recommendation?.action === 'increase' && !recommendation?.safetyOverride
+      ? (unit === 'kg' ? 2.5 : 5)
+      : null;
+
+  // Иконка + цвет рекомендации
+  // ENG-4: при safety override (downgrade increase → hold) используем warning color,
+  // чтобы визуально отделить от обычного hold (CONSOLIDATE/HIGH_RPE_HOLD).
+  // Suppressed (no_data) — не рендерится.
+  // ENG-3/ENG-4: любой системный override (safety ИЛИ readiness) использует warning color
+  const isSystemDowngrade = !!(recommendation?.safetyOverride || recommendation?.readinessOverride);
+  // (удалено — иконку действия рендерит RecommendationCard)
+  const recommendationColor = isSystemDowngrade
+    ? colors.warning
+    : recommendation?.action === 'increase'
+      ? colors.success
+      : recommendation?.action === 'decrease'
+        ? colors.warning
+        : colors.primary;
+
+  // ============================================================================
+  // ENG-2 + COACH-1: recommendation UX — expand / dismiss / chips-open state
+  // COACH-3: feedbackState для inline-запроса причины отклонения
+  // ============================================================================
+  const [expanded, setExpanded] = useState(false);
+  // dismissed — скрывает recommendation на сессию (не persist — COACH-3 territory)
+  const [dismissed, setDismissed] = useState(false);
+  // COACH-1: chips are hidden by default and revealed by the "Изменить" button
+  // inside the RecommendationCard. Reduces L1 noise (PRODUCT.md §3.3).
+  const [chipsOpen, setChipsOpen] = useState(false);
+  // COACH-3: состояние prompt-а причины отклонения.
+  // 'reasonPrompt' показывается после «Скрыть» — inline-чипы причин + пропустить.
+  const [feedbackState, setFeedbackState] = useState<FeedbackState>({ status: 'idle' });
+
+  // Reset expand/dismiss/chipsOpen/feedbackState state when exercise changes
+  useEffect(() => {
+    setExpanded(false);
+    setDismissed(false);
+    setChipsOpen(false);
+    setFeedbackState({ status: 'idle' });
+  }, [exerciseIndex]);
+
+  const explanationItems = useMemo<ExplanationItem[]>(() => {
+    if (!recommendation || recommendation.action === 'no_data') return [];
+    return explainProgression(recommendation);
+  }, [recommendation]);
+
+  const toggleExpanded = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExpanded((v) => !v);
+  }, []);
+
+  // COACH-3: «Скрыть» → показываем inline-чипы причин (reasonPrompt).
+  // Сам feedback запишется позже — при выборе причины или пропуске.
+  const handleDismiss = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDismissed(true);
+    setExpanded(false);
+    setChipsOpen(false);
+    // Только при наличии активного сета и валидной рекомендации показываем prompt
+    if (progressionSetIndex !== null && recommendation && recommendation.action !== 'no_data') {
+      setFeedbackState({ status: 'reasonPrompt' });
+    } else {
+      setFeedbackState({ status: 'resolved' });
+    }
+  }, [progressionSetIndex, recommendation]);
+
+  // COACH-1: «Изменить» toggles visibility of progression chips (they are the
+  // manual weight-adjustment tool). Chips hidden by default — lower L1 noise.
+  const handleChipsToggle = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setChipsOpen((v) => !v);
+  }, []);
+
+  // COACH-1: «Принять» writes suggestedWeight (+ suggestedReps if provided)
+  // into the first incomplete set (progressionSetIndex). Uses the existing
+  // updateSet mutation + scheduleFlush chain — no new server call,
+  // no new prop drilling. After the set fills, the recommendation naturally
+  // recomputes for the next incomplete set (per-set progression, FEAT-1.1 v2).
+  // COACH-3: тихая запись accepted feedback (fire-and-forget).
+  const handleAccept = useCallback(() => {
+    if (
+      progressionSetIndex === null ||
+      !recommendation ||
+      recommendation.action === 'no_data' ||
+      recommendation.suggestedWeight == null
+    ) {
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Weight: engine returns kg (storage unit) → write directly to set.weight
+    // (set.weight stores kg regardless of display unit; flushPendingLogs
+    // parses it as weight_kg).
+    updateSet(
+      exerciseIndex,
+      progressionSetIndex,
+      'weight',
+      String(recommendation.suggestedWeight),
+    );
+    if (recommendation.suggestedReps != null) {
+      updateSet(
+        exerciseIndex,
+        progressionSetIndex,
+        'reps',
+        String(recommendation.suggestedReps),
+      );
+    }
+    // Close chips to reduce noise after acceptance; card stays visible until
+    // the next set's recommendation is computed.
+    setChipsOpen(false);
+
+    // COACH-3: fire-and-forget запись accepted feedback.
+    // appliedWeight = вес, который только что записали в сет.
+    submitFeedback({
+      workoutId,
+      exerciseId,
+      setNumber: progressionSetIndex + 1,
+      decision: 'accepted',
+      userReasonCode: null,
+      engineAction: recommendation.action,
+      engineReasonCode: recommendation.reason.code,
+      suggestedWeight: recommendation.suggestedWeight,
+      suggestedReps: recommendation.suggestedReps ?? null,
+      appliedWeight: recommendation.suggestedWeight,
+    });
+  }, [
+    progressionSetIndex,
+    recommendation,
+    exerciseIndex,
+    updateSet,
+    workoutId,
+    exerciseId,
+    submitFeedback,
+  ]);
+
+  // COACH-3: выбор причины отклонения → запись rejected + userReasonCode.
+  const handleReasonSelect = useCallback(
+    (reasonCode: UserRejectionReason) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (
+        progressionSetIndex === null ||
+        !recommendation ||
+        recommendation.action === 'no_data'
+      ) {
+        setFeedbackState({ status: 'resolved' });
+        return;
+      }
+      submitFeedback({
+        workoutId,
+        exerciseId,
+        setNumber: progressionSetIndex + 1,
+        decision: 'rejected',
+        userReasonCode: reasonCode,
+        engineAction: recommendation.action,
+        engineReasonCode: recommendation.reason.code,
+        suggestedWeight: recommendation.suggestedWeight ?? null,
+        suggestedReps: recommendation.suggestedReps ?? null,
+        appliedWeight: null,
+      });
+      setFeedbackState({ status: 'resolved' });
+    },
+    [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback],
+  );
+
+  // COACH-3: пропустить причину → запись rejected без userReasonCode.
+  const handleSkipReason = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (
+      progressionSetIndex === null ||
+      !recommendation ||
+      recommendation.action === 'no_data'
+    ) {
+      setFeedbackState({ status: 'resolved' });
+      return;
+    }
+    submitFeedback({
+      workoutId,
+      exerciseId,
+      setNumber: progressionSetIndex + 1,
+      decision: 'rejected',
+      userReasonCode: null,
+      engineAction: recommendation.action,
+      engineReasonCode: recommendation.reason.code,
+      suggestedWeight: recommendation.suggestedWeight ?? null,
+      suggestedReps: recommendation.suggestedReps ?? null,
+      appliedWeight: null,
+    });
+    setFeedbackState({ status: 'resolved' });
+  }, [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback]);
+
   const handleOpenFeedback = useCallback((setIndex: number) => {
     setFeedbackSetIndex(setIndex);
   }, []);
@@ -412,29 +668,97 @@ export const SetsGrid = memo(function SetsGrid({
                 )}
               </Text>
             </View>
+            {/* COACH-1: Recommendation Card (replaces ENG-2 one-liner + expandable) */}
+            {recommendation && recommendation.action !== 'no_data' && !dismissed && (
+            <RecommendationCard
+            recommendation={recommendation}
+            explanationItems={explanationItems}
+            accentColor={recommendationColor}
+            colors={colors}
+            toDisplay={toDisplay}
+            unit={unit}
+            expanded={expanded}
+            onToggleExpand={toggleExpanded}
+            onAccept={handleAccept}
+            onChange={handleChipsToggle}
+            onDismiss={handleDismiss}
+            acceptDisabled={progressionSetIndex === null}
+            chipsOpen={chipsOpen}
+            />
+            )}
+            {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
+                PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
+                «×» справа = пропустить причину (записать rejected без userReasonCode). */}
+            {dismissed && feedbackState.status === 'reasonPrompt' && (
+              <View style={{ marginTop: SPACING.sm, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: colors.primary + '20' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.xs }}>
+                  <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '500' }]}>
+                    Почему? (не обязательно)
+                  </Text>
+                  {REJECTION_REASONS.map((reason) => (
+                    <TouchableOpacity
+                      key={reason.code}
+                      onPress={() => handleReasonSelect(reason.code)}
+                      activeOpacity={0.7}
+                      style={{
+                        paddingHorizontal: SPACING.sm,
+                        paddingVertical: 4,
+                        borderRadius: BORDER_RADIUS.sm,
+                        backgroundColor: colors.surfaceSecondary,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                      }}
+                    >
+                      <Text style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '600' }]}>
+                        {reason.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    onPress={handleSkipReason}
+                    activeOpacity={0.7}
+                    style={{
+                      paddingHorizontal: 6,
+                      paddingVertical: 4,
+                      borderRadius: BORDER_RADIUS.sm,
+                    }}
+                  >
+                    <X size={14} color={colors.textTertiary} strokeWidth={2} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить" */}
+            {chipsOpen && (
             <View
-              style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
+            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
             >
-              {PROGRESSION_STEPS.map((step) => (
-                <TouchableOpacity
-                  key={step}
-                  onPress={() => handleProgressionStep(step)}
-                  activeOpacity={0.7}
-                  style={{
-                    paddingHorizontal: SPACING.sm,
-                    paddingVertical: 4,
-                    borderRadius: BORDER_RADIUS.sm,
-                    backgroundColor: colors.primary,
+            {PROGRESSION_STEPS.map((step) => {
+            const isHighlighted = step === highlightedChip;
+            return (
+            <TouchableOpacity
+            key={step}
+                onPress={() => handleProgressionStep(step)}
+                activeOpacity={0.7}
+              style={{
+                paddingHorizontal: SPACING.sm,
+                paddingVertical: 4,
+                borderRadius: BORDER_RADIUS.sm,
+              backgroundColor: isHighlighted ? colors.success : colors.primary,
+                borderWidth: isHighlighted ? 1 : 0,
+                  borderColor: isHighlighted ? colors.success : 'transparent',
                   }}
-                >
+                    >
                   <Text
                     style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
-                  >
-                    +{step} {unit}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                >
+                +{step} {unit}
+            </Text>
+            </TouchableOpacity>
+            );
+            })}
             </View>
+            )}
           </View>
         )}
 

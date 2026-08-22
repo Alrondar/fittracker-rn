@@ -112,4 +112,18 @@ async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
     });
     if (error) throw error;
   },
+    /**
+   * AUDIT-6: количество pain events за сегодня (для чипа «⚠ Боль сегодня»
+   * в StatusCard). Информационный сигнал, не блокирует тренировку.
+   */
+  async getPainEventsToday(userId: string): Promise<number> {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('pain_events')
+      .select('id')
+      .eq('user_id', userId)
+      .gte('occurred_at', `${today}T00:00:00+00:00`);
+    if (error) throw error;
+    return (data ?? []).length;
+  },
 };

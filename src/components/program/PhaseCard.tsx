@@ -29,7 +29,6 @@ interface PhaseCardProps {
   colors: any;
   cardStyles: any;
   badgeStyles: any;
-  getIntensityInfo: (intensity: string) => { label: string; color: string; icon: React.ReactNode };
   onMoveUp: () => void;
   onMoveDown: () => void;
   onEditPhase: () => void;
@@ -43,7 +42,6 @@ interface PhaseCardProps {
   onExerciseSettings: (day: ProgramDay, exerciseIndex: number) => void;
   onAddExercise: (flatIndex: number) => void;
   onRemoveExercise: (flatIndex: number, exerciseIndex: number) => void;
-  updateExerciseParams: (flatIndex: number, exerciseIndex: number, params: any) => void;
   onExerciseDragEnd: (flatIndex: number, data: ProgramExercise[]) => void;
 }
 
@@ -57,7 +55,6 @@ export function PhaseCard({
   colors,
   cardStyles,
   badgeStyles,
-  getIntensityInfo,
   onMoveUp,
   onMoveDown,
   onEditPhase,
@@ -71,7 +68,6 @@ export function PhaseCard({
   onExerciseSettings,
   onAddExercise,
   onRemoveExercise,
-  updateExerciseParams,
   onExerciseDragEnd,
 }: PhaseCardProps) {
   const [expanded, setExpanded] = useState(true);
@@ -85,9 +81,9 @@ export function PhaseCard({
   const sortByDay = (a: ProgramDay, b: ProgramDay) => (a.day_number || 0) - (b.day_number || 0);
   const weekDays = days.filter((d) => (d.week_number ?? 1) === selectedWeek).sort(sortByDay);
   const templateDays = days.filter((d) => (d.week_number ?? 1) === 1).sort(sortByDay);
-const isOverridden = selectedWeek === 1 || weekDays.length > 0;
-const displayDays = isOverridden ? weekDays : templateDays;
-const isInherited = !isOverridden;
+  const isOverridden = selectedWeek === 1 || weekDays.length > 0;
+  const displayDays = isOverridden ? weekDays : templateDays;
+  const isInherited = !isOverridden;
   const canEditDays = editMode && isOverridden;
 
   const getFlatIndex = (day: ProgramDay) => allDays.indexOf(day);
@@ -98,7 +94,6 @@ const isInherited = !isOverridden;
       <DayCard
         day={day}
         dayIndex={flatIndex}
-        getIntensityInfo={getIntensityInfo}
         colors={colors}
         cardStyles={cardStyles}
         badgeStyles={badgeStyles}
@@ -109,7 +104,6 @@ const isInherited = !isOverridden;
         onExerciseSettings={(exerciseIndex: number) => onExerciseSettings(day, exerciseIndex)}
         onAddExercise={() => onAddExercise(flatIndex)}
         onRemoveExercise={(exerciseIndex: number) => onRemoveExercise(flatIndex, exerciseIndex)}
-        updateExerciseParams={updateExerciseParams}
         onExerciseDragEnd={(data) => onExerciseDragEnd(flatIndex, data)}
       />
     );
