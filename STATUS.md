@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 21.08.2026 (main)
+Срез: 22.08.2026 (main)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -85,6 +85,7 @@
 | AUDIT-5 | 🟠 | ✅ | **Workout Report**: создан `app/(tabs)/progress/[id].tsx` с детальной сводкой (время, объём, подходы, ср. RPE), задействованными мышцами и списком упражнений с логами |
 | AUDIT-3 | 🟡 | 🔲 | аудит библиотеки Exercises (`exercises.tsx`): поиск, фильтры, infinite scroll (PERF-9) |
 | AUDIT-4 | 🟡 | 🔲 | аудит Profile/Goals/Injuries/Metrics: зачем данные и что реально используется (PRODUCT.md §15 product test) |
+| AUDIT-6 | 🟠 | ✅ | **Блок «Состояние сегодня»** (`StatusCard`): readiness — мини-кольцо (consistency с `CircularNutritionChart`) + 5 tappable pips (quick-set с haptics, `ReadinessSheet` — детальный check-in); чипы активных травм (`SEVERITY_COLORS`, tap → `/profile/injuries`) + информационный чип «⚠ Боль сегодня» (`painService.getPainEventsToday`); строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8); `ReadinessSheet` встроен в `StatusCard` и инвалидирует `['todayReadiness', userId]` после сохранения; травмы и readiness — независимые сигналы, травмы не переписывают самооценку |
 
 ## 5. Training Engine
 
@@ -113,11 +114,11 @@
 |---|---:|---|---|
 | PROG-1 | 🔴 | 🔲 | аудит каталога готовых/личных программ |
 | PROG-2 | 🔴 | 🔲 | аудит Program Card |
-| PROG-3 | 🔴 | 🔲 | разделить Program Detail и Editor |
-| PROG-4 | 🔴 | 🔲 | полный аудит вложенности Program → Phase/Week → Workout → Exercise |
-| PROG-5 | 🔴 | 🔲 | progressive disclosure в Editor |
-| PROG-6 | 🟠 | 🔲 | context/breadcrumb |
-| PROG-7 | 🟠 | 🔲 | sheets + save/sync UX |
+| PROG-3 | 🔴 | ✅ | разделить Program Detail и Editor: создан отдельный маршрут `/program/[id]/edit`, убран toggle `editMode` из Detail, вынесены editor-модалки в `ProgramEditorModals` |
+| PROG-4 | 🔴 | ✅ | вложенность программы: карточки упражнения получили собственный контейнер и явную L1-схему (подходы × повторы пилюлей); визуальный шум снижен |
+| PROG-5 | 🔴 | ✅ | progressive disclosure в Program Editor: детали упражнения (отдых/интенсивность) — L2 через sheet, на карточке только схема и мышцы |
+| PROG-6 | 🟠 | ✅ | context/breadcrumb: добавлен компактный breadcrumb в шапку экрана редактирования |
+| PROG-7 | 🟠 | ✅ | sheets + save/sync UX: убран блокирующий `Alert`, добавлен спокойный `Toast`; все editor-листы переведены на каноничный `SheetShell` (INVENTORY.md §6) |
 
 ## 8. Optional AI Coach
 

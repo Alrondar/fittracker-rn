@@ -20,7 +20,7 @@ interface ProgramHeroProps {
   programDescription: string;
   duration: number;
   schedule: string[];
-  levelInfo: {
+  levelInfo?: {
     label: string;
     color: string;
     icon: React.ReactNode;
@@ -75,10 +75,12 @@ export function ProgramHero({
             marginBottom: SPACING.lg,
           }}
         >
-          <View style={badgeStyles.metaBadge}>
-            {levelInfo.icon}
-            <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
-          </View>
+          {levelInfo && (
+            <View style={badgeStyles.metaBadge}>
+              {levelInfo.icon}
+              <Text style={badgeStyles.metaBadgeText}>{levelInfo.label}</Text>
+            </View>
+          )}
           <View style={badgeStyles.metaBadge}>
             <Clock size={14} color={ON_COLOR} strokeWidth={1.5} />
             <Text style={badgeStyles.metaBadgeText}>{duration} недель</Text>
