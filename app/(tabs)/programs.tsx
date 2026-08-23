@@ -21,6 +21,7 @@ import { ProgramCard } from '../../src/components/ProgramCard';
 import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
 import { ImportProgramSheet } from '../../src/components/program/sheets/ImportProgramSheet';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 import { importProgramByCode } from '../../src/services/programSharingService';
 import { getUserProgramsStatus, activateProgram } from '../../src/services/programsService';
 import { FadeIn } from '../../src/components/FadeIn';
@@ -287,6 +288,20 @@ export default function ProgramsScreen() {
           </View>
         </TouchableOpacity>
       )}
+      {activeTab === 'ready' && (
+        <TouchableOpacity
+          style={[buttonStyles.primary, { paddingHorizontal: SPACING.xl }]}
+          onPress={() => {
+            setImportError(null);
+            setShowImportModal(true);
+          }}
+        >
+          <View style={buttonStyles.content}>
+            <Link2 size={20} color={colors.textInverse} strokeWidth={2} />
+            <Text style={buttonStyles.textPrimary}>Импортировать по коду</Text>
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -364,32 +379,35 @@ export default function ProgramsScreen() {
           </TouchableOpacity>
         </View>
         {showSortMenu && (
-          <View style={{ marginBottom: SPACING.sm }}>
+          <SheetShell title="Сортировка" onClose={() => setShowSortMenu(false)}>
             {SORT_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option.value}
                 style={{
-                  paddingVertical: SPACING.sm,
-                  paddingHorizontal: SPACING.md,
-                  borderRadius: BORDER_RADIUS.md,
-                  backgroundColor: sortBy === option.value ? colors.primary + '15' : 'transparent',
+                  paddingVertical: SPACING.md,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
                 }}
                 onPress={() => {
                   setSortBy(option.value);
                   setShowSortMenu(false);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
               >
                 <Text
                   style={[
-                    typography.label,
-                    { color: sortBy === option.value ? colors.primary : colors.textPrimary },
+                    typography.body,
+                    {
+                      color: sortBy === option.value ? colors.primary : colors.textPrimary,
+                      fontWeight: sortBy === option.value ? '600' : '400',
+                    },
                   ]}
                 >
                   {option.label}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </SheetShell>
         )}
         {/* Чипы фильтров по уровню */}
         <View style={cardStyles.filterChips}>

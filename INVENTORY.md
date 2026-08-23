@@ -2,7 +2,7 @@ FitTracker — Code & Screen Inventory
 Срез: 22.08.2026 (main)
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
-0. Navigation: where to look for what
+# 0. Navigation: where to look for what
 Этот раздел помогает находить код с MCP или без. Первичный источник — code search; здесь — направления и поисковые шаблоны.
 
 | Что ищем|Где искать|
@@ -18,7 +18,7 @@ FitTracker — Code & Screen Inventory
 | Схема/RPC/migrations|supabase/migrations/|
 | Expo config|app.config.ts  +  src/lib/config.ts|
 
-Search patterns
+## Search patterns
 Типовые запросы для code search / grep:
 Потребители компонента/хука: `from '.*<name>'` или `import.*<name>` в `src/` и `app/`.
 Нарушения Supabase boundary: `supabase.from(` и `supabase.auth.` вне `src/services/` и root auth flow.
@@ -35,7 +35,7 @@ Migrations таблиц/RPC: поиск в `supabase/migrations/` + провер
 С MCP
 Code search — первичный источник фактов; этот файл — вторичный. Поиск потребителей перед изменением обязателен (CLAUDE.md §10).
 
-1. Screen map
+# 1. Screen map
 
 | Экран|Роль|Основные зависимости|
 | ---|---|---|
@@ -59,9 +59,9 @@ Code search — первичный источник фактов; этот фа�
 | app/profile/progress.tsx|УДАЛЁН : функциональность перенесена в  app/(tabs)/progress.tsx||
 | app/(tabs)/history.tsx|УДАЛЁН (history.tsx.deleted); Calendar/List (UX-9/UX-10) — см. раздел 2||
 
-2. Highest-priority UX surfaces
+# 2. Highest-priority UX surfaces
 
-Workout
+## Workout
 `app/workout/[id].tsx`
 Main components:
 `src/components/workout/ExerciseCard.tsx` — thin orchestrator, рендерит секции по displayMode
@@ -114,7 +114,7 @@ recommendation placement;
 performance during logging.
 exercise item visual hierarchy (container + scheme pill) ✅;
 
-Programs / Editor
+## Programs / Editor
 `app/(tabs)/programs.tsx` — catalog.
 `app/program/[id]/index.tsx` — detail; `app/program/[id]/edit.tsx` — editor.
 Main components:
@@ -148,16 +148,14 @@ save/sync semantics;
 drag & drop;
 sheet complexity (🟡 остаток: замена Modal на SheetShell).
 
-History
+## History
 `app/(tabs)/history.tsx` — УДАЛЁН (history.tsx.deleted).
-Dead code (единственный потребитель удалён; code search 23.08.2026): `history/HistoryCalendar.tsx`, `history/HistoryViewToggle.tsx`, `useHistoryView.ts`.
+Компоненты Calendar/List (`HistoryCalendar`, `HistoryViewToggle`) и хук `useHistoryView` удалены 23.08.2026 как dead code (code search: живых потребителей не было).
 Живые: `useHistory` + `historyService` — `app/(tabs)/progress.tsx` (RecentWorkouts) и `app/progress/[id].tsx` (Workout Report); `DaySummaryCard` — Dashboard.
 Main components:
-`history/HistoryCalendar.tsx` — месяц с отметками тренировок, навигация по месяцам, выбор дня (UX-9)
-`history/DaySummaryCard.tsx` — sheet выбранного дня через SheetShell, тап по тренировке → Workout Report (L3, `progress/[id]`) (UX-9)
-`history/HistoryViewToggle.tsx` — segmented control Calendar/List (UX-10)
+`history/DaySummaryCard.tsx` — sheet выбранного дня через SheetShell, тап по тренировке → Workout Report (L3, `progress/[id]`); используется Dashboard
 Main dependencies:
-`useHistory.ts`, `useHistoryView.ts` — persist выбора Calendar/List (AsyncStorage, default calendar)
+`useHistory.ts` — `app/(tabs)/progress.tsx` (RecentWorkouts)
 `historyService.ts`
 UX direction (реализовано UX-9/UX-10):
 Calendar with workout marks ✅;
@@ -165,7 +163,7 @@ List alternative ✅;
 selected day → workout details ✅;
 keep Progress as separate mental model (UX-11 открыт).
 
-3. Dashboard
+# 3. Dashboard
 `app/(tabs)/index.tsx`
 Components:
 `dashboard/StreakCard.tsx`
@@ -196,7 +194,7 @@ active program context;
 compact insights;
 readiness must remain optional.
 
-4. Exercises
+# 4. Exercises
 Screen:
 `app/(tabs)/exercises.tsx`
 `app/exercise/[id].tsx`
@@ -215,7 +213,7 @@ debounce search;
 dictionaries with long stale time;
 main list: FlashList (PERF-9); horizontal category strip — plain FlatList.
 
-5. Profile / Context
+# 5. Profile / Context
 Screens:
 `app/(tabs)/profile.tsx`
 `app/profile/goals.tsx`
@@ -234,7 +232,7 @@ Dependencies:
 `WeightTrendChart.tsx`
 `MetricSparkline.tsx`
 
-6. Shared UI
+# 6. Shared UI
 `src/components/ui/`
 Important components:
 `AppButton`
@@ -248,7 +246,7 @@ Important components:
 `Toast`
 `SheetShell` is the canonical sheet surface. New sheets should use it unless a clear reason exists not to.
 
-7. Hooks dependency map
+# 7. Hooks dependency map
 
 | Hook|Main consumers|
 | ---|---|
@@ -262,7 +260,6 @@ Important components:
 | useInjuryWarnings|useWarmup, ExerciseCard, workout|
 | useWarmup|WarmupBlock, workout|
 | useHistory|app/(tabs)/progress.tsx  (RecentWorkouts)|
-| useHistoryView|dead: единственный потребитель  app/(tabs)/history.tsx  удалён (code search 23.08.2026)|
 | useProgress|app/(tabs)/progress.tsx  (Progress hub)|
 | useInjuries|injuries + StatusCard (AUDIT-6: чипы активных травм)|
 | useProfile|profile/settings|
@@ -280,7 +277,7 @@ Important components:
 | useTodayPain|StatusCard (AUDIT-6: «⚠ Боль сегодня»)|
 | useNutritionLogs|NutritionLogListModal (NUTRI-2: CRUD записей за день, инвалидация daily/weekly/burned)|
 
-8. Service dependency map
+# 8. Service dependency map
 
 | Service|Main consumers|
 | ---|---|
@@ -289,8 +286,7 @@ Important components:
 | workoutService|workout/create|
 | workoutsService|workouts/useWorkouts|
 | dashboardService|Dashboard/useDashboard|
-| historyService|app/(tabs)/progress.tsx  (RecentWorkouts: duration, program_name, avg_rpe),  app/progress/[id].tsx  (Workout Report)|
-| profileService|profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories)|
+| historyService|app/(tabs)/progress.tsx  (RecentWorkouts: duration, program_name, avg_rpe),  app/progress/[id].tsx  (Workout Report)|| profileService|profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories)|
 | authService|root auth flow + auth screens|
 | exercisesService|exercise library/detail|
 | goalsService  /  metricsService|goals/metrics|
@@ -301,7 +297,7 @@ Important components:
 | progressService|useProgress ,  progress  (режим Аналитика/Обзор)|
 | weeklySummaryService|useWeeklySummary (ENG-6); UI — COACH-5|
 
-9. Core types / constants / utilities
+# 9. Core types / constants / utilities
 
 | Location|Role|
 | ---|---|
@@ -325,7 +321,7 @@ Important components:
 | engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция|
 | engine/weeklySummary.ts|buildWeeklyInsights (ENG-6): 9 детерминированных инсайтов недели; типы WeeklySummaryData/Insight. Чистая функция|
 
-10. Database / migrations
+# 10. Database / migrations
 Important migrations include:
 duplicate RLS cleanup;
 RPC security invoker;
@@ -343,7 +339,7 @@ legacy columns `exercises.equipment`, `exercises.injuries`, `exercises.alternati
 -other current schema migrations under  `supabase/migrations/` .
 Before changing a DB operation, inspect the current migration and generated `database.types.ts`.
 
-11. Blast-radius rules
+# 11. Blast-radius rules
 
 Change `useWorkoutSession.ts`
 Inspect:
@@ -369,7 +365,7 @@ Inspect all workout components and `useWorkoutSession` before changing exports.
 
 Расположение кода — code search (MCP); INVENTORY.md — роли, blast-radius и грабли.
 
-12. Current known implementation notes
+# 12. Current known implementation notes
 RPE is already tappable 1–10; do not reintroduce draggable RPE as default.
 ExerciseSlider already uses lazy mounting/performance safeguards.
 SetsGrid contains per-set previous data; progression chips are hidden by default and revealed by RecommendationCard «Изменить» (COACH-1). COACH-3: после «Скрыть» inline-чипы причин (устал/слишком тяжело/боль/хочу легче/другое) + пропустить; запись через useRecommendationFeedback (fire-and-forget, ошибки глотаются тихо). Таблица recommendation_feedback (upsert по user+workout+exercise+set). `useRecommendationFeedback` автоматически берёт `userId` из `useStore`, что устраняет необходимость пробрасывать его через пропсы компонента.
@@ -393,7 +389,7 @@ RPE quick-skip (UX-6): SetFeedbackEditor показывает кнопку «П�
 Skip workout (FIT-7): пропуск = finished_at + skipped_at заполнены, started_at NULL, подходов нет. onlyCurrentDay: пропускается только тренировка, на которую указывает прогресс-поинтер user_programs (day→week→phase не рассинхронизируется). advanceProgramProgress вызывается sequential с retry (паттерн saveWorkout). Пропуск не попадает в History (historyService фильтрует по наличию логов). Программа без active program — пропуск недоступен.
 Program replacement (UX-5 Feature 1): replaceExerciseInProgram в programsService — 7 шагов (workout → workout_exercise → program_day → program_exercises → UPDATE program_exercises + exercise_name → UPDATE текущей workout_exercises.exercise_id для защиты от orphaned row в sync → syncProgramChanges). Alert в workout/[id].tsx через handleReplaceChoice: 3 кнопки при наличии программы (Отмена / Только сегодня / В программе destructive) или мгновенная temp-замена для ad-hoc тренировок. Rollback при ошибке sync (например, seeded программы с created_by IS NULL).
 Sync safety insight (UX-5 Feature 1): RPC sync_program_changes_to_workouts удаляет workout_exercises с exercise_id, которого нет в program_exercises (orphaned by exercise_id). Поэтому перед вызовом sync обязательно обновляем текущую workout_exercises.exercise_id — иначе для не начатых тренировок sync пересоздал бы строку с новым id и осиротил бы pending workout_logs.
-Исторически (экран `app/(tabs)/history.tsx` удалён): History calendar (UX-9/UX-10): workoutDates вычисляются локально из HistoryWorkout.date (effective date: `finished_at ?? started_at ?? created_at`, см. CLAUDE.md §4) через useMemo — ноль новых запросов, данные уже загружены getHistory. HistoryCalendar: навигация от самого раннего месяца с тренировками до текущего (в будущее нельзя), неделя с понедельника, точки на днях с тренировками. Тап по дню → DaySummaryCard (SheetShell) со списком тренировок дня; несколько тренировок в день поддерживаются. Выбор вида Calendar/List персистится в AsyncStorage (useHistoryView), default — Calendar. Пропущенные тренировки (skipped_at) в календаре НЕ отображаются — Вариант A, консистентно с FIT-7: History = фактически выполненное (historyService фильтрует по наличию логов).
+Исторически (экран и Calendar/List-компоненты удалены 23.08.2026): History calendar (UX-9/UX-10): workoutDates вычисляются локально из HistoryWorkout.date ...date (effective date: `finished_at ?? started_at ?? created_at`, см. CLAUDE.md §4) через useMemo — ноль новых запросов, данные уже загружены getHistory. HistoryCalendar: навигация от самого раннего месяца с тренировками до текущего (в будущее нельзя), неделя с понедельника, точки на днях с тренировками. Тап по дню → DaySummaryCard (SheetShell) со списком тренировок дня; несколько тренировок в день поддерживаются. Выбор вида Calendar/List персистится в AsyncStorage (useHistoryView), default — Calendar. Пропущенные тренировки (skipped_at) в календаре НЕ отображаются — Вариант A, консистентно с FIT-7: History = фактически выполненное (historyService фильтрует по наличию логов).
 Progress hub (UX-11): `app/(tabs)/progress.tsx` — отдельный bottom-tab, единый экран «Как я меняюсь?» (PRODUCT.md §11). Последовательный поток: Hero → Stats → Insights → Activity → Strength (с интерактивным селектором упражнений и explainability e1RM) → Weight → PR → RecentWorkouts. Карточки RecentWorkouts используют детерминированный градиент (на основе RPE) и показывают program_name, duration, volume, sets, avg_rpe. Грабли: `workout_exercises` не имеет `exercise_name` (только через embed); skip-тренировки (FIT-7) исключаем через `.is('skipped_at', null)`.
 Progression rules (ENG-1): src/engine/progression.ts — чистая функция calculateProgression({sets, repsRange, stepKg}). 8 правил в порядке приоритета: MAX_EFFORT (RPE 10 → decrease), READY_TO_PROGRESS (allAtMax + RPE ≤ 7 → increase), ALL_MAX_REPS (allAtMax без RPE → increase), HIGH_RPE_HOLD (RPE ≥ 9), CONSOLIDATE (allAtMin), OVERREACHED (allBelowMin → decrease), MISSED_REPS (anyBelowMin), INCONCLUSIVE (fallback hold). Reason codes machine-readable (ENG-2/B5 foundation). SetsGrid рендерит one-liner recommendation + подсвечивает smallest chip при increase. Данные: previous session (SetData.previousWeight/Reps/Rpe) + текущие завершённые сеты (live recompute). repsRange парсится из ExerciseData.reps_range. Step: 2.5 кг / 5 lb.
 Progression engine (ENG-1/ENG-2): src/engine/progression.ts — чистые функции без React/Supabase. calculateProgression: 8 правил по приоритету, данные = previous session (SetData.previousWeight/Reps/Rpe) + завершённые сеты текущей сессии (live recompute). explainProgression: массив ExplanationItem (input/signal/conclusion) по reason.code — engine отдаёт сырые данные, UI форматирует. SetsGrid: RecommendationCard c one-liner reason/override в header; тап → expanded «Почему?» + «Скрыть» (dismissed локально; persistence отложен до COACH-3). Директория src/engine/ — архитектурный задел для B2 readiness, B4 alternatives ranking, B5 explainability.
@@ -409,7 +405,9 @@ src/hooks/useNutritionLogs.ts — NUTRI-2: React Query список + мутац
 Workout effective date (FIT-8, bugfix 2026-08-23): никогда не использовать `workouts.created_at` как дату тренировки в History / Progress / Calendar / Streak / PR / Dashboard. Эффективная дата = `finished_at ?? started_at ?? created_at`, т.к. при upfront-создании программы (`create_workouts_for_program`) все записи получают `created_at` в момент активации (CLAUDE.md §4). В historyService.ts канонизован хелпер `effectiveDate()`; в dashboardService / progressService / weeklySummaryService — аналогичные inline-вычисления.
 Exercise library (PERF-9): основной список в `app/(tabs)/exercises.tsx` — FlashList 2.x (`@shopify/flash-list`). Грабли: в 2.x удалён проп `estimatedItemSize` (был в 1.x) — не добавлять, упадёт tsc. `windowSize`/`removeClippedSubviews` — пропы FlatList, FlashList их не принимает. Горизонтальная полоса групп мышц намеренно оставлена на FlatList (короткий список, ~10–15 элементов).
 
-13. Inventory maintenance
+Program catalog (PROG-1/PROG-2): sort menu переведён на SheetShell (INVENTORY.md §6); copyProgramForUser вынесен в programsService (CLAUDE.md §2: supabase только в services); LayoutAnimation убран (CLAUDE.md §9 anti-pattern, New Architecture); empty state ready-tab — кнопка «Импортировать по коду» (открывает ImportProgramSheet). Alert для ready-program tap сохранён: Program Detail не имеет CTA «Скопировать и редактировать» для seeded программ, удаление Alert потеряло бы функционал копирования.
+
+# 13. Inventory maintenance
 When adding/removing/renaming a meaningful screen, hook, service, shared component, or migration:
 update this inventory;
 update `STATUS.md` if task status changed;

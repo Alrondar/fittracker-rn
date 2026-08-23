@@ -518,6 +518,39 @@ export async function advanceProgramProgress(
 }
 
 // ============================================================================
+// КОПИРОВАНИЕ ГОТОВОЙ ПРОГРАММЫ (PROG-1)
+// ============================================================================
+/**
+ * PROG-1: Копировать готовую (seeded) программу в "Мои программы" пользователя.
+ * Оборачивает RPC copy_program_for_user + select для возврата полной программы.
+ * Используется в каталоге программ для ready-programs (`created_by IS NULL`).
+ */
+export async function copyProgramForUser(
+  programId: string,
+  userId: string,
+): Promise<Program> {
+  const { data: newProgramId, error: rpcError } = await supabase.rpc(
+    'copy_program_for_user',
+    { p_program_id: programId, p_user_id: userId },
+  );
+  if (rpcError) throw rpcError;
+
+  // RPC возвращает id (string | string[] в зависимости от конфигурации).
+  const id = Array.isArray(newProgramId) ? newProgramId[0] : newProgramId;
+  if (!id) throw new Error('Не удалось скопировать программу');
+
+  const { data: program, error: selectError } = await supabase
+    .from('programs')
+    .select('*')
+    .eq('id', id as string)
+    .single();
+  if (selectError) throw selectError;
+  if (!program) throw new Error('Скопированная программа не найдена');
+
+  return mapProgramRow(program as unknown as ProgramRow);
+}
+
+// ============================================================================
 // АКТИВАЦИЯ ПРОГРАММЫ
 // ============================================================================
 /**

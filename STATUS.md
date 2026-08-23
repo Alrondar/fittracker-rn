@@ -117,8 +117,8 @@
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| PROG-1 | 🔴 | 🔲 | аудит каталога готовых/личных программ |
-| PROG-2 | 🔴 | 🔲 | аудит Program Card |
+| PROG-1 | 🔴 | ✅ | аудит каталога готовых/личных программ: sort menu → SheetShell, copyProgramForUser вынесен в programsService, LayoutAnimation убран (CLAUDE.md §9 anti-pattern), empty state ready-tab — кнопка «Импортировать по коду» |
+| PROG-2 | 🔴 | ✅ | аудит Program Card: бейджи (Моя/Уровень/Длительность/Текущая), цветная полоса уровня, акцентная рамка для активной, расписание, footer с Edit/Активировать/Подробнее; Alert для ready-programs сохранён (деталь экрана не имеет CTA «Скопировать») |
 | PROG-3 | 🔴 | ✅ | разделить Program Detail и Editor: создан отдельный маршрут `/program/[id]/edit`, убран toggle `editMode` из Detail, вынесены editor-модалки в `ProgramEditorModals` |
 | PROG-4 | 🔴 | ✅ | вложенность программы: карточки упражнения получили собственный контейнер и явную L1-схему (подходы × повторы пилюлей); визуальный шум снижен |
 | PROG-5 | 🔴 | ✅ | progressive disclosure в Program Editor: детали упражнения (отдых/интенсивность) — L2 через sheet, на карточке только схема и мышцы |
