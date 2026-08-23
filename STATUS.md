@@ -53,6 +53,7 @@
 | FEAT-1.8 | Context | ✅ | optional daily readiness |
 | FEAT-1.9 | Safety | ✅ | pain sheet + injury caution + persistent state (PR6): prefill из pain_events, upsert/delete, «Боль прошла», visual affordance «⚠ Боль отмечена» |
 | FEAT-2.2 | Progress | ✅ | WeightTrendChart + MetricSparkline + body metrics |
+| FEAT-2.3 | Progress | ✅ | Разделение бедра на левое/правое (thigh_left_cm/thigh_right_cm) для консистентности с другими конечностями; thigh_cm — legacy (как arm_cm); миграция 20260823_split_thigh_cm.sql копирует данные в обе новые колонки; UI автоматически поддерживает через METRIC_FIELDS |
 | UX-1 | Workout | ✅ | header разгружен, UnitToggle рядом с timer |
 | UX-14 | Workout | ✅ | header variant D: Settings справа от названия, metadata слева, actions-bubbles справа |
 

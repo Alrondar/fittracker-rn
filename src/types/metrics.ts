@@ -19,6 +19,9 @@ export interface BodyMetric {
   biceps_right_cm: number | null;
   forearm_left_cm: number | null;
   forearm_right_cm: number | null;
+  thigh_left_cm: number | null;
+  thigh_right_cm: number | null;
+  /** legacy: старое единое бедро; в новых записях используются thigh_left_cm/thigh_right_cm */
   thigh_cm: number | null;
   calf_left_cm: number | null;
   calf_right_cm: number | null;
@@ -42,6 +45,8 @@ export interface MetricFormData {
   biceps_right_cm: string;
   forearm_left_cm: string;
   forearm_right_cm: string;
+  thigh_left_cm: string;
+  thigh_right_cm: string;
   thigh_cm: string;
   calf_left_cm: string;
   calf_right_cm: string;
@@ -69,7 +74,8 @@ export const METRIC_FIELDS = [
   { key: 'biceps_right_cm', label: 'Бицепс правый', unit: 'см', group: 'arms' },
   { key: 'forearm_left_cm', label: 'Предплечье левое', unit: 'см', group: 'arms' },
   { key: 'forearm_right_cm', label: 'Предплечье правое', unit: 'см', group: 'arms' },
-  { key: 'thigh_cm', label: 'Бедро', unit: 'см', group: 'legs' },
+  { key: 'thigh_left_cm', label: 'Бедро левое', unit: 'см', group: 'legs' },
+  { key: 'thigh_right_cm', label: 'Бедро правое', unit: 'см', group: 'legs' },
   { key: 'calf_left_cm', label: 'Икра левая', unit: 'см', group: 'legs' },
   { key: 'calf_right_cm', label: 'Икра правая', unit: 'см', group: 'legs' },
 ] as const;

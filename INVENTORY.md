@@ -372,6 +372,7 @@ SetsGrid contains per-set previous data; progression chips are hidden by default
 RestTimer has auto-start and manual fallback.
 PainSheet and ReadinessSheet exist.
 WeightTrendChart and MetricSparkline exist.
+Body metrics schema (FEAT-2.3): `body_metrics` таблица содержит `thigh_left_cm` и `thigh_right_cm` (numeric, nullable) для консистентности с другими конечностями (biceps_left/right, forearm_left/right, calf_left/right). `thigh_cm` — legacy колонка (как `arm_cm`), остаётся для обратной совместимости; миграция `20260823_split_thigh_cm.sql` копирует существующие данные `thigh_cm` в обе новые колонки. UI автоматически поддерживает через `METRIC_FIELDS` в `src/types/metrics.ts` — форма и история рендерятся из этого массива.
 Program editing is already split into multiple components/sheets, but the UX hierarchy remains a major audit target.
 Display modes (training/balanced/learn) реализованы через `useWorkoutDisplayMode` + `WorkoutDisplayModePicker` в settings (feature branch).
 ExerciseCard разбит на секции в `sections/`; порядок секций: Header → Equipment → Warning → [Muscles] → SetsGrid → Technique → [Knowledge]. SetsGrid — главный рабочий блок, всегда выше справочной информации (Technique/Knowledge). Muscles/Knowledge скрыты в training mode.

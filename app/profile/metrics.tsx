@@ -125,6 +125,8 @@ export default function MetricsScreen() {
     biceps_right_cm: '',
     forearm_left_cm: '',
     forearm_right_cm: '',
+    thigh_left_cm: '',
+    thigh_right_cm: '',
     thigh_cm: '',
     calf_left_cm: '',
     calf_right_cm: '',
