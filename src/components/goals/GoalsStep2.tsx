@@ -102,7 +102,7 @@ export function GoalsStep2({
                 Использую фармакологию
               </Text>
               <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                АС, ГР или комбо
+                АС, ГР или комбо — меняет формулу расчёта КБЖУ
               </Text>
             </View>
           </View>

@@ -100,6 +100,7 @@ export default function MetricsScreen() {
   };
 
   const sparkFields = METRIC_FIELDS.filter((f) => f.key !== 'weight_kg');
+
   const pointsFor = (key: MetricKey): TrendPoint[] =>
     metrics
       .filter((m) => m[key] != null)
@@ -108,6 +109,9 @@ export default function MetricsScreen() {
   const CHART_COLORS = [colors.primary, colors.success, colors.warning, colors.error];
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const HISTORY_PAGE = 30;
+
   const emptyForm = (): MetricFormData => ({
     metric_date: new Date().toISOString().split('T')[0],
     weight_kg: '',
@@ -127,6 +131,7 @@ export default function MetricsScreen() {
     arm_cm: '',
     notes: '',
   });
+
   const [formData, setFormData] = useState<MetricFormData>(emptyForm);
 
   const handleSave = () => {
@@ -285,6 +290,16 @@ export default function MetricsScreen() {
                 />
               );
             })}
+          {selectedMetrics.length > 0 && (
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textTertiary, marginTop: SPACING.sm, textAlign: 'center' },
+              ]}
+            >
+              Нажмите на чип выше, чтобы показать или скрыть график
+            </Text>
+          )}
         </View>
 
         {/* Кнопка добавления */}
@@ -317,66 +332,88 @@ export default function MetricsScreen() {
         ) : (
           // ✅ map вместо FlatList: список короткий, скроллится внешний ScrollView —
           //    вложенный VirtualizedList запрещён правилами и здесь не нужен.
-          metrics.map((item) => (
-            <AppCard key={item.id} variant="compact" style={{ marginBottom: SPACING.sm }}>
-              <View
+          // AUDIT-4: пагинация истории (cap + «Показать ещё»)
+          <>
+            {(showAllHistory ? metrics : metrics.slice(0, HISTORY_PAGE)).map((item) => (
+              <AppCard key={item.id} variant="compact" style={{ marginBottom: SPACING.sm }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: SPACING.md,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Calendar size={18} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+                    <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                      {new Date(item.metric_date).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleDelete(item.id)} style={{ padding: 4 }}>
+                    <Trash2 size={18} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
+                  {METRIC_FIELDS.map((field) => {
+                    const value = item[field.key as keyof typeof item];
+                    if (!value) return null;
+                    return (
+                      <View
+                        key={field.key}
+                        style={{
+                          backgroundColor: colors.surfaceSecondary,
+                          paddingHorizontal: SPACING.md,
+                          paddingVertical: SPACING.xs,
+                          borderRadius: BORDER_RADIUS.sm,
+                        }}
+                      >
+                        <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                          {field.label}:{' '}
+                          <Text style={[typography.caption, { color: colors.textPrimary, fontWeight: '600' }]}>
+                            {value} {field.unit}
+                          </Text>
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                {item.notes && (
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: colors.textSecondary, marginTop: SPACING.sm, fontStyle: 'italic' },
+                    ]}
+                  >
+                    📝 {item.notes}
+                  </Text>
+                )}
+              </AppCard>
+            ))}
+            {!showAllHistory && metrics.length > HISTORY_PAGE && (
+              <TouchableOpacity
+                onPress={() => setShowAllHistory(true)}
+                activeOpacity={0.7}
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  marginBottom: SPACING.md,
+                  paddingVertical: SPACING.md,
+                  alignItems: 'center',
+                  backgroundColor: colors.surface,
+                  borderRadius: BORDER_RADIUS.md,
+                  marginTop: SPACING.sm,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Calendar size={18} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-                  <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-                    {new Date(item.metric_date).toLocaleDateString('ru-RU', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={() => handleDelete(item.id)} style={{ padding: 4 }}>
-                  <Trash2 size={18} color={colors.error} />
-                </TouchableOpacity>
-              </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-                {METRIC_FIELDS.map((field) => {
-                  const value = item[field.key as keyof typeof item];
-                  if (!value) return null;
-                  return (
-                    <View
-                      key={field.key}
-                      style={{
-                        backgroundColor: colors.surfaceSecondary,
-                        paddingHorizontal: SPACING.md,
-                        paddingVertical: SPACING.xs,
-                        borderRadius: BORDER_RADIUS.sm,
-                      }}
-                    >
-                      <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                        {field.label}:{' '}
-                        <Text style={[typography.caption, { color: colors.textPrimary, fontWeight: '600' }]}>
-                          {value} {field.unit}
-                        </Text>
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-              {item.notes && (
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: colors.textSecondary, marginTop: SPACING.sm, fontStyle: 'italic' },
-                  ]}
-                >
-                  📝 {item.notes}
+                <Text style={[typography.labelBold, { color: colors.primary }]}>
+                  Показать ещё ({metrics.length - HISTORY_PAGE})
                 </Text>
-              )}
-            </AppCard>
-          ))
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </ScrollView>
 

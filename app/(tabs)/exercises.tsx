@@ -343,7 +343,6 @@ export default function ExercisesScreen() {
                 placeholderTextColor={colors.textTertiary}
                 value={searchInput}
                 onChangeText={setSearchInput}
-                autoFocus
                 returnKeyType="search"
               />
               {searchInput.length > 0 && (

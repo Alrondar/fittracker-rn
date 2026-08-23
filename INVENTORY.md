@@ -407,6 +407,11 @@ Exercise library (PERF-9): основной список в `app/(tabs)/exercise
 
 Program catalog (PROG-1/PROG-2): sort menu переведён на SheetShell (INVENTORY.md §6); copyProgramForUser вынесен в programsService (CLAUDE.md §2: supabase только в services); LayoutAnimation убран (CLAUDE.md §9 anti-pattern, New Architecture); empty state ready-tab — кнопка «Импортировать по коду» (открывает ImportProgramSheet). Alert для ready-program tap сохранён: Program Detail не имеет CTA «Скопировать и редактировать» для seeded программ, удаление Alert потеряло бы функционал копирования.
 Workout session supabase boundary (Slice B): все supabase-вызовы сессии — в `workoutService` (fetchWorkoutSession / fetchAlternatives / updateWorkout / RPC upsert_workout_logs); `workout/useWorkoutSession.loader.ts` — thin re-export; `useWorkoutSession.ts` и UI — без supabase (CLAUDE.md §2).
+Profile clickable stats (AUDIT-4): карточки статистики (Тренировки/Программы/Объем) в profile.tsx обёрнуты в TouchableOpacity с haptics, ведут в workouts/programs/progress. Личные рекорды (PR) кликабельны с ChevronRight, ведут в /exercise/${id}.
+
+Metrics pagination (AUDIT-4): app/profile/metrics.tsx — пагинация истории замеров (HISTORY_PAGE=30), кнопка «Показать ещё (N)» при превышении лимита. Предотвращает рендер огромных списков в ScrollView.
+
+Injuries zone filter (AUDIT-4): app/profile/injuries.tsx — интерактивный фильтр по зонам тела (arms/torso/legs) с BODY_ZONE_COLORS, счётчики в заголовках секций, кнопка «Сбросить».
 
 # 13. Inventory maintenance
 When adding/removing/renaming a meaningful screen, hook, service, shared component, or migration:

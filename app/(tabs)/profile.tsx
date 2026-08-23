@@ -231,27 +231,54 @@ const {
             paddingHorizontal: SPACING.lg,
           }}
         >
-          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
-            <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
-            <Text style={[typography.h3, { color: colors.primary, marginTop: SPACING.xs }]}>
-              {stats.totalWorkouts}
-            </Text>
-            <Text style={[typography.caption, { color: colors.textSecondary }]}>Тренировки</Text>
-          </AppCard>
-          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
-            <Calendar size={20} color={colors.success} strokeWidth={1.5} />
-            <Text style={[typography.h3, { color: colors.success, marginTop: SPACING.xs }]}>
-              {stats.totalPrograms}
-            </Text>
-            <Text style={[typography.caption, { color: colors.textSecondary }]}>Программы</Text>
-          </AppCard>
-          <AppCard variant="compact" style={{ flex: 1, alignItems: 'center', marginHorizontal: 4 }}>
-            <Trophy size={20} color={colors.warning} strokeWidth={1.5} />
-            <Text style={[typography.h3, { color: colors.warning, marginTop: SPACING.xs }]}>
-              {(stats.totalVolume / 1000).toFixed(1)}
-            </Text>
-            <Text style={[typography.caption, { color: colors.textSecondary }]}>Объем (т)</Text>
-          </AppCard>
+          <TouchableOpacity
+            style={{ flex: 1, marginHorizontal: 4 }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/workouts');
+            }}
+            activeOpacity={0.7}
+          >
+            <AppCard variant="compact" style={{ alignItems: 'center' }}>
+              <Dumbbell size={20} color={colors.primary} strokeWidth={1.5} />
+              <Text style={[typography.h3, { color: colors.primary, marginTop: SPACING.xs }]}>
+                {stats.totalWorkouts}
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>Тренировки</Text>
+            </AppCard>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ flex: 1, marginHorizontal: 4 }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/programs');
+            }}
+            activeOpacity={0.7}
+          >
+            <AppCard variant="compact" style={{ alignItems: 'center' }}>
+              <Calendar size={20} color={colors.success} strokeWidth={1.5} />
+              <Text style={[typography.h3, { color: colors.success, marginTop: SPACING.xs }]}>
+                {stats.totalPrograms}
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>Программы</Text>
+            </AppCard>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ flex: 1, marginHorizontal: 4 }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/progress');
+            }}
+            activeOpacity={0.7}
+          >
+            <AppCard variant="compact" style={{ alignItems: 'center' }}>
+              <Trophy size={20} color={colors.warning} strokeWidth={1.5} />
+              <Text style={[typography.h3, { color: colors.warning, marginTop: SPACING.xs }]}>
+                {(stats.totalVolume / 1000).toFixed(1)}
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>Объем (т)</Text>
+            </AppCard>
+          </TouchableOpacity>
         </View>
 
         {/* Личные рекорды */}
@@ -264,57 +291,69 @@ const {
               style={{ paddingHorizontal: 0, paddingTop: 0 }}
             />
             <AppCard variant="compact">
-              {personalRecords.map((record, index) => (
-                <View
-                  key={index}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: SPACING.sm,
-                    borderBottomWidth: index < personalRecords.length - 1 ? 1 : 0,
-                    borderBottomColor: colors.border,
-                  }}
-                >
-                  <View
+              {personalRecords.map((record, index) => {
+                const recordId = (record as any).exercise_id || (record as any).id;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    disabled={!recordId}
+                    onPress={() => {
+                      if (recordId) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push(`/exercise/${recordId}`);
+                      }
+                    }}
+                    activeOpacity={recordId ? 0.7 : 1}
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor:
-                        index < 3 ? RANK_COLORS[index] : colors.surfaceSecondary,
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: SPACING.md,
+                      paddingVertical: SPACING.sm,
+                      borderBottomWidth: index < personalRecords.length - 1 ? 1 : 0,
+                      borderBottomColor: colors.border,
                     }}
                   >
-                    <Text
-                      style={[
-                        typography.caption,
-                        {
-                          color: index < 3 ? colors.textInverse : colors.textSecondary,
-                          fontWeight: '700',
-                        },
-                      ]}
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor:
+                          index < 3 ? RANK_COLORS[index] : colors.surfaceSecondary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: SPACING.md,
+                      }}
                     >
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[typography.labelBold, { color: colors.textPrimary }]}
-                      numberOfLines={1}
-                    >
-                      {record.name}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={[typography.h5, { color: colors.primary }]}>{record.maxWeight} кг</Text>
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      × {record.reps}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                      <Text
+                        style={[
+                          typography.caption,
+                          {
+                            color: index < 3 ? colors.textInverse : colors.textSecondary,
+                            fontWeight: '700',
+                          },
+                        ]}
+                      >
+                        {index + 1}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[typography.labelBold, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                      >
+                        {record.name}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={[typography.h5, { color: colors.primary }]}>{record.maxWeight} кг</Text>
+                      <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                        × {record.reps}
+                      </Text>
+                    </View>
+                    {recordId && <ChevronRight size={18} color={colors.textTertiary} style={{ marginLeft: SPACING.xs }} />}
+                  </TouchableOpacity>
+                );
+              })}
             </AppCard>
           </View>
         )}

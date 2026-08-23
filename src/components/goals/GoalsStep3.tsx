@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { Beef, Droplet, Flame, Pill, Save, Wheat } from 'lucide-react-native';
+import { Beef, Droplet, Flame, Pill, RefreshCw, Save, Wheat } from 'lucide-react-native';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
@@ -153,9 +153,10 @@ export function GoalsStep3({
       {/* Кнопки */}
       <View style={{ flexDirection: 'row', gap: SPACING.md }}>
         <AppButton
-          title="Изменить"
+          title="Пересчитать"
           variant="secondary"
           size="large"
+          icon={<RefreshCw size={18} color={colors.textPrimary} />}
           onPress={onBack}
           style={{ flex: 1 }}
         />
