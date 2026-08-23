@@ -10,12 +10,13 @@
 
 import React, { useCallback, useMemo } from 'react';
 import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+ActivityIndicator,
+Alert,
+RefreshControl,
+ScrollView,
+Text,
+TouchableOpacity,
+View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -448,71 +449,71 @@ export default function ProgressScreen() {
       title="Личные рекорды"
       subtitle="Твои лучшие результаты"
     />
-    {topRecords.map((record) => (
-      <View
-        key={record.name}
-        style={{
-          backgroundColor: colors.warning + '15',
-          borderRadius: BORDER_RADIUS.lg,
-          borderWidth: 1,
-          borderColor: colors.warning + '40',
-          padding: SPACING.md,
-          marginBottom: SPACING.sm,
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}
+{topRecords.map((record) => (
+  <View
+    key={record.name}
+    style={{
+      backgroundColor: colors.warning + '15',
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1,
+      borderColor: colors.warning + '40',
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+    }}
+  >
+    <View
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.warning + '25',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: SPACING.md,
+      }}
+    >
+      <Award size={20} color={colors.warning} />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text
+        numberOfLines={1}
+        style={[typography.labelBold, { color: colors.textPrimary }]}
       >
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: colors.warning + '25',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: SPACING.md,
-          }}
+        {record.name}
+      </Text>
+      {!!record.recordDate && (
+        <Text
+          style={[
+            typography.captionSmall,
+            { color: colors.textTertiary, marginTop: 2 },
+          ]}
         >
-          <Award size={20} color={colors.warning} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text
-            numberOfLines={1}
-            style={[typography.labelBold, { color: colors.textPrimary }]}
-          >
-            {record.name}
-          </Text>
-          {!!record.recordDate && (
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textTertiary, marginTop: 2 },
-              ]}
-            >
-              {new Date(record.recordDate).toLocaleDateString('ru-RU')}
-            </Text>
-          )}
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text
-            style={[
-              typography.h3,
-              { color: colors.warning, fontWeight: '700' },
-            ]}
-          >
-            {record.maxWeight}
-          </Text>
-          <Text
-            style={[
-              typography.captionSmall,
-              { color: colors.textSecondary },
-            ]}
-          >
-            кг × {record.reps}
-          </Text>
-        </View>
-      </View>
-    ))}
+          {new Date(record.recordDate).toLocaleDateString('ru-RU')}
+        </Text>
+      )}
+    </View>
+    <View style={{ alignItems: 'flex-end', marginRight: SPACING.xs }}>
+      <Text
+        style={[
+          typography.h3,
+          { color: colors.warning, fontWeight: '700' },
+        ]}
+      >
+        {record.maxWeight}
+      </Text>
+      <Text
+        style={[
+          typography.captionSmall,
+          { color: colors.textSecondary },
+        ]}
+      >
+        кг × {record.reps}
+      </Text>
+    </View>
+  </View>
+))}
   </View>
 )}
 

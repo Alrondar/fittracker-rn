@@ -59,6 +59,7 @@ export interface NutritionLog {
 }
 
 export interface PersonalRecord {
+  exercise_id: string;
   name: string;
   maxWeight: number;
   reps: number;
@@ -441,17 +442,19 @@ export const profileService = {
       const existing =
         exerciseRecords[exerciseId];
 
-      if (!existing || weight > existing.maxWeight) {
-        exerciseRecords[exerciseId] = {
-          name: exerciseName,
-          maxWeight: weight,
-          reps,
-          e1rm: Math.max(
-            setE1rm,
-            existing?.e1rm ?? 0,
-          ),
-        };
-      } else if (
+if (!existing || weight > existing.maxWeight) {
+  exerciseRecords[exerciseId] = {
+    exercise_id: exerciseId,
+    name: exerciseName,
+    maxWeight: weight,
+    reps,
+    e1rm: Math.max(
+      setE1rm,
+      existing?.e1rm ?? 0,
+    ),
+  };
+}
+      else if (
         setE1rm > existing.e1rm
       ) {
         existing.e1rm = setE1rm;

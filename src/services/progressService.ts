@@ -25,6 +25,8 @@ export interface WeeklyVolume {
 
 export interface PersonalRecordWithDate extends PersonalRecord {
   recordDate: string; // ISO date
+  /** id тренировки, где установлен рекорд — для перехода в Workout Report */
+  workoutId: string;
 }
 
 export interface StrengthPoint {
@@ -187,9 +189,9 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
 async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select(
-      'created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at))',
-    )
+ .select(
+  'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at))',
+)
     .eq('user_id', userId);
 
   if (error) throw error;
@@ -214,24 +216,27 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
         const recordDate = workoutDate || log.completed_at || '';
 
         const existing = exerciseRecords[exerciseId];
-        if (!existing) {
-          exerciseRecords[exerciseId] = {
-            name: exerciseName,
-            maxWeight: weight,
-            reps,
-            e1rm: setE1rm,
-            recordDate,
-          };
-        } else {
-          if (weight > existing.maxWeight) {
-            existing.maxWeight = weight;
-            existing.reps = reps;
-          }
-          if (setE1rm > existing.e1rm) {
-            existing.e1rm = setE1rm;
-            existing.recordDate = recordDate;
-          }
-        }
+if (!existing) {
+  exerciseRecords[exerciseId] = {
+    exercise_id: exerciseId,
+    name: exerciseName,
+    maxWeight: weight,
+    reps,
+    e1rm: setE1rm,
+    recordDate,
+    workoutId: workout.id,
+  };
+} else {
+  if (weight > existing.maxWeight) {
+    existing.maxWeight = weight;
+    existing.reps = reps;
+  }
+  if (setE1rm > existing.e1rm) {
+    existing.e1rm = setE1rm;
+    existing.recordDate = recordDate;
+    existing.workoutId = workout.id;
+  }
+}
       });
     });
   });

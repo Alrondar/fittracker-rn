@@ -4,7 +4,7 @@
 //
 // Поддерживает фильтрацию по одному упражнению (prop selectedExerciseName),
 // чтобы progress.tsx мог показать интерактивный селектор.
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -121,6 +121,7 @@ export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
             <MiniLineChart
               points={s.points.map((p) => p.e1rm)}
               labels={s.points.map((p) => formatShort(p.weekStart))}
+              weekStarts={s.points.map((p) => p.weekStart)}
               color={LINE_COLORS[idx % LINE_COLORS.length]}
               width={chartWidth}
             />
@@ -140,23 +141,23 @@ function MiniLineChart({
   labels,
   color,
   width,
+  weekStarts,
 }: {
   points: number[];
   labels: string[];
   color: string;
   width: number;
+  weekStarts: string[];
 }) {
   const { colors } = useTheme();
+  // Хук вызывается ДО любых early return (rules-of-hooks): длина серии может
+  // меняться между рендерами после refetch.
+  const [actualWidth, setActualWidth] = useState<number>(width);
   const height = 60;
 
   if (points.length === 0) {
     return (
-      <Text
-        style={[
-          typography.caption,
-          { color: colors.textTertiary, fontStyle: 'italic' },
-        ]}
-      >
+      <Text style={[typography.caption, { color: colors.textTertiary, fontStyle: 'italic' }]}>
         Недостаточно данных для тренда
       </Text>
     );
@@ -173,17 +174,8 @@ function MiniLineChart({
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs }}>
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: color,
-            }}
-          />
-          <Text style={[typography.caption, { color: colors.textSecondary }]}>
-            Первый замер
-          </Text>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>Первый замер</Text>
         </View>
         <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
           {points[0].toFixed(1)} кг
@@ -196,15 +188,32 @@ function MiniLineChart({
   const max = Math.max(...points);
   const range = max - min || 1;
 
+  // Расчёт x по датам (weekStarts), а не по индексу
+  const dates = weekStarts.map((d) => +new Date(d));
+  const minDate = Math.min(...dates);
+  const maxDate = Math.max(...dates);
+  const dateRange = maxDate - minDate || 1;
+
+  // Реальная ширина контейнера: проп width может не учитывать внутренние
+  // отступы карточки, из-за чего последняя точка уезжала за правый край.
+  const chartW = actualWidth > 0 ? actualWidth : width;
+  const PAD = 4; // радиус точки + 1px, чтобы крайние точки не обрезались
+
   const dotPositions = points.map((val, i) => {
-    const x = (i / (points.length - 1)) * width;
+    const x = PAD + ((dates[i] - minDate) / dateRange) * (chartW - PAD * 2);
     const y = height - ((val - min) / range) * (height - 8) - 4;
     return { x, y };
   });
 
   return (
     <View>
-      <View style={{ height, width, position: 'relative' }}>
+      <View
+        style={{ height, width: '100%', position: 'relative' }}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          setActualWidth((prev) => (Math.abs(prev - w) > 0.5 ? w : prev));
+        }}
+      >
         {dotPositions.map((pos, i) => (
           <View
             key={i}
@@ -219,20 +228,24 @@ function MiniLineChart({
             }}
           />
         ))}
-        {/* Соединительные линии через View с rotation */}
         {dotPositions.slice(0, -1).map((pos, i) => {
           const next = dotPositions[i + 1];
           const dx = next.x - pos.x;
           const dy = next.y - pos.y;
           const length = Math.sqrt(dx * dx + dy * dy);
           const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+          // Позиционируем линию так, чтобы её центр совпадал с серединой отрезка
+          // между двумя точками. RN поворачивает View вокруг центра, поэтому
+          // после поворота концы линии лягут ровно на точки.
+          const midX = (pos.x + next.x) / 2;
+          const midY = (pos.y + next.y) / 2;
           return (
             <View
               key={`line-${i}`}
               style={{
                 position: 'absolute',
-                left: pos.x,
-                top: pos.y,
+                left: midX - length / 2,
+                top: midY - 0.75,
                 width: length,
                 height: 1.5,
                 backgroundColor: color,
@@ -243,18 +256,12 @@ function MiniLineChart({
           );
         })}
       </View>
-      {/* Labels */}
-      <View
-        style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}
-      >
-        <Text style={[typography.overline, { color: colors.textTertiary }]}>
-          {labels[0]}
-        </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+        <Text style={[typography.overline, { color: colors.textTertiary }]}>{labels[0]}</Text>
         <Text style={[typography.overline, { color: colors.textTertiary }]}>
           {labels[labels.length - 1]}
         </Text>
       </View>
-      {/* Delta */}
       {points.length >= 2 && (
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2 }}>
           <Text
@@ -262,9 +269,7 @@ function MiniLineChart({
               typography.overline,
               {
                 color:
-                  points[points.length - 1] >= points[0]
-                    ? colors.success
-                    : colors.error,
+                  points[points.length - 1] >= points[0] ? colors.success : colors.error,
               },
             ]}
           >
