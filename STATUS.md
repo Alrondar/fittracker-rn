@@ -43,6 +43,7 @@
 | FIT-5 | Workouts | ✅ | следующая фаза/неделя |
 | FIT-6 | Workout | ✅ | program + phase context |
 | FIT-7 | Workouts | ✅ |пропуск тренировки программы: long press на «Следующая» → подтверждение, skipped_at + advanceProgramProgress, бейдж «Пропущена», в историю не попадает|
+| FIT-8 | History / Progress / Dashboard | ✅ | **effective date для тренировок** (bugfix 2026-08-23): исправлено использование `created_at` как даты тренировки в History/Progress/Dashboard/Streak/PR; effective date = `finished_at ?? started_at ?? created_at` (CLAUDE.md §4); хелпер `effectiveDate()` в historyService.ts, аналогичные inline-вычисления в dashboardService / progressService / weeklySummaryService |
 | FEAT-1.1 | Tracker | ✅ | per-set previous data + progression chips; chips ручной корректировки доступны через «Изменить» в RecommendationCard (COACH-1) |
 | FEAT-1.2 | Tracker | ✅ | rest timer + auto-start |
 | FEAT-1.3 | Tracker | ✅ | streak |

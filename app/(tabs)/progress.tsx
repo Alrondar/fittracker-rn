@@ -77,7 +77,7 @@ export default function ProgressScreen() {
       [...flatWorkouts]
         .sort(
           (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+            new Date(b.date).getTime() - new Date(a.date).getTime(),
         )
         .slice(0, 5),
     [flatWorkouts],

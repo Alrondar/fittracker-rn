@@ -119,7 +119,7 @@ export default function DashboardScreen() {
           set.add(
             dayKey(
               new Date(
-                w.created_at,
+                w.date,
               ),
             ),
           ),

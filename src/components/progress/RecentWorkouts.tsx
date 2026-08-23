@@ -152,7 +152,7 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
 
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, alignItems: 'center' }}>
                     <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                      {formatDate(workout.created_at)}
+                      {formatDate(workout.date)}
                     </Text>
                     {duration ? (
                       <>

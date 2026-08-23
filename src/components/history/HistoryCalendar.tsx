@@ -29,7 +29,7 @@ interface HistoryCalendarProps {
   onRetry?: () => void;
 }
 
-/** Дата → 'YYYY-MM-DD' в локальной таймзоне (для совпадения с created_at). */
+/** Дата → 'YYYY-MM-DD' в локальной таймзоне. */
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

@@ -6,6 +6,14 @@ import { supabase } from '../lib/supabase';
 export interface HistoryWorkout {
   id: string;
   name: string;
+  /**
+   * Фактическая дата тренировки: finished_at ?? started_at ?? created_at.
+   * Используйте это поле для отображения даты, сортировки и фильтрации.
+   * created_at ниже оставлен для обратной совместимости и отражает момент
+   * создания записи в БД (при upfront-создании тренировок программы он
+   * НЕ совпадает с фактической датой тренировки — см. bugfix 2026-08-23).
+   */
+  date: string;
   created_at: string;
   volume: number;
   sets: number;
@@ -49,10 +57,16 @@ interface HistoryWorkoutRow {
   id: string;
   name: string;
   created_at: string;
+  started_at: string | null;
   finished_at: string | null;
   duration_seconds: number | null;
   program_id: string | null;
   workout_exercises: HistoryExerciseRow[] | null;
+}
+
+/** Effective date тренировки: когда она фактически завершилась/началась. */
+function effectiveDate(row: HistoryWorkoutRow): string {
+  return row.finished_at ?? row.started_at ?? row.created_at;
 }
 
 function calculateVolume(workout: HistoryWorkoutRow): number {
@@ -91,7 +105,7 @@ function calculateAvgRpe(workout: HistoryWorkoutRow): number | null {
 function groupByMonth(workouts: HistoryWorkout[]): HistorySection[] {
   const groups: Record<string, HistoryWorkout[]> = {};
   workouts.forEach((workout) => {
-    const date = new Date(workout.created_at);
+    const date = new Date(workout.date);
     const monthYear = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
     const formattedMonth = monthYear.charAt(0).toUpperCase() + monthYear.slice(1);
     if (!groups[formattedMonth]) groups[formattedMonth] = [];
@@ -103,7 +117,7 @@ function groupByMonth(workouts: HistoryWorkout[]): HistorySection[] {
 function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
   const now = new Date();
   const thisMonth = workouts.filter((w) => {
-    const date = new Date(w.created_at);
+    const date = new Date(w.date);
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   });
   let totalVolume = 0;
@@ -120,13 +134,15 @@ function calculateMonthlyStats(workouts: HistoryWorkout[]): MonthlyStats {
 }
 
 export async function getHistory(userId: string): Promise<HistoryData> {
+  // Запрашиваем started_at для корректной effective date.
+  // PostgREST не умеет ORDER BY COALESCE(finished_at, started_at, created_at),
+  // поэтому сортируем по effective date на клиенте — ниже, после маппинга.
   const { data, error } = await supabase
     .from('workouts')
-.select(
-  'id, name, created_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe ) )',
+    .select(
+      'id, name, created_at, started_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe ) )',
     )
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('user_id', userId);
 
   if (error) throw error;
 
@@ -161,13 +177,16 @@ export async function getHistory(userId: string): Promise<HistoryData> {
     .map((w) => ({
       id: w.id,
       name: w.name,
+      date: effectiveDate(w),
       created_at: w.created_at,
       volume: calculateVolume(w),
       sets: calculateSets(w),
       duration_seconds: w.duration_seconds ?? null,
       program_name: w.program_id ? (programNames[w.program_id] ?? null) : null,
       avg_rpe: calculateAvgRpe(w),
-    }));
+    }))
+    // Сортируем по фактической дате тренировки, а не по дате создания записи.
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return {
     sections: groupByMonth(completed),
@@ -203,6 +222,7 @@ interface WorkoutDetailRow {
   id: string;
   name: string;
   created_at: string;
+  started_at: string | null;
   finished_at: string | null;
   duration_seconds: number | null;
   program_id: string | null;
@@ -237,6 +257,7 @@ export interface WorkoutDetail {
   id: string;
   name: string;
   created_at: string;
+  started_at: string | null;
   finished_at: string | null;
   duration_seconds: number | null;
   program_id: string | null;
@@ -256,7 +277,7 @@ export async function getWorkoutDetail(
   const { data, error } = await supabase
     .from('workouts')
     .select(
-      `id, name, created_at, finished_at, duration_seconds, program_id, week_number, day_index,
+      `id, name, created_at, started_at, finished_at, duration_seconds, program_id, week_number, day_index,
        workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name, primary_muscles, secondary_muscles ), workout_logs ( id, set_number, weight_kg, reps, rpe, rir, difficulty ) )`,
     )
     .eq('id', workoutId)
@@ -302,6 +323,7 @@ export async function getWorkoutDetail(
       id: workout.id,
       name: workout.name,
       created_at: workout.created_at,
+      started_at: workout.started_at,
       finished_at: workout.finished_at,
       duration_seconds: workout.duration_seconds,
       program_id: workout.program_id,

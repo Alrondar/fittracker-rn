@@ -63,6 +63,8 @@ function computeWeekRange(weekOffset: number, now: Date = new Date()): WeekRange
 interface WorkoutWeekRow {
   id: string;
   created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
   duration_seconds: number | null;
   workout_exercises: {
     id: string;
@@ -76,6 +78,11 @@ interface WorkoutWeekRow {
       completed_at: string | null;
     }[];
   }[] | null;
+}
+
+/** Effective date тренировки: когда она фактически завершилась/началась. */
+function workoutEffectiveDate(w: { finished_at: string | null; started_at: string | null; created_at: string }): string {
+  return w.finished_at ?? w.started_at ?? w.created_at;
 }
 
 interface PainWeekRow {
@@ -114,6 +121,8 @@ async function aggregateWeek(
       .select(`
         id,
         created_at,
+        started_at,
+        finished_at,
         duration_seconds,
         workout_exercises(
           id,
@@ -125,8 +134,8 @@ async function aggregateWeek(
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .is('skipped_at', 'null')
-      .gte('created_at', range.startISO)
-      .lt('created_at', range.nextStartISO),
+      .gte('finished_at', range.startISO)
+      .lt('finished_at', range.nextStartISO),
     supabase
       .from('pain_events')
       .select('body_part, occurred_at')
@@ -164,7 +173,7 @@ async function aggregateWeek(
   const exercisedIds = new Set<string>();
 
   for (const w of workoutsRows) {
-    const wDate = new Date(w.created_at);
+    const wDate = new Date(workoutEffectiveDate(w));
     workoutDaysSet.add(toDateKey(wDate));
     for (const we of w.workout_exercises ?? []) {
       exercisedIds.add(we.exercise_id);
@@ -188,7 +197,7 @@ async function aggregateWeek(
             name,
             maxWeight: weight,
             e1rm: e,
-            date: log.completed_at ?? w.created_at,
+            date: log.completed_at ?? workoutEffectiveDate(w),
           });
         }
       }
