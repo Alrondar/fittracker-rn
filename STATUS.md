@@ -29,8 +29,7 @@
 | SCALE-2 | Monitoring | 🟠 | 🔲 | Sentry до production build |
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
-| PERF-8…PERF-10 | Performance/Design | 🟠 | 🔲 | См. секции 12 и 13: baseline метрик, аудит длинных списков, React Query audit |
-| DS-1 | Design system | 🟠 | 🔲 | Аудит токенов/типографики/spacing/states перед Этапом H (ROADMAP) |
+| PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)| DS-1 | Design system | 🟠 | 🔲 | Аудит токенов/типографики/spacing/states перед Этапом H (ROADMAP) |
 
 ## 3. Existing product baseline
 
@@ -83,10 +82,10 @@
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
 | AUDIT-1 | 🟠 | ✅ | **Dashboard упрощён и дополнен**: фокус на Today-first; L1-summary питания — карточка с 2 страницами (swipe + тапабельные точки): стр. 1 — 3 концентрических кольца (внешнее — макросы сегментами пропорционально целям, среднее — калории, внутреннее — вода только при >0) + 🔥 сожжённые калории в центре + модалка быстрого ввода (state в index.tsx, рендер вне ScrollView); стр. 2 — lazy-таблица КБЖУ+вода за неделю; сожжённые калории перенесены с профиля на Dashboard (getBurnedCalories достаёт вес из profiles сам, null при отсутствии веса — бейдж скрыт); блок «Коротко о неделе» (insights); readiness остаётся optional (PRODUCT.md §12) |
-| AUDIT-2 | 🟡 | 🔲 | аудит Exercise Detail (`exercise/[id].tsx`): техника, оборудование, мышцы, alternatives, связь с workout |
+| AUDIT-2 | 🟡 | ✅ | аудит проведён, вердикт 🟢, кодовые правки не требуются: alternatives работают через exerciseReferenceService (normalized tables, INVENTORY §10); техника — текст, основной контент экрана; records staleTime 2 min — практического импакта нет. Не подтверждено (предположение): hero media autoPlay в TechniqueMediaSlider |
 | AUDIT-5 | 🟠 | ✅ | **Workout Report**: создан `app/(tabs)/progress/[id].tsx` с детальной сводкой (время, объём, подходы, ср. RPE), задействованными мышцами и списком упражнений с логами |
 | AUDIT-3 | 🟡 | 🟡 | аудит библиотеки упражнений: sort sheet → SheetShell ✅ (INVENTORY §6); поиск/фильтры/infinite scroll/PERF-9 ✅; 🟡 suggestions остались (autofocus на поиске, empty state ready-tab) |
-| AUDIT-4 | 🟡 | 🔲 | аудит Profile/Goals/Injuries/Metrics: зачем данные и что реально используется (PRODUCT.md §15 product test) |
+| AUDIT-4 | 🟡 | 🔲 | аудит проведён (PRODUCT.md §15): Goals/Injuries/Metrics — 🟢; Profile — 🟡 (PR и статистика не кликабельны). Modal→SheetShell в profile/metrics/settings — ✅. Остаток 🟡: pharma tooltip и «Пересчитать» в goals; body zones-фильтр в injuries; chart chips tooltip и pagination истории в metrics |
 | AUDIT-6 | 🟠 | ✅ | **Блок «Состояние сегодня»** (`StatusCard`): readiness — мини-кольцо (consistency с `CircularNutritionChart`) + 5 tappable pips (quick-set с haptics, `ReadinessSheet` — детальный check-in); чипы активных травм (`SEVERITY_COLORS`, tap → `/profile/injuries`) + информационный чип «⚠ Боль сегодня» (`painService.getPainEventsToday`); строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8); `ReadinessSheet` встроен в `StatusCard` и инвалидирует `['todayReadiness', userId]` после сохранения; травмы и readiness — независимые сигналы, травмы не переписывают самооценку |
 | AUDIT-6 | 🟠 | ✅ | **Блок «Состояние сегодня»** (`StatusCard`): readiness — мини-кольцо (consistency с `CircularNutritionChart`) + 5 tappable pips (quick-set с haptics, `ReadinessSheet` — детальный check-in); чипы активных травм (`SEVERITY_COLORS`, tap → `/profile/injuries`) + информационный чип «⚠ Боль сегодня» (`painService.getPainEventsToday`); строка-следствие с приоритетом safety > recommendation (PRODUCT.md §8); `ReadinessSheet` встроен в `StatusCard` и инвалидирует `['todayReadiness', userId]` после сохранения; травмы и readiness — независимые сигналы, травмы не переписывают самооценку |
 | NUTRI-1|🔴|✅|сожжённые калории на Dashboard: исправлен фильтр по finished_at (завершённые тренировки) вместо created_at; тренировка, завершённая вчера, теперь корректно учитывается|
@@ -107,8 +106,8 @@
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| COACH-1 | 🔴 | 🔲 | Recommendation card: Accept / Change / Why — выполнено: `RecommendationCard` в `SetsGrid`: suggested weight × reps как primary, «Принять»/«Изменить» как secondary, collapsible «Почему?» как tertiary; progression chips скрыты до «Изменить»; Accept пишет suggestedWeight/suggestedReps в первый незавершённый сет через существующий `updateSet`; «Скрыть» session-local без persistence; safety/readiness overrides используют warning color и не подсвечивают increase-chip. Причина изменения/отклонения и feedback — COACH-3| |
-| COACH-2 | 🔴 | 🔲 | structured reasons |
+| COACH-1 | 🔴 | ✅ | Recommendation card: Accept / Change / Why — выполнено: `RecommendationCard` в `SetsGrid`: suggested weight × reps как primary, «Принять»/«Изменить» как secondary, collapsible «Почему?» как tertiary; progression chips скрыты до «Изменить»; Accept пишет suggestedWeight/suggestedReps в первый незавершённый сет через существующий `updateSet`; «Скрыть» session-local без persistence; safety/readiness overrides используют warning color и не подсвечивают increase-chip. Причина изменения/отклонения и feedback — COACH-3| 
+| COACH-2 | 🔴 | ✅ | structured reasons | structured reasons — реализовано в рамках ENG-2 (explainProgression + «Почему?»/«Скрыть» в SetsGrid)|
 | COACH-3 | 🟠 | ✅ | acceptance/rejection feedback — выполнено: таблица recommendation_feedback (upsert по user+workout+exercise+set), recommendationFeedbackService, useRecommendationFeedback (fire-and-forget useMutation, ошибки глотаются тихо); UI в SetsGrid: после «Скрыть» inline-чипы причин (устал/слишком тяжело/боль/хочу легче/другое) + пропустить (×); «Принять» записывает accepted без причины; PRODUCT.md §3.2 L2 inline-фидбек без sheet/modal; фактический вес при ручном изменении (changed) — вариант B отложен |
 | COACH-4 | 🟠 | ✅ | contextual tips без спама (Dashboard L1 + readiness warning) |
 | COACH-5 | 🟠 | ✅ | weekly review UI (Progress hub, deterministic insights) |

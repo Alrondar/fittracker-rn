@@ -146,7 +146,7 @@ Program → Phase/Week → Workout/Day → Exercise hierarchy (✅ упроще�
 context/breadcrumb (✅ добавлен в edit.tsx);
 save/sync semantics;
 drag & drop;
-sheet complexity (🟡 остаток: замена Modal на SheetShell).
+sheet complexity (✅ PROG-7 + PROG-1: editor-листы, sort menu, create/import — SheetShell).
 
 ## History
 `app/(tabs)/history.tsx` — УДАЛЁН (history.tsx.deleted).
@@ -283,7 +283,7 @@ Important components:
 | ---|---|
 | programsService|usePrograms, programs, program/[id], editor, workouts, dashboard|
 | programSharingService|ShareProgramSheet, ImportProgramSheet|
-| workoutService|workout/create|
+| workoutService|workout/create + workout session (useWorkoutSession): fetchWorkoutSession / fetchAlternatives / updateWorkout / upsertWorkoutLogs — единственная supabase-граница сессии (CLAUDE.md §2)|
 | workoutsService|workouts/useWorkouts|
 | dashboardService|Dashboard/useDashboard|
 | historyService|app/(tabs)/progress.tsx  (RecentWorkouts: duration, program_name, avg_rpe),  app/progress/[id].tsx  (Workout Report)|| profileService|profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories)|
@@ -406,6 +406,7 @@ Workout effective date (FIT-8, bugfix 2026-08-23): никогда не испо�
 Exercise library (PERF-9): основной список в `app/(tabs)/exercises.tsx` — FlashList 2.x (`@shopify/flash-list`). Грабли: в 2.x удалён проп `estimatedItemSize` (был в 1.x) — не добавлять, упадёт tsc. `windowSize`/`removeClippedSubviews` — пропы FlatList, FlashList их не принимает. Горизонтальная полоса групп мышц намеренно оставлена на FlatList (короткий список, ~10–15 элементов).
 
 Program catalog (PROG-1/PROG-2): sort menu переведён на SheetShell (INVENTORY.md §6); copyProgramForUser вынесен в programsService (CLAUDE.md §2: supabase только в services); LayoutAnimation убран (CLAUDE.md §9 anti-pattern, New Architecture); empty state ready-tab — кнопка «Импортировать по коду» (открывает ImportProgramSheet). Alert для ready-program tap сохранён: Program Detail не имеет CTA «Скопировать и редактировать» для seeded программ, удаление Alert потеряло бы функционал копирования.
+Workout session supabase boundary (Slice B): все supabase-вызовы сессии — в `workoutService` (fetchWorkoutSession / fetchAlternatives / updateWorkout / RPC upsert_workout_logs); `workout/useWorkoutSession.loader.ts` — thin re-export; `useWorkoutSession.ts` и UI — без supabase (CLAUDE.md §2).
 
 # 13. Inventory maintenance
 When adding/removing/renaming a meaningful screen, hook, service, shared component, or migration:
