@@ -27,6 +27,7 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 
 // Цвет группы мышц — из единых констант (fallback — semantic token)
 // getGroupColor теперь принимает colors для fallback
@@ -579,75 +580,45 @@ export default function ExercisesScreen() {
       )}
 
       {/* Лист сортировки */}
-      {showSortSheet && (
-        <>
+      <SheetShell visible={showSortSheet} title="Сортировка" onClose={() => setShowSortSheet(false)}>
+        {(
+          [
+            { key: 'name-asc', label: 'По названию (А-Я)' },
+            { key: 'name-desc', label: 'По названию (Я-А)' },
+            { key: 'popularity', label: 'По популярности' },
+          ] as { key: ExerciseSortBy; label: string }[]
+        ).map((option, idx, arr) => (
           <TouchableOpacity
+            key={option.key}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: colors.overlay,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
+              borderBottomColor: colors.border,
             }}
-            onPress={() => setShowSortSheet(false)}
-            activeOpacity={1}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: colors.surface,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              padding: SPACING.lg,
+            onPress={() => {
+              setSortBy(option.key);
+              setShowSortSheet(false);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
           >
-            <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-              Сортировка
+            <Text
+              style={[
+                typography.body,
+                {
+                  color: sortBy === option.key ? colors.primary : colors.textPrimary,
+                  fontWeight: sortBy === option.key ? '600' : '400',
+                },
+              ]}
+            >
+              {option.label}
             </Text>
-            {(
-              [
-                { key: 'name-asc', label: 'По названию (А-Я)' },
-                { key: 'name-desc', label: 'По названию (Я-А)' },
-                { key: 'popularity', label: 'По популярности' },
-              ] as { key: ExerciseSortBy; label: string }[]
-            ).map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingVertical: SPACING.md,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-                onPress={() => {
-                  setSortBy(option.key);
-                  setShowSortSheet(false);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Text
-                  style={[
-                    typography.body,
-                    {
-                      color: sortBy === option.key ? colors.primary : colors.textPrimary,
-                      fontWeight: sortBy === option.key ? '600' : '400',
-                    },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-                {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
+            {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
+          </TouchableOpacity>
+        ))}
+      </SheetShell>
     </SafeAreaView>
   );
 }
