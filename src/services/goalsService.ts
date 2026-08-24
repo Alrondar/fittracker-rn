@@ -12,6 +12,8 @@ export interface GoalsProfileForm {
   goal: GoalType | null;
   activityLevel: number | null;
   pharmacologyType: PharmaType;
+  /** P1.1: Процент жира (опционально, для формулы Кэтча-МакАрдла). */
+  bodyFatPercentage: number | null;
   calories: number;
   proteins: number;
   fats: number;
@@ -26,6 +28,8 @@ export interface GoalsSavePayload {
   goal: GoalType | null;
   activity_level: number | null;
   pharmacology_type: PharmaType;
+  /** P1.1: Процент жира (опционально). */
+  body_fat_percentage: number | null;
   target_calories: number;
   target_proteins: number;
   target_fats: number;
@@ -68,6 +72,8 @@ export async function getGoalsProfile(userId: string): Promise<GoalsProfileForm 
     goal,
     activityLevel: typeof data.activity_level === 'number' ? data.activity_level : null,
     pharmacologyType,
+    bodyFatPercentage:
+      typeof data.body_fat_percentage === 'number' ? data.body_fat_percentage : null,
     calories: data.target_calories || 0,
     proteins: data.target_proteins || 0,
     fats: data.target_fats || 0,

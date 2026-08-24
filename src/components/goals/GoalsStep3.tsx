@@ -18,6 +18,8 @@ interface GoalsStep3Props {
   carbs: number;
   usePharma: boolean;
   pharmaType: PharmaType;
+  /** P1.1: Процент жира, если использовалась формула Кэтча-МакАрдла. */
+  bodyFatPercentage: number | null;
   goal: GoalType | null;
   saving: boolean;
   onBack: () => void;
@@ -32,6 +34,7 @@ export function GoalsStep3({
   carbs,
   usePharma,
   pharmaType,
+  bodyFatPercentage,
   goal,
   saving,
   onBack,
@@ -139,8 +142,9 @@ export function GoalsStep3({
           ℹ️ Как рассчитано
         </Text>
         <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
-          Использована формула Миффлина-Сан Жеора с учетом твоего пола, возраста, роста, веса и
-          уровня активности.
+          {bodyFatPercentage != null
+            ? `Использована формула Кэтча-МакАрдла (по сухому весу, % жира ${bodyFatPercentage}%) с учетом твоего уровня активности.`
+            : 'Использована формула Миффлина-Сан Жеора с учетом твоего пола, возраста, роста, веса и уровня активности.'}
           {goal === 'lose' && ' Для похудения создан дефицит 15%.'}
           {goal === 'gain' && ' Для набора массы создан профицит 15%.'}{' '}
           Соотношение макросов: белки 2г/кг, жиры 1г/кг, углеводы — остаток калорий.

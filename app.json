@@ -4,10 +4,13 @@
     "slug": "fittracker",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "fittracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "splash": {
+      "backgroundColor": "#1A1A2E"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fittracker.app"
@@ -15,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#7c3aed"
+        "backgroundColor": "#1A1A2E"
       },
       "package": "com.fittracker.app",
       "softwareKeyboardLayoutMode": "resize",
@@ -29,7 +32,7 @@
         "projectId": "56a40b35-5721-4c21-b743-ae3fc74186a8"
       }
     },
-    "plugins": ["expo-router", "expo-audio"],
+    "plugins": ["expo-router", "expo-audio", "expo-splash-screen"],
     "owner": "alrondar"
   }
 }
