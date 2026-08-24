@@ -29,7 +29,8 @@
 | SCALE-2 | Monitoring | 🟠 | 🔲 | Sentry до production build |
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
-| PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)| DS-1 | Design system | 🟠 | 🔲 | Аудит токенов/типографики/spacing/states перед Этапом H (ROADMAP) |
+| PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)|
+| DS-1 | Design system | 🟠 | ✅ | Аудит токенов/типографики/spacing/states завершён. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 
 ## 3. Existing product baseline
 
@@ -184,7 +185,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-8 | 🟠 | 🔲 | Baseline-метрики workout screen и logging (см. секцию 12) |
 | PERF-9 | 🟡 | ✅ | библиотека упражнений: основной список переведён на @shopify/flash-list 2.x (ROADMAP I3) |
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
-| DS-1 | 🟠 | 🔲 | Аудит design system: шкала типографики/spacing, состояния, тёмная тема — перед Этапом H (ROADMAP) |
+| DS-1 | 🟠 | ✅ | Аудит design system завершён: шкала типографики/spacing/состояния проверены. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 | LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: ~74 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
 
 ## 14. Update rule

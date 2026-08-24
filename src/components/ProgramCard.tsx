@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Zap,
 } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, fontScale } from '../constants/theme';
 import { typography } from '../styles/typography';
 import { createCardStyles } from '../styles/components/card';
 import { createBadgeStyles } from '../styles/components/badge';
@@ -90,6 +90,8 @@ export const ProgramCard = memo(function ProgramCard({
       onLongPress={onLongPress}
       delayLongPress={500}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.name}, ${item.level}, ${isActive ? 'Текущая программа' : ''}`}
       style={{
         marginBottom: SPACING.md,
         borderRadius: BORDER_RADIUS.lg,
@@ -153,7 +155,7 @@ export const ProgramCard = memo(function ProgramCard({
                 <CheckCircle2 size={12} color={colors.textInverse} strokeWidth={2.5} />
                 <Text
                   style={{
-                    fontSize: 10,
+                    fontSize: fontScale(10),
                     fontWeight: '700',
                     color: colors.textInverse,
                     textTransform: 'uppercase',

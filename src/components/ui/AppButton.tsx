@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, fontScale } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -47,9 +47,9 @@ export function AppButton({
 
   const getSizeStyles = () => {
     switch (size) {
-      case 'small': return { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, fontSize: 14 };
-      case 'large': return { paddingVertical: SPACING.lg, paddingHorizontal: SPACING.xl, fontSize: 18 };
-      default: return { paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, fontSize: 16 }; // medium
+      case 'small': return { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, fontSize: fontScale(14) };
+      case 'large': return { paddingVertical: SPACING.lg, paddingHorizontal: SPACING.xl, fontSize: fontScale(18) };
+      default: return { paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, fontSize: fontScale(16) }; // medium
     }
   };
 
@@ -62,6 +62,8 @@ export function AppButton({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={title}
       style={[
         styles.button,
         { 
