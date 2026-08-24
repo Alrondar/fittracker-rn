@@ -142,7 +142,11 @@ export default function WorkoutReportScreen() {
     );
   }
 
-  const dateStr = new Date(data.created_at).toLocaleDateString('ru-RU', {
+  // Фактическая дата тренировки: finished_at ?? started_at ?? created_at.
+  // created_at при upfront-создании тренировок программы отражает момент
+  // создания записи в БД, а не фактическую дату тренировки.
+  const workoutDate = data.finished_at ?? data.started_at ?? data.created_at;
+  const dateStr = new Date(workoutDate).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

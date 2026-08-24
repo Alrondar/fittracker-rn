@@ -45,6 +45,14 @@ export interface WeeklySummaryData {
     max: number | null;
   };
 
+  /** P1.3: Агрегация объёма по типам тренировок (для раздельных порогов). */
+  volumeByType: {
+    strength: number;
+    hypertrophy: number;
+    cardio: number;
+    mixed: number;
+  };
+
   /** Новые личные рекорды недели (e1rm недели > pre-week best e1rm для того же упражнения). */
   prs: {
     exerciseId: string;
@@ -93,14 +101,36 @@ export function buildWeeklyInsights(
   // === Объём (сравнение с прошлой неделей, если в прошлой были тренировки) ===
   if (previous.totalVolume > 0) {
     const ratio = current.totalVolume / previous.totalVolume;
-    if (ratio >= 1.1) {
+    
+    // P1.3: Определяем порог на основе доминирующего типа тренировки
+    let thresholdUp = 1.10;
+    let thresholdDown = 0.90;
+    
+    if (current.totalVolume > 0) {
+      const strengthRatio = current.volumeByType.strength / current.totalVolume;
+      const hypertrophyRatio = current.volumeByType.hypertrophy / current.totalVolume;
+      const cardioRatio = current.volumeByType.cardio / current.totalVolume;
+      
+      if (strengthRatio > 0.5) {
+        thresholdUp = 1.15;
+        thresholdDown = 0.85;
+      } else if (hypertrophyRatio > 0.5) {
+        thresholdUp = 1.10;
+        thresholdDown = 0.90;
+      } else if (cardioRatio > 0.5) {
+        thresholdUp = 1.20;
+        thresholdDown = 0.80;
+      }
+    }
+
+    if (ratio >= thresholdUp) {
       add(
         'VOLUME_UP',
         `Объём вырос на ${Math.round((ratio - 1) * 100)}%`,
         'positive',
         `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`,
       );
-    } else if (ratio <= 0.9) {
+    } else if (ratio <= thresholdDown) {
       add(
         'VOLUME_DOWN',
         `Объём снизился на ${Math.round((1 - ratio) * 100)}%`,
@@ -180,6 +210,44 @@ export function buildWeeklyInsights(
       `Регулярная неделя: ${current.workoutsCount} тренировок`,
       'positive',
     );
+  }
+
+  // === P0: Плато (стабильный объем без PR при регулярных тренировках) ===
+  if (
+    current.workoutsCount >= 3 &&
+    previous.workoutsCount >= 3 &&
+    current.prs.length === 0 &&
+    previous.totalVolume > 0
+  ) {
+    const ratio = current.totalVolume / previous.totalVolume;
+    if (ratio >= 0.95 && ratio <= 1.05) {
+      add(
+        'PLATEAU_DETECTED',
+        'Стабильные результаты 3+ недели',
+        'caution',
+        'Рассмотрите неделю разгрузки или смену схемы',
+      );
+    }
+  }
+
+  // === P1.3: Дисбаланс типов тренировок ===
+  if (current.totalVolume > 0) {
+    const strengthRatio = current.volumeByType.strength / current.totalVolume;
+    const hypertrophyRatio = current.volumeByType.hypertrophy / current.totalVolume;
+    const cardioRatio = current.volumeByType.cardio / current.totalVolume;
+    
+    if (strengthRatio >= 0.8 || hypertrophyRatio >= 0.8 || cardioRatio >= 0.8) {
+      let dominantType = 'силовых';
+      if (hypertrophyRatio >= 0.8) dominantType = 'гипертрофии';
+      else if (cardioRatio >= 0.8) dominantType = 'кардио';
+      
+      add(
+        'TYPE_IMBALANCE',
+        'Дисбаланс нагрузки',
+        'caution',
+        `80%+ объёма — ${dominantType}. Рассмотрите добавление других типов тренировок для баланса.`
+      );
+    }
   }
 
   return insights;

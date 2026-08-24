@@ -372,3 +372,39 @@ async getWarmupAlternatives(
   }
   },
 };
+
+// ============================================================================
+// P2.3: Прогрессия весов в разминке
+// ============================================================================
+
+export interface WarmupSet {
+  weight: number;
+  reps: number;
+  note?: string;
+}
+
+/**
+ * P2.3: Генерирует прогрессию весов для разминки перед рабочим подходом.
+ * Для базовых (compound) упражнений: 4 подхода с прогрессией.
+ * Для изолированных (isolation): 2 подхода.
+ */
+export function generateWarmupSets(
+  workingWeight: number,
+  exerciseType: 'compound' | 'isolation',
+): WarmupSet[] {
+  if (workingWeight <= 0) return [];
+
+  if (exerciseType === 'compound') {
+    return [
+      { weight: Math.round(workingWeight * 0.5 * 2) / 2, reps: 5, note: 'Разминка 50%' },
+      { weight: Math.round(workingWeight * 0.7 * 2) / 2, reps: 3, note: 'Разминка 70%' },
+      { weight: Math.round(workingWeight * 0.85 * 2) / 2, reps: 1, note: 'Разминка 85%' },
+      { weight: workingWeight, reps: 1, note: 'Рабочий вес (подготовка)' },
+    ];
+  } else {
+    return [
+      { weight: Math.round(workingWeight * 0.6 * 2) / 2, reps: 8, note: 'Разминка 60%' },
+      { weight: Math.round(workingWeight * 0.8 * 2) / 2, reps: 3, note: 'Разминка 80%' },
+    ];
+  }
+}

@@ -9,6 +9,8 @@ export interface MacroInput {
   goal: GoalType | null;
   usePharma: boolean;
   pharmaType: PharmaType;
+  /** P1.1: Процент жира для расчёта по формуле Кэтча-МакАрдла (опционально). */
+  bodyFatPercentage?: number | null;
 }
 
 export interface MacroResult {
@@ -47,10 +49,17 @@ export function calculateMacros(input: MacroInput): MacroResult {
 
   // BMR (базовый метаболизм)
   let bmr: number;
-  if (g === 'male') {
-    bmr = 10 * w + 6.25 * h - 5 * age + 5;
+  // P1.1: Если известен % жира, используем формулу Кэтча-МакАрдла (точнее для рекомпозиции)
+  if (input.bodyFatPercentage != null && input.bodyFatPercentage > 0 && input.bodyFatPercentage < 100) {
+    const leanMass = w * (1 - input.bodyFatPercentage / 100);
+    bmr = 370 + 21.6 * leanMass;
   } else {
-    bmr = 10 * w + 6.25 * h - 5 * age - 161;
+    // Fallback: формула Миффлина-Сан Жеора
+    if (g === 'male') {
+      bmr = 10 * w + 6.25 * h - 5 * age + 5;
+    } else {
+      bmr = 10 * w + 6.25 * h - 5 * age - 161;
+    }
   }
 
   // Целевые калории с учётом активности и цели

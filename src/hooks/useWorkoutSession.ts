@@ -8,7 +8,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '../lib/supabase';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -31,7 +30,9 @@ import {
   fetchWorkoutSession,
   fetchAlternatives,
   FetchAlternativesResult,
-} from './workout/useWorkoutSession.loader';
+  updateWorkout,
+  upsertWorkoutLogs,
+} from '../services/workoutService';
 import {
   buildExercisesData,
   buildPrevLogsByExerciseId,
@@ -109,13 +110,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
       if (formattedLogs.length === 0) return;
 
-      const { error } = await supabase.rpc('upsert_workout_logs', {
-        p_workout_exercise_id: workoutExerciseId,
-        p_logs: formattedLogs,
-      });
-
-      if (error) {
-        console.error('[flushPendingLogs] RPC error:', error);
+      try {
+        await upsertWorkoutLogs(workoutExerciseId, formattedLogs);
+      } catch (error) {
+        console.error('[flushPendingLogs] error:', error);
       }
     });
 
@@ -201,15 +199,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         !isFinishingRef.current &&
         currentTimeRef.current > 0
       ) {
-        supabase
-          .from('workouts')
-          .update({ duration_seconds: currentTimeRef.current })
-          .eq('id', workoutId)
-          .then(({ error }) => {
-            if (error) {
-              console.error('Ошибка сохранения прогресса:', error);
-            }
-          });
+        updateWorkout(workoutId, { duration_seconds: currentTimeRef.current }).catch(
+          (error) => {
+            console.error('Ошибка сохранения прогресса:', error);
+          },
+        );
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -225,18 +219,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const handleTimerStart = useCallback(() => {
     setIsWorkoutActive(true);
     if (currentTimeRef.current === 0) {
-      supabase
-        .from('workouts')
-        .update({
-          started_at: new Date().toISOString(),
-          duration_seconds: 0,
-        })
-        .eq('id', workoutId)
-        .then(({ error }) => {
-          if (error) {
-            console.error('Ошибка сохранения started_at:', error);
-          }
-        });
+      updateWorkout(workoutId, {
+        started_at: new Date().toISOString(),
+        duration_seconds: 0,
+      }).catch((error) => {
+        console.error('Ошибка сохранения started_at:', error);
+      });
     }
   }, [workoutId]);
 
@@ -624,15 +612,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             try {
               await flushPendingLogs();
 
-              const { error } = await supabase
-                .from('workouts')
-                .update({
+              try {
+                await updateWorkout(workoutId, {
                   finished_at: new Date().toISOString(),
                   duration_seconds: durationSeconds,
-                })
-                .eq('id', workoutId);
-
-              if (error) throw error;
+                });
+              } catch (error) {
+                throw error;
+              }
 
               let totalLogs = 0;
               exercisesRef.current.forEach((ex) => {

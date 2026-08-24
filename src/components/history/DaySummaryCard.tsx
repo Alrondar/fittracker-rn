@@ -36,7 +36,7 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
   const dayWorkouts = useMemo(() => {
     if (!selectedDay) return [];
     return workouts.filter((w) => {
-      const dt = new Date(w.created_at);
+      const dt = new Date(w.date);
       const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(
         dt.getDate(),
       ).padStart(2, '0')}`;

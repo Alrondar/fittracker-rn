@@ -16,7 +16,7 @@ import {
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useInjuries } from '../../src/hooks/useInjuries';
-import { SPACING } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { BODY_ZONE_COLORS } from '../../src/constants/semanticColors';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
@@ -141,6 +141,19 @@ export default function InjuriesScreen() {
   const [showForm, setShowForm] = useState(false);
   const [editingInjury, setEditingInjury] = useState<Injury | null>(null);
 
+  // AUDIT-4: фильтр по зонам тела (arms / torso / legs)
+  const [zoneFilter, setZoneFilter] = useState<'arms' | 'torso' | 'legs' | null>(null);
+  const ZONE_BODY_PARTS: Record<'arms' | 'torso' | 'legs', string[]> = {
+    arms: ['shoulder', 'elbow', 'wrist'],
+    torso: ['back', 'neck'],
+    legs: ['hip', 'knee', 'ankle'],
+  };
+  const ZONE_LABELS: Record<'arms' | 'torso' | 'legs', string> = {
+    arms: 'Руки',
+    torso: 'Корпус',
+    legs: 'Ноги',
+  };
+
   useFocusEffect(
     useCallback(() => {
       refetch();
@@ -149,6 +162,12 @@ export default function InjuriesScreen() {
 
   const activeInjuries = injuries.filter((i) => i.status !== 'recovered');
   const recoveredInjuries = injuries.filter((i) => i.status === 'recovered');
+
+  // AUDIT-4: применение зонального фильтра
+  const applyZoneFilter = <T extends Injury>(list: T[]): T[] =>
+    zoneFilter ? list.filter((i) => ZONE_BODY_PARTS[zoneFilter].includes(i.body_part)) : list;
+  const displayedActive = applyZoneFilter(activeInjuries);
+  const displayedRecovered = applyZoneFilter(recoveredInjuries);
 
   const openCreate = () => {
     setEditingInjury(null);
@@ -256,36 +275,79 @@ export default function InjuriesScreen() {
         </View>
 
         <AppCard variant="compact">
-          <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-            Зоны тела
-          </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-            <View style={{ alignItems: 'center' }}>
-              <Circle size={16} color={BODY_ZONE_COLORS.arms} fill={BODY_ZONE_COLORS.arms + '20'} strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Руки
-              </Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Circle size={16} color={BODY_ZONE_COLORS.torso} fill={BODY_ZONE_COLORS.torso + '20'} strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Корпус
-              </Text>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <Circle size={16} color={BODY_ZONE_COLORS.legs} fill={BODY_ZONE_COLORS.legs + '20'} strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Ноги
-              </Text>
-            </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+              Зоны тела
+            </Text>
+            {zoneFilter && (
+              <TouchableOpacity onPress={() => setZoneFilter(null)}>
+                <Text style={[typography.caption, { color: colors.primary, fontWeight: '600' }]}>
+                  Сбросить
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+            {(['arms', 'torso', 'legs'] as const).map((zone) => {
+              const isActive = zoneFilter === zone;
+              const zoneColor = BODY_ZONE_COLORS[zone];
+              return (
+                <TouchableOpacity
+                  key={zone}
+                  onPress={() => {
+                    setZoneFilter((prev) => (prev === zone ? null : zone));
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  activeOpacity={0.7}
+                  style={{
+                    alignItems: 'center',
+                    paddingHorizontal: SPACING.md,
+                    paddingVertical: SPACING.sm,
+                    borderRadius: BORDER_RADIUS.md,
+                    backgroundColor: isActive ? zoneColor + '20' : 'transparent',
+                    borderWidth: 1,
+                    borderColor: isActive ? zoneColor : 'transparent',
+                  }}
+                >
+                  <Circle
+                    size={16}
+                    color={zoneColor}
+                    fill={zoneColor + '20'}
+                    strokeWidth={2}
+                  />
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      {
+                        color: isActive ? zoneColor : colors.textSecondary,
+                        marginTop: SPACING.xs,
+                        fontWeight: isActive ? '700' : '400',
+                      },
+                    ]}
+                  >
+                    {ZONE_LABELS[zone]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {zoneFilter && (
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textTertiary, marginTop: SPACING.sm, textAlign: 'center' },
+              ]}
+            >
+              Показаны травмы зоны: {ZONE_LABELS[zoneFilter]}
+            </Text>
+          )}
         </AppCard>
 
         <SectionHeader
-          title="Активные травмы"
+          title={zoneFilter ? `Активные (${displayedActive.length})` : 'Активные травмы'}
           style={{ paddingHorizontal: 0, paddingTop: 0, marginTop: SPACING.lg }}
         />
-        {activeInjuries.length === 0 ? (
+        {displayedActive.length === 0 ? (
           <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
             <Activity size={48} color={colors.textTertiary} />
             <Text
@@ -294,11 +356,13 @@ export default function InjuriesScreen() {
                 { color: colors.textSecondary, marginTop: SPACING.md, textAlign: 'center' },
               ]}
             >
-              У вас нет активных травм
+              {zoneFilter
+                ? `В зоне «${ZONE_LABELS[zoneFilter]}» активных травм нет`
+                : 'У вас нет активных травм'}
             </Text>
           </AppCard>
         ) : (
-          activeInjuries.map((injury) => (
+          displayedActive.map((injury) => (
             <InjuryCard
               key={injury.id}
               injury={injury}
@@ -310,13 +374,13 @@ export default function InjuriesScreen() {
           ))
         )}
 
-        {recoveredInjuries.length > 0 && (
+        {displayedRecovered.length > 0 && (
           <>
             <SectionHeader
-              title="Восстановленные"
+              title={zoneFilter ? `Восстановленные (${displayedRecovered.length})` : 'Восстановленные'}
               style={{ paddingHorizontal: 0, paddingTop: 0, marginTop: SPACING.lg }}
             />
-            {recoveredInjuries.map((injury) => (
+            {displayedRecovered.map((injury) => (
               <InjuryCard
                 key={injury.id}
                 injury={injury}

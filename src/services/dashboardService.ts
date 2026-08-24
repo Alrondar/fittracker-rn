@@ -86,6 +86,8 @@ function parseExerciseProgress(recentWorkouts: any[]): DashboardExerciseProgress
   const exerciseMap: Record<string, any> = {};
 
   recentWorkouts?.forEach((workout: any) => {
+    // Effective date: finished_at ?? started_at ?? created_at.
+    const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
     workout.workout_exercises?.forEach((exercise: any) => {
       exercise.workout_logs?.forEach((log: any) => {
         const exerciseId = exercise.exercise_id;
@@ -108,7 +110,7 @@ function parseExerciseProgress(recentWorkouts: any[]): DashboardExerciseProgress
         }
 
         exerciseMap[exerciseId].history.push({
-          date: workout.created_at,
+          date: effectiveDate,
           maxWeight: weight,
           volume,
         });
@@ -201,7 +203,7 @@ supabase
 
     supabase
       .from('workouts')
-      .select('created_at')
+      .select('created_at, started_at, finished_at')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .gte('created_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()),
@@ -219,6 +221,8 @@ supabase
         id,
         name,
         created_at,
+        started_at,
+        finished_at,
         duration_seconds,
         workout_exercises (
           id,
@@ -230,7 +234,7 @@ supabase
       `)
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
-      .order('created_at', { ascending: false })
+      .order('finished_at', { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle(),
 
@@ -245,6 +249,8 @@ supabase
       .select(`
         id,
         created_at,
+        started_at,
+        finished_at,
         workout_exercises (
           exercise_id,
           exercises (
@@ -258,7 +264,7 @@ supabase
       `)
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
-      .order('created_at', { ascending: false })
+      .order('finished_at', { ascending: false, nullsFirst: false })
       .limit(20),
 
   ]);
@@ -356,7 +362,11 @@ supabase
 
   if (workoutDatesResult.status === 'fulfilled' && workoutDatesResult.value.data) {
     workoutDates = workoutDatesResult.value.data
-      .map((workout: any) => workout.created_at?.split('T')[0])
+      .map((workout: any) => {
+        // Effective date: finished_at ?? started_at ?? created_at
+        const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
+        return effectiveDate?.split('T')[0];
+      })
       .filter(Boolean);
   }
 
@@ -410,10 +420,12 @@ if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
       }
     });
 
+    // Effective date: finished_at ?? started_at ?? created_at
+    const lastWorkoutDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
     lastWorkout = {
       id: workout.id,
       name: workout.name,
-      date: workout.created_at,
+      date: lastWorkoutDate,
       durationSeconds: workout.duration_seconds || 0,
       exercisesCount,
       totalVolume,
@@ -455,11 +467,14 @@ try {
     try {
       const { data: streakDates } = await supabase
         .from('workouts')
-        .select('created_at')
+        .select('created_at, started_at, finished_at')
         .eq('user_id', userId)
         .not('finished_at', 'is', null);
       streak = computeStreaks(
-        (streakDates ?? []).map((w: { created_at: string | null }) => w.created_at).filter(Boolean) as string[],
+        (streakDates ?? []).map((w: { created_at: string | null; started_at: string | null; finished_at: string | null }) => {
+          // Effective date: finished_at ?? started_at ?? created_at
+          return w.finished_at ?? w.started_at ?? w.created_at;
+        }).filter(Boolean) as string[],
       );
     } catch {
       streak = { current: 0, best: 0, activeThisWeek: false };

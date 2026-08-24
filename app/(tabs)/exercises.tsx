@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
 import * as Haptics from 'expo-haptics';
 import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame, Zap } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -26,10 +27,12 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
+import { SheetShell } from '../../src/components/ui/SheetShell';
 
-// Цвет группы мышц — из единых констант
-const getGroupColor = (groupName: string): string =>
-  MUSCLE_COLORS[groupName.toLowerCase()] || '#6B7280';
+// Цвет группы мышц — из единых констант (fallback — semantic token)
+// getGroupColor теперь принимает colors для fallback
+const getGroupColor = (groupName: string, colors: any): string =>
+  MUSCLE_COLORS[groupName.toLowerCase()] || colors.textSecondary;
 
 // ===== Мемоизированная строка списка =====
 interface ExerciseRowProps {
@@ -253,6 +256,12 @@ export default function ExercisesScreen() {
 
   const groupNames = Object.keys(MUSCLE_GROUPS);
 
+  // Memoized group color getter with theme fallback
+  const getGroupColorForTheme = useCallback(
+    (groupName: string): string => getGroupColor(groupName, colors),
+    [colors],
+  );
+
   return (
     <SafeAreaView
       style={[commonStyles.container, { backgroundColor: colors.background }]}
@@ -334,7 +343,6 @@ export default function ExercisesScreen() {
                 placeholderTextColor={colors.textTertiary}
                 value={searchInput}
                 onChangeText={setSearchInput}
-                autoFocus
                 returnKeyType="search"
               />
               {searchInput.length > 0 && (
@@ -393,7 +401,7 @@ export default function ExercisesScreen() {
             const muscles = MUSCLE_GROUPS[groupName];
             const isActive = activeGroup === groupName;
             const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
-            const groupColor = getGroupColor(groupName);
+            const groupColor = getGroupColorForTheme(groupName);
             return (
               <TouchableOpacity
                 key={groupName}
@@ -544,21 +552,19 @@ export default function ExercisesScreen() {
       ) : isError && exercises.length === 0 ? (
         renderError()
       ) : (
-        <FlatList
-          data={exercises}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
-          contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          windowSize={7}
-          removeClippedSubviews={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-          }
-        />
+    <FlashList
+      data={exercises}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
+      contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
+      ListEmptyComponent={renderEmpty}
+      ListFooterComponent={renderFooter}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+      }
+    />
       )}
 
       {/* Шкаф оборудования */}
@@ -573,75 +579,45 @@ export default function ExercisesScreen() {
       )}
 
       {/* Лист сортировки */}
-      {showSortSheet && (
-        <>
+      <SheetShell visible={showSortSheet} title="Сортировка" onClose={() => setShowSortSheet(false)}>
+        {(
+          [
+            { key: 'name-asc', label: 'По названию (А-Я)' },
+            { key: 'name-desc', label: 'По названию (Я-А)' },
+            { key: 'popularity', label: 'По популярности' },
+          ] as { key: ExerciseSortBy; label: string }[]
+        ).map((option, idx, arr) => (
           <TouchableOpacity
+            key={option.key}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: colors.overlay,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
+              borderBottomColor: colors.border,
             }}
-            onPress={() => setShowSortSheet(false)}
-            activeOpacity={1}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: colors.surface,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              padding: SPACING.lg,
+            onPress={() => {
+              setSortBy(option.key);
+              setShowSortSheet(false);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
           >
-            <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
-              Сортировка
+            <Text
+              style={[
+                typography.body,
+                {
+                  color: sortBy === option.key ? colors.primary : colors.textPrimary,
+                  fontWeight: sortBy === option.key ? '600' : '400',
+                },
+              ]}
+            >
+              {option.label}
             </Text>
-            {(
-              [
-                { key: 'name-asc', label: 'По названию (А-Я)' },
-                { key: 'name-desc', label: 'По названию (Я-А)' },
-                { key: 'popularity', label: 'По популярности' },
-              ] as { key: ExerciseSortBy; label: string }[]
-            ).map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingVertical: SPACING.md,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-                onPress={() => {
-                  setSortBy(option.key);
-                  setShowSortSheet(false);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Text
-                  style={[
-                    typography.body,
-                    {
-                      color: sortBy === option.key ? colors.primary : colors.textPrimary,
-                      fontWeight: sortBy === option.key ? '600' : '400',
-                    },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-                {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
+            {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
+          </TouchableOpacity>
+        ))}
+      </SheetShell>
     </SafeAreaView>
   );
 }

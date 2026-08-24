@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -9,15 +9,10 @@ import {
   createProgram,
   updateProgram,
   deleteProgram,
+  copyProgramForUser,
   Program,
   ProgramFilters,
 } from '../services/programsService';
-import { supabase } from '../lib/supabase';
-
-// Включить LayoutAnimation на Android
-if (Platform.OS === 'android') {
-  UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
 
 export type TabType = 'my' | 'ready';
 export type SortType = 'date' | 'name' | 'level';
@@ -170,27 +165,23 @@ const deleteMutation = useMutation({
   },
 });
 
-  // ===== ОБЁРТКИ С АНИМАЦИЕЙ =====
+  // ===== ОБЁРТКИ БЕЗ АНИМАЦИИ (PROG-1: LayoutAnimation убран — CLAUDE.md §9 anti-pattern) =====
   const setActiveTab = (tab: TabType) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveTabState(tab);
   };
 
   const setSearchQuery = (q: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSearchQueryState(q);
   };
 
   const toggleLevel = (level: LevelFilter) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSelectedLevels(prev =>
       prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
     );
   };
 
   const resetLevels = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSelectedLevels([]);
   };
 
@@ -281,7 +272,7 @@ const deleteMutation = useMutation({
           { text: 'Отмена', style: 'cancel' },
           {
             text: 'Скопировать и редактировать',
-            onPress: () => copyProgramToUser(program),
+            onPress: () => copyToMyPrograms(program),
           },
           {
             text: 'Только посмотреть',
@@ -294,44 +285,25 @@ const deleteMutation = useMutation({
     }
   };
 
-  const copyProgramToUser = async (program: Program) => {
+  const copyToMyPrograms = async (program: Program) => {
     if (!userId) {
       showToast('Необходимо войти в аккаунт', 'error');
       return;
     }
 
     try {
-      const { data, error } = await supabase.rpc('copy_program_for_user', {
-        p_program_id: program.id,
-        p_user_id: userId,
-      });
-
-      if (error) throw error;
-
-      const newProgramId = Array.isArray(data) ? data[0]?.id || data[0] : data?.id || data;
-
+      const copiedProgram = await copyProgramForUser(program.id, userId);
       queryClient.invalidateQueries({ queryKey: ['programs'] });
-      
       setActiveTabState('my');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Программа скопирована в "Мои программы"', 'success');
 
-      if (newProgramId) {
-        const { data: copiedData } = await supabase
-          .from('programs')
-          .select('*')
-          .eq('id', newProgramId)
-          .single();
-
-        if (copiedData) {
-          setEditingProgram(copiedData);
-          setFormName(copiedData.name);
-          setFormDescription(copiedData.description);
-          setFormDuration(copiedData.duration.toString());
-          setFormLevel(copiedData.level);
-          setShowCreateModal(true);
-        }
-      }
+      setEditingProgram(copiedProgram);
+      setFormName(copiedProgram.name);
+      setFormDescription(copiedProgram.description);
+      setFormDuration(copiedProgram.duration.toString());
+      setFormLevel(copiedProgram.level);
+      setShowCreateModal(true);
     } catch (e: any) {
       showToast(e.message || 'Не удалось скопировать программу', 'error');
     }

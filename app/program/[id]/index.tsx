@@ -30,8 +30,6 @@ import { ProgramFabs } from '../../../src/components/program/ProgramFabs';
 import { ProgramDetailModals } from '../../../src/components/program/ProgramDetailModals';
 import { generateShareCode, formatShareCode } from '../../../src/services/programSharingService';
 
-const ON_COLOR = '#FFFFFF';
-
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
@@ -218,10 +216,10 @@ export default function ProgramDetailScreen() {
           activeOpacity={0.8}
         >
           {starting ? (
-            <ActivityIndicator color={ON_COLOR} size="small" />
+            <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
             <View style={buttonStyles.content}>
-              <Play size={20} color={ON_COLOR} strokeWidth={2} fill={ON_COLOR} />
+              <Play size={20} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} />
               <Text style={buttonStyles.textPrimary}>Начать программу</Text>
             </View>
           )}

@@ -46,6 +46,8 @@ export const metricsService = {
         biceps_right_cm: metric.biceps_right_cm,
         forearm_left_cm: metric.forearm_left_cm,
         forearm_right_cm: metric.forearm_right_cm,
+        thigh_left_cm: metric.thigh_left_cm,
+        thigh_right_cm: metric.thigh_right_cm,
         thigh_cm: metric.thigh_cm,
         calf_left_cm: metric.calf_left_cm,
         calf_right_cm: metric.calf_right_cm,

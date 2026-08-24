@@ -87,6 +87,7 @@
 - `workout_logs.rpe` — smallint 1–10; `rir` — 0–5.
 - `difficulty` — `easy/moderate/hard/max`.
 - Exercise catalog содержит 870+ записей.
+- **`workouts.created_at` — не дата тренировки.** Это время создания записи в БД. При upfront-создании программы (`create_workouts_for_program`, см. §5) все записи тренировок программы получают один и тот же `created_at` в момент активации. Эффективная дата тренировки — `finished_at ?? started_at ?? created_at`. Именно её использовать для History, Progress, календарей, стрика, PR, Dashboard. Не допускать регрессии к `created_at`.
 
 ## 5. Training model
 
@@ -103,6 +104,7 @@ Workout lifecycle:
 - progression: day → week → phase → completion.
 
 Program changes синхронизируются только с будущими/не начатыми workouts (`started_at IS NULL AND finished_at IS NULL`). История не переписывается.
+- **Effective date правило** — см. §4 (из-за upfront creation нельзя полагаться на `created_at`).
 
 ## 6. Product/UX technical rules
 
@@ -148,6 +150,7 @@ style={{ backgroundColor: colors.primary }}
 - Не монтировать media/slider content в collapsed accordion.
 - Не логировать в animation/onScroll/gesture loops.
 - Workout screen — приоритетная зона performance profiling.
+- Длинные списки (сотни элементов, напр. каталог упражнений) — `@shopify/flash-list`; короткие и горизонтальные списки — `FlatList`.
 
 ### Performance gate (перед завершением задачи, затрагивающей UI или данные)
 

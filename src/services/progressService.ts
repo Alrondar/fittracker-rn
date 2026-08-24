@@ -25,6 +25,8 @@ export interface WeeklyVolume {
 
 export interface PersonalRecordWithDate extends PersonalRecord {
   recordDate: string; // ISO date
+  /** id тренировки, где установлен рекорд — для перехода в Workout Report */
+  workoutId: string;
 }
 
 export interface StrengthPoint {
@@ -128,12 +130,12 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
 
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at, workout_exercises (workout_logs (weight_kg, reps))')
+    .select('created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps))')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null) // FIT-7: пропуски не считаем
-    .gte('created_at', startISO)
-    .order('created_at', { ascending: true });
+    .gte('finished_at', startISO)
+    .order('finished_at', { ascending: true, nullsFirst: false });
 
   if (error) throw error;
   if (!workouts || workouts.length === 0) return [];
@@ -141,7 +143,9 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
   const byWeek = new Map<string, { volume: number; count: number }>();
 
   workouts.forEach((workout: any) => {
-    const weekStart = getMondayISO(new Date(workout.created_at));
+    // Effective date: finished_at ?? started_at ?? created_at
+    const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
+    const weekStart = getMondayISO(new Date(effectiveDate));
     if (!byWeek.has(weekStart)) {
       byWeek.set(weekStart, { volume: 0, count: 0 });
     }
@@ -185,9 +189,9 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
 async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select(
-      'created_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at))',
-    )
+ .select(
+  'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at))',
+)
     .eq('user_id', userId);
 
   if (error) throw error;
@@ -196,7 +200,8 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
   const exerciseRecords: Record<string, PersonalRecordWithDate> = {};
 
   workouts.forEach((workout: any) => {
-    const workoutDate = workout.created_at ?? '';
+    // Effective date: finished_at ?? started_at ?? created_at
+    const workoutDate = workout.finished_at ?? workout.started_at ?? workout.created_at ?? '';
     workout.workout_exercises?.forEach((we: any) => {
       const exerciseId = we.exercise_id;
       const exerciseName = we.exercises?.name;
@@ -211,24 +216,27 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
         const recordDate = workoutDate || log.completed_at || '';
 
         const existing = exerciseRecords[exerciseId];
-        if (!existing) {
-          exerciseRecords[exerciseId] = {
-            name: exerciseName,
-            maxWeight: weight,
-            reps,
-            e1rm: setE1rm,
-            recordDate,
-          };
-        } else {
-          if (weight > existing.maxWeight) {
-            existing.maxWeight = weight;
-            existing.reps = reps;
-          }
-          if (setE1rm > existing.e1rm) {
-            existing.e1rm = setE1rm;
-            existing.recordDate = recordDate;
-          }
-        }
+if (!existing) {
+  exerciseRecords[exerciseId] = {
+    exercise_id: exerciseId,
+    name: exerciseName,
+    maxWeight: weight,
+    reps,
+    e1rm: setE1rm,
+    recordDate,
+    workoutId: workout.id,
+  };
+} else {
+  if (weight > existing.maxWeight) {
+    existing.maxWeight = weight;
+    existing.reps = reps;
+  }
+  if (setE1rm > existing.e1rm) {
+    existing.e1rm = setE1rm;
+    existing.recordDate = recordDate;
+    existing.workoutId = workout.id;
+  }
+}
       });
     });
   });
@@ -250,11 +258,11 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
 
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps))')
+    .select('created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps))')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null)
-    .gte('created_at', startISO);
+    .gte('finished_at', startISO);
 
   if (error) throw error;
   if (!workouts || workouts.length === 0) return [];
@@ -263,7 +271,9 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
   const exerciseWeeks = new Map<string, Map<string, number[]>>();
 
   workouts.forEach((workout: any) => {
-    const weekStart = getMondayISO(new Date(workout.created_at));
+    // Effective date: finished_at ?? started_at ?? created_at
+    const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
+    const weekStart = getMondayISO(new Date(effectiveDate));
     workout.workout_exercises?.forEach((we: any) => {
       const name = we.exercises?.name;
       if (!name) return;
@@ -326,7 +336,7 @@ async function getWeightTrend(userId: string, weeks: number): Promise<WeightPoin
 async function getStreakData(userId: string): Promise<{ current: number; best: number }> {
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at')
+    .select('created_at, started_at, finished_at')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null);
@@ -336,7 +346,10 @@ async function getStreakData(userId: string): Promise<{ current: number; best: n
     return { current: 0, best: 0 };
   }
 
-  const dates = workouts.map((w) => w.created_at).filter((d): d is string => !!d);
+  // Effective date: finished_at ?? started_at ?? created_at
+  const dates = workouts.map((w: any) => {
+    return w.finished_at ?? w.started_at ?? w.created_at;
+  }).filter((d): d is string => !!d);
   if (dates.length === 0) return { current: 0, best: 0 };
 
   const streak = computeStreaks(dates);
