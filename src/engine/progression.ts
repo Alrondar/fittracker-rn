@@ -34,6 +34,8 @@ export interface ProgressionReason {
     lastRpe: number | null;
     completedSets: number;
     targetRange: { min: number; max: number } | null;
+    /** P1.2: Тип текущей фазы программы для объяснения deload. */
+    currentPhaseType?: 'strength' | 'hypertrophy' | 'endurance' | 'deload';
   };
 }
 
@@ -62,6 +64,10 @@ export interface ProgressionInput {
   isHeavyDay?: boolean;
   /** P0: использует ли пользователь фармакологию (ускоренное восстановление). */
   usePharma?: boolean;
+  /** P1.2: Тип текущей фазы программы для корректировки шага и deload. */
+  currentPhaseType?: 'strength' | 'hypertrophy' | 'endurance' | 'deload';
+  /** P1.2: Сколько недель пользователь находится в текущей фазе. */
+  weeksInBlock?: number;
 }
 
 // ============================================================================
@@ -161,12 +167,19 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     lastRpe,
     completedSets: completed.length,
     targetRange,
+    currentPhaseType: input.currentPhaseType,
   };
+
+  // P1.2: Корректировка шага на основе фазы программы
+  let effectiveStepKg = stepKg;
+  if (input.currentPhaseType === 'hypertrophy') effectiveStepKg = 1.25;
+  else if (input.currentPhaseType === 'endurance') effectiveStepKg = 1.0;
+  // strength остаётся 2.5 (дефолт)
 
   // Вспомогалки для построения результата
   const increaseResult = (code: string, ruText: string): ProgressionResult => ({
     action: 'increase',
-    suggestedWeight: round2(lastWeight + stepKg),
+    suggestedWeight: round2(lastWeight + effectiveStepKg),
     suggestedReps: targetRange ? targetRange.min : null,
     reason: { code, ruText, factors },
   });
@@ -180,7 +193,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   const decreaseResult = (code: string, ruText: string): ProgressionResult => {
     // Bodyweight protection: нельзя уйти ниже 0 кг (bodyweight не в кг-единицах)
-    const newWeight = Math.max(0, round2(lastWeight - stepKg));
+    const newWeight = Math.max(0, round2(lastWeight - effectiveStepKg));
     return {
       action: 'decrease',
       suggestedWeight: newWeight > 0 ? newWeight : null,
@@ -191,16 +204,19 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // ===== Decision tree (priority order) =====
 
-  // 0. P0: Неделя разгрузки (Deload)
-  if (input.isDeloadWeek) {
+  // 0. P0/P1.2: Неделя разгрузки или Deload фаза
+  if (input.isDeloadWeek || input.currentPhaseType === 'deload') {
     const deloadWeight = Math.max(0, round2(lastWeight * 0.9));
+    const isPhaseDeload = input.currentPhaseType === 'deload';
     return {
       action: 'decrease',
       suggestedWeight: deloadWeight > 0 ? deloadWeight : null,
       suggestedReps: targetRange ? targetRange.min : null,
       reason: {
-        code: 'DELOAD_WEEK',
-        ruText: 'Неделя разгрузки — снижаем нагрузку на 10%',
+        code: isPhaseDeload ? 'DELOAD_PHASE' : 'DELOAD_WEEK',
+        ruText: isPhaseDeload 
+          ? 'Фаза разгрузки — снижаем нагрузку на 10%' 
+          : 'Неделя разгрузки — снижаем нагрузку на 10%',
         factors,
       },
     };
@@ -215,6 +231,10 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   // P0: при фармакологии порог смягчается до <= 8 (ускоренное восстановление)
   const rpeThresholdForProgress = input.usePharma ? 8 : 7;
   if (allAtMax && lastRpe != null && lastRpe <= rpeThresholdForProgress) {
+    // P1.2: Авто-deload при >6 недель в блоке
+    if (input.weeksInBlock != null && input.weeksInBlock > 6) {
+      return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+    }
     return increaseResult('READY_TO_PROGRESS', 'Все повторы, низкий RPE');
   }
 
@@ -428,10 +448,20 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       break;
 
     case 'DELOAD_WEEK':
+    case 'DELOAD_PHASE':
       items.push({
         kind: 'signal',
         label: 'Периодизация',
-        value: 'запланированная неделя разгрузки',
+        value: reason.factors.currentPhaseType === 'deload' ? 'фаза разгрузки программы' : 'запланированная неделя разгрузки',
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'AUTO_DELOAD_SUGGESTION':
+      items.push({
+        kind: 'signal',
+        label: 'Периодизация',
+        value: '6+ недель в текущей фазе — рекомендуется разгрузка',
         emphasis: 'warning',
       });
       break;
@@ -515,7 +545,7 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       emphasis: 'success',
     });
   } else if (action === 'decrease' && suggestedWeight != null) {
-    const isDeload = reason.code === 'DELOAD_WEEK' || reason.code === 'PLATEAU_DELOAD';
+    const isDeload = reason.code === 'DELOAD_WEEK' || reason.code === 'DELOAD_PHASE' || reason.code === 'PLATEAU_DELOAD';
     items.push({
       kind: 'conclusion',
       label: isDeload ? 'Разгрузка' : 'Снизить до',
