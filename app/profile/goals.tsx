@@ -49,6 +49,8 @@ export default function GoalsScreen() {
   const [activityLevel, setActivityLevel] = useState<number | null>(null);
   const [usePharma, setUsePharma] = useState(false);
   const [pharmaType, setPharmaType] = useState<PharmaType>(null);
+  const [useBodyFat, setUseBodyFat] = useState(false);
+  const [bodyFatPercentage, setBodyFatPercentage] = useState<number | null>(null);
   const [calories, setCalories] = useState(0);
   const [proteins, setProteins] = useState(0);
   const [fats, setFats] = useState(0);
@@ -72,6 +74,8 @@ export default function GoalsScreen() {
     setActivityLevel(profile.activityLevel);
     setUsePharma(profile.pharmacologyType !== null);
     setPharmaType(profile.pharmacologyType);
+    setUseBodyFat(profile.bodyFatPercentage != null && profile.bodyFatPercentage > 0);
+    setBodyFatPercentage(profile.bodyFatPercentage);
     setCalories(profile.calories);
     setProteins(profile.proteins);
     setFats(profile.fats);
@@ -130,6 +134,7 @@ export default function GoalsScreen() {
       goal,
       usePharma,
       pharmaType,
+      bodyFatPercentage: useBodyFat ? bodyFatPercentage : null,
     });
     setCalories(result.calories);
     setProteins(result.proteins);
@@ -152,6 +157,7 @@ export default function GoalsScreen() {
       goal,
       activity_level: activityLevel,
       pharmacology_type: usePharma ? pharmaType : null,
+      body_fat_percentage: useBodyFat ? bodyFatPercentage : null,
       target_calories: calories,
       target_proteins: proteins,
       target_fats: fats,
@@ -166,6 +172,15 @@ export default function GoalsScreen() {
     setUsePharma(nextValue);
     if (!nextValue) {
       setPharmaType(null);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const toggleBodyFat = () => {
+    const nextValue = !useBodyFat;
+    setUseBodyFat(nextValue);
+    if (!nextValue) {
+      setBodyFatPercentage(null);
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -224,6 +239,10 @@ export default function GoalsScreen() {
               onHeightChange={setHeight}
               weight={weight}
               onWeightChange={setWeight}
+              useBodyFat={useBodyFat}
+              bodyFatPercentage={bodyFatPercentage}
+              onToggleBodyFat={toggleBodyFat}
+              onBodyFatPercentageChange={setBodyFatPercentage}
               onNext={() => setStep(2)}
               colors={colors}
             />
@@ -253,6 +272,7 @@ export default function GoalsScreen() {
               carbs={carbs}
               usePharma={usePharma}
               pharmaType={pharmaType}
+              bodyFatPercentage={useBodyFat ? bodyFatPercentage : null}
               goal={goal}
               saving={saving}
               onBack={() => setStep(2)}
