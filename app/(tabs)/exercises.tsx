@@ -192,13 +192,13 @@ export default function ExercisesScreen() {
       </Text>
       <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
         {activeFiltersCount > 0 || searchInput
-          ? 'Попробуйте изменить запрос или сбросить фильтры'
-          : 'База упражнений пуста'}
+          ? 'Попробуйте изменить параметры поиска или сбросить фильтры'
+          : 'Измените параметры поиска, чтобы найти нужное упражнение'}
       </Text>
       {(activeFiltersCount > 0 || searchInput) && (
         <TouchableOpacity style={{ marginTop: SPACING.md }} onPress={resetFilters}>
           <AppBadge variant="primary" size="medium">
-            Сбросить
+            Сбросить фильтры
           </AppBadge>
         </TouchableOpacity>
       )}
@@ -556,6 +556,7 @@ export default function ExercisesScreen() {
       data={exercises}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
+      drawDistance={1000}
       contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
       ListEmptyComponent={renderEmpty}
       ListFooterComponent={renderFooter}

@@ -4,6 +4,7 @@
 // Должен рендериться внутри WorkoutTimerProvider (Pill/Panel используют контекст).
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING } from '../../constants/theme';
@@ -30,6 +31,8 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
   onUnitChange,
   colors,
 }: WorkoutScreenHeaderProps) {
+  const router = useRouter();
+
   return (
     <>
       <View
@@ -39,7 +42,10 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
         ]}
       >
         <TouchableOpacity
-          onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
           style={commonStyles.backButton}
         >
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />

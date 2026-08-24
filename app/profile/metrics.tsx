@@ -45,6 +45,7 @@ import {
   Weight,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { FadeIn } from '../../src/components/FadeIn';
 
 export default function MetricsScreen() {
   const router = useRouter();
@@ -105,10 +106,34 @@ export default function MetricsScreen() {
       .filter((m) => m[key] != null)
       .map((m) => ({ date: m.metric_date, value: m[key] as number }));
 
+  const getMetricTrend = (key: MetricKey) => {
+    const pts = metrics
+      .filter((m) => m[key] != null)
+      .map((m) => ({ date: m.metric_date, value: m[key] as number }));
+    
+    if (pts.length < 2) return null;
+    
+    const sorted = [...pts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const latest = sorted[0];
+    const previous = sorted[1];
+    
+    const diff = latest.value - previous.value;
+    const percent = previous.value !== 0 ? (diff / previous.value) * 100 : 0;
+    
+    return {
+      latestValue: latest.value,
+      latestDate: latest.date,
+      diff,
+      percent,
+      direction: (diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat') as 'up' | 'down' | 'flat',
+    };
+  };
+
   const CHART_COLORS = [colors.primary, colors.success, colors.warning, colors.error];
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [longPressedMetric, setLongPressedMetric] = useState<MetricKey | null>(null);
   const HISTORY_PAGE = 30;
 
   const emptyForm = (): MetricFormData => ({
@@ -255,6 +280,10 @@ export default function MetricsScreen() {
                   <TouchableOpacity
                     key={f.key}
                     onPress={() => toggleMetric(f.key)}
+                    onLongPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setLongPressedMetric(f.key);
+                    }}
                     style={{
                       paddingHorizontal: SPACING.md,
                       paddingVertical: SPACING.xs,
@@ -276,6 +305,52 @@ export default function MetricsScreen() {
                 );
               })}
             </View>
+            {longPressedMetric && (() => {
+              const trend = getMetricTrend(longPressedMetric);
+              const field = sparkFields.find((f) => f.key === longPressedMetric);
+              if (!trend || !field) return null;
+
+              const isUp = trend.direction === 'up';
+              const isDown = trend.direction === 'down';
+              const trendColor = isUp ? colors.error : isDown ? colors.success : colors.textSecondary;
+              const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
+
+              return (
+                <FadeIn>
+                  <AppCard variant="compact" style={{ marginTop: SPACING.md, marginBottom: SPACING.md }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View>
+                        <Text style={[typography.caption, { color: colors.textSecondary }]}>{field.label}</Text>
+                        <Text style={[typography.h3, { color: colors.textPrimary }]}>
+                          {trend.latestValue} {field.unit}
+                        </Text>
+                        <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                          {new Date(trend.latestDate).toLocaleDateString('ru-RU')}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <TrendIcon size={18} color={trendColor} />
+                          <Text style={[typography.labelBold, { color: trendColor, marginLeft: SPACING.xs }]}>
+                            {trend.diff > 0 ? '+' : ''}{trend.diff.toFixed(1)} {field.unit}
+                          </Text>
+                        </View>
+                        <Text style={[typography.captionSmall, { color: trendColor }]}>
+                          {trend.percent > 0 ? '+' : ''}{trend.percent.toFixed(1)}%
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity 
+                      style={{ marginTop: SPACING.sm, alignItems: 'center' }}
+                      onPress={() => setLongPressedMetric(null)}
+                    >
+                      <Text style={[typography.captionSmall, { color: colors.primary }]}>Закрыть</Text>
+                    </TouchableOpacity>
+                  </AppCard>
+                </FadeIn>
+              );
+            })()}
+
             {chartsReady &&
               selectedMetrics.map((key, i) => {
                 const field = sparkFields.find((f) => f.key === key);
@@ -292,14 +367,14 @@ export default function MetricsScreen() {
                   />
                 );
               })}
-            {selectedMetrics.length > 0 && (
+            {selectedMetrics.length > 0 && !longPressedMetric && (
               <Text
                 style={[
                   typography.captionSmall,
                   { color: colors.textTertiary, marginTop: SPACING.sm, textAlign: 'center' },
                 ]}
               >
-                Нажмите на чип выше, чтобы показать или скрыть график
+                Нажмите на чип, чтобы показать график. Удерживайте для деталей.
               </Text>
             )}
           </View>
