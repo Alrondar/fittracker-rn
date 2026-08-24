@@ -7,7 +7,9 @@
     "scheme": "fittracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fittracker.app"
@@ -29,7 +31,12 @@
         "projectId": "56a40b35-5721-4c21-b743-ae3fc74186a8"
       }
     },
-    "plugins": ["expo-router", "expo-audio"],
+    "plugins": [
+      "expo-router",
+      "expo-audio",
+      "expo-asset",
+      "expo-font"
+    ],
     "owner": "alrondar"
   }
 }
