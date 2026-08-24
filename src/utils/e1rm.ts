@@ -1,13 +1,27 @@
 // src/utils/e1rm.ts
-// FEAT-1.4: оценочный одноповторный максимум (формула Epley).
+// FEAT-1.4: оценочный одноповторный максимум.
 // Чистые функции — кандидат в SCALE-1 тесты; позже переиспользуется в AI-прогрессии (3.2).
 
-/** Epley: e1RM = w × (1 + reps/30). При reps ≤ 1 возвращает сам вес. */
-export function epley(weight: number, reps: number): number {
+/**
+ * P2.1: Переключение формулы для точности.
+ * Epley точна до ~10 повторов. Для high-rep (>10) Brzycki даёт более точную оценку,
+ * так как Epley начинает завышать 1ПМ на 5–10%.
+ */
+export function calculateE1rm(weight: number, reps: number): number {
   if (!isFinite(weight) || !isFinite(reps) || weight <= 0 || reps <= 0) return 0;
   if (reps <= 1) return weight;
-  return weight * (1 + reps / 30);
+  
+  if (reps <= 10) {
+    // Epley: w × (1 + reps/30)
+    return weight * (1 + reps / 30);
+  } else {
+    // Brzycki: w × (36 / (37 - reps))
+    return weight * (36 / (37 - reps));
+  }
 }
+
+/** Legacy alias для обратной совместимости. */
+export const epley = calculateE1rm;
 
 /** Лучший e1RM по набору сетов (0, если валидных сетов нет). */
 export function bestE1rm(

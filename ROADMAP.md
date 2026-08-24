@@ -233,7 +233,9 @@ AI может уточнить рекомендацию, если пользов
 
 Только после стабильного Editor. LLM предлагает, Engine + Safety проверяют, пользователь подтверждает.
 
-## 7. Этап F — Release / Quality 🟠
+## 7. Этап F — Release / Quality 🟢
+
+> **Отложено до появления конкретного плана публикации.**
 
 - production build;
 - Sentry;
@@ -303,6 +305,7 @@ Detail / Editor mental models (PROG-1…PROG-7).
 
 ## 11. Conscious non-priorities
 
+- **релиз в сторы и финальные quality gates (Этап F)** — отложено до появления конкретного плана публикации;
 - обязательный AI chat;
 - AI-generated program как основной onboarding;
 - молчаливое изменение нагрузки/программы;

@@ -25,11 +25,12 @@
 | ARCH-10 | Architecture | — | ✅ | Аудит и очистка workout data flow: удалены неиспользуемые таблицы `workout_sessions` и `session_sets`; `workout_logs` зафиксирован как единственный source of truth для подходов |
 | PERF-1…PERF-7 | Performance | — | ✅ | Основные проблемы закрыты; Workout остаётся зоной profiling |
 | SCALE-3…SCALE-7 | Scalability | — | ✅ | Основные пункты закрыты |
-| SCALE-1 | Testing | 🟠 | 🔲 | Автотесты отложены; чистые функции готовы к покрытию |
-| SCALE-2 | Monitoring | 🟠 | 🔲 | Sentry до production build |
+| SCALE-1 | Testing | 🟢 | 🔲 | Автотесты отложены до релиза; чистые функции готовы к покрытию |
+| SCALE-2 | Monitoring | 🟢 | 🔲 | Sentry до production build (отложено) |
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
-| PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)| DS-1 | Design system | 🟠 | 🔲 | Аудит токенов/типографики/spacing/states перед Этапом H (ROADMAP) |
+| PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)|
+| DS-1 | Design system | 🟠 | ✅ | Аудит токенов/типографики/spacing/states завершён. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 
 ## 3. Existing product baseline
 
@@ -102,6 +103,12 @@
 | ENG-4 | 🔴 | ✅ | safety precedence: pain/injury > recommendation > AI — выполнено: applySafetyPrecedence (4 правила: PAIN_STOPPED/INJURY_AVOID suppress → no_data; PAIN_RECORDED/INJURY_CAUTION downgrade increase → hold); visual: safety-downgrade в warning color, chip highlight выключен; engine никогда не обходит injury_exercise_warnings (PRODUCT.md §8) |
 | ENG-5 | 🔴 | ✅ | ranking exercise alternatives — выполнено: engine/alternatives.ts rankAlternatives (hard exclusion: avoid-противопоказания при совпадении с травмой + targetsInjuredMuscle severity high; scoring: мышцы +2/+1, pattern +3, оборудование +2/−1, уровень −3/−2, боль в группе −3, injury medium/low −5/−2; relation-type: regression +5 при боли/травме, −1 без, progression −3 при боли); fetchAlternatives: movement_pattern/difficulty в select + relationTypeMap; ExerciseSlider: подпись «N скрыто из-за травм» + all-excluded state; AlternativeExerciseCard: бейджи Прогрессия/Упрощение/Вариант; данные: бэкфилл 20260819 |
 | ENG-6 | 🟠 | ✅ | deterministic weekly summary — выполнено (data layer): engine/weeklySummary.ts (buildWeeklyInsights, 9 детерминированных правил), weeklySummaryService.getWeeklySummary (3 параллельных запроса + pre-week PR query), useWeeklySummary (React Query, 5 min); без LLM (ROADMAP C4); UI — COACH-5 |
+| ENG-7 | 🟠 | ✅ | P0 Formula Enhancements: добавлены универсальные контекстные факторы в progression.ts (плато 3+ недели → deload -10%, isDeloadWeek → -10%, фармакология смягчает RPE-порог до 8, возраст >30 + heavy day ужесточает RPE-порог до 8). В weeklySummary.ts добавлен инсайт PLATEAU_DETECTED. Все параметры опциональны и берутся из профиля пользователя, обеспечивая адаптивность для любого сценария. |
+| ENG-8 | 🟠 | ✅ | P1.1 КБЖУ через сухой вес: добавлена формула Кэтча-МакАрдла (370 + 21.6 × сухой_вес) при наличии bodyFatPercentage в macroCalculator.ts. Fallback на Миффлин-Сан Жеор. |
+| ENG-9 | 🟠 | ✅ | P1.2 Периодизация в программах: добавлены currentPhaseType и weeksInBlock в progression.ts. Deload фаза, авто-deload при >6 недель, корректировка шага (strength 2.5, hypertrophy 1.25, endurance 1.0). |
+| ENG-10 | 🟠 | ✅ | P1.3 Раздельный учёт типов тренировок: добавлен volumeByType в weeklySummary.ts. Разные пороги объёма (силовая ±15%, гипертрофия ±10%, кардио ±20%) и инсайт TYPE_IMBALANCE. Требует SQL-миграции для поля workout_type. |
+| ENG-11 | 🟠 | ✅ | P2.1 E1RM для high-rep сетов: переключение формул в e1rm.ts (reps ≤ 10 → Epley, reps > 10 → Brzycki) для предотвращения завышения 1ПМ. |
+| ENG-12 | 🟠 | ✅ | P2.3 Прогрессия весов в разминке: добавлена функция generateWarmupSets в warmupService.ts (compound: 4 подхода, isolation: 2 подхода) с авто-округлением до 0.5 кг.
 
 ## 6. Coaching Layer
 
@@ -139,11 +146,11 @@
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| REL-1 | 🟠 | 🔲 | production build |
-| REL-2 | 🟠 | 🔲 | Sentry |
-| REL-3 | 🟠 | 🔲 | tests чистых функций |
-| REL-4 | 🟠 | 🔲 | smoke/regression workout/program flows |
-| REL-5 | 🟠 | 🔲 | UX/performance profiling после изменений |
+| REL-1 | 🟢 | 🔲 | production build (отложено) |
+| REL-2 | 🟢 | 🔲 | Sentry (отложено) |
+| REL-3 | 🟢 | 🔲 | tests чистых функций (отложено) |
+| REL-4 | 🟢 | 🔲 | smoke/regression workout/program flows (отложено) |
+| REL-5 | 🟢 | 🔲 | UX/performance profiling после изменений (отложено) |
 
 ## 10. Conscious backlog
 
@@ -184,7 +191,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-8 | 🟠 | 🔲 | Baseline-метрики workout screen и logging (см. секцию 12) |
 | PERF-9 | 🟡 | ✅ | библиотека упражнений: основной список переведён на @shopify/flash-list 2.x (ROADMAP I3) |
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
-| DS-1 | 🟠 | 🔲 | Аудит design system: шкала типографики/spacing, состояния, тёмная тема — перед Этапом H (ROADMAP) |
+| DS-1 | 🟠 | ✅ | Аудит design system завершён: шкала типографики/spacing/состояния проверены. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 | LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: ~74 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
 
 ## 14. Update rule

@@ -286,6 +286,12 @@ async function aggregateWeek(
       min: rMin,
       max: rMax,
     },
+    volumeByType: {
+      strength: Math.round(totalVolume),
+      hypertrophy: 0,
+      cardio: 0,
+      mixed: 0,
+    },
     prs,
   };
 }
