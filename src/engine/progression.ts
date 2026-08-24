@@ -52,6 +52,16 @@ export interface ProgressionInput {
   repsRange: string | null;
   /** Шаг изменения в кг. Default 2.5 (меньший чип прогрессии). */
   stepKg?: number;
+  /** P0: сколько сессий/недель подряд рекомендация была hold на том же весе. */
+  consecutiveHolds?: number;
+  /** P0: флаг недели разгрузки (из программы или вручную). */
+  isDeloadWeek?: boolean;
+  /** P0: возраст пользователя для корректировки восстановления. */
+  age?: number;
+  /** P0: является ли тренировка тяжелой (ноги/спина). */
+  isHeavyDay?: boolean;
+  /** P0: использует ли пользователь фармакологию (ускоренное восстановление). */
+  usePharma?: boolean;
 }
 
 // ============================================================================
@@ -181,13 +191,30 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // ===== Decision tree (priority order) =====
 
+  // 0. P0: Неделя разгрузки (Deload)
+  if (input.isDeloadWeek) {
+    const deloadWeight = Math.max(0, round2(lastWeight * 0.9));
+    return {
+      action: 'decrease',
+      suggestedWeight: deloadWeight > 0 ? deloadWeight : null,
+      suggestedReps: targetRange ? targetRange.min : null,
+      reason: {
+        code: 'DELOAD_WEEK',
+        ruText: 'Неделя разгрузки — снижаем нагрузку на 10%',
+        factors,
+      },
+    };
+  }
+
   // 1. Полный отказ
   if (lastRpe === 10) {
     return decreaseResult('MAX_EFFORT', 'Отказ — снижаем вес');
   }
 
   // 2. Все повторы по верху диапазона + низкий RPE → явно готовы к прогрессу
-  if (allAtMax && lastRpe != null && lastRpe <= 7) {
+  // P0: при фармакологии порог смягчается до <= 8 (ускоренное восстановление)
+  const rpeThresholdForProgress = input.usePharma ? 8 : 7;
+  if (allAtMax && lastRpe != null && lastRpe <= rpeThresholdForProgress) {
     return increaseResult('READY_TO_PROGRESS', 'Все повторы, низкий RPE');
   }
 
@@ -197,12 +224,28 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // 4. Высокий RPE — закрепляем результат
-  if (lastRpe != null && lastRpe >= 9) {
+  // P0: при возрасте >30 и тяжелой тренировке порог ужесточается до >= 8
+  const rpeThresholdForHold = input.age && input.age > 30 && input.isHeavyDay ? 8 : 9;
+  if (lastRpe != null && lastRpe >= rpeThresholdForHold) {
     return holdResult('HIGH_RPE_HOLD', 'Высокий RPE — закрепляем вес');
   }
 
   // 5a. Все повторы в диапазоне (>= min) → consolidate
   if (allAtMin) {
+    // P0: Плато — если 3+ сессии подряд hold, предлагаем deload
+    if (input.consecutiveHolds != null && input.consecutiveHolds >= 3) {
+      const plateauWeight = Math.max(0, round2(lastWeight * 0.9));
+      return {
+        action: 'decrease',
+        suggestedWeight: plateauWeight > 0 ? plateauWeight : null,
+        suggestedReps: targetRange ? targetRange.min : null,
+        reason: {
+          code: 'PLATEAU_DELOAD',
+          ruText: 'Плато 3+ недели — время разгрузки (-10%)',
+          factors,
+        },
+      };
+    }
     return holdResult('CONSOLIDATE', 'В диапазоне — закрепляем');
   }
 
@@ -384,6 +427,24 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       }
       break;
 
+    case 'DELOAD_WEEK':
+      items.push({
+        kind: 'signal',
+        label: 'Периодизация',
+        value: 'запланированная неделя разгрузки',
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'PLATEAU_DELOAD':
+      items.push({
+        kind: 'signal',
+        label: 'Плато',
+        value: 'стабильные результаты 3+ недели подряд',
+        emphasis: 'warning',
+      });
+      break;
+
     case 'INCONCLUSIVE':
       items.push({
         kind: 'signal',
@@ -454,9 +515,10 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       emphasis: 'success',
     });
   } else if (action === 'decrease' && suggestedWeight != null) {
+    const isDeload = reason.code === 'DELOAD_WEEK' || reason.code === 'PLATEAU_DELOAD';
     items.push({
       kind: 'conclusion',
-      label: 'Снизить до',
+      label: isDeload ? 'Разгрузка' : 'Снизить до',
       value: `${suggestedWeight} кг${repsPart}`,
       emphasis: 'warning',
     });

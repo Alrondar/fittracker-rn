@@ -182,5 +182,23 @@ export function buildWeeklyInsights(
     );
   }
 
+  // === P0: Плато (стабильный объем без PR при регулярных тренировках) ===
+  if (
+    current.workoutsCount >= 3 &&
+    previous.workoutsCount >= 3 &&
+    current.prs.length === 0 &&
+    previous.totalVolume > 0
+  ) {
+    const ratio = current.totalVolume / previous.totalVolume;
+    if (ratio >= 0.95 && ratio <= 1.05) {
+      add(
+        'PLATEAU_DETECTED',
+        'Стабильные результаты 3+ недели',
+        'caution',
+        'Рассмотрите неделю разгрузки или смену схемы',
+      );
+    }
+  }
+
   return insights;
 }
