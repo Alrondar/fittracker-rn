@@ -160,9 +160,50 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
           })}
         </View>
 
+        {/* Training Load L1 Block */}
+        <View style={{ marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.xs }}>
+            <Activity
+              size={16}
+              color={
+                data.trainingLoad.level === 'normal'
+                  ? colors.success
+                  : data.trainingLoad.level === 'elevated'
+                  ? colors.warning
+                  : colors.error
+              }
+            />
+            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+              {data.trainingLoad.level === 'normal'
+                ? 'Обычная нагрузка'
+                : data.trainingLoad.level === 'elevated'
+                ? 'Повышенная нагрузка'
+                : 'Высокая нагрузка'}
+            </Text>
+          </View>
+          {data.trainingLoad.level === 'normal' ? (
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>
+              Нагрузка стабильна, объём и RPE в пределах твоей нормы.
+            </Text>
+          ) : (
+            <View style={{ gap: SPACING.xs }}>
+              {data.trainingLoad.reasons.slice(0, 2).map((reason, idx) => (
+                <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                  • {reason}
+                </Text>
+              ))}
+              {data.trainingLoad.reasons.length > 2 && (
+                <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                  и ещё {data.trainingLoad.reasons.length - 2} фактора
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
+
         <View style={{ marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: colors.border }}>
           <Text style={[typography.captionSmall, { color: colors.textTertiary, textAlign: 'center' }]}>
-            Нажми, чтобы увидеть детали: объём, восстановление и прогресс
+            Нажми, чтобы увидеть полные метрики и детали
           </Text>
         </View>
       </AppCard>
@@ -209,25 +250,102 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
             )}
           </DetailBlock>
 
-          {/* Training Load */}
+          {/* Training Load Context */}
           <DetailBlock
-            icon={<Activity size={20} color={colors.warning} />}
-            title="Нагрузка"
-            color={colors.warning}
+            icon={
+              <Activity
+                size={20}
+                color={
+                  data.trainingLoad.level === 'normal'
+                    ? colors.success
+                    : data.trainingLoad.level === 'elevated'
+                    ? colors.warning
+                    : colors.error
+                }
+              />
+            }
+            title="Контекст нагрузки"
+            color={
+              data.trainingLoad.level === 'normal'
+                ? colors.success
+                : data.trainingLoad.level === 'elevated'
+                ? colors.warning
+                : colors.error
+            }
           >
-            <Text style={[typography.body, { color: colors.textPrimary }]}>
-              Объём: {data.current.totalVolume.toLocaleString()} кг
-            </Text>
-            {data.previous.totalVolume > 0 && (
-              <Text style={[typography.caption, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Прошлая неделя: {data.previous.totalVolume.toLocaleString()} кг
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SPACING.xs,
+                marginBottom: SPACING.sm,
+              }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor:
+                    data.trainingLoad.level === 'normal'
+                      ? colors.success
+                      : data.trainingLoad.level === 'elevated'
+                      ? colors.warning
+                      : colors.error,
+                }}
+              />
+              <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                {data.trainingLoad.level === 'normal'
+                  ? 'Обычная'
+                  : data.trainingLoad.level === 'elevated'
+                  ? 'Повышенная'
+                  : 'Высокая'}
               </Text>
-            )}
-            {data.current.rpe.avg != null && (
-              <Text style={[typography.caption, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
-                Средний RPE: {data.current.rpe.avg.toFixed(1)} (на {data.current.rpe.count} подходах)
+            </View>
+
+            <View style={{ gap: SPACING.xs }}>
+              {data.trainingLoad.reasons.map((reason, idx) => (
+                <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                  • {reason}
+                </Text>
+              ))}
+            </View>
+
+            <View
+              style={{
+                marginTop: SPACING.md,
+                paddingTop: SPACING.md,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+                gap: SPACING.xs,
+              }}
+            >
+              <Text style={[typography.captionSmall, { color: colors.textTertiary, fontWeight: '600' }]}>
+                Метрики:
               </Text>
-            )}
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Объём: {data.current.totalVolume.toLocaleString()} кг{' '}
+                {data.previous.totalVolume > 0
+                  ? `(${Math.round((data.trainingLoad.signals.volumeTrend - 1) * 100)}% к прошлой неделе)`
+                  : ''}
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Тренировок: {data.current.workoutsCount}{' '}
+                {data.previous.workoutsCount > 0 ? `(было ${data.previous.workoutsCount})` : ''}
+              </Text>
+              {data.trainingLoad.signals.intensityTrend != null && (
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  RPE: {data.current.rpe.avg?.toFixed(1) ?? 'N/A'}{' '}
+                  {data.previous.rpe.avg != null ? `(было ${data.previous.rpe.avg.toFixed(1)})` : ''}
+                </Text>
+              )}
+              {data.trainingLoad.signals.readinessTrend != null && data.current.readiness.avg != null && (
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Readiness: {data.current.readiness.avg.toFixed(1)}{' '}
+                  {data.previous.readiness.avg != null ? `(был ${data.previous.readiness.avg.toFixed(1)})` : ''}
+                </Text>
+              )}
+            </View>
           </DetailBlock>
 
           {/* Recovery */}

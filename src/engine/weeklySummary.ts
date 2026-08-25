@@ -74,11 +74,23 @@ export interface WeeklyInsight {
   severity: InsightSeverity;
 }
 
+export interface TrainingLoadContext {
+  level: 'normal' | 'elevated' | 'high';
+  signals: {
+    volumeTrend: number;
+    intensityTrend: number | null;
+    frequencyTrend: number;
+    readinessTrend: number | null;
+  };
+  reasons: string[];
+}
+
 export interface WeeklySummaryResult {
   current: WeeklySummaryData;
   /** Предыдущая неделя — для сравнения в инсайтах. */
   previous: WeeklySummaryData;
   insights: WeeklyInsight[];
+  trainingLoad: TrainingLoadContext;
 }
 
 /**
@@ -251,4 +263,86 @@ export function buildWeeklyInsights(
   }
 
   return insights;
+}
+
+/**
+ * Вычисляет контекст тренировочной нагрузки на основе трендов.
+ * Детерминированная логика без "магических" score (ROADMAP C7).
+ */
+export function calculateTrainingLoadContext(
+  current: WeeklySummaryData,
+  previous: WeeklySummaryData,
+): TrainingLoadContext {
+  const reasons: string[] = [];
+
+  const volumeRatio = previous.totalVolume > 0 ? current.totalVolume / previous.totalVolume : 1;
+  const volumeChangePct = Math.round((volumeRatio - 1) * 100);
+  const frequencyTrend = current.workoutsCount - previous.workoutsCount;
+
+  const intensityTrend =
+    current.rpe.avg != null && previous.rpe.avg != null
+      ? current.rpe.avg - previous.rpe.avg
+      : null;
+
+  const readinessTrend =
+    current.readiness.avg != null && previous.readiness.avg != null
+      ? current.readiness.avg - previous.readiness.avg
+      : null;
+
+  let level: 'normal' | 'elevated' | 'high' = 'normal';
+  let elevatedSignals = 0;
+  let highSignals = 0;
+
+  if (volumeRatio >= 1.20) {
+    reasons.push(`Объём вырос на ${volumeChangePct}%`);
+    highSignals++;
+  } else if (volumeRatio >= 1.10) {
+    reasons.push(`Объём вырос на ${volumeChangePct}%`);
+    elevatedSignals++;
+  } else if (volumeRatio <= 0.80 && previous.totalVolume > 0) {
+    reasons.push(`Объём снизился на ${Math.abs(volumeChangePct)}%`);
+    elevatedSignals++;
+  }
+
+  if (frequencyTrend >= 2) {
+    reasons.push(`+${frequencyTrend} тренировок к обычной частоте`);
+    elevatedSignals++;
+  }
+
+  if (intensityTrend != null && intensityTrend >= 0.5) {
+    reasons.push(
+      `Средний RPE вырос с ${previous.rpe.avg?.toFixed(1)} до ${current.rpe.avg?.toFixed(1)}`,
+    );
+    elevatedSignals++;
+  }
+
+  if (readinessTrend != null && readinessTrend <= -0.5) {
+    reasons.push(
+      `Readiness снизился (с ${previous.readiness.avg?.toFixed(1)} до ${current.readiness.avg?.toFixed(1)})`,
+    );
+    elevatedSignals++;
+  }
+
+  if (highSignals >= 2 || (highSignals >= 1 && elevatedSignals >= 1)) {
+    level = 'high';
+  } else if (elevatedSignals >= 2) {
+    level = 'elevated';
+  }
+
+  if (level === 'normal' && reasons.length === 0) {
+    reasons.push('Нагрузка стабильна, объём и RPE в пределах твоей нормы');
+  } else if (level === 'normal' && reasons.length > 0) {
+    reasons.push('Незначительные колебания в пределах нормы');
+  }
+
+  return {
+    level,
+    signals: {
+      volumeTrend: volumeRatio,
+      intensityTrend,
+      frequencyTrend,
+      readinessTrend,
+    },
+    reasons,
+  };
 }

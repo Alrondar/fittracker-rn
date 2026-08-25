@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { epley, roundE1rm } from '../utils/e1rm';
 import {
   buildWeeklyInsights,
+  calculateTrainingLoadContext,
   WeeklySummaryData,
   WeeklySummaryResult,
 } from '../engine/weeklySummary';
@@ -312,5 +313,6 @@ export async function getWeeklySummary(
     aggregateWeek(userId, previousRange),
   ]);
   const insights = buildWeeklyInsights(current, previous);
-  return { current, previous, insights };
+  const trainingLoad = calculateTrainingLoadContext(current, previous);
+  return { current, previous, insights, trainingLoad };
 }
