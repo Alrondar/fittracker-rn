@@ -286,7 +286,8 @@ Important components:
 | workoutService|workout/create + workout session (useWorkoutSession): fetchWorkoutSession / fetchAlternatives / updateWorkout / upsertWorkoutLogs — единственная supabase-граница сессии (CLAUDE.md §2)|
 | workoutsService|workouts/useWorkouts|
 | dashboardService|Dashboard/useDashboard|
-| historyService|app/(tabs)/progress.tsx  (RecentWorkouts: duration, program_name, avg_rpe),  app/progress/[id].tsx  (Workout Report)|| profileService|profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories)|
+| historyService|app/(tabs)/progress.tsx  (RecentWorkouts: duration, program_name, avg_rpe),  app/progress/[id].tsx  (Workout Report)|
+| profileService|profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories)|
 | authService|root auth flow + auth screens|
 | exercisesService|exercise library/detail|
 | goalsService  /  metricsService|goals/metrics|
@@ -319,7 +320,7 @@ Important components:
 | utils/macroCalculator.ts|macro calculations|
 | engine/progression.ts|calculateProgression (ENG-1); explainProgression (ENG-2); applySafetyPrecedence (ENG-4); applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety). Чистые функции|
 | engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция|
-| engine/weeklySummary.ts|buildWeeklyInsights (ENG-6): 9 детерминированных инсайтов недели; CI-5: goal-aware приоритеты и адаптация текста под цель пользователя (`profiles.goal`); типы WeeklySummaryData/Insight. Чистая функция|
+| engine/weeklySummary.ts|buildWeeklyInsights (ENG-6) + CI-5 goal-aware + calculateTrainingLoadContext (CI-2) + calculateDeloadContext (CI-6, 4 сигнала, threshold ≥3 или highLoad+(plateau|readinessDecline)); типы WeeklySummaryData/Insight/TrainingLoadContext/DeloadContext. Чистые функции |
 
 # 10. Database / migrations
 Important migrations include:

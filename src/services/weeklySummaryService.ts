@@ -8,6 +8,7 @@ import { epley, roundE1rm } from '../utils/e1rm';
 import {
   buildWeeklyInsights,
   calculateTrainingLoadContext,
+  calculateDeloadContext,
   WeeklySummaryData,
   WeeklySummaryResult,
 } from '../engine/weeklySummary';
@@ -332,5 +333,7 @@ export async function getWeeklySummary(
   const primaryGoal = profileRes.data?.goal ?? null;
   const insights = buildWeeklyInsights(current, previous, { primaryGoal });
   const trainingLoad = calculateTrainingLoadContext(current, previous);
-  return { current, previous, insights, trainingLoad };
+  // CI-6: расчёт рекомендации разгрузки после инсайтов и контекста нагрузки.
+  const deload = calculateDeloadContext(current, previous, trainingLoad, insights);
+  return { current, previous, insights, trainingLoad, deload };
 }

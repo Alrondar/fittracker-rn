@@ -67,8 +67,8 @@
 | UX-3 | 🔴 | ✅ | context sheets: history / technique / warm-up / pain / notes —  закрыто : technique через accordion с подзаголовками (PR7), pain persistent state с prefill и delete (PR6), warm-up через вкладку WorkoutTabs + WarmupBlock, history — per-set previous data + вкладка History с деталями тренировок; notes отложены (нет таблицы, не подтверждена потребность) |
 | UX-4 | 🔴 | ✅ | доступные alternatives без перегрузки — выполнено: slider + text affordance + облегчённая AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания видимы сразу, Техника в lazy-mount аккордеоне |
 | UX-5 | 🔴 | ✅ | temporary vs program replacement + skip workout — закрыто: Alert 3 кнопок (Отмена/Только сегодня/В программе destructive) + rollback для seeded программ + graceful degradation; пропуск тренировки программы: long press на «Следующая», skipped_at + advanceProgramProgress, бейдж «Пропущена» (FIT-7) |
-| UX-6 | 🟠 | ✅ | |динамическая расшифровка RPE + быстрый skip — выполнено: «RPE N — description» в SetFeedbackEditor (FEAT-7 v2), кнопка «Пропустить» в редакторе (UX-6) |
-| UX-7 | 🟠 | ✅ | |настройка частоты запроса RPE — выполнено: useRpeSettings (always/last-set/off), picker в settings, conditional rendering чипа в SetsGrid (UX-7) |
+| UX-6 | 🟠 | ✅ | динамическая расшифровка RPE + быстрый skip — выполнено: «RPE N — description» в SetFeedbackEditor (FEAT-7 v2), кнопка «Пропустить» в редакторе (UX-6) |
+| UX-7 | 🟠 | ✅ | настройка частоты запроса RPE — выполнено: useRpeSettings (always/last-set/off), picker в settings, conditional rendering чипа в SetsGrid (UX-7) |
 | UX-8 | 🟠 | ✅ | lazy mount тяжёлого контента — media/slider монтируется только при раскрытии accordion; stagger в ExerciseSlider |
 | UX-9 | 🟠 | ✅ | History calendar с отметками — выполнено: HistoryCalendar (месяц, навигация, точки, тап по дню → DaySummaryCard через SheetShell); даты вычисляются локально из уже загруженных данных (ноль новых запросов); пропущенные тренировки не отображаются (Вариант A, консистентно с FIT-7) |
 | UX-10 | 🟠 | ✅ | Calendar/List toggle + day details — выполнено: HistoryViewToggle segmented control + useHistoryView (persist в AsyncStorage, default calendar); list view сохранён без изменений; day details: тап по дню → DaySummaryCard → history/[id] |
@@ -114,7 +114,7 @@
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
 | COACH-1 | 🔴 | ✅ | Recommendation card: Accept / Change / Why — выполнено: `RecommendationCard` в `SetsGrid`: suggested weight × reps как primary, «Принять»/«Изменить» как secondary, collapsible «Почему?» как tertiary; progression chips скрыты до «Изменить»; Accept пишет suggestedWeight/suggestedReps в первый незавершённый сет через существующий `updateSet`; «Скрыть» session-local без persistence; safety/readiness overrides используют warning color и не подсвечивают increase-chip. Причина изменения/отклонения и feedback — COACH-3| 
-| COACH-2 | 🔴 | ✅ | structured reasons | structured reasons — реализовано в рамках ENG-2 (explainProgression + «Почему?»/«Скрыть» в SetsGrid)|
+| COACH-2 | 🔴 | ✅ | sstructured reasons — реализовано в рамках ENG-2 (explainProgression + «Почему?»/«Скрыть» в SetsGrid)|
 | COACH-3 | 🟠 | ✅ | acceptance/rejection feedback — выполнено: таблица recommendation_feedback (upsert по user+workout+exercise+set), recommendationFeedbackService, useRecommendationFeedback (fire-and-forget useMutation, ошибки глотаются тихо); UI в SetsGrid: после «Скрыть» inline-чипы причин (устал/слишком тяжело/боль/хочу легче/другое) + пропустить (×); «Принять» записывает accepted без причины; PRODUCT.md §3.2 L2 inline-фидбек без sheet/modal; фактический вес при ручном изменении (changed) — вариант B отложен |
 | COACH-4 | 🟠 | ✅ | contextual tips без спама (Dashboard L1 + readiness warning) |
 | COACH-5 | 🟠 | ✅ | weekly review UI (Progress hub, deterministic insights) — закрыто через CI-1 |
@@ -131,7 +131,7 @@
 | CI-3 | 🟠 | ✅ | Plateau Detection: L2-блок с observation и вариантами действий при PLATEAU_DETECTED (ROADMAP C8) |
 | CI-4 | 🟠 | ✅ | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals (L2-блок в WeeklyReviewSection) |
 | CI-5 | 🟠 | ✅ | Goal-aware Insights (Вариант B: Balanced): цель из профиля (`profiles.goal`) учитывается в `buildWeeklyInsights` — приоритеты инсайтов и контекстная адаптация текста («почему это важно для твоей цели»). Чистая логика в `engine/weeklySummary.ts`, интеграция в `weeklySummaryService.ts`, UI доверяет отсортированному массиву. Без дублирования экранов. |
-| CI-6 | 🟡 | 🔲 | Deload Recommendations: только при сочетании CI-2 + CI-3 и дополнительных устойчивых сигналов; без автоизменения программы |
+| CI-6 | 🟡 | ✅ | Deload Recommendations — выполнено (Вариант B, ROADMAP C11): `calculateDeloadContext` в `engine/weeklySummary.ts` (4 объяснимых сигнала: highLoad/plateau/readinessDecline/rpeRisingNoImprovement; рекомендация при ≥3 сигналах или highLoad+plateau/readinessDecline; insufficient-data guard для первой недели); `WeeklyReviewSection` L1-карточка с Moon/warning + session-local dismiss + «Почему?» → L2-блок в SheetShell (сигналы + типовой план −40–60% объёма, RPE ≤ 6–7, 1 неделя) с disclaimer «не меняет программу автоматически»; без автоизменения программы (PRODUCT.md §3.3 user control) |
 | CI-7 | 🟡 | 🔲 | Optional AI Explanations: AI объясняет structured facts/reason codes; зависит от Coaching Intelligence и AI foundation |
 
 Порядок реализации:

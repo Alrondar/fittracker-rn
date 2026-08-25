@@ -95,12 +95,31 @@ export interface TrainingLoadContext {
   reasons: string[];
 }
 
+/**
+ * CI-6: детерминированная рекомендация разгрузочной недели.
+ * recommendation=true только при сочетании ≥3 сигналов (или highLoad + plateau/readinessDecline).
+ * Без автоизменения программы (ROADMAP C11, PRODUCT.md §3.3 — user control).
+ */
+export type DeloadSignalKey =
+  | 'highLoad'
+  | 'plateau'
+  | 'readinessDecline'
+  | 'rpeRisingNoImprovement';
+
+export interface DeloadContext {
+  recommended: boolean;
+  signals: Record<DeloadSignalKey, boolean>;
+  /** Human-readable причины для каждого сработавшего сигнала. */
+  reasons: string[];
+}
+
 export interface WeeklySummaryResult {
   current: WeeklySummaryData;
   /** Предыдущая неделя — для сравнения в инсайтах. */
   previous: WeeklySummaryData;
   insights: WeeklyInsight[];
   trainingLoad: TrainingLoadContext;
+  deload: DeloadContext;
 }
 
 /**
@@ -514,4 +533,81 @@ export function calculateTrainingLoadContext(
     },
     reasons,
   };
+}
+
+/**
+ * CI-6: вычисляет контекст разгрузочной недели.
+ * 4 объяснимых сигнала; recommendation срабатывает при ≥3 сработавших сигналах
+ * ИЛИ при highLoad + (plateau || readinessDecline).
+ * Первая неделя (previous.workoutsCount === 0) всегда recommended=false —
+ * не выдумываем certainty без baseline (PRODUCT.md §3.4).
+ */
+export function calculateDeloadContext(
+  current: WeeklySummaryData,
+  previous: WeeklySummaryData,
+  trainingLoad: TrainingLoadContext,
+  insights: WeeklyInsight[],
+): DeloadContext {
+  const signals: Record<DeloadSignalKey, boolean> = {
+    highLoad: false,
+    plateau: false,
+    readinessDecline: false,
+    rpeRisingNoImprovement: false,
+  };
+  const reasons: string[] = [];
+
+  // Недостаточно данных для уверенной оценки — безопасный fallback.
+  if (previous.workoutsCount === 0) {
+    return { recommended: false, signals, reasons };
+  }
+
+  // 1. Накопленная нагрузка повышена (зависит от CI-2).
+  if (trainingLoad.level === 'high' || trainingLoad.level === 'elevated') {
+    signals.highLoad = true;
+    reasons.push(
+      trainingLoad.level === 'high'
+        ? 'Накопленная нагрузка высокая'
+        : 'Накопленная нагрузка повышенная',
+    );
+  }
+
+  // 2. Прогресс замедлился 3+ недели (зависит от CI-3).
+  if (insights.some((i) => i.code === 'PLATEAU_DETECTED')) {
+    signals.plateau = true;
+    reasons.push('Прогресс замедлился 3+ недели');
+  }
+
+  // 3. Readiness устойчиво снизился (тренд ≤ −0.5 и текущее значение ≤ 3.5,
+  // ИЛИ резкий спад ≤ −1.0 при наличии данных в обеих неделях).
+  if (
+    current.readiness.avg != null &&
+    previous.readiness.avg != null &&
+    trainingLoad.signals.readinessTrend != null
+  ) {
+    const trend = trainingLoad.signals.readinessTrend;
+    if ((trend <= -0.5 && current.readiness.avg <= 3.5) || trend <= -1.0) {
+      signals.readinessDecline = true;
+      reasons.push(
+        `Readiness устойчиво снизился (${previous.readiness.avg.toFixed(1)} → ${current.readiness.avg.toFixed(1)})`,
+      );
+    }
+  }
+
+  // 4. RPE растёт без новых рекордов (субъективная нагрузка ↑, но результаты не улучшаются).
+  if (
+    trainingLoad.signals.intensityTrend != null &&
+    trainingLoad.signals.intensityTrend >= 0.5 &&
+    current.prs.length === 0
+  ) {
+    signals.rpeRisingNoImprovement = true;
+    reasons.push(
+      `Средний RPE растёт (на +${trainingLoad.signals.intensityTrend.toFixed(1)}) без новых рекордов`,
+    );
+  }
+
+  const signalCount = Object.values(signals).filter(Boolean).length;
+  const recommended =
+    signalCount >= 3 || (signals.highLoad && (signals.plateau || signals.readinessDecline));
+
+  return { recommended, signals, reasons };
 }

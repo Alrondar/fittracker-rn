@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { ChevronRight, AlertTriangle, TrendingUp, Activity, Heart, Calendar, AlertCircle, Dumbbell } from 'lucide-react-native';
+import { ChevronRight, AlertTriangle, TrendingUp, Activity, Heart, Calendar, AlertCircle, Dumbbell, Moon, X } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -36,8 +36,16 @@ const severityColors: Record<InsightSeverity, { bg: string; icon: string; border
 export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
   const { colors } = useTheme();
   const [showDetails, setShowDetails] = useState(false);
+  // CI-6: session-local dismiss deload card (без persistence, как COACH-1).
+  const [deloadDismissed, setDeloadDismissed] = useState(false);
 
   const { data, isPending, isError, error, refetch } = useWeeklySummary(userId, 0);
+
+  // CI-6: количество сработавших сигналов для L1-карточки.
+  const deloadSignalCount = useMemo(() => {
+    if (!data?.deload) return 0;
+    return Object.values(data.deload.signals).filter(Boolean).length;
+  }, [data?.deload]);
 
   const sortedInsights = useMemo(() => {
     if (!data?.insights) return [];
@@ -121,6 +129,55 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
 
   return (
     <>
+      {/* CI-6 L1: Deload recommendation card (Вариант B — отдельная карточка) */}
+      {data.deload.recommended && !deloadDismissed && (
+        <AppCard
+          variant="default"
+          style={{
+            marginBottom: SPACING.md,
+            borderWidth: 1,
+            borderColor: colors.warning,
+            backgroundColor: (colors as any).warningLight + '30',
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flex: 1 }}>
+              <Moon size={20} color={colors.warning} />
+              <Text style={[typography.h5, { color: colors.textPrimary, flex: 1 }]}>
+                Рассмотри разгрузочную неделю
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setDeloadDismissed(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Скрыть предложение"
+              accessibilityRole="button"
+            >
+              <X size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+            Наблюдается {deloadSignalCount} из 4 устойчивых сигналов перегрузки.
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowDetails(true)}
+            style={{
+              marginTop: SPACING.md,
+              alignSelf: 'flex-start',
+              paddingHorizontal: SPACING.md,
+              paddingVertical: SPACING.xs,
+              backgroundColor: colors.warning + '20',
+              borderRadius: BORDER_RADIUS.md,
+            }}
+            accessibilityRole="button"
+          >
+            <Text style={[typography.label, { color: colors.warning, fontWeight: '600' }]}>
+              Почему?
+            </Text>
+          </TouchableOpacity>
+        </AppCard>
+      )}
+
       <AppCard
         variant="default"
         style={{ marginBottom: SPACING.lg }}
@@ -351,6 +408,56 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               )}
             </View>
           </DetailBlock>
+
+          {/* CI-6: Deload Recommendations (L2) */}
+          {data.deload.recommended && (
+            <DetailBlock
+              icon={<Moon size={20} color={colors.warning} />}
+              title="Разгрузочная неделя"
+              color={colors.warning}
+            >
+              <Text style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+                Почему это предложение:
+              </Text>
+              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                {data.deload.reasons.map((reason, idx) => (
+                  <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                    • {reason}
+                  </Text>
+                ))}
+              </View>
+
+              <Text style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+                Что обычно включает разгрузочная неделя:
+              </Text>
+              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Объём: −40–60% от обычной недели
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Интенсивность: лёгкая (RPE ≤ 6–7)
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Длительность: обычно 1 неделя
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • После этого — постепенный возврат к обычным нагрузкам
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  padding: SPACING.sm,
+                  backgroundColor: (colors as any).surfaceSecondary ?? colors.background,
+                  borderRadius: BORDER_RADIUS.md,
+                }}
+              >
+                <Text style={[typography.caption, { color: colors.textTertiary }]}>
+                  Это предложение, не команда. Приложение не изменяет твою программу автоматически — решение всегда за тобой.
+                </Text>
+              </View>
+            </DetailBlock>
+          )}
 
           {/* CI-4: Muscle Volume Analysis */}
           <DetailBlock
