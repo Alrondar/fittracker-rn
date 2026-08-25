@@ -321,11 +321,16 @@ export async function getWeeklySummary(
   const now = new Date();
   const currentRange = computeWeekRange(weekOffset, now);
   const previousRange = computeWeekRange(weekOffset - 1, now);
-  const [current, previous] = await Promise.all([
+  
+  // CI-5: параллельно загружаем цель пользователя из профиля
+  const [current, previous, profileRes] = await Promise.all([
     aggregateWeek(userId, currentRange),
     aggregateWeek(userId, previousRange),
+    supabase.from('profiles').select('goal').eq('id', userId).single(),
   ]);
-  const insights = buildWeeklyInsights(current, previous);
+  
+  const primaryGoal = profileRes.data?.goal ?? null;
+  const insights = buildWeeklyInsights(current, previous, { primaryGoal });
   const trainingLoad = calculateTrainingLoadContext(current, previous);
   return { current, previous, insights, trainingLoad };
 }

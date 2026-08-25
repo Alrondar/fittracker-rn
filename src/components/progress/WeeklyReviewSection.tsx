@@ -41,9 +41,13 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
 
   const sortedInsights = useMemo(() => {
     if (!data?.insights) return [];
-    return [...data.insights].sort(
-      (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
-    );
+    // CI-5: учитываем goalPriority от engine; если его нет — fallback на severity
+    return [...data.insights].sort((a, b) => {
+      const pa = a.goalPriority ?? 0;
+      const pb = b.goalPriority ?? 0;
+      if (pb !== pa) return pb - pa;
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
   }, [data?.insights]);
 
   const topInsights = sortedInsights.slice(0, 2);

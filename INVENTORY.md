@@ -319,7 +319,7 @@ Important components:
 | utils/macroCalculator.ts|macro calculations|
 | engine/progression.ts|calculateProgression (ENG-1); explainProgression (ENG-2); applySafetyPrecedence (ENG-4); applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety). Чистые функции|
 | engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция|
-| engine/weeklySummary.ts|buildWeeklyInsights (ENG-6): 9 детерминированных инсайтов недели; типы WeeklySummaryData/Insight. Чистая функция|
+| engine/weeklySummary.ts|buildWeeklyInsights (ENG-6): 9 детерминированных инсайтов недели; CI-5: goal-aware приоритеты и адаптация текста под цель пользователя (`profiles.goal`); типы WeeklySummaryData/Insight. Чистая функция|
 
 # 10. Database / migrations
 Important migrations include:
