@@ -32,6 +32,7 @@ import { commonStyles } from '../../src/styles/common';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { ProgressHero } from '../../src/components/progress/ProgressHero';
 import { ProgressStats } from '../../src/components/progress/ProgressStats';
+import { WeeklyReviewSection } from '../../src/components/progress/WeeklyReviewSection';
 import { ProgressInsights } from '../../src/components/progress/ProgressInsights';
 import { RecentWorkouts } from '../../src/components/progress/RecentWorkouts';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
@@ -292,6 +293,8 @@ export default function ProgressScreen() {
           currentStreak={progressData?.currentStreak ?? 0}
           bestStreak={progressData?.bestStreak ?? 0}
         />
+
+        <WeeklyReviewSection userId={userId} />
 
         <ProgressInsights
           weeklyVolume={progressData?.weeklyVolume ?? []}
