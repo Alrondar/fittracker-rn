@@ -1,6 +1,6 @@
 # FitTracker — Product Roadmap
 
-Срез: 16.08.2026
+Срез: 24.08.2026
 
 Source of truth: `STATUS.md` — статусы, `CLAUDE.md` — technical rules, `PRODUCT.md` — product/UX principles, `INVENTORY.md` — code map.
 
@@ -142,9 +142,255 @@ Acceptance/rejection может использоваться как feedback д�
 
 Только при полезном сигнале: progression, recovery, unusual fatigue, PR, deload, consistency.
 
-### C4. Weekly review
+### C4. Weekly review — baseline
 
-Сначала deterministic summary: тренировки, объём, RPE, PR, pain/readiness signals. LLM не обязателен.
+Базовый deterministic summary уже определяет направление: тренировки, объём, RPE, PR, pain/readiness signals. LLM не обязателен.
+
+Следующий этап — расширить этот baseline до полноценного **Coaching Intelligence**, не заменяя существующий Tracker или Training Engine.
+
+### C5. Coaching Intelligence — общий принцип
+
+Цель: научить существующие данные приложения работать вместе и отвечать пользователю:
+
+> что происходит → почему это происходит → что можно учитывать дальше.
+
+Порядок ответственности:
+
+```text
+Tracker
+  └─ хранит факты и историю
+
+Training Engine
+  └─ принимает детерминированные тренировочные решения
+
+Coaching Intelligence
+  └─ анализирует тенденции и формирует insights
+
+Coaching Layer
+  └─ показывает и объясняет insights
+
+Optional AI
+  └─ только уточняет и объясняет структурированные факты
+```
+
+AI не является источником фактов и не может самостоятельно обходить safety или deterministic training decisions.
+
+Новые coaching-решения должны иметь:
+- понятный тип сигнала;
+- severity;
+- summary;
+- structured reason codes / факторы;
+- исходные метрики или факты, на которых основан вывод;
+- понятное объяснение;
+- recommendation только при наличии достаточного сигнала;
+- действие пользователя только там, где оно действительно полезно.
+
+### C6. CI-1 — Weekly Training Review 🔴
+
+**Цель:** создать полноценный детерминированный недельный обзор, который превращает существующие данные Tracker и Training Engine в понятный ответ:
+
+> что произошло за неделю → почему это важно → что стоит учитывать дальше.
+
+Использовать существующие данные, где они доступны:
+- completed/planned workouts;
+- effective workout date (`finished_at ?? started_at ?? created_at`);
+- workout volume и frequency;
+- exercise performance;
+- RPE;
+- readiness;
+- pain/injury/safety signals;
+- PR/e1RM и progress metrics;
+- program context.
+
+Минимальные блоки обзора:
+
+1. **Consistency**
+   - выполненные / запланированные тренировки, если есть program context;
+   - frequency;
+   - сравнение с предыдущим сопоставимым периодом.
+
+2. **Performance**
+   - упражнения с улучшением;
+   - стабильные результаты;
+   - повторяющееся ухудшение только при достаточном количестве данных.
+
+3. **Training load**
+   - изменение объёма;
+   - изменение частоты;
+   - изменение субъективной сложности (RPE).
+
+4. **Recovery / safety context**
+   - readiness trend;
+   - сочетание readiness и RPE;
+   - повторяющиеся pain/injury signals;
+   - safety всегда имеет приоритет над обычной рекомендацией.
+
+5. **Next-step context**
+   - не обязательная команда, а объяснимая рекомендация или observation;
+   - пользователь может продолжить текущий план, рассмотреть сохранение нагрузки или открыть подробности.
+
+**Не делать:**
+- не использовать LLM для расчёта фактов;
+- не менять программу автоматически;
+- не ставить медицинские диагнозы;
+- не объявлять плато по нескольким случайным тренировкам;
+- не показывать recommendation без причин.
+
+**Definition of Done:**
+- обзор работает на реальных данных пользователя;
+- empty / insufficient-data states понятны;
+- каждый важный insight объясним;
+- рекомендации имеют structured reasons;
+- нет зависимости от AI;
+- existing weekly summary не ломается и может использоваться как baseline/data source;
+- effective workout date соблюдается во всех новых расчётах.
+
+### C7. CI-2 — Training Load Context 🔴
+
+**Цель:** дать пользователю понятный контекст накопленной тренировочной нагрузки без «магического» непрозрачного fatigue score.
+
+Система анализирует относительно собственной недавней нормы пользователя:
+- volume trend;
+- frequency trend;
+- RPE / subjective intensity trend;
+- readiness trend, если данные есть;
+- pain/safety context как отдельный сигнал.
+
+Выводимые уровни:
+- normal;
+- elevated;
+- high.
+
+Каждый уровень обязан иметь объяснение:
+
+> «Повышенная нагрузка, потому что объём вырос на X%, тренировок стало больше, а средний RPE выше твоего обычного уровня».
+
+Правила:
+- отсутствие readiness не блокирует анализ;
+- один плохой сигнал не должен автоматически означать fatigue;
+- safety/pain не маскируются общим load score;
+- не выдавать ложную точность в виде необъяснимого 0–100 score на первом этапе.
+
+**Definition of Done:**
+- baseline сравнения определён и документирован в коде;
+- уровни строятся из нескольких сигналов;
+- причины доступны UI;
+- insufficient-data state не превращается в fake certainty;
+- расчёт deterministic и тестируемый.
+
+### C8. CI-3 — Plateau Detection 🟠
+
+**Цель:** выявлять устойчивое замедление прогресса, а не реагировать на одну неудачную тренировку.
+
+Анализировать достаточное окно истории (ориентир: несколько тренировок и/или 3–6 недель, точный порог определяется реализацией и данными).
+
+Основные сигналы:
+- performance не улучшается;
+- при этом RPE растёт или остаётся непропорционально высоким;
+- тренд повторяется;
+- контекст readiness/load не противоречит выводу.
+
+Результат должен быть observation:
+
+> «Похоже, прогресс в упражнении замедлился».
+
+Возможные варианты:
+- сохранить нагрузку;
+- временно не повышать вес;
+- изменить rep range;
+- рассмотреть альтернативное упражнение;
+- рассмотреть deload при наличии дополнительных сигналов.
+
+**Не делать:**
+- не менять программу автоматически;
+- не объявлять plateau при недостатке данных;
+- не подменять plateau медицинской или recovery-диагностикой.
+
+### C9. CI-4 — Muscle Volume Analysis 🟠
+
+**Цель:** показать распределение тренировочной работы по мышечным группам и его тренды.
+
+Основа:
+- completed working sets;
+- exercise → primary/secondary muscles;
+- единые внутренние правила учёта косвенной нагрузки.
+
+Пользователь должен видеть:
+- weekly muscle volume;
+- изменение относительно собственного baseline;
+- заметный дисбаланс или необычное изменение как insight, а не как абсолютный медицинский норматив.
+
+Важно:
+- коэффициенты primary/secondary muscles — внутренняя модель, а не «абсолютная истина»;
+- UI не должен перегружать Dashboard;
+- основной смысл — тренд и контекст.
+
+### C10. CI-5 — Goal-aware Insights 🟠
+
+**Цель:** связать цель пользователя с тем, какие показатели и coaching insights действительно важны.
+
+Приоритеты:
+
+- **strength:** e1RM, основные lifts, intensity, progression;
+- **hypertrophy:** weekly sets, muscle distribution, progression, consistency;
+- **body composition / fat loss:** weight trend, activity, consistency, nutrition context при наличии данных;
+- **general fitness:** consistency, frequency, gradual progression, activity.
+
+Правила:
+- не создавать отдельный набор экранов для каждой цели;
+- адаптировать приоритеты Dashboard / Progress / Coaching;
+- отсутствие nutrition data не должно ломать тренировочные рекомендации.
+
+### C11. CI-6 — Deload Recommendations 🟡
+
+**Зависит от:** CI-2 + CI-3.
+
+**Цель:** предлагать разгрузку только при сочетании нескольких устойчивых сигналов, например:
+- повышенная накопленная нагрузка;
+- ухудшение readiness trend;
+- замедление progress;
+- рост RPE при отсутствии улучшения.
+
+Результат:
+
+> «Рассмотри разгрузочную неделю».
+
+Пользователь может:
+- узнать «Почему?»;
+- посмотреть возможный план;
+- продолжить текущий план.
+
+Автоматически изменять программу или нагрузку нельзя.
+
+### C12. CI-7 — Optional AI Explanations 🟡
+
+**Зависит от:** стабильного Coaching Intelligence и этапа E.
+
+AI получает структурированные facts/reason codes и помогает:
+- объяснить recommendation;
+- ответить на вопрос о weekly review;
+- пояснить plateau/load context;
+- предложить варианты для обсуждения.
+
+Канонический поток:
+
+```text
+Database / Tracker
+        ↓
+Training Engine
+        ↓
+Structured facts + reason codes
+        ↓
+Coaching Intelligence
+        ↓
+Optional AI explanation
+```
+
+AI:
+- не создаёт факты вместо deterministic analysis;
+- не обходит safety constraints;
+- не принимает молчаливые изменения за пользователя;
+- явно сообщает об ограниченности данных, если structured analysis не уверен.
 
 ## 5. Этап D — Programs / Program Editor 🔴
 

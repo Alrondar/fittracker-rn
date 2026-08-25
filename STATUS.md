@@ -117,7 +117,30 @@
 | COACH-2 | 🔴 | ✅ | structured reasons | structured reasons — реализовано в рамках ENG-2 (explainProgression + «Почему?»/«Скрыть» в SetsGrid)|
 | COACH-3 | 🟠 | ✅ | acceptance/rejection feedback — выполнено: таблица recommendation_feedback (upsert по user+workout+exercise+set), recommendationFeedbackService, useRecommendationFeedback (fire-and-forget useMutation, ошибки глотаются тихо); UI в SetsGrid: после «Скрыть» inline-чипы причин (устал/слишком тяжело/боль/хочу легче/другое) + пропустить (×); «Принять» записывает accepted без причины; PRODUCT.md §3.2 L2 inline-фидбек без sheet/modal; фактический вес при ручном изменении (changed) — вариант B отложен |
 | COACH-4 | 🟠 | ✅ | contextual tips без спама (Dashboard L1 + readiness warning) |
-| COACH-5 | 🟠 | ✅ | weekly review UI (Progress hub, deterministic insights) |
+| COACH-5 | 🟠 | ✅ | weekly review UI (Progress hub, deterministic insights) — закрыто через CI-1 |
+
+
+### Coaching Intelligence — planned
+
+> Базовый deterministic weekly summary (ENG-6 / COACH-5) уже реализован. Ниже — следующий этап: расширить существующие данные до полноценного explainable Coaching Intelligence. Полные функциональные спецификации и зависимости — `ROADMAP.md`, §4 C5–C12.
+
+| ID | Пр. | Статус | Цель / зависимость |
+|---|---:|---|---|
+| CI-1 | 🔴 | ✅ | Weekly Training Review: consistency + performance + load + recovery/safety context + explainable next-step context; расширяет baseline ENG-6/COACH-5. UI реализован в Progress hub (WeeklyReviewSection + SheetShell). |
+| CI-2 | 🔴 | 🔲 | Training Load Context: normal/elevated/high на основе volume/frequency/RPE/readiness trends; deterministic, без opaque score |
+| CI-3 | 🟠 | 🔲 | Plateau Detection: устойчивое замедление прогресса при достаточном окне данных; зависит от performance history и load/recovery context |
+| CI-4 | 🟠 | 🔲 | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals |
+| CI-5 | 🟠 | 🔲 | Goal-aware Insights: strength/hypertrophy/body composition/general fitness меняют приоритеты insights без дублирования экранов |
+| CI-6 | 🟡 | 🔲 | Deload Recommendations: только при сочетании CI-2 + CI-3 и дополнительных устойчивых сигналов; без автоизменения программы |
+| CI-7 | 🟡 | 🔲 | Optional AI Explanations: AI объясняет structured facts/reason codes; зависит от Coaching Intelligence и AI foundation |
+
+Порядок реализации:
+
+```text
+CI-1 → CI-2 → CI-3 / CI-4 → CI-5 → CI-6 → CI-7
+```
+
+`CI-3` и `CI-4` могут выполняться параллельно после стабилизации CI-2. `CI-7` не является условием ценности базового продукта.
 
 ## 7. Programs / Program Editor
 
