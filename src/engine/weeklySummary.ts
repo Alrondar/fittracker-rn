@@ -224,7 +224,7 @@ export function buildWeeklyInsights(
     );
   }
 
-  // === P0: Плато (стабильный объем без PR при регулярных тренировках) ===
+  // === P0: Плато (стабильный объем без PR при регулярных тренировках)
   if (
     current.workoutsCount >= 3 &&
     previous.workoutsCount >= 3 &&
@@ -233,12 +233,20 @@ export function buildWeeklyInsights(
   ) {
     const ratio = current.totalVolume / previous.totalVolume;
     if (ratio >= 0.95 && ratio <= 1.05) {
-      add(
-        'PLATEAU_DETECTED',
-        'Стабильные результаты 3+ недели',
-        'caution',
-        'Рассмотрите неделю разгрузки или смену схемы',
-      );
+      let subtitle = 'Стабильные результаты 3+ недели. Рассмотрите неделю разгрузки или смену схемы';
+      let severity: InsightSeverity = 'caution';
+
+      // Усиленный сигнал: рост RPE при стабильном объёме (ROADMAP C8)
+      if (
+        current.rpe.avg != null &&
+        previous.rpe.avg != null &&
+        current.rpe.avg > previous.rpe.avg
+      ) {
+        subtitle = `Объём стабилен, но средний RPE вырос (с ${previous.rpe.avg.toFixed(1)} до ${current.rpe.avg.toFixed(1)})`;
+        severity = 'warning';
+      }
+
+      add('PLATEAU_DETECTED', 'Прогресс замедлился', severity, subtitle);
     }
   }
 

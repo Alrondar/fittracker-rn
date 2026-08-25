@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { ChevronRight, AlertTriangle, TrendingUp, Activity, Heart, Calendar } from 'lucide-react-native';
+import { ChevronRight, AlertTriangle, TrendingUp, Activity, Heart, Calendar, AlertCircle } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -347,6 +347,39 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               )}
             </View>
           </DetailBlock>
+
+          {/* Plateau Detection */}
+          {data.insights.some((i) => i.code === 'PLATEAU_DETECTED') && (
+            <DetailBlock
+              icon={<AlertCircle size={20} color={colors.warning} />}
+              title="Замедление прогресса"
+              color={colors.warning}
+            >
+              <Text style={[typography.body, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+                Похоже, прогресс в основных упражнениях замедлился. Ты продолжаешь тренироваться регулярно, но результаты не растут, а усилия (RPE) могут увеличиваться.
+              </Text>
+              <Text style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+                Возможные варианты:
+              </Text>
+              <View style={{ gap: SPACING.xs }}>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Сохранить текущую нагрузку (закрепить результат)
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Временно не повышать вес на следующей тренировке
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Изменить диапазон повторов (rep range)
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Рассмотреть альтернативное упражнение
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  • Рассмотреть разгрузочную неделю (deload), если есть признаки усталости
+                </Text>
+              </View>
+            </DetailBlock>
+          )}
 
           {/* Recovery */}
           <DetailBlock
