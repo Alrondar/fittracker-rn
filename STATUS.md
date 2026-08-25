@@ -129,7 +129,7 @@
 | CI-1 | 🔴 | ✅ | Weekly Training Review: consistency + performance + load + recovery/safety context + explainable next-step context; расширяет baseline ENG-6/COACH-5. UI реализован в Progress hub (WeeklyReviewSection + SheetShell). |
 | CI-2 | 🔴 | ✅ | Training Load Context: normal/elevated/high на основе volume/frequency/RPE/readiness trends; deterministic, без opaque score. UI интегрирован в WeeklyReviewSection (L1/L2). |
 | CI-3 | 🟠 | ✅ | Plateau Detection: L2-блок с observation и вариантами действий при PLATEAU_DETECTED (ROADMAP C8) |
-| CI-4 | 🟠 | 🔲 | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals |
+| CI-4 | 🟠 | ✅ | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals (L2-блок в WeeklyReviewSection) |
 | CI-5 | 🟠 | 🔲 | Goal-aware Insights: strength/hypertrophy/body composition/general fitness меняют приоритеты insights без дублирования экранов |
 | CI-6 | 🟡 | 🔲 | Deload Recommendations: только при сочетании CI-2 + CI-3 и дополнительных устойчивых сигналов; без автоизменения программы |
 | CI-7 | 🟡 | 🔲 | Optional AI Explanations: AI объясняет structured facts/reason codes; зависит от Coaching Intelligence и AI foundation |

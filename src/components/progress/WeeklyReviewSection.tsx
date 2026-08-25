@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { ChevronRight, AlertTriangle, TrendingUp, Activity, Heart, Calendar, AlertCircle } from 'lucide-react-native';
+import { ChevronRight, AlertTriangle, TrendingUp, Activity, Heart, Calendar, AlertCircle, Dumbbell } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -348,7 +348,50 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
             </View>
           </DetailBlock>
 
-          {/* Plateau Detection */}
+          {/* CI-4: Muscle Volume Analysis */}
+          <DetailBlock
+            icon={<Dumbbell size={20} color={colors.primary} />}
+            title="Нагрузка на мышцы"
+            color={colors.primary}
+          >
+            {Object.keys(data.current.muscleVolume).length > 0 ? (
+              <View style={{ gap: SPACING.xs }}>
+                {Object.entries(data.current.muscleVolume)
+                  .filter(([_, v]) => v >= 4)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 5)
+                  .map(([muscle, sets]) => {
+                    const prevSets = data.previous.muscleVolume[muscle] || 0;
+                    const diff = sets - prevSets;
+                    const diffText = diff > 0 ? `↑ +${Math.round(diff)}` : diff < 0 ? `↓ ${Math.round(diff)}` : '→';
+                    const diffColor = diff > 0 ? colors.success : diff < 0 ? colors.error : colors.textTertiary;
+                    
+                    return (
+                      <View key={muscle} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={[typography.body, { color: colors.textPrimary }]}>{muscle}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                          <Text style={[typography.caption, { color: diffColor, fontWeight: '600' }]}>{diffText}</Text>
+                          <Text style={[typography.body, { color: colors.textSecondary }]}>{Math.round(sets)} сетов</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                {data.insights.some((i) => i.code === 'MUSCLE_IMBALANCE') && (
+                  <View style={{ marginTop: SPACING.sm, padding: SPACING.sm, backgroundColor: colors.warningLight, borderRadius: BORDER_RADIUS.md }}>
+                    <Text style={[typography.caption, { color: colors.warning, fontWeight: '600' }]}>
+                      ⚠️ Обрати внимание на дисбаланс в распределении нагрузки.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Недостаточно данных для анализа нагрузки на мышцы.
+              </Text>
+            )}
+          </DetailBlock>
+
+          {/* CI-3: Plateau Detection */}
           {data.insights.some((i) => i.code === 'PLATEAU_DETECTED') && (
             <DetailBlock
               icon={<AlertCircle size={20} color={colors.warning} />}

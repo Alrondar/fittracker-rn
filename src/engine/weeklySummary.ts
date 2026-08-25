@@ -53,6 +53,9 @@ export interface WeeklySummaryData {
     mixed: number;
   };
 
+  /** CI-4: Агрегация сетов по мышечным группам (primary = 1.0, secondary = 0.5). */
+  muscleVolume: Record<string, number>;
+
   /** Новые личные рекорды недели (e1rm недели > pre-week best e1rm для того же упражнения). */
   prs: {
     exerciseId: string;
@@ -266,6 +269,23 @@ export function buildWeeklyInsights(
         'Дисбаланс нагрузки',
         'caution',
         `80%+ объёма — ${dominantType}. Рассмотрите добавление других типов тренировок для баланса.`
+      );
+    }
+  }
+
+  // === CI-4: Muscle Volume Imbalance ===
+  const muscleEntries = Object.entries(current.muscleVolume).filter(([_, v]) => v >= 4);
+  if (muscleEntries.length >= 2) {
+    muscleEntries.sort((a, b) => b[1] - a[1]);
+    const maxMuscle = muscleEntries[0];
+    const minMuscle = muscleEntries[muscleEntries.length - 1];
+    
+    if (maxMuscle[1] >= 12 && minMuscle[1] < maxMuscle[1] * 0.5) {
+      add(
+        'MUSCLE_IMBALANCE',
+        'Дисбаланс нагрузки',
+        'caution',
+        `${maxMuscle[0]} (${Math.round(maxMuscle[1])} сетов) vs ${minMuscle[0]} (${Math.round(minMuscle[1])} сетов)`
       );
     }
   }

@@ -128,7 +128,7 @@ async function aggregateWeek(
         workout_exercises(
           id,
           exercise_id,
-          exercises(name),
+          exercises(name, primary_muscles, secondary_muscles),
           workout_logs(set_number, weight_kg, reps, rpe, completed_at)
         )
       `)
@@ -162,6 +162,7 @@ async function aggregateWeek(
   const workoutDaysSet = new Set<string>();
   let totalVolume = 0;
   let totalSets = 0;
+  const muscleVolume: Record<string, number> = {};
   let rpeSum = 0;
   let rpeCount = 0;
   let rpeMin: number | null = null;
@@ -178,13 +179,24 @@ async function aggregateWeek(
     workoutDaysSet.add(toDateKey(wDate));
     for (const we of w.workout_exercises ?? []) {
       exercisedIds.add(we.exercise_id);
-      const ex = asOne(we.exercises);
+      const ex = asOne(we.exercises) as { name: string; primary_muscles?: string[]; secondary_muscles?: string[] } | null;
       const name = ex?.name ?? 'Упражнение';
+      const primary = ex?.primary_muscles ?? [];
+      const secondary = ex?.secondary_muscles ?? [];
+      
       for (const log of we.workout_logs ?? []) {
         totalSets += 1;
         const weight = toNumber(log.weight_kg);
         const reps = log.reps ?? 0;
         totalVolume += weight * reps;
+        
+        // CI-4: Muscle volume aggregation (primary = 1.0, secondary = 0.5)
+        for (const m of primary) {
+          muscleVolume[m] = (muscleVolume[m] || 0) + 1.0;
+        }
+        for (const m of secondary) {
+          muscleVolume[m] = (muscleVolume[m] || 0) + 0.5;
+        }
         if (log.rpe != null) {
           rpeSum += log.rpe;
           rpeCount += 1;
@@ -293,6 +305,7 @@ async function aggregateWeek(
       cardio: 0,
       mixed: 0,
     },
+    muscleVolume,
     prs,
   };
 }
