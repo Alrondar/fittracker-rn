@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 25.08.2026 (main)
+Срез: 28.08.2026 (main)
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -107,7 +107,8 @@
 | ENG-9 | 🟠 | ✅ | P1.2 Периодизация в программах: добавлены currentPhaseType и weeksInBlock в progression.ts. Deload фаза, авто-deload при >6 недель, корректировка шага (strength 2.5, hypertrophy 1.25, endurance 1.0). |
 | ENG-10 | 🟠 | ✅ | P1.3 Раздельный учёт типов тренировок: добавлен volumeByType в weeklySummary.ts. Разные пороги объёма (силовая ±15%, гипертрофия ±10%, кардио ±20%) и инсайт TYPE_IMBALANCE. Требует SQL-миграции для поля workout_type. |
 | ENG-11 | 🟠 | ✅ | P2.1 E1RM для high-rep сетов: переключение формул в e1rm.ts (reps ≤ 10 → Epley, reps > 10 → Brzycki) для предотвращения завышения 1ПМ. |
-| ENG-12 | 🟠 | ✅ | P2.3 Прогрессия весов в разминке: добавлена функция generateWarmupSets в warmupService.ts (compound: 4 подхода, isolation: 2 подхода) с авто-округлением до 0.5 кг.
+| ENG-12 | 🟠 | ✅ | P2.3 Прогрессия весов в разминке: добавлена функция generateWarmupSets в warmupService.ts (compound: 4 подхода, isolation: 2 подхода) с авто-округлением до 0.5 кг. |
+| ENG-13 | 🔴 | 🟡 | Per-set recommendation + warmup chip + current-session context: `targetSetIndex` в progression.ts (base = previousWeight целевого сета, работает для пирамид); `isWarmup` сеты исключены из оценки; усталость оценивается по завершённым рабочим сетам текущей сессии (reps/RPE/вес, а не previousReps); новые сигналы SESSION_FATIGUE (текущий вес <90% от прошлого → decrease до текущего уровня) и SESSION_LIGHT_DAY (90–100% → hold без повышения). UI: чип «Разминка» под RPE в SetsGrid, при toggle on на последнем сете автоматически добавляется новый пустой сет (addSet: workout/[id] → ExerciseSlider → ExerciseCard → SetsGrid). Schema: `workout_logs.is_warmup` + `is_estimated_reps` (миграция 20260828). Остаток: регенерация `database.types.ts`, tsc/eslint, фильтр `is_warmup=false` в аналитических сервисах (volume/e1RM/PR), ручная верификация. |
 
 ## 6. Coaching Layer
 

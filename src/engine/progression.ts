@@ -54,6 +54,12 @@ export interface ProgressionInput {
   repsRange: string | null;
   /** Шаг изменения в кг. Default 2.5 (меньший чип прогрессии). */
   stepKg?: number;
+  /**
+   * ENG-13: индекс сета, для которого даётся рекомендация (обычно первый незавершённый).
+   * Для пирамидальных подходов baseWeight = previousWeight этого сета.
+   * Если не передан — fallback на последний completed сет с историей (старая логика).
+   */
+  targetSetIndex?: number;
   /** P0: сколько сессий/недель подряд рекомендация была hold на том же весе. */
   consecutiveHolds?: number;
   /** P0: флаг недели разгрузки (из программы или вручную). */
@@ -106,13 +112,19 @@ const DEFAULT_STEP_KG = 2.5;
 /**
  * Вычисляет рекомендацию прогрессии по previous-данным сетов.
  * Не мутирует input. Возвращает детерминированный результат.
+ *
+ * ENG-13: Per-set recommendations + warmup filtering.
+ * - Разминочные сеты (isWarmup === true) исключаются из оценки усталости.
+ * - Базовый вес = previousWeight целевого сета (для пирамид).
+ * - Оценка усталости = текущие завершённые рабочие сеты (не previousReps!).
  */
 export function calculateProgression(input: ProgressionInput): ProgressionResult {
-  const { sets, repsRange, stepKg = DEFAULT_STEP_KG } = input;
+  const { sets, repsRange, stepKg = DEFAULT_STEP_KG, targetSetIndex } = input;
 
-  // Сеты с валидными previous-данными
-  const completed = sets.filter(
+  // 1. Рабочие сеты с историей (исключая warmup)
+  const workingSetsWithHistory = sets.filter(
     (s) =>
+      !s.isWarmup &&
       s.previousWeight != null &&
       s.previousReps != null &&
       !Number.isNaN(s.previousWeight) &&
@@ -121,8 +133,8 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   const targetRange = parseRepsRange(repsRange);
 
-  // No data: ничего не можем сказать
-  if (completed.length === 0) {
+  // No history: первый раз — используем программный вес
+  if (workingSetsWithHistory.length === 0) {
     return {
       action: 'no_data',
       suggestedWeight: null,
@@ -141,31 +153,52 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     };
   }
 
-  // Рабочий вес = вес первого completed сета (обычно все рабочие сеты одинаковы)
-  const lastWeight = completed[0].previousWeight as number;
-  // Last RPE = последний непустой RPE в порядке сетов (обычно последний сет — самый тяжёлый)
-  const rpeCandidates = completed
-    .map((s) => s.previousRpe)
-    .filter((r): r is number => r != null && !Number.isNaN(r));
-  const lastRpe = rpeCandidates.length > 0 ? rpeCandidates[rpeCandidates.length - 1] : null;
-  // Last reps = reps первого completed сета (для хинта «прошлый раз»)
-  const lastReps = completed[0].previousReps as number;
+  // 2. Базовый вес = previousWeight целевого сета (для пирамид)
+  // Если targetSetIndex передан и имеет previousWeight — используем его.
+  // Иначе fallback на последний completed сет с историей (старая логика).
+  const targetSet = targetSetIndex != null ? sets[targetSetIndex] : null;
+  const baseWeight = (targetSet?.previousWeight ?? null) as number | null
+    ?? (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousWeight as number);
+  
+  // Данные "прошлый раз" для хинта
+  const hintReps = (targetSet?.previousReps ?? workingSetsWithHistory[workingSetsWithHistory.length - 1].previousReps) as number;
+  const hintRpe = (targetSet?.previousRpe ?? workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe) ?? null;
 
-  const reps = completed.map((s) => s.previousReps as number);
+  // 3. Текущие завершённые РАБОЧИЕ сеты — для оценки усталости
+  // (weight !== '' && reps !== '' = завершён; !isWarmup = рабочий)
+  // ENG-13: если reps пустое, но есть estimatedReps — тоже учитываем (оценка пользователя)
+  const currentCompleted = sets.filter(
+    (s) =>
+      !s.isWarmup &&
+      s.weight !== '' &&
+      (s.reps !== '' || s.estimatedReps != null),
+  );
+
+  // 4. Оценка: если есть currentCompleted, используем их; иначе fallback на прошлые данные
+  // ENG-13: evalReps учитывает estimatedReps если reps пустое
+  const evalReps = currentCompleted.length > 0
+    ? currentCompleted.map((s) =>
+        s.reps !== '' ? parseInt(s.reps, 10) : (s.estimatedReps ?? 0),
+      )
+    : workingSetsWithHistory.map((s) => s.previousReps as number);
+  const evalRpe = currentCompleted.length > 0
+    ? currentCompleted[currentCompleted.length - 1].rpe ?? null
+    : (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ?? null);
+  
   const allAtMax =
-    targetRange != null && reps.every((r) => r >= targetRange.max);
+    targetRange != null && evalReps.every((r) => r >= targetRange.max);
   const allAtMin =
-    targetRange != null && reps.every((r) => r >= targetRange.min);
+    targetRange != null && evalReps.every((r) => r >= targetRange.min);
   const anyBelowMin =
-    targetRange != null && reps.some((r) => r < targetRange.min);
+    targetRange != null && evalReps.some((r) => r < targetRange.min);
   const allBelowMin =
-    targetRange != null && reps.every((r) => r < targetRange.min);
+    targetRange != null && evalReps.every((r) => r < targetRange.min);
 
   const factors: ProgressionReason['factors'] = {
-    lastWeight,
-    lastReps,
-    lastRpe,
-    completedSets: completed.length,
+    lastWeight: baseWeight,
+    lastReps: hintReps,
+    lastRpe: hintRpe,
+    completedSets: currentCompleted.length || workingSetsWithHistory.length,
     targetRange,
     currentPhaseType: input.currentPhaseType,
   };
@@ -179,21 +212,21 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   // Вспомогалки для построения результата
   const increaseResult = (code: string, ruText: string): ProgressionResult => ({
     action: 'increase',
-    suggestedWeight: round2(lastWeight + effectiveStepKg),
+    suggestedWeight: round2(baseWeight + effectiveStepKg),
     suggestedReps: targetRange ? targetRange.min : null,
     reason: { code, ruText, factors },
   });
 
   const holdResult = (code: string, ruText: string): ProgressionResult => ({
     action: 'hold',
-    suggestedWeight: lastWeight,
+    suggestedWeight: baseWeight,
     suggestedReps: targetRange ? targetRange.max : null,
     reason: { code, ruText, factors },
   });
 
   const decreaseResult = (code: string, ruText: string): ProgressionResult => {
     // Bodyweight protection: нельзя уйти ниже 0 кг (bodyweight не в кг-единицах)
-    const newWeight = Math.max(0, round2(lastWeight - effectiveStepKg));
+    const newWeight = Math.max(0, round2(baseWeight - effectiveStepKg));
     return {
       action: 'decrease',
       suggestedWeight: newWeight > 0 ? newWeight : null,
@@ -206,7 +239,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // 0. P0/P1.2: Неделя разгрузки или Deload фаза
   if (input.isDeloadWeek || input.currentPhaseType === 'deload') {
-    const deloadWeight = Math.max(0, round2(lastWeight * 0.9));
+    const deloadWeight = Math.max(0, round2(baseWeight * 0.9));
     const isPhaseDeload = input.currentPhaseType === 'deload';
     return {
       action: 'decrease',
@@ -223,14 +256,52 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // 1. Полный отказ
-  if (lastRpe === 10) {
+  if (evalRpe === 10) {
     return decreaseResult('MAX_EFFORT', 'Отказ — снижаем вес');
+  }
+
+  // ENG-13: Weight trend signal — если текущий рабочий вес значительно ниже прошлого,
+  // пользователь, вероятно, устал. Не предлагаем повышение (даже если повторы и RPE
+  // позволяют), а при сильном провале — снижаем.
+  // avgRatio = среднее (currentWeight / previousWeight) по завершённым рабочим сетам
+  // с историей. ratio < 0.95 → SESSION_LIGHT_DAY (cap increase to hold, base = previousWeight × avgRatio).
+  // ratio < 0.90 → SESSION_FATIGUE (decrease to previousWeight × avgRatio).
+  const currentWorkingSets = sets.filter(
+    (s) => !s.isWarmup && s.weight !== '' && s.reps !== '' && s.previousWeight != null && s.previousWeight > 0
+  );
+  let avgRatio: number | null = null;
+  if (currentWorkingSets.length > 0) {
+    const ratios = currentWorkingSets.map((s) => parseFloat(s.weight) / (s.previousWeight as number));
+    avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  }
+
+  // SESSION_FATIGUE: weights significantly below last time — decrease to current level
+  if (avgRatio != null && avgRatio < 0.90) {
+    const adjustedWeight = Math.max(0, round2(baseWeight * avgRatio));
+    return {
+      action: 'decrease',
+      suggestedWeight: adjustedWeight > 0 ? adjustedWeight : null,
+      suggestedReps: targetRange ? targetRange.min : null,
+      reason: { code: 'SESSION_FATIGUE', ruText: 'Веса заметно ниже прошлого раза — снижаем до текущего уровня', factors },
+    };
+  }
+  // SESSION_LIGHT_DAY: weights slightly below last time — cap increase to hold, use lower weight
+  if (avgRatio != null && avgRatio >= 0.90 && avgRatio < 1.0) {
+    // Don't increase — if base chain would say increase, use hold at adjusted weight
+    // But this rule is checked BEFORE READY_TO_PROGRESS, so if we're here, it's always a SESSION_LIGHT_DAY hold
+    const adjustedWeight = round2(baseWeight * avgRatio);
+    return {
+      action: 'hold',
+      suggestedWeight: adjustedWeight,
+      suggestedReps: targetRange ? targetRange.max : null,
+      reason: { code: 'SESSION_LIGHT_DAY', ruText: 'Веса ниже прошлого раза — закрепляем, без повышения', factors },
+    };
   }
 
   // 2. Все повторы по верху диапазона + низкий RPE → явно готовы к прогрессу
   // P0: при фармакологии порог смягчается до <= 8 (ускоренное восстановление)
   const rpeThresholdForProgress = input.usePharma ? 8 : 7;
-  if (allAtMax && lastRpe != null && lastRpe <= rpeThresholdForProgress) {
+  if (allAtMax && evalRpe != null && evalRpe <= rpeThresholdForProgress) {
     // P1.2: Авто-deload при >6 недель в блоке
     if (input.weeksInBlock != null && input.weeksInBlock > 6) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -239,14 +310,14 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // 3. Все повторы по верху + нет RPE данных — всё равно прогресс (reps-driven)
-  if (allAtMax && lastRpe == null) {
+  if (allAtMax && evalRpe == null) {
     return increaseResult('ALL_MAX_REPS', 'Все повторы по верху диапазона');
   }
 
   // 4. Высокий RPE — закрепляем результат
   // P0: при возрасте >30 и тяжелой тренировке порог ужесточается до >= 8
   const rpeThresholdForHold = input.age && input.age > 30 && input.isHeavyDay ? 8 : 9;
-  if (lastRpe != null && lastRpe >= rpeThresholdForHold) {
+  if (evalRpe != null && evalRpe >= rpeThresholdForHold) {
     return holdResult('HIGH_RPE_HOLD', 'Высокий RPE — закрепляем вес');
   }
 
@@ -254,7 +325,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   if (allAtMin) {
     // P0: Плато — если 3+ сессии подряд hold, предлагаем deload
     if (input.consecutiveHolds != null && input.consecutiveHolds >= 3) {
-      const plateauWeight = Math.max(0, round2(lastWeight * 0.9));
+      const plateauWeight = Math.max(0, round2(baseWeight * 0.9));
       return {
         action: 'decrease',
         suggestedWeight: plateauWeight > 0 ? plateauWeight : null,
@@ -270,7 +341,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // 5b. Без таргета: low RPE = consolidate (не знаем, попали ли в репы)
-  if (targetRange == null && lastRpe != null && lastRpe <= 8) {
+  if (targetRange == null && evalRpe != null && evalRpe <= 8) {
     return holdResult('CONSOLIDATE', 'Уверенное выполнение — закрепляем');
   }
 
@@ -471,6 +542,24 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
         kind: 'signal',
         label: 'Плато',
         value: 'стабильные результаты 3+ недели подряд',
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'SESSION_FATIGUE':
+      items.push({
+        kind: 'signal',
+        label: 'Вес сегодня',
+        value: 'заметно ниже прошлого раза — возможная усталость',
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'SESSION_LIGHT_DAY':
+      items.push({
+        kind: 'signal',
+        label: 'Вес сегодня',
+        value: 'ниже прошлого раза — закрепляем без повышения',
         emphasis: 'warning',
       });
       break;

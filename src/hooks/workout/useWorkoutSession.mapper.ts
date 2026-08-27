@@ -19,6 +19,10 @@ interface LogRow {
   rpe: number | null;
   rir: number | null;
   difficulty: string | null;
+  /** ENG-13: флаг разминочного сета */
+  is_warmup?: boolean;
+  /** ENG-13: оценка повторов для незавершённого сета */
+  is_estimated_reps?: boolean;
 }
 /**
  * Строит ExerciseData[] из workout_exercises + exercises + logs + referenceData.
@@ -56,6 +60,9 @@ export function buildExercisesData(
             rpe: log.rpe ?? null,
             rir: log.rir ?? null,
             difficulty: (log.difficulty as SetData['difficulty']) ?? null,
+            // ENG-13: warmup + estimated reps
+            isWarmup: log.is_warmup ?? false,
+            estimatedReps: log.is_estimated_reps && typeof log.reps === 'number' ? log.reps : null,
           };
         }
       });
