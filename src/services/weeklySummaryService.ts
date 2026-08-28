@@ -112,6 +112,50 @@ function toNumber(v: number | string | null | undefined): number {
 }
 
 /**
+ * CI-2 / ACWR: Вычисляет хроническую нагрузку (средний объём за 4 недели).
+ * Используется для расчёта Acute:Chronic Workload Ratio (золотой стандарт предотвращения травм).
+ */
+async function calculateChronicVolume(
+  userId: string,
+  endDateISO: string, // exclusive upper bound (nextStartISO текущей недели)
+): Promise<number> {
+  const fourWeeksAgo = new Date(endDateISO);
+  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+  const startDateISO = fourWeeksAgo.toISOString();
+
+  const { data, error } = await supabase
+    .from('workouts')
+    .select(`
+      workout_exercises(
+        workout_logs(weight_kg, reps, is_warmup)
+      )
+    `)
+    .eq('user_id', userId)
+    .not('finished_at', 'is', null)
+    .is('skipped_at', 'null')
+    .gte('finished_at', startDateISO)
+    .lt('finished_at', endDateISO);
+
+  if (error || !data) return 0;
+
+  let totalVolume = 0;
+  for (const w of data as unknown as { workout_exercises: { workout_logs: { weight_kg: number | string | null; reps: number | null; is_warmup?: boolean }[] }[] }[]) {
+    for (const we of w.workout_exercises ?? []) {
+      for (const log of we.workout_logs ?? []) {
+        // ENG-13: разминочные сеты исключаются из метрик нагрузки
+        if (log.is_warmup) continue;
+        const weight = toNumber(log.weight_kg);
+        const reps = log.reps ?? 0;
+        totalVolume += weight * reps;
+      }
+    }
+  }
+
+  // Средний объём за 4 недели
+  return Math.round(totalVolume / 4);
+}
+
+/**
  * Агрегирует данные одной недели: workouts + logs + pain + readiness + pre-week PRs.
  */
 async function aggregateWeek(
@@ -328,17 +372,26 @@ export async function getWeeklySummary(
   const currentRange = computeWeekRange(weekOffset, now);
   const previousRange = computeWeekRange(weekOffset - 1, now);
   
-  // CI-5: параллельно загружаем цель пользователя из профиля
-  const [current, previous, profileRes] = await Promise.all([
+  // CI-2 / CI-5: параллельно загружаем цель, хронический объём (4 недели для ACWR) и данные недель
+  const [current, previous, profileRes, chronicVol] = await Promise.all([
     aggregateWeek(userId, currentRange),
     aggregateWeek(userId, previousRange),
     supabase.from('profiles').select('goal').eq('id', userId).single(),
+    calculateChronicVolume(userId, currentRange.nextStartISO),
   ]);
   
   const primaryGoal = profileRes.data?.goal ?? null;
-  const insights = buildWeeklyInsights(current, previous, { primaryGoal });
-  const trainingLoad = calculateTrainingLoadContext(current, previous);
+  
+  // Активируем ACWR в engine, передавая chronicVolume
+  const currentWithChronic: WeeklySummaryData = {
+    ...current,
+    chronicVolume: chronicVol,
+  };
+
+  const insights = buildWeeklyInsights(currentWithChronic, previous, { primaryGoal });
+  const trainingLoad = calculateTrainingLoadContext(currentWithChronic, previous);
   // CI-6: расчёт рекомендации разгрузки после инсайтов и контекста нагрузки.
-  const deload = calculateDeloadContext(current, previous, trainingLoad, insights);
-  return { current, previous, insights, trainingLoad, deload };
+  const deload = calculateDeloadContext(currentWithChronic, previous, trainingLoad, insights);
+  
+  return { current: currentWithChronic, previous, insights, trainingLoad, deload };
 }

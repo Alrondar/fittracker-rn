@@ -299,9 +299,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // 2. Все повторы по верху диапазона + низкий RPE → явно готовы к прогрессу
-  // P0: при фармакологии порог смягчается до <= 8 (ускоренное восстановление)
-  const rpeThresholdForProgress = input.usePharma ? 8 : 7;
-  if (allAtMax && evalRpe != null && evalRpe <= rpeThresholdForProgress) {
+  if (allAtMax && evalRpe != null && evalRpe <= 7) {
     // P1.2: Авто-deload при >6 недель в блоке
     if (input.weeksInBlock != null && input.weeksInBlock > 6) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -315,9 +313,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   }
 
   // 4. Высокий RPE — закрепляем результат
-  // P0: при возрасте >30 и тяжелой тренировке порог ужесточается до >= 8
-  const rpeThresholdForHold = input.age && input.age > 30 && input.isHeavyDay ? 8 : 9;
-  if (evalRpe != null && evalRpe >= rpeThresholdForHold) {
+  if (evalRpe != null && evalRpe >= 9) {
     return holdResult('HIGH_RPE_HOLD', 'Высокий RPE — закрепляем вес');
   }
 

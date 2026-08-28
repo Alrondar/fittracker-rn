@@ -385,8 +385,10 @@ export interface WarmupSet {
 
 /**
  * P2.3: Генерирует прогрессию весов для разминки перед рабочим подходом.
- * Для базовых (compound) упражнений: 4 подхода с прогрессией.
- * Для изолированных (isolation): 2 подхода.
+ * Для базовых (compound) упражнений: 4 подхода с прогрессией (неврологическая активация).
+ * Для изолированных (isolation): 2 подхода с фокусом на кровоток (blood flow),
+ * так как 3 повтора на 80% в изоляции не дают ни активации ЦНС, ни пампа,
+ * и могут привести к микротравме холодного сухожилия.
  */
 export function generateWarmupSets(
   workingWeight: number,
@@ -402,9 +404,10 @@ export function generateWarmupSets(
       { weight: workingWeight, reps: 1, note: 'Рабочий вес (подготовка)' },
     ];
   } else {
+    // Изоляция: фокус на приток крови, без утомления ЦНС
     return [
-      { weight: Math.round(workingWeight * 0.6 * 2) / 2, reps: 8, note: 'Разминка 60%' },
-      { weight: Math.round(workingWeight * 0.8 * 2) / 2, reps: 3, note: 'Разминка 80%' },
+      { weight: Math.round(workingWeight * 0.4 * 2) / 2, reps: 12, note: 'Лёгкая разминка (кровоток)' },
+      { weight: Math.round(workingWeight * 0.6 * 2) / 2, reps: 6, note: 'Подготовка к рабочему весу' },
     ];
   }
 }

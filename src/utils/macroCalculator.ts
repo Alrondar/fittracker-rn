@@ -71,23 +71,20 @@ export function calculateMacros(input: MacroInput): MacroResult {
     targetCalories = targetCalories * 1.15;
   }
 
-  // Макросы: белки 2г/кг, жиры 1г/кг
-  let targetProteins = Math.round(w * 2);
-  let targetFats = Math.round(w * 1);
+  // Макросы: научно обоснованные диапазоны (NSCA/ACSM)
+  // Белок: MPS (muscle protein synthesis) достигает плато при ~2.2–2.4 г/кг.
+  // Выше 2.4 г/кг избыток окисляется для энергии, создавая нагрузку на ЖКТ/почки.
+  let targetProteins = Math.round(w * 2.0);
+  // Жиры: минимум 1.0 г/кг критичен для гормональной системы и усвоения витаминов.
+  let targetFats = Math.round(w * 1.0);
 
-  // Корректировки при фармакологии
-  if (input.usePharma && input.pharmaType) {
-    if (input.pharmaType === 'steroids') {
-      targetProteins = Math.min(Math.round(w * 3), 3 * w);
-      targetCalories = targetCalories * 1.1;
-    }
-    if (input.pharmaType === 'gh') {
-      targetFats = Math.round(targetFats * 0.8);
-    }
-    if (input.pharmaType === 'combo') {
-      targetProteins = Math.min(Math.round(w * 3), 3 * w);
-      targetFats = Math.round(targetFats * 0.8);
-    }
+  // Безопасные ограничения (вместо опасных фармакологических эвристик)
+  // PRODUCT.md §14: AI/приложение не должно назначать фармакологию или поощрять опасные протоколы.
+  if (input.usePharma) {
+    // Даже на фармакологии белок не превышает физиологический потолок усвоения
+    targetProteins = Math.min(Math.round(w * 2.4), targetProteins);
+    // Жиры не опускаем ниже гормонального минимума
+    targetFats = Math.max(Math.round(w * 1.0), targetFats);
   }
 
   // Углеводы — остаток калорий
