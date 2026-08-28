@@ -272,9 +272,10 @@ Important components:
 | useDailyNutrition|Dashboard (AUDIT-1)|
 | useWeeklyNutrition|NutritionWeekCard (profile), NutritionWeekTable (Dashboard, AUDIT-1)|
 | useBurnedCalories|DashboardNutritionCard (AUDIT-1: 🔥-бейдж)|
-| useTodayReadiness|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4)|
+| useTodayReadiness|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4) + ReadinessSheet (P0: auto-calculation)|
 | useWeeklySummary|Dashboard («Коротко о неделе», COACH-4/COACH-5) + Progress hub|
 | useTodayPain|StatusCard (AUDIT-6: «⚠ Боль сегодня»)|
+| useRecoveryTrend|app/profile/metrics.tsx (P0: L3 тренды сна/стресса за 7 дней)|
 | useNutritionLogs|NutritionLogListModal (NUTRI-2: CRUD записей за день, инвалидация daily/weekly/burned)|
 
 # 8. Service dependency map
@@ -425,6 +426,7 @@ Profile clickable stats (AUDIT-4): карточки статистики (Тре
 Metrics pagination (AUDIT-4): app/profile/metrics.tsx — пагинация истории замеров (HISTORY_PAGE=30), кнопка «Показать ещё (N)» при превышении лимита. Предотвращает рендер огромных списков в ScrollView.
 
 Injuries zone filter (AUDIT-4): app/profile/injuries.tsx — интерактивный фильтр по зонам тела (arms/torso/legs) с BODY_ZONE_COLORS, счётчики в заголовках секций, кнопка «Сбросить».
+P0 Recovery Details (Вариант B): `daily_readiness` расширен колонками `sleep_hours`, `sleep_quality`, `stress`. `readinessService.upsertToday` поддерживает авто-расчёт readiness. `progression.ts` содержит правила `LOW_SLEEP` (<6ч) и `HIGH_STRESS` (≥4). L3-тренды реализованы в `app/profile/metrics.tsx` через `useRecoveryTrend`.
 
 # 13. Inventory maintenance
 When adding/removing/renaming a meaningful screen, hook, service, shared component, or migration:

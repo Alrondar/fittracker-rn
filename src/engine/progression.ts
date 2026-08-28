@@ -74,6 +74,10 @@ export interface ProgressionInput {
   currentPhaseType?: 'strength' | 'hypertrophy' | 'endurance' | 'deload';
   /** P1.2: Сколько недель пользователь находится в текущей фазе. */
   weeksInBlock?: number;
+  /** P0 Вариант B: часы сна для оценки восстановления. */
+  sleepHours?: number | null;
+  /** P0 Вариант B: уровень стресса (1–5) для оценки восстановления. */
+  stressLevel?: number | null;
 }
 
 // ============================================================================
@@ -250,6 +254,33 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
         ruText: isPhaseDeload 
           ? 'Фаза разгрузки — снижаем нагрузку на 10%' 
           : 'Неделя разгрузки — снижаем нагрузку на 10%',
+        factors,
+      },
+    };
+  }
+
+  // 0.5. P0 Вариант B: Recovery context (Сон/Стресс)
+  // Применяется ДО базовых правил прогрессии, чтобы предотвратить повышение веса при плохом восстановлении
+  if (input.sleepHours != null && input.sleepHours < 6) {
+    return {
+      action: 'hold',
+      suggestedWeight: baseWeight,
+      suggestedReps: targetRange ? targetRange.max : null,
+      reason: {
+        code: 'LOW_SLEEP',
+        ruText: `Сон ${input.sleepHours}ч — ниже нормы. Закрепляем вес для безопасности.`,
+        factors,
+      },
+    };
+  }
+  if (input.stressLevel != null && input.stressLevel >= 4) {
+    return {
+      action: 'hold',
+      suggestedWeight: baseWeight,
+      suggestedReps: targetRange ? targetRange.max : null,
+      reason: {
+        code: 'HIGH_STRESS',
+        ruText: `Высокий стресс (${input.stressLevel}/5). Закрепляем вес.`,
         factors,
       },
     };
@@ -538,6 +569,24 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
         kind: 'signal',
         label: 'Плато',
         value: 'стабильные результаты 3+ недели подряд',
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'LOW_SLEEP':
+      items.push({
+        kind: 'signal',
+        label: 'Сон',
+        value: 'менее 6 часов — восстановление невозможно',
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'HIGH_STRESS':
+      items.push({
+        kind: 'signal',
+        label: 'Стресс',
+        value: 'высокий уровень стресса повышает риск травмы',
         emphasis: 'warning',
       });
       break;

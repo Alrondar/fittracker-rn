@@ -136,18 +136,29 @@ const queryClient = useQueryClient();
             backgroundColor: colors.surfaceSecondary,
             color: colors.textPrimary,
             padding: SPACING.md,
-            marginBottom: SPACING.md,
+            marginBottom: SPACING.xs,
           }}
           keyboardType="decimal-pad"
           value={sleepHours}
           onChangeText={setSleepHours}
           placeholderTextColor={colors.textTertiary}
         />
+        {parseFloat(sleepHours.replace(',', '.')) < 6 && (
+          <Text style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}>
+            ⚠ Менее 6ч сна — система не предложит повышение веса
+          </Text>
+        )}
 
         <ScaleRow label="Качество сна (5 — отлично)" value={sleepQuality} onChange={setSleepQuality} colors={colors} />
         <ScaleRow label="Усталость (1 — свежий)" value={fatigue} onChange={setFatigue} colors={colors} />
         <ScaleRow label="Боль в мышцах (1 — нет)" value={soreness} onChange={setSoreness} colors={colors} />
+        
         <ScaleRow label="Стресс (1 — спокойно)" value={stress} onChange={setStress} colors={colors} />
+        {stress >= 4 && (
+          <Text style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}>
+            ⚠ Высокий стресс — закрепляем вес для безопасности
+          </Text>
+        )}
 
         <View
           style={{

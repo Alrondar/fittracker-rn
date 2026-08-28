@@ -20,6 +20,7 @@ import { AppCard } from '../ui/AppCard';
 import { ReadinessSheet } from './ReadinessSheet';
 import { useStore } from '../../store/useStore';
 import { useTodayReadiness } from '../../hooks/useTodayReadiness';
+import { useTodayRecovery } from '../../hooks/useTodayRecovery';
 import { useTodayPain } from '../../hooks/useTodayPain';
 import { useInjuries } from '../../hooks/useInjuries';
 import { readinessService } from '../../services/readinessService';
@@ -45,6 +46,7 @@ export function StatusCard() {
   const queryClient = useQueryClient();
 
   const { data: readiness } = useTodayReadiness(userId);
+  const { data: recovery } = useTodayRecovery(userId);
   const { injuries } = useInjuries(userId);
   const { data: painTodayCount } = useTodayPain(userId);
 
@@ -218,6 +220,48 @@ export function StatusCard() {
           <Text style={[typography.caption, { color: colors.textSecondary }]}>{hint}</Text>
         </View>
       </View>
+
+      {/* P0 Вариант B: L1 чипы сна и стресса */}
+      {recovery && (recovery.sleepHours != null || recovery.stressLevel != null) && (
+        <View style={{ flexDirection: 'row', gap: SPACING.xs, marginTop: SPACING.md }}>
+          {recovery.sleepHours != null && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: SPACING.sm,
+                paddingVertical: 4,
+                borderRadius: BORDER_RADIUS.full,
+                borderWidth: 1,
+                borderColor: recovery.sleepHours < 6 ? colors.warning + '88' : colors.border,
+                backgroundColor: recovery.sleepHours < 6 ? colors.warning + '1A' : colors.surfaceSecondary,
+              }}
+            >
+              <Text style={[typography.captionSmall, { color: recovery.sleepHours < 6 ? colors.warning : colors.textSecondary }]}>
+                🌙 {recovery.sleepHours}ч
+              </Text>
+            </View>
+          )}
+          {recovery.stressLevel != null && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: SPACING.sm,
+                paddingVertical: 4,
+                borderRadius: BORDER_RADIUS.full,
+                borderWidth: 1,
+                borderColor: recovery.stressLevel >= 4 ? colors.warning + '88' : colors.border,
+                backgroundColor: recovery.stressLevel >= 4 ? colors.warning + '1A' : colors.surfaceSecondary,
+              }}
+            >
+              <Text style={[typography.captionSmall, { color: recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary }]}>
+                ⚡ {recovery.stressLevel}/5
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Chips: травмы + боль */}
       <View style={{ marginTop: SPACING.md, minHeight: 28 }}>
