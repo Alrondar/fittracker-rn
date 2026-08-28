@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, Platform } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, Platform, LogBox } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -19,6 +19,12 @@ if (Platform.OS !== 'web' && __DEV__) {
     if (args[0]?.includes?.('Unable to activate keep awake')) return;
     originalError.apply(console, args);
   };
+
+  // Игнорируем ложные предупреждения от сторонних библиотек
+  LogBox.ignoreLogs([
+    'SafeAreaView has been deprecated', // Проект уже использует react-native-safe-area-context
+    'JWT issued at future', // Server-side clock skew в Supabase (PGRST303), не влияет на функциональность
+  ]);
 }
 
 // QueryClient создаётся ВНЕ компонента (правило CLAUDE.md)

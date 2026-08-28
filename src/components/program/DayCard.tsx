@@ -9,7 +9,10 @@ import {
   Plus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import {
+  ScaleDecorator,
+  NestableDraggableFlatList,
+} from 'react-native-draggable-flatlist';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
 import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
@@ -131,7 +134,14 @@ export function DayCard({
     return (
       <View style={[cardStyles.dayCardExerciseItem, { opacity: isDragging ? 0.5 : 1 }]}>
         {editMode && onExerciseDragEnd && (
-          <TouchableOpacity onPressIn={drag} style={cardStyles.dayCardExerciseItemGrip}>
+          <TouchableOpacity
+            onLongPress={drag}
+            delayLongPress={150}
+            disabled={isDragging}
+            style={cardStyles.dayCardExerciseItemGrip}
+            accessibilityLabel="Перетащить упражнение"
+            accessibilityRole="button"
+          >
             <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
           </TouchableOpacity>
         )}
@@ -168,19 +178,29 @@ export function DayCard({
     <View style={[cardStyles.dayCardContainer, { opacity: isActive ? 0.5 : 1 }]}>
       {/* Заголовок дня */}
       <View style={cardStyles.dayCardHeader}>
+        {/* Grip вынесен из внешнего TouchableOpacity: pan gesture DraggableFlatList
+            не должен перехватываться outer touchable (конфликт nested Touchable).
+            disabled={isActive} — как в официальном примере библиотеки. */}
+        {editMode && (
+          <TouchableOpacity
+            onLongPress={onDrag}
+            delayLongPress={150}
+            disabled={isActive}
+            style={cardStyles.dayCardGripButton}
+            accessibilityLabel="Перетащить день"
+            accessibilityRole="button"
+          >
+            <GripVertical size={20} color={colors.textTertiary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={cardStyles.dayCardLeftContent}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setExpanded(!expanded);
           }}
           activeOpacity={0.7}
         >
-          {editMode && (
-            <TouchableOpacity onPressIn={onDrag} style={cardStyles.dayCardGripButton}>
-              <GripVertical size={20} color={colors.textTertiary} strokeWidth={2} />
-            </TouchableOpacity>
-          )}
           <View style={cardStyles.dayCardNumberCircle}>
             <Text style={cardStyles.dayCardNumberText}>{day.day_number}</Text>
           </View>
@@ -188,18 +208,15 @@ export function DayCard({
             <Text style={cardStyles.dayCardName}>{day.name}</Text>
             <Text style={cardStyles.dayCardExerciseCount}>{exercises.length} упражнений</Text>
           </View>
-          {editMode && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                onEditSettings();
-              }}
-              style={cardStyles.dayCardSettingsButton}
-            >
-              <Settings size={16} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
-          )}
         </TouchableOpacity>
+        {editMode && (
+          <TouchableOpacity
+            onPress={() => onEditSettings()}
+            style={cardStyles.dayCardSettingsButton}
+          >
+            <Settings size={16} color={colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
         {!editMode && (
           <TouchableOpacity
             onPress={() => {
@@ -221,7 +238,7 @@ export function DayCard({
       {expanded && (
         <View style={cardStyles.dayCardExercisesContainer}>
             {editMode && onExerciseDragEnd ? (
-              <DraggableFlatList
+              <NestableDraggableFlatList
                 data={exercises}
                 onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
                 keyExtractor={(item: ProgramExercise) => item.id}
@@ -238,7 +255,6 @@ export function DayCard({
                     </ScaleDecorator>
                   );
                 }}
-                scrollEnabled={false}
               />
             ) : (
               exercises.map((exercise: ProgramExercise, exIndex: number) => (

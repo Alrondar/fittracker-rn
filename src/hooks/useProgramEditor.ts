@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
@@ -59,6 +59,16 @@ export function useProgramEditor(
     setDeletedDayIds,
     setDeletedExerciseIds,
   });
+
+  // Dirty tracking: сравниваем editedProgram с program (deep-equal через JSON.stringify).
+  // Также проверяем deleted IDs — если есть удалённые сущности, считаем dirty.
+  const isDirty = useMemo(() => {
+    if (!program || !editedProgram) return false;
+    if (deletedExerciseIds.length > 0 || deletedDayIds.length > 0 || deletedPhaseIds.length > 0) {
+      return true;
+    }
+    return JSON.stringify(program) !== JSON.stringify(editedProgram);
+  }, [program, editedProgram, deletedExerciseIds, deletedDayIds, deletedPhaseIds]);
 
   useEffect(() => {
     loadProgram();
@@ -370,6 +380,7 @@ export function useProgramEditor(
     setDeletedDayIds,
     deletedPhaseIds,
     setDeletedPhaseIds,
+    isDirty,
     showDaySettings,
     setShowDaySettings,
     showExerciseSettings,

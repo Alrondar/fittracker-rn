@@ -1,5 +1,7 @@
 FitTracker — Code & Screen Inventory
+
 Срез: 28.08.2026 (main) [P1 Cycle added]
+
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
 # 0. Navigation: where to look for what
@@ -145,8 +147,9 @@ Detail vs Editor mental model;
 Program → Phase/Week → Workout/Day → Exercise hierarchy (✅ упрощена: строка упражнения в редакторе показывает только название, мышцы и подходы; детали вынесены в sheet);
 context/breadcrumb (✅ добавлен в edit.tsx);
 save/sync semantics;
-drag & drop;
-sheet complexity (✅ PROG-7 + PROG-1: editor-листы, sort menu, create/import — SheetShell).
+drag & drop (✅ PROG-8 + PROG-9: официальный nesting pattern библиотеки — outer `NestableScrollContainer` (RNGH ScrollView) + три `NestableDraggableFlatList` (фазы/дни/упражнения); React context координирует жесты — `setOuterScrollEnabled(false)` автоматически вызывается во время drag, предотвращая перехват outer scroll; `onLongPress` + `delayLongPress={150}` на GripVertical handles; `disabled={isActive}` / `disabled={isDragging}` на grip handles (официальный паттерн DFL); grip дня вынесен из внешнего `TouchableOpacity` в DayCard header (устранён конфликт nested touchable); `accessibilityLabel`/`accessibilityRole` для всех grip handles);
+sheet complexity (✅ PROG-7 + PROG-1: editor-листы, sort menu, create/import — SheetShell);
+dirty tracking (✅ PROG-8: `isDirty` в useProgramEditor + Alert при выходе + индикатор-точка у «Сохранить»).
 
 ## History
 `app/(tabs)/history.tsx` — УДАЛЁН (history.tsx.deleted).
@@ -250,7 +253,7 @@ Important components:
 
 | Hook|Main consumers|
 | ---|---|
-| useProgramEditor|program/[id], phases/cards, programsService|
+| useProgramEditor|program/[id], phases/cards, programsService; PROG-8: `isDirty` (deep-equal через JSON.stringify + deleted IDs) для dirty tracking и exit guard|
 | useProgramPhases|useProgramEditor|
 | useWorkoutSession|workout/[id], ExerciseCard, SetsGrid, SetFeedbackControl, WorkoutTimer; thin wrapper над workout/useWorkoutSession.* модулями|
 | usePrograms|programs, program/[id], dashboard/workouts|

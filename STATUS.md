@@ -156,6 +156,8 @@ CI-1 → CI-2 → CI-3 / CI-4 → CI-5 → CI-6 → CI-7
 | PROG-5 | 🔴 | ✅ | progressive disclosure в Program Editor: детали упражнения (отдых/интенсивность) — L2 через sheet, на карточке только схема и мышцы |
 | PROG-6 | 🟠 | ✅ | context/breadcrumb: добавлен компактный breadcrumb в шапку экрана редактирования |
 | PROG-7 | 🟠 | ✅ | sheets + save/sync UX: убран блокирующий `Alert`, добавлен спокойный `Toast`; все editor-листы переведены на каноничный `SheetShell` (INVENTORY.md §6) |
+| PROG-8 | 🟠 | ✅ | Dirty tracking + exit guard + phase drag & drop: `isDirty` в `useProgramEditor` (deep-equal через JSON.stringify + проверка deleted IDs), Alert при выходе с несохранёнными изменениями (BackHandler + useFocusEffect), индикатор-точка рядом с «Сохранить», фазы перетаскиваются через `DraggableFlatList` (консистентность с днями/упражнениями), убраны ChevronUp/ChevronDown из PhaseCard (заменены на GripVertical drag handle) |
+| PROG-9 | 🔴 | ✅ | Drag/scroll conflict fix в Program Editor: мигрировали на официальный nesting pattern библиотеки — outer `ScrollView` (RN) → `NestableScrollContainer` (RNGH ScrollView), все три `DraggableFlatList` (фазы/дни/упражнения) → `NestableDraggableFlatList`. React context координирует жесты: `setOuterScrollEnabled(false)` автоматически вызывается внутри `NestableDraggableFlatList` во время drag, предотвращая перехват outer scroll; `outerScrollOffset` shared value для autoscroll. Grip handles: `onLongPress` + `delayLongPress={150}` + `disabled={isActive}` + `accessibilityLabel`/`accessibilityRole`. Grip дня вынесен из внешнего `TouchableOpacity` (устранён nested touchable конфликт). Компромисс PRODUCT.md §3.2: drag handle с discoverable affordance достаточен, tap-alternatives для reorder не требуется |
 
 ## 8. Optional AI Coach
 

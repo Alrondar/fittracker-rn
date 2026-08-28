@@ -1,14 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  BackHandler,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
+import {
+  ScaleDecorator,
+  NestableScrollContainer,
+  NestableDraggableFlatList,
+} from 'react-native-draggable-flatlist';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useProgramEditor } from '../../../src/hooks/useProgramEditor';
@@ -25,6 +31,7 @@ import { useToast } from '../../../src/hooks/useToast';
 import { PhaseCard } from '../../../src/components/program/PhaseCard';
 import { ProgramHero } from '../../../src/components/program/ProgramHero';
 import { ProgramEditorModals } from '../../../src/components/program/ProgramEditorModals';
+import type { ProgramPhase } from '../../../src/services/programsService';
 
 export default function ProgramEditScreen() {
   const { id } = useLocalSearchParams();
@@ -75,12 +82,13 @@ export default function ProgramEditScreen() {
     addPhase,
     removePhase,
     updatePhaseSettings,
-    movePhase,
     addDayToPhase,
     copyTemplateToWeek,
     resetWeekToTemplate,
     addDayToPhaseWeek,
     onDayDragEnd,
+    onPhaseDragEnd,
+    isDirty,
   } = useProgramEditor(id as string, userId, true);
 
   const handleSave = async () => {
@@ -94,9 +102,41 @@ export default function ProgramEditScreen() {
   };
 
   const handleCancel = () => {
-    setEditMode(false);
-    router.back();
+    if (isDirty) {
+      Alert.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Выйти',
+          style: 'destructive',
+          onPress: () => {
+            setEditMode(false);
+            router.back();
+          },
+        },
+      ]);
+    } else {
+      setEditMode(false);
+      router.back();
+    }
   };
+
+  // Exit guard: предупреждение при нажатии hardware back с несохранёнными изменениями.
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (isDirty) {
+          Alert.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
+            { text: 'Отмена', style: 'cancel' },
+            { text: 'Выйти', style: 'destructive', onPress: () => router.back() },
+          ]);
+          return true;
+        }
+        return false;
+      };
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [isDirty, router]),
+  );
 
   if (loading || !program || !editedProgram) {
     return (
@@ -143,6 +183,7 @@ export default function ProgramEditScreen() {
           onPress={handleSave}
           disabled={saving}
           style={{
+            position: 'relative',
             flexDirection: 'row',
             alignItems: 'center',
             gap: SPACING.xs,
@@ -152,6 +193,22 @@ export default function ProgramEditScreen() {
             borderRadius: 8,
           }}
         >
+          {isDirty && (
+            <View
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: colors.warning,
+                borderWidth: 2,
+                borderColor: colors.background,
+              }}
+              accessibilityLabel="Есть несохранённые изменения"
+            />
+          )}
           {saving ? (
             <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
@@ -163,11 +220,12 @@ export default function ProgramEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <NestableScrollContainer
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Hero */}
         <ProgramHero
           programName={program.name}
           programDescription={program.description}
@@ -180,78 +238,85 @@ export default function ProgramEditScreen() {
           badgeStyles={badgeStyles}
         />
 
-        {/* ===== Фазы ===== */}
-        <View style={{ paddingTop: SPACING.md }}>
-          {phases.map((phase, phaseIndex) => (
-            <PhaseCard
-              key={phase.id}
-              phase={phase}
-              phaseIndex={phaseIndex}
-              phaseCount={phases.length}
-              days={getDaysForPhase(phase.id)}
-              allDays={allDays}
-              editMode={true}
-              colors={colors}
-              cardStyles={cardStyles}
-              badgeStyles={badgeStyles}
-              onMoveUp={() => movePhase(phaseIndex, 'up')}
-              onMoveDown={() => movePhase(phaseIndex, 'down')}
-              onEditPhase={() => {
-                setSelectedPhaseIndex(phaseIndex);
-                setShowPhaseSettings(true);
-              }}
-              onRemovePhase={() => removePhase(phaseIndex)}
-              onAddDay={() => addDayToPhase(phaseIndex)}
-              onDayDragEnd={(data) => onDayDragEnd(data, phase.id)}
-              onEditDaySettings={(day, flatIndex) => {
-                setSelectedDay(day);
-                setSelectedDayIndex(flatIndex);
-                setShowDaySettings(true);
-              }}
-              onExerciseSettings={(day, exerciseIndex) => {
-                setSelectedDay(day);
-                setSelectedExercise(day.exercises?.[exerciseIndex] || null);
-                setSelectedExerciseIndex(exerciseIndex);
-                setShowExerciseSettings(true);
-              }}
-              onAddExercise={(flatIndex) => {
-                setSelectedDayIndex(flatIndex);
-                setShowExercisePicker(true);
-              }}
-              onRemoveExercise={(flatIndex, exerciseIndex) =>
-                removeExercise(flatIndex, exerciseIndex)
-              }
-              onExerciseDragEnd={onExerciseDragEnd}
-              onAddDayToWeek={(week) => addDayToPhaseWeek(phaseIndex, week)}
-              onCopyTemplateToWeek={(week) => copyTemplateToWeek(phaseIndex, week)}
-              onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
-            />
-          ))}
+        {/* Фазы с drag & drop */}
+        <NestableDraggableFlatList
+          data={phases}
+          onDragEnd={({ data }) => onPhaseDragEnd(data)}
+          keyExtractor={(item: ProgramPhase) => item.id}
+          renderItem={({ item: phase, drag, isActive, getIndex }) => {
+            const phaseIndex = getIndex() ?? 0;
+            return (
+              <ScaleDecorator>
+                <PhaseCard
+                  phase={phase}
+                  phaseIndex={phaseIndex}
+                  phaseCount={phases.length}
+                  days={getDaysForPhase(phase.id)}
+                  allDays={allDays}
+                  editMode={true}
+                  colors={colors}
+                  cardStyles={cardStyles}
+                  badgeStyles={badgeStyles}
+                  onDrag={drag}
+                  isActive={isActive}
+                  onEditPhase={() => {
+                    setSelectedPhaseIndex(phaseIndex);
+                    setShowPhaseSettings(true);
+                  }}
+                  onRemovePhase={() => removePhase(phaseIndex)}
+                  onAddDay={() => addDayToPhase(phaseIndex)}
+                  onDayDragEnd={(data) => onDayDragEnd(data, phase.id)}
+                  onEditDaySettings={(day, flatIndex) => {
+                    setSelectedDay(day);
+                    setSelectedDayIndex(flatIndex);
+                    setShowDaySettings(true);
+                  }}
+                  onExerciseSettings={(day, exerciseIndex) => {
+                    setSelectedDay(day);
+                    setSelectedExercise(day.exercises?.[exerciseIndex] || null);
+                    setSelectedExerciseIndex(exerciseIndex);
+                    setShowExerciseSettings(true);
+                  }}
+                  onAddExercise={(flatIndex) => {
+                    setSelectedDayIndex(flatIndex);
+                    setShowExercisePicker(true);
+                  }}
+                  onRemoveExercise={(flatIndex, exerciseIndex) =>
+                    removeExercise(flatIndex, exerciseIndex)
+                  }
+                  onExerciseDragEnd={onExerciseDragEnd}
+                  onAddDayToWeek={(week) => addDayToPhaseWeek(phaseIndex, week)}
+                  onCopyTemplateToWeek={(week) => copyTemplateToWeek(phaseIndex, week)}
+                  onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
+                />
+              </ScaleDecorator>
+            );
+          }}
+        />
 
-          {/* Добавить фазу */}
-          <TouchableOpacity
-            onPress={addPhase}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.xs,
-              paddingVertical: SPACING.md,
-              marginHorizontal: SPACING.lg,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderStyle: 'dashed',
-              borderColor: colors.border,
-              marginTop: SPACING.md,
-            }}
-          >
-            <Text style={[typography.labelBold, { color: colors.primary }]}>
-              + Добавить фазу
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        {/* Кнопка добавить фазу */}
+        <TouchableOpacity
+          onPress={addPhase}
+          activeOpacity={0.7}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: SPACING.xs,
+            paddingVertical: SPACING.md,
+            marginHorizontal: SPACING.lg,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: colors.border,
+            marginTop: SPACING.md,
+          }}
+        >
+          <Text style={[typography.labelBold, { color: colors.primary }]}>
+            + Добавить фазу
+          </Text>
+        </TouchableOpacity>
+      </NestableScrollContainer>
 
       {/* Футер с кнопкой Отмена */}
       <View

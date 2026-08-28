@@ -3,16 +3,19 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import {
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   Settings,
   Trash2,
   Plus,
   Calendar,
   Copy,
   RotateCcw,
+  GripVertical,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import {
+  ScaleDecorator,
+  NestableDraggableFlatList,
+} from 'react-native-draggable-flatlist';
 import { DayCard } from './DayCard';
 import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
 import { getPhaseMeta, getPhaseColor } from '../../constants/phaseTypes';
@@ -29,8 +32,10 @@ interface PhaseCardProps {
   colors: any;
   cardStyles: any;
   badgeStyles: any;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
+  /** @deprecated Фазы теперь перетаскиваются через DraggableFlatList в edit.tsx. Пропсы оставлены для обратной совместимости. */
+  onMoveUp?: () => void;
+  /** @deprecated Фазы теперь перетаскиваются через DraggableFlatList в edit.tsx. Пропсы оставлены для обратной совместимости. */
+  onMoveDown?: () => void;
   onEditPhase: () => void;
   onRemovePhase: () => void;
   onAddDay: () => void;
@@ -43,6 +48,10 @@ interface PhaseCardProps {
   onAddExercise: (flatIndex: number) => void;
   onRemoveExercise: (flatIndex: number, exerciseIndex: number) => void;
   onExerciseDragEnd: (flatIndex: number, data: ProgramExercise[]) => void;
+  /** Drag handle от DraggableFlatList (edit.tsx). */
+  onDrag?: () => void;
+  /** Активен ли drag сейчас. */
+  isActive?: boolean;
 }
 
 export function PhaseCard({
@@ -55,8 +64,6 @@ export function PhaseCard({
   colors,
   cardStyles,
   badgeStyles,
-  onMoveUp,
-  onMoveDown,
   onEditPhase,
   onRemovePhase,
   onAddDay,
@@ -69,6 +76,8 @@ export function PhaseCard({
   onAddExercise,
   onRemoveExercise,
   onExerciseDragEnd,
+  onDrag,
+  isActive,
 }: PhaseCardProps) {
   const [expanded, setExpanded] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -170,22 +179,19 @@ export function PhaseCard({
 
         {editMode && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: SPACING.sm }}>
-            <TouchableOpacity
-              onPress={onMoveUp}
-              disabled={phaseIndex === 0}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              style={{ opacity: phaseIndex === 0 ? 0.3 : 1, padding: 4 }}
-            >
-              <ChevronUp size={18} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onMoveDown}
-              disabled={phaseIndex === phaseCount - 1}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              style={{ opacity: phaseIndex === phaseCount - 1 ? 0.3 : 1, padding: 4 }}
-            >
-              <ChevronDown size={18} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
+            {onDrag && (
+              <TouchableOpacity
+                onLongPress={onDrag}
+                delayLongPress={150}
+                disabled={isActive}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                style={{ padding: 4, opacity: isActive ? 0.5 : 1 }}
+                accessibilityLabel="Перетащить фазу"
+                accessibilityRole="button"
+              >
+                <GripVertical size={18} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               onPress={onEditPhase}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -299,14 +305,13 @@ export function PhaseCard({
 
           {/* Дни */}
           {canEditDays ? (
-            <DraggableFlatList
+            <NestableDraggableFlatList
               data={displayDays}
               onDragEnd={({ data }) => onDayDragEnd(data as ProgramDay[])}
               keyExtractor={(item: ProgramDay) => item.id}
               renderItem={({ item: day, drag, isActive }) => (
                 <ScaleDecorator>{renderDayCard(day, drag, isActive)}</ScaleDecorator>
               )}
-              scrollEnabled={false}
             />
           ) : (
             displayDays.map((day) => <View key={day.id}>{renderDayCard(day)}</View>)
