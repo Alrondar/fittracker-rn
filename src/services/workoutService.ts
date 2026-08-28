@@ -352,6 +352,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
           .select('weight_kg, reps, rpe, set_number, workout_exercises(exercise_id)')
           .in('workout_exercises.exercise_id', exerciseIds)
           .neq('workout_exercises.workout_id', workoutId)
+          .eq('is_warmup', false) // ENG-13: previous data только из рабочих сетов
           .order('created_at', { ascending: false })
           .limit(300)
       : Promise.resolve({ data: null, error: null }),

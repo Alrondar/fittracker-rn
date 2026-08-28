@@ -108,7 +108,7 @@ export const profileService = {
   async getStats(userId: string): Promise<ProfileStats> {
     const { data: workouts } = await supabase
       .from('workouts')
-      .select('id, workout_exercises (workout_logs (weight_kg, reps))')
+      .select('id, workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
       .eq('user_id', userId);
 
     const { data: programs } = await supabase
@@ -121,15 +121,18 @@ export const profileService = {
     let totalWorkouts = 0;
 
     workouts?.forEach((workout: any) => {
-      const hasLogs = workout.workout_exercises?.some(
-        (ex: any) => ex.workout_logs?.length > 0,
+      // ENG-13: тренировка считается выполненной, если есть хотя бы 1 рабочий сет
+      const hasWorkingLogs = workout.workout_exercises?.some((ex: any) =>
+        ex.workout_logs?.some((l: any) => !l.is_warmup),
       );
 
-      if (hasLogs) {
+      if (hasWorkingLogs) {
         totalWorkouts++;
 
         workout.workout_exercises?.forEach((ex: any) => {
           ex.workout_logs?.forEach((log: any) => {
+            // ENG-13: разминка не учитывается в общем объёме
+            if (log.is_warmup) return;
             totalVolume +=
               (parseFloat(log.weight_kg) || 0) *
               (parseInt(log.reps) || 0);
@@ -406,8 +409,9 @@ export const profileService = {
 
     const { data: logs } = await supabase
       .from('workout_logs')
-      .select('workout_exercise_id, weight_kg, reps')
+      .select('workout_exercise_id, weight_kg, reps, is_warmup')
       .in('workout_exercise_id', workoutExerciseIds)
+      .eq('is_warmup', false) // ENG-13: PR считаются только по рабочим сетам
       .order('weight_kg', { ascending: false });
 
     const exerciseRecords: Record<

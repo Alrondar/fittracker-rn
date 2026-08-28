@@ -78,6 +78,8 @@ interface WorkoutWeekRow {
       reps: number | null;
       rpe: number | null;
       completed_at: string | null;
+      /** ENG-13: флаг разминочного сета (исключается из аналитики) */
+      is_warmup?: boolean;
     }[];
   }[] | null;
 }
@@ -130,7 +132,7 @@ async function aggregateWeek(
           id,
           exercise_id,
           exercises(name, primary_muscles, secondary_muscles),
-          workout_logs(set_number, weight_kg, reps, rpe, completed_at)
+          workout_logs(set_number, weight_kg, reps, rpe, completed_at, is_warmup)
         )
       `)
       .eq('user_id', userId)
@@ -186,6 +188,8 @@ async function aggregateWeek(
       const secondary = ex?.secondary_muscles ?? [];
       
       for (const log of we.workout_logs ?? []) {
+        // ENG-13: разминочные сеты исключаются из всех метрик недели
+        if (log.is_warmup) continue;
         totalSets += 1;
         const weight = toNumber(log.weight_kg);
         const reps = log.reps ?? 0;
@@ -246,6 +250,7 @@ async function aggregateWeek(
       .from('workout_logs')
       .select('weight_kg, reps, workout_exercises!inner(exercise_id)')
       .in('workout_exercises.exercise_id', exercisedIdsArr)
+      .eq('is_warmup', false) // ENG-13: baseline для PR — только рабочие сеты
       .lt('completed_at', range.startISO);
     if (!preError && preRows) {
       for (const row of preRows as unknown as PreWeekLogRow[]) {
