@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 28.08.2026 (main)
+Срез: 28.08.2026 (main) [P1 Cycle added]
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -110,6 +110,7 @@
 | ENG-12 | 🟠 | ✅ | P2.3 Прогрессия весов в разминке: функция generateWarmupSets в warmupService.ts. **Исправлено для изоляции**: вместо неврологической активации (3 повтора на 80%) теперь используется blood flow протокол (40% x 12, 60% x 6), что предотвращает микротравмы холодных сухожилий и обеспечивает приток синовиальной жидкости без утомления ЦНС. Compound: 4 подхода (50%x5, 70%x3, 85%x1, 100%x1). |
 | ENG-13 | 🔴 | ✅ | Per-set recommendation + warmup chip + current-session context + analytics filtering: `targetSetIndex` в progression.ts (base = previousWeight целевого сета, работает для пирамид); `isWarmup` сеты исключены из оценки; усталость оценивается по завершённым рабочим сетам текущей сессии (reps/RPE/вес, а не previousReps); новые сигналы SESSION_FATIGUE (текущий вес <90% от прошлого → decrease до текущего уровня) и SESSION_LIGHT_DAY (90–100% → hold без повышения). UI: чип «Разминка» под RPE в SetsGrid, при toggle on на последнем сете автоматически добавляется новый пустой сет (addSet: workout/[id] → ExerciseSlider → ExerciseCard → SetsGrid). Schema: `workout_logs.is_warmup` + `is_estimated_reps` (миграция 20260828_workout_logs_is_warmup). Analytics filtering (закрыто): все сервисы (historyService, progressService, weeklySummaryService, dashboardService, exercisesServiceNormalized, profileService) фильтруют `is_warmup=false` при агрегации volume/sets/avg_rpe/PR/e1RM/muscle volume; `recentLogs` (previous data для прогрессии) тоже фильтруется по `is_warmup=false` в workoutService.ts. Workout Report (getWorkoutDetail) возвращает `is_warmup` в `WorkoutDetailLog` для UI маркера. Остаток: регенерация `database.types.ts` после применения миграции (колонка `is_warmup` + `is_estimated_reps`). |
 | ENG-14 | 🟠 | ✅ | P0 Recovery Context (Сон/Стресс, Вариант B): добавлены поля `sleep_hours`, `sleep_quality`, `stress` в `daily_readiness` (миграция 20260828_daily_readiness_recovery_details). В `progression.ts` добавлены правила `LOW_SLEEP` (<6ч) и `HIGH_STRESS` (≥4), блокирующие повышение веса. Авто-расчёт readiness на основе деталей в `readinessService.ts`. L1 чипы сна/стресса в `StatusCard` с warning-цветом при отклонениях. L3 тренды восстановления через `useRecoveryTrend` **интегрированы в `app/profile/metrics.tsx`**. |
+| ENG-15 | 🟠 | ✅ | P1 Menstrual Cycle (Balanced): добавлены таблицы `cycle_events` и `cycle_settings`. В `progression.ts` добавлены правила `LUTEAL_PHASE` и `OVULATION_RISK`. Чистые функции `calculateCyclePhases` и `getPhaseForDate` в `utils/cycle.ts`. Единый flow: L2 `CycleCheckInSheet` вызывается из `ReadinessSheet` (под блоком стресса) или по тапу на день календаря в режиме правки. L2: `CycleCalendar` (рассчитывает фазу для каждого дня) и `CycleSettingsSheet` (по шестерёнке) в `profile.tsx`. Используется поле `gender` из раздела «Мои цели» (колонка `sex` упразднена). Удалён прямой `supabase.from` из UI (CLAUDE.md §2).
 
 ## 6. Coaching Layer
 

@@ -1,5 +1,5 @@
 FitTracker — Code & Screen Inventory
-Срез: 28.08.2026 (main)
+Срез: 28.08.2026 (main) [P1 Cycle added]
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
 # 0. Navigation: where to look for what
@@ -275,6 +275,7 @@ Important components:
 | useTodayReadiness|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4) + ReadinessSheet (P0: auto-calculation)|
 | useWeeklySummary|Dashboard («Коротко о неделе», COACH-4/COACH-5) + Progress hub|
 | useTodayPain|StatusCard (AUDIT-6: «⚠ Боль сегодня»)|
+| useCycle|StatusCard (L1 cycle phase chip / Empty CTA), profile.tsx (L2 calendar + edit mode)|
 | useRecoveryTrend|app/profile/metrics.tsx (P0: L3 тренды сна/стресса за 7 дней)|
 | useNutritionLogs|NutritionLogListModal (NUTRI-2: CRUD записей за день, инвалидация daily/weekly/burned)|
 
@@ -295,6 +296,7 @@ Important components:
 | warmupService|useWarmup|
 | readinessService|ReadinessSheet (owns StatusCard, AUDIT-6) + quick-set pips StatusCard|
 | painService|PainSheet/ExerciseCard + StatusCard (AUDIT-6: getPainEventsToday)|
+| cycleService|useCycle, StatusCard, profile.tsx (settings, check-in)|
 | recommendationFeedbackService|SetsGrid (COACH-3: inline-чипы причин после «Скрыть»)|
 | progressService|useProgress ,  progress  (режим Аналитика/Обзор)|
 | weeklySummaryService|useWeeklySummary (ENG-6); UI — COACH-5|
@@ -428,6 +430,8 @@ Metrics pagination (AUDIT-4): app/profile/metrics.tsx — пагинация и�
 Injuries zone filter (AUDIT-4): app/profile/injuries.tsx — интерактивный фильтр по зонам тела (arms/torso/legs) с BODY_ZONE_COLORS, счётчики в заголовках секций, кнопка «Сбросить».
 P0 Recovery Details (Вариант B): `daily_readiness` расширен колонками `sleep_hours`, `sleep_quality`, `stress`. `readinessService.upsertToday` поддерживает авто-расчёт readiness. `progression.ts` содержит правила `LOW_SLEEP` (<6ч) и `HIGH_STRESS` (≥4). L3-тренды реализованы в `app/profile/metrics.tsx` через `useRecoveryTrend`.
 
+P1 Menstrual Cycle (ENG-15): `cycle_events` (user_id, event_type, event_date) и `cycle_settings` (user_id, luteal_length_days). `calculateCyclePhases` и `getPhaseForDate` в `utils/cycle.ts` определяют фазу (menstrual/follicular/ovulation/luteal). Правила `LUTEAL_PHASE` и `OVULATION_RISK` в `progression.ts` блокируют повышение веса. UI: L2 `CycleCheckInSheet` вызывается из `ReadinessSheet` (под блоком стресса) или по тапу на день календаря в режиме правки. L2: `CycleCalendar` (рассчитывает фазу для каждого дня) + `CycleSettingsSheet` (по шестерёнке) в `profile.tsx` (только для `gender='female'`). Используется поле `gender` из раздела «Мои цели».
+
 # 13. Inventory maintenance
 When adding/removing/renaming a meaningful screen, hook, service, shared component, or migration:
 update this inventory;
@@ -437,7 +441,7 @@ do not copy product decisions from `PRODUCT.md` here.
 
 Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
-`src/components/dashboard/StatusCard.tsx` — AUDIT-6: «Состояние сегодня» (readiness мини-кольцо + tappable pips, чипы травм, «⚠ Боль сегодня»)
+`src/components/dashboard/StatusCard.tsx` — AUDIT-6: «Состояние сегодня» (readiness мини-кольцо + tappable pips, чипы травм, «⚠ Боль сегодня»); ENG-15: передаёт `gender` в `ReadinessSheet` (без прямого supabase)
 `src/components/dashboard/CircularNutritionChart.tsx` — AUDIT-1: SVG-кольца питания
 `src/components/dashboard/NutritionWeekTable.tsx` — AUDIT-1: недельная таблица КБЖУ+вода (стр. 2 pager)
 `src/components/dashboard/NutritionAddModal.tsx` — AUDIT-1: L2-модалка ввода приёма пищи

@@ -78,6 +78,8 @@ export interface ProgressionInput {
   sleepHours?: number | null;
   /** P0 Вариант B: уровень стресса (1–5) для оценки восстановления. */
   stressLevel?: number | null;
+  /** P1: Фаза менструального цикла для корректировки рекомендаций. */
+  cyclePhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | null;
 }
 
 // ============================================================================
@@ -281,6 +283,33 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
       reason: {
         code: 'HIGH_STRESS',
         ruText: `Высокий стресс (${input.stressLevel}/5). Закрепляем вес.`,
+        factors,
+      },
+    };
+  }
+
+  // 0.6. P1: Cycle context (Менструальный цикл)
+  // Применяется ДО базовых правил прогрессии
+  if (input.cyclePhase === 'luteal') {
+    return {
+      action: 'hold',
+      suggestedWeight: baseWeight,
+      suggestedReps: targetRange ? targetRange.max : null,
+      reason: {
+        code: 'LUTEAL_PHASE',
+        ruText: 'Лютеиновая фаза цикла — закрепляем вес.',
+        factors,
+      },
+    };
+  }
+  if (input.cyclePhase === 'ovulation') {
+    return {
+      action: 'hold',
+      suggestedWeight: baseWeight,
+      suggestedReps: targetRange ? targetRange.max : null,
+      reason: {
+        code: 'OVULATION_RISK',
+        ruText: 'Овуляция — высокий риск травм, закрепляем вес.',
         factors,
       },
     };

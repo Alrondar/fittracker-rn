@@ -25,6 +25,13 @@ import { SectionHeader } from '../../src/components/SectionHeader';
 import { SheetShell } from '../../src/components/ui/SheetShell';
 import { MACRO_COLORS } from '../../src/constants/semanticColors';
 import * as Haptics from 'expo-haptics';
+import { useQueryClient } from '@tanstack/react-query';
+// P1: Цикл
+import { useCycle } from '../../src/hooks/useCycle';
+import { CycleCalendar } from '../../src/components/cycle/CycleCalendar';
+import { CycleSettingsSheet } from '../../src/components/cycle/CycleSettingsSheet';
+import { CycleCheckInSheet } from '../../src/components/cycle/CycleCheckInSheet';
+import { cycleService } from '../../src/services/cycleService';
 import {
   User,
   Settings,
@@ -44,6 +51,7 @@ import {
   Award,
   Ruler,
   TrendingUp,
+  Pencil,
 } from 'lucide-react-native';
 
 // Фиксированная палитра рангов (золото/серебро/бронза) — семантика медалей,
@@ -70,6 +78,39 @@ const {
   const [inputFats, setInputFats] = useState('');
   const [inputCarbs, setInputCarbs] = useState('');
   const [inputWater, setInputWater] = useState('');
+
+  // P1: Цикл
+  const queryClient = useQueryClient();
+  const gender = userData?.gender;
+  const { currentPhase, events, settings, isLoading: cycleLoading } = useCycle(gender);
+  const [cycleSettingsVisible, setCycleSettingsVisible] = useState(false);
+  const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  const handleSaveCycleSettings = async (lutealLength: number) => {
+    if (!userId) return;
+    await cycleService.updateCycleSettings(userId, lutealLength);
+    queryClient.invalidateQueries({ queryKey: ['cycleSettings', userId] });
+  };
+
+  const handleSaveCycleEvent = async (eventType: any, date: string, isStart: boolean) => {
+    if (!userId) return;
+    const actualEventType = isStart ? eventType : (eventType.replace('_start', '_end') as any);
+    await cycleService.upsertCycleEvent(userId, actualEventType, date);
+    queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
+  };
+
+  const handleDeleteCycleEvent = async (eventId: string) => {
+    if (!userId) return;
+    await cycleService.deleteCycleEvent(eventId);
+    queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
+  };
+
+  const handleDayPress = (date: Date) => {
+    setSelectedDate(date.toISOString().split('T')[0]);
+    setCycleCheckInOpen(true);
+  };
 
   const handleLogout = () => {
     Alert.alert('Выход из аккаунта', 'Вы уверены, что хотите выйти?', [
@@ -358,6 +399,56 @@ const {
           </View>
         )}
 
+        {/* P1: Секция Цикл (только для female) */}
+        {gender === 'female' && (
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
+            <SectionHeader title="Цикл" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+            <AppCard variant="compact">
+              {cycleLoading ? (
+                <View style={{ height: 200, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+                </View>
+              ) : (
+                <>
+                  <CycleCalendar
+                    events={events}
+                    settings={settings}
+                    currentPhase={currentPhase}
+                    onSettingsPress={() => setCycleSettingsVisible(true)}
+                    isEditMode={isEditMode}
+                    onDayPress={handleDayPress}
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: SPACING.md }}>
+                    <TouchableOpacity
+                      onPress={() => setIsEditMode(!isEditMode)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingHorizontal: SPACING.md,
+                        paddingVertical: SPACING.sm,
+                        borderRadius: BORDER_RADIUS.full,
+                        backgroundColor: isEditMode ? colors.primary + '1A' : colors.surfaceSecondary,
+                        borderWidth: 1,
+                        borderColor: isEditMode ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Pencil size={18} color={isEditMode ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.xs }} />
+                      <Text
+                        style={[
+                          typography.label,
+                          { color: isEditMode ? colors.primary : colors.textSecondary, fontWeight: '600' },
+                        ]}
+                      >
+                        {isEditMode ? 'Завершить правку' : 'Режим правки'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </AppCard>
+          </View>
+        )}
+
         {/* Быстрые действия */}
         <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
           <SectionHeader title="Быстрые действия" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
@@ -500,6 +591,27 @@ const {
           style={{ marginTop: SPACING.md }}
         />
       </SheetShell>
+
+      {/* P1: Настройки цикла */}
+      <CycleSettingsSheet
+        visible={cycleSettingsVisible}
+        onClose={() => setCycleSettingsVisible(false)}
+        settings={settings}
+        onSave={handleSaveCycleSettings}
+      />
+
+      {/* P1: Ввод события цикла */}
+      <CycleCheckInSheet
+        visible={cycleCheckInOpen}
+        onClose={() => {
+          setCycleCheckInOpen(false);
+          setIsEditMode(false);
+        }}
+        events={events}
+        onSave={handleSaveCycleEvent}
+        onDelete={handleDeleteCycleEvent}
+        defaultDate={selectedDate}
+      />
     </SafeAreaView>
   );
 }

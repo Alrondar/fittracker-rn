@@ -9,7 +9,7 @@ export function useRecoveryTrend(days = 7) {
 
   return useQuery({
     queryKey: ['recoveryTrend', userId, days],
-    queryFn: () => readinessService.getRecoveryTrend(userId, days),
+    queryFn: () => readinessService.getRecoveryTrend(userId!, days),
     staleTime: 5 * 60 * 1000, // 5 минут
     enabled: !!userId,
   });

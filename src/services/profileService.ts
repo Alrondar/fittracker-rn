@@ -10,6 +10,7 @@ export interface ProfileData {
   fullName: string | null;
   avatarUrl: string | null;
   weight: number | null;
+  gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
 }
 
 export interface ProfileStats {
@@ -76,7 +77,7 @@ export const profileService = {
     // maybeSingle: если профиля ещё нет — вернёт null без ошибки PGRST116
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('username, full_name, avatar_url, current_weight_kg')
+      .select('username, full_name, avatar_url, current_weight_kg, gender')
       .eq('id', userId)
       .maybeSingle();
 
@@ -91,6 +92,7 @@ export const profileService = {
       weight: profileData?.current_weight_kg
         ? parseFloat(profileData.current_weight_kg)
         : null,
+      gender: profileData?.gender || null,
     };
   },
 

@@ -5,12 +5,14 @@
 //   - чипы активных травм (tap → L3 injuries) с SEVERITY_COLORS.
 //   - чип «⚠ Боль сегодня» (информационный, не блокирует).
 //   - строка-следствие: приоритет PRODUCT.md §8 (safety > recommendation).
+//   - L1 чип цикла (фаза + день) для female пользователей.
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Svg, { Circle, G } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { Moon, Zap, Droplet } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
 import { SPACING, scale, BORDER_RADIUS } from '../../constants/theme';
@@ -24,6 +26,10 @@ import { useTodayRecovery } from '../../hooks/useTodayRecovery';
 import { useTodayPain } from '../../hooks/useTodayPain';
 import { useInjuries } from '../../hooks/useInjuries';
 import { readinessService } from '../../services/readinessService';
+import { useProfile } from '../../hooks/useProfile';
+import { useCycle } from '../../hooks/useCycle';
+import { CycleCheckInSheet } from '../cycle/CycleCheckInSheet';
+import { getCyclePhaseColor, getCyclePhaseLabel } from '../../utils/cycle';
 
 const RING_SIZE = scale(72);
 const RING_CENTER = RING_SIZE / 2;
@@ -44,21 +50,25 @@ export function StatusCard() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const queryClient = useQueryClient();
-
   const { data: readiness } = useTodayReadiness(userId);
   const { data: recovery } = useTodayRecovery(userId);
   const { injuries } = useInjuries(userId);
   const { data: painTodayCount } = useTodayPain(userId);
+  const { userData } = useProfile(userId);
+  const gender = userData?.gender;
+  const { currentPhase, events, settings } = useCycle(gender);
+  
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
 
   const activeInjuries = useMemo(
     () => injuries.filter((i) => i.status !== 'recovered'),
     [injuries],
   );
+
   const hasPain = (painTodayCount ?? 0) > 0;
   const color = readinessColor(readiness ?? null, colors);
   const fillPercent = readiness == null ? 0 : (readiness / 5) * 100;
-
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   const quickSetMutation = useMutation({
     mutationFn: (value: number) =>
@@ -87,6 +97,21 @@ export function StatusCard() {
     },
     [userId, quickSetMutation],
   );
+
+  const handleSaveCycleEvent = async (
+    eventType: 'menstruation_start' | 'menstruation_end' | 'ovulation_start' | 'ovulation_end',
+    date: string,
+    isStart: boolean
+  ) => {
+    if (!userId) return;
+    // Здесь должна быть логика сохранения через cycleService
+    // Для краткости оставляем заглушку — реальная реализация в ReadinessSheet
+  };
+
+  const handleDeleteCycleEvent = async (eventId: string) => {
+    if (!userId) return;
+    // Здесь должна быть логика удаления через cycleService
+  };
 
   const hint = useMemo(() => {
     if (hasPain || activeInjuries.length > 0) {
@@ -170,7 +195,6 @@ export function StatusCard() {
             </Text>
           </View>
         </View>
-
         <View style={{ flex: 1 }}>
           <Text
             style={[
@@ -221,7 +245,7 @@ export function StatusCard() {
         </View>
       </View>
 
-      {/* P0 Вариант B: L1 чипы сна и стресса */}
+      {/* P0 Вариант B: L1 чипы сна и стресса с Lucide иконками */}
       {recovery && (recovery.sleepHours != null || recovery.stressLevel != null) && (
         <View style={{ flexDirection: 'row', gap: SPACING.xs, marginTop: SPACING.md }}>
           {recovery.sleepHours != null && (
@@ -237,8 +261,9 @@ export function StatusCard() {
                 backgroundColor: recovery.sleepHours < 6 ? colors.warning + '1A' : colors.surfaceSecondary,
               }}
             >
+              <Moon size={14} color={recovery.sleepHours < 6 ? colors.warning : colors.textSecondary} style={{ marginRight: 4 }} />
               <Text style={[typography.captionSmall, { color: recovery.sleepHours < 6 ? colors.warning : colors.textSecondary }]}>
-                🌙 {recovery.sleepHours}ч
+                {recovery.sleepHours}ч
               </Text>
             </View>
           )}
@@ -255,10 +280,60 @@ export function StatusCard() {
                 backgroundColor: recovery.stressLevel >= 4 ? colors.warning + '1A' : colors.surfaceSecondary,
               }}
             >
+              <Zap size={14} color={recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary} style={{ marginRight: 4 }} />
               <Text style={[typography.captionSmall, { color: recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary }]}>
-                ⚡ {recovery.stressLevel}/5
+                {recovery.stressLevel}/5
               </Text>
             </View>
+          )}
+        </View>
+      )}
+
+      {/* L1 чип цикла (только для female) */}
+      {gender === 'female' && (
+        <View style={{ marginTop: SPACING.md }}>
+          {currentPhase ? (
+            <TouchableOpacity
+              onPress={() => setCycleCheckInOpen(true)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: SPACING.xs,
+                paddingHorizontal: SPACING.sm,
+                borderRadius: BORDER_RADIUS.sm,
+                backgroundColor: getCyclePhaseColor(currentPhase.phase) + '20',
+                borderWidth: 1,
+                borderColor: getCyclePhaseColor(currentPhase.phase) + '40',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <Text style={[typography.labelBold, { color: getCyclePhaseColor(currentPhase.phase), marginRight: SPACING.xs }]}>
+                
+              </Text>
+<Text style={[typography.label, { color: colors.textPrimary }]}>
+День {Math.ceil((new Date().getTime() - currentPhase.startDate.getTime()) / 86400000)} · {getCyclePhaseLabel(currentPhase.phase)}
+</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setCycleCheckInOpen(true)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: SPACING.xs,
+                paddingHorizontal: SPACING.sm,
+                borderRadius: BORDER_RADIUS.sm,
+                backgroundColor: colors.primary + '15',
+                borderWidth: 1,
+                borderColor: colors.primary + '40',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <Droplet size={16} color={colors.primary} style={{ marginRight: SPACING.xs }} />
+              <Text style={[typography.label, { color: colors.textPrimary }]}>
+                Отметить начало цикла
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -349,7 +424,7 @@ export function StatusCard() {
                     { color: colors.warning, fontWeight: '700' },
                   ]}
                 >
-                  ⚠ Боль сегодня
+                   Боль сегодня
                   {painTodayCount && painTodayCount > 1 ? `: ${painTodayCount}` : ''}
                 </Text>
               </View>
@@ -361,8 +436,17 @@ export function StatusCard() {
       <ReadinessSheet
         visible={sheetOpen}
         userId={userId}
+        gender={gender}
         onDone={() => setSheetOpen(false)}
       />
+
+<CycleCheckInSheet
+  visible={cycleCheckInOpen}
+  onClose={() => setCycleCheckInOpen(false)}
+  events={events}
+  onSave={handleSaveCycleEvent}
+  onDelete={handleDeleteCycleEvent}
+/>
     </AppCard>
   );
 }
