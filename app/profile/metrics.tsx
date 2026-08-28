@@ -19,6 +19,7 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { useStore } from '../../src/store/useStore';
 import { useBodyMetrics } from '../../src/hooks/useBodyMetrics';
+import { useRecoveryTrend } from '../../src/hooks/useRecoveryTrend';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
@@ -60,6 +61,9 @@ export default function MetricsScreen() {
     deleteMetric,
     isCreating,
   } = useBodyMetrics(userId);
+
+  // P0 Вариант B: тренд восстановления за 7 дней
+  const { data: recoveryData, isLoading: isRecoveryLoading } = useRecoveryTrend(7);
 
   // FEAT-2.2: точки для графика тренда (только непустой вес)
   const weightPoints = useMemo(
@@ -378,6 +382,47 @@ export default function MetricsScreen() {
               </Text>
             )}
           </View>
+
+          {/* P0 Вариант B: Восстановление (7 дней) */}
+          {!isRecoveryLoading && recoveryData && (recoveryData.sleepHours.some(d => d.value !== null) || recoveryData.stress.some(d => d.value !== null)) && (
+            <View style={{ marginBottom: SPACING.xl }}>
+              <SectionHeader title="Восстановление (7 дней)" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+              
+              {recoveryData.sleepHours.some(d => d.value !== null) && (
+                <MetricSparkline
+                  label="Сон"
+                  unit="ч"
+                  color={recoveryData.avgSleepHours < 7 ? colors.warning : colors.success}
+                  points={recoveryData.sleepHours.filter((d): d is { date: string; value: number } => d.value !== null)}
+                />
+              )}
+              
+              {recoveryData.stress.some(d => d.value !== null) && (
+                <MetricSparkline
+                  label="Стресс"
+                  unit="/5"
+                  color={recoveryData.avgStress >= 4 ? colors.error : colors.success}
+                  points={recoveryData.stress.filter((d): d is { date: string; value: number } => d.value !== null)}
+                />
+              )}
+
+              {recoveryData.avgSleepHours > 0 && recoveryData.avgSleepHours < 7 && (
+                <View style={{ backgroundColor: colors.warning + '20', padding: SPACING.md, borderRadius: BORDER_RADIUS.md, marginTop: SPACING.sm }}>
+                  <Text style={[typography.caption, { color: colors.warning }]}>
+                    ⚠️ Средний сон: {recoveryData.avgSleepHours.toFixed(1)}ч (рекомендуется 7–9ч)
+                  </Text>
+                </View>
+              )}
+
+              {recoveryData.avgStress > 0 && recoveryData.avgStress >= 4 && (
+                <View style={{ backgroundColor: colors.error + '20', padding: SPACING.md, borderRadius: BORDER_RADIUS.md, marginTop: SPACING.sm }}>
+                  <Text style={[typography.caption, { color: colors.error }]}>
+                    ⚠️ Высокий уровень стресса ({recoveryData.avgStress.toFixed(1)}/5). Рассмотрите снижение нагрузки.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Кнопка добавления */}
           <AppButton

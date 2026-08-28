@@ -1,6 +1,6 @@
 export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
 
-export type SetFeedbackPatch = Partial<Pick<SetData, 'rpe' | 'rir' | 'difficulty'>>;
+export type SetFeedbackPatch = Partial<Pick<SetData, 'rpe' | 'rir' | 'difficulty' | 'isWarmup' | 'estimatedReps'>>;
 
 export interface SetData {
   weight: string;
@@ -8,10 +8,18 @@ export interface SetData {
   rpe?: number | null;
   rir?: number | null;
   difficulty?: Difficulty | null;
+  /**
+   * ENG-13: флаг разминочного подхода. Разминочные сеты исключаются из расчёта
+   * прогрессии (не влияют на оценку усталости и базовый вес рекомендации).
+   * При toggle on на последнем сете — автоматически добавляется новый рабочий сет.
+   */
+  isWarmup?: boolean;
   // FEAT-1.1: данные из последней тренировки для подсказки прогрессии
   previousWeight?: number | null;
   previousReps?: number | null;
   previousRpe?: number | null;
+  /** ENG-13: Estimated reps for incomplete set (user estimate or projected) */
+  estimatedReps?: number | null;
 }
 
 // PR6: per-exercise pain state из pain_events (для prefill в PainSheet + visual affordance).

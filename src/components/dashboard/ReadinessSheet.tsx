@@ -2,13 +2,16 @@
 // FEAT-1.8: чек-ин состояния перед тренировкой (раз в день).
 import React, { useState, useCallback } from 'react';
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { Droplet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { readinessService } from '../../services/readinessService';
+import { cycleService } from '../../services/cycleService';
 import { useQueryClient } from '@tanstack/react-query';
+import { CycleCheckInSheet } from '../cycle/CycleCheckInSheet';
 
 const SCALE = [1, 2, 3, 4, 5];
 
@@ -63,19 +66,34 @@ function ScaleRow({
 interface ReadinessSheetProps {
   visible: boolean;
   userId: string | null;
+  gender?: string | null;
   onDone: (proceed: boolean) => void;
 }
 
-export function ReadinessSheet({ visible, userId, onDone }: ReadinessSheetProps) {
+export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessSheetProps) {
   const { colors } = useTheme();
+  const queryClient = useQueryClient();
+
+  const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
+
+  const handleSaveCycleEvent = async (eventType: any, date: string, isStart: boolean) => {
+    if (!userId) return;
+    const actualEventType = isStart ? eventType : (eventType.replace('_start', '_end') as any);
+    await cycleService.upsertCycleEvent(userId, actualEventType, date);
+    queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
+  };
+
+  const handleDeleteCycleEvent = async (eventId: string) => {
+    if (!userId) return;
+    await cycleService.deleteCycleEvent(eventId);
+    queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
+  };
   const [sleepHours, setSleepHours] = useState('7');
   const [sleepQuality, setSleepQuality] = useState(3);
   const [fatigue, setFatigue] = useState(3);
   const [soreness, setSoreness] = useState(3);
   const [stress, setStress] = useState(3);
   const [saving, setSaving] = useState(false);
-const queryClient = useQueryClient();
-
   // готовность: качество сна + инверсии усталости/боли/стресса
   const readiness = Math.round(
     (sleepQuality + (6 - fatigue) + (6 - soreness) + (6 - stress)) / 4,
@@ -136,18 +154,52 @@ const queryClient = useQueryClient();
             backgroundColor: colors.surfaceSecondary,
             color: colors.textPrimary,
             padding: SPACING.md,
-            marginBottom: SPACING.md,
+            marginBottom: SPACING.xs,
           }}
           keyboardType="decimal-pad"
           value={sleepHours}
           onChangeText={setSleepHours}
           placeholderTextColor={colors.textTertiary}
         />
+        {parseFloat(sleepHours.replace(',', '.')) < 6 && (
+          <Text style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}>
+            ⚠ Менее 6ч сна — система не предложит повышение веса
+          </Text>
+        )}
 
         <ScaleRow label="Качество сна (5 — отлично)" value={sleepQuality} onChange={setSleepQuality} colors={colors} />
         <ScaleRow label="Усталость (1 — свежий)" value={fatigue} onChange={setFatigue} colors={colors} />
         <ScaleRow label="Боль в мышцах (1 — нет)" value={soreness} onChange={setSoreness} colors={colors} />
+        
         <ScaleRow label="Стресс (1 — спокойно)" value={stress} onChange={setStress} colors={colors} />
+        {stress >= 4 && (
+          <Text style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}>
+            ⚠ Высокий стресс — закрепляем вес для безопасности
+          </Text>
+        )}
+
+        {gender === 'female' && (
+          <View style={{ marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <TouchableOpacity
+              onPress={() => setCycleCheckInOpen(true)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                backgroundColor: colors.primary + '15',
+                borderWidth: 1,
+                borderColor: colors.primary + '40',
+              }}
+            >
+              <Droplet size={20} color={colors.primary} style={{ marginRight: SPACING.xs }} />
+<Text style={[typography.labelBold, { color: colors.primary }]}>
+  Отметить цикл
+</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View
           style={{
@@ -186,6 +238,14 @@ const queryClient = useQueryClient();
         >
           <Text style={[typography.caption, { color: colors.textSecondary }]}>Пропустить</Text>
         </TouchableOpacity>
+
+        <CycleCheckInSheet
+          visible={cycleCheckInOpen}
+          onClose={() => setCycleCheckInOpen(false)}
+          events={[]}
+          onSave={handleSaveCycleEvent}
+          onDelete={handleDeleteCycleEvent}
+        />
       </SheetShell>
     </Modal>
   );

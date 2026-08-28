@@ -106,6 +106,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           rpe: set.rpe ?? null,
           rir: set.rir ?? null,
           difficulty: set.difficulty ?? null,
+          // ENG-13: warmup + estimated reps
+          is_warmup: set.isWarmup ?? false,
+          is_estimated_reps: set.reps === '' && set.estimatedReps != null,
         }));
 
       if (formattedLogs.length === 0) return;
@@ -351,6 +354,20 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         exercise.sets = sets.slice(0, newSetsCount);
         exercise.target_sets = newSetsCount;
         exercise.rest_seconds = newRestSeconds;
+        updated[exerciseIndex] = exercise;
+        return updated;
+      });
+    },
+    [],
+  );
+
+  // ENG-13: добавить новый сет (для warmup toggle auto-add)
+  const addSet = useCallback(
+    (exerciseIndex: number) => {
+      setExercises((prev) => {
+        const updated = [...prev];
+        const exercise = { ...updated[exerciseIndex] };
+        exercise.sets = [...exercise.sets, { weight: '', reps: '' }];
         updated[exerciseIndex] = exercise;
         return updated;
       });
@@ -729,6 +746,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     loadAlternatives,
     updateSet,
     updateSetFeedback,
+    addSet,
     applyProgression,
     isSetCompleted,
     updateExerciseSettings,

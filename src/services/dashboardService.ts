@@ -72,6 +72,8 @@ function parseVolumeFromWorkouts(workouts: any[]): number {
   workouts?.forEach((workout: any) => {
     workout.workout_exercises?.forEach((exercise: any) => {
       exercise.workout_logs?.forEach((log: any) => {
+        // ENG-13: разминка не учитывается в недельном объёме
+        if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
         const reps = parseInt(log.reps) || 0;
         volume += weight * reps;
@@ -90,6 +92,8 @@ function parseExerciseProgress(recentWorkouts: any[]): DashboardExerciseProgress
     const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
     workout.workout_exercises?.forEach((exercise: any) => {
       exercise.workout_logs?.forEach((log: any) => {
+        // ENG-13: разминочные сеты не влияют на тренды упражнений
+        if (log.is_warmup) return;
         const exerciseId = exercise.exercise_id;
 
         if (!exerciseId) return;
@@ -210,7 +214,7 @@ supabase
 
     supabase
       .from('workouts')
-      .select('workout_exercises (workout_logs (weight_kg, reps))')
+      .select('workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
@@ -228,7 +232,8 @@ supabase
           id,
           workout_logs (
             weight_kg,
-            reps
+            reps,
+            is_warmup
           )
         )
       `)
@@ -258,7 +263,8 @@ supabase
           ),
           workout_logs (
             weight_kg,
-            reps
+            reps,
+            is_warmup
           )
         )
       `)
@@ -409,10 +415,14 @@ if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
     let exercisesCount = 0;
 
     workout.workout_exercises?.forEach((exercise: any) => {
-      if (exercise.workout_logs && exercise.workout_logs.length > 0) {
+      // ENG-13: упражнение считается «выполненным», если в нём есть хотя бы 1 рабочий сет
+      const hasWorkingSet = exercise.workout_logs?.some((l: any) => !l.is_warmup);
+      if (hasWorkingSet) {
         exercisesCount += 1;
 
         exercise.workout_logs.forEach((log: any) => {
+          // ENG-13: разминка не считается в объёме последней тренировки
+          if (log.is_warmup) return;
           const weight = parseFloat(log.weight_kg) || 0;
           const reps = parseInt(log.reps) || 0;
           totalVolume += weight * reps;

@@ -36,6 +36,8 @@ interface ExerciseCardProps {
   displayMode: WorkoutCardDisplayMode;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
+  /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
+  addSet: (exerciseIndex: number) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number) => void;
@@ -67,6 +69,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   displayMode,
   updateSet,
   updateSetFeedback,
+  addSet,
   applyProgression,
   isSetCompleted,
   startRestTimer,
@@ -196,6 +199,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           unit={unit}
           updateSet={updateSet}
           updateSetFeedback={updateSetFeedback}
+          addSet={addSet}
           applyProgression={applyProgression}
           isSetCompleted={isSetCompleted}
           startRestTimer={startRestTimer}

@@ -48,6 +48,8 @@ interface HistoryLogRow {
   weight_kg: number | null;
   reps: number | null;
   rpe: number | null;
+  /** ENG-13: флаг разминочного сета (исключается из аналитики volume/sets/avg_rpe) */
+  is_warmup?: boolean;
 }
 interface HistoryExerciseRow {
   id: string;
@@ -73,6 +75,8 @@ function calculateVolume(workout: HistoryWorkoutRow): number {
   let volume = 0;
   (workout.workout_exercises ?? []).forEach((ex) => {
     (ex.workout_logs ?? []).forEach((log) => {
+      // ENG-13: разминочные сеты исключаются из аналитики
+      if (log.is_warmup) return;
       volume += (Number(log.weight_kg) || 0) * (Number(log.reps) || 0);
     });
   });
@@ -82,7 +86,10 @@ function calculateVolume(workout: HistoryWorkoutRow): number {
 function calculateSets(workout: HistoryWorkoutRow): number {
   let sets = 0;
   (workout.workout_exercises ?? []).forEach((ex) => {
-    sets += ex.workout_logs?.length || 0;
+    // ENG-13: считаем только рабочие сеты
+    (ex.workout_logs ?? []).forEach((log) => {
+      if (!log.is_warmup) sets += 1;
+    });
   });
   return sets;
 }
@@ -92,6 +99,8 @@ function calculateAvgRpe(workout: HistoryWorkoutRow): number | null {
   let count = 0;
   (workout.workout_exercises ?? []).forEach((ex) => {
     (ex.workout_logs ?? []).forEach((log) => {
+      // ENG-13: разминка не влияет на средний RPE тренировки
+      if (log.is_warmup) return;
       if (log.rpe != null) {
         sum += Number(log.rpe);
         count += 1;
@@ -140,7 +149,7 @@ export async function getHistory(userId: string): Promise<HistoryData> {
   const { data, error } = await supabase
     .from('workouts')
     .select(
-      'id, name, created_at, started_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe ) )',
+      'id, name, created_at, started_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe, is_warmup ) )',
     )
     .eq('user_id', userId);
 
@@ -208,6 +217,8 @@ interface WorkoutDetailLogRow {
   rpe: number | null;
   rir: number | null;
   difficulty: string | null;
+  /** ENG-13: флаг разминочного сета (для UI маркера; из аналитики исключается) */
+  is_warmup?: boolean;
 }
 interface WorkoutDetailExerciseRow {
   id: string;
@@ -239,6 +250,8 @@ export interface WorkoutDetailLog {
   rpe: number | null;
   rir: number | null;
   difficulty: string | null;
+  /** ENG-13: флаг разминочного сета (для UI маркера) */
+  is_warmup?: boolean;
 }
 
 export interface WorkoutDetailExercise {
@@ -278,7 +291,7 @@ export async function getWorkoutDetail(
     .from('workouts')
     .select(
       `id, name, created_at, started_at, finished_at, duration_seconds, program_id, week_number, day_index,
-       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name, primary_muscles, secondary_muscles ), workout_logs ( id, set_number, weight_kg, reps, rpe, rir, difficulty ) )`,
+       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name, primary_muscles, secondary_muscles ), workout_logs ( id, set_number, weight_kg, reps, rpe, rir, difficulty, is_warmup ) )`,
     )
     .eq('id', workoutId)
     .maybeSingle();
@@ -315,6 +328,8 @@ export async function getWorkoutDetail(
         rpe: log.rpe,
         rir: log.rir,
         difficulty: log.difficulty,
+        // ENG-13: пробрасываем флаг, чтобы UI мог визуально отличить разминочный подход
+        is_warmup: log.is_warmup ?? false,
       })),
   }));
 

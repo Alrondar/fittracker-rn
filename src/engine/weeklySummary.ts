@@ -56,6 +56,9 @@ export interface WeeklySummaryData {
   /** CI-4: Агрегация сетов по мышечным группам (primary = 1.0, secondary = 0.5). */
   muscleVolume: Record<string, number>;
 
+  /** ACWR: Средний объём за последние 4 недели (хроническая нагрузка). */
+  chronicVolume?: number;
+
   /** Новые личные рекорды недели (e1rm недели > pre-week best e1rm для того же упражнения). */
   prs: {
     exerciseId: string;
@@ -456,6 +459,7 @@ function adaptInsightText(ins: WeeklyInsight, goal: 'muscle_gain' | 'strength' |
 /**
  * Вычисляет контекст тренировочной нагрузки на основе трендов.
  * Детерминированная логика без "магических" score (ROADMAP C7).
+ * Включает расчёт ACWR (Acute:Chronic Workload Ratio) для оценки риска травм.
  */
 export function calculateTrainingLoadContext(
   current: WeeklySummaryData,
@@ -477,19 +481,41 @@ export function calculateTrainingLoadContext(
       ? current.readiness.avg - previous.readiness.avg
       : null;
 
+  // ACWR (Acute:Chronic Workload Ratio)
+  // Золотой стандарт спортивной медицины: Acute (текущая неделя) / Chronic (среднее за 4 недели)
+  // Sweet spot: 0.8–1.3. >1.5 — зона высокого риска травм.
+  const acwr = current.chronicVolume && current.chronicVolume > 0
+    ? current.totalVolume / current.chronicVolume
+    : null;
+
   let level: 'normal' | 'elevated' | 'high' = 'normal';
   let elevatedSignals = 0;
   let highSignals = 0;
 
-  if (volumeRatio >= 1.20) {
-    reasons.push(`Объём вырос на ${volumeChangePct}%`);
-    highSignals++;
-  } else if (volumeRatio >= 1.10) {
-    reasons.push(`Объём вырос на ${volumeChangePct}%`);
-    elevatedSignals++;
-  } else if (volumeRatio <= 0.80 && previous.totalVolume > 0) {
-    reasons.push(`Объём снизился на ${Math.abs(volumeChangePct)}%`);
-    elevatedSignals++;
+  // Проверка ACWR (приоритет над простым сравнением с прошлой неделей)
+  if (acwr != null) {
+    if (acwr > 1.5) {
+      reasons.push(`Резкий скачок нагрузки (ACWR ${acwr.toFixed(2)} > 1.5). Риск травмы повышен`);
+      highSignals++;
+    } else if (acwr > 1.3) {
+      reasons.push(`Повышенная нагрузка относительно месяца (ACWR ${acwr.toFixed(2)})`);
+      elevatedSignals++;
+    } else if (acwr < 0.8) {
+      reasons.push(`Снижение нагрузки относительно месяца (ACWR ${acwr.toFixed(2)})`);
+      elevatedSignals++;
+    }
+  } else {
+    // Fallback на сравнение с предыдущей неделей, если chronicVolume недоступен
+    if (volumeRatio >= 1.20) {
+      reasons.push(`Объём вырос на ${volumeChangePct}%`);
+      highSignals++;
+    } else if (volumeRatio >= 1.10) {
+      reasons.push(`Объём вырос на ${volumeChangePct}%`);
+      elevatedSignals++;
+    } else if (volumeRatio <= 0.80 && previous.totalVolume > 0) {
+      reasons.push(`Объём снизился на ${Math.abs(volumeChangePct)}%`);
+      elevatedSignals++;
+    }
   }
 
   if (frequencyTrend >= 2) {

@@ -87,6 +87,8 @@ interface ExerciseSliderProps {
   readinessContext?: ReadinessContext | null;
   // COACH-3: идентификатор тренировки для записи feedback (пробрасывается в ExerciseCard).
   workoutId: string;
+  // ENG-13: добавить новый сет (для warmup toggle auto-add)
+  addSet: (exerciseIndex: number) => void;
 }
 
 export const ExerciseSlider = memo(function ExerciseSlider({
@@ -111,6 +113,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   warning = null,
   readinessContext = null,
   workoutId,
+  addSet,
 }: ExerciseSliderProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
@@ -231,28 +234,29 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
         <View style={{ width: cardWidth }}>
-          <ExerciseCard
-          exercise={exercise}
-          isMain
-          isReplaced={isReplaced}
-          exerciseIndex={exerciseIndex}
-          alternatives={alternatives}
-          displayMode={displayMode}
-          updateSet={updateSet}
-          updateSetFeedback={updateSetFeedback}
-          applyProgression={applyProgression}
-          isSetCompleted={isSetCompleted}
-          startRestTimer={startRestTimer}
-          getIntensityInfo={getIntensityInfo}
-          onOpenSettings={onOpenSettings}
-          onOpenPain={onOpenPain}
-          colors={colors}
-          cardStyles={cardStyles}
-          unit={unit}
-          warning={warning}
-          readinessContext={readinessContext}
-            workoutId={workoutId}
-          />
+<ExerciseCard
+  exercise={exercise}
+  isMain
+  isReplaced={isReplaced}
+  exerciseIndex={exerciseIndex}
+  alternatives={alternatives}
+  displayMode={displayMode}
+  updateSet={updateSet}
+  updateSetFeedback={updateSetFeedback}
+  applyProgression={applyProgression}
+  isSetCompleted={isSetCompleted}
+  startRestTimer={startRestTimer}
+  getIntensityInfo={getIntensityInfo}
+  onOpenSettings={onOpenSettings}
+  onOpenPain={onOpenPain}
+  colors={colors}
+  cardStyles={cardStyles}
+  unit={unit}
+  warning={warning}
+  readinessContext={readinessContext}
+  workoutId={workoutId}
+  addSet={addSet}
+/>
         </View>
 
         {showPlaceholder && (
