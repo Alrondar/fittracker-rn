@@ -288,6 +288,10 @@ export interface WorkoutSessionData {
       rpe: number | null;
       rir: number | null;
       difficulty: string | null;
+      /** ENG-13: флаг разминочного сета */
+      is_warmup?: boolean;
+      /** ENG-13: оценка повторов для незавершённого сета */
+      is_estimated_reps?: boolean;
     }[]
   >;
   recentLogs: RecentLog[];
@@ -338,7 +342,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
     workoutExerciseIds.length > 0
       ? supabase
           .from('workout_logs')
-          .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty')
+          .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty, is_warmup, is_estimated_reps')
           .in('workout_exercise_id', workoutExerciseIds)
       : Promise.resolve({ data: null, error: null }),
 
@@ -348,6 +352,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
           .select('weight_kg, reps, rpe, set_number, workout_exercises(exercise_id)')
           .in('workout_exercises.exercise_id', exerciseIds)
           .neq('workout_exercises.workout_id', workoutId)
+          .eq('is_warmup', false) // ENG-13: previous data только из рабочих сетов
           .order('created_at', { ascending: false })
           .limit(300)
       : Promise.resolve({ data: null, error: null }),
@@ -532,6 +537,10 @@ export async function upsertWorkoutLogs(
     rpe: number | null;
     rir: number | null;
     difficulty: string | null;
+    /** ENG-13: флаг разминочного сета */
+    is_warmup?: boolean;
+    /** ENG-13: оценка повторов для незавершённого сета */
+    is_estimated_reps?: boolean;
   }>,
 ): Promise<void> {
   const { error } = await supabase.rpc('upsert_workout_logs', {

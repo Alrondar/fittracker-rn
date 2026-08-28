@@ -130,7 +130,7 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
 
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps))')
+    .select('created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null) // FIT-7: пропуски не считаем
@@ -154,6 +154,8 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
 
     workout.workout_exercises?.forEach((ex: any) => {
       ex.workout_logs?.forEach((log: any) => {
+        // ENG-13: разминка не учитывается в объёме
+        if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
         const reps = parseInt(log.reps) || 0;
         week.volume += weight * reps;
@@ -188,11 +190,11 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
  */
 async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
   const { data: workouts, error } = await supabase
-    .from('workouts')
- .select(
-  'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at))',
-)
-    .eq('user_id', userId);
+  .from('workouts')
+  .select(
+  'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at, is_warmup))',
+  )
+  .eq('user_id', userId);
 
   if (error) throw error;
   if (!workouts || workouts.length === 0) return [];
@@ -208,6 +210,8 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
       if (!exerciseId || !exerciseName) return;
 
       we.workout_logs?.forEach((log: any) => {
+        // ENG-13: разминка не может быть PR
+        if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
         const reps = parseInt(log.reps) || 0;
         if (weight <= 0 || reps <= 0) return;
@@ -258,7 +262,7 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
 
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps))')
+    .select('created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, is_warmup))')
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null)
@@ -278,6 +282,8 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
       const name = we.exercises?.name;
       if (!name) return;
       we.workout_logs?.forEach((log: any) => {
+        // ENG-13: разминочные сеты не попадают в тренд силы
+        if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
         const reps = parseInt(log.reps) || 0;
         if (weight <= 0 || reps <= 0) return;

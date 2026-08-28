@@ -75,18 +75,25 @@ export interface ExerciseRecords {
 interface RecordLogRow { weight_kg: number | null; reps: number | null; }
 interface RecordWorkoutRow { id: string; finished_at: string | null; started_at: string | null; }
 interface RecordWERow { id: string; workouts: RecordWorkoutRow | null; workout_logs: RecordLogRow[] | null; }
+interface RecordLogRowWithWarmup { weight_kg: number | null; reps: number | null; is_warmup?: boolean; }
 export async function getExerciseRecords(exerciseId: string, userId: string): Promise<ExerciseRecords> {
   const { data, error } = await supabase.from('workout_exercises')
-    .select('id, workouts!inner ( id, finished_at, started_at ), workout_logs ( weight_kg, reps )')
+    .select('id, workouts!inner ( id, finished_at, started_at ), workout_logs ( weight_kg, reps, is_warmup )')
     .eq('exercise_id', exerciseId).eq('workouts.user_id', userId);
   if (error) throw error;
   let maxWeight: number | null = null, repsAtMaxWeight = 0, maxReps: number | null = null, bestE1RM: number | null = null;
   let totalVolume = 0, totalSets = 0, workoutCount = 0, lastPerformedAt: string | null = null;
   ((data ?? []) as unknown as RecordWERow[]).forEach((we) => {
-    const logs = we.workout_logs ?? []; if (!logs.length) return; workoutCount++;
+    const logs = (we.workout_logs ?? []) as unknown as RecordLogRowWithWarmup[];
+    // ENG-13: тренировка считается выполненной, если есть хотя бы 1 рабочий сет
+    const hasWorking = logs.some((l) => !l.is_warmup);
+    if (!hasWorking) return;
+    workoutCount++;
     const performedAt = we.workouts?.finished_at || we.workouts?.started_at || null;
     if (performedAt && (!lastPerformedAt || performedAt > lastPerformedAt)) lastPerformedAt = performedAt;
     logs.forEach((log) => {
+      // ENG-13: разминка не влияет на рекорды и статистику упражнения
+      if (log.is_warmup) return;
       const weight = Number(log.weight_kg) || 0, reps = Number(log.reps) || 0;
       if (weight <= 0 && reps <= 0) return; totalSets++; totalVolume += weight * reps;
       if (weight > 0 && (maxWeight === null || weight > maxWeight)) { maxWeight = weight; repsAtMaxWeight = reps; }

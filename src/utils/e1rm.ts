@@ -4,8 +4,9 @@
 
 /**
  * P2.1: Переключение формулы для точности.
- * Epley точна до ~10 повторов. Для high-rep (>10) Brzycki даёт более точную оценку,
- * так как Epley начинает завышать 1ПМ на 5–10%.
+ * Epley точна до ~10 повторов. Brzycki точнее до ~12.
+ * Для high-rep (>12) формула Wathan даёт более точную оценку,
+ * так как Epley/Brzycki начинают завышать 1ПМ на 10–20%.
  */
 export function calculateE1rm(weight: number, reps: number): number {
   if (!isFinite(weight) || !isFinite(reps) || weight <= 0 || reps <= 0) return 0;
@@ -14,9 +15,12 @@ export function calculateE1rm(weight: number, reps: number): number {
   if (reps <= 10) {
     // Epley: w × (1 + reps/30)
     return weight * (1 + reps / 30);
-  } else {
+  } else if (reps <= 12) {
     // Brzycki: w × (36 / (37 - reps))
     return weight * (36 / (37 - reps));
+  } else {
+    // Wathan для high-rep (>12), где другие формулы теряют валидность
+    return 100 * weight / (48.8 + (53.8 * Math.exp(-0.075 * reps)));
   }
 }
 

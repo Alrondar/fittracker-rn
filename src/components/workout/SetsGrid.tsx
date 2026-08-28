@@ -157,6 +157,8 @@ interface SetRowProps {
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   onOpenFeedback: (setIndex: number) => void;
+  // ENG-13: toggle warmup flag for a set
+  onToggleWarmup: (setIndex: number) => void;
   // UX-7: predicate для показа чипа RPE (already-filled всегда показываются)
   shouldShowRpeChip: (set: SetData, setIndex: number) => boolean;
 }
@@ -174,6 +176,7 @@ const SetRow = memo(function SetRow({
   colors,
   cardStyles,
   onOpenFeedback,
+  onToggleWarmup,
   shouldShowRpeChip,
 }: SetRowProps) {
   return (
@@ -220,7 +223,7 @@ const SetRow = memo(function SetRow({
       </View>
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
-          <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0 }}>
+          <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0, gap: 4 }}>
             {shouldShowRpeChip(set, startIndex + si) && (
               <SetFeedbackChip
                 rpe={set.rpe ?? null}
@@ -228,6 +231,32 @@ const SetRow = memo(function SetRow({
                 colors={colors}
               />
             )}
+            {/* ENG-13: Warmup chip — toggle per-set warmup flag */}
+            <TouchableOpacity
+              onPress={() => onToggleWarmup(startIndex + si)}
+              activeOpacity={0.7}
+              style={{
+                paddingHorizontal: SPACING.xs,
+                paddingVertical: 4,
+                borderRadius: BORDER_RADIUS.sm,
+                backgroundColor: set.isWarmup ? colors.primary : colors.surfaceSecondary,
+                borderWidth: 1,
+                borderColor: set.isWarmup ? colors.primary : colors.border,
+                alignSelf: 'flex-start',
+              }}
+            >
+              <Text
+                style={[
+                  typography.captionSmall,
+                  {
+                    color: set.isWarmup ? colors.textInverse : colors.textSecondary,
+                    fontWeight: '600',
+                  },
+                ]}
+              >
+                Разминка
+              </Text>
+            </TouchableOpacity>
           </View>
         ))}
       </View>
@@ -251,6 +280,8 @@ interface SetsGridProps {
   unit: WeightUnit;
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
+  /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
+  addSet: (exerciseIndex: number) => void;
   // FEAT-1.1 v2: прогрессия пер-сет через updateSet; applyProgression оставлен
   // в сигнатуре опционально для совместимости с ExerciseCard (не вызывается).
   applyProgression?: (exerciseIndex: number, newWeight: number) => void;
@@ -273,6 +304,7 @@ export const SetsGrid = memo(function SetsGrid({
   unit,
   updateSet,
   updateSetFeedback,
+  addSet,
   isSetCompleted,
   startRestTimer,
   colors,
@@ -397,17 +429,22 @@ export const SetsGrid = memo(function SetsGrid({
   // ============================================================================
   // ENG-1: детерминированная рекомендация прогрессии
   // ENG-4: safety precedence (pain/injury > recommendation)
+  // ENG-13: targetSetIndex для per-set recommendation + warmup filtering
   // ============================================================================
   const recommendation = useMemo<(ProgressionResult & {
     safetyOverride?: SafetyOverride | null;
     readinessOverride?: ReadinessOverride | null;
   }) | null>(() => {
     if (sets.length === 0) return null;
-    const base = calculateProgression({ sets, repsRange: repsRange ?? null });
+    const base = calculateProgression({
+      sets,
+      repsRange: repsRange ?? null,
+      targetSetIndex: progressionSetIndex ?? undefined,
+    });
     const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
     // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
     return applyReadinessContext(afterSafety, readinessContext ?? null);
-  }, [sets, repsRange, safetyContext, readinessContext]);
+  }, [sets, repsRange, safetyContext, readinessContext, progressionSetIndex]);
 
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
   // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)
@@ -605,6 +642,22 @@ export const SetsGrid = memo(function SetsGrid({
     setFeedbackSetIndex(setIndex);
   }, []);
 
+  // ENG-13: toggle warmup flag for a set
+  // If toggling ON and it's the last set, auto-add a new working set
+  const handleToggleWarmup = useCallback(
+    (setIndex: number) => {
+      const set = sets[setIndex];
+      const newIsWarmup = !set.isWarmup;
+      updateSetFeedback(exerciseIndex, setIndex, { isWarmup: newIsWarmup });
+
+      // Auto-add new set when marking the last set as warmup
+      if (newIsWarmup && setIndex === sets.length - 1) {
+        addSet(exerciseIndex);
+      }
+    },
+    [sets, exerciseIndex, updateSetFeedback, addSet],
+  );
+
   return (
     <View
       style={[
@@ -781,6 +834,7 @@ export const SetsGrid = memo(function SetsGrid({
               colors={colors}
               cardStyles={cardStyles}
               onOpenFeedback={handleOpenFeedback}
+              onToggleWarmup={handleToggleWarmup}
               shouldShowRpeChip={shouldShowRpeChip}
             />
           );

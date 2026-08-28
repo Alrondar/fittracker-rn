@@ -67,38 +67,39 @@ export default function WorkoutSessionScreen() {
     perfMark('tti:mount');
   }
 
-  const {
-    workoutName,
-    exercises,
-    loading,
-    saving,
-    isWorkoutActive,
-    setIsWorkoutActive,
-    initialTime,
-    restTimer,
-    restTimeLeft,
-    isRestFinished,
-    adjustRestTimer,
-    replacements,
-    handleTimerTick,
-    handleTimerStart,
-    handleTimerStop,
-    loadAlternatives,
-    updateSet,
-    updateSetFeedback,
-    applyProgression,
-    isSetCompleted,
-    updateExerciseSettings,
-    programId,
-    replaceExercise,
-    replaceExerciseInProgram,
-    resetToOriginal,
-    savePainState,
-    clearPainState,
-    startRestTimer,
-    stopRestTimer,
-    saveWorkout,
-  } = useWorkoutSession(id as string, userId);
+const {
+  workoutName,
+  exercises,
+  loading,
+  saving,
+  isWorkoutActive,
+  setIsWorkoutActive,
+  initialTime,
+  restTimer,
+  restTimeLeft,
+  isRestFinished,
+  adjustRestTimer,
+  replacements,
+  handleTimerTick,
+  handleTimerStart,
+  handleTimerStop,
+  loadAlternatives,
+  updateSet,
+  updateSetFeedback,
+  applyProgression,
+  isSetCompleted,
+  updateExerciseSettings,
+  programId,
+  replaceExercise,
+  replaceExerciseInProgram,
+  resetToOriginal,
+  savePainState,
+  clearPainState,
+  startRestTimer,
+  stopRestTimer,
+  addSet,
+  saveWorkout,
+} = useWorkoutSession(id as string, userId);
 
   const { data: workoutProgramInfo } = useQuery({
     queryKey: ['workoutProgramInfo', id],
@@ -260,54 +261,56 @@ export default function WorkoutSessionScreen() {
     [programId, replaceExercise, replaceExerciseInProgram],
   );
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => (
-      <ExerciseSlider
-        exercise={item}
-        exerciseIndex={index}
-        isReplaced={!!replacements[item.workout_exercise_id]}
-        displayMode={displayMode}
-        loadAlternatives={loadAlternatives}
-        updateSet={updateSet}
-        updateSetFeedback={updateSetFeedback}
-        applyProgression={applyProgression}
-        isSetCompleted={isSetCompleted}
-        onRequestReplace={handleReplaceChoice}
-        resetToOriginal={resetToOriginal}
-        startRestTimer={startRestTimer}
-        getIntensityInfo={getIntensityInfo}
-        onOpenSettings={openExerciseSettings}
-        onOpenPain={openPain}
-        colors={colors}
-        cardStyles={cardStyles}
-        unit={unit}
-        warning={exerciseWarnings[item.id] || null}
-        readinessContext={readinessContext}
-        workoutId={id as string}
-      />
-    ),
-    [
-      id,
-      replacements,
-      displayMode,
-      loadAlternatives,
-      updateSet,
-      updateSetFeedback,
-      applyProgression,
-      isSetCompleted,
-      handleReplaceChoice,
-      resetToOriginal,
-      startRestTimer,
-      getIntensityInfo,
-      openExerciseSettings,
-      openPain,
-      colors,
-      cardStyles,
-      unit,
-      exerciseWarnings,
-      readinessContext,
-    ],
-  );
+const renderItem = useCallback(
+  ({ item, index }: { item: any; index: number }) => (
+    <ExerciseSlider
+      exercise={item}
+      exerciseIndex={index}
+      isReplaced={!!replacements[item.workout_exercise_id]}
+      displayMode={displayMode}
+      loadAlternatives={loadAlternatives}
+      updateSet={updateSet}
+      updateSetFeedback={updateSetFeedback}
+      applyProgression={applyProgression}
+      isSetCompleted={isSetCompleted}
+      onRequestReplace={handleReplaceChoice}
+      resetToOriginal={resetToOriginal}
+      startRestTimer={startRestTimer}
+      getIntensityInfo={getIntensityInfo}
+      onOpenSettings={openExerciseSettings}
+      onOpenPain={openPain}
+      colors={colors}
+      cardStyles={cardStyles}
+      unit={unit}
+      warning={exerciseWarnings[item.id] || null}
+      readinessContext={readinessContext}
+      workoutId={id as string}
+      addSet={addSet}
+    />
+  ),
+  [
+    id,
+    replacements,
+    displayMode,
+    loadAlternatives,
+    updateSet,
+    updateSetFeedback,
+    applyProgression,
+    isSetCompleted,
+    handleReplaceChoice,
+    resetToOriginal,
+    startRestTimer,
+    getIntensityInfo,
+    openExerciseSettings,
+    openPain,
+    colors,
+    cardStyles,
+    unit,
+    exerciseWarnings,
+    readinessContext,
+    addSet,
+  ],
+);
 
   const renderEmpty = useCallback(
     () => (
