@@ -307,12 +307,10 @@ export function StatusCard() {
                 alignSelf: 'flex-start',
               }}
             >
-              <Text style={[typography.labelBold, { color: getCyclePhaseColor(currentPhase.phase), marginRight: SPACING.xs }]}>
-                
+              <Droplet size={16} color={getCyclePhaseColor(currentPhase.phase)} style={{ marginRight: SPACING.xs }} />
+              <Text style={[typography.label, { color: colors.textPrimary }]}>
+                День {currentPhase.dayNumber} · {getCyclePhaseLabel(currentPhase.phase)}
               </Text>
-<Text style={[typography.label, { color: colors.textPrimary }]}>
-День {Math.ceil((new Date().getTime() - currentPhase.startDate.getTime()) / 86400000)} · {getCyclePhaseLabel(currentPhase.phase)}
-</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity

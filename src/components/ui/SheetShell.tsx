@@ -29,11 +29,9 @@ export function SheetShell({
   keyboardVerticalOffset = 0,
   children,
 }: SheetShellProps) {
-  if (!visible) return null;
-
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-
+  if (!visible) return null;
   return (
     <View
       style={{
