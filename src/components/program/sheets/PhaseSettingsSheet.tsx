@@ -5,7 +5,6 @@ import { ProgramPhase } from '../../../services/programsService';
 import { PHASE_TYPES, getPhaseColor, PhaseType } from '../../../constants/phaseTypes';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
-import { SheetShell } from '../../ui/SheetShell';
 
 interface PhaseSettingsSheetProps {
   phase: ProgramPhase | null;
@@ -37,7 +36,7 @@ export function PhaseSettingsSheet({
   const selectedMeta = PHASE_TYPES.find((p) => p.value === phaseType);
 
   return (
-    <SheetShell title="Настройки фазы" onClose={onClose}>
+    <>
       {/* Название */}
       <View style={{ marginBottom: SPACING.lg }}>
         <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
@@ -190,6 +189,6 @@ export function PhaseSettingsSheet({
       >
         <Text style={buttonStyles.textPrimary}>Сохранить</Text>
       </TouchableOpacity>
-    </SheetShell>
+    </>
   );
 }

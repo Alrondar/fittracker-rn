@@ -1,3 +1,4 @@
+import { Modal } from 'react-native';
 import { SheetShell } from '../ui/SheetShell';
 import { PhaseSettingsSheet } from './sheets/PhaseSettingsSheet';
 import { ExerciseSettingsSheet } from './sheets/ExerciseSettingsSheet';
@@ -78,48 +79,62 @@ export function ProgramEditorModals({
 }: ProgramEditorModalsProps) {
   return (
     <>
-      <SheetShell
+      <Modal
         visible={showPhaseSettings}
-        onClose={() => setShowPhaseSettings(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPhaseSettings(false)}
       >
-        <PhaseSettingsSheet
-          phase={selectedPhase}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          onSave={onSavePhaseSettings}
-          onClose={() => setShowPhaseSettings(false)}
-        />
-      </SheetShell>
+        <SheetShell isModal title="Настройки фазы" onClose={() => setShowPhaseSettings(false)}>
+          <PhaseSettingsSheet
+            phase={selectedPhase}
+            colors={colors}
+            buttonStyles={buttonStyles}
+            onSave={onSavePhaseSettings}
+            onClose={() => setShowPhaseSettings(false)}
+          />
+        </SheetShell>
+      </Modal>
 
-      <SheetShell
+      <Modal
         visible={showExerciseSettings}
-        onClose={() => setShowExerciseSettings(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExerciseSettings(false)}
       >
-        <ExerciseSettingsSheet
-          exercise={selectedExercise}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          onSave={onSaveExerciseParams}
-          onClose={() => setShowExerciseSettings(false)}
-        />
-      </SheetShell>
+        <SheetShell isModal title="Настройки упражнения" onClose={() => setShowExerciseSettings(false)}>
+          <ExerciseSettingsSheet
+            exercise={selectedExercise}
+            colors={colors}
+            buttonStyles={buttonStyles}
+            onSave={onSaveExerciseParams}
+            onClose={() => setShowExerciseSettings(false)}
+          />
+        </SheetShell>
+      </Modal>
 
-      <SheetShell
+      <Modal
         visible={showDaySettings}
-        onClose={() => setShowDaySettings(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDaySettings(false)}
       >
-        <DaySettingsSheet
-          day={selectedDay}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          onSave={onSaveDaySettings}
-          onClose={() => setShowDaySettings(false)}
-        />
-      </SheetShell>
+        <SheetShell isModal title="Настройки дня" onClose={() => setShowDaySettings(false)}>
+          <DaySettingsSheet
+            day={selectedDay}
+            colors={colors}
+            buttonStyles={buttonStyles}
+            onSave={onSaveDaySettings}
+            onClose={() => setShowDaySettings(false)}
+          />
+        </SheetShell>
+      </Modal>
 
-      <SheetShell
+      <Modal
         visible={showExercisePicker}
-        onClose={() => setShowExercisePicker(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowExercisePicker(false)}
       >
         <ExercisePickerSheet
           onSelectExercise={onSelectExercise}
@@ -127,21 +142,25 @@ export function ProgramEditorModals({
           colors={colors}
           badgeStyles={badgeStyles}
         />
-      </SheetShell>
+      </Modal>
 
-      <SheetShell
+      <Modal
         visible={showScheduleEditor}
-        onClose={() => setShowScheduleEditor(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowScheduleEditor(false)}
       >
-        <ScheduleEditorSheet
-          schedule={schedule}
-          onSave={onSaveSchedule}
-          onClose={() => setShowScheduleEditor(false)}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          badgeStyles={badgeStyles}
-        />
-      </SheetShell>
+        <SheetShell isModal title="Расписание тренировок" onClose={() => setShowScheduleEditor(false)}>
+          <ScheduleEditorSheet
+            schedule={schedule}
+            onSave={onSaveSchedule}
+            onClose={() => setShowScheduleEditor(false)}
+            colors={colors}
+            buttonStyles={buttonStyles}
+            badgeStyles={badgeStyles}
+          />
+        </SheetShell>
+      </Modal>
     </>
   );
 }

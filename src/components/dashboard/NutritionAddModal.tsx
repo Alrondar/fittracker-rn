@@ -217,6 +217,7 @@ export function NutritionAddModal({
       onRequestClose={onClose}
     >
       <SheetShell
+        isModal
         title={
           isEditing
             ? 'Редактировать приём пищи'

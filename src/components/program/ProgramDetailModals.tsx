@@ -1,3 +1,4 @@
+import { Modal } from 'react-native';
 import { SheetShell } from '../ui/SheetShell';
 import { ScheduleEditorSheet } from './sheets/ScheduleEditorSheet';
 import { ShareProgramSheet } from './sheets/ShareProgramSheet';
@@ -40,33 +41,40 @@ export function ProgramDetailModals({
 }: ProgramDetailModalsProps) {
   return (
     <>
-      <SheetShell
+      <Modal
         visible={showScheduleEditor}
-        onClose={() => setShowScheduleEditor(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowScheduleEditor(false)}
       >
-        <ScheduleEditorSheet
-          schedule={schedule}
-          onSave={onSaveSchedule}
-          onClose={() => setShowScheduleEditor(false)}
-          colors={colors}
-          buttonStyles={buttonStyles}
-          badgeStyles={badgeStyles}
-        />
-      </SheetShell>
+        <SheetShell isModal onClose={() => setShowScheduleEditor(false)}>
+          <ScheduleEditorSheet
+            schedule={schedule}
+            onSave={onSaveSchedule}
+            onClose={() => setShowScheduleEditor(false)}
+            colors={colors}
+            buttonStyles={buttonStyles}
+            badgeStyles={badgeStyles}
+          />
+        </SheetShell>
+      </Modal>
 
-      {/* Модалка шаринга по коду */}
-      <SheetShell
+      <Modal
         visible={showShareModal}
-        onClose={() => setShowShareModal(false)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowShareModal(false)}
       >
-        <ShareProgramSheet
-          code={shareCode}
-          loading={shareLoading}
-          programName={programName}
-          onShare={onShareViaSystem}
-          onClose={() => setShowShareModal(false)}
-        />
-      </SheetShell>
+        <SheetShell isModal onClose={() => setShowShareModal(false)}>
+          <ShareProgramSheet
+            code={shareCode}
+            loading={shareLoading}
+            programName={programName}
+            onShare={onShareViaSystem}
+            onClose={() => setShowShareModal(false)}
+          />
+        </SheetShell>
+      </Modal>
     </>
   );
 }

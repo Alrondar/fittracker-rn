@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { X } from 'lucide-react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
-import { SheetShell } from '../../ui/SheetShell';
 
 interface ScheduleEditorSheetProps {
   schedule: string[];
@@ -60,139 +58,137 @@ export function ScheduleEditorSheet({
   );
 
   return (
-    <SheetShell title="Расписание тренировок" onClose={onClose}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text
-          style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
-        >
-          Выберите дни недели, в которые будут проходить тренировки
-        </Text>
+    <>
+      <Text
+        style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
+      >
+        Выберите дни недели, в которые будут проходить тренировки
+      </Text>
 
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: SPACING.sm,
+          marginBottom: SPACING.lg,
+        }}
+      >
+        {WEEKDAYS.map((day) => {
+          const isSelected = selectedDays.includes(day.value);
+          return (
+            <TouchableOpacity
+              key={day.value}
+              onPress={() => toggleDay(day.value)}
+              style={{
+                flex: 1,
+                minWidth: 70,
+                padding: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 2,
+                borderColor: isSelected ? colors.primary : colors.border,
+                backgroundColor: isSelected ? colors.primary + '20' : colors.surfaceSecondary,
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={[
+                  typography.h4,
+                  {
+                    color: isSelected ? colors.primary : colors.textSecondary,
+                    fontWeight: '700',
+                  },
+                ]}
+              >
+                {day.short}
+              </Text>
+              <Text
+                style={[
+                  typography.captionSmall,
+                  {
+                    color: isSelected ? colors.primary : colors.textTertiary,
+                    marginTop: 2,
+                  },
+                ]}
+              >
+                {day.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+        <TouchableOpacity
+          onPress={selectAll}
+          style={{
+            flex: 1,
+            padding: SPACING.sm,
+            borderRadius: BORDER_RADIUS.md,
+            backgroundColor: colors.surfaceSecondary,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={[typography.labelBold, { color: colors.primary }]}>Выбрать все</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={clearAll}
+          style={{
+            flex: 1,
+            padding: SPACING.sm,
+            borderRadius: BORDER_RADIUS.md,
+            backgroundColor: colors.surfaceSecondary,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={[typography.labelBold, { color: colors.error }]}>Очистить</Text>
+        </TouchableOpacity>
+      </View>
+
+      {selectedDays.length > 0 && (
         <View
           style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: SPACING.sm,
+            backgroundColor: colors.primaryLight,
+            padding: SPACING.md,
+            borderRadius: BORDER_RADIUS.md,
             marginBottom: SPACING.lg,
           }}
         >
-          {WEEKDAYS.map((day) => {
-            const isSelected = selectedDays.includes(day.value);
-            return (
-              <TouchableOpacity
-                key={day.value}
-                onPress={() => toggleDay(day.value)}
-                style={{
-                  flex: 1,
-                  minWidth: 70,
-                  padding: SPACING.md,
-                  borderRadius: BORDER_RADIUS.md,
-                  borderWidth: 2,
-                  borderColor: isSelected ? colors.primary : colors.border,
-                  backgroundColor: isSelected ? colors.primary + '20' : colors.surfaceSecondary,
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    typography.h4,
-                    {
-                      color: isSelected ? colors.primary : colors.textSecondary,
-                      fontWeight: '700',
-                    },
-                  ]}
-                >
-                  {day.short}
-                </Text>
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: isSelected ? colors.primary : colors.textTertiary,
-                      marginTop: 2,
-                    },
-                  ]}
-                >
-                  {day.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-          <TouchableOpacity
-            onPress={selectAll}
-            style={{
-              flex: 1,
-              padding: SPACING.sm,
-              borderRadius: BORDER_RADIUS.md,
-              backgroundColor: colors.surfaceSecondary,
-              alignItems: 'center',
-            }}
+          <Text
+            style={[
+              typography.caption,
+              { color: colors.primary, marginBottom: SPACING.sm, fontWeight: '600' },
+            ]}
           >
-            <Text style={[typography.labelBold, { color: colors.primary }]}>Выбрать все</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={clearAll}
-            style={{
-              flex: 1,
-              padding: SPACING.sm,
-              borderRadius: BORDER_RADIUS.md,
-              backgroundColor: colors.surfaceSecondary,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={[typography.labelBold, { color: colors.error }]}>Очистить</Text>
-          </TouchableOpacity>
-        </View>
-
-        {selectedDays.length > 0 && (
-          <View
-            style={{
-              backgroundColor: colors.primaryLight,
-              padding: SPACING.md,
-              borderRadius: BORDER_RADIUS.md,
-              marginBottom: SPACING.lg,
-            }}
-          >
-            <Text
-              style={[
-                typography.caption,
-                { color: colors.primary, marginBottom: SPACING.sm, fontWeight: '600' },
-              ]}
-            >
-              Выбрано: {selectedDays.length} дн/нед
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-              {orderedSelected.map((day) => (
-                <View key={day} style={badgeStyles.dayChip}>
-                  <Text style={badgeStyles.dayChipText}>{day}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <TouchableOpacity
-          onPress={() => onSave(selectedDays)}
-          disabled={selectedDays.length === 0}
-          style={[
-            buttonStyles.primary,
-            {
-              backgroundColor:
-                selectedDays.length === 0 ? colors.textTertiary : colors.primary,
-              opacity: selectedDays.length === 0 ? 0.5 : 1,
-            },
-          ]}
-        >
-          <Text style={buttonStyles.textPrimary}>
-            {selectedDays.length === 0
-              ? 'Выберите хотя бы один день'
-              : 'Сохранить расписание'}
+            Выбрано: {selectedDays.length} дн/нед
           </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SheetShell>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
+            {orderedSelected.map((day) => (
+              <View key={day} style={badgeStyles.dayChip}>
+                <Text style={badgeStyles.dayChipText}>{day}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      <TouchableOpacity
+        onPress={() => onSave(selectedDays)}
+        disabled={selectedDays.length === 0}
+        style={[
+          buttonStyles.primary,
+          {
+            backgroundColor:
+              selectedDays.length === 0 ? colors.textTertiary : colors.primary,
+            opacity: selectedDays.length === 0 ? 0.5 : 1,
+          },
+        ]}
+      >
+        <Text style={buttonStyles.textPrimary}>
+          {selectedDays.length === 0
+            ? 'Выберите хотя бы один день'
+            : 'Сохранить расписание'}
+        </Text>
+      </TouchableOpacity>
+    </>
   );
 }

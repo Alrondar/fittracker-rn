@@ -1,14 +1,6 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native';
-import { X, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react-native';
 import { ProgramExercise } from '../../../services/programsService';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -42,257 +34,211 @@ const intensities = [
 ];
 
   return (
-    // ✅ KeyboardAvoidingView поднимает панель над клавиатурой на iOS;
-    // на Android полагаемся на ScrollView + системный resize окна.
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1 }}
-    >
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <TouchableOpacity style={{ flex: 1 }} onPress={onClose} activeOpacity={1} />
+    <>
+      {/* Подходы */}
+      <View style={{ marginBottom: SPACING.lg }}>
+        <Text
+          style={[
+            typography.label,
+            { color: colors.textSecondary, marginBottom: SPACING.md },
+          ]}
+        >
+          Подходы
+        </Text>
         <View
           style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            maxHeight: '92%',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: SPACING.lg,
           }}
         >
-          {/* Заголовок — вне скролла, всегда виден */}
-          <View
+          <TouchableOpacity
+            onPress={() => setSets(Math.max(1, sets - 1))}
             style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: colors.surfaceSecondary,
               alignItems: 'center',
-              paddingHorizontal: SPACING.lg,
-              paddingTop: SPACING.lg,
-              paddingBottom: SPACING.md,
+              justifyContent: 'center',
             }}
           >
-            <Text style={[typography.h5, { color: colors.textPrimary }]}>
-              Настройки упражнения
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <X size={20} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
-          </View>
-
-          {/* ✅ Скроллируемая форма: авто-прокрутка к полю «Повторения» над клавиатурой */}
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: SPACING.lg,
-              paddingBottom: SPACING.lg,
+            <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
+          </TouchableOpacity>
+          <Text
+            style={[
+              typography.h3,
+              { color: colors.textPrimary, minWidth: 40, textAlign: 'center' },
+            ]}
+          >
+            {sets}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setSets(Math.min(10, sets + 1))}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            {/* Подходы */}
-            <View style={{ marginBottom: SPACING.lg }}>
-              <Text
-                style={[
-                  typography.label,
-                  { color: colors.textSecondary, marginBottom: SPACING.md },
-                ]}
-              >
-                Подходы
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: SPACING.lg,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => setSets(Math.max(1, sets - 1))}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: colors.surfaceSecondary,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
-                </TouchableOpacity>
-                <Text
-                  style={[
-                    typography.h3,
-                    { color: colors.textPrimary, minWidth: 40, textAlign: 'center' },
-                  ]}
-                >
-                  {sets}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setSets(Math.min(10, sets + 1))}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: colors.surfaceSecondary,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Повторения */}
-            <View style={{ marginBottom: SPACING.lg }}>
-              <Text
-                style={[
-                  typography.label,
-                  { color: colors.textSecondary, marginBottom: SPACING.md },
-                ]}
-              >
-                Повторения
-              </Text>
-              <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: BORDER_RADIUS.md,
-                  padding: SPACING.md,
-                  fontSize: 16,
-                  color: colors.textPrimary,
-                  backgroundColor: colors.surface,
-                }}
-                value={repsRange}
-                onChangeText={setRepsRange}
-                placeholder="например: 8-12"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-
-            {/* Отдых */}
-            <View style={{ marginBottom: SPACING.lg }}>
-              <Text
-                style={[
-                  typography.label,
-                  { color: colors.textSecondary, marginBottom: SPACING.md },
-                ]}
-              >
-                Отдых (секунды)
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: SPACING.lg,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: colors.surfaceSecondary,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
-                </TouchableOpacity>
-                <Text
-                  style={[
-                    typography.h3,
-                    { color: colors.textPrimary, minWidth: 60, textAlign: 'center' },
-                  ]}
-                >
-                  {restSeconds}с
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: colors.surfaceSecondary,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Интенсивность */}
-            <View style={{ marginBottom: SPACING.lg }}>
-              <Text
-                style={[
-                  typography.label,
-                  { color: colors.textSecondary, marginBottom: SPACING.md },
-                ]}
-              >
-                Интенсивность
-              </Text>
-              <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-                {intensities.map((item) => (
-                  <TouchableOpacity
-                    key={item.value}
-                    onPress={() => setIntensity(item.value)}
-                    style={{
-                      flex: 1,
-                      padding: SPACING.md,
-                      borderRadius: BORDER_RADIUS.md,
-                      borderWidth: 2,
-                      borderColor:
-                        intensity === item.value ? item.color : colors.border,
-                      backgroundColor:
-                        intensity === item.value ? item.color + '15' : colors.surface,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <item.icon
-                      size={20}
-                      color={
-                        intensity === item.value ? item.color : colors.textSecondary
-                      }
-                      strokeWidth={2}
-                    />
-                    <Text
-                      style={[
-                        typography.labelBold,
-                        {
-                          color:
-                            intensity === item.value
-                              ? item.color
-                              : colors.textSecondary,
-                          marginTop: SPACING.xs,
-                        },
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Сохранить — внутри ScrollView, всегда достижим прокруткой */}
-            <TouchableOpacity
-              onPress={() =>
-                onSave({
-                  sets,
-                  reps_range: repsRange,
-                  rest_seconds: restSeconds,
-                  intensity,
-                })
-              }
-              style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
-            >
-              <Text style={buttonStyles.textPrimary}>Сохранить</Text>
-            </TouchableOpacity>
-          </ScrollView>
+            <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+
+      {/* Повторения */}
+      <View style={{ marginBottom: SPACING.lg }}>
+        <Text
+          style={[
+            typography.label,
+            { color: colors.textSecondary, marginBottom: SPACING.md },
+          ]}
+        >
+          Повторения
+        </Text>
+        <TextInput
+          style={{
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: BORDER_RADIUS.md,
+            padding: SPACING.md,
+            fontSize: 16,
+            color: colors.textPrimary,
+            backgroundColor: colors.surface,
+          }}
+          value={repsRange}
+          onChangeText={setRepsRange}
+          placeholder="например: 8-12"
+          placeholderTextColor={colors.textTertiary}
+        />
+      </View>
+
+      {/* Отдых */}
+      <View style={{ marginBottom: SPACING.lg }}>
+        <Text
+          style={[
+            typography.label,
+            { color: colors.textSecondary, marginBottom: SPACING.md },
+          ]}
+        >
+          Отдых (секунды)
+        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: SPACING.lg,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
+          </TouchableOpacity>
+          <Text
+            style={[
+              typography.h3,
+              { color: colors.textPrimary, minWidth: 60, textAlign: 'center' },
+            ]}
+          >
+            {restSeconds}с
+          </Text>
+          <TouchableOpacity
+            onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: colors.surfaceSecondary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Интенсивность */}
+      <View style={{ marginBottom: SPACING.lg }}>
+        <Text
+          style={[
+            typography.label,
+            { color: colors.textSecondary, marginBottom: SPACING.md },
+          ]}
+        >
+          Интенсивность
+        </Text>
+        <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+          {intensities.map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              onPress={() => setIntensity(item.value)}
+              style={{
+                flex: 1,
+                padding: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 2,
+                borderColor:
+                  intensity === item.value ? item.color : colors.border,
+                backgroundColor:
+                  intensity === item.value ? item.color + '15' : colors.surface,
+                alignItems: 'center',
+              }}
+            >
+              <item.icon
+                size={20}
+                color={
+                  intensity === item.value ? item.color : colors.textSecondary
+                }
+                strokeWidth={2}
+              />
+              <Text
+                style={[
+                  typography.labelBold,
+                  {
+                    color:
+                      intensity === item.value
+                        ? item.color
+                        : colors.textSecondary,
+                    marginTop: SPACING.xs,
+                  },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Сохранить */}
+      <TouchableOpacity
+        onPress={() =>
+          onSave({
+            sets,
+            reps_range: repsRange,
+            rest_seconds: restSeconds,
+            intensity,
+          })
+        }
+        style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
+      >
+        <Text style={buttonStyles.textPrimary}>Сохранить</Text>
+      </TouchableOpacity>
+    </>
   );
 }
