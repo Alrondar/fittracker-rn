@@ -75,6 +75,7 @@
 | UX-11 | 🟠 | ✅ | **Progress hub** (отдельный bottom-tab, единый экран «Как я меняюсь?»): убраны 4 режима; последовательный поток: Hero → Stats → Insights → Activity → Strength (с интерактивным селектором упражнений и explainability e1RM) → Weight → PR (в виде карточек-достижений) → RecentWorkouts (детерминированный градиент, program_name, duration, avg_rpe); History вынесен в отдельную ментальную модель (PRODUCT.md §11). |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
 | UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
+| UX-15 | 🟠 | ✅ | workouts.tsx: Sticky-карточка «Следующая» + фильтр «Предстоящие/Все» (Гибрид А+Б). Решает проблему скролла к нужной неделе, сохраняет историю доступной в 1 тап. |
 
 ### Остаточные аудиты экранов (из архивного `UX_AUDIT_PLAN.md`, Этап H)
 

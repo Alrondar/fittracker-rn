@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import {
   Dumbbell,
   Check,
   Clock,
-  ChevronRight,
   SkipForward,
 } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
@@ -70,6 +69,28 @@ export default function WorkoutsScreen() {
   // UX-5 Feature 2: skip workout
   const [skipTarget, setSkipTarget] = useState<{ id: string; name: string } | null>(null);
   const [skipping, setSkipping] = useState(false);
+
+  // Гибрид А+Б: Фильтр "Предстоящие / Все"
+  const [viewMode, setViewMode] = useState<'upcoming' | 'all'>('upcoming');
+
+  // Гибрид А+Б: Поиск следующей тренировки для Sticky-карточки
+  const allWorkouts = useMemo(() => sections.flatMap(s => s.data), [sections]);
+  const nextWorkout = allWorkouts.find(w => getWorkoutStatus(w, activeProgram) === 'in_progress') || 
+                      allWorkouts.find(w => getWorkoutStatus(w, activeProgram) === 'next');
+
+  // Гибрид А+Б: Фильтрация секций
+  const filteredSections = useMemo(() => {
+    if (viewMode === 'all') return sections;
+    return sections
+      .map(section => ({
+        ...section,
+        data: section.data.filter(item => {
+          const status = getWorkoutStatus(item, activeProgram);
+          return status === 'next' || status === 'in_progress' || status === 'upcoming';
+        })
+      }))
+      .filter(section => section.data.length > 0);
+  }, [sections, activeProgram, viewMode]);
 
   useFocusEffect(
     useCallback(() => {
@@ -126,27 +147,7 @@ export default function WorkoutsScreen() {
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
             {activeProgram.name}
           </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: SPACING.xs,
-              marginTop: SPACING.xs,
-            }}
-          >
-            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-              Следующая:
-            </Text>
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.primary, fontWeight: '700' },
-              ]}
-            >
-              Фаза {activeProgram.currentPhase}, Неделя {activeProgram.currentWeek}
-            </Text>
-            <ChevronRight size={12} color={colors.primary} strokeWidth={2.5} />
-          </View>
+
           {currentPhaseObj && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
               <View
@@ -340,11 +341,7 @@ export default function WorkoutsScreen() {
                   </Text>
                 )}
               </View>
-              {status === 'next' && (
-                <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.xs }]}>
-                  Удерживайте для пропуска
-                </Text>
-              )}
+
             </AppCard>
           </FadeIn>
         </TouchableOpacity>
@@ -353,17 +350,24 @@ export default function WorkoutsScreen() {
     [activeProgram, colors, navigateToWorkout],
   );
 
-  const renderEmpty = () => (
-    <FadeIn delay={200} style={commonStyles.emptyContainer}>
-      <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет тренировок</Text>
-      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        {activeProgram
-          ? `Для программы "${activeProgram.name}" ещё нет тренировок.`
-          : 'Активируйте программу, чтобы увидеть список тренировок.'}
-      </Text>
-    </FadeIn>
-  );
+  const renderEmpty = () => {
+    const isUpcomingEmpty = viewMode === 'upcoming' && sections.length > 0;
+    return (
+      <FadeIn delay={200} style={commonStyles.emptyContainer}>
+        <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
+        <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
+          {isUpcomingEmpty ? 'Нет предстоящих тренировок' : 'Нет тренировок'}
+        </Text>
+        <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
+          {isUpcomingEmpty 
+            ? 'Все тренировки этой программы уже завершены или пропущены. Переключитесь на «Все», чтобы увидеть историю.' 
+            : (activeProgram
+              ? `Для программы "${activeProgram.name}" ещё нет тренировок.`
+              : 'Активируйте программу, чтобы увидеть список тренировок.')}
+        </Text>
+      </FadeIn>
+    );
+  };
 
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
@@ -376,19 +380,109 @@ export default function WorkoutsScreen() {
       {loading ? (
         <ListSkeleton count={4} />
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          renderItem={renderWorkoutItem}
-          renderSectionHeader={renderSectionHeader}
-          ListHeaderComponent={renderHeader}
-          ListEmptyComponent={renderEmpty}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          stickySectionHeadersEnabled={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-          }
-        />
+        <>
+          {/* Прогресс программы (бывший ListHeaderComponent) */}
+          {renderHeader()}
+
+          {/* Гибрид А+Б: Sticky-карточка "Следующая тренировка" */}
+          {activeProgram && nextWorkout && (
+            <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
+              <AppCard variant="default" style={{ borderColor: colors.primary, borderWidth: 1.5 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>Следующая тренировка</Text>
+                    <Text style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]} numberOfLines={2}>
+                      {nextWorkout.name}
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: SPACING.xs, marginTop: SPACING.sm, flexWrap: 'wrap' }}>
+                      <AppBadge variant="primary" size="small" icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}>
+                        Нед {nextWorkout.week_number}, День {nextWorkout.day_index}
+                      </AppBadge>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => navigateToWorkout(nextWorkout.id)}
+                    style={{ backgroundColor: colors.primary, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: BORDER_RADIUS.md }}
+                  >
+                    <Text style={[typography.labelBold, { color: colors.textInverse }]}>Начать →</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity 
+                  onLongPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setSkipTarget({ id: nextWorkout.id, name: nextWorkout.name });
+                  }}
+                  delayLongPress={500}
+                  style={{ marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: colors.border }}
+                >
+                  <Text style={[typography.captionSmall, { color: colors.textTertiary, textAlign: 'center' }]}>
+                    Удерживайте для пропуска
+                  </Text>
+                </TouchableOpacity>
+              </AppCard>
+            </View>
+          )}
+
+          {/* Гибрид А+Б: Состояние "Программа завершена" */}
+          {activeProgram && !nextWorkout && progress.completed === progress.total && progress.total > 0 && (
+            <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
+              <AppCard variant="default" style={{ borderColor: colors.success, borderWidth: 1.5, alignItems: 'center', paddingVertical: SPACING.lg }}>
+                <Text style={[typography.h5, { color: colors.success }]}>Программа завершена! 🎉</Text>
+                <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.xs, textAlign: 'center' }]}>
+                  Отличная работа! Все тренировки этой программы пройдены.
+                </Text>
+              </AppCard>
+            </View>
+          )}
+
+          {/* Гибрид А+Б: Segmented Control */}
+          {activeProgram && (
+            <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
+              <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.md, padding: 2 }}>
+                {(['upcoming', 'all'] as const).map((mode) => (
+                  <TouchableOpacity
+                    key={mode}
+                    onPress={() => setViewMode(mode)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: SPACING.sm,
+                      alignItems: 'center',
+                      borderRadius: BORDER_RADIUS.sm,
+                      backgroundColor: viewMode === mode ? colors.background : 'transparent',
+                      shadowColor: viewMode === mode ? '#000' : 'transparent',
+                      shadowOpacity: viewMode === mode ? 0.1 : 0,
+                      shadowRadius: 2,
+                      elevation: viewMode === mode ? 2 : 0,
+                    }}
+                  >
+                    <Text style={{
+                      color: viewMode === mode ? colors.textPrimary : colors.textSecondary,
+                      fontWeight: viewMode === mode ? '600' : '400',
+                      fontSize: 14,
+                    }}>
+                      {mode === 'upcoming' ? 'Предстоящие' : 'Все'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={{ flex: 1 }}>
+            <SectionList
+              sections={filteredSections}
+              keyExtractor={(item) => item.id}
+              renderItem={renderWorkoutItem}
+              renderSectionHeader={renderSectionHeader}
+              ListEmptyComponent={renderEmpty}
+              contentContainerStyle={{ paddingBottom: 100 }}
+              stickySectionHeadersEnabled={true}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+              }
+            />
+          </View>
+        </>
       )}
 
       {/* UX-5 Feature 2: skip workout — bottom sheet с подтверждением */}

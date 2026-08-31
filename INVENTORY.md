@@ -44,7 +44,7 @@ Code search — первичный источник фактов; этот фа�
 | app/(auth)/|root auth flow: login / reset / update password|authService , root _layout (CLAUDE.md §2)|
 | app/(tabs)/index.tsx|Dashboard / Today|useDashboard , dashboard services/widgets, readiness|
 | app/(tabs)/programs.tsx|каталог программ|usePrograms , ProgramCard, import|
-| app/(tabs)/workouts.tsx|список/план тренировок|useWorkouts , phases/weeks|
+| app/(tabs)/workouts.tsx|список/план тренировок|useWorkouts , phases/weeks, **Sticky-карточка следующей тренировки, Segmented Control фильтрации (UX-15)**|
 | app/(tabs)/progress.tsx|Progress hub («Как я меняюсь?»)|useHistory ,  useProgress ,  useWeeklySummary ; единый экран: Hero → Stats → Insights → Activity → Strength → Weight → PR → RecentWorkouts|
 | app/progress/[id].tsx|Workout Report (детали тренировки)|historyService.getWorkoutDetail , мышцы, сводка, подходы|
 | app/(tabs)/exercises.tsx|exercise library|useExercises , filters, pagination|
