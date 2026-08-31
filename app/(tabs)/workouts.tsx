@@ -242,20 +242,21 @@ export default function WorkoutsScreen() {
       };
 
       return (
-        <FadeIn>
-          <TouchableOpacity
-            onPress={() => navigateToWorkout(item.id)}
-            onLongPress={handleLongPress}
-            delayLongPress={500}
-            activeOpacity={0.85}
-          >
+        <TouchableOpacity
+          onPress={() => navigateToWorkout(item.id)}
+          onLongPress={handleLongPress}
+          delayLongPress={500}
+          activeOpacity={0.85}
+          disabled={status === 'skipped'}
+          style={{ marginHorizontal: SPACING.lg }}
+        >
+          <FadeIn>
             <AppCard
               variant="compact"
               style={{
                 borderColor,
                 borderWidth: status === 'next' ? 1.5 : 1,
                 opacity: status === 'upcoming' ? 0.7 : status === 'skipped' ? 0.6 : 1,
-                marginHorizontal: SPACING.lg,
               }}
             >
               <View style={{ flexDirection: 'row', gap: SPACING.xs, flexWrap: 'wrap' }}>
@@ -339,9 +340,14 @@ export default function WorkoutsScreen() {
                   </Text>
                 )}
               </View>
+              {status === 'next' && (
+                <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.xs }]}>
+                  Удерживайте для пропуска
+                </Text>
+              )}
             </AppCard>
-          </TouchableOpacity>
-        </FadeIn>
+          </FadeIn>
+        </TouchableOpacity>
       );
     },
     [activeProgram, colors, navigateToWorkout],

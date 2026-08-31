@@ -236,13 +236,15 @@ const SetRow = memo(function SetRow({
               onPress={() => onToggleWarmup(startIndex + si)}
               activeOpacity={0.7}
               style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
                 paddingHorizontal: SPACING.xs,
                 paddingVertical: 4,
                 borderRadius: BORDER_RADIUS.sm,
                 backgroundColor: set.isWarmup ? colors.primary : colors.surfaceSecondary,
                 borderWidth: 1,
                 borderColor: set.isWarmup ? colors.primary : colors.border,
-                alignSelf: 'flex-start',
               }}
             >
               <Text
@@ -270,6 +272,8 @@ const SetRow = memo(function SetRow({
 interface SetsGridProps {
   exerciseIndex: number;
   sets: SetData[];
+  /** ENG-13: базовое количество подходов (до пометки разминочными) для расчёта автодобавления. */
+  targetSets: number;
   restSeconds: number;
   /** ENG-1: диапазон повторов для прогрессии. null = no target (fallback to RPE only). */
   repsRange?: string | null;
@@ -297,6 +301,7 @@ interface SetsGridProps {
 export const SetsGrid = memo(function SetsGrid({
   exerciseIndex,
   sets,
+  targetSets,
   restSeconds,
   repsRange,
   safetyContext,
@@ -643,19 +648,36 @@ export const SetsGrid = memo(function SetsGrid({
   }, []);
 
   // ENG-13: toggle warmup flag for a set
-  // If toggling ON and it's the last set, auto-add a new working set
+  // Auto-add new working sets to maintain the original number of working sets.
+  // Formula: added sets = current warmup count (after toggle).
+  // Example: target=4. Mark 1 as warmup -> +1 set (total 5: 1 warmup + 4 working).
+  // Mark 2 as warmup -> +2 sets (total 6: 2 warmup + 4 working), etc.
   const handleToggleWarmup = useCallback(
     (setIndex: number) => {
       const set = sets[setIndex];
       const newIsWarmup = !set.isWarmup;
+      
+      // Сначала обновляем флаг
       updateSetFeedback(exerciseIndex, setIndex, { isWarmup: newIsWarmup });
 
-      // Auto-add new set when marking the last set as warmup
-      if (newIsWarmup && setIndex === sets.length - 1) {
-        addSet(exerciseIndex);
+      if (newIsWarmup) {
+        // Считаем, сколько будет разминочных подходов ПОСЛЕ обновления
+        const warmupCount = sets.filter((s, idx) => idx === setIndex || s.isWarmup).length;
+        
+        // Целевое общее количество подходов = базовое (targetSets) + количество разминочных
+        const targetTotalSets = targetSets + warmupCount;
+        
+        // Сколько нужно добавить, чтобы достичь целевого количества
+        const toAdd = targetTotalSets - sets.length;
+        
+        if (toAdd > 0) {
+          for (let i = 0; i < toAdd; i++) {
+            addSet(exerciseIndex);
+          }
+        }
       }
     },
-    [sets, exerciseIndex, updateSetFeedback, addSet],
+    [sets, exerciseIndex, updateSetFeedback, addSet, targetSets],
   );
 
   return (

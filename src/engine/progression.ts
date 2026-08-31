@@ -315,6 +315,13 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     };
   }
 
+  // P1.2: Флаг необходимости рассмотреть разгрузку (>6 недель в блоке)
+  // Примечание: currentPhaseType !== 'deload' уже гарантирован, так как deload-фаза
+  // обрабатывается и возвращает результат выше (строка ~280).
+  const shouldConsiderDeload =
+    input.weeksInBlock != null &&
+    input.weeksInBlock > 6;
+
   // 1. Полный отказ
   if (evalRpe === 10) {
     return decreaseResult('MAX_EFFORT', 'Отказ — снижаем вес');
@@ -360,8 +367,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // 2. Все повторы по верху диапазона + низкий RPE → явно готовы к прогрессу
   if (allAtMax && evalRpe != null && evalRpe <= 7) {
-    // P1.2: Авто-deload при >6 недель в блоке
-    if (input.weeksInBlock != null && input.weeksInBlock > 6) {
+    if (shouldConsiderDeload) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
     }
     return increaseResult('READY_TO_PROGRESS', 'Все повторы, низкий RPE');
@@ -369,6 +375,9 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // 3. Все повторы по верху + нет RPE данных — всё равно прогресс (reps-driven)
   if (allAtMax && evalRpe == null) {
+    if (shouldConsiderDeload) {
+      return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+    }
     return increaseResult('ALL_MAX_REPS', 'Все повторы по верху диапазона');
   }
 
@@ -379,6 +388,9 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // 5a. Все повторы в диапазоне (>= min) → consolidate
   if (allAtMin) {
+    if (shouldConsiderDeload) {
+      return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+    }
     // P0: Плато — если 3+ сессии подряд hold, предлагаем deload
     if (input.consecutiveHolds != null && input.consecutiveHolds >= 3) {
       const plateauWeight = Math.max(0, round2(baseWeight * 0.9));
@@ -398,6 +410,9 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // 5b. Без таргета: low RPE = consolidate (не знаем, попали ли в репы)
   if (targetRange == null && evalRpe != null && evalRpe <= 8) {
+    if (shouldConsiderDeload) {
+      return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+    }
     return holdResult('CONSOLIDATE', 'Уверенное выполнение — закрепляем');
   }
 
@@ -408,6 +423,9 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
 
   // 7. Часть сетов ниже таргета → mixed signal, hold
   if (anyBelowMin) {
+    if (shouldConsiderDeload) {
+      return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+    }
     return holdResult('MISSED_REPS', 'Часть повторов меньше цели — тот же вес');
   }
 

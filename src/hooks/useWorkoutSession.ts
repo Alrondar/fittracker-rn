@@ -348,8 +348,15 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
         const sets = [...exercise.sets];
+        const lastSetWithHistory = [...sets].reverse().find(s => s.previousWeight != null);
         while (sets.length < newSetsCount) {
-          sets.push({ weight: '', reps: '' });
+          sets.push({
+            weight: '',
+            reps: '',
+            previousWeight: lastSetWithHistory?.previousWeight ?? null,
+            previousReps: lastSetWithHistory?.previousReps ?? null,
+            previousRpe: lastSetWithHistory?.previousRpe ?? null,
+          });
         }
         exercise.sets = sets.slice(0, newSetsCount);
         exercise.target_sets = newSetsCount;
@@ -367,7 +374,15 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       setExercises((prev) => {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
-        exercise.sets = [...exercise.sets, { weight: '', reps: '' }];
+        const lastSetWithHistory = [...exercise.sets].reverse().find(s => s.previousWeight != null);
+        const newSet: SetData = {
+          weight: '',
+          reps: '',
+          previousWeight: lastSetWithHistory?.previousWeight ?? null,
+          previousReps: lastSetWithHistory?.previousReps ?? null,
+          previousRpe: lastSetWithHistory?.previousRpe ?? null,
+        };
+        exercise.sets = [...exercise.sets, newSet];
         updated[exerciseIndex] = exercise;
         return updated;
       });

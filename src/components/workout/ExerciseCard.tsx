@@ -91,6 +91,7 @@ export const ExerciseCard = memo(function ExerciseCard({
     () => (hasSets ? (exercise as ExerciseData).sets : []),
     [hasSets, exercise],
   );
+  const targetSets = hasSets ? (exercise as ExerciseData).target_sets : sets.length;
   const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
   const intensity = hasSets ? (exercise as ExerciseData).intensity : 'medium';
   const repsRange = (exercise as RepsRangeHolder).reps_range;
@@ -192,6 +193,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         <SetsGrid
           exerciseIndex={exerciseIndex}
           sets={sets}
+          targetSets={targetSets}
           restSeconds={restSeconds}
           repsRange={repsRange}
           safetyContext={safetyContext}
