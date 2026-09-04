@@ -460,4 +460,5 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 `src/components/progress/StrengthTrendChart.tsx` — UX-11: тренд e1RM с интерактивным селектором упражнений и explainability
 
 **Bugfixes & Maintenance**
-* ENG-16: Temporary replacement (UX-5) now updates `workout_exercises.exercise_id` in DB to prevent progression pollution. Logs are correctly attributed to the actually performed exercise.
+* ENG-16: Temporary replacement (UX-5) now updates BOTH `workout_exercises.exercise_id` and `pain_events.exercise_id` in DB. This ensures workout logs AND safety/pain context remain correctly attributed to the actually performed exercise, preventing lost injury warnings and false progression recommendations.
+* **ENG-17 (Фича 2)**: RPE-based Autoregulation. `program_exercises` now supports `target_rpe` (1-10). `progression.ts` checks if `actualRpe <= targetRpe - 2` to suggest progression even if max reps aren't reached. `ExerciseSettingsSheet` allows setting this target.

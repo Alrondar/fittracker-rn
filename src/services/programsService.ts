@@ -56,6 +56,8 @@ export interface ProgramExercise {
   intensity: 'low' | 'medium' | 'high';
   position: number;
   primary_muscles?: string[];
+  /** Фича 2: Целевой RPE для упражнения (1-10). */
+  target_rpe?: number | null;
   isNew?: boolean;
 }
 
@@ -214,7 +216,7 @@ export function mapPhase(phase: ProgramPhaseRow): ProgramPhase {
     position: phase.position,
     created_at: phase.created_at ?? undefined,
     days: (phase.program_days || [])
-      .sort((a, b) => (a.week_number - b.week_number) || (a.day_number - b.day_number))
+      .sort((a, b) => a.week_number - b.week_number || a.day_number - b.day_number)
       .map(mapDay),
   };
 }
@@ -256,7 +258,7 @@ export async function getMyPrograms(userId: string, filters?: ProgramFilters): P
 
 export async function createProgram(
   program: Omit<Program, 'id' | 'created_at' | 'phases' | 'days'>,
-  userId: string,
+  userId: string
 ): Promise<Program> {
   // id генерируется на стороне БД (DEFAULT gen_random_uuid()::text).
   const { data, error } = await supabase
@@ -268,7 +270,10 @@ export async function createProgram(
   return data;
 }
 
-export async function updateProgram(programId: string, updates: Partial<Program>): Promise<Program> {
+export async function updateProgram(
+  programId: string,
+  updates: Partial<Program>
+): Promise<Program> {
   const { phases, days, ...rest } = updates;
   const { data, error } = await supabase
     .from('programs')
@@ -329,7 +334,7 @@ export async function getProgramWithPhases(programId: string): Promise<Program |
   const { data: program, error } = await supabase
     .from('programs')
     .select(
-      `*, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )`,
+      `*, program_phases ( *, program_days ( *, program_exercises (*, exercises ( primary_muscles ) ) ) )`
     )
     .eq('id', programId)
     .single();
@@ -346,7 +351,7 @@ export async function getProgramWithPhases(programId: string): Promise<Program |
     .sort((a, b) => a.phase_number - b.phase_number)
     .map(mapPhase);
   const flatDays = phases.flatMap((p) =>
-    (p.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1),
+    (p.days || []).filter((d: ProgramDay) => (d.week_number ?? 1) === 1)
   );
 
   return { ...mapProgramRow(programRow), phases, days: flatDays };
@@ -401,7 +406,7 @@ export async function getActiveUserProgram(): Promise<UserProgram | null> {
 export async function updateProgramProgress(
   userProgramId: string,
   week: number,
-  day: number,
+  day: number
 ): Promise<void> {
   const { error } = await supabase
     .from('user_programs')
@@ -420,7 +425,7 @@ export async function completeProgram(userProgramId: string): Promise<void> {
 
 export async function advanceProgramProgress(
   userId: string,
-  programId: string,
+  programId: string
 ): Promise<{ phase: number; week: number; day: number; isCompleted: boolean }> {
   const { data: current, error: fetchError } = await supabase
     .from('user_programs')
@@ -525,14 +530,11 @@ export async function advanceProgramProgress(
  * Оборачивает RPC copy_program_for_user + select для возврата полной программы.
  * Используется в каталоге программ для ready-programs (`created_by IS NULL`).
  */
-export async function copyProgramForUser(
-  programId: string,
-  userId: string,
-): Promise<Program> {
-  const { data: newProgramId, error: rpcError } = await supabase.rpc(
-    'copy_program_for_user',
-    { p_program_id: programId, p_user_id: userId },
-  );
+export async function copyProgramForUser(programId: string, userId: string): Promise<Program> {
+  const { data: newProgramId, error: rpcError } = await supabase.rpc('copy_program_for_user', {
+    p_program_id: programId,
+    p_user_id: userId,
+  });
   if (rpcError) throw rpcError;
 
   // RPC возвращает id (string | string[] в зависимости от конфигурации).
@@ -564,7 +566,7 @@ export async function copyProgramForUser(
 export async function activateProgram(
   programId: string,
   userId: string,
-  reset: boolean = false,
+  reset: boolean = false
 ): Promise<void> {
   // 1. Деактивируем все программы пользователя.
   const { error: deactivateError } = await supabase
@@ -719,7 +721,7 @@ export async function replaceExerciseInProgram(
   workoutId: string,
   workoutExerciseId: string,
   newExerciseId: string,
-  newExerciseName: string,
+  newExerciseName: string
 ): Promise<void> {
   // 1. Workout context
   const { data: workout, error: workoutError } = await supabase
@@ -895,7 +897,7 @@ export async function getActiveProgram(userId: string) {
   const { data, error } = await supabase
     .from('user_programs')
     .select(
-      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) ) )`,
+      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) ) )`
     )
     .eq('user_id', userId)
     .eq('is_active', true)

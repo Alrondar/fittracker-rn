@@ -36,6 +36,8 @@ export interface ProgressionReason {
     targetRange: { min: number; max: number } | null;
     /** P1.2: Тип текущей фазы программы для объяснения deload. */
     currentPhaseType?: 'strength' | 'hypertrophy' | 'endurance' | 'deload';
+    /** Фича 2: Целевой RPE для упражнения. */
+    targetRpe?: number | null;
   };
 }
 
@@ -80,6 +82,8 @@ export interface ProgressionInput {
   stressLevel?: number | null;
   /** P1: Фаза менструального цикла для корректировки рекомендаций. */
   cyclePhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | null;
+  /** Фича 2: Целевой RPE для упражнения (1-10). Если задан, прогрессия учитывает не только повторы, но и субъективную сложность. */
+  targetRpe?: number | null;
 }
 
 // ============================================================================
@@ -93,7 +97,7 @@ export interface ProgressionInput {
  *   null, "", "abc"                   → null
  */
 export function parseRepsRange(
-  repsRange: string | null | undefined,
+  repsRange: string | null | undefined
 ): { min: number; max: number } | null {
   if (!repsRange || repsRange.trim() === '') return null;
   // Захватывает одно или два числа через необязательный разделитель (dash/em-dash)
@@ -134,7 +138,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
       s.previousWeight != null &&
       s.previousReps != null &&
       !Number.isNaN(s.previousWeight) &&
-      !Number.isNaN(s.previousReps),
+      !Number.isNaN(s.previousReps)
   );
 
   const targetRange = parseRepsRange(repsRange);
@@ -163,42 +167,40 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   // Если targetSetIndex передан и имеет previousWeight — используем его.
   // Иначе fallback на последний completed сет с историей (старая логика).
   const targetSet = targetSetIndex != null ? sets[targetSetIndex] : null;
-  const baseWeight = (targetSet?.previousWeight ?? null) as number | null
-    ?? (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousWeight as number);
-  
+  const baseWeight =
+    ((targetSet?.previousWeight ?? null) as number | null) ??
+    (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousWeight as number);
+
   // Данные "прошлый раз" для хинта
-  const hintReps = (targetSet?.previousReps ?? workingSetsWithHistory[workingSetsWithHistory.length - 1].previousReps) as number;
-  const hintRpe = (targetSet?.previousRpe ?? workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe) ?? null;
+  const hintReps = (targetSet?.previousReps ??
+    workingSetsWithHistory[workingSetsWithHistory.length - 1].previousReps) as number;
+  const hintRpe =
+    targetSet?.previousRpe ??
+    workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ??
+    null;
 
   // 3. Текущие завершённые РАБОЧИЕ сеты — для оценки усталости
   // (weight !== '' && reps !== '' = завершён; !isWarmup = рабочий)
   // ENG-13: если reps пустое, но есть estimatedReps — тоже учитываем (оценка пользователя)
   const currentCompleted = sets.filter(
-    (s) =>
-      !s.isWarmup &&
-      s.weight !== '' &&
-      (s.reps !== '' || s.estimatedReps != null),
+    (s) => !s.isWarmup && s.weight !== '' && (s.reps !== '' || s.estimatedReps != null)
   );
 
   // 4. Оценка: если есть currentCompleted, используем их; иначе fallback на прошлые данные
   // ENG-13: evalReps учитывает estimatedReps если reps пустое
-  const evalReps = currentCompleted.length > 0
-    ? currentCompleted.map((s) =>
-        s.reps !== '' ? parseInt(s.reps, 10) : (s.estimatedReps ?? 0),
-      )
-    : workingSetsWithHistory.map((s) => s.previousReps as number);
-  const evalRpe = currentCompleted.length > 0
-    ? currentCompleted[currentCompleted.length - 1].rpe ?? null
-    : (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ?? null);
-  
-  const allAtMax =
-    targetRange != null && evalReps.every((r) => r >= targetRange.max);
-  const allAtMin =
-    targetRange != null && evalReps.every((r) => r >= targetRange.min);
-  const anyBelowMin =
-    targetRange != null && evalReps.some((r) => r < targetRange.min);
-  const allBelowMin =
-    targetRange != null && evalReps.every((r) => r < targetRange.min);
+  const evalReps =
+    currentCompleted.length > 0
+      ? currentCompleted.map((s) => (s.reps !== '' ? parseInt(s.reps, 10) : (s.estimatedReps ?? 0)))
+      : workingSetsWithHistory.map((s) => s.previousReps as number);
+  const evalRpe =
+    currentCompleted.length > 0
+      ? (currentCompleted[currentCompleted.length - 1].rpe ?? null)
+      : (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ?? null);
+
+  const allAtMax = targetRange != null && evalReps.every((r) => r >= targetRange.max);
+  const allAtMin = targetRange != null && evalReps.every((r) => r >= targetRange.min);
+  const anyBelowMin = targetRange != null && evalReps.some((r) => r < targetRange.min);
+  const allBelowMin = targetRange != null && evalReps.every((r) => r < targetRange.min);
 
   const factors: ProgressionReason['factors'] = {
     lastWeight: baseWeight,
@@ -207,6 +209,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     completedSets: currentCompleted.length || workingSetsWithHistory.length,
     targetRange,
     currentPhaseType: input.currentPhaseType,
+    targetRpe: input.targetRpe,
   };
 
   // P1.2: Корректировка шага на основе фазы программы
@@ -253,8 +256,8 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
       suggestedReps: targetRange ? targetRange.min : null,
       reason: {
         code: isPhaseDeload ? 'DELOAD_PHASE' : 'DELOAD_WEEK',
-        ruText: isPhaseDeload 
-          ? 'Фаза разгрузки — снижаем нагрузку на 10%' 
+        ruText: isPhaseDeload
+          ? 'Фаза разгрузки — снижаем нагрузку на 10%'
           : 'Неделя разгрузки — снижаем нагрузку на 10%',
         factors,
       },
@@ -318,9 +321,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   // P1.2: Флаг необходимости рассмотреть разгрузку (>6 недель в блоке)
   // Примечание: currentPhaseType !== 'deload' уже гарантирован, так как deload-фаза
   // обрабатывается и возвращает результат выше (строка ~280).
-  const shouldConsiderDeload =
-    input.weeksInBlock != null &&
-    input.weeksInBlock > 6;
+  const shouldConsiderDeload = input.weeksInBlock != null && input.weeksInBlock > 6;
 
   // 1. Полный отказ
   if (evalRpe === 10) {
@@ -334,26 +335,37 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   // с историей. ratio < 0.95 → SESSION_LIGHT_DAY (cap increase to hold, base = previousWeight × avgRatio).
   // ratio < 0.90 → SESSION_FATIGUE (decrease to previousWeight × avgRatio).
   const currentWorkingSets = sets.filter(
-    (s) => !s.isWarmup && s.weight !== '' && s.reps !== '' && s.previousWeight != null && s.previousWeight > 0
+    (s) =>
+      !s.isWarmup &&
+      s.weight !== '' &&
+      s.reps !== '' &&
+      s.previousWeight != null &&
+      s.previousWeight > 0
   );
   let avgRatio: number | null = null;
   if (currentWorkingSets.length > 0) {
-    const ratios = currentWorkingSets.map((s) => parseFloat(s.weight) / (s.previousWeight as number));
+    const ratios = currentWorkingSets.map(
+      (s) => parseFloat(s.weight) / (s.previousWeight as number)
+    );
     avgRatio = ratios.reduce((a, b) => a + b, 0) / ratios.length;
   }
 
   // SESSION_FATIGUE: weights significantly below last time — decrease to current level
-  if (avgRatio != null && avgRatio < 0.90) {
+  if (avgRatio != null && avgRatio < 0.9) {
     const adjustedWeight = Math.max(0, round2(baseWeight * avgRatio));
     return {
       action: 'decrease',
       suggestedWeight: adjustedWeight > 0 ? adjustedWeight : null,
       suggestedReps: targetRange ? targetRange.min : null,
-      reason: { code: 'SESSION_FATIGUE', ruText: 'Веса заметно ниже прошлого раза — снижаем до текущего уровня', factors },
+      reason: {
+        code: 'SESSION_FATIGUE',
+        ruText: 'Веса заметно ниже прошлого раза — снижаем до текущего уровня',
+        factors,
+      },
     };
   }
   // SESSION_LIGHT_DAY: weights slightly below last time — cap increase to hold, use lower weight
-  if (avgRatio != null && avgRatio >= 0.90 && avgRatio < 1.0) {
+  if (avgRatio != null && avgRatio >= 0.9 && avgRatio < 1.0) {
     // Don't increase — if base chain would say increase, use hold at adjusted weight
     // But this rule is checked BEFORE READY_TO_PROGRESS, so if we're here, it's always a SESSION_LIGHT_DAY hold
     const adjustedWeight = round2(baseWeight * avgRatio);
@@ -361,11 +373,30 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
       action: 'hold',
       suggestedWeight: adjustedWeight,
       suggestedReps: targetRange ? targetRange.max : null,
-      reason: { code: 'SESSION_LIGHT_DAY', ruText: 'Веса ниже прошлого раза — закрепляем, без повышения', factors },
+      reason: {
+        code: 'SESSION_LIGHT_DAY',
+        ruText: 'Веса ниже прошлого раза — закрепляем, без повышения',
+        factors,
+      },
     };
   }
 
-  // 2. Все повторы по верху диапазона + низкий RPE → явно готовы к прогрессу
+  // 2. Фича 2: RPE-based Autoregulation
+  // Если задан targetRpe, и фактический RPE значительно ниже целевого (≥ 2 пунктов разницы),
+  // и повторы в диапазоне (или выше минимума) → сигнал к прогрессии, даже если верхняя граница не достигнута.
+  if (
+    input.targetRpe != null &&
+    evalRpe != null &&
+    evalRpe <= input.targetRpe - 2 &&
+    allAtMin // повторы хотя бы на уровне минимума таргета
+  ) {
+    if (shouldConsiderDeload) {
+      return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+    }
+    return increaseResult('RPE_UNDER_TARGET', `RPE ${evalRpe} ниже целевого ${input.targetRpe}`);
+  }
+
+  // 3. Все повторы по верху диапазона + низкий RPE → явно готовы к прогрессу
   if (allAtMax && evalRpe != null && evalRpe <= 7) {
     if (shouldConsiderDeload) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -373,7 +404,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     return increaseResult('READY_TO_PROGRESS', 'Все повторы, низкий RPE');
   }
 
-  // 3. Все повторы по верху + нет RPE данных — всё равно прогресс (reps-driven)
+  // 4. Все повторы по верху + нет RPE данных — всё равно прогресс (reps-driven)
   if (allAtMax && evalRpe == null) {
     if (shouldConsiderDeload) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -381,12 +412,12 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     return increaseResult('ALL_MAX_REPS', 'Все повторы по верху диапазона');
   }
 
-  // 4. Высокий RPE — закрепляем результат
+  // 5. Высокий RPE — закрепляем результат
   if (evalRpe != null && evalRpe >= 9) {
     return holdResult('HIGH_RPE_HOLD', 'Высокий RPE — закрепляем вес');
   }
 
-  // 5a. Все повторы в диапазоне (>= min) → consolidate
+  // 6a. Все повторы в диапазоне (>= min) → consolidate
   if (allAtMin) {
     if (shouldConsiderDeload) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -408,7 +439,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     return holdResult('CONSOLIDATE', 'В диапазоне — закрепляем');
   }
 
-  // 5b. Без таргета: low RPE = consolidate (не знаем, попали ли в репы)
+  // 6b. Без таргета: low RPE = consolidate (не знаем, попали ли в репы)
   if (targetRange == null && evalRpe != null && evalRpe <= 8) {
     if (shouldConsiderDeload) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -416,12 +447,12 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     return holdResult('CONSOLIDATE', 'Уверенное выполнение — закрепляем');
   }
 
-  // 6. Все повторы ниже таргета → overreached, снижаем
+  // 7. Все повторы ниже таргета → overreached, снижаем
   if (allBelowMin) {
     return decreaseResult('OVERREACHED', 'Не в диапазоне — снижаем вес');
   }
 
-  // 7. Часть сетов ниже таргета → mixed signal, hold
+  // 8. Часть сетов ниже таргета → mixed signal, hold
   if (anyBelowMin) {
     if (shouldConsiderDeload) {
       return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
@@ -429,7 +460,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     return holdResult('MISSED_REPS', 'Часть повторов меньше цели — тот же вес');
   }
 
-  // 8. Fallback: без таргета и без RPE — данных мало
+  // 9. Fallback: без таргета и без RPE — данных мало
   return holdResult('INCONCLUSIVE', 'Используй текущий вес');
 }
 
@@ -505,6 +536,25 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
         value: `${lastRpe} — полный отказ (0 в запасе)`,
         emphasis: 'warning',
       });
+      break;
+
+    case 'RPE_UNDER_TARGET':
+      if (reason.factors.targetRpe != null && lastRpe != null) {
+        items.push({
+          kind: 'signal',
+          label: 'RPE',
+          value: `${lastRpe} значительно ниже целевого ${reason.factors.targetRpe} (≥2 пункта разницы)`,
+          emphasis: 'success',
+        });
+      }
+      if (targetRange) {
+        items.push({
+          kind: 'signal',
+          label: 'Диапазон',
+          value: `повторы в диапазоне (${targetRange.min}–${targetRange.max})`,
+          emphasis: 'success',
+        });
+      }
       break;
 
     case 'READY_TO_PROGRESS':
@@ -597,7 +647,10 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       items.push({
         kind: 'signal',
         label: 'Периодизация',
-        value: reason.factors.currentPhaseType === 'deload' ? 'фаза разгрузки программы' : 'запланированная неделя разгрузки',
+        value:
+          reason.factors.currentPhaseType === 'deload'
+            ? 'фаза разгрузки программы'
+            : 'запланированная неделя разгрузки',
         emphasis: 'warning',
       });
       break;
@@ -667,9 +720,11 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
   }
   // 2.5. ENG-4: SAFETY OVERRIDE — если recommendation подавлена или downgraded
   // из-за pain/injury, добавляем сигнал с warning emphasis.
-  const safetyOverride = (result as ProgressionResult & {
-    safetyOverride?: SafetyOverride | null;
-  }).safetyOverride;
+  const safetyOverride = (
+    result as ProgressionResult & {
+      safetyOverride?: SafetyOverride | null;
+    }
+  ).safetyOverride;
   if (safetyOverride) {
     let signalText: string;
     switch (safetyOverride.code) {
@@ -697,9 +752,11 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
   }
 
   // 2.6. ENG-3: READINESS OVERRIDE — low readiness + base increase → hold
-  const readinessOverride = (result as ProgressionResult & {
-    readinessOverride?: ReadinessOverride | null;
-  }).readinessOverride;
+  const readinessOverride = (
+    result as ProgressionResult & {
+      readinessOverride?: ReadinessOverride | null;
+    }
+  ).readinessOverride;
   if (readinessOverride) {
     items.push({
       kind: 'signal',
@@ -726,7 +783,10 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
       emphasis: 'success',
     });
   } else if (action === 'decrease' && suggestedWeight != null) {
-    const isDeload = reason.code === 'DELOAD_WEEK' || reason.code === 'DELOAD_PHASE' || reason.code === 'PLATEAU_DELOAD';
+    const isDeload =
+      reason.code === 'DELOAD_WEEK' ||
+      reason.code === 'DELOAD_PHASE' ||
+      reason.code === 'PLATEAU_DELOAD';
     items.push({
       kind: 'conclusion',
       label: isDeload ? 'Разгрузка' : 'Снизить до',
@@ -787,7 +847,7 @@ export interface SafetyOverride {
  */
 export function applySafetyPrecedence(
   base: ProgressionResult,
-  safety: SafetyContext | null,
+  safety: SafetyContext | null
 ): ProgressionResult & { safetyOverride?: SafetyOverride | null } {
   if (!safety) return { ...base, safetyOverride: null };
 
@@ -825,9 +885,7 @@ export function applySafetyPrecedence(
       return {
         action: 'hold',
         suggestedWeight: holdWeight,
-        suggestedReps: base.reason.factors.targetRange
-          ? base.reason.factors.targetRange.max
-          : null,
+        suggestedReps: base.reason.factors.targetRange ? base.reason.factors.targetRange.max : null,
         reason: base.reason,
         safetyOverride: {
           code: 'PAIN_RECORDED',
@@ -841,9 +899,7 @@ export function applySafetyPrecedence(
       return {
         action: 'hold',
         suggestedWeight: holdWeight,
-        suggestedReps: base.reason.factors.targetRange
-          ? base.reason.factors.targetRange.max
-          : null,
+        suggestedReps: base.reason.factors.targetRange ? base.reason.factors.targetRange.max : null,
         reason: base.reason,
         safetyOverride: {
           code: 'INJURY_CAUTION',
@@ -889,7 +945,7 @@ export interface ReadinessOverride {
  */
 export function applyReadinessContext(
   input: ProgressionResult & { safetyOverride?: SafetyOverride | null },
-  readiness: ReadinessContext | null,
+  readiness: ReadinessContext | null
 ): ProgressionResult & {
   safetyOverride?: SafetyOverride | null;
   readinessOverride?: ReadinessOverride | null;
@@ -909,9 +965,7 @@ export function applyReadinessContext(
       ...input,
       action: 'hold',
       suggestedWeight: holdWeight,
-      suggestedReps: input.reason.factors.targetRange
-        ? input.reason.factors.targetRange.max
-        : null,
+      suggestedReps: input.reason.factors.targetRange ? input.reason.factors.targetRange.max : null,
       readinessOverride: {
         code: 'LOW_READINESS',
         ruText: `Низкая готовность (${readiness.readiness} из 5) — фиксируем вес`,

@@ -34,11 +34,11 @@ export const painService = {
    * PR6: Получить все pain events для текущей тренировки.
    * Фильтр по workout_id; user_id — через RLS.
    */
-async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
-  const { data, error } = await supabase
-    .from('pain_events')
-    .select(
-      'id, exercise_id, pain_level, pain_type, body_part, stop_exercise, notes, occurred_at',
+  async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
+    const { data, error } = await supabase
+      .from('pain_events')
+      .select(
+        'id, exercise_id, pain_level, pain_type, body_part, stop_exercise, notes, occurred_at'
       )
       .eq('workout_id', workoutId)
       .order('occurred_at', { ascending: false });
@@ -68,7 +68,7 @@ async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
       {
         onConflict: 'user_id,workout_id,exercise_id',
         ignoreDuplicates: false,
-      },
+      }
     );
     if (error) throw error;
   },
@@ -77,11 +77,7 @@ async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
    * PR6: Удалить pain event для упражнения в тренировке («Боль прошла»).
    * Фильтр по трём полям — защита от случайного удаления чужих записей.
    */
-  async deletePainEvent(
-    userId: string,
-    workoutId: string,
-    exerciseId: string,
-  ): Promise<void> {
+  async deletePainEvent(userId: string, workoutId: string, exerciseId: string): Promise<void> {
     const { error } = await supabase
       .from('pain_events')
       .delete()
@@ -100,7 +96,7 @@ async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
     userId: string,
     bodyPart: string,
     severity: 'low' | 'medium' | 'high',
-    notes: string | null,
+    notes: string | null
   ): Promise<void> {
     const { error } = await supabase.from('user_injuries').insert({
       user_id: userId,
@@ -112,7 +108,29 @@ async getPainEventsForWorkout(workoutId: string): Promise<PainEvent[]> {
     });
     if (error) throw error;
   },
-    /**
+  /**
+   * Обновляет exercise_id в pain_events при временной замене упражнения.
+   * Критично для сохранения контекста безопасности (PRODUCT.md §8):
+   * предотвращает исчезновение индикатора боли и отключение safety-downgrade
+   * в progression engine после замены упражнения.
+   */
+  async updatePainEventExerciseId(
+    userId: string,
+    workoutId: string,
+    oldExerciseId: string,
+    newExerciseId: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('pain_events')
+      .update({ exercise_id: newExerciseId })
+      .eq('user_id', userId)
+      .eq('workout_id', workoutId)
+      .eq('exercise_id', oldExerciseId);
+
+    if (error) throw error;
+  },
+
+  /**
    * AUDIT-6: количество pain events за сегодня (для чипа «⚠ Боль сегодня»
    * в StatusCard). Информационный сигнал, не блокирует тренировку.
    */

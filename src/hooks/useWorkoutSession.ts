@@ -395,8 +395,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // ENG-16: Обновляем exercise_id в БД, чтобы логи сохранились под новым упражнением.
-      // Это предотвращает загрязнение истории оригинального упражнения.
+      // И обновляем pain_events, чтобы контекст безопасности не потерялся.
       try {
+        if (userId) {
+          await painService.updatePainEventExerciseId(
+            userId,
+            workoutId,
+            exercise.id, // старый exercise_id
+            alternative.id // новый exercise_id
+          );
+        }
         await updateWorkoutExerciseId(exercise.workout_exercise_id, alternative.id);
       } catch (error) {
         console.error('[useWorkoutSession] replaceExercise DB update:', error);
