@@ -1,0 +1,37 @@
+---
+description: Продуктовые и UX-инварианты FitTracker
+globs: ["*.tsx", "*.ts"]
+alwaysApply: true
+---
+
+# Продуктовые и UX-инварианты
+
+**Source of truth:** `PRODUCT.md` (§3.1–3.5), `CLAUDE.md` (§6, §7), `ROADMAP.md` (§2)
+
+## Core Principles (PRODUCT.md §3)
+- **Tracker first**: Во время тренировки главный экран обслуживает логирование, а не аналитику.
+- **Progressive disclosure**: Дополнительные данные открываются по запросу.
+- **Safety before AI**: `injury_exercise_warnings` — hard constraint. AI не может его обойти (PRODUCT.md §8, §14).
+- **User control**: Существенные изменения (вес, программа) требуют подтверждения пользователя.
+
+## Уровни информации (PRODUCT.md §3.2)
+- **L1**: Всегда видно (минимум для текущего действия: вес, повторы, RPE, rest timer).
+- **L2**: По запросу (bottom sheet / accordion: история, альтернативы, техника). Тяжёлый L2 контент **не монтируется** до открытия.
+- **L3**: Отдельный экран (Workout Report, Progress hub).
+
+## Design System & Tokens (CLAUDE.md §7, PRODUCT.md §3.1)
+- Использовать **только** semantic tokens: `primary`, `textPrimary`, `textSecondary`, `textTertiary`, `error`, `warning`, `success`, `LEVEL_COLORS`, `getMuscleColor`, `getPhaseColor`.
+- **Запрещено**: hardcoded colors (`#...`, `rgb(...)`) вне `src/constants/`.
+- Spacing и radius — только канонические константы из `src/constants/theme.ts`.
+- Пример канона: `const { colors } = useTheme(); style={{ backgroundColor: colors.primary }}`.
+
+## Visual Anti-patterns (PRODUCT.md §3.5)
+- Аналитика/dashboard на экране тренировки.
+- Несколько несинхронизированных цветовых акцентов в одном блоке.
+- Swipe-only действия без tap-альтернативы и подсказки.
+- Modal там, где подходит bottom sheet (использовать `SheetShell` из `src/components/ui/`).
+- Новая UI-сущность без причины (стабильность важнее новизны).
+
+## RPE & Replacement (PRODUCT.md §5, §4.4)
+- RPE — одна tappable шкала 1–10. Не возвращаться к нескольким UX-шкалам.
+- «Заменить только сегодня» и «заменить в программе» — визуально и семантически разные действия с разным подтверждением.

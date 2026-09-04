@@ -1,0 +1,44 @@
+---
+description: Рабочий процесс агента и quality gates
+globs: ["*.ts", "*.tsx"]
+alwaysApply: true
+---
+
+# Рабочий процесс и Quality Gates
+
+**Source of truth:** `CLAUDE.md` (§10, §14), `AGENTS.md`
+
+## Pre-flight Checklist (CLAUDE.md §10)
+Перед **любым** изменением:
+1. Работать с актуальным `main`.
+2. Прочитать изменяемый файл и найти потребителей code search'ом (MCP) — первичный источник.
+3. Проверить `INVENTORY.md` (§1, §11) — роль экрана, blast-radius, известные грабли.
+4. Проверить текущий статус задачи в `STATUS.md`.
+5. Проверить продуктовый intent в `PRODUCT.md` (§15: Product test).
+6. Для RPC: проверить migration + RLS + generated types (`types/database.types.ts`).
+7. Для Program Editor: проверить sync semantics (только будущие/не начатые тренировки).
+8. Для Workout: оценить mount/render/performance impact.
+
+## Agent Workflow: Spec → Code → Review (CLAUDE.md §14)
+
+### UI/UX задача
+1. **Spec без кода**: user goal, уровни информации L1/L2, состояния (loading/error/empty/data), варианты (minimal / balanced).
+2. **Подтверждение spec** пользователем (или явное «делай»).
+3. **Реализация**: существующие компоненты/токены, lazy mount, минимальный diff.
+4. **Review**: PRODUCT.md §3.1–3.5, performance gate, обновление STATUS.md / INVENTORY.md.
+
+### Кодовая задача
+1. Читаем файл, ищем потребителей через code search (MCP). Без MCP — карта зависимостей в INVENTORY.md; предположения обязаны быть явно помечены.
+2. План impact и риски: re-render, mount cost, запросы, sync/safety semantics.
+3. Минимальный diff; файл >450 строк — рассмотреть split.
+4. Review: инварианты §2, антипаттерны §9, performance gate §8.
+
+## Обязательные проверки перед «готово» (CLAUDE.md §14)
+- `tsc --noEmit` проходит.
+- `eslint` проходит; новые нарушения недопустимы.
+- loading / error / empty / null states обработаны.
+- Существующий функционал не сломан.
+- `STATUS.md` / `INVENTORY.md` обновлены, если изменились статус / роль / blast-radius; drift документа исправлен в том же изменении.
+
+## Conflict Resolution (CLAUDE.md §0)
+При конфликте документа и кода побеждает **код**; документ исправляется в том же изменении.

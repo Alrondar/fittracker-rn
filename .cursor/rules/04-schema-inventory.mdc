@@ -1,0 +1,44 @@
+---
+description: Работа со схемой, миграциями, RLS и blast-radius
+globs: ["src/services/**/*.ts", "src/engine/**/*.ts", "supabase/migrations/**/*.sql"]
+alwaysApply: false
+---
+
+# Schema, Migrations & Blast-radius
+
+**Source of truth:** `CLAUDE.md` (§3, §4, §5), `INVENTORY.md` (§0, §10, §11)
+
+## Effective Date Rule (CLAUDE.md §4, INVENTORY.md §12)
+- **НИКОГДА** не использовать `workouts.created_at` как дату тренировки в History / Progress / Calendar / Streak / PR / Dashboard.
+- При upfront-создании программы все записи получают один `created_at` в момент активации.
+- **Эффективная дата тренировки**: `finished_at ?? started_at ?? created_at`.
+- Использовать хелпер `effectiveDate()` или аналогичные inline-вычисления во всех сервисах.
+
+## RLS & Security (CLAUDE.md §3)
+- Новая таблица требует RLS.
+- RLS bypass → `SECURITY DEFINER` + явная проверка `auth.uid()`.
+- RLS-respecting → `SECURITY INVOKER` + `SET search_path TO 'public'`.
+- Idempotency: `IF EXISTS` / `ON CONFLICT`.
+- Transactional operations — внутри одного RPC, не через client `Promise.all`.
+
+## Known Schema Constraints (CLAUDE.md §4)
+- `exercises` не имеет `description`.
+- `profiles` не имеет `email`.
+- `program_days.id` / `program_exercises.id` — uuid.
+- `programs.id` / `program_phases.id` — text.
+- `workout_logs.rpe` — smallint 1–10; `rir` — 0–5.
+- `workout_logs.is_warmup` — boolean (фильтровать `is_warmup=false` в аналитике, см. INVENTORY.md §12).
+
+## Blast-radius Rules (INVENTORY.md §11)
+Перед изменением ключевых модулей проверить потребителей:
+- `useWorkoutSession.ts` → `workout/[id].tsx`, `ExerciseCard`, `SetsGrid`, `SetFeedbackControl`, `WorkoutTimer`.
+- `useProgramEditor.ts` → `program/[id].tsx`, `useProgramPhases`, `PhaseCard`, `DayCard`, все program sheets, `programsService`.
+- `programsService.ts` → `usePrograms`, programs screen, Program Detail/Editor, workouts, Dashboard, sync/delete/activation flows.
+- `historyService.ts` → `useHistory`, history list, history detail.
+- `types/workout.ts` → все workout компоненты и `useWorkoutSession`.
+
+## Code Search Patterns (INVENTORY.md §0)
+- Потребители: `from '.*<name>'` или `import.*<name>` в `src/` и `app/`.
+- Нарушения Supabase boundary: `supabase.from(` и `supabase.auth.` вне `src/services/`.
+- RPC вызовы: `rpc('` в `src/services/`.
+- Hardcoded colors: `#[0-9a-fA-F]{3,8}`, `rgba?(` в `src/` вне `src/constants/`.

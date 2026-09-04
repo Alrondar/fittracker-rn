@@ -1,0 +1,33 @@
+---
+description: Архитектурные инварианты и границы слоёв FitTracker
+globs: ["*.ts", "*.tsx"]
+alwaysApply: true
+---
+
+# Архитектурные инварианты
+
+**Source of truth:** `CLAUDE.md` (§2, §9), `INVENTORY.md` (§7, §8)
+
+## Supabase Boundary (CLAUDE.md §2)
+- `supabase.from()` и `supabase.auth.*` **запрещены** в UI-компонентах и хуках.
+- Единственное место для прямых вызовов Supabase: `src/services/`.
+- Исключения: `authService.ts` и root `_layout.tsx` (auth flow).
+- Новые RPC создаются в `supabase/migrations/` и требуют проверки в `types/database.types.ts`.
+
+## State Management (CLAUDE.md §1, §2)
+- **Server data**: Только через TanStack React Query 5 (`useQuery`, `useMutation`).
+- **UI/Auth state**: Только Zustand 5.
+- **Запрещено**: хранить server data в Zustand (CLAUDE.md §9).
+
+## Anti-patterns (CLAUDE.md §9)
+- N+1 запросы вместо вложенных queries/RPC.
+- `Math.random()` в `keyExtractor` VirtualizedList.
+- `RN Image` (использовать `expo-image`).
+- LayoutAnimation в New Architecture.
+- Raw DB errors пользователю (использовать `mapError` / `extractMessage`).
+- Неатомарные `delete` + `insert` для транзакционных операций (использовать RPC).
+- AI bypass injury/safety rules (CLAUDE.md §12).
+
+## File Size Limit (CLAUDE.md §2)
+- Файл не должен разрастаться выше 500 строк.
+- При >450 строк сначала рассмотреть split на модули.

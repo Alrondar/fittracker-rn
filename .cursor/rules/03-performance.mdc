@@ -1,0 +1,42 @@
+---
+description: Performance gate для UI и данных
+globs: ["*.tsx", "*.ts"]
+alwaysApply: false
+---
+
+# Performance Gate
+
+**Source of truth:** `CLAUDE.md` (§8), `INVENTORY.md` (§12, §13)
+
+## Render & Memoization (CLAUDE.md §8)
+- List cards — `React.memo`; callbacks — `useCallback`.
+- Нет новых источников re-render в core flow: нет новых inline-объектов/массивов в props мемоизированных детей.
+- `useWindowDimensions()` вместо `Dimensions.get('window')`, кроме осознанного theme exception.
+
+## Lazy Mount & Content (CLAUDE.md §8, PRODUCT.md §3.2)
+- Не монтировать media/slider content в collapsed accordion.
+- Тяжёлый контент (charts, pickers, heavy lists) монтируется **только** при открытии (L2 disclosure).
+- Не логировать в animation/onScroll/gesture loops.
+
+## Lists & Virtualization (CLAUDE.md §8, INVENTORY.md §12)
+- **Длинные списки** (сотни элементов, напр. каталог упражнений): `@shopify/flash-list`.
+  - Грабля: в 2.x удалён проп `estimatedItemSize` (был в 1.x) — не добавлять, упадёт tsc.
+  - Использовать `drawDistance={1000}` для буфера отрисовки против blank-пространства.
+- **Короткие и горизонтальные списки**: `FlatList`.
+- **Запрещено**: вкладывать VirtualizedList в ScrollView (исключение — DraggableFlatList с `scrollEnabled={false}`).
+- Стабильные keys, нет `Math.random()` в `keyExtractor`.
+
+## Reanimated & Gestures (CLAUDE.md §8)
+- Reanimated `.value` — только в worklet/animated style.
+- JS commit — через `runOnJS`.
+- Gesture Handler — `simultaneousWithExternalGesture(Gesture.Native())` при необходимости.
+- Для Program Editor drag & drop: использовать официальный nesting pattern (`NestableScrollContainer` + `NestableDraggableFlatList`, см. INVENTORY.md §12 PROG-9).
+
+## Query & Data (CLAUDE.md §8)
+- `QueryClient` создаётся вне компонента.
+- Новые server data — через React Query; запросы сгруппированы/вложены, без N+1.
+- Не тянуть тяжёлые данные в списки.
+
+## Workout Screen Priority (CLAUDE.md §8)
+- Workout screen — приоритетная зона performance profiling.
+- Для изменений `workout/[id].tsx` и `useWorkoutSession` — явно оценить mount/render impact в описании задачи.
