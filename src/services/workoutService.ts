@@ -31,10 +31,7 @@ function parseTargetReps(repsRange: string | null): number | null {
   return Number.isNaN(value) ? null : value;
 }
 
-export async function startProgramWorkout(
-  userId: string,
-  programId: string
-): Promise<string> {
+export async function startProgramWorkout(userId: string, programId: string): Promise<string> {
   const { data: userProgram, error: userProgramError } = await supabase
     .from('user_programs')
     .select('id, current_phase, current_week, current_day, started_at')
@@ -159,20 +156,20 @@ export async function startProgramWorkout(
   const workoutName = day.name || `${program?.name || 'Тренировка'} — День ${dayNumber}`;
 
   // ✅ Сначала создаём тренировку и получаем реальный id — никакого плейсхолдера ''
-const { data: newWorkout, error: insertWorkoutError } = await supabase
-  .from('workouts')
-  .insert({
-    user_id: userId,
-    program_id: programId,
-    name: workoutName,
-    phase_number: phaseNumber,
-    week_number: weekNumber,
-    day_index: dayNumber,
-    created_at: new Date().toISOString(),
-    started_at: new Date().toISOString(),
-  })
-  .select('id')
-  .single();
+  const { data: newWorkout, error: insertWorkoutError } = await supabase
+    .from('workouts')
+    .insert({
+      user_id: userId,
+      program_id: programId,
+      name: workoutName,
+      phase_number: phaseNumber,
+      week_number: weekNumber,
+      day_index: dayNumber,
+      created_at: new Date().toISOString(),
+      started_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
 
   if (insertWorkoutError) throw insertWorkoutError;
 
@@ -209,10 +206,7 @@ const { data: newWorkout, error: insertWorkoutError } = await supabase
   return newWorkout.id;
 }
 
-export async function repeatWorkout(
-  userId: string,
-  sourceWorkoutId: string
-): Promise<string> {
+export async function repeatWorkout(userId: string, sourceWorkoutId: string): Promise<string> {
   // ✅ Копируем также description (раньше терялся)
   const { data: sourceWorkout, error: sourceWorkoutError } = await supabase
     .from('workouts')
@@ -225,21 +219,21 @@ export async function repeatWorkout(
 
   if (sourceWorkoutError) throw sourceWorkoutError;
 
-const { data: newWorkout, error: insertWorkoutError } = await supabase
-  .from('workouts')
-  .insert({
-    user_id: userId,
-    name: sourceWorkout.name,
-    description: sourceWorkout.description,
-    program_id: null,
-    phase_number: null,
-    week_number: null,
-    day_index: null,
-    created_at: new Date().toISOString(),
-    started_at: new Date().toISOString(),
-  })
-  .select('id')
-  .single();
+  const { data: newWorkout, error: insertWorkoutError } = await supabase
+    .from('workouts')
+    .insert({
+      user_id: userId,
+      name: sourceWorkout.name,
+      description: sourceWorkout.description,
+      program_id: null,
+      phase_number: null,
+      week_number: null,
+      day_index: null,
+      created_at: new Date().toISOString(),
+      started_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
 
   if (insertWorkoutError) throw insertWorkoutError;
 
@@ -310,7 +304,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
   const { data: workout, error } = await supabase
     .from('workouts')
     .select(
-      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, target_sets, rest_seconds, intensity, target_reps_range )`,
+      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, target_sets, rest_seconds, intensity, target_reps_range )`
     )
     .eq('id', workoutId)
     .single();
@@ -328,7 +322,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
   const { data: exerciseRows, error: exerciseError } = await supabase
     .from('exercises')
     .select(
-      `id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url`,
+      `id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url`
     )
     .in('id', exerciseIds);
 
@@ -342,7 +336,9 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
     workoutExerciseIds.length > 0
       ? supabase
           .from('workout_logs')
-          .select('workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty, is_warmup, is_estimated_reps')
+          .select(
+            'workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty, is_warmup, is_estimated_reps'
+          )
           .in('workout_exercise_id', workoutExerciseIds)
       : Promise.resolve({ data: null, error: null }),
 
@@ -395,7 +391,7 @@ export interface FetchAlternativesResult {
 export async function fetchAlternatives(
   exerciseId: string,
   source: AlternativeSourceInput,
-  activeInjuries: UserInjury[],
+  activeInjuries: UserInjury[]
 ): Promise<FetchAlternativesResult> {
   // 1. Получаем связи альтернатив из нормализованной таблицы
   const { data: relationships, error: relationshipsError } = await supabase
@@ -412,7 +408,7 @@ export async function fetchAlternatives(
     ...new Set(
       (relationships ?? [])
         .map((row) => row.related_exercise_id)
-        .filter((id): id is string => !!id && id !== exerciseId),
+        .filter((id): id is string => !!id && id !== exerciseId)
     ),
   ];
 
@@ -431,7 +427,7 @@ export async function fetchAlternatives(
   const { data: exercisesData, error: exercisesError } = await supabase
     .from('exercises')
     .select(
-      'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url, movement_pattern, difficulty',
+      'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url, movement_pattern, difficulty'
     )
     .in('id', allIds);
 
@@ -439,9 +435,7 @@ export async function fetchAlternatives(
 
   const referenceData = await getExerciseReferenceData(alternativeIds);
 
-  const exercisesById = new Map(
-    (exercisesData ?? []).map((exercise) => [exercise.id, exercise]),
-  );
+  const exercisesById = new Map((exercisesData ?? []).map((exercise) => [exercise.id, exercise]));
 
   const sourceRow = exercisesById.get(exerciseId);
   const sourceContext: AlternativeSourceContext = {
@@ -514,12 +508,9 @@ export async function updateWorkout(
     started_at?: string;
     finished_at?: string;
     duration_seconds?: number;
-  },
+  }
 ): Promise<void> {
-  const { error } = await supabase
-    .from('workouts')
-    .update(updates)
-    .eq('id', workoutId);
+  const { error } = await supabase.from('workouts').update(updates).eq('id', workoutId);
 
   if (error) throw error;
 }
@@ -529,7 +520,7 @@ export async function updateWorkout(
  */
 export async function upsertWorkoutLogs(
   workoutExerciseId: string,
-  logs: Array<{
+  logs: {
     set_number: number;
     weight_kg: number | null;
     reps: number | null;
@@ -541,12 +532,29 @@ export async function upsertWorkoutLogs(
     is_warmup?: boolean;
     /** ENG-13: оценка повторов для незавершённого сета */
     is_estimated_reps?: boolean;
-  }>,
+  }[]
 ): Promise<void> {
   const { error } = await supabase.rpc('upsert_workout_logs', {
     p_workout_exercise_id: workoutExerciseId,
     p_logs: logs,
   });
+
+  if (error) throw error;
+}
+
+/**
+ * Обновляет exercise_id в workout_exercises.
+ * Критично для временной замены (UX-5): предотвращает загрязнение истории
+ * оригинального упражнения логами от заменённого упражнения.
+ */
+export async function updateWorkoutExerciseId(
+  workoutExerciseId: string,
+  newExerciseId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('workout_exercises')
+    .update({ exercise_id: newExerciseId })
+    .eq('id', workoutExerciseId);
 
   if (error) throw error;
 }

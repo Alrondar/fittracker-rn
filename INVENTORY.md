@@ -458,3 +458,6 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 `src/components/progress/ProgressInsights.tsx` — UX-11: детерминированные инсайты (сила, объём, вес, PR) без AI
 `src/components/progress/RecentWorkouts.tsx` — UX-11: последние 3–5 тренировок с информативными карточками (детерминированный градиент, program_name, duration, avg_rpe)
 `src/components/progress/StrengthTrendChart.tsx` — UX-11: тренд e1RM с интерактивным селектором упражнений и explainability
+
+**Bugfixes & Maintenance**
+* ENG-16: Temporary replacement (UX-5) now updates `workout_exercises.exercise_id` in DB to prevent progression pollution. Logs are correctly attributed to the actually performed exercise.

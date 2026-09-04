@@ -15,10 +15,7 @@ import {
   SetFeedbackPatch,
   ExercisePainState,
 } from '../types/workout';
-import {
-  advanceProgramProgress,
-  replaceExerciseInProgram,
-} from '../services/programsService';
+import { advanceProgramProgress, replaceExerciseInProgram } from '../services/programsService';
 import { getActiveInjuries } from '../services/profileService';
 import { painService, PainType } from '../services/painService';
 import { mapError } from '../utils/errorMapper';
@@ -32,6 +29,7 @@ import {
   FetchAlternativesResult,
   updateWorkout,
   upsertWorkoutLogs,
+  updateWorkoutExerciseId,
 } from '../services/workoutService';
 import {
   buildExercisesData,
@@ -168,7 +166,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         exercisesById,
         logsByWorkoutExercise,
         referenceData,
-        painStateMap,
+        painStateMap
       );
 
       const prevLogsByExerciseId = buildPrevLogsByExerciseId(recentLogs);
@@ -197,16 +195,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       }
       flushPendingLogs();
 
-      if (
-        isWorkoutActiveRef.current &&
-        !isFinishingRef.current &&
-        currentTimeRef.current > 0
-      ) {
-        updateWorkout(workoutId, { duration_seconds: currentTimeRef.current }).catch(
-          (error) => {
-            console.error('Ошибка сохранения прогресса:', error);
-          },
-        );
+      if (isWorkoutActiveRef.current && !isFinishingRef.current && currentTimeRef.current > 0) {
+        updateWorkout(workoutId, { duration_seconds: currentTimeRef.current }).catch((error) => {
+          console.error('Ошибка сохранения прогресса:', error);
+        });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -259,7 +251,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return { alternatives: [], excludedCount: 0 };
       }
     },
-    [userId],
+    [userId]
   );
 
   // ============================================================================
@@ -288,7 +280,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return updated;
       });
     },
-    [scheduleFlush],
+    [scheduleFlush]
   );
 
   const updateSetFeedback = useCallback(
@@ -297,11 +289,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         const exercise = prev[exerciseIndex];
         const set = exercise.sets[setIndex];
 
-        if (
-          set.rpe === patch.rpe &&
-          set.rir === patch.rir &&
-          set.difficulty === patch.difficulty
-        ) {
+        if (set.rpe === patch.rpe && set.rir === patch.rir && set.difficulty === patch.difficulty) {
           return prev;
         }
 
@@ -316,7 +304,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return updated;
       });
     },
-    [scheduleFlush],
+    [scheduleFlush]
   );
 
   const applyProgression = useCallback(
@@ -335,7 +323,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return updated;
       });
     },
-    [scheduleFlush],
+    [scheduleFlush]
   );
 
   const isSetCompleted = useCallback((set: SetData): boolean => {
@@ -348,7 +336,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
         const sets = [...exercise.sets];
-        const lastSetWithHistory = [...sets].reverse().find(s => s.previousWeight != null);
+        const lastSetWithHistory = [...sets].reverse().find((s) => s.previousWeight != null);
         while (sets.length < newSetsCount) {
           sets.push({
             weight: '',
@@ -365,30 +353,27 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return updated;
       });
     },
-    [],
+    []
   );
 
   // ENG-13: добавить новый сет (для warmup toggle auto-add)
-  const addSet = useCallback(
-    (exerciseIndex: number) => {
-      setExercises((prev) => {
-        const updated = [...prev];
-        const exercise = { ...updated[exerciseIndex] };
-        const lastSetWithHistory = [...exercise.sets].reverse().find(s => s.previousWeight != null);
-        const newSet: SetData = {
-          weight: '',
-          reps: '',
-          previousWeight: lastSetWithHistory?.previousWeight ?? null,
-          previousReps: lastSetWithHistory?.previousReps ?? null,
-          previousRpe: lastSetWithHistory?.previousRpe ?? null,
-        };
-        exercise.sets = [...exercise.sets, newSet];
-        updated[exerciseIndex] = exercise;
-        return updated;
-      });
-    },
-    [],
-  );
+  const addSet = useCallback((exerciseIndex: number) => {
+    setExercises((prev) => {
+      const updated = [...prev];
+      const exercise = { ...updated[exerciseIndex] };
+      const lastSetWithHistory = [...exercise.sets].reverse().find((s) => s.previousWeight != null);
+      const newSet: SetData = {
+        weight: '',
+        reps: '',
+        previousWeight: lastSetWithHistory?.previousWeight ?? null,
+        previousReps: lastSetWithHistory?.previousReps ?? null,
+        previousRpe: lastSetWithHistory?.previousRpe ?? null,
+      };
+      exercise.sets = [...exercise.sets, newSet];
+      updated[exerciseIndex] = exercise;
+      return updated;
+    });
+  }, []);
 
   // ============================================================================
   // REPLACE / RESET
@@ -408,6 +393,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       if (!alternative) return;
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // ENG-16: Обновляем exercise_id в БД, чтобы логи сохранились под новым упражнением.
+      // Это предотвращает загрязнение истории оригинального упражнения.
+      try {
+        await updateWorkoutExerciseId(exercise.workout_exercise_id, alternative.id);
+      } catch (error) {
+        console.error('[useWorkoutSession] replaceExercise DB update:', error);
+        // Не прерываем локальное обновление UI, но логируем ошибку
+      }
+
       setExercises((prev) => {
         const updated = [...prev];
         updated[exerciseIndex] = {
@@ -436,7 +431,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       // (UX-5 Feature 1) в [id].tsx; при отсутствии программы — действие настолько
       // лёгкое, что подтверждение не требуется (haptic + мгновенная замена).
     },
-    [loadAlternatives],
+    [loadAlternatives]
   );
 
   const resetToOriginal = useCallback(
@@ -463,10 +458,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               });
             },
           },
-        ],
+        ]
       );
     },
-    [loadWorkout],
+    [loadWorkout]
   );
 
   // ============================================================================
@@ -522,11 +517,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           workoutId,
           exercise.workout_exercise_id,
           alternative.id,
-          alternative.name,
+          alternative.name
         );
         Alert.alert(
           'Заменено в программе',
-          `${previousExercise.name} → ${alternative.name}\n\nИзменение применено к будущим тренировкам программы.`,
+          `${previousExercise.name} → ${alternative.name}\n\nИзменение применено к будущим тренировкам программы.`
         );
       } catch (error) {
         console.error('[useWorkoutSession] replaceExerciseInProgram:', error);
@@ -538,11 +533,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         });
         Alert.alert(
           'Не удалось изменить программу',
-          'Программа не была изменена. Возможно, это готовая программа — только личные программы доступны для редактирования.',
+          'Программа не была изменена. Возможно, это готовая программа — только личные программы доступны для редактирования.'
         );
       }
     },
-    [programId, workoutId, loadAlternatives],
+    [programId, workoutId, loadAlternatives]
   );
 
   // ============================================================================
@@ -583,7 +578,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         Alert.alert('Ошибка', mapError(error));
       }
     },
-    [userId, workoutId],
+    [userId, workoutId]
   );
 
   const clearPainState = useCallback(
@@ -612,7 +607,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         Alert.alert('Ошибка', mapError(error));
       }
     },
-    [userId, workoutId],
+    [userId, workoutId]
   );
 
   // ============================================================================
@@ -667,13 +662,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                   if (progress.isCompleted) {
                     Alert.alert(
                       'Программа завершена!',
-                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».',
+                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
                     );
                     router.replace('/(tabs)/programs');
                   } else {
                     Alert.alert(
                       'Тренировка завершена!',
-                      `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`,
+                      `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
                     );
                     router.replace('/(tabs)/workouts');
                   }
@@ -688,7 +683,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                       if (progress.isCompleted) {
                         Alert.alert(
                           'Программа завершена!',
-                          'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».',
+                          'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
                         );
                         router.replace('/(tabs)/programs');
                       } else {
@@ -698,7 +693,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                       Alert.alert(
                         'Не удалось продвинуть прогресс',
                         e?.message ||
-                          'Прогресс можно продвинуть автоматически при следующей тренировке.',
+                          'Прогресс можно продвинуть автоматически при следующей тренировке.'
                       );
                     }
                   };
@@ -714,14 +709,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                         onPress: () => router.replace('/(tabs)/workouts'),
                       },
                       { text: 'Повторить', onPress: retryAdvance },
-                    ],
+                    ]
                   );
                 }
               } else {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 Alert.alert(
                   'Успех',
-                  `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`,
+                  `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
                 );
                 router.replace('/(tabs)/history');
               }
@@ -733,7 +728,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             }
           },
         },
-      ],
+      ]
     );
   }, [isWorkoutActive, workoutId, programId, userId, router, flushPendingLogs]);
 
