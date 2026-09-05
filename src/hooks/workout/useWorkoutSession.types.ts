@@ -20,6 +20,8 @@ export interface SessionWERow {
   rest_seconds: number | null;
   intensity: string | null;
   target_reps_range: string | null;
+  /** Фича 2: Целевой RPE для упражнения (1-10). */
+  target_rpe: number | null;
 }
 
 export interface SessionWorkoutRow {
@@ -37,8 +39,5 @@ export interface RecentLog {
   reps: number | null;
   rpe: number | null;
   set_number: number | null;
-  workout_exercises:
-    | { exercise_id: string }
-    | { exercise_id: string }[]
-    | null;
+  workout_exercises: { exercise_id: string } | { exercise_id: string }[] | null;
 }

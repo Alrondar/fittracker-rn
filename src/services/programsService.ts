@@ -153,6 +153,8 @@ interface ProgramExerciseRow {
   rest_seconds: number;
   intensity: string; // БД хранит строку; домен сужает в mapExercise
   position: number;
+  /** Фича 2: Целевой RPE для упражнения (1-10). */
+  target_rpe: number | null;
   exercises: { primary_muscles: string[] } | null;
 }
 
@@ -185,6 +187,7 @@ function mapExercise(ex: ProgramExerciseRow): ProgramExercise {
     intensity: ex.intensity as ProgramExercise['intensity'],
     position: ex.position,
     primary_muscles: ex.exercises?.primary_muscles || [],
+    target_rpe: ex.target_rpe,
   };
 }
 
@@ -897,7 +900,7 @@ export async function getActiveProgram(userId: string) {
   const { data, error } = await supabase
     .from('user_programs')
     .select(
-      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position ) ) ) )`
+      `*, programs ( id, name, level, duration, description, schedule, program_phases ( id, phase_number, name, phase_type, weeks_count, program_days ( id, day_number, week_number, name, program_exercises ( id, exercise_name, sets, reps_range, rest_seconds, intensity, position, target_rpe ) ) ) )`
     )
     .eq('user_id', userId)
     .eq('is_active', true)

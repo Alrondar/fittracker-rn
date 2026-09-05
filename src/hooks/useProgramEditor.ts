@@ -24,7 +24,7 @@ const genRandomUUID = () =>
 export function useProgramEditor(
   programId: string,
   userId: string | null,
-  initialEditMode = false,
+  initialEditMode = false
 ) {
   const router = useRouter();
   const [program, setProgram] = useState<Program | null>(null);
@@ -110,35 +110,31 @@ export function useProgramEditor(
         `Программа: "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)\n\n` +
         `Продолжить?`
       : `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`;
-    Alert.alert(
-      hasExistingData ? 'Перезапустить программу?' : 'Начать программу?',
-      message,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: hasExistingData ? 'Перезапустить' : 'Начать',
-          style: hasExistingData ? 'destructive' : 'default',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setStarting(true);
-            try {
-              await startProgram(programId);
-              const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
-                p_program_id: programId,
-                p_user_id: userId,
-              });
-              if (rpcError) throw rpcError;
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.replace('/(tabs)/workouts');
-            } catch (error: any) {
-              Alert.alert('Ошибка', error.message);
-            } finally {
-              setStarting(false);
-            }
-          },
+    Alert.alert(hasExistingData ? 'Перезапустить программу?' : 'Начать программу?', message, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: hasExistingData ? 'Перезапустить' : 'Начать',
+        style: hasExistingData ? 'destructive' : 'default',
+        onPress: async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setStarting(true);
+          try {
+            await startProgram(programId);
+            const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
+              p_program_id: programId,
+              p_user_id: userId,
+            });
+            if (rpcError) throw rpcError;
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.replace('/(tabs)/workouts');
+          } catch (error: any) {
+            Alert.alert('Ошибка', error.message);
+          } finally {
+            setStarting(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const toggleEditMode = async () => {
@@ -223,6 +219,7 @@ export function useProgramEditor(
                 reps_range: exercise.reps_range,
                 rest_seconds: exercise.rest_seconds,
                 intensity: exercise.intensity,
+                target_rpe: exercise.target_rpe,
                 position: exIndex + 1,
               })),
             })),
@@ -276,7 +273,7 @@ export function useProgramEditor(
   const updateExerciseParams = (
     dayIndex: number,
     exerciseIndex: number,
-    params: Partial<ProgramExercise>,
+    params: Partial<ProgramExercise>
   ) => {
     if (!editedProgram || !editedProgram.days) return;
     const newDays = [...editedProgram.days];

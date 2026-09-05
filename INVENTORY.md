@@ -1,6 +1,6 @@
 FitTracker — Code & Screen Inventory
 
-Срез: 28.08.2026 (main) [P1 Cycle added]
+Срез: 05.09.2026 (main) [CI-6 Technique Week]
 
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -462,3 +462,4 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 **Bugfixes & Maintenance**
 * ENG-16: Temporary replacement (UX-5) now updates BOTH `workout_exercises.exercise_id` and `pain_events.exercise_id` in DB. This ensures workout logs AND safety/pain context remain correctly attributed to the actually performed exercise, preventing lost injury warnings and false progression recommendations.
 * **ENG-17 (Фича 2)**: RPE-based Autoregulation. `program_exercises` now supports `target_rpe` (1-10). `progression.ts` checks if `actualRpe <= targetRpe - 2` to suggest progression even if max reps aren't reached. `ExerciseSettingsSheet` allows setting this target.
+* **Фича 5 (Technique Week as Deload alternative)**: `DeloadContext.availableTypes: ('volume' | 'technique')[]` в `engine/weeklySummary.ts` — когда разгрузка рекомендована, возвращает `['volume', 'technique']`. `WeeklyReviewSection` Л1-карточка имеет 2 кнопки (Объём/Техника), SheetShell показывает два независимых блока с разными иконками (Moon vs Target) и планами: классическая разгрузка (−40–60% объёма) vs техническая неделя (вес 65–70%, RPE 6–7, акцент на контроль движения — восстановление ЦНС без потери навыка).

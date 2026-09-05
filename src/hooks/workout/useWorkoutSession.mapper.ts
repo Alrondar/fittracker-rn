@@ -33,7 +33,7 @@ export function buildExercisesData(
   exercisesById: Map<string, SessionExerciseRow>,
   logsByWorkoutExercise: Record<string, LogRow[]>,
   referenceData: ReferenceDataMap,
-  painStateByExerciseId: Map<string, ExercisePainState> = new Map(),
+  painStateByExerciseId: Map<string, ExercisePainState> = new Map()
 ): ExerciseData[] {
   return workoutExercises
     .map((we): ExerciseData | null => {
@@ -92,6 +92,7 @@ export function buildExercisesData(
         intensity: we.intensity || 'medium',
         sets,
         reps_range: we.target_reps_range || undefined,
+        target_rpe: we.target_rpe,
         // PR6: pain state из pain_events для этого упражнения (если есть)
         painState: painStateByExerciseId.get(exercise.id) ?? null,
       };
@@ -104,7 +105,7 @@ export function buildExercisesData(
  * FEAT-1.1 v2: данные из последней завершённой тренировки
  */
 export function buildPrevLogsByExerciseId(
-  recentLogs: RecentLog[],
+  recentLogs: RecentLog[]
 ): Map<string, Map<number, { weight_kg: number | null; reps: number | null; rpe: number | null }>> {
   const prevLogsByExerciseId = new Map<
     string,
@@ -140,7 +141,10 @@ export function buildPrevLogsByExerciseId(
  */
 export function injectPreviousData(
   exercisesData: ExerciseData[],
-  prevLogsByExerciseId: Map<string, Map<number, { weight_kg: number | null; reps: number | null; rpe: number | null }>>,
+  prevLogsByExerciseId: Map<
+    string,
+    Map<number, { weight_kg: number | null; reps: number | null; rpe: number | null }>
+  >
 ): ExerciseData[] {
   return exercisesData.map((ex) => {
     const bySet = prevLogsByExerciseId.get(ex.id);

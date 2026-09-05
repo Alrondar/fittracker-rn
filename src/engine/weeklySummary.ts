@@ -104,16 +104,15 @@ export interface TrainingLoadContext {
  * Без автоизменения программы (ROADMAP C11, PRODUCT.md §3.3 — user control).
  */
 export type DeloadSignalKey =
-  | 'highLoad'
-  | 'plateau'
-  | 'readinessDecline'
-  | 'rpeRisingNoImprovement';
+  'highLoad' | 'plateau' | 'readinessDecline' | 'rpeRisingNoImprovement';
 
 export interface DeloadContext {
   recommended: boolean;
   signals: Record<DeloadSignalKey, boolean>;
   /** Human-readable причины для каждого сработавшего сигнала. */
   reasons: string[];
+  /** Фича 5: доступные типы разгрузки (volume = объём, technique = техника). */
+  availableTypes: ('volume' | 'technique')[];
 }
 
 export interface WeeklySummaryResult {
@@ -133,38 +132,34 @@ export interface WeeklySummaryResult {
 export function buildWeeklyInsights(
   current: WeeklySummaryData,
   previous: WeeklySummaryData,
-  options: BuildInsightsOptions = {},
+  options: BuildInsightsOptions = {}
 ): WeeklyInsight[] {
   const insights: WeeklyInsight[] = [];
-  const add = (
-    code: string,
-    title: string,
-    severity: InsightSeverity,
-    subtitle?: string,
-  ) => insights.push({ code, title, subtitle, severity });
+  const add = (code: string, title: string, severity: InsightSeverity, subtitle?: string) =>
+    insights.push({ code, title, subtitle, severity });
 
   // === Объём (сравнение с прошлой неделей, если в прошлой были тренировки) ===
   if (previous.totalVolume > 0) {
     const ratio = current.totalVolume / previous.totalVolume;
-    
+
     // P1.3: Определяем порог на основе доминирующего типа тренировки
-    let thresholdUp = 1.10;
-    let thresholdDown = 0.90;
-    
+    let thresholdUp = 1.1;
+    let thresholdDown = 0.9;
+
     if (current.totalVolume > 0) {
       const strengthRatio = current.volumeByType.strength / current.totalVolume;
       const hypertrophyRatio = current.volumeByType.hypertrophy / current.totalVolume;
       const cardioRatio = current.volumeByType.cardio / current.totalVolume;
-      
+
       if (strengthRatio > 0.5) {
         thresholdUp = 1.15;
         thresholdDown = 0.85;
       } else if (hypertrophyRatio > 0.5) {
-        thresholdUp = 1.10;
-        thresholdDown = 0.90;
+        thresholdUp = 1.1;
+        thresholdDown = 0.9;
       } else if (cardioRatio > 0.5) {
-        thresholdUp = 1.20;
-        thresholdDown = 0.80;
+        thresholdUp = 1.2;
+        thresholdDown = 0.8;
       }
     }
 
@@ -173,21 +168,21 @@ export function buildWeeklyInsights(
         'VOLUME_UP',
         `Объём вырос на ${Math.round((ratio - 1) * 100)}%`,
         'positive',
-        `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`,
+        `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`
       );
     } else if (ratio <= thresholdDown) {
       add(
         'VOLUME_DOWN',
         `Объём снизился на ${Math.round((1 - ratio) * 100)}%`,
         'caution',
-        `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`,
+        `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`
       );
     } else {
       add(
         'VOLUME_STABLE',
         'Стабильный объём',
         'neutral',
-        `примерно как прошлая неделя (${Math.round(current.totalVolume)} кг)`,
+        `примерно как прошлая неделя (${Math.round(current.totalVolume)} кг)`
       );
     }
   }
@@ -202,20 +197,22 @@ export function buildWeeklyInsights(
     const subtitle =
       current.prs.length === 1
         ? `${first.maxWeight} кг · ${first.e1rm} кг 1RM`
-        : current.prs.map((p) => p.exerciseName).slice(0, 3).join(', ');
+        : current.prs
+            .map((p) => p.exerciseName)
+            .slice(0, 3)
+            .join(', ');
     add('NEW_PR', title, 'positive', subtitle);
   }
 
   // === Боль: высокий count или повторяющаяся зона ===
-  const painHigh =
-    current.pain.count >= 3 || current.pain.bodyParts.some((p) => p.count >= 2);
+  const painHigh = current.pain.count >= 3 || current.pain.bodyParts.some((p) => p.count >= 2);
   if (painHigh) {
     const top = current.pain.bodyParts[0];
     add(
       'PAIN_SPIKE',
       `Боль: ${current.pain.count} событий за неделю`,
       'warning',
-      top ? `чаще всего: ${top.bodyPart} (${top.count})` : undefined,
+      top ? `чаще всего: ${top.bodyPart} (${top.count})` : undefined
     );
   }
 
@@ -226,14 +223,14 @@ export function buildWeeklyInsights(
         'LOW_READINESS',
         'Низкий readiness',
         'caution',
-        `среднее ${current.readiness.avg.toFixed(1)} из 5 за ${current.readiness.daysLogged} дн.`,
+        `среднее ${current.readiness.avg.toFixed(1)} из 5 за ${current.readiness.daysLogged} дн.`
       );
     } else if (current.readiness.avg >= 4.5) {
       add(
         'HIGH_READINESS',
         'Высокий readiness',
         'positive',
-        `среднее ${current.readiness.avg.toFixed(1)} из 5 — хороший период для прогресса`,
+        `среднее ${current.readiness.avg.toFixed(1)} из 5 — хороший период для прогресса`
       );
     }
   }
@@ -244,17 +241,13 @@ export function buildWeeklyInsights(
       'HIGH_RPE_WEEK',
       'Высокий средний RPE',
       'caution',
-      `средний RPE ${current.rpe.avg.toFixed(1)} из 10 — возможна высокая нагрузка`,
+      `средний RPE ${current.rpe.avg.toFixed(1)} из 10 — возможна высокая нагрузка`
     );
   }
 
   // === Регулярность (≥4 тренировок за неделю — условный порог «стабильная неделя») ===
   if (current.workoutsCount >= 4) {
-    add(
-      'CONSISTENT_WEEK',
-      `Регулярная неделя: ${current.workoutsCount} тренировок`,
-      'positive',
-    );
+    add('CONSISTENT_WEEK', `Регулярная неделя: ${current.workoutsCount} тренировок`, 'positive');
   }
 
   // === P0: Плато (стабильный объем без PR при регулярных тренировках)
@@ -266,7 +259,8 @@ export function buildWeeklyInsights(
   ) {
     const ratio = current.totalVolume / previous.totalVolume;
     if (ratio >= 0.95 && ratio <= 1.05) {
-      let subtitle = 'Стабильные результаты 3+ недели. Рассмотрите неделю разгрузки или смену схемы';
+      let subtitle =
+        'Стабильные результаты 3+ недели. Рассмотрите неделю разгрузки или смену схемы';
       let severity: InsightSeverity = 'caution';
 
       // Усиленный сигнал: рост RPE при стабильном объёме (ROADMAP C8)
@@ -288,12 +282,12 @@ export function buildWeeklyInsights(
     const strengthRatio = current.volumeByType.strength / current.totalVolume;
     const hypertrophyRatio = current.volumeByType.hypertrophy / current.totalVolume;
     const cardioRatio = current.volumeByType.cardio / current.totalVolume;
-    
+
     if (strengthRatio >= 0.8 || hypertrophyRatio >= 0.8 || cardioRatio >= 0.8) {
       let dominantType = 'силовых';
       if (hypertrophyRatio >= 0.8) dominantType = 'гипертрофии';
       else if (cardioRatio >= 0.8) dominantType = 'кардио';
-      
+
       add(
         'TYPE_IMBALANCE',
         'Дисбаланс нагрузки',
@@ -309,7 +303,7 @@ export function buildWeeklyInsights(
     muscleEntries.sort((a, b) => b[1] - a[1]);
     const maxMuscle = muscleEntries[0];
     const minMuscle = muscleEntries[muscleEntries.length - 1];
-    
+
     if (maxMuscle[1] >= 12 && minMuscle[1] < maxMuscle[1] * 0.5) {
       add(
         'MUSCLE_IMBALANCE',
@@ -328,13 +322,29 @@ export function buildWeeklyInsights(
  * CI-5: нормализует строку цели к стандартным категориям.
  * Значения из онбординга (GoalsStep2): 'muscle_gain', 'strength', 'weight_loss', 'health', etc.
  */
-function normalizeGoal(goal: string | null): 'muscle_gain' | 'strength' | 'weight_loss' | 'health' | null {
+function normalizeGoal(
+  goal: string | null
+): 'muscle_gain' | 'strength' | 'weight_loss' | 'health' | null {
   if (!goal) return null;
   const g = goal.toLowerCase();
-  if (g.includes('muscle') || g.includes('hypertrophy') || g.includes('mass') || g.includes('gain')) return 'muscle_gain';
+  if (g.includes('muscle') || g.includes('hypertrophy') || g.includes('mass') || g.includes('gain'))
+    return 'muscle_gain';
   if (g.includes('strength') || g.includes('power') || g.includes('сила')) return 'strength';
-  if (g.includes('weight') || g.includes('fat') || g.includes('loss') || g.includes('lean') || g.includes('похуд')) return 'weight_loss';
-  if (g.includes('health') || g.includes('fitness') || g.includes('endurance') || g.includes('well')) return 'health';
+  if (
+    g.includes('weight') ||
+    g.includes('fat') ||
+    g.includes('loss') ||
+    g.includes('lean') ||
+    g.includes('похуд')
+  )
+    return 'weight_loss';
+  if (
+    g.includes('health') ||
+    g.includes('fitness') ||
+    g.includes('endurance') ||
+    g.includes('well')
+  )
+    return 'health';
   return null;
 }
 
@@ -344,7 +354,7 @@ function normalizeGoal(goal: string | null): 'muscle_gain' | 'strength' | 'weigh
  */
 function applyGoalContext(insights: WeeklyInsight[], rawGoal: string | null): WeeklyInsight[] {
   const goal = normalizeGoal(rawGoal);
-  
+
   if (goal) {
     for (const ins of insights) {
       // Приоритеты по цели (3 = max, 0 = default)
@@ -380,12 +390,12 @@ function applyGoalContext(insights: WeeklyInsight[], rawGoal: string | null): We
           else ins.goalPriority = 1;
           break;
       }
-      
+
       // Адаптация текста под цель
       adaptInsightText(ins, goal);
     }
   }
-  
+
   // Сортировка: сначала по goalPriority (desc), затем по severity (asc)
   const severityOrder: Record<InsightSeverity, number> = {
     warning: 0,
@@ -393,14 +403,14 @@ function applyGoalContext(insights: WeeklyInsight[], rawGoal: string | null): We
     caution: 2,
     neutral: 3,
   };
-  
+
   insights.sort((a, b) => {
     const pa = a.goalPriority ?? 0;
     const pb = b.goalPriority ?? 0;
     if (pb !== pa) return pb - pa;
     return severityOrder[a.severity] - severityOrder[b.severity];
   });
-  
+
   return insights;
 }
 
@@ -408,21 +418,26 @@ function applyGoalContext(insights: WeeklyInsight[], rawGoal: string | null): We
  * CI-5: добавляет «почему это важно» для цели в subtitle.
  * Меняет subtitle, не трогая title (title остаётся компактным).
  */
-function adaptInsightText(ins: WeeklyInsight, goal: 'muscle_gain' | 'strength' | 'weight_loss' | 'health'): void {
+function adaptInsightText(
+  ins: WeeklyInsight,
+  goal: 'muscle_gain' | 'strength' | 'weight_loss' | 'health'
+): void {
   const base = ins.subtitle ?? '';
   let context = '';
-  
+
   switch (ins.code) {
     case 'VOLUME_UP':
       if (goal === 'muscle_gain') context = 'Ключевой фактор для роста мышц';
       else if (goal === 'strength') context = 'Хорошая база для силовых';
       break;
     case 'VOLUME_STABLE':
-      if (goal === 'muscle_gain') context = 'Для роста мышц попробуй добавить 1-2 подхода на отстающую группу';
+      if (goal === 'muscle_gain')
+        context = 'Для роста мышц попробуй добавить 1-2 подхода на отстающую группу';
       else if (goal === 'strength') context = 'Стабильная база — можно повышать интенсивность';
       break;
     case 'VOLUME_DOWN':
-      if (goal === 'muscle_gain' || goal === 'strength') context = 'Может замедлить прогресс к цели';
+      if (goal === 'muscle_gain' || goal === 'strength')
+        context = 'Может замедлить прогресс к цели';
       break;
     case 'NEW_PR':
       if (goal === 'strength') context = 'Отличный силовой прогресс';
@@ -433,24 +448,29 @@ function adaptInsightText(ins: WeeklyInsight, goal: 'muscle_gain' | 'strength' |
       else if (goal === 'health') context = 'Регулярная активность — ключ к здоровью';
       break;
     case 'PLATEAU_DETECTED':
-      if (goal === 'muscle_gain') context = 'Для роста мышц важно менять стимул — попробуй добавить объём или сменить упражнение';
-      else if (goal === 'strength') context = 'Для силы попробуй поработать в другом диапазоне повторов';
+      if (goal === 'muscle_gain')
+        context =
+          'Для роста мышц важно менять стимул — попробуй добавить объём или сменить упражнение';
+      else if (goal === 'strength')
+        context = 'Для силы попробуй поработать в другом диапазоне повторов';
       break;
     case 'MUSCLE_IMBALANCE':
       if (goal === 'muscle_gain') context = 'Симметричный объём важен для пропорций и роста';
       break;
     case 'LOW_READINESS':
-      if (goal === 'weight_loss') context = 'Дефицит калорий может снижать восстановление — следи за сном';
+      if (goal === 'weight_loss')
+        context = 'Дефицит калорий может снижать восстановление — следи за сном';
       else if (goal === 'health') context = 'Обрати внимание на восстановление';
       break;
     case 'HIGH_READINESS':
-      if (goal === 'strength' || goal === 'muscle_gain') context = 'Хороший момент для тяжёлой тренировки или PR';
+      if (goal === 'strength' || goal === 'muscle_gain')
+        context = 'Хороший момент для тяжёлой тренировки или PR';
       break;
     case 'PAIN_SPIKE':
       if (goal === 'health') context = 'Ваше здоровье — приоритет, обратись к специалисту';
       break;
   }
-  
+
   if (context) {
     ins.subtitle = base ? `${base} · ${context}` : context;
   }
@@ -463,7 +483,7 @@ function adaptInsightText(ins: WeeklyInsight, goal: 'muscle_gain' | 'strength' |
  */
 export function calculateTrainingLoadContext(
   current: WeeklySummaryData,
-  previous: WeeklySummaryData,
+  previous: WeeklySummaryData
 ): TrainingLoadContext {
   const reasons: string[] = [];
 
@@ -472,9 +492,7 @@ export function calculateTrainingLoadContext(
   const frequencyTrend = current.workoutsCount - previous.workoutsCount;
 
   const intensityTrend =
-    current.rpe.avg != null && previous.rpe.avg != null
-      ? current.rpe.avg - previous.rpe.avg
-      : null;
+    current.rpe.avg != null && previous.rpe.avg != null ? current.rpe.avg - previous.rpe.avg : null;
 
   const readinessTrend =
     current.readiness.avg != null && previous.readiness.avg != null
@@ -484,9 +502,10 @@ export function calculateTrainingLoadContext(
   // ACWR (Acute:Chronic Workload Ratio)
   // Золотой стандарт спортивной медицины: Acute (текущая неделя) / Chronic (среднее за 4 недели)
   // Sweet spot: 0.8–1.3. >1.5 — зона высокого риска травм.
-  const acwr = current.chronicVolume && current.chronicVolume > 0
-    ? current.totalVolume / current.chronicVolume
-    : null;
+  const acwr =
+    current.chronicVolume && current.chronicVolume > 0
+      ? current.totalVolume / current.chronicVolume
+      : null;
 
   let level: 'normal' | 'elevated' | 'high' = 'normal';
   let elevatedSignals = 0;
@@ -506,13 +525,13 @@ export function calculateTrainingLoadContext(
     }
   } else {
     // Fallback на сравнение с предыдущей неделей, если chronicVolume недоступен
-    if (volumeRatio >= 1.20) {
+    if (volumeRatio >= 1.2) {
       reasons.push(`Объём вырос на ${volumeChangePct}%`);
       highSignals++;
-    } else if (volumeRatio >= 1.10) {
+    } else if (volumeRatio >= 1.1) {
       reasons.push(`Объём вырос на ${volumeChangePct}%`);
       elevatedSignals++;
-    } else if (volumeRatio <= 0.80 && previous.totalVolume > 0) {
+    } else if (volumeRatio <= 0.8 && previous.totalVolume > 0) {
       reasons.push(`Объём снизился на ${Math.abs(volumeChangePct)}%`);
       elevatedSignals++;
     }
@@ -525,14 +544,14 @@ export function calculateTrainingLoadContext(
 
   if (intensityTrend != null && intensityTrend >= 0.5) {
     reasons.push(
-      `Средний RPE вырос с ${previous.rpe.avg?.toFixed(1)} до ${current.rpe.avg?.toFixed(1)}`,
+      `Средний RPE вырос с ${previous.rpe.avg?.toFixed(1)} до ${current.rpe.avg?.toFixed(1)}`
     );
     elevatedSignals++;
   }
 
   if (readinessTrend != null && readinessTrend <= -0.5) {
     reasons.push(
-      `Readiness снизился (с ${previous.readiness.avg?.toFixed(1)} до ${current.readiness.avg?.toFixed(1)})`,
+      `Readiness снизился (с ${previous.readiness.avg?.toFixed(1)} до ${current.readiness.avg?.toFixed(1)})`
     );
     elevatedSignals++;
   }
@@ -572,7 +591,7 @@ export function calculateDeloadContext(
   current: WeeklySummaryData,
   previous: WeeklySummaryData,
   trainingLoad: TrainingLoadContext,
-  insights: WeeklyInsight[],
+  insights: WeeklyInsight[]
 ): DeloadContext {
   const signals: Record<DeloadSignalKey, boolean> = {
     highLoad: false,
@@ -584,7 +603,7 @@ export function calculateDeloadContext(
 
   // Недостаточно данных для уверенной оценки — безопасный fallback.
   if (previous.workoutsCount === 0) {
-    return { recommended: false, signals, reasons };
+    return { recommended: false, signals, reasons, availableTypes: [] };
   }
 
   // 1. Накопленная нагрузка повышена (зависит от CI-2).
@@ -593,7 +612,7 @@ export function calculateDeloadContext(
     reasons.push(
       trainingLoad.level === 'high'
         ? 'Накопленная нагрузка высокая'
-        : 'Накопленная нагрузка повышенная',
+        : 'Накопленная нагрузка повышенная'
     );
   }
 
@@ -614,7 +633,7 @@ export function calculateDeloadContext(
     if ((trend <= -0.5 && current.readiness.avg <= 3.5) || trend <= -1.0) {
       signals.readinessDecline = true;
       reasons.push(
-        `Readiness устойчиво снизился (${previous.readiness.avg.toFixed(1)} → ${current.readiness.avg.toFixed(1)})`,
+        `Readiness устойчиво снизился (${previous.readiness.avg.toFixed(1)} → ${current.readiness.avg.toFixed(1)})`
       );
     }
   }
@@ -627,7 +646,7 @@ export function calculateDeloadContext(
   ) {
     signals.rpeRisingNoImprovement = true;
     reasons.push(
-      `Средний RPE растёт (на +${trainingLoad.signals.intensityTrend.toFixed(1)}) без новых рекордов`,
+      `Средний RPE растёт (на +${trainingLoad.signals.intensityTrend.toFixed(1)}) без новых рекордов`
     );
   }
 
@@ -635,5 +654,8 @@ export function calculateDeloadContext(
   const recommended =
     signalCount >= 3 || (signals.highLoad && (signals.plateau || signals.readinessDecline));
 
-  return { recommended, signals, reasons };
+  // Фича 5: если разгрузка рекомендована, предлагаем оба варианта (объём и техника)
+  const availableTypes: ('volume' | 'technique')[] = recommended ? ['volume', 'technique'] : [];
+
+  return { recommended, signals, reasons, availableTypes };
 }

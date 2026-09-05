@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 29.08.2026 (main) [ENG-9 auto-deload fix]
+Срез: 05.09.2026 (main) [CI-6 Technique Week]
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -137,7 +137,7 @@
 | CI-3 | 🟠 | ✅ | Plateau Detection: L2-блок с observation и вариантами действий при PLATEAU_DETECTED (ROADMAP C8) |
 | CI-4 | 🟠 | ✅ | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals (L2-блок в WeeklyReviewSection) |
 | CI-5 | 🟠 | ✅ | Goal-aware Insights (Вариант B: Balanced): цель из профиля (`profiles.goal`) учитывается в `buildWeeklyInsights` — приоритеты инсайтов и контекстная адаптация текста («почему это важно для твоей цели»). Чистая логика в `engine/weeklySummary.ts`, интеграция в `weeklySummaryService.ts`, UI доверяет отсортированному массиву. Без дублирования экранов. |
-| CI-6 | 🟡 | ✅ | Deload Recommendations — выполнено (Вариант B, ROADMAP C11): `calculateDeloadContext` в `engine/weeklySummary.ts` (4 объяснимых сигнала: highLoad/plateau/readinessDecline/rpeRisingNoImprovement; рекомендация при ≥3 сигналах или highLoad+plateau/readinessDecline; insufficient-data guard для первой недели); `WeeklyReviewSection` L1-карточка с Moon/warning + session-local dismiss + «Почему?» → L2-блок в SheetShell (сигналы + типовой план −40–60% объёма, RPE ≤ 6–7, 1 неделя) с disclaimer «не меняет программу автоматически»; без автоизменения программы (PRODUCT.md §3.3 user control) |
+| CI-6 | 🟡 | ✅ | Deload Recommendations + **Фича 5: Technique Week** — выполнено (Вариант B, ROADMAP C11): `calculateDeloadContext` в `engine/weeklySummary.ts` (4 объяснимых сигнала: highLoad/plateau/readinessDecline/rpeRisingNoImprovement; рекомендация при ≥3 сигналах или highLoad+plateau/readinessDecline; insufficient-data guard для первой недели; `DeloadContext.availableTypes: ['volume', 'technique']` при `recommended: true`); `WeeklyReviewSection` L1-карточка с Moon/warning + **2 кнопки выбора стратегии (Объём/Техника)** + session-local dismiss; L2 SheetShell содержит два независимых блока: «Разгрузочная неделя (Объём)» (−40–60% объёма, RPE ≤ 6–7) и «Техническая неделя» (вес 65–70% от рабочего, акцент на идеальную технику, RPE 6–7, сохранение количества подходов — восстановление ЦНС без потери навыка) с disclaimer «не меняет программу автоматически»; без автоизменения программы (PRODUCT.md §3.3 user control) |
 | CI-7 | 🟡 | 🔲 | Optional AI Explanations: AI объясняет structured facts/reason codes; зависит от Coaching Intelligence и AI foundation |
 
 Порядок реализации:

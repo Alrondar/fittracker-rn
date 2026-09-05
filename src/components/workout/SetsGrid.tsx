@@ -53,10 +53,7 @@ const REJECTION_REASONS: { code: UserRejectionReason; label: string }[] = [
 // COACH-3: состояние prompt-а причины отклонения.
 // 'idle' — ничего не спрашиваем; 'reasonPrompt' — показываем чипы причин;
 // 'resolved' — ответ записан, prompt скрыт.
-type FeedbackState =
-  | { status: 'idle' }
-  | { status: 'reasonPrompt' }
-  | { status: 'resolved' };
+type FeedbackState = { status: 'idle' } | { status: 'reasonPrompt' } | { status: 'resolved' };
 
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
@@ -113,8 +110,7 @@ const SetInput = memo(function SetInput({
       style={[
         cardStyles.setInputContainer,
         {
-          backgroundColor:
-            isFilled || completed ? colors.successLight : colors.surfaceSecondary,
+          backgroundColor: isFilled || completed ? colors.successLight : colors.surfaceSecondary,
         },
       ]}
     >
@@ -277,6 +273,8 @@ interface SetsGridProps {
   restSeconds: number;
   /** ENG-1: диапазон повторов для прогрессии. null = no target (fallback to RPE only). */
   repsRange?: string | null;
+  /** Фича 2: целевой RPE для упражнения (1-10). Если задан, прогрессия учитывает не только повторы, но и субъективную сложность. */
+  targetRpe?: number | null;
   /** ENG-4: safety context (pain/injury). Engine применяет precedence к рекомендации. */
   safetyContext?: SafetyContext | null;
   /** ENG-3: readiness context (optional signal). Применяется после safety. */
@@ -304,6 +302,7 @@ export const SetsGrid = memo(function SetsGrid({
   targetSets,
   restSeconds,
   repsRange,
+  targetRpe,
   safetyContext,
   readinessContext,
   unit,
@@ -338,7 +337,7 @@ export const SetsGrid = memo(function SetsGrid({
       if (prompt === 'last-set') return setIndex === sets.length - 1;
       return true;
     },
-    [rpeSettings.prompt, sets.length, isSetCompleted],
+    [rpeSettings.prompt, sets.length, isSetCompleted]
   );
 
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
@@ -347,7 +346,7 @@ export const SetsGrid = memo(function SetsGrid({
   // ✅ Мемоизация вычислений
   const completedSets = useMemo(
     () => sets.filter((s) => isSetCompleted(s)).length,
-    [sets, isSetCompleted],
+    [sets, isSetCompleted]
   );
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
 
@@ -362,8 +361,7 @@ export const SetsGrid = memo(function SetsGrid({
 
   useEffect(() => {
     const shouldStart =
-      timerSettings.autoStartAfterEverySet ||
-      (timerSettings.autoStartRest && allSetsDone);
+      timerSettings.autoStartAfterEverySet || (timerSettings.autoStartRest && allSetsDone);
 
     if (
       shouldStart &&
@@ -385,22 +383,14 @@ export const SetsGrid = memo(function SetsGrid({
   ]);
 
   // ✅ Стабильные функции конвертации
-  const toDisplay = useCallback(
-    (kgStr: string) => weightToDisplay(kgStr, unit),
-    [unit],
-  );
-  const fromDisplay = useCallback(
-    (disp: string) => weightFromDisplay(disp, unit),
-    [unit],
-  );
+  const toDisplay = useCallback((kgStr: string) => weightToDisplay(kgStr, unit), [unit]);
+  const fromDisplay = useCallback((disp: string) => weightFromDisplay(disp, unit), [unit]);
 
   // ✅ Мемоизация активного сета (для редактора RPE)
   const activeSet = useMemo(
     () =>
-      feedbackSetIndex !== null && feedbackSetIndex < sets.length
-        ? sets[feedbackSetIndex]
-        : null,
-    [feedbackSetIndex, sets],
+      feedbackSetIndex !== null && feedbackSetIndex < sets.length ? sets[feedbackSetIndex] : null,
+    [feedbackSetIndex, sets]
   );
 
   // FEAT-1.1 v2: активный сет = первый незавершённый; хинт показывает ЕГО прошлые
@@ -428,7 +418,7 @@ export const SetsGrid = memo(function SetsGrid({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       updateSet(exerciseIndex, progressionSetIndex, 'weight', String(newKg));
     },
-    [progressionSetIndex, prevWeight, fromDisplay, updateSet, exerciseIndex],
+    [progressionSetIndex, prevWeight, fromDisplay, updateSet, exerciseIndex]
   );
 
   // ============================================================================
@@ -436,26 +426,32 @@ export const SetsGrid = memo(function SetsGrid({
   // ENG-4: safety precedence (pain/injury > recommendation)
   // ENG-13: targetSetIndex для per-set recommendation + warmup filtering
   // ============================================================================
-  const recommendation = useMemo<(ProgressionResult & {
-    safetyOverride?: SafetyOverride | null;
-    readinessOverride?: ReadinessOverride | null;
-  }) | null>(() => {
+  const recommendation = useMemo<
+    | (ProgressionResult & {
+        safetyOverride?: SafetyOverride | null;
+        readinessOverride?: ReadinessOverride | null;
+      })
+    | null
+  >(() => {
     if (sets.length === 0) return null;
     const base = calculateProgression({
       sets,
       repsRange: repsRange ?? null,
       targetSetIndex: progressionSetIndex ?? undefined,
+      targetRpe,
     });
     const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
     // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
     return applyReadinessContext(afterSafety, readinessContext ?? null);
-  }, [sets, repsRange, safetyContext, readinessContext, progressionSetIndex]);
+  }, [sets, repsRange, targetRpe, safetyContext, readinessContext, progressionSetIndex]);
 
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
   // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)
   const highlightedChip: number | null =
     recommendation?.action === 'increase' && !recommendation?.safetyOverride
-      ? (unit === 'kg' ? 2.5 : 5)
+      ? unit === 'kg'
+        ? 2.5
+        : 5
       : null;
 
   // Иконка + цвет рекомендации
@@ -546,19 +542,9 @@ export const SetsGrid = memo(function SetsGrid({
     // Weight: engine returns kg (storage unit) → write directly to set.weight
     // (set.weight stores kg regardless of display unit; flushPendingLogs
     // parses it as weight_kg).
-    updateSet(
-      exerciseIndex,
-      progressionSetIndex,
-      'weight',
-      String(recommendation.suggestedWeight),
-    );
+    updateSet(exerciseIndex, progressionSetIndex, 'weight', String(recommendation.suggestedWeight));
     if (recommendation.suggestedReps != null) {
-      updateSet(
-        exerciseIndex,
-        progressionSetIndex,
-        'reps',
-        String(recommendation.suggestedReps),
-      );
+      updateSet(exerciseIndex, progressionSetIndex, 'reps', String(recommendation.suggestedReps));
     }
     // Close chips to reduce noise after acceptance; card stays visible until
     // the next set's recommendation is computed.
@@ -592,11 +578,7 @@ export const SetsGrid = memo(function SetsGrid({
   const handleReasonSelect = useCallback(
     (reasonCode: UserRejectionReason) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (
-        progressionSetIndex === null ||
-        !recommendation ||
-        recommendation.action === 'no_data'
-      ) {
+      if (progressionSetIndex === null || !recommendation || recommendation.action === 'no_data') {
         setFeedbackState({ status: 'resolved' });
         return;
       }
@@ -614,17 +596,13 @@ export const SetsGrid = memo(function SetsGrid({
       });
       setFeedbackState({ status: 'resolved' });
     },
-    [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback],
+    [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback]
   );
 
   // COACH-3: пропустить причину → запись rejected без userReasonCode.
   const handleSkipReason = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (
-      progressionSetIndex === null ||
-      !recommendation ||
-      recommendation.action === 'no_data'
-    ) {
+    if (progressionSetIndex === null || !recommendation || recommendation.action === 'no_data') {
       setFeedbackState({ status: 'resolved' });
       return;
     }
@@ -656,20 +634,20 @@ export const SetsGrid = memo(function SetsGrid({
     (setIndex: number) => {
       const set = sets[setIndex];
       const newIsWarmup = !set.isWarmup;
-      
+
       // Сначала обновляем флаг
       updateSetFeedback(exerciseIndex, setIndex, { isWarmup: newIsWarmup });
 
       if (newIsWarmup) {
         // Считаем, сколько будет разминочных подходов ПОСЛЕ обновления
         const warmupCount = sets.filter((s, idx) => idx === setIndex || s.isWarmup).length;
-        
+
         // Целевое общее количество подходов = базовое (targetSets) + количество разминочных
         const targetTotalSets = targetSets + warmupCount;
-        
+
         // Сколько нужно добавить, чтобы достичь целевого количества
         const toAdd = targetTotalSets - sets.length;
-        
+
         if (toAdd > 0) {
           for (let i = 0; i < toAdd; i++) {
             addSet(exerciseIndex);
@@ -677,7 +655,7 @@ export const SetsGrid = memo(function SetsGrid({
         }
       }
     },
-    [sets, exerciseIndex, updateSetFeedback, addSet, targetSets],
+    [sets, exerciseIndex, updateSetFeedback, addSet, targetSets]
   );
 
   return (
@@ -689,9 +667,7 @@ export const SetsGrid = memo(function SetsGrid({
     >
       <View style={[cardStyles.setsHeader, { backgroundColor: 'transparent' }]}>
         <TrendingUp size={16} color={colors.primary} strokeWidth={2} />
-        <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>
-          Подходы
-        </Text>
+        <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>Подходы</Text>
         <Text
           style={[
             typography.captionSmall,
@@ -721,7 +697,12 @@ export const SetsGrid = memo(function SetsGrid({
             }}
           >
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.sm }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: SPACING.sm,
+              }}
             >
               <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
               <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
@@ -745,29 +726,48 @@ export const SetsGrid = memo(function SetsGrid({
             </View>
             {/* COACH-1: Recommendation Card (replaces ENG-2 one-liner + expandable) */}
             {recommendation && recommendation.action !== 'no_data' && !dismissed && (
-            <RecommendationCard
-            recommendation={recommendation}
-            explanationItems={explanationItems}
-            accentColor={recommendationColor}
-            colors={colors}
-            toDisplay={toDisplay}
-            unit={unit}
-            expanded={expanded}
-            onToggleExpand={toggleExpanded}
-            onAccept={handleAccept}
-            onChange={handleChipsToggle}
-            onDismiss={handleDismiss}
-            acceptDisabled={progressionSetIndex === null}
-            chipsOpen={chipsOpen}
-            />
+              <RecommendationCard
+                recommendation={recommendation}
+                explanationItems={explanationItems}
+                accentColor={recommendationColor}
+                colors={colors}
+                toDisplay={toDisplay}
+                unit={unit}
+                expanded={expanded}
+                onToggleExpand={toggleExpanded}
+                onAccept={handleAccept}
+                onChange={handleChipsToggle}
+                onDismiss={handleDismiss}
+                acceptDisabled={progressionSetIndex === null}
+                chipsOpen={chipsOpen}
+              />
             )}
             {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
                 PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
                 «×» справа = пропустить причину (записать rejected без userReasonCode). */}
             {dismissed && feedbackState.status === 'reasonPrompt' && (
-              <View style={{ marginTop: SPACING.sm, paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: colors.primary + '20' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: SPACING.xs }}>
-                  <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '500' }]}>
+              <View
+                style={{
+                  marginTop: SPACING.sm,
+                  paddingTop: SPACING.sm,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.primary + '20',
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: SPACING.xs,
+                  }}
+                >
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      { color: colors.textSecondary, fontWeight: '500' },
+                    ]}
+                  >
                     Почему? (не обязательно)
                   </Text>
                   {REJECTION_REASONS.map((reason) => (
@@ -784,7 +784,12 @@ export const SetsGrid = memo(function SetsGrid({
                         borderColor: colors.border,
                       }}
                     >
-                      <Text style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '600' }]}>
+                      <Text
+                        style={[
+                          typography.captionSmall,
+                          { color: colors.textPrimary, fontWeight: '600' },
+                        ]}
+                      >
                         {reason.label}
                       </Text>
                     </TouchableOpacity>
@@ -805,34 +810,42 @@ export const SetsGrid = memo(function SetsGrid({
             )}
             {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить" */}
             {chipsOpen && (
-            <View
-            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: SPACING.sm }}
-            >
-            {PROGRESSION_STEPS.map((step) => {
-            const isHighlighted = step === highlightedChip;
-            return (
-            <TouchableOpacity
-            key={step}
-                onPress={() => handleProgressionStep(step)}
-                activeOpacity={0.7}
-              style={{
-                paddingHorizontal: SPACING.sm,
-                paddingVertical: 4,
-                borderRadius: BORDER_RADIUS.sm,
-              backgroundColor: isHighlighted ? colors.success : colors.primary,
-                borderWidth: isHighlighted ? 1 : 0,
-                  borderColor: isHighlighted ? colors.success : 'transparent',
-                  }}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: SPACING.xs,
+                  marginTop: SPACING.sm,
+                }}
+              >
+                {PROGRESSION_STEPS.map((step) => {
+                  const isHighlighted = step === highlightedChip;
+                  return (
+                    <TouchableOpacity
+                      key={step}
+                      onPress={() => handleProgressionStep(step)}
+                      activeOpacity={0.7}
+                      style={{
+                        paddingHorizontal: SPACING.sm,
+                        paddingVertical: 4,
+                        borderRadius: BORDER_RADIUS.sm,
+                        backgroundColor: isHighlighted ? colors.success : colors.primary,
+                        borderWidth: isHighlighted ? 1 : 0,
+                        borderColor: isHighlighted ? colors.success : 'transparent',
+                      }}
                     >
-                  <Text
-                    style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
-                >
-                +{step} {unit}
-            </Text>
-            </TouchableOpacity>
-            );
-            })}
-            </View>
+                      <Text
+                        style={[
+                          typography.captionSmall,
+                          { color: colors.textInverse, fontWeight: '700' },
+                        ]}
+                      >
+                        +{step} {unit}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             )}
           </View>
         )}

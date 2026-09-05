@@ -1,6 +1,8 @@
 export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
 
-export type SetFeedbackPatch = Partial<Pick<SetData, 'rpe' | 'rir' | 'difficulty' | 'isWarmup' | 'estimatedReps'>>;
+export type SetFeedbackPatch = Partial<
+  Pick<SetData, 'rpe' | 'rir' | 'difficulty' | 'isWarmup' | 'estimatedReps'>
+>;
 
 export interface SetData {
   weight: string;
@@ -50,6 +52,8 @@ export interface ExerciseData {
   intensity: string;
   sets: SetData[];
   reps_range?: string;
+  /** Фича 2: Целевой RPE для упражнения (1-10). Если задан, прогрессия учитывает не только повторы, но и субъективную сложность. */
+  target_rpe?: number | null;
   // PR6: pain state из pain_events (null = не отмечено в этой тренировке)
   painState?: ExercisePainState | null;
 }
@@ -78,9 +82,4 @@ export type WorkoutCardDisplayMode = 'training' | 'balanced' | 'learn';
 export type RecommendationDecision = 'accepted' | 'rejected' | 'changed';
 
 /** Пользовательская причина отклонения (ROADMAP C2, фиксированный набор). */
-export type UserRejectionReason =
-  | 'tired'
-  | 'too_heavy'
-  | 'pain'
-  | 'want_easier'
-  | 'other';
+export type UserRejectionReason = 'tired' | 'too_heavy' | 'pain' | 'want_easier' | 'other';

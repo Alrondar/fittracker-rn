@@ -87,18 +87,13 @@ export const ExerciseCard = memo(function ExerciseCard({
   const hasSets = 'sets' in exercise;
   // cleanup: sets через useMemo — условная [] не должна пересоздаваться каждый
   // рендер (от sets зависит borderColor useMemo).
-  const sets = useMemo(
-    () => (hasSets ? (exercise as ExerciseData).sets : []),
-    [hasSets, exercise],
-  );
+  const sets = useMemo(() => (hasSets ? (exercise as ExerciseData).sets : []), [hasSets, exercise]);
   const targetSets = hasSets ? (exercise as ExerciseData).target_sets : sets.length;
   const restSeconds = hasSets ? (exercise as ExerciseData).rest_seconds : 0;
   const intensity = hasSets ? (exercise as ExerciseData).intensity : 'medium';
   const repsRange = (exercise as RepsRangeHolder).reps_range;
-  const intensityInfo = useMemo(
-    () => getIntensityInfo(intensity),
-    [getIntensityInfo, intensity],
-  );
+  const targetRpe = (exercise as ExerciseData).target_rpe;
+  const intensityInfo = useMemo(() => getIntensityInfo(intensity), [getIntensityInfo, intensity]);
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
   const equipment = exercise.equipment ?? [];
@@ -123,7 +118,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const hideSecondaryInTraining = displayMode === 'training' && isMain;
 
   // PR6: есть ли запись боли в pain_events для этого упражнения — для visual affordance в header
-  const hasPainRecord = !!((exercise as ExerciseData).painState);
+  const hasPainRecord = !!(exercise as ExerciseData).painState;
 
   // PERF: единый useMemo вместо пересчёта в рендере
   const { borderColor } = useMemo(() => {
@@ -144,7 +139,11 @@ export const ExerciseCard = memo(function ExerciseCard({
 
   return (
     <View
-      style={[cardStyles.container, cardStyles.workoutExerciseCard, { borderWidth: 1, borderColor }]}
+      style={[
+        cardStyles.container,
+        cardStyles.workoutExerciseCard,
+        { borderWidth: 1, borderColor },
+      ]}
     >
       {/* 1. Header: название + Settings + repsRange + intensity */}
       <ExerciseCardHeader
@@ -166,15 +165,10 @@ export const ExerciseCard = memo(function ExerciseCard({
       />
 
       {/* 2. Equipment: bubbles сразу под header (PR 4a) */}
-      <ExerciseCardEquipment
-        equipment={equipment}
-        primaryMuscles={exercise.primary_muscles}
-      />
+      <ExerciseCardEquipment equipment={equipment} primaryMuscles={exercise.primary_muscles} />
 
       {/* 3. Warning banner (только основная карточка) */}
-      {warning && isMain && (
-        <ExerciseWarningBanner warning={warning} colors={colors} />
-      )}
+      {warning && isMain && <ExerciseWarningBanner warning={warning} colors={colors} />}
 
       {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
       {!hideSecondaryInTraining && (
@@ -187,6 +181,7 @@ export const ExerciseCard = memo(function ExerciseCard({
 
       {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК.
           ENG-1: проброс repsRange для детерминированной прогрессии.
+          Фича 2: проброс targetRpe для RPE-based autoregulation.
           ENG-4: проброс safetyContext (pain/injury) для safety precedence в engine.
           COACH-3: проброс workoutId + exercise.id для записи feedback. */}
       {hasSets && sets.length > 0 && (
@@ -196,6 +191,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           targetSets={targetSets}
           restSeconds={restSeconds}
           repsRange={repsRange}
+          targetRpe={targetRpe}
           safetyContext={safetyContext}
           readinessContext={readinessContext}
           unit={unit}
