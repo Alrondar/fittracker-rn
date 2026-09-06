@@ -24,6 +24,8 @@ export interface NutritionTargets {
   proteins: number;
   fats: number;
   carbs: number;
+  /** FEAT-3: цель пользователя для goal-aware инсайтов (CI-5). */
+  goal?: string | null;
 }
 
 export interface DailyNutrition {
@@ -83,15 +85,10 @@ export const profileService = {
 
     return {
       email: user?.email || '',
-      username:
-        profileData?.username ||
-        user?.email?.split('@')[0] ||
-        'Пользователь',
+      username: profileData?.username || user?.email?.split('@')[0] || 'Пользователь',
       fullName: profileData?.full_name || null,
       avatarUrl: profileData?.avatar_url || null,
-      weight: profileData?.current_weight_kg
-        ? parseFloat(profileData.current_weight_kg)
-        : null,
+      weight: profileData?.current_weight_kg ? parseFloat(profileData.current_weight_kg) : null,
       gender: profileData?.gender || null,
     };
   },
@@ -125,7 +122,7 @@ export const profileService = {
     workouts?.forEach((workout: any) => {
       // ENG-13: тренировка считается выполненной, если есть хотя бы 1 рабочий сет
       const hasWorkingLogs = workout.workout_exercises?.some((ex: any) =>
-        ex.workout_logs?.some((l: any) => !l.is_warmup),
+        ex.workout_logs?.some((l: any) => !l.is_warmup)
       );
 
       if (hasWorkingLogs) {
@@ -135,9 +132,7 @@ export const profileService = {
           ex.workout_logs?.forEach((log: any) => {
             // ENG-13: разминка не учитывается в общем объёме
             if (log.is_warmup) return;
-            totalVolume +=
-              (parseFloat(log.weight_kg) || 0) *
-              (parseInt(log.reps) || 0);
+            totalVolume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
           });
         });
       }
@@ -152,9 +147,10 @@ export const profileService = {
 
   async getNutritionTargets(userId: string): Promise<NutritionTargets> {
     // maybeSingle: отсутствие профиля не роняет запрос
+    // FEAT-3: добавлен goal для goal-aware инсайтов недельного баланса.
     const { data } = await supabase
       .from('profiles')
-      .select('target_calories, target_proteins, target_fats, target_carbs')
+      .select('target_calories, target_proteins, target_fats, target_carbs, goal')
       .eq('id', userId)
       .maybeSingle();
 
@@ -163,6 +159,7 @@ export const profileService = {
       proteins: data?.target_proteins || 0,
       fats: data?.target_fats || 0,
       carbs: data?.target_carbs || 0,
+      goal: data?.goal || null,
     };
   },
 
@@ -200,19 +197,15 @@ export const profileService = {
         fats: 0,
         carbs: 0,
         water_ml: 0,
-      },
+      }
     );
   },
 
   // FEAT-2.1: недельная агрегация питания
   // один запрос, группировка по дням на клиенте
-  async getWeeklyNutrition(
-    userId: string,
-    days: number = 7,
-  ): Promise<WeeklyNutritionDay[]> {
+  async getWeeklyNutrition(userId: string, days: number = 7): Promise<WeeklyNutritionDay[]> {
     const now = new Date();
-    const startMs =
-      now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
+    const startMs = now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
     const startISO = new Date(startMs).toISOString().split('T')[0];
 
     const { data, error } = await supabase
@@ -228,11 +221,7 @@ export const profileService = {
     const byDate = new Map<string, WeeklyNutritionDay>();
 
     for (let i = 0; i < days; i++) {
-      const d = new Date(
-        startMs + i * 24 * 60 * 60 * 1000,
-      )
-        .toISOString()
-        .split('T')[0];
+      const d = new Date(startMs + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       byDate.set(d, {
         date: d,
@@ -265,19 +254,14 @@ export const profileService = {
   // сожжённые калории за период.
   // Вес берётся из profiles внутри сервиса.
   // Возвращает null, если вес в профиле не задан.
-  async getBurnedCalories(
-    userId: string,
-    days: number = 1,
-  ): Promise<number | null> {
+  async getBurnedCalories(userId: string, days: number = 1): Promise<number | null> {
     const { data: profile } = await supabase
       .from('profiles')
       .select('current_weight_kg')
       .eq('id', userId)
       .maybeSingle();
 
-    const userWeight = profile?.current_weight_kg
-      ? parseFloat(profile.current_weight_kg)
-      : null;
+    const userWeight = profile?.current_weight_kg ? parseFloat(profile.current_weight_kg) : null;
 
     if (!userWeight) return null;
 
@@ -291,9 +275,7 @@ export const profileService = {
       endISO = `${today}T23:59:59+00:00`;
     } else {
       const now = new Date();
-      const start = new Date(
-        now.getTime() - days * 24 * 60 * 60 * 1000,
-      );
+      const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
       startISO = start.toISOString();
       endISO = now.toISOString();
@@ -321,9 +303,7 @@ export const profileService = {
     // Устранён N+1: один запрос всех логов за период.
     const { data: logs } = await supabase
       .from('workout_logs')
-      .select(
-        'completed_at, workout_exercises!inner (workout_id)',
-      )
+      .select('completed_at, workout_exercises!inner (workout_id)')
       .in('workout_exercises.workout_id', workoutIds)
       .order('completed_at', { ascending: true });
 
@@ -350,26 +330,19 @@ export const profileService = {
         const firstLog = Math.min(...times);
         const lastLog = Math.max(...times);
 
-        const durationHours = Math.max(
-          0,
-          (lastLog - firstLog) / 1000 / 3600,
-        );
+        const durationHours = Math.max(0, (lastLog - firstLog) / 1000 / 3600);
 
-        totalBurned +=
-          5.0 * userWeight * durationHours;
+        totalBurned += 5.0 * userWeight * durationHours;
       } else {
         // Fallback: тренировка без логов ≈ 45 минут.
-        totalBurned +=
-          5.0 * userWeight * (45 / 60);
+        totalBurned += 5.0 * userWeight * (45 / 60);
       }
     });
 
     return Math.round(totalBurned);
   },
 
-  async getPersonalRecords(
-    userId: string,
-  ): Promise<PersonalRecord[]> {
+  async getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
     const { data: userWorkouts } = await supabase
       .from('workouts')
       .select('id')
@@ -390,24 +363,16 @@ export const profileService = {
       return [];
     }
 
-    const exerciseIds = [
-      ...new Set(
-        workoutExercises.map((we) => we.exercise_id),
-      ),
-    ];
+    const exerciseIds = [...new Set(workoutExercises.map((we) => we.exercise_id))];
 
-    const workoutExerciseIds = workoutExercises.map(
-      (we) => we.id,
-    );
+    const workoutExerciseIds = workoutExercises.map((we) => we.id);
 
     const { data: exercises } = await supabase
       .from('exercises')
       .select('id, name')
       .in('id', exerciseIds);
 
-    const exerciseNameMap = new Map(
-      exercises?.map((e) => [e.id, e.name]) || [],
-    );
+    const exerciseNameMap = new Map(exercises?.map((e) => [e.id, e.name]) || []);
 
     const { data: logs } = await supabase
       .from('workout_logs')
@@ -416,65 +381,43 @@ export const profileService = {
       .eq('is_warmup', false) // ENG-13: PR считаются только по рабочим сетам
       .order('weight_kg', { ascending: false });
 
-    const exerciseRecords: Record<
-      string,
-      PersonalRecord
-    > = {};
+    const exerciseRecords: Record<string, PersonalRecord> = {};
 
     logs?.forEach((log: any) => {
-      const workoutExercise = workoutExercises.find(
-        (we) =>
-          we.id === log.workout_exercise_id,
-      );
+      const workoutExercise = workoutExercises.find((we) => we.id === log.workout_exercise_id);
 
       if (!workoutExercise) return;
 
-      const exerciseId =
-        workoutExercise.exercise_id;
+      const exerciseId = workoutExercise.exercise_id;
 
-      const exerciseName =
-        exerciseNameMap.get(exerciseId);
+      const exerciseName = exerciseNameMap.get(exerciseId);
 
       if (!exerciseName) return;
 
-      const weight =
-        parseFloat(log.weight_kg) || 0;
+      const weight = parseFloat(log.weight_kg) || 0;
 
-      const reps =
-        parseInt(log.reps) || 0;
+      const reps = parseInt(log.reps) || 0;
 
       const setE1rm = epley(weight, reps);
 
-      const existing =
-        exerciseRecords[exerciseId];
+      const existing = exerciseRecords[exerciseId];
 
-if (!existing || weight > existing.maxWeight) {
-  exerciseRecords[exerciseId] = {
-    exercise_id: exerciseId,
-    name: exerciseName,
-    maxWeight: weight,
-    reps,
-    e1rm: Math.max(
-      setE1rm,
-      existing?.e1rm ?? 0,
-    ),
-  };
-}
-      else if (
-        setE1rm > existing.e1rm
-      ) {
+      if (!existing || weight > existing.maxWeight) {
+        exerciseRecords[exerciseId] = {
+          exercise_id: exerciseId,
+          name: exerciseName,
+          maxWeight: weight,
+          reps,
+          e1rm: Math.max(setE1rm, existing?.e1rm ?? 0),
+        };
+      } else if (setE1rm > existing.e1rm) {
         existing.e1rm = setE1rm;
       }
     });
 
     return Object.values(exerciseRecords)
-      .filter(
-        (record) => record.maxWeight > 0,
-      )
-      .sort(
-        (a, b) =>
-          b.maxWeight - a.maxWeight,
-      )
+      .filter((record) => record.maxWeight > 0)
+      .sort((a, b) => b.maxWeight - a.maxWeight)
       .slice(0, 5);
   },
 
@@ -487,30 +430,22 @@ if (!existing || weight > existing.maxWeight) {
       carbs: number;
       water_ml: number;
       meal_type: string;
-    },
+    }
   ): Promise<void> {
-    const today =
-      new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
 
-    const { error } = await supabase
-      .from('nutrition_logs')
-      .insert({
-        user_id: userId,
-        log_date: today,
-        ...data,
-      });
+    const { error } = await supabase.from('nutrition_logs').insert({
+      user_id: userId,
+      log_date: today,
+      ...data,
+    });
 
     if (error) throw error;
   },
 
   // NUTRI-2: CRUD записей питания за день.
-  async getNutritionLogs(
-    userId: string,
-    date?: string,
-  ): Promise<NutritionLog[]> {
-    const logDate =
-      date ||
-      new Date().toISOString().split('T')[0];
+  async getNutritionLogs(userId: string, date?: string): Promise<NutritionLog[]> {
+    const logDate = date || new Date().toISOString().split('T')[0];
 
     const { data, error } = await supabase
       .from('nutrition_logs')
@@ -529,28 +464,15 @@ if (!existing || weight > existing.maxWeight) {
 
   async updateNutritionLog(
     id: string,
-    data: Partial<
-      Omit<
-        NutritionLog,
-        'id' | 'user_id' | 'created_at'
-      >
-    >,
+    data: Partial<Omit<NutritionLog, 'id' | 'user_id' | 'created_at'>>
   ): Promise<void> {
-    const { error } = await supabase
-      .from('nutrition_logs')
-      .update(data)
-      .eq('id', id);
+    const { error } = await supabase.from('nutrition_logs').update(data).eq('id', id);
 
     if (error) throw error;
   },
 
-  async deleteNutritionLog(
-    id: string,
-  ): Promise<void> {
-    const { error } = await supabase
-      .from('nutrition_logs')
-      .delete()
-      .eq('id', id);
+  async deleteNutritionLog(id: string): Promise<void> {
+    const { error } = await supabase.from('nutrition_logs').delete().eq('id', id);
 
     if (error) throw error;
   },
@@ -561,14 +483,10 @@ if (!existing || weight > existing.maxWeight) {
 // ============================================================================
 
 /** Активные травмы пользователя (все, кроме полностью восстановленных). */
-export async function getActiveInjuries(
-  userId: string,
-): Promise<UserInjury[]> {
+export async function getActiveInjuries(userId: string): Promise<UserInjury[]> {
   const { data, error } = await supabase
     .from('user_injuries')
-    .select(
-      'body_part, injury_type, severity',
-    )
+    .select('body_part, injury_type, severity')
     .eq('user_id', userId)
     .neq('status', 'recovered');
 
@@ -582,14 +500,10 @@ export async function getActiveInjuries(
  * (body_part → muscle_group → рекомендация).
  * Таблица может отсутствовать — возвращаем пустой список.
  */
-export async function getInjuryWarningRules(): Promise<
-  WarningRule[]
-> {
+export async function getInjuryWarningRules(): Promise<WarningRule[]> {
   const { data, error } = await supabase
     .from('injury_exercise_warnings')
-    .select(
-      'body_part, muscle_group, recommendation',
-    );
+    .select('body_part, muscle_group, recommendation');
 
   if (error) return [];
 

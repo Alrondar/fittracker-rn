@@ -4,13 +4,22 @@
 //
 // Поддерживает фильтрацию по одному упражнению (prop selectedExerciseName),
 // чтобы progress.tsx мог показать интерактивный селектор.
+//
+// Фича 1: Strength Standards
+// - Рядом с названием упражнения — бейдж уровня (Novice/Beginner/Intermediate/Advanced/Elite)
+// - Тап по бейджу → SheetShell с таблицей нормативов (L2)
 import React, { useState } from 'react';
 import { View, Text, Dimensions } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
+import { useStore } from '../../store/useStore';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { StrengthSeries } from '../../services/progressService';
+import { profileService } from '../../services/profileService';
 import { TrendingUp } from 'lucide-react-native';
+import { useStrengthStandards } from '../../hooks/useStrengthStandards';
+import { StrengthLevelBadge } from './StrengthLevelBadge';
 
 const LINE_COLORS = ['#6C5CE7', '#00B894', '#FDCB6E'];
 
@@ -27,6 +36,7 @@ interface Props {
 
 export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
   const { colors } = useTheme();
+  const { userId } = useStore();
   const chartWidth = Dimensions.get('window').width - SPACING.lg * 4;
 
   // Фильтрация: если выбрано конкретное упражнение — показываем только его.
@@ -78,12 +88,7 @@ export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Сила</Text>
-          <Text
-            style={[
-              typography.captionSmall,
-              { color: colors.textSecondary, marginTop: 2 },
-            ]}
-          >
+          <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
             Расчётный 1ПМ (e1RM)
           </Text>
         </View>
@@ -98,36 +103,87 @@ export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
         }}
       >
         {filtered.map((s, idx) => (
-          <View
+          <StrengthSeriesRow
             key={s.exerciseName}
-            style={{ marginBottom: idx < filtered.length - 1 ? SPACING.lg : 0 }}
-          >
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}
-            >
-              <View
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: LINE_COLORS[idx % LINE_COLORS.length],
-                  marginRight: SPACING.xs,
-                }}
-              />
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                {s.exerciseName}
-              </Text>
-            </View>
-            <MiniLineChart
-              points={s.points.map((p) => p.e1rm)}
-              labels={s.points.map((p) => formatShort(p.weekStart))}
-              weekStarts={s.points.map((p) => p.weekStart)}
-              color={LINE_COLORS[idx % LINE_COLORS.length]}
-              width={chartWidth}
-            />
-          </View>
+            series={s}
+            idx={idx}
+            userId={userId}
+            chartWidth={chartWidth}
+            isLast={idx === filtered.length - 1}
+          />
         ))}
       </View>
+    </View>
+  );
+}
+
+/**
+ * Строка серии: название + бейдж уровня + мини-график.
+ * Вынесено в отдельный компонент, чтобы использовать хуки внутри map.
+ */
+function StrengthSeriesRow({
+  series,
+  idx,
+  userId,
+  chartWidth,
+  isLast,
+}: {
+  series: StrengthSeries;
+  idx: number;
+  userId: string | null;
+  chartWidth: number;
+  isLast: boolean;
+}) {
+  const { colors } = useTheme();
+
+  // Получаем вес пользователя для отображения в sheet
+  const { data: profile } = useQuery({
+    queryKey: ['profile-weight', userId],
+    queryFn: () => profileService.getProfileData(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Лучший e1RM по всем точкам серии
+  const bestE1rm = series.points.reduce((max, p) => Math.max(max, p.e1rm), 0);
+
+  // Расчёт уровня силы (Фича 1)
+  const standardResult = useStrengthStandards({
+    exerciseName: series.exerciseName,
+    e1rm: bestE1rm,
+    userId,
+  });
+
+  return (
+    <View style={{ marginBottom: isLast ? 0 : SPACING.lg }}>
+      {/* Заголовок строки: цветная точка + название + бейдж уровня */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
+        <View
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: LINE_COLORS[idx % LINE_COLORS.length],
+            marginRight: SPACING.xs,
+          }}
+        />
+        <Text style={[typography.caption, { color: colors.textSecondary, flex: 1 }]}>
+          {series.exerciseName}
+        </Text>
+        <StrengthLevelBadge
+          result={standardResult}
+          exerciseName={series.exerciseName}
+          e1rm={bestE1rm}
+          bodyWeightKg={profile?.weight ?? null}
+        />
+      </View>
+      <MiniLineChart
+        points={series.points.map((p) => p.e1rm)}
+        labels={series.points.map((p) => formatShort(p.weekStart))}
+        weekStarts={series.points.map((p) => p.weekStart)}
+        color={LINE_COLORS[idx % LINE_COLORS.length]}
+        width={chartWidth}
+      />
     </View>
   );
 }
@@ -268,8 +324,7 @@ function MiniLineChart({
             style={[
               typography.overline,
               {
-                color:
-                  points[points.length - 1] >= points[0] ? colors.success : colors.error,
+                color: points[points.length - 1] >= points[0] ? colors.success : colors.error,
               },
             ]}
           >

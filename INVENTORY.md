@@ -264,6 +264,7 @@ Important components:
 | useWarmup|WarmupBlock, workout|
 | useHistory|app/(tabs)/progress.tsx  (RecentWorkouts)|
 | useProgress|app/(tabs)/progress.tsx  (Progress hub)|
+| useStrengthStandards|StrengthLevelBadge (Фича 1): расчёт уровня силы для бейджа|
 | useInjuries|injuries + StatusCard (AUDIT-6: чипы активных травм)|
 | useProfile|profile/settings|
 | useBodyMetrics|metrics|
@@ -319,6 +320,8 @@ Important components:
 | utils/e1rm.ts|e1RM calculations|
 | utils/streak.ts|streak calculations|
 | utils/trend.ts|trend/moving average/slope|
+| utils/strengthStandards.ts|calculateStrengthStandard (Фича 1): уровень силы (Novice…Elite) по e1RM/вес/пол; null для упражнений без нормативов|
+| constants/strengthStandards.ts|нормативы 1ПМ/вес для 13 compound-движений (Фича 1); resolveStandardKey (exact + pattern fallback)|
 | utils/plates.ts|plate calculation logic; UI pending|
 | utils/csv.ts|CSV builder; service/UI pending|
 | utils/errorMapper.ts|user-facing error mapping|
@@ -457,9 +460,13 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 `src/components/progress/ProgressStats.tsx` — UX-11: 3 ключевых показателя (тренировки, объём, серия)
 `src/components/progress/ProgressInsights.tsx` — UX-11: детерминированные инсайты (сила, объём, вес, PR) без AI
 `src/components/progress/RecentWorkouts.tsx` — UX-11: последние 3–5 тренировок с информативными карточками (детерминированный градиент, program_name, duration, avg_rpe)
-`src/components/progress/StrengthTrendChart.tsx` — UX-11: тренд e1RM с интерактивным селектором упражнений и explainability
+`src/components/progress/StrengthTrendChart.tsx` — UX-11: тренд e1RM с интерактивным селектором упражнений и explainability; Фича 1: StrengthLevelBadge рядом с названием упражнения
+`src/components/progress/StrengthLevelBadge.tsx` — Фича 1: бейдж уровня силы (Novice/Beginner/Intermediate/Advanced/Elite); тап → SheetShell с таблицей нормативов
+`src/components/PersonalRecordsCard.tsx` — FEAT-1.4: PR-карточки; Фича 1: StrengthLevelBadge рядом с e1RM
 
 **Bugfixes & Maintenance**
 * ENG-16: Temporary replacement (UX-5) now updates BOTH `workout_exercises.exercise_id` and `pain_events.exercise_id` in DB. This ensures workout logs AND safety/pain context remain correctly attributed to the actually performed exercise, preventing lost injury warnings and false progression recommendations.
 * **ENG-17 (Фича 2)**: RPE-based Autoregulation. `program_exercises` now supports `target_rpe` (1-10). `progression.ts` checks if `actualRpe <= targetRpe - 2` to suggest progression even if max reps aren't reached. `ExerciseSettingsSheet` allows setting this target.
 * **Фича 5 (Technique Week as Deload alternative)**: `DeloadContext.availableTypes: ('volume' | 'technique')[]` в `engine/weeklySummary.ts` — когда разгрузка рекомендована, возвращает `['volume', 'technique']`. `WeeklyReviewSection` Л1-карточка имеет 2 кнопки (Объём/Техника), SheetShell показывает два независимых блока с разными иконками (Moon vs Target) и планами: классическая разгрузка (−40–60% объёма) vs техническая неделя (вес 65–70%, RPE 6–7, акцент на контроль движения — восстановление ЦНС без потери навыка).
+
+**Фича 1 (Strength Standards)**: `src/utils/strengthStandards.ts` + `src/constants/strengthStandards.ts` — чистая функция `calculateStrengthStandard(exerciseName, e1rm, bodyWeightKg, gender)` возвращает `StrengthStandardResult | null`. Нормативы: 13 compound-движений (bench_press, squat, deadlift, overhead_press, barbell_row, pull_up, dip, и варианты), 5 уровней (Novice < Beginner < Intermediate < Advanced < Elite), male/female. `resolveStandardKey`: точное совпадение по имени + pattern fallback (ключевые слова). `StrengthLevelBadge` — L1-бейдж с цветом уровня; тап → SheetShell с таблицей нормативов, текущим результатом и disclaimer. Используется в `StrengthTrendChart` (Progress Hub) и `PersonalRecordsCard` (PR-карточки). Null-result (нет норматива / нет веса / e1rm<=0) — бейдж не рендерится (честный fallback, не выдумываем данные). Цвета: `STRENGTH_LEVEL_COLORS` (mid-tone, читаемы в обеих темах). Хук `useStrengthStandards` кэширует профиль на 5 минут (как progress).

@@ -3,11 +3,7 @@
 // 2 страницы: кольца + макросы / таблица недели.
 // NUTRI-2: tap по заголовку → список записей за сегодня.
 
-import React, {
-  useCallback,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -22,15 +18,13 @@ import { Plus } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore } from '../../store/useStore';
 import { typography } from '../../styles/typography';
-import {
-  SPACING,
-  scale,
-} from '../../constants/theme';
+import { SPACING, scale } from '../../constants/theme';
 import { MACRO_COLORS } from '../../constants/semanticColors';
 import { AppCard } from '../ui/AppCard';
 import { CircularNutritionChart } from './CircularNutritionChart';
 import { NutritionWeekTable } from './NutritionWeekTable';
 import { useBurnedCalories } from '../../hooks/useBurnedCalories';
+import { WeeklyBalanceChip } from './WeeklyBalanceChip';
 
 interface DashboardNutritionCardProps {
   daily: {
@@ -64,65 +58,49 @@ export function DashboardNutritionCard({
   const { colors } = useTheme();
   const { userId } = useStore();
 
-  const { data: burned } =
-    useBurnedCalories(userId);
+  const { data: burned } = useBurnedCalories(userId);
 
-  const [page, setPage] =
-    useState(0);
+  const [page, setPage] = useState(0);
 
-  const [weekVisited, setWeekVisited] =
-    useState(false);
+  const [weekVisited, setWeekVisited] = useState(false);
 
-  const [pageWidth, setPageWidth] =
-    useState(0);
+  const [pageWidth, setPageWidth] = useState(0);
 
-  const scrollRef =
-    useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
-  const goToPage =
-    useCallback(
-      (idx: number) => {
-        setPage(idx);
+  const goToPage = useCallback(
+    (idx: number) => {
+      setPage(idx);
 
-        if (idx === 1) {
-          setWeekVisited(true);
-        }
+      if (idx === 1) {
+        setWeekVisited(true);
+      }
 
-        scrollRef.current?.scrollTo(
-          {
-            x: pageWidth * idx,
-            y: 0,
-            animated: true,
-          },
-        );
-      },
-      [pageWidth],
-    );
+      scrollRef.current?.scrollTo({
+        x: pageWidth * idx,
+        y: 0,
+        animated: true,
+      });
+    },
+    [pageWidth]
+  );
 
-  const handleMomentumEnd =
-    useCallback(
-      (
-        e: NativeSyntheticEvent<NativeScrollEvent>,
-      ) => {
-        if (!pageWidth) return;
+  const handleMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!pageWidth) return;
 
-        const idx = Math.round(
-          e.nativeEvent.contentOffset.x /
-            pageWidth,
-        );
+      const idx = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
 
-        setPage(idx);
+      setPage(idx);
 
-        if (idx === 1) {
-          setWeekVisited(true);
-        }
-      },
-      [pageWidth],
-    );
+      if (idx === 1) {
+        setWeekVisited(true);
+      }
+    },
+    [pageWidth]
+  );
 
-  const hasTargets =
-    targets.calories > 0 ||
-    targets.proteins > 0;
+  const hasTargets = targets.calories > 0 || targets.proteins > 0;
 
   if (!hasTargets) {
     return (
@@ -131,8 +109,7 @@ export function DashboardNutritionCard({
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent:
-              'space-between',
+            justifyContent: 'space-between',
           }}
         >
           <View>
@@ -140,8 +117,7 @@ export function DashboardNutritionCard({
               style={[
                 typography.h5,
                 {
-                  color:
-                    colors.textPrimary,
+                  color: colors.textPrimary,
                 },
               ]}
             >
@@ -152,8 +128,7 @@ export function DashboardNutritionCard({
               style={[
                 typography.caption,
                 {
-                  color:
-                    colors.textSecondary,
+                  color: colors.textSecondary,
                   marginTop: 4,
                 },
               ]}
@@ -162,19 +137,12 @@ export function DashboardNutritionCard({
             </Text>
           </View>
 
-          <TouchableOpacity
-            onPress={() =>
-              router.push(
-                '/profile/goals',
-              )
-            }
-          >
+          <TouchableOpacity onPress={() => router.push('/profile/goals')}>
             <Text
               style={[
                 typography.body,
                 {
-                  color:
-                    colors.primary,
+                  color: colors.primary,
                 },
               ]}
             >
@@ -192,8 +160,7 @@ export function DashboardNutritionCard({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent:
-            'space-between',
+          justifyContent: 'space-between',
           marginBottom: SPACING.md,
         }}
       >
@@ -214,14 +181,17 @@ export function DashboardNutritionCard({
             style={[
               typography.h5,
               {
-                color:
-                  colors.textPrimary,
+                color: colors.textPrimary,
               },
             ]}
           >
             Питание сегодня
           </Text>
         </TouchableOpacity>
+
+        {/* FEAT-3: L1 чип недельного баланса калорий.
+            Скрывается автоматически при недостатке данных. */}
+        <WeeklyBalanceChip />
 
         <TouchableOpacity
           onPress={onOpenModal}
@@ -237,18 +207,13 @@ export function DashboardNutritionCard({
             right: 10,
           }}
         >
-          <Plus
-            size={scale(18)}
-            color={colors.primary}
-            strokeWidth={2}
-          />
+          <Plus size={scale(18)} color={colors.primary} strokeWidth={2} />
 
           <Text
             style={[
               typography.caption,
               {
-                color:
-                  colors.primary,
+                color: colors.primary,
               },
             ]}
           >
@@ -257,66 +222,42 @@ export function DashboardNutritionCard({
         </TouchableOpacity>
       </View>
 
-      <View
-        onLayout={(e) =>
-          setPageWidth(
-            e.nativeEvent.layout.width,
-          )
-        }
-      >
+      <View onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}>
         <ScrollView
           ref={scrollRef}
           horizontal
           pagingEnabled
-          showsHorizontalScrollIndicator={
-            false
-          }
-          onMomentumScrollEnd={
-            handleMomentumEnd
-          }
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleMomentumEnd}
         >
           {/* Страница 1: кольца + макросы */}
           <View
             style={{
-              width:
-                pageWidth || undefined,
+              width: pageWidth || undefined,
             }}
           >
             <CircularNutritionChart
               daily={daily}
               targets={targets}
-              burnedCalories={
-                burned ?? null
-              }
+              burnedCalories={burned ?? null}
             />
 
             <View
               style={{
                 flexDirection: 'row',
-                justifyContent:
-                  'space-between',
-                marginTop:
-                  SPACING.lg,
-                paddingTop:
-                  SPACING.md,
+                justifyContent: 'space-between',
+                marginTop: SPACING.lg,
+                paddingTop: SPACING.md,
                 borderTopWidth: 1,
-                borderTopColor:
-                  colors.border,
+                borderTopColor: colors.border,
               }}
             >
               <MacroItem
                 label="Белки"
-                current={
-                  daily.proteins
-                }
-                target={
-                  targets.proteins
-                }
+                current={daily.proteins}
+                target={targets.proteins}
                 unit="г"
-                color={
-                  MACRO_COLORS
-                    .proteins
-                }
+                color={MACRO_COLORS.proteins}
               />
 
               <MacroItem
@@ -324,39 +265,24 @@ export function DashboardNutritionCard({
                 current={daily.fats}
                 target={targets.fats}
                 unit="г"
-                color={
-                  MACRO_COLORS.fats
-                }
+                color={MACRO_COLORS.fats}
               />
 
               <MacroItem
                 label="Углеводы"
-                current={
-                  daily.carbs
-                }
-                target={
-                  targets.carbs
-                }
+                current={daily.carbs}
+                target={targets.carbs}
                 unit="г"
-                color={
-                  MACRO_COLORS
-                    .carbs
-                }
+                color={MACRO_COLORS.carbs}
               />
 
-              {daily.water_ml >
-                0 && (
+              {daily.water_ml > 0 && (
                 <MacroItem
                   label="Вода"
-                  current={
-                    daily.water_ml
-                  }
+                  current={daily.water_ml}
                   target={2000}
                   unit="мл"
-                  color={
-                    MACRO_COLORS
-                      .water
-                  }
+                  color={MACRO_COLORS.water}
                 />
               )}
             </View>
@@ -365,16 +291,12 @@ export function DashboardNutritionCard({
           {/* Страница 2: таблица недели */}
           <View
             style={{
-              width:
-                pageWidth || undefined,
-              paddingTop:
-                SPACING.sm,
+              width: pageWidth || undefined,
+              paddingTop: SPACING.sm,
             }}
           >
             {weekVisited ? (
-              <NutritionWeekTable
-                userId={userId}
-              />
+              <NutritionWeekTable userId={userId} />
             ) : (
               <View
                 style={{
@@ -390,18 +312,14 @@ export function DashboardNutritionCard({
       <View
         style={{
           flexDirection: 'row',
-          justifyContent:
-            'center',
+          justifyContent: 'center',
           alignItems: 'center',
           gap: SPACING.sm,
-          marginTop:
-            SPACING.md,
+          marginTop: SPACING.md,
         }}
       >
         <TouchableOpacity
-          onPress={() =>
-            goToPage(0)
-          }
+          onPress={() => goToPage(0)}
           hitSlop={{
             top: 12,
             bottom: 12,
@@ -414,18 +332,13 @@ export function DashboardNutritionCard({
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor:
-                page === 0
-                  ? colors.textPrimary
-                  : colors.textTertiary,
+              backgroundColor: page === 0 ? colors.textPrimary : colors.textTertiary,
             }}
           />
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() =>
-            goToPage(1)
-          }
+          onPress={() => goToPage(1)}
           hitSlop={{
             top: 12,
             bottom: 12,
@@ -438,10 +351,7 @@ export function DashboardNutritionCard({
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor:
-                page === 1
-                  ? colors.textPrimary
-                  : colors.textTertiary,
+              backgroundColor: page === 1 ? colors.textPrimary : colors.textTertiary,
             }}
           />
         </TouchableOpacity>
@@ -463,8 +373,7 @@ function MacroItem({
   unit: string;
   color: string;
 }) {
-  const { colors } =
-    useTheme();
+  const { colors } = useTheme();
 
   return (
     <View
@@ -489,8 +398,7 @@ function MacroItem({
         style={[
           typography.body,
           {
-            color:
-              colors.textPrimary,
+            color: colors.textPrimary,
             fontWeight: '600',
           },
         ]}
@@ -498,8 +406,7 @@ function MacroItem({
         {current}{' '}
         <Text
           style={{
-            color:
-              colors.textTertiary,
+            color: colors.textTertiary,
             fontWeight: '400',
           }}
         >
