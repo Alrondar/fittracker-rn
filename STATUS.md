@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 06.09.2026 (main) [ENG-19 Next Workout Forecast]
+Срез: 06.09.2026 (main) [H4 Accessibility polish — новые поверхности]
 
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
@@ -30,7 +30,7 @@
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
 | PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)|
-| DS-1 | Design system | 🟠 | ✅ | Аудит токенов/типографики/spacing/states завершён. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
+| DS-1 | Design system | 🟠 | ✅ | Аудит токенов/типографики/spacing/states завершён. Контраст textTertiary исправлен (WCAG 2.1 AA). Этап H4: accessibilityRole/Label/Hint во всех новых поверхностях (Фичи 1–7, UX-15): StrengthLevelBadge, WeeklyReviewSection, StatusCard (readiness pips, cycle/injury/forecast/pain chips), ExerciseSettingsSheet (степперы/интенсивность/save), workouts.tsx (sticky/segmented/items/skip sheet). PainTrendSheet/WorkoutForecastSheet — без интерактивных элементов, изменений не требуют. |
 
 ## 3. Existing product baseline
 

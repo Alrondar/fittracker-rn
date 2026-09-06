@@ -88,6 +88,8 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
           </Text>
           <TouchableOpacity
             onPress={() => refetch()}
+            accessibilityRole="button"
+            accessibilityLabel="Повторить попытку загрузки"
             style={{
               paddingHorizontal: SPACING.md,
               paddingVertical: SPACING.xs,
@@ -191,6 +193,8 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                 gap: SPACING.xs,
               }}
               accessibilityRole="button"
+              accessibilityLabel="Разгрузочная неделя: снижение объёма"
+              accessibilityHint="Откроет детали плана разгрузки"
             >
               <Moon size={16} color={colors.warning} />
               <Text style={[typography.label, { color: colors.warning, fontWeight: '600' }]}>
@@ -211,6 +215,8 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                 gap: SPACING.xs,
               }}
               accessibilityRole="button"
+              accessibilityLabel="Техническая неделя: снижение веса с акцентом на технику"
+              accessibilityHint="Откроет детали плана технической недели"
             >
               <Target size={16} color={colors.primary} />
               <Text style={[typography.label, { color: colors.primary, fontWeight: '600' }]}>

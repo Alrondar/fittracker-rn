@@ -1,6 +1,6 @@
 FitTracker — Code & Screen Inventory
 
-Срез: 06.09.2026 (main) [ENG-19 Next Workout Forecast]
+Срез: 06.09.2026 (main) [H4 Accessibility polish — новые поверхности]
 
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 

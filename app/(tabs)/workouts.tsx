@@ -273,6 +273,8 @@ export default function WorkoutsScreen() {
           delayLongPress={500}
           activeOpacity={0.85}
           disabled={status === 'skipped'}
+          accessibilityRole="button"
+          accessibilityLabel={`${item.name}, ${status === 'completed' ? 'выполнена' : status === 'next' ? 'следующая' : status === 'in_progress' ? 'в процессе' : status === 'skipped' ? 'пропущена' : 'предстоит'}`}
           style={{ marginHorizontal: SPACING.lg }}
         >
           <FadeIn>
@@ -446,6 +448,7 @@ export default function WorkoutsScreen() {
                       {forecast && forecast.difficulty !== 'unknown' && (
                         <TouchableOpacity
                           onPress={() => setForecastSheetOpen(true)}
+                          accessibilityRole="button"
                           accessibilityLabel={`Прогноз: ${forecast.difficulty}, открой подробности`}
                           style={{
                             flexDirection: 'row',
@@ -479,6 +482,8 @@ export default function WorkoutsScreen() {
                   </View>
                   <TouchableOpacity
                     onPress={() => navigateToWorkout(nextWorkout.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Начать тренировку: ${nextWorkout.name}`}
                     style={{
                       backgroundColor: colors.primary,
                       paddingHorizontal: SPACING.md,
@@ -497,6 +502,9 @@ export default function WorkoutsScreen() {
                     setSkipTarget({ id: nextWorkout.id, name: nextWorkout.name });
                   }}
                   delayLongPress={500}
+                  accessibilityRole="button"
+                  accessibilityLabel="Пропустить тренировку"
+                  accessibilityHint="Удерживай 0.5 секунды, чтобы открыть подтверждение пропуска"
                   style={{
                     marginTop: SPACING.md,
                     paddingTop: SPACING.md,
@@ -562,6 +570,11 @@ export default function WorkoutsScreen() {
                   <TouchableOpacity
                     key={mode}
                     onPress={() => setViewMode(mode)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      mode === 'upcoming' ? 'Предстоящие тренировки' : 'Все тренировки'
+                    }
+                    accessibilityState={{ selected: viewMode === mode }}
                     style={{
                       flex: 1,
                       paddingVertical: SPACING.sm,
@@ -645,6 +658,8 @@ export default function WorkoutsScreen() {
             <TouchableOpacity
               onPress={handleSkip}
               disabled={skipping}
+              accessibilityRole="button"
+              accessibilityLabel="Подтвердить пропуск тренировки"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -670,6 +685,8 @@ export default function WorkoutsScreen() {
             <TouchableOpacity
               onPress={() => setSkipTarget(null)}
               disabled={skipping}
+              accessibilityRole="button"
+              accessibilityLabel="Отменить пропуск"
               style={{
                 alignItems: 'center',
                 paddingVertical: SPACING.md,

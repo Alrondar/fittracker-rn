@@ -51,6 +51,8 @@ export function ExerciseSettingsSheet({
         >
           <TouchableOpacity
             onPress={() => setSets(Math.max(1, sets - 1))}
+            accessibilityRole="button"
+            accessibilityLabel="Уменьшить количество подходов"
             style={{
               width: 44,
               height: 44,
@@ -72,6 +74,8 @@ export function ExerciseSettingsSheet({
           </Text>
           <TouchableOpacity
             onPress={() => setSets(Math.min(10, sets + 1))}
+            accessibilityRole="button"
+            accessibilityLabel="Увеличить количество подходов"
             style={{
               width: 44,
               height: 44,
@@ -123,6 +127,8 @@ export function ExerciseSettingsSheet({
         >
           <TouchableOpacity
             onPress={() => setTargetRpe((prev) => (prev != null && prev > 1 ? prev - 1 : null))}
+            accessibilityRole="button"
+            accessibilityLabel="Снизить целевой RPE или сбросить"
             style={{
               width: 44,
               height: 44,
@@ -148,6 +154,8 @@ export function ExerciseSettingsSheet({
           </Text>
           <TouchableOpacity
             onPress={() => setTargetRpe((prev) => (prev != null && prev < 10 ? prev + 1 : 1))}
+            accessibilityRole="button"
+            accessibilityLabel="Увеличить целевой RPE"
             style={{
               width: 44,
               height: 44,
@@ -187,6 +195,8 @@ export function ExerciseSettingsSheet({
         >
           <TouchableOpacity
             onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))}
+            accessibilityRole="button"
+            accessibilityLabel="Уменьшить время отдыха на 15 секунд"
             style={{
               width: 44,
               height: 44,
@@ -208,6 +218,8 @@ export function ExerciseSettingsSheet({
           </Text>
           <TouchableOpacity
             onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))}
+            accessibilityRole="button"
+            accessibilityLabel="Увеличить время отдыха на 15 секунд"
             style={{
               width: 44,
               height: 44,
@@ -232,6 +244,9 @@ export function ExerciseSettingsSheet({
             <TouchableOpacity
               key={item.value}
               onPress={() => setIntensity(item.value)}
+              accessibilityRole="button"
+              accessibilityLabel={`Интенсивность: ${item.label}${intensity === item.value ? ', выбрано' : ''}`}
+              accessibilityState={{ selected: intensity === item.value }}
               style={{
                 flex: 1,
                 padding: SPACING.md,
@@ -274,6 +289,8 @@ export function ExerciseSettingsSheet({
             intensity,
           })
         }
+        accessibilityRole="button"
+        accessibilityLabel="Сохранить настройки упражнения"
         style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
       >
         <Text style={buttonStyles.textPrimary}>Сохранить</Text>

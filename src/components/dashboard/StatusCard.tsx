@@ -148,6 +148,9 @@ export function StatusCard() {
         <Text style={[typography.h5, { color: colors.textPrimary }]}>Состояние сегодня</Text>
         <TouchableOpacity
           onPress={() => setSheetOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={readiness == null ? 'Отметить готовность' : 'Обновить готовность'}
+          accessibilityHint="Откроет детальный чек-ин"
           style={{
             paddingHorizontal: SPACING.md,
             paddingVertical: 6,
@@ -217,6 +220,8 @@ export function StatusCard() {
                   disabled={quickSetMutation.isPending || !userId}
                   onPress={() => handlePipTap(v)}
                   hitSlop={{ top: 12, bottom: 12, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Оценить готовность на ${v} из 5`}
                   style={{ flex: 1, alignItems: 'center', paddingVertical: 4 }}
                 >
                   <View
@@ -318,6 +323,7 @@ export function StatusCard() {
       {forecast && forecast.difficulty !== 'unknown' && (
         <TouchableOpacity
           onPress={() => setForecastSheetOpen(true)}
+          accessibilityRole="button"
           accessibilityLabel={`Следующая тренировка: ${forecast.difficulty}, открой подробности`}
           style={{
             flexDirection: 'row',
@@ -371,6 +377,9 @@ export function StatusCard() {
           {currentPhase ? (
             <TouchableOpacity
               onPress={() => setCycleCheckInOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Цикл: день ${currentPhase.dayNumber}, ${getCyclePhaseLabel(currentPhase.phase)}`}
+              accessibilityHint="Откроет чек-ин цикла"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -395,6 +404,8 @@ export function StatusCard() {
           ) : (
             <TouchableOpacity
               onPress={() => setCycleCheckInOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Отметить начало цикла"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -431,6 +442,8 @@ export function StatusCard() {
                 <TouchableOpacity
                   key={inj.id}
                   onPress={() => router.push('/profile/injuries')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Активная травма: ${(BODY_PART_LABELS as Record<string, string>)[inj.body_part] || inj.body_part}. Нажми для подробностей`}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -460,6 +473,8 @@ export function StatusCard() {
             {activeInjuries.length > 2 && (
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/profile/injuries')}
+                accessibilityRole="button"
+                accessibilityLabel={`Ещё ${activeInjuries.length - 2} активных травм. Нажми для просмотра`}
                 style={{
                   paddingHorizontal: SPACING.sm,
                   paddingVertical: 4,
@@ -480,7 +495,9 @@ export function StatusCard() {
             {hasChronic && topChronic && (
               <TouchableOpacity
                 onPress={() => setPainTrendSheetOpen(true)}
+                accessibilityRole="button"
                 accessibilityLabel="Устойчивая боль: открой подробности"
+                accessibilityHint="Откроет тренд боли по зонам за 4 недели"
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',

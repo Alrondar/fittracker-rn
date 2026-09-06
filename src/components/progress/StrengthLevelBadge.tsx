@@ -49,6 +49,9 @@ export function StrengthLevelBadge({
       <TouchableOpacity
         activeOpacity={0.75}
         onPress={() => setSheetOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`Уровень силы: ${result.levelLabel}. ${result.ratio.toFixed(1)}× веса`}
+        accessibilityHint="Откроет таблицу нормативов силы"
         style={[
           styles.badge,
           {
