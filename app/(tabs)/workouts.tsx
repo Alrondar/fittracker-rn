@@ -11,16 +11,13 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import {
-  ClipboardList,
-  Dumbbell,
-  Check,
-  Clock,
-  SkipForward,
-} from 'lucide-react-native';
+import { ClipboardList, Dumbbell, Check, Clock, SkipForward } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
+import { useWorkoutForecast } from '../../src/hooks/useWorkoutForecast';
+import { WorkoutForecastSheet } from '../../src/components/dashboard/WorkoutForecastSheet';
+import type { ForecastDifficulty } from '../../src/utils/workoutForecast';
 import type { ActiveProgram, WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
@@ -34,6 +31,21 @@ import { typography } from '../../src/styles/typography';
 import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
 
 type WorkoutStatus = 'completed' | 'skipped' | 'next' | 'in_progress' | 'upcoming';
+
+// Фича 7: цветовые хелперы для L1-прогноз-бейджа в Sticky-карточке.
+function forecastDifficultyColor(d: ForecastDifficulty, colors: any): string {
+  if (d === 'hard') return colors.warning;
+  if (d === 'easy') return colors.success;
+  return colors.textSecondary;
+}
+function forecastDifficultyBorderColor(d: ForecastDifficulty, colors: any): string {
+  const base = forecastDifficultyColor(d, colors);
+  return base + '88';
+}
+function forecastDifficultyBg(d: ForecastDifficulty, colors: any): string {
+  const base = forecastDifficultyColor(d, colors);
+  return base + '1A';
+}
 
 function getWorkoutStatus(w: any, activeProgram: ActiveProgram | null): WorkoutStatus {
   // UX-5 Feature 2: пропуск — отдельный статус (skipped_at заполнен)
@@ -70,32 +82,37 @@ export default function WorkoutsScreen() {
   const [skipTarget, setSkipTarget] = useState<{ id: string; name: string } | null>(null);
   const [skipping, setSkipping] = useState(false);
 
+  // Фича 7: Next Workout Forecast (L1 badge в Sticky-карточке, L2 sheet).
+  const { result: forecast } = useWorkoutForecast(userId);
+  const [forecastSheetOpen, setForecastSheetOpen] = useState(false);
+
   // Гибрид А+Б: Фильтр "Предстоящие / Все"
   const [viewMode, setViewMode] = useState<'upcoming' | 'all'>('upcoming');
 
   // Гибрид А+Б: Поиск следующей тренировки для Sticky-карточки
-  const allWorkouts = useMemo(() => sections.flatMap(s => s.data), [sections]);
-  const nextWorkout = allWorkouts.find(w => getWorkoutStatus(w, activeProgram) === 'in_progress') || 
-                      allWorkouts.find(w => getWorkoutStatus(w, activeProgram) === 'next');
+  const allWorkouts = useMemo(() => sections.flatMap((s) => s.data), [sections]);
+  const nextWorkout =
+    allWorkouts.find((w) => getWorkoutStatus(w, activeProgram) === 'in_progress') ||
+    allWorkouts.find((w) => getWorkoutStatus(w, activeProgram) === 'next');
 
   // Гибрид А+Б: Фильтрация секций
   const filteredSections = useMemo(() => {
     if (viewMode === 'all') return sections;
     return sections
-      .map(section => ({
+      .map((section) => ({
         ...section,
-        data: section.data.filter(item => {
+        data: section.data.filter((item) => {
           const status = getWorkoutStatus(item, activeProgram);
           return status === 'next' || status === 'in_progress' || status === 'upcoming';
-        })
+        }),
       }))
-      .filter(section => section.data.length > 0);
+      .filter((section) => section.data.length > 0);
   }, [sections, activeProgram, viewMode]);
 
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch]),
+    }, [refetch])
   );
 
   const onRefresh = useCallback(() => {
@@ -108,7 +125,7 @@ export default function WorkoutsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       router.push(`/workout/${id}`);
     },
-    [router],
+    [router]
   );
 
   // UX-5 Feature 2: пропуск тренировки (sequential + retry, паттерн saveWorkout)
@@ -133,7 +150,7 @@ export default function WorkoutsScreen() {
   const renderHeader = useCallback(() => {
     if (!activeProgram) return null;
     const currentPhaseObj = activeProgram.phases.find(
-      (p: any) => p.phase_number === activeProgram.currentPhase,
+      (p: any) => p.phase_number === activeProgram.currentPhase
     );
     const phaseColor = currentPhaseObj
       ? getPhaseColor(currentPhaseObj.phase_type, colors)
@@ -149,7 +166,9 @@ export default function WorkoutsScreen() {
           </Text>
 
           {currentPhaseObj && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}
+            >
               <View
                 style={{
                   flexDirection: 'row',
@@ -190,7 +209,12 @@ export default function WorkoutsScreen() {
                 }}
               />
             </View>
-            <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textSecondary, marginTop: SPACING.xs },
+              ]}
+            >
               Выполнено {progress.completed} из {progress.total} тренировок
             </Text>
           </View>
@@ -215,7 +239,7 @@ export default function WorkoutsScreen() {
         />
       );
     },
-    [colors],
+    [colors]
   );
 
   // ===== Карточка тренировки (со статусом) =====
@@ -230,10 +254,10 @@ export default function WorkoutsScreen() {
         status === 'next'
           ? colors.primary
           : status === 'in_progress'
-          ? colors.warning
-          : status === 'completed'
-          ? colors.success + '60'
-          : colors.border;
+            ? colors.warning
+            : status === 'completed'
+              ? colors.success + '60'
+              : colors.border;
 
       // UX-5 Feature 2: long press только для «Следующая» (скоуп подтверждён)
       const handleLongPress = () => {
@@ -341,13 +365,12 @@ export default function WorkoutsScreen() {
                   </Text>
                 )}
               </View>
-
             </AppCard>
           </FadeIn>
         </TouchableOpacity>
       );
     },
-    [activeProgram, colors, navigateToWorkout],
+    [activeProgram, colors, navigateToWorkout]
   );
 
   const renderEmpty = () => {
@@ -359,11 +382,11 @@ export default function WorkoutsScreen() {
           {isUpcomingEmpty ? 'Нет предстоящих тренировок' : 'Нет тренировок'}
         </Text>
         <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-          {isUpcomingEmpty 
-            ? 'Все тренировки этой программы уже завершены или пропущены. Переключитесь на «Все», чтобы увидеть историю.' 
-            : (activeProgram
+          {isUpcomingEmpty
+            ? 'Все тренировки этой программы уже завершены или пропущены. Переключитесь на «Все», чтобы увидеть историю.'
+            : activeProgram
               ? `Для программы "${activeProgram.name}" ещё нет тренировок.`
-              : 'Активируйте программу, чтобы увидеть список тренировок.')}
+              : 'Активируйте программу, чтобы увидеть список тренировок.'}
         </Text>
       </FadeIn>
     );
@@ -388,34 +411,105 @@ export default function WorkoutsScreen() {
           {activeProgram && nextWorkout && (
             <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
               <AppCard variant="default" style={{ borderColor: colors.primary, borderWidth: 1.5 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
                   <View style={{ flex: 1 }}>
-                    <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>Следующая тренировка</Text>
-                    <Text style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]} numberOfLines={2}>
+                    <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                      Следующая тренировка
+                    </Text>
+                    <Text
+                      style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]}
+                      numberOfLines={2}
+                    >
                       {nextWorkout.name}
                     </Text>
-                    <View style={{ flexDirection: 'row', gap: SPACING.xs, marginTop: SPACING.sm, flexWrap: 'wrap' }}>
-                      <AppBadge variant="primary" size="small" icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        gap: SPACING.xs,
+                        marginTop: SPACING.sm,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <AppBadge
+                        variant="primary"
+                        size="small"
+                        icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}
+                      >
                         Нед {nextWorkout.week_number}, День {nextWorkout.day_index}
                       </AppBadge>
+                      {forecast && forecast.difficulty !== 'unknown' && (
+                        <TouchableOpacity
+                          onPress={() => setForecastSheetOpen(true)}
+                          accessibilityLabel={`Прогноз: ${forecast.difficulty}, открой подробности`}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: SPACING.sm,
+                            paddingVertical: 4,
+                            borderRadius: BORDER_RADIUS.full,
+                            borderWidth: 1,
+                            borderColor: forecastDifficultyBorderColor(forecast.difficulty, colors),
+                            backgroundColor: forecastDifficultyBg(forecast.difficulty, colors),
+                          }}
+                        >
+                          <Text
+                            style={[
+                              typography.captionSmall,
+                              {
+                                color: forecastDifficultyColor(forecast.difficulty, colors),
+                                fontWeight: '700',
+                              },
+                            ]}
+                          >
+                            {forecast.difficulty === 'hard'
+                              ? 'Тяжёлая'
+                              : forecast.difficulty === 'easy'
+                                ? 'Лёгкая'
+                                : 'Обычная'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => navigateToWorkout(nextWorkout.id)}
-                    style={{ backgroundColor: colors.primary, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: BORDER_RADIUS.md }}
+                    style={{
+                      backgroundColor: colors.primary,
+                      paddingHorizontal: SPACING.md,
+                      paddingVertical: SPACING.sm,
+                      borderRadius: BORDER_RADIUS.md,
+                    }}
                   >
-                    <Text style={[typography.labelBold, { color: colors.textInverse }]}>Начать →</Text>
+                    <Text style={[typography.labelBold, { color: colors.textInverse }]}>
+                      Начать →
+                    </Text>
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onLongPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     setSkipTarget({ id: nextWorkout.id, name: nextWorkout.name });
                   }}
                   delayLongPress={500}
-                  style={{ marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: colors.border }}
+                  style={{
+                    marginTop: SPACING.md,
+                    paddingTop: SPACING.md,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                  }}
                 >
-                  <Text style={[typography.captionSmall, { color: colors.textTertiary, textAlign: 'center' }]}>
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      { color: colors.textTertiary, textAlign: 'center' },
+                    ]}
+                  >
                     Удерживайте для пропуска
                   </Text>
                 </TouchableOpacity>
@@ -424,21 +518,46 @@ export default function WorkoutsScreen() {
           )}
 
           {/* Гибрид А+Б: Состояние "Программа завершена" */}
-          {activeProgram && !nextWorkout && progress.completed === progress.total && progress.total > 0 && (
-            <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
-              <AppCard variant="default" style={{ borderColor: colors.success, borderWidth: 1.5, alignItems: 'center', paddingVertical: SPACING.lg }}>
-                <Text style={[typography.h5, { color: colors.success }]}>Программа завершена! 🎉</Text>
-                <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.xs, textAlign: 'center' }]}>
-                  Отличная работа! Все тренировки этой программы пройдены.
-                </Text>
-              </AppCard>
-            </View>
-          )}
+          {activeProgram &&
+            !nextWorkout &&
+            progress.completed === progress.total &&
+            progress.total > 0 && (
+              <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
+                <AppCard
+                  variant="default"
+                  style={{
+                    borderColor: colors.success,
+                    borderWidth: 1.5,
+                    alignItems: 'center',
+                    paddingVertical: SPACING.lg,
+                  }}
+                >
+                  <Text style={[typography.h5, { color: colors.success }]}>
+                    Программа завершена! 🎉
+                  </Text>
+                  <Text
+                    style={[
+                      typography.body,
+                      { color: colors.textSecondary, marginTop: SPACING.xs, textAlign: 'center' },
+                    ]}
+                  >
+                    Отличная работа! Все тренировки этой программы пройдены.
+                  </Text>
+                </AppCard>
+              </View>
+            )}
 
           {/* Гибрид А+Б: Segmented Control */}
           {activeProgram && (
             <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
-              <View style={{ flexDirection: 'row', backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.md, padding: 2 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  backgroundColor: colors.surfaceSecondary,
+                  borderRadius: BORDER_RADIUS.md,
+                  padding: 2,
+                }}
+              >
                 {(['upcoming', 'all'] as const).map((mode) => (
                   <TouchableOpacity
                     key={mode}
@@ -455,11 +574,13 @@ export default function WorkoutsScreen() {
                       elevation: viewMode === mode ? 2 : 0,
                     }}
                   >
-                    <Text style={{
-                      color: viewMode === mode ? colors.textPrimary : colors.textSecondary,
-                      fontWeight: viewMode === mode ? '600' : '400',
-                      fontSize: 14,
-                    }}>
+                    <Text
+                      style={{
+                        color: viewMode === mode ? colors.textPrimary : colors.textSecondary,
+                        fontWeight: viewMode === mode ? '600' : '400',
+                        fontSize: 14,
+                      }}
+                    >
                       {mode === 'upcoming' ? 'Предстоящие' : 'Все'}
                     </Text>
                   </TouchableOpacity>
@@ -467,6 +588,13 @@ export default function WorkoutsScreen() {
               </View>
             </View>
           )}
+
+          {/* Фича 7: L2 sheet с разбивкой прогноза по упражнениям */}
+          <WorkoutForecastSheet
+            visible={forecastSheetOpen}
+            onClose={() => setForecastSheetOpen(false)}
+            result={forecast}
+          />
 
           <View style={{ flex: 1 }}>
             <SectionList
@@ -478,7 +606,11 @@ export default function WorkoutsScreen() {
               contentContainerStyle={{ paddingBottom: 100 }}
               stickySectionHeadersEnabled={true}
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.primary}
+                />
               }
             />
           </View>
@@ -491,65 +623,65 @@ export default function WorkoutsScreen() {
         title="Пропустить тренировку?"
         onClose={() => !skipping && setSkipTarget(null)}
       >
-          {skipTarget && (
-            <>
-              <Text
-                style={[
-                  typography.body,
-                  { color: colors.textPrimary, fontWeight: '600', marginBottom: SPACING.xs },
-                ]}
-              >
-                {skipTarget.name}
-              </Text>
-              <Text
-                style={[
-                  typography.bodySmall,
-                  { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.lg },
-                ]}
-              >
-                Программа перейдёт к следующему дню. Подходы не будут записаны. Это действие нельзя
-                отменить.
-              </Text>
-              <TouchableOpacity
-                onPress={handleSkip}
-                disabled={skipping}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: SPACING.sm,
-                  paddingVertical: SPACING.md,
-                  borderRadius: BORDER_RADIUS.lg,
-                  backgroundColor: colors.warning,
-                  marginBottom: SPACING.sm,
-                }}
-              >
-                {skipping ? (
-                  <ActivityIndicator color={colors.textInverse} size="small" />
-                ) : (
-                  <>
-                    <SkipForward size={18} color={colors.textInverse} strokeWidth={2} />
-                    <Text style={[typography.button, { color: colors.textInverse }]}>
-                      Пропустить тренировку
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setSkipTarget(null)}
-                disabled={skipping}
-                style={{
-                  alignItems: 'center',
-                  paddingVertical: SPACING.md,
-                  borderRadius: BORDER_RADIUS.lg,
-                  backgroundColor: colors.surfaceSecondary,
-                }}
-              >
-                <Text style={[typography.button, { color: colors.textSecondary }]}>Отмена</Text>
-              </TouchableOpacity>
-            </>
-            )}
-            </SheetShell>
+        {skipTarget && (
+          <>
+            <Text
+              style={[
+                typography.body,
+                { color: colors.textPrimary, fontWeight: '600', marginBottom: SPACING.xs },
+              ]}
+            >
+              {skipTarget.name}
+            </Text>
+            <Text
+              style={[
+                typography.bodySmall,
+                { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.lg },
+              ]}
+            >
+              Программа перейдёт к следующему дню. Подходы не будут записаны. Это действие нельзя
+              отменить.
+            </Text>
+            <TouchableOpacity
+              onPress={handleSkip}
+              disabled={skipping}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.sm,
+                paddingVertical: SPACING.md,
+                borderRadius: BORDER_RADIUS.lg,
+                backgroundColor: colors.warning,
+                marginBottom: SPACING.sm,
+              }}
+            >
+              {skipping ? (
+                <ActivityIndicator color={colors.textInverse} size="small" />
+              ) : (
+                <>
+                  <SkipForward size={18} color={colors.textInverse} strokeWidth={2} />
+                  <Text style={[typography.button, { color: colors.textInverse }]}>
+                    Пропустить тренировку
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSkipTarget(null)}
+              disabled={skipping}
+              style={{
+                alignItems: 'center',
+                paddingVertical: SPACING.md,
+                borderRadius: BORDER_RADIUS.lg,
+                backgroundColor: colors.surfaceSecondary,
+              }}
+            >
+              <Text style={[typography.button, { color: colors.textSecondary }]}>Отмена</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </SheetShell>
     </SafeAreaView>
   );
 }

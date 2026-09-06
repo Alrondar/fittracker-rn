@@ -1,6 +1,7 @@
 # FitTracker — Current Status
 
-Срез: 05.09.2026 (main) [CI-6 Technique Week]
+Срез: 06.09.2026 (main) [ENG-19 Next Workout Forecast]
+
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
 
@@ -115,6 +116,8 @@
 | ENG-15 | 🟠 | ✅ | P1 Menstrual Cycle (Balanced): добавлены таблицы `cycle_events` и `cycle_settings`. В `progression.ts` добавлены правила `LUTEAL_PHASE` и `OVULATION_RISK`. Чистые функции `calculateCyclePhases` и `getPhaseForDate` в `utils/cycle.ts`. Единый flow: L2 `CycleCheckInSheet` вызывается из `ReadinessSheet` (под блоком стресса) или по тапу на день календаря в режиме правки. L2: `CycleCalendar` (рассчитывает фазу для каждого дня) и `CycleSettingsSheet` (по шестерёнке) в `profile.tsx`. Используется поле `gender` из раздела «Мои цели» (колонка `sex` упразднена). Удалён прямой `supabase.from` из UI (CLAUDE.md §2). |
 | ENG-16 | 🔴 | ✅ | Fix progression & safety pollution on temporary replacement: update `workout_exercises.exercise_id` AND `pain_events.exercise_id` in DB during temp replace. Ensures logs and pain context are attributed to the actually performed exercise, preventing lost injury warnings and false progression recommendations. |
 | ENG-17 | 🔴 | ✅ | Фича 2: RPE-based Autoregulation. Добавлено поле `target_rpe` в `program_exercises` (миграция 20260904). Движок `progression.ts` теперь учитывает целевой RPE: если фактический RPE ≤ целевого - 2 и повторы в диапазоне, предлагается прогрессия. UI: `ExerciseSettingsSheet` позволяет задать целевой RPE.
+| ENG-18 | 🟠 | ✅ | Фича 4: Pain Trend by Body Part. Чистая утилита `calculatePainTrend` в `utils/painTrend.ts` группирует `pain_events` по `body_part` и ISO-неделям (окно 4 недели назад). Зоны с болью в ≥2 разных неделях — хронические. Сервис `painService.getPainEventsInRange`, хук `usePainTrend` (staleTime 5 мин). UI: `StatusCard` показывает кликабельный error-чип "Боль: {зона} · {n} нед." (вместо warning "Боль сегодня") с `PainTrendSheet` (L2: таблица недель + рекомендация без медицинского диагноза); `ProgressInsights` (Progress hub) добавляет observation "Устойчивая боль" в начало списка инсайтов. |
+| ENG-19 | 🟠 | ✅ | **Фича 7: Next Workout Forecast**. Детерминированный прогноз сложности следующей тренировки (easy/normal/hard) на основе реальных объёмов последних 4 недель. Чистая функция `calculateWorkoutForecast` в `utils/workoutForecast.ts` (thresholds 0.85/1.15, insufficient-data guard при < 3 тренировках за окно — честный fallback, PRODUCT.md §14). Сервис `forecastService.getWorkoutForecast` (единственная supabase-граница, 2 параллельных запроса, без N+1): активная программа → следующая тренировка → workout_exercises → workout_logs + recent workout volumes. Хук `useWorkoutForecast` (staleTime 5 мин). UI: L1-бейдж «Тяжёлая/Лёгкая/Обычная» в Sticky-карточке `workouts.tsx` (рядом с названием); L1-чип «Следующая: тяжёлая» в `StatusCard` (Dashboard); L2 — `WorkoutForecastSheet` с разбивкой по упражнениям, сравнением с средним объёмом тренировки и disclaimer «наблюдение, а не предписание». |
 
 ## 6. Coaching Layer
 

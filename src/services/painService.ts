@@ -131,6 +131,24 @@ export const painService = {
   },
 
   /**
+   * Фича 4: получить все pain events в диапазоне дат (ISO-строки).
+   * Используется хуком usePainTrend для построения тренда боли по зонам.
+   */
+  async getPainEventsInRange(userId: string, fromIso: string, toIso: string): Promise<PainEvent[]> {
+    const { data, error } = await supabase
+      .from('pain_events')
+      .select(
+        'id, exercise_id, pain_level, pain_type, body_part, stop_exercise, notes, occurred_at'
+      )
+      .eq('user_id', userId)
+      .gte('occurred_at', fromIso)
+      .lte('occurred_at', toIso)
+      .order('occurred_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as PainEvent[];
+  },
+
+  /**
    * AUDIT-6: количество pain events за сегодня (для чипа «⚠ Боль сегодня»
    * в StatusCard). Информационный сигнал, не блокирует тренировку.
    */

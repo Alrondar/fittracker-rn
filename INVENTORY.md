@@ -1,6 +1,6 @@
 FitTracker — Code & Screen Inventory
 
-Срез: 05.09.2026 (main) [CI-6 Technique Week]
+Срез: 06.09.2026 (main) [ENG-19 Next Workout Forecast]
 
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -265,6 +265,7 @@ Important components:
 | useHistory|app/(tabs)/progress.tsx  (RecentWorkouts)|
 | useProgress|app/(tabs)/progress.tsx  (Progress hub)|
 | useStrengthStandards|StrengthLevelBadge (Фича 1): расчёт уровня силы для бейджа|
+| useWorkoutForecast|StatusCard (Dashboard, Фича 7), workouts.tsx (Sticky-карточка): прогноз сложности следующей тренировки|
 | useInjuries|injuries + StatusCard (AUDIT-6: чипы активных травм)|
 | useProfile|profile/settings|
 | useBodyMetrics|metrics|
@@ -279,6 +280,7 @@ Important components:
 | useTodayReadiness|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4) + ReadinessSheet (P0: auto-calculation)|
 | useWeeklySummary|Dashboard («Коротко о неделе», COACH-4/COACH-5) + Progress hub|
 | useTodayPain|StatusCard (AUDIT-6: «⚠ Боль сегодня»)|
+| usePainTrend|StatusCard (Фича 4: error-чип + PainTrendSheet) + ProgressInsights (хроническая боль инсайт)|
 | useCycle|StatusCard (L1 cycle phase chip / Empty CTA), profile.tsx (L2 calendar + edit mode)|
 | useRecoveryTrend|app/profile/metrics.tsx (P0: L3 тренды сна/стресса за 7 дней)|
 | useNutritionLogs|NutritionLogListModal (NUTRI-2: CRUD записей за день, инвалидация daily/weekly/burned)|
@@ -299,7 +301,8 @@ Important components:
 | goalsService  /  metricsService|goals/metrics|
 | warmupService|useWarmup|
 | readinessService|ReadinessSheet (owns StatusCard, AUDIT-6) + quick-set pips StatusCard|
-| painService|PainSheet/ExerciseCard + StatusCard (AUDIT-6: getPainEventsToday)|
+| painService|PainSheet/ExerciseCard + StatusCard (AUDIT-6: getPainEventsToday) + usePainTrend (Фича 4: getPainEventsInRange)|
+| forecastService|useWorkoutForecast (Фича 7): единственная supabase-граница прогноза следующей тренировки|
 | cycleService|useCycle, StatusCard, profile.tsx (settings, check-in)|
 | recommendationFeedbackService|SetsGrid (COACH-3: inline-чипы причин после «Скрыть»)|
 | progressService|useProgress ,  progress  (режим Аналитика/Обзор)|
@@ -321,7 +324,9 @@ Important components:
 | utils/streak.ts|streak calculations|
 | utils/trend.ts|trend/moving average/slope|
 | utils/strengthStandards.ts|calculateStrengthStandard (Фича 1): уровень силы (Novice…Elite) по e1RM/вес/пол; null для упражнений без нормативов|
+| utils/painTrend.ts|calculatePainTrend (Фича 4): чистая функция, группирует pain events по body_part/неделям (ISO, 4-недельное окно); возвращает  { chronicZones, weeks } . Хроническая зона = боль в ≥2 разных неделях.|
 | constants/strengthStandards.ts|нормативы 1ПМ/вес для 13 compound-движений (Фича 1); resolveStandardKey (exact + pattern fallback)|
+| utils/workoutForecast.ts|calculateWorkoutForecast (Фича 7): детерминированный прогноз сложности следующей тренировки; thresholds 0.85/1.15; insufficient-data guard (< 3 workouts = unknown)|
 | utils/plates.ts|plate calculation logic; UI pending|
 | utils/csv.ts|CSV builder; service/UI pending|
 | utils/errorMapper.ts|user-facing error mapping|
@@ -467,6 +472,9 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 **Bugfixes & Maintenance**
 * ENG-16: Temporary replacement (UX-5) now updates BOTH `workout_exercises.exercise_id` and `pain_events.exercise_id` in DB. This ensures workout logs AND safety/pain context remain correctly attributed to the actually performed exercise, preventing lost injury warnings and false progression recommendations.
 * **ENG-17 (Фича 2)**: RPE-based Autoregulation. `program_exercises` now supports `target_rpe` (1-10). `progression.ts` checks if `actualRpe <= targetRpe - 2` to suggest progression even if max reps aren't reached. `ExerciseSettingsSheet` allows setting this target.
+* **Фича 4 (Pain Trend by Body Part, ENG-18)**: `src/utils/painTrend.ts` + `src/hooks/usePainTrend.ts` + `src/components/dashboard/PainTrendSheet.tsx`. Чистая функция `calculatePainTrend` группирует `pain_events` по `body_part` и ISO-неделям (окно 4 недели назад). Хроническая зона = боль в ≥2 разных неделях. UI: в `StatusCard` кликабельный error-чип "Боль: {зона} · {n} нед." (заменяет warning "Боль сегодня") с `PainTrendSheet` (L2: таблица недель с body part-пилюлями, рекомендация без медицинского диагноза); `ProgressInsights` добавляет инсайт "Устойчивая боль" в начало списка. Не влияет на `progression.ts` — observation для пользователя (PRODUCT.md §8).
 * **Фича 5 (Technique Week as Deload alternative)**: `DeloadContext.availableTypes: ('volume' | 'technique')[]` в `engine/weeklySummary.ts` — когда разгрузка рекомендована, возвращает `['volume', 'technique']`. `WeeklyReviewSection` Л1-карточка имеет 2 кнопки (Объём/Техника), SheetShell показывает два независимых блока с разными иконками (Moon vs Target) и планами: классическая разгрузка (−40–60% объёма) vs техническая неделя (вес 65–70%, RPE 6–7, акцент на контроль движения — восстановление ЦНС без потери навыка).
 
 **Фича 1 (Strength Standards)**: `src/utils/strengthStandards.ts` + `src/constants/strengthStandards.ts` — чистая функция `calculateStrengthStandard(exerciseName, e1rm, bodyWeightKg, gender)` возвращает `StrengthStandardResult | null`. Нормативы: 13 compound-движений (bench_press, squat, deadlift, overhead_press, barbell_row, pull_up, dip, и варианты), 5 уровней (Novice < Beginner < Intermediate < Advanced < Elite), male/female. `resolveStandardKey`: точное совпадение по имени + pattern fallback (ключевые слова). `StrengthLevelBadge` — L1-бейдж с цветом уровня; тап → SheetShell с таблицей нормативов, текущим результатом и disclaimer. Используется в `StrengthTrendChart` (Progress Hub) и `PersonalRecordsCard` (PR-карточки). Null-result (нет норматива / нет веса / e1rm<=0) — бейдж не рендерится (честный fallback, не выдумываем данные). Цвета: `STRENGTH_LEVEL_COLORS` (mid-tone, читаемы в обеих темах). Хук `useStrengthStandards` кэширует профиль на 5 минут (как progress).
+
+**Фича 7 (Next Workout Forecast, ENG-19)**: `src/utils/workoutForecast.ts` (чистая функция `calculateWorkoutForecast`) + `src/services/forecastService.ts` (единственная supabase-граница) + `src/hooks/useWorkoutForecast.ts` (staleTime 5 мин) + `src/components/dashboard/WorkoutForecastSheet.tsx` (L2). Forecast volume = сумма средних объёмов каждого упражнения следующей тренировки за последние 4 недели; сравнение с средним объёмом тренировки за тот же период. Thresholds: < 0.85 → easy, 0.85–1.15 → normal, > 1.15 → hard. Insufficient-data guard: < 3 тренировок за окно → `difficulty: 'unknown'` (PRODUCT.md §14 — не выдумываем данные). Supabase flow: user_programs (active) → workouts (next: phase/week/day match, finished_at null, skipped_at null) → workout_exercises (с embed `exercises(name)` для L2) → 2 параллельных запроса (workout_logs по exercise_id за 4 недели `is_warmup=false` + все завершённые workouts за 4 недели для baseline). UI: L1-бейдж `Тяжёлая/Лёгкая/Обычная` в Sticky-карточке `workouts.tsx` рядом с названием тренировки; L1-чип `Следующая: тяжёлая` в `StatusCard` (Dashboard) после recovery-чипов; L2 — `WorkoutForecastSheet` с итоговой оценкой (иконка + цвет), сравнением ожидаемого vs среднего объёма и разбивкой по упражнениям с disclaimer «наблюдение, а не предписание». Не влияет на `progression.ts` — observation для пользователя.

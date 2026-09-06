@@ -1,18 +1,27 @@
 // src/components/progress/ProgressInsights.tsx
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { Activity, Award, Scale, Sparkles, TrendingUp } from 'lucide-react-native';
+import { Activity, AlertTriangle, Award, Scale, Sparkles, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
-import type { WeeklyVolume, StrengthSeries, WeightPoint, PersonalRecordWithDate } from '../../services/progressService';
+import { BODY_PART_LABELS } from '../../constants/injuries';
+import type {
+  WeeklyVolume,
+  StrengthSeries,
+  WeightPoint,
+  PersonalRecordWithDate,
+} from '../../services/progressService';
+import type { ChronicPainZone } from '../../utils/painTrend';
 
 interface ProgressInsightsProps {
   weeklyVolume: WeeklyVolume[];
   strengthTrend: StrengthSeries[];
   weightTrend: WeightPoint[];
   personalRecords: PersonalRecordWithDate[];
+  /** Фича 4: хронические зоны боли (≥2 недель) из usePainTrend. */
+  chronicPainZones?: ChronicPainZone[];
 }
 
 export function ProgressInsights({
@@ -20,6 +29,7 @@ export function ProgressInsights({
   strengthTrend,
   weightTrend,
   personalRecords,
+  chronicPainZones = [],
 }: ProgressInsightsProps) {
   const { colors } = useTheme();
 
@@ -27,14 +37,14 @@ export function ProgressInsights({
     const result: { icon: React.ReactNode; title: string; subtitle: string }[] = [];
 
     // 0. Начало отслеживания силы: есть упражнения в топ-3, но ни у одного нет 2+ точек
-const hasAnyMultiPoint = strengthTrend.some((s) => s.points.length >= 2);
-if (strengthTrend.length > 0 && !hasAnyMultiPoint) {
-  result.push({
-    icon: <TrendingUp size={18} color={colors.primary} />,
-    title: 'Начало отслеживания силы',
-    subtitle: `Зафиксируй ещё 1–2 тренировки, чтобы увидеть тренд e1RM по ${strengthTrend[0].exerciseName}.`,
-  });
-}
+    const hasAnyMultiPoint = strengthTrend.some((s) => s.points.length >= 2);
+    if (strengthTrend.length > 0 && !hasAnyMultiPoint) {
+      result.push({
+        icon: <TrendingUp size={18} color={colors.primary} />,
+        title: 'Начало отслеживания силы',
+        subtitle: `Зафиксируй ещё 1–2 тренировки, чтобы увидеть тренд e1RM по ${strengthTrend[0].exerciseName}.`,
+      });
+    }
 
     // 1. Сила
     if (strengthTrend.length > 0) {
@@ -99,8 +109,25 @@ if (strengthTrend.length > 0 && !hasAnyMultiPoint) {
       });
     }
 
-    return result.slice(0, 3); // максимум 3 инсайта
-  }, [weeklyVolume, strengthTrend, weightTrend, personalRecords, colors]);
+    // 5. Хроническая боль (Фича 4): observation + рекомендация.
+    //    Не медицинский диагноз (PRODUCT.md §8, §14). Имеет приоритет
+    //    перед обычными позитивными инсайтами — добавляется в начало.
+    if (chronicPainZones.length > 0) {
+      const labels = chronicPainZones
+        .map((z) => {
+          const label = (BODY_PART_LABELS as Record<string, string>)[z.bodyPart] ?? z.bodyPart;
+          return `${label} (${z.weeks} нед.)`;
+        })
+        .join(', ');
+      result.unshift({
+        icon: <AlertTriangle size={18} color={colors.error} />,
+        title: 'Устойчивая боль',
+        subtitle: `${labels}. Рассмотри снижение веса или консультацию со специалистом.`,
+      });
+    }
+
+    return result.slice(0, 4); // максимум 4 инсайта (хроническая боль + 3 основных)
+  }, [weeklyVolume, strengthTrend, weightTrend, personalRecords, chronicPainZones, colors]);
 
   if (insights.length === 0) {
     return (
@@ -116,33 +143,35 @@ if (strengthTrend.length > 0 && !hasAnyMultiPoint) {
 
   return (
     <View style={{ marginBottom: SPACING.md }}>
-<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-  <View
-    style={{
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.primary + '1A',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: SPACING.sm,
-    }}
-  >
-    <Sparkles size={18} color={colors.primary} />
-  </View>
-  <View style={{ flex: 1 }}>
-    <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Что изменилось</Text>
-    <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
-      Последние наблюдения
-    </Text>
-  </View>
-</View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: colors.primary + '1A',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: SPACING.sm,
+          }}
+        >
+          <Sparkles size={18} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Что изменилось</Text>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
+            Последние наблюдения
+          </Text>
+        </View>
+      </View>
       {insights.map((insight, idx) => (
         <AppCard key={idx} variant="compact" style={{ marginBottom: SPACING.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ marginRight: SPACING.sm }}>{insight.icon}</View>
             <View style={{ flex: 1 }}>
-              <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{insight.title}</Text>
+              <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                {insight.title}
+              </Text>
               <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
                 {insight.subtitle}
               </Text>

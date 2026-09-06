@@ -24,6 +24,10 @@ import { useStore } from '../../store/useStore';
 import { useTodayReadiness } from '../../hooks/useTodayReadiness';
 import { useTodayRecovery } from '../../hooks/useTodayRecovery';
 import { useTodayPain } from '../../hooks/useTodayPain';
+import { usePainTrend } from '../../hooks/usePainTrend';
+import { PainTrendSheet } from './PainTrendSheet';
+import { useWorkoutForecast } from '../../hooks/useWorkoutForecast';
+import { WorkoutForecastSheet } from './WorkoutForecastSheet';
 import { useInjuries } from '../../hooks/useInjuries';
 import { readinessService } from '../../services/readinessService';
 import { useProfile } from '../../hooks/useProfile';
@@ -54,19 +58,26 @@ export function StatusCard() {
   const { data: recovery } = useTodayRecovery(userId);
   const { injuries } = useInjuries(userId);
   const { data: painTodayCount } = useTodayPain(userId);
+  const { result: painTrend } = usePainTrend(userId);
+  const { result: forecast } = useWorkoutForecast(userId);
   const { userData } = useProfile(userId);
   const gender = userData?.gender;
   const { currentPhase, events, settings } = useCycle(gender);
-  
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
+  const [painTrendSheetOpen, setPainTrendSheetOpen] = useState(false);
+  const [forecastSheetOpen, setForecastSheetOpen] = useState(false);
 
   const activeInjuries = useMemo(
     () => injuries.filter((i) => i.status !== 'recovered'),
-    [injuries],
+    [injuries]
   );
 
   const hasPain = (painTodayCount ?? 0) > 0;
+  const chronicZones = painTrend?.chronicZones ?? [];
+  const hasChronic = chronicZones.length > 0;
+  const topChronic = chronicZones[0];
   const color = readinessColor(readiness ?? null, colors);
   const fillPercent = readiness == null ? 0 : (readiness / 5) * 100;
 
@@ -95,7 +106,7 @@ export function StatusCard() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       quickSetMutation.mutate(value);
     },
-    [userId, quickSetMutation],
+    [userId, quickSetMutation]
   );
 
   const handleSaveCycleEvent = async (
@@ -114,14 +125,14 @@ export function StatusCard() {
   };
 
   const hint = useMemo(() => {
-    if (hasPain || activeInjuries.length > 0) {
+    if (hasChronic || hasPain || activeInjuries.length > 0) {
       return 'Замены и нагрузка учтут ограничения';
     }
     if (readiness != null && readiness <= 2) {
       return 'Сегодня без повышения нагрузки';
     }
     return 'Нагрузка по плану';
-  }, [hasPain, activeInjuries, readiness]);
+  }, [hasPain, hasChronic, activeInjuries, readiness]);
 
   return (
     <AppCard variant="default">
@@ -134,9 +145,7 @@ export function StatusCard() {
           marginBottom: SPACING.md,
         }}
       >
-        <Text style={[typography.h5, { color: colors.textPrimary }]}>
-          Состояние сегодня
-        </Text>
+        <Text style={[typography.h5, { color: colors.textPrimary }]}>Состояние сегодня</Text>
         <TouchableOpacity
           onPress={() => setSheetOpen(true)}
           style={{
@@ -196,12 +205,7 @@ export function StatusCard() {
           </View>
         </View>
         <View style={{ flex: 1 }}>
-          <Text
-            style={[
-              typography.captionSmall,
-              { color: colors.textSecondary, marginBottom: 6 },
-            ]}
-          >
+          <Text style={[typography.captionSmall, { color: colors.textSecondary, marginBottom: 6 }]}>
             Готовность (тапни, чтобы оценить)
           </Text>
           <View style={{ flexDirection: 'row', gap: SPACING.xs, marginBottom: SPACING.sm }}>
@@ -258,11 +262,21 @@ export function StatusCard() {
                 borderRadius: BORDER_RADIUS.full,
                 borderWidth: 1,
                 borderColor: recovery.sleepHours < 6 ? colors.warning + '88' : colors.border,
-                backgroundColor: recovery.sleepHours < 6 ? colors.warning + '1A' : colors.surfaceSecondary,
+                backgroundColor:
+                  recovery.sleepHours < 6 ? colors.warning + '1A' : colors.surfaceSecondary,
               }}
             >
-              <Moon size={14} color={recovery.sleepHours < 6 ? colors.warning : colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={[typography.captionSmall, { color: recovery.sleepHours < 6 ? colors.warning : colors.textSecondary }]}>
+              <Moon
+                size={14}
+                color={recovery.sleepHours < 6 ? colors.warning : colors.textSecondary}
+                style={{ marginRight: 4 }}
+              />
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: recovery.sleepHours < 6 ? colors.warning : colors.textSecondary },
+                ]}
+              >
                 {recovery.sleepHours}ч
               </Text>
             </View>
@@ -277,16 +291,78 @@ export function StatusCard() {
                 borderRadius: BORDER_RADIUS.full,
                 borderWidth: 1,
                 borderColor: recovery.stressLevel >= 4 ? colors.warning + '88' : colors.border,
-                backgroundColor: recovery.stressLevel >= 4 ? colors.warning + '1A' : colors.surfaceSecondary,
+                backgroundColor:
+                  recovery.stressLevel >= 4 ? colors.warning + '1A' : colors.surfaceSecondary,
               }}
             >
-              <Zap size={14} color={recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary} style={{ marginRight: 4 }} />
-              <Text style={[typography.captionSmall, { color: recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary }]}>
+              <Zap
+                size={14}
+                color={recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary}
+                style={{ marginRight: 4 }}
+              />
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: recovery.stressLevel >= 4 ? colors.warning : colors.textSecondary },
+                ]}
+              >
                 {recovery.stressLevel}/5
               </Text>
             </View>
           )}
         </View>
+      )}
+
+      {/* Фича 7: L1 chip прогноза следующей тренировки. Показываем только
+          при определённой сложности и достаточных данных, чтобы не выдумывать. */}
+      {forecast && forecast.difficulty !== 'unknown' && (
+        <TouchableOpacity
+          onPress={() => setForecastSheetOpen(true)}
+          accessibilityLabel={`Следующая тренировка: ${forecast.difficulty}, открой подробности`}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: SPACING.xs,
+            paddingHorizontal: SPACING.sm,
+            borderRadius: BORDER_RADIUS.sm,
+            backgroundColor:
+              (forecast.difficulty === 'hard'
+                ? colors.warning
+                : forecast.difficulty === 'easy'
+                  ? colors.success
+                  : colors.primary) + '15',
+            borderWidth: 1,
+            borderColor:
+              (forecast.difficulty === 'hard'
+                ? colors.warning
+                : forecast.difficulty === 'easy'
+                  ? colors.success
+                  : colors.primary) + '40',
+            alignSelf: 'flex-start',
+            marginTop: SPACING.md,
+          }}
+        >
+          <Text
+            style={[
+              typography.label,
+              {
+                color:
+                  forecast.difficulty === 'hard'
+                    ? colors.warning
+                    : forecast.difficulty === 'easy'
+                      ? colors.success
+                      : colors.primary,
+              },
+            ]}
+          >
+            Следующая:{' '}
+            {forecast.difficulty === 'hard'
+              ? 'тяжёлая'
+              : forecast.difficulty === 'easy'
+                ? 'лёгкая'
+                : 'обычная'}
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* L1 чип цикла (только для female) */}
@@ -307,7 +383,11 @@ export function StatusCard() {
                 alignSelf: 'flex-start',
               }}
             >
-              <Droplet size={16} color={getCyclePhaseColor(currentPhase.phase)} style={{ marginRight: SPACING.xs }} />
+              <Droplet
+                size={16}
+                color={getCyclePhaseColor(currentPhase.phase)}
+                style={{ marginRight: SPACING.xs }}
+              />
               <Text style={[typography.label, { color: colors.textPrimary }]}>
                 День {currentPhase.dayNumber} · {getCyclePhaseLabel(currentPhase.phase)}
               </Text>
@@ -371,14 +451,8 @@ export function StatusCard() {
                       marginRight: 6,
                     }}
                   />
-                  <Text
-                    style={[
-                      typography.captionSmall,
-                      { color: sevColor, fontWeight: '700' },
-                    ]}
-                  >
-                    {(BODY_PART_LABELS as Record<string, string>)[inj.body_part] ||
-                      inj.body_part}
+                  <Text style={[typography.captionSmall, { color: sevColor, fontWeight: '700' }]}>
+                    {(BODY_PART_LABELS as Record<string, string>)[inj.body_part] || inj.body_part}
                   </Text>
                 </TouchableOpacity>
               );
@@ -403,7 +477,30 @@ export function StatusCard() {
                 </Text>
               </TouchableOpacity>
             )}
-            {hasPain && (
+            {hasChronic && topChronic && (
+              <TouchableOpacity
+                onPress={() => setPainTrendSheetOpen(true)}
+                accessibilityLabel="Устойчивая боль: открой подробности"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 4,
+                  borderRadius: BORDER_RADIUS.full,
+                  borderWidth: 1,
+                  borderColor: colors.error + '88',
+                  backgroundColor: colors.error + '1A',
+                }}
+              >
+                <Text style={[typography.captionSmall, { color: colors.error, fontWeight: '700' }]}>
+                  Боль:{' '}
+                  {(BODY_PART_LABELS as Record<string, string>)[topChronic.bodyPart] ??
+                    topChronic.bodyPart}{' '}
+                  · {topChronic.weeks} нед.
+                </Text>
+              </TouchableOpacity>
+            )}
+            {hasPain && !hasChronic && (
               <View
                 style={{
                   flexDirection: 'row',
@@ -417,12 +514,9 @@ export function StatusCard() {
                 }}
               >
                 <Text
-                  style={[
-                    typography.captionSmall,
-                    { color: colors.warning, fontWeight: '700' },
-                  ]}
+                  style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}
                 >
-                   Боль сегодня
+                  Боль сегодня
                   {painTodayCount && painTodayCount > 1 ? `: ${painTodayCount}` : ''}
                 </Text>
               </View>
@@ -438,13 +532,25 @@ export function StatusCard() {
         onDone={() => setSheetOpen(false)}
       />
 
-<CycleCheckInSheet
-  visible={cycleCheckInOpen}
-  onClose={() => setCycleCheckInOpen(false)}
-  events={events}
-  onSave={handleSaveCycleEvent}
-  onDelete={handleDeleteCycleEvent}
-/>
+      <PainTrendSheet
+        visible={painTrendSheetOpen}
+        onClose={() => setPainTrendSheetOpen(false)}
+        result={painTrend}
+      />
+
+      <WorkoutForecastSheet
+        visible={forecastSheetOpen}
+        onClose={() => setForecastSheetOpen(false)}
+        result={forecast}
+      />
+
+      <CycleCheckInSheet
+        visible={cycleCheckInOpen}
+        onClose={() => setCycleCheckInOpen(false)}
+        events={events}
+        onSave={handleSaveCycleEvent}
+        onDelete={handleDeleteCycleEvent}
+      />
     </AppCard>
   );
 }
