@@ -42,46 +42,48 @@ export function SheetShell({
       style={{ flex: 1 }}
     >
       <View style={{ flex: 1, backgroundColor: colors.overlay }}>
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          activeOpacity={1}
-          onPress={onClose}
-        />
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
 
         <View
           style={{
+            flex: 1,
             backgroundColor: colors.surface,
             borderTopLeftRadius: BORDER_RADIUS.xl,
             borderTopRightRadius: BORDER_RADIUS.xl,
           }}
         >
-            {title ? (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingHorizontal: SPACING.lg,
-                  paddingTop: SPACING.lg,
-                  paddingBottom: SPACING.md,
-                }}
+          {title ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: SPACING.lg,
+                paddingTop: SPACING.lg,
+                paddingBottom: SPACING.md,
+              }}
+            >
+              <Text
+                style={[typography.h5, { color: colors.textPrimary, flex: 1 }]}
+                numberOfLines={1}
               >
-                <Text
-                  style={[typography.h5, { color: colors.textPrimary, flex: 1 }]}
-                  numberOfLines={1}
-                >
-                  {title}
-                </Text>
-                <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
-            ) : null}
+                {title}
+              </Text>
+              <TouchableOpacity
+                onPress={onClose}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <X size={20} color={colors.textSecondary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <ScrollView
+            style={{ flex: 1 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
+              flexGrow: 1,
               paddingHorizontal: SPACING.lg,
               paddingBottom: Math.max(SPACING.lg, insets.bottom + SPACING.md),
             }}

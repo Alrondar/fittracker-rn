@@ -31,6 +31,7 @@ import {
 } from '../../src/hooks/useRpeSettings';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { SheetShell } from '../../src/components/ui/SheetShell';
+import { PillToggle } from '../../src/components/ui/PillToggle';
 import { WorkoutDisplayModePicker } from '../../src/components/workout/WorkoutDisplayModePicker';
 import {
   ChevronLeft,
@@ -153,9 +154,30 @@ export default function SettingsScreen() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 6 }}>
-            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: currentTheme.colors.primary }} />
-            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: currentTheme.colors.success }} />
-            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: currentTheme.colors.warning }} />
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: currentTheme.colors.primary,
+              }}
+            />
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: currentTheme.colors.success,
+              }}
+            />
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: currentTheme.colors.warning,
+              }}
+            />
           </View>
           <Text style={[typography.h5, { color: colors.textPrimary }]}>{item.label}</Text>
         </View>
@@ -252,11 +274,17 @@ export default function SettingsScreen() {
             onPress={handleChangePassword}
           >
             <Lock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-            <Text style={[typography.label, { color: colors.textPrimary, flex: 1 }]}>Сменить пароль</Text>
+            <Text style={[typography.label, { color: colors.textPrimary, flex: 1 }]}>
+              Сменить пароль
+            </Text>
             <ChevronRight size={20} color={colors.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[buttonStyles.primary]} onPress={handleSaveProfile} disabled={saving}>
+          <TouchableOpacity
+            style={[buttonStyles.primary]}
+            onPress={handleSaveProfile}
+            disabled={saving}
+          >
             {saving ? (
               <Text style={buttonStyles.textPrimary}>Сохранение...</Text>
             ) : (
@@ -271,7 +299,12 @@ export default function SettingsScreen() {
 
         {/* Внешний вид */}
         <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+          <Text
+            style={[
+              commonStyles.sectionTitle,
+              { color: colors.textPrimary, marginBottom: SPACING.md },
+            ]}
+          >
             Внешний вид
           </Text>
           <View
@@ -280,58 +313,23 @@ export default function SettingsScreen() {
               { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.md },
             ]}
           >
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.md },
+              ]}
+            >
               Тема оформления
             </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                backgroundColor: colors.surfaceSecondary,
-                borderRadius: BORDER_RADIUS.md,
-                padding: 4,
-              }}
-            >
-              {(['light', 'dark', 'system'] as const).map((mode) => (
-                <TouchableOpacity
-                  key={mode}
-                  style={[
-                    {
-                      flex: 1,
-                      paddingVertical: SPACING.md,
-                      borderRadius: BORDER_RADIUS.sm,
-                      alignItems: 'center',
-                      backgroundColor: themeMode === mode ? colors.primary : 'transparent',
-                    },
-                  ]}
-                  onPress={() => {
-                    setThemeMode(mode);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                >
-                  {mode === 'light' && (
-                    <Sun size={18} color={themeMode === mode ? colors.textInverse : colors.textSecondary} />
-                  )}
-                  {mode === 'dark' && (
-                    <Moon size={18} color={themeMode === mode ? colors.textInverse : colors.textSecondary} />
-                  )}
-                  {mode === 'system' && (
-                    <Monitor size={18} color={themeMode === mode ? colors.textInverse : colors.textSecondary} />
-                  )}
-                  <Text
-                    style={[
-                      typography.caption,
-                      {
-                        color: themeMode === mode ? colors.textInverse : colors.textSecondary,
-                        fontWeight: themeMode === mode ? '600' : '400',
-                        marginTop: SPACING.xs,
-                      },
-                    ]}
-                  >
-                    {mode === 'light' ? 'Светлая' : mode === 'dark' ? 'Тёмная' : 'Авто'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <PillToggle
+              options={[
+                { key: 'light', label: 'Светлая', icon: Sun },
+                { key: 'dark', label: 'Тёмная', icon: Moon },
+                { key: 'system', label: 'Авто', icon: Monitor },
+              ]}
+              value={themeMode}
+              onChange={setThemeMode}
+            />
           </View>
 
           <TouchableOpacity
@@ -350,7 +348,9 @@ export default function SettingsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Palette size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
               <View>
-                <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Цветовая схема</Text>
+                <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                  Цветовая схема
+                </Text>
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
                   {availableAccents.find((a) => a.key === themeAccent)?.label || 'Синяя'}
                 </Text>
@@ -362,7 +362,12 @@ export default function SettingsScreen() {
 
         {/* Предпочтения */}
         <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+          <Text
+            style={[
+              commonStyles.sectionTitle,
+              { color: colors.textPrimary, marginBottom: SPACING.md },
+            ]}
+          >
             Предпочтения
           </Text>
           <View
@@ -371,11 +376,19 @@ export default function SettingsScreen() {
               { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Ruler size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: colors.textPrimary }]}>Единицы измерения</Text>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Единицы измерения
+                  </Text>
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
                     {useImperial ? 'Фунты, дюймы' : 'Килограммы, сантиметры'}
                   </Text>
@@ -393,90 +406,59 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-{/* Режим карточки упражнения (UX-2) */}
-<View
-  style={[
-    cardStyles.compact,
-    { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
-  ]}
->
-  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-    <LayoutGrid size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-    <View style={{ flex: 1 }}>
-      <Text style={[typography.label, { color: colors.textPrimary }]}>
-        Режим карточки упражнения
-      </Text>
-      <Text style={[typography.caption, { color: colors.textSecondary }]}>
-        Сколько информации показывать на тренировке
-      </Text>
-    </View>
-  </View>
-  <WorkoutDisplayModePicker />
-</View>
+          {/* Режим карточки упражнения (UX-2) */}
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+              <LayoutGrid size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.label, { color: colors.textPrimary }]}>
+                  Режим карточки упражнения
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Сколько информации показывать на тренировке
+                </Text>
+              </View>
+            </View>
+            <WorkoutDisplayModePicker />
+          </View>
 
-{/* UX-7: частота запроса RPE */}
-<View
-  style={[
-    cardStyles.compact,
-    { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
-  ]}
->
-  <View style={{ marginBottom: SPACING.sm }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
-      <LayoutGrid size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-          Частота запроса RPE
-        </Text>
-        <Text style={[typography.caption, { color: colors.textSecondary }]}>
-          {RPE_PROMPT_DESCRIPTIONS[rpeSettings.prompt]}
-        </Text>
-      </View>
-    </View>
-  </View>
-  <View
-    style={{
-      flexDirection: 'row',
-      backgroundColor: colors.surfaceSecondary,
-      borderRadius: BORDER_RADIUS.md,
-      padding: 4,
-    }}
-  >
-    {(['always', 'last-set', 'off'] as const).map((prompt) => (
-      <TouchableOpacity
-        key={prompt}
-        style={[
-          {
-            flex: 1,
-            paddingVertical: SPACING.sm,
-            borderRadius: BORDER_RADIUS.sm,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: rpeSettings.prompt === prompt ? colors.primary : 'transparent',
-          },
-        ]}
-        onPress={() => {
-          updateRpeSettings({ prompt });
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }}
-      >
-        <Text
-          numberOfLines={1}
-          style={[
-            typography.caption,
-            {
-              color: rpeSettings.prompt === prompt ? colors.textInverse : colors.textSecondary,
-              fontWeight: rpeSettings.prompt === prompt ? '600' : '400',
-              textAlign: 'center',
-            },
-          ]}
-        >
-          {RPE_PROMPT_LABELS[prompt]}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-</View>
+          {/* UX-7: частота запроса RPE */}
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
+            <View style={{ marginBottom: SPACING.sm }}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}
+              >
+                <LayoutGrid size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                    Частота запроса RPE
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    {RPE_PROMPT_DESCRIPTIONS[rpeSettings.prompt]}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <PillToggle
+              options={[
+                { key: 'always', label: 'Всегда' },
+                { key: 'last-set', label: 'Посл. сет' },
+                { key: 'off', label: 'Выкл' },
+              ]}
+              value={rpeSettings.prompt}
+              onChange={(prompt) => updateRpeSettings({ prompt })}
+            />
+          </View>
 
           <View
             style={[
@@ -484,11 +466,19 @@ export default function SettingsScreen() {
               { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Bell size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: colors.textPrimary }]}>Напоминания о тренировках</Text>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Напоминания о тренировках
+                  </Text>
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
                     Уведомления о запланированных тренировках
                   </Text>
@@ -507,92 +497,115 @@ export default function SettingsScreen() {
           </View>
 
           <View
-        style={[
-          cardStyles.compact,
-          { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
-        ]}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <Clock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.label, { color: colors.textPrimary }]}>
-                Автостарт после каждого подхода
-              </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Запускать таймер после каждого завершённого подхода
-              </Text>
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Clock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Автостарт после каждого подхода
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Запускать таймер после каждого завершённого подхода
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.autoStartAfterEverySet}
+                onValueChange={(value) => {
+                  updateTimerSettings({ autoStartAfterEverySet: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
             </View>
           </View>
-          <Switch
-            value={timerSettings.autoStartAfterEverySet}
-            onValueChange={(value) => {
-              updateTimerSettings({ autoStartAfterEverySet: value });
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.textInverse}
-          />
-        </View>
-      </View>
 
-      <View
-        style={[
-          cardStyles.compact,
-          { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
-        ]}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <Vibrate size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.label, { color: colors.textPrimary }]}>
-                Вибрация до сброса
-              </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Вибрировать каждые 3 сек, пока не сбросишь таймер
-              </Text>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Vibrate size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Вибрация до сброса
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Вибрировать каждые 3 сек, пока не сбросишь таймер
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.vibrateUntilDismissed}
+                onValueChange={(value) => {
+                  updateTimerSettings({ vibrateUntilDismissed: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
             </View>
           </View>
-          <Switch
-            value={timerSettings.vibrateUntilDismissed}
-            onValueChange={(value) => {
-              updateTimerSettings({ vibrateUntilDismissed: value });
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.textInverse}
-          />
-        </View>
-      </View>
 
-      <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-            <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.label, { color: colors.textPrimary }]}>Вибрация</Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Вибросигнал по окончании отдыха
-              </Text>
+          <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>Вибрация</Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Вибросигнал по окончании отдыха
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.vibration}
+                onValueChange={(value) => {
+                  updateTimerSettings({ vibration: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
             </View>
           </View>
-          <Switch
-            value={timerSettings.vibration}
-            onValueChange={(value) => {
-              updateTimerSettings({ vibration: value });
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.textInverse}
-          />
-        </View>
-      </View>
         </View>
 
         {/* Таймер отдыха */}
         <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+          <Text
+            style={[
+              commonStyles.sectionTitle,
+              { color: colors.textPrimary, marginBottom: SPACING.md },
+            ]}
+          >
             Таймер отдыха
           </Text>
           <View
@@ -601,11 +614,19 @@ export default function SettingsScreen() {
               { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Volume2 size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: colors.textPrimary }]}>Звук по окончании</Text>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Звук по окончании
+                  </Text>
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
                     Звуковой сигнал, когда отдых завершён
                   </Text>
@@ -629,11 +650,19 @@ export default function SettingsScreen() {
               { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <BellRing size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: colors.textPrimary }]}>Отсчёт 3-2-1</Text>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Отсчёт 3-2-1
+                  </Text>
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
                     Короткие сигналы за 3 секунды до конца
                   </Text>
@@ -651,36 +680,50 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-<View
-  style={[
-    cardStyles.compact,
-    { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
-  ]}
->
-  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-      <Clock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.label, { color: colors.textPrimary }]}>Автостарт отдыха</Text>
-        <Text style={[typography.caption, { color: colors.textSecondary }]}>
-          Запускать таймер после последнего подхода автоматически
-        </Text>
-      </View>
-    </View>
-    <Switch
-      value={timerSettings.autoStartRest}
-      onValueChange={(value) => {
-        updateTimerSettings({ autoStartRest: value });
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }}
-      trackColor={{ false: colors.border, true: colors.primary }}
-      thumbColor={colors.textInverse}
-    />
-  </View>
-</View>
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Clock size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Автостарт отдыха
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Запускать таймер после последнего подхода автоматически
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={timerSettings.autoStartRest}
+                onValueChange={(value) => {
+                  updateTimerSettings({ autoStartRest: value });
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.textInverse}
+              />
+            </View>
+          </View>
 
           <View style={[cardStyles.compact, { borderColor: colors.border, borderWidth: 1 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Vibrate size={20} color={colors.success} style={{ marginRight: SPACING.sm }} />
                 <View style={{ flex: 1 }}>
@@ -708,11 +751,19 @@ export default function SettingsScreen() {
               { borderColor: colors.border, borderWidth: 1, marginTop: SPACING.sm },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <ArrowUpDown size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[typography.label, { color: colors.textPrimary }]}>Активация перед растяжкой</Text>
+                  <Text style={[typography.label, { color: colors.textPrimary }]}>
+                    Активация перед растяжкой
+                  </Text>
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
                     {timerSettings.activationFirst
                       ? 'Сначала активация, затем растяжка'
@@ -735,7 +786,12 @@ export default function SettingsScreen() {
 
         {/* О приложении */}
         <View style={commonStyles.section}>
-          <Text style={[commonStyles.sectionTitle, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+          <Text
+            style={[
+              commonStyles.sectionTitle,
+              { color: colors.textPrimary, marginBottom: SPACING.md },
+            ]}
+          >
             О приложении
           </Text>
           <TouchableOpacity
@@ -750,7 +806,9 @@ export default function SettingsScreen() {
                 marginBottom: SPACING.sm,
               },
             ]}
-            onPress={() => Alert.alert('О приложении', 'FitTracker v1.0.0\nСоздано с ❤️ для спортсменов')}
+            onPress={() =>
+              Alert.alert('О приложении', 'FitTracker v1.0.0\nСоздано с ❤️ для спортсменов')
+            }
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Info size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
@@ -773,7 +831,9 @@ export default function SettingsScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <HelpCircle size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
-              <Text style={[typography.label, { color: colors.textPrimary }]}>Помощь и поддержка</Text>
+              <Text style={[typography.label, { color: colors.textPrimary }]}>
+                Помощь и поддержка
+              </Text>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
           </TouchableOpacity>

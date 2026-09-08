@@ -12,7 +12,11 @@ import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { getWorkoutDetail } from '../../src/services/historyService';
-import type { WorkoutDetail, WorkoutDetailExercise, WorkoutDetailLog } from '../../src/services/historyService';
+import type {
+  WorkoutDetail,
+  WorkoutDetailExercise,
+  WorkoutDetailLog,
+} from '../../src/services/historyService';
 import { useQuery } from '@tanstack/react-query';
 
 interface MuscleLoad {
@@ -69,7 +73,10 @@ export default function WorkoutReportScreen() {
     const muscleMap = new Map<string, { volume: number; rpeSum: number; rpeCount: number }>();
 
     data.exercises.forEach((ex: WorkoutDetailExercise) => {
-      const exerciseVolume = ex.logs.reduce((sum, log) => sum + (log.weight_kg || 0) * (log.reps || 0), 0);
+      const exerciseVolume = ex.logs.reduce(
+        (sum, log) => sum + (log.weight_kg || 0) * (log.reps || 0),
+        0
+      );
       const exerciseRpe = ex.logs.reduce((sum, log) => sum + (log.rpe || 0), 0);
       const exerciseRpeCount = ex.logs.filter((log) => log.rpe != null).length;
 
@@ -118,7 +125,10 @@ export default function WorkoutReportScreen() {
 
   if (isPending) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -128,15 +138,25 @@ export default function WorkoutReportScreen() {
 
   if (isError || !data) {
     return (
-      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
         <View style={commonStyles.navHeader}>
           <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
             <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}>
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}
+        >
           <Text style={[typography.h4, { color: colors.textPrimary }]}>Не удалось загрузить</Text>
-          <AppButton title="Повторить" variant="primary" onPress={() => refetch()} style={{ marginTop: SPACING.lg }} />
+          <AppButton
+            title="Повторить"
+            variant="primary"
+            onPress={() => refetch()}
+            style={{ marginTop: SPACING.lg }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -155,21 +175,39 @@ export default function WorkoutReportScreen() {
   });
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[commonStyles.navHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
+      <View
+        style={[
+          commonStyles.navHeader,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
-        <Text style={[typography.h4, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]} numberOfLines={1}>
-          Отчёт
+        <Text
+          style={[typography.h4, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]}
+          numberOfLines={1}
+        >
+          {data.name || 'Отчёт'}
         </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Заголовок тренировки */}
-        <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>{data.name}</Text>
-        <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>{dateStr}</Text>
+        <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+          {data.name}
+        </Text>
+        <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
+          {dateStr}
+        </Text>
 
         {/* Сводка */}
         <View
@@ -210,7 +248,9 @@ export default function WorkoutReportScreen() {
               <View style={{ width: 1, backgroundColor: colors.border }} />
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <Flame size={20} color={colors.error} />
-                <Text style={[typography.h4, { color: colors.textPrimary, marginTop: SPACING.xs }]}>{stats.avgRpe}</Text>
+                <Text style={[typography.h4, { color: colors.textPrimary, marginTop: SPACING.xs }]}>
+                  {stats.avgRpe}
+                </Text>
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>ср. RPE</Text>
               </View>
             </>
@@ -220,7 +260,12 @@ export default function WorkoutReportScreen() {
         {/* Мышцы — инфографика */}
         {muscleLoads.length > 0 && (
           <View style={{ marginBottom: SPACING.xl }}>
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.md },
+              ]}
+            >
               Задействованные мышцы
             </Text>
             {muscleLoads.map((muscle) => {
@@ -228,8 +273,16 @@ export default function WorkoutReportScreen() {
               const barColor = getMuscleColor(muscle.avgRpe);
               return (
                 <View key={muscle.name} style={{ marginBottom: SPACING.sm }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={[typography.body, { color: colors.textPrimary }]}>{muscle.name}</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Text style={[typography.body, { color: colors.textPrimary }]}>
+                      {muscle.name}
+                    </Text>
                     <Text style={[typography.caption, { color: colors.textSecondary }]}>
                       {Math.round(muscle.volume)} кг
                       {muscle.avgRpe != null && ` · RPE ${muscle.avgRpe.toFixed(1)}`}
@@ -255,14 +308,21 @@ export default function WorkoutReportScreen() {
                 </View>
               );
             })}
-            <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.xs }]}>
+            <Text
+              style={[
+                typography.captionSmall,
+                { color: colors.textTertiary, marginTop: SPACING.xs },
+              ]}
+            >
               Длина = объём работы · Цвет = интенсивность (RPE)
             </Text>
           </View>
         )}
 
         {/* Упражнения */}
-        <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+        <Text
+          style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
+        >
           Упражнения
         </Text>
         {data.exercises.map((ex: WorkoutDetailExercise) => (
@@ -277,11 +337,23 @@ export default function WorkoutReportScreen() {
               marginBottom: SPACING.md,
             }}
           >
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.sm },
+              ]}
+            >
               {ex.exercise_name}
             </Text>
             {ex.logs.map((log: WorkoutDetailLog) => (
-              <View key={log.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SPACING.xs }}>
+              <View
+                key={log.id}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  paddingVertical: SPACING.xs,
+                }}
+              >
                 <Text style={[typography.body, { color: colors.textSecondary }]}>
                   Подход {log.set_number}
                 </Text>
@@ -290,7 +362,9 @@ export default function WorkoutReportScreen() {
                     {log.weight_kg ?? 0} × {log.reps ?? 0}
                   </Text>
                   {log.rpe != null && (
-                    <Text style={[typography.caption, { color: colors.warning }]}>RPE {log.rpe}</Text>
+                    <Text style={[typography.caption, { color: colors.warning }]}>
+                      RPE {log.rpe}
+                    </Text>
                   )}
                 </View>
               </View>

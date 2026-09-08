@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 06.09.2026 (main) [H4 Accessibility polish — новые поверхности]
+Срез: 08.09.2026 (main) [H4 Accessibility polish, UX-11 Progress zones, SheetShell scroll fix]
 
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
@@ -75,7 +75,7 @@
 | UX-8 | 🟠 | ✅ | lazy mount тяжёлого контента — media/slider монтируется только при раскрытии accordion; stagger в ExerciseSlider |
 | UX-9 | 🟠 | ✅ | History calendar с отметками — выполнено: HistoryCalendar (месяц, навигация, точки, тап по дню → DaySummaryCard через SheetShell); даты вычисляются локально из уже загруженных данных (ноль новых запросов); пропущенные тренировки не отображаются (Вариант A, консистентно с FIT-7) |
 | UX-10 | 🟠 | ✅ | Calendar/List toggle + day details — выполнено: HistoryViewToggle segmented control + useHistoryView (persist в AsyncStorage, default calendar); list view сохранён без изменений; day details: тап по дню → DaySummaryCard → history/[id] |
-| UX-11 | 🟠 | ✅ | **Progress hub** (отдельный bottom-tab, единый экран «Как я меняюсь?»): убраны 4 режима; последовательный поток: Hero → Stats → Insights → Activity → Strength (с интерактивным селектором упражнений и explainability e1RM) → Weight → PR (в виде карточек-достижений) → RecentWorkouts (детерминированный градиент, program_name, duration, avg_rpe); History вынесен в отдельную ментальную модель (PRODUCT.md §11). |
+| UX-11 | 🟠 | ✅ | **Progress hub** (отдельный bottom-tab, единый экран «Как я меняюсь?»): убраны 4 режима; последовательный поток: Hero → Stats → Insights → Activity → Strength (с интерактивным селектором упражнений и explainability e1RM) → Weight → PR (в виде карточек-достижений) → RecentWorkouts (детерминированный градиент, program_name, duration, avg_rpe); History вынесен в отдельную ментальную модель (PRODUCT.md §11). **Реструктуризация (08.09.2026)**: контент сгруппирован в 4 чёткие визуальные зоны (Обзор, Инсайты, Динамика и рекорды, История) с общим заголовком раздела для устранения ощущения «хаоса» и водопада карточек. В Workout Report (`app/progress/[id].tsx`) заголовок навигации теперь отображает реальное имя тренировки (`data.name`) вместо generic «Отчёт». |
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
 | UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
 | UX-15 | 🟠 | ✅ | workouts.tsx: Sticky-карточка «Следующая» + фильтр «Предстоящие/Все» (Гибрид А+Б). Решает проблему скролла к нужной неделе, сохраняет историю доступной в 1 тап. |
@@ -229,6 +229,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
 | DS-1 | 🟠 | ✅ | Аудит design system завершён: шкала типографики/spacing/состояния проверены. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 | DS-2 | 🟠 | ✅ | Bottom Tab Bar: внедрён паттерн Pill Highlight (явный active state: `colors.primary` background + filled icon + bold text), haptics, `accessibilityRole="tab"`. 6 табов скомпактизированы (`inset: 2`, `paddingVertical: SPACING.sm`) для предотвращения переноса текста. Соответствует PRODUCT.md §3.1–3.2. |
+| DS-3 | 🟠 | ✅ | Segmented Controls: создан универсальный компонент `PillToggle` (PRODUCT.md §3.6). Заменены все хардкодные реализации в `workouts.tsx`, `settings.tsx` и `WorkoutDisplayModePicker`. Явный active state: `colors.primary` background, `textInverse`, `fontWeight: 600`, shadow, tap target ≥ 44pt. |
 | LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: ~74 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
 
 ## 14. Update rule

@@ -25,6 +25,7 @@ import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
 import { SheetShell } from '../../src/components/ui/SheetShell';
+import { PillToggle } from '../../src/components/ui/PillToggle';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
@@ -555,50 +556,17 @@ export default function WorkoutsScreen() {
               </View>
             )}
 
-          {/* Гибрид А+Б: Segmented Control */}
+          {/* Гибрид А+Б: Segmented Control (Pill Toggle) */}
           {activeProgram && (
             <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  backgroundColor: colors.surfaceSecondary,
-                  borderRadius: BORDER_RADIUS.md,
-                  padding: 2,
-                }}
-              >
-                {(['upcoming', 'all'] as const).map((mode) => (
-                  <TouchableOpacity
-                    key={mode}
-                    onPress={() => setViewMode(mode)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      mode === 'upcoming' ? 'Предстоящие тренировки' : 'Все тренировки'
-                    }
-                    accessibilityState={{ selected: viewMode === mode }}
-                    style={{
-                      flex: 1,
-                      paddingVertical: SPACING.sm,
-                      alignItems: 'center',
-                      borderRadius: BORDER_RADIUS.sm,
-                      backgroundColor: viewMode === mode ? colors.background : 'transparent',
-                      shadowColor: viewMode === mode ? '#000' : 'transparent',
-                      shadowOpacity: viewMode === mode ? 0.1 : 0,
-                      shadowRadius: 2,
-                      elevation: viewMode === mode ? 2 : 0,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: viewMode === mode ? colors.textPrimary : colors.textSecondary,
-                        fontWeight: viewMode === mode ? '600' : '400',
-                        fontSize: typography.label.fontSize,
-                      }}
-                    >
-                      {mode === 'upcoming' ? 'Предстоящие' : 'Все'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <PillToggle
+                options={[
+                  { key: 'upcoming', label: 'Предстоящие' },
+                  { key: 'all', label: 'Все' },
+                ]}
+                value={viewMode}
+                onChange={setViewMode}
+              />
             </View>
           )}
 

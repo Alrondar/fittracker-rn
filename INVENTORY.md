@@ -1,6 +1,6 @@
 FitTracker — Code & Screen Inventory
 
-Срез: 06.09.2026 (main) [H4 Accessibility polish — новые поверхности]
+Срез: 08.09.2026 (main) [H4 Accessibility polish, SheetShell scroll fix]
 
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -11,7 +11,7 @@ FitTracker — Code & Screen Inventory
 | ---|---|
 | Экраны/роуты|app/ , табы —  app/(tabs)/  (Expo Router, file-based)|
 | Компоненты фич|src/components/<feature>/ :  workout/ ,  program/ ,  dashboard/ ,  exercises/ ,  profile/|
-| Shared UI|src/components/ui/  ( AppButton ,  AppCard ,  SheetShell ,  Skeleton , …)|
+| Shared UI|src/components/ui/  ( AppButton ,  AppCard ,  SheetShell ,  Skeleton ,  PillToggle , …)|
 | Хуки|src/hooks/ , feature-подпапки ( hooks/workout/ ,  hooks/program/ , …)|
 | Supabase boundary|src/services/  (единственное место для  supabase.from/auth/rpc )|
 | Тема/токены/константы|src/constants/  ( theme.ts ,  semanticColors.ts ,  phaseTypes.ts ,  injuries.ts , …)|
@@ -480,3 +480,7 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 **Фича 7 (Next Workout Forecast, ENG-19)**: `src/utils/workoutForecast.ts` (чистая функция `calculateWorkoutForecast`) + `src/services/forecastService.ts` (единственная supabase-граница) + `src/hooks/useWorkoutForecast.ts` (staleTime 5 мин) + `src/components/dashboard/WorkoutForecastSheet.tsx` (L2). Forecast volume = сумма средних объёмов каждого упражнения следующей тренировки за последние 4 недели; сравнение с средним объёмом тренировки за тот же период. Thresholds: < 0.85 → easy, 0.85–1.15 → normal, > 1.15 → hard. Insufficient-data guard: < 3 тренировок за окно → `difficulty: 'unknown'` (PRODUCT.md §14 — не выдумываем данные). Supabase flow: user_programs (active) → workouts (next: phase/week/day match, finished_at null, skipped_at null) → workout_exercises (с embed `exercises(name)` для L2) → 2 параллельных запроса (workout_logs по exercise_id за 4 недели `is_warmup=false` + все завершённые workouts за 4 недели для baseline). UI: L1-бейдж `Тяжёлая/Лёгкая/Обычная` в Sticky-карточке `workouts.tsx` рядом с названием тренировки; L1-чип `Следующая: тяжёлая` в `StatusCard` (Dashboard) после recovery-чипов; L2 — `WorkoutForecastSheet` с итоговой оценкой (иконка + цвет), сравнением ожидаемого vs среднего объёма и разбивкой по упражнениям с disclaimer «наблюдение, а не предписание». Не влияет на `progression.ts` — observation для пользователя.
 
 **DS-2 (Bottom Tab Bar)**: `src/components/CustomTabBar.tsx` использует паттерн Pill Highlight для активного состояния (PRODUCT.md §3.2): absolute pill background (`colors.primary`), filled иконка (`fill={color}`), bold label (`fontWeight: '600'`). 6 табов скомпактизированы (`inset: 2`, `paddingVertical: SPACING.sm`) для предотвращения переноса текста на узких экранах. `accessibilityRole="tab"` и haptics сохранены.
+
+**DS-3 (Segmented Controls)**: Создан универсальный компонент `src/components/ui/PillToggle.tsx` (PRODUCT.md §3.6). Заменяет все хардкодные segmented controls в `workouts.tsx`, `settings.tsx` и `WorkoutDisplayModePicker`. Обеспечивает явный active state: `colors.primary` background, `textInverse`, `fontWeight: 600`, shadow, tap target ≥ 44pt, haptics.
+
+**SheetShell scroll fix (08.09.2026)**: Для предотвращения обрезания длинного контента (например, блока «Нагрузка на мышцы» в `WeeklyReviewSection`) в `SheetShell` (при использовании без `isModal`) добавлены `flex: 1` к контейнеру sheet и `ScrollView`, а также `flexGrow: 1` к `contentContainerStyle`. Это гарантирует корректный расчёт высоты и скролл без обрезания.

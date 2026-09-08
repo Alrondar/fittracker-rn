@@ -270,245 +270,269 @@ export default function ProgressScreen() {
           />
         }
       >
-        <ProgressHero
-          totalWorkouts={progressData?.totalWorkouts ?? 0}
-          currentStreak={progressData?.currentStreak ?? 0}
-          weeklyWorkoutDelta={weeklyWorkoutDelta}
-          currentWeekVolume={currentWeek.volume}
-          previousWeekVolume={previousWeek?.volume ?? null}
-        />
-
-        <ProgressStats
-          totalWorkouts={progressData?.totalWorkouts ?? 0}
-          totalVolume={progressData?.totalVolume ?? 0}
-          currentStreak={progressData?.currentStreak ?? 0}
-          bestStreak={progressData?.bestStreak ?? 0}
-        />
-
-        <WeeklyReviewSection userId={userId} />
-
-        <ProgressInsights
-          weeklyVolume={progressData?.weeklyVolume ?? []}
-          strengthTrend={strengthTrend}
-          weightTrend={weightTrend}
-          personalRecords={personalRecords}
-          chronicPainZones={painTrend.chronicZones}
-        />
-
-        {/* Активность: прозрачный заголовок + собственная карточка графика
-            (без AppCard — убираем «карточку в карточке») */}
-        <View style={{ marginBottom: SPACING.lg }}>
-          <SectionTitle
-            accent={colors.success}
-            icon={<Activity size={18} color={colors.success} />}
-            title="Активность"
-            subtitle="Объём за последние недели"
+        {/* Зона 1: Обзор (L1) */}
+        <View style={{ marginBottom: SPACING.lg, gap: SPACING.md }}>
+          <ProgressHero
+            totalWorkouts={progressData?.totalWorkouts ?? 0}
+            currentStreak={progressData?.currentStreak ?? 0}
+            weeklyWorkoutDelta={weeklyWorkoutDelta}
+            currentWeekVolume={currentWeek.volume}
+            previousWeekVolume={previousWeek?.volume ?? null}
           />
-          <VolumeTrendChart weeklyVolume={progressData?.weeklyVolume ?? []} />
+          <ProgressStats
+            totalWorkouts={progressData?.totalWorkouts ?? 0}
+            totalVolume={progressData?.totalVolume ?? 0}
+            currentStreak={progressData?.currentStreak ?? 0}
+            bestStreak={progressData?.bestStreak ?? 0}
+          />
         </View>
 
-        {/* Сила: заголовок один — внутри StrengthTrendChart */}
-        {hasStrength ? (
-          <View style={{ marginBottom: SPACING.lg }}>
-            <SectionTitle
-              accent={colors.primary}
-              icon={<TrendingUp size={18} color={colors.primary} />}
-              title="Сила"
-              subtitle="Расчётный 1ПМ (e1RM)"
-            />
-            {/* Селектор упражнений */}
-            {strengthTop.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ marginBottom: SPACING.md, gap: SPACING.sm }}
+        {/* Зона 2: Инсайты (L1/L2) */}
+        <View style={{ marginBottom: SPACING.lg, gap: SPACING.md }}>
+          <WeeklyReviewSection userId={userId} />
+          <ProgressInsights
+            weeklyVolume={progressData?.weeklyVolume ?? []}
+            strengthTrend={strengthTrend}
+            weightTrend={weightTrend}
+            personalRecords={personalRecords}
+            chronicPainZones={painTrend.chronicZones}
+          />
+        </View>
+
+        {/* Зона 3: Динамика и рекорды (L2) */}
+        <View style={{ marginBottom: SPACING.lg }}>
+          <SectionTitle
+            accent={colors.primary}
+            icon={<TrendingUp size={18} color={colors.primary} />}
+            title="Динамика и рекорды"
+            subtitle="Как меняются твои показатели"
+          />
+
+          <View style={{ gap: SPACING.lg }}>
+            {/* Активность */}
+            <View>
+              <Text
+                style={[
+                  typography.labelBold,
+                  { color: colors.textPrimary, marginBottom: SPACING.sm },
+                ]}
               >
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  onPress={() => setSelectedExercise(null)}
-                  style={{
-                    paddingHorizontal: SPACING.md,
-                    paddingVertical: SPACING.sm,
-                    minHeight: 44,
-                    borderRadius: BORDER_RADIUS.full,
-                    backgroundColor: selectedExercise === null ? colors.primary : colors.surface,
-                    borderWidth: 1,
-                    borderColor: selectedExercise === null ? colors.primary : colors.border,
-                    justifyContent: 'center',
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Показать все упражнения"
-                  accessibilityState={{ selected: selectedExercise === null }}
+                Активность
+              </Text>
+              <VolumeTrendChart weeklyVolume={progressData?.weeklyVolume ?? []} />
+            </View>
+
+            {/* Сила */}
+            {hasStrength ? (
+              <View>
+                <Text
+                  style={[
+                    typography.labelBold,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
                 >
-                  <Text
-                    style={[
-                      typography.captionSmall,
-                      {
-                        color:
-                          selectedExercise === null ? colors.textInverse : colors.textSecondary,
-                        fontWeight: '600',
-                      },
-                    ]}
+                  Сила (e1RM)
+                </Text>
+                {strengthTop.length > 1 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ marginBottom: SPACING.md, gap: SPACING.sm }}
                   >
-                    Все
-                  </Text>
-                </TouchableOpacity>
-                {strengthTop.map((item) => {
-                  const isSelected = selectedExercise === item.name;
-                  return (
                     <TouchableOpacity
-                      key={item.name}
                       activeOpacity={0.75}
-                      onPress={() => setSelectedExercise(item.name)}
+                      onPress={() => setSelectedExercise(null)}
                       style={{
                         paddingHorizontal: SPACING.md,
                         paddingVertical: SPACING.sm,
                         minHeight: 44,
                         borderRadius: BORDER_RADIUS.full,
-                        backgroundColor: isSelected ? colors.primary : colors.surface,
+                        backgroundColor:
+                          selectedExercise === null ? colors.primary : colors.surface,
                         borderWidth: 1,
-                        borderColor: isSelected ? colors.primary : colors.border,
+                        borderColor: selectedExercise === null ? colors.primary : colors.border,
                         justifyContent: 'center',
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`Фильтр по упражнению: ${item.name}`}
-                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel="Показать все упражнения"
+                      accessibilityState={{ selected: selectedExercise === null }}
                     >
                       <Text
-                        numberOfLines={1}
                         style={[
                           typography.captionSmall,
                           {
-                            color: isSelected ? colors.textInverse : colors.textSecondary,
+                            color:
+                              selectedExercise === null ? colors.textInverse : colors.textSecondary,
                             fontWeight: '600',
                           },
                         ]}
                       >
-                        {item.name}
+                        Все
                       </Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )}
-            <AppCard>
-              <StrengthTrendChart
-                series={strengthTrend}
-                selectedExerciseName={selectedExercise ?? undefined}
-              />
-            </AppCard>
-          </View>
-        ) : (
-          <View style={{ marginBottom: SPACING.lg }}>
-            <SectionTitle
-              accent={colors.primary}
-              icon={<TrendingUp size={18} color={colors.primary} />}
-              title="Сила"
-              subtitle="Расчётный 1ПМ (e1RM)"
-            />
-            <View
-              style={{
-                padding: SPACING.md,
-                borderRadius: BORDER_RADIUS.md,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              <Text
-                style={[typography.body, { color: colors.textPrimary, marginBottom: SPACING.xs }]}
-              >
-                Продолжай фиксировать веса и повторения
-              </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Здесь появится график силы (e1RM) по твоим основным упражнениям.
-              </Text>
-              <Text
-                style={[
-                  typography.captionSmall,
-                  { color: colors.textTertiary, marginTop: SPACING.sm, fontStyle: 'italic' },
-                ]}
-              >
-                e1RM — расчётный одноповторный максимум по формуле Эпли: вес × (1 + повторы / 30).
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Вес: заголовок живёт внутри WeightTrendRow */}
-        {hasWeight && (
-          <View style={{ marginBottom: SPACING.lg }}>
-            <WeightTrendRow weightTrend={weightTrend} />
-          </View>
-        )}
-
-        {/* Личные рекорды */}
-        {hasRecords && (
-          <View style={{ marginBottom: SPACING.lg }}>
-            <SectionTitle
-              accent={colors.warning}
-              icon={<Award size={18} color={colors.warning} />}
-              title="Личные рекорды"
-              subtitle="Твои лучшие результаты"
-            />
-            {topRecords.map((record) => (
-              <View
-                key={record.name}
-                style={{
-                  backgroundColor: withAlpha(colors.warning, 0.08),
-                  borderRadius: BORDER_RADIUS.lg,
-                  borderWidth: 1,
-                  borderColor: withAlpha(colors.warning, 0.25),
-                  padding: SPACING.md,
-                  marginBottom: SPACING.sm,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}
-              >
+                    {strengthTop.map((item) => {
+                      const isSelected = selectedExercise === item.name;
+                      return (
+                        <TouchableOpacity
+                          key={item.name}
+                          activeOpacity={0.75}
+                          onPress={() => setSelectedExercise(item.name)}
+                          style={{
+                            paddingHorizontal: SPACING.md,
+                            paddingVertical: SPACING.sm,
+                            minHeight: 44,
+                            borderRadius: BORDER_RADIUS.full,
+                            backgroundColor: isSelected ? colors.primary : colors.surface,
+                            borderWidth: 1,
+                            borderColor: isSelected ? colors.primary : colors.border,
+                            justifyContent: 'center',
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Фильтр по упражнению: ${item.name}`}
+                          accessibilityState={{ selected: isSelected }}
+                        >
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              typography.captionSmall,
+                              {
+                                color: isSelected ? colors.textInverse : colors.textSecondary,
+                                fontWeight: '600',
+                              },
+                            ]}
+                          >
+                            {item.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+                <AppCard>
+                  <StrengthTrendChart
+                    series={strengthTrend}
+                    selectedExerciseName={selectedExercise ?? undefined}
+                  />
+                </AppCard>
+              </View>
+            ) : (
+              <View>
+                <Text
+                  style={[
+                    typography.labelBold,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Сила (e1RM)
+                </Text>
                 <View
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: withAlpha(colors.warning, 0.15),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: SPACING.md,
+                    padding: SPACING.md,
+                    borderRadius: BORDER_RADIUS.md,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
                   }}
                 >
-                  <Award size={20} color={colors.warning} />
-                </View>
-                <View style={{ flex: 1 }}>
                   <Text
-                    numberOfLines={1}
-                    style={[typography.labelBold, { color: colors.textPrimary }]}
+                    style={[
+                      typography.body,
+                      { color: colors.textPrimary, marginBottom: SPACING.xs },
+                    ]}
                   >
-                    {record.name}
+                    Продолжай фиксировать веса и повторения
                   </Text>
-                  {!!record.recordDate && (
-                    <Text
-                      style={[
-                        typography.captionSmall,
-                        { color: colors.textTertiary, marginTop: 2 },
-                      ]}
-                    >
-                      {new Date(record.recordDate).toLocaleDateString('ru-RU')}
-                    </Text>
-                  )}
-                </View>
-                <View style={{ alignItems: 'flex-end', marginRight: SPACING.xs }}>
-                  <Text style={[typography.h3, { color: colors.warning, fontWeight: '700' }]}>
-                    {record.maxWeight}
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    Здесь появится график силы (e1RM) по твоим основным упражнениям.
                   </Text>
-                  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                    кг × {record.reps}
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      { color: colors.textTertiary, marginTop: SPACING.sm, fontStyle: 'italic' },
+                    ]}
+                  >
+                    e1RM — расчётный одноповторный максимум по формуле Эпли: вес × (1 + повторы /
+                    30).
                   </Text>
                 </View>
               </View>
-            ))}
-          </View>
-        )}
+            )}
 
+            {/* Вес */}
+            {hasWeight && <WeightTrendRow weightTrend={weightTrend} />}
+
+            {/* Личные рекорды */}
+            {hasRecords && (
+              <View>
+                <Text
+                  style={[
+                    typography.labelBold,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Личные рекорды
+                </Text>
+                {topRecords.map((record) => (
+                  <View
+                    key={record.name}
+                    style={{
+                      backgroundColor: withAlpha(colors.warning, 0.08),
+                      borderRadius: BORDER_RADIUS.lg,
+                      borderWidth: 1,
+                      borderColor: withAlpha(colors.warning, 0.25),
+                      padding: SPACING.md,
+                      marginBottom: SPACING.sm,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: withAlpha(colors.warning, 0.15),
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: SPACING.md,
+                      }}
+                    >
+                      <Award size={20} color={colors.warning} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={[typography.labelBold, { color: colors.textPrimary }]}
+                      >
+                        {record.name}
+                      </Text>
+                      {!!record.recordDate && (
+                        <Text
+                          style={[
+                            typography.captionSmall,
+                            { color: colors.textTertiary, marginTop: 2 },
+                          ]}
+                        >
+                          {new Date(record.recordDate).toLocaleDateString('ru-RU')}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ alignItems: 'flex-end', marginRight: SPACING.xs }}>
+                      <Text style={[typography.h3, { color: colors.warning, fontWeight: '700' }]}>
+                        {record.maxWeight}
+                      </Text>
+                      <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                        кг × {record.reps}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Зона 4: История (L2) */}
         <RecentWorkouts workouts={recentWorkouts} onPress={openWorkout} />
       </ScrollView>
     </SafeAreaView>
