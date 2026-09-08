@@ -16,10 +16,12 @@ export interface ThemeColors {
   primaryDark: string;
   success: string;
   successLight: string;
+  successBorder: string;
   error: string;
   errorLight: string;
   warning: string;
   warningLight: string;
+  warningBorder: string;
   info: string;
   background: string;
   surface: string;
@@ -64,10 +66,12 @@ export const purpleLightTheme: Theme = {
     primaryDark: '#6b21a8',
     success: '#10b981',
     successLight: '#d1fae5',
+    successBorder: 'rgba(16, 185, 129, 0.4)',
     error: '#ef4444',
     errorLight: '#fee2e2',
     warning: '#f59e0b',
     warningLight: '#fef3c7',
+    warningBorder: 'rgba(245, 158, 11, 0.4)',
     info: '#3b82f6',
     background: '#faf5ff',
     surface: '#ffffff',
@@ -101,10 +105,12 @@ export const purpleDarkTheme: Theme = {
     primaryDark: '#a78bfa',
     success: '#34d399',
     successLight: '#064e3b',
+    successBorder: 'rgba(52, 211, 153, 0.4)',
     error: '#f87171',
     errorLight: '#7f1d1d',
     warning: '#fbbf24',
     warningLight: '#78350f',
+    warningBorder: 'rgba(251, 191, 36, 0.4)',
     info: '#60a5fa',
     background: '#0f172a',
     surface: '#1e293b',
@@ -141,10 +147,12 @@ export const orangeLightTheme: Theme = {
     primaryDark: '#E85D2A',
     success: '#2ECC71',
     successLight: '#E8F8F0',
+    successBorder: 'rgba(46, 204, 113, 0.4)',
     error: '#EB4D4B',
     errorLight: '#FDEDEC',
     warning: '#F9CA24',
     warningLight: '#FEF9E7',
+    warningBorder: 'rgba(249, 202, 36, 0.4)',
     info: '#004E89',
     background: '#FFFFFF',
     surface: '#FFF8F5',
@@ -178,10 +186,12 @@ export const orangeDarkTheme: Theme = {
     primaryDark: '#FF6B35',
     success: '#2ECC71',
     successLight: '#0D2B1A',
+    successBorder: 'rgba(46, 204, 113, 0.4)',
     error: '#FF6B6B',
     errorLight: '#2D1010',
     warning: '#F9CA24',
     warningLight: '#2D2608',
+    warningBorder: 'rgba(249, 202, 36, 0.4)',
     info: '#5BA4D9',
     background: '#1A1412',
     surface: '#2A211E',
@@ -218,10 +228,12 @@ export const blueLightTheme: Theme = {
     primaryDark: '#075985',
     success: '#00CE7C',
     successLight: '#E6F9F1',
+    successBorder: 'rgba(0, 206, 124, 0.4)',
     error: '#FF4757',
     errorLight: '#FFE5E8',
     warning: '#FFA502',
     warningLight: '#FFF4E6',
+    warningBorder: 'rgba(255, 165, 2, 0.4)',
     info: '#0984E3',
     background: '#F8F9FA',
     surface: '#FFFFFF',
@@ -255,10 +267,12 @@ export const blueDarkTheme: Theme = {
     primaryDark: '#0984E3',
     success: '#55EFC4',
     successLight: '#0A2B22',
+    successBorder: 'rgba(85, 239, 196, 0.4)',
     error: '#FF7675',
     errorLight: '#2D0F0F',
     warning: '#FDCB6E',
     warningLight: '#2D2608',
+    warningBorder: 'rgba(253, 203, 110, 0.4)',
     info: '#74B9FF',
     background: '#0A1628',
     surface: '#132238',
@@ -295,10 +309,12 @@ export const neonLightTheme: Theme = {
     primaryDark: '#009E52',
     success: '#00CC6A',
     successLight: '#E6FFF2',
+    successBorder: 'rgba(0, 204, 106, 0.4)',
     error: '#FF3366',
     errorLight: '#FFE5EC',
     warning: '#FFAA00',
     warningLight: '#FFF4E0',
+    warningBorder: 'rgba(255, 170, 0, 0.4)',
     info: '#00D9FF',
     background: '#F5FFF9',
     surface: '#FFFFFF',
@@ -332,10 +348,12 @@ export const neonDarkTheme: Theme = {
     primaryDark: '#00CC6A',
     success: '#00FF88',
     successLight: '#003D22',
+    successBorder: 'rgba(0, 255, 136, 0.4)',
     error: '#FF3366',
     errorLight: '#3D0018',
     warning: '#FFAA00',
     warningLight: '#3D2900',
+    warningBorder: 'rgba(255, 170, 0, 0.4)',
     info: '#00D9FF',
     background: '#0A0A0A',
     surface: '#141414',
@@ -372,10 +390,12 @@ export const pinkLightTheme: Theme = {
     primaryDark: '#C2185B',
     success: '#4CAF50',
     successLight: '#E8F5E9',
+    successBorder: 'rgba(76, 175, 80, 0.4)',
     error: '#F44336',
     errorLight: '#FFEBEE',
     warning: '#FF9800',
     warningLight: '#FFF3E0',
+    warningBorder: 'rgba(255, 152, 0, 0.4)',
     info: '#2196F3',
     background: '#FFF5F8',
     surface: '#FFFFFF',
@@ -409,10 +429,12 @@ export const pinkDarkTheme: Theme = {
     primaryDark: '#E91E63',
     success: '#66BB6A',
     successLight: '#0F2B12',
+    successBorder: 'rgba(102, 187, 106, 0.4)',
     error: '#EF5350',
     errorLight: '#2D0F0F',
     warning: '#FFB74D',
     warningLight: '#2D1F0A',
+    warningBorder: 'rgba(255, 183, 77, 0.4)',
     info: '#64B5F6',
     background: '#1A0F14',
     surface: '#2A1A22',
@@ -529,6 +551,19 @@ export const scale = (size: number): number =>
 /** Масштаб для шрифтов: сжимается мягче (95% линейно + 5% база),
  *  чтобы на больших экранах текст не становился несоразмерно крупным. */
 export const fontScale = (size: number): number =>
-  PixelRatio.roundToNearestPixel(
-    (SCREEN_WIDTH / BASE_WIDTH) * size * 0.95 + size * 0.05,
-  );
+  PixelRatio.roundToNearestPixel((SCREEN_WIDTH / BASE_WIDTH) * size * 0.95 + size * 0.05);
+
+/**
+ * Добавляет прозрачность к hex-цвету.
+ * Типобезопасная альтернатива конкатенации строк (`color + '1A'`).
+ * @param color hex-цвет (например, '#ff0000' или 'ff0000')
+ * @param alpha прозрачность (0-1)
+ * @returns rgba-строка (например, 'rgba(255, 0, 0, 0.5)')
+ */
+export function withAlpha(color: string, alpha: number): string {
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}

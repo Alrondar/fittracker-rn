@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { useStore } from '../../src/store/useStore';
@@ -62,15 +56,8 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-const {
-  userData,
-  stats,
-  targets,
-  todayNutrition,
-  personalRecords,
-  loading,
-  saveNutrition,
-} = useProfile(userId);
+  const { userData, stats, targets, todayNutrition, personalRecords, loading, saveNutrition } =
+    useProfile(userId);
 
   const [showNutritionSheet, setShowNutritionSheet] = useState(false);
   const [inputCalories, setInputCalories] = useState('');
@@ -153,7 +140,7 @@ const {
     current: number,
     target: number,
     unit: string,
-    color: string,
+    color: string
   ) => {
     const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
     const isOver = current > target;
@@ -169,7 +156,9 @@ const {
           >
             {label}
           </Text>
-          <Text style={[typography.caption, { color: isOver ? colors.error : colors.textSecondary }]}>
+          <Text
+            style={[typography.caption, { color: isOver ? colors.error : colors.textSecondary }]}
+          >
             {current}/{target} {unit}
           </Text>
         </View>
@@ -358,8 +347,7 @@ const {
                         width: 28,
                         height: 28,
                         borderRadius: 14,
-                        backgroundColor:
-                          index < 3 ? RANK_COLORS[index] : colors.surfaceSecondary,
+                        backgroundColor: index < 3 ? RANK_COLORS[index] : colors.surfaceSecondary,
                         alignItems: 'center',
                         justifyContent: 'center',
                         marginRight: SPACING.md,
@@ -386,12 +374,20 @@ const {
                       </Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[typography.h5, { color: colors.primary }]}>{record.maxWeight} кг</Text>
+                      <Text style={[typography.h5, { color: colors.primary }]}>
+                        {record.maxWeight} кг
+                      </Text>
                       <Text style={[typography.caption, { color: colors.textSecondary }]}>
                         × {record.reps}
                       </Text>
                     </View>
-                    {recordId && <ChevronRight size={18} color={colors.textTertiary} style={{ marginLeft: SPACING.xs }} />}
+                    {recordId && (
+                      <ChevronRight
+                        size={18}
+                        color={colors.textTertiary}
+                        style={{ marginLeft: SPACING.xs }}
+                      />
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -406,7 +402,9 @@ const {
             <AppCard variant="compact">
               {cycleLoading ? (
                 <View style={{ height: 200, justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+                  <Text style={[typography.body, { color: colors.textSecondary }]}>
+                    Загрузка...
+                  </Text>
                 </View>
               ) : (
                 <>
@@ -418,7 +416,13 @@ const {
                     isEditMode={isEditMode}
                     onDayPress={handleDayPress}
                   />
-                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: SPACING.md }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      marginTop: SPACING.md,
+                    }}
+                  >
                     <TouchableOpacity
                       onPress={() => setIsEditMode(!isEditMode)}
                       style={{
@@ -427,16 +431,25 @@ const {
                         paddingHorizontal: SPACING.md,
                         paddingVertical: SPACING.sm,
                         borderRadius: BORDER_RADIUS.full,
-                        backgroundColor: isEditMode ? colors.primary + '1A' : colors.surfaceSecondary,
+                        backgroundColor: isEditMode
+                          ? withAlpha(colors.primary, 0.1)
+                          : colors.surfaceSecondary,
                         borderWidth: 1,
                         borderColor: isEditMode ? colors.primary : colors.border,
                       }}
                     >
-                      <Pencil size={18} color={isEditMode ? colors.primary : colors.textSecondary} style={{ marginRight: SPACING.xs }} />
+                      <Pencil
+                        size={18}
+                        color={isEditMode ? colors.primary : colors.textSecondary}
+                        style={{ marginRight: SPACING.xs }}
+                      />
                       <Text
                         style={[
                           typography.label,
-                          { color: isEditMode ? colors.primary : colors.textSecondary, fontWeight: '600' },
+                          {
+                            color: isEditMode ? colors.primary : colors.textSecondary,
+                            fontWeight: '600',
+                          },
                         ]}
                       >
                         {isEditMode ? 'Завершить правку' : 'Режим правки'}
@@ -470,9 +483,13 @@ const {
               router.push('/profile/metrics');
             }}
           >
-
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Ruler size={20} color={colors.primary} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <Ruler
+                size={20}
+                color={colors.primary}
+                strokeWidth={1.5}
+                style={{ marginRight: SPACING.md }}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={[typography.h5, { color: colors.textPrimary }]}>Замеры тела</Text>
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
@@ -500,7 +517,12 @@ const {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Target size={20} color={colors.success} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
+              <Target
+                size={20}
+                color={colors.success}
+                strokeWidth={1.5}
+                style={{ marginRight: SPACING.md }}
+              />
               <Text style={[typography.h5, { color: colors.textPrimary }]}>Мои цели</Text>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
@@ -522,8 +544,15 @@ const {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Activity size={20} color={colors.error} strokeWidth={1.5} style={{ marginRight: SPACING.md }} />
-              <Text style={[typography.h5, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
+              <Activity
+                size={20}
+                color={colors.error}
+                strokeWidth={1.5}
+                style={{ marginRight: SPACING.md }}
+              />
+              <Text style={[typography.h5, { color: colors.textPrimary }]}>
+                Травмы и ограничения
+              </Text>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
           </TouchableOpacity>

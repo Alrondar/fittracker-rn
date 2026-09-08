@@ -516,6 +516,13 @@ Detail / Editor mental models (PROG-1…PROG-7).
 - tap targets ≥ 44pt;
 - VoiceOver/TalkBack sanity checks.
 
+### H5. Navigation polish
+
+- **Bottom Tabs**: внедрение Pill Highlight паттерна (явный active state: форма + цвет + вес текста).
+- **Segmented Controls**: замена всех неявных переключателей на Pill Toggle с анимацией (200ms).
+- **Modal vs Sheet Audit**: классификация всех существующих модалок/листов согласно `PRODUCT.md §3.6` (контекст → sheet, критическое → modal).
+- **Micro-interactions**: добавление haptic feedback и scale-анимаций (98%) на основные tap targets.
+
 ## 9. Этап I — Performance and measurement 🟠
 
 Стартует параллельно с H после стабилизации A.

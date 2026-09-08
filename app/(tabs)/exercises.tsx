@@ -18,7 +18,7 @@ import { useExercises } from '../../src/hooks/useExercises';
 import { ExerciseListItem, ExerciseSortBy } from '../../src/services/exercisesService';
 import { MUSCLE_GROUPS } from '../../src/constants/muscleGroups';
 import { getMuscleColor, MUSCLE_COLORS } from '../../src/constants/muscleColors';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppBadge } from '../../src/components/ui/AppBadge';
@@ -66,7 +66,7 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
           width: 50,
           height: 50,
           borderRadius: 25,
-          backgroundColor: borderColor + '20',
+          backgroundColor: withAlpha(borderColor, 0.13),
           justifyContent: 'center',
           alignItems: 'center',
           marginRight: SPACING.md,
@@ -90,7 +90,7 @@ const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProp
                 key={idx}
                 variant="default"
                 size="small"
-                style={{ backgroundColor: getMuscleColor(muscle) + '15' }}
+                style={{ backgroundColor: withAlpha(getMuscleColor(muscle), 0.08) }}
                 textStyle={{ color: getMuscleColor(muscle) }}
               >
                 {muscle}
@@ -181,7 +181,7 @@ export default function ExercisesScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       router.push(`/exercise/${id}`);
     },
-    [router],
+    [router]
   );
 
   const renderEmpty = () => (
@@ -235,7 +235,9 @@ export default function ExercisesScreen() {
           }}
         >
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[typography.caption, { color: colors.textSecondary }]}>Загружаем ещё...</Text>
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>
+            Загружаем ещё...
+          </Text>
         </View>
       );
     }
@@ -259,7 +261,7 @@ export default function ExercisesScreen() {
   // Memoized group color getter with theme fallback
   const getGroupColorForTheme = useCallback(
     (groupName: string): string => getGroupColor(groupName, colors),
-    [colors],
+    [colors]
   );
 
   return (
@@ -269,7 +271,9 @@ export default function ExercisesScreen() {
     >
       {/* Header */}
       <View style={commonStyles.header}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View
+          style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <View>
             <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>
               Справочник упражнений
@@ -282,14 +286,16 @@ export default function ExercisesScreen() {
             <TouchableOpacity
               onPress={() => setShowSortSheet(true)}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 backgroundColor: sortBy !== 'name-asc' ? colors.primaryLight : colors.surface,
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Сортировка"
             >
               <ArrowUpDown
                 size={20}
@@ -300,14 +306,16 @@ export default function ExercisesScreen() {
             <TouchableOpacity
               onPress={handleToggleSearch}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 backgroundColor: showSearch ? colors.primaryLight : colors.surface,
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={showSearch ? 'Закрыть поиск' : 'Открыть поиск'}
             >
               {showSearch ? (
                 <X size={20} color={colors.primary} strokeWidth={2} />
@@ -411,7 +419,7 @@ export default function ExercisesScreen() {
                   paddingHorizontal: SPACING.md,
                   paddingVertical: SPACING.sm,
                   borderRadius: BORDER_RADIUS.full,
-                  backgroundColor: isActive ? groupColor + '20' : colors.surface,
+                  backgroundColor: isActive ? withAlpha(groupColor, 0.13) : colors.surface,
                   borderWidth: 1,
                   borderColor: isActive ? groupColor : colors.border,
                 }}
@@ -419,11 +427,13 @@ export default function ExercisesScreen() {
                 activeOpacity={0.6}
               >
                 <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '600',
-                    color: isActive ? groupColor : colors.textPrimary,
-                  }}
+                  style={[
+                    typography.label,
+                    {
+                      fontWeight: '600',
+                      color: isActive ? groupColor : colors.textPrimary,
+                    },
+                  ]}
                 >
                   {groupName}
                 </Text>
@@ -437,7 +447,12 @@ export default function ExercisesScreen() {
                       paddingVertical: 2,
                     }}
                   >
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textInverse }}>
+                    <Text
+                      style={[
+                        typography.captionSmall,
+                        { fontWeight: '600', color: colors.textInverse },
+                      ]}
+                    >
                       {selectedInGroup}
                     </Text>
                   </View>
@@ -467,7 +482,7 @@ export default function ExercisesScreen() {
                       paddingHorizontal: SPACING.md,
                       paddingVertical: SPACING.sm,
                       borderRadius: BORDER_RADIUS.md,
-                      backgroundColor: isSelected ? muscleColor + '20' : colors.surface,
+                      backgroundColor: isSelected ? withAlpha(muscleColor, 0.13) : colors.surface,
                       borderWidth: 1,
                       borderColor: isSelected ? muscleColor : colors.border,
                     }}
@@ -483,11 +498,13 @@ export default function ExercisesScreen() {
                       />
                     )}
                     <Text
-                      style={{
-                        fontSize: 13,
-                        color: isSelected ? muscleColor : colors.textSecondary,
-                        fontWeight: '500',
-                      }}
+                      style={[
+                        typography.caption,
+                        {
+                          color: isSelected ? muscleColor : colors.textSecondary,
+                          fontWeight: '500',
+                        },
+                      ]}
                     >
                       {muscle}
                     </Text>
@@ -521,7 +538,7 @@ export default function ExercisesScreen() {
               paddingHorizontal: SPACING.md,
               paddingVertical: SPACING.sm,
               borderRadius: BORDER_RADIUS.full,
-              backgroundColor: activationOnly ? colors.warning + '20' : colors.surface,
+              backgroundColor: activationOnly ? withAlpha(colors.warning, 0.13) : colors.surface,
               borderWidth: 1,
               borderColor: activationOnly ? colors.warning : colors.border,
             }}
@@ -552,20 +569,24 @@ export default function ExercisesScreen() {
       ) : isError && exercises.length === 0 ? (
         renderError()
       ) : (
-    <FlashList
-      data={exercises}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
-      drawDistance={1000}
-      contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
-      ListEmptyComponent={renderEmpty}
-      ListFooterComponent={renderFooter}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.5}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-      }
-    />
+        <FlashList
+          data={exercises}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
+          drawDistance={1000}
+          contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+        />
       )}
 
       {/* Шкаф оборудования */}
@@ -580,7 +601,11 @@ export default function ExercisesScreen() {
       )}
 
       {/* Лист сортировки */}
-      <SheetShell visible={showSortSheet} title="Сортировка" onClose={() => setShowSortSheet(false)}>
+      <SheetShell
+        visible={showSortSheet}
+        title="Сортировка"
+        onClose={() => setShowSortSheet(false)}
+      >
         {(
           [
             { key: 'name-asc', label: 'По названию (А-Я)' },

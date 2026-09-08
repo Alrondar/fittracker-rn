@@ -136,7 +136,30 @@ style={{ backgroundColor: colors.primary }}
 
 Не добавлять hardcoded colors. Spacing/radius — canonical constants.
 
-Визуальные правила и дизайн-скилл — `PRODUCT.md §3.1–3.5`.
+Визуальные правила и дизайн-скилл — `PRODUCT.md §3.1–3.6`.
+
+### 7.1 Navigation & Toggle Tokens
+
+Для обеспечения консистентности active states использовать следующие семантические токены:
+
+```ts
+// Навигация (Bottom Tabs)
+navActiveBackground: colors.primary,
+navActiveIcon: colors.textInverse,
+navActiveLabel: colors.textInverse,
+navInactiveIcon: colors.textTertiary,
+navInactiveLabel: colors.textSecondary,
+
+// Переключатели (Segmented Controls / Pills)
+togglePillBackground: colors.primary,
+togglePillText: colors.textInverse,
+togglePillInactiveBackground: colors.surface,
+togglePillInactiveText: colors.textSecondary,
+
+// Анимации
+toggleTransitionDuration: 200, // ms, ease-out
+navTransitionDuration: 300,    // ms, ease-out
+```
 
 ## 8. Performance
 

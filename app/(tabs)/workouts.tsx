@@ -25,7 +25,7 @@ import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
 import { SheetShell } from '../../src/components/ui/SheetShell';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
@@ -40,11 +40,11 @@ function forecastDifficultyColor(d: ForecastDifficulty, colors: any): string {
 }
 function forecastDifficultyBorderColor(d: ForecastDifficulty, colors: any): string {
   const base = forecastDifficultyColor(d, colors);
-  return base + '88';
+  return withAlpha(base, 0.53);
 }
 function forecastDifficultyBg(d: ForecastDifficulty, colors: any): string {
   const base = forecastDifficultyColor(d, colors);
-  return base + '1A';
+  return withAlpha(base, 0.1);
 }
 
 function getWorkoutStatus(w: any, activeProgram: ActiveProgram | null): WorkoutStatus {
@@ -174,7 +174,7 @@ export default function WorkoutsScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 4,
-                  backgroundColor: phaseColor + '18',
+                  backgroundColor: withAlpha(phaseColor, 0.09),
                   paddingHorizontal: SPACING.sm,
                   paddingVertical: 2,
                   borderRadius: BORDER_RADIUS.sm,
@@ -256,7 +256,7 @@ export default function WorkoutsScreen() {
           : status === 'in_progress'
             ? colors.warning
             : status === 'completed'
-              ? colors.success + '60'
+              ? withAlpha(colors.success, 0.38)
               : colors.border;
 
       // UX-5 Feature 2: long press только для «Следующая» (скоуп подтверждён)
@@ -291,7 +291,7 @@ export default function WorkoutsScreen() {
                   variant="default"
                   size="small"
                   icon={<PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
-                  style={{ backgroundColor: phaseColor + '18' }}
+                  style={{ backgroundColor: withAlpha(phaseColor, 0.09) }}
                   textStyle={{ color: phaseColor }}
                 >
                   {section.phaseName}
@@ -591,7 +591,7 @@ export default function WorkoutsScreen() {
                       style={{
                         color: viewMode === mode ? colors.textPrimary : colors.textSecondary,
                         fontWeight: viewMode === mode ? '600' : '400',
-                        fontSize: 14,
+                        fontSize: typography.label.fontSize,
                       }}
                     >
                       {mode === 'upcoming' ? 'Предстоящие' : 'Все'}

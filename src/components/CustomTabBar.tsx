@@ -13,7 +13,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: 'transparent', paddingBottom: insets.bottom + SPACING.sm }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: 'transparent', paddingBottom: insets.bottom + SPACING.sm },
+      ]}
+    >
       <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -39,31 +44,44 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             });
           };
 
-          const iconColor = isFocused ? colors.primary : colors.textSecondary;
+          const iconColor = isFocused ? colors.textInverse : colors.textSecondary;
+          const strokeWidth = isFocused ? 2 : 1.5;
 
           return (
             <TouchableOpacity
               key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isFocused }}
               accessibilityLabel={options.tabBarAccessibilityLabel}
               onPress={onPress}
               onLongPress={onLongPress}
               style={styles.tab}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
+              {/* Pill Highlight Background для активного состояния */}
+              {isFocused && (
+                <View
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: colors.primary,
+                      shadowColor: colors.primary,
+                    },
+                  ]}
+                />
+              )}
+
               <View style={styles.iconContainer}>
-                {isFocused && <View style={[styles.indicator, { backgroundColor: colors.primary }]} />}
-                <View style={{ opacity: isFocused ? 1 : 0.6 }}>
-                  {getTabIcon(route.name, iconColor)}
-                </View>
+                {getTabIcon(route.name, iconColor, strokeWidth)}
               </View>
-              {/* ✅ Подпись не переносится: flex:1 + numberOfLines + центрирование.
-                  Размер масштабируется, чтобы на узких экранах влезало в долю вкладки. */}
+
               <Text
                 style={[
                   styles.label,
-                  { color: isFocused ? colors.primary : colors.textSecondary },
+                  {
+                    color: isFocused ? colors.textInverse : colors.textSecondary,
+                    fontWeight: isFocused ? '600' : '500',
+                  },
                 ]}
                 numberOfLines={1}
               >
@@ -77,9 +95,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   );
 }
 
-function getTabIcon(routeName: string, color: string) {
+function getTabIcon(routeName: string, color: string, strokeWidth: number) {
   const size = scale(22);
-  const strokeWidth = 1.5;
   switch (routeName) {
     case 'index':
       return <Home size={size} color={color} strokeWidth={strokeWidth} />;
@@ -106,40 +123,39 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.sm,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    padding: SPACING.xs, // Компактный padding для 6 табов
+    backgroundColor: 'transparent', // Фон управляется SafeAreaView/контейнером
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.sm,
-    paddingHorizontal: 2,
+    paddingHorizontal: SPACING.xs,
     position: 'relative',
+    borderRadius: BORDER_RADIUS.full,
+  },
+  pill: {
+    position: 'absolute',
+    inset: 2, // Компактный отступ от краев таба, чтобы pill был виден
+    borderRadius: BORDER_RADIUS.full,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
     height: 24,
-  },
-  indicator: {
-    position: 'absolute',
-    top: -4,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    zIndex: 1, // Иконка поверх pill
   },
   label: {
-    // ✅ flex:1 + центрирование дают тексту всю ширину доли вкладки;
-    // numberOfLines={1} (в JSX) режет перенос. Размер — масштабируемый.
     flex: 1,
     textAlign: 'center',
     fontSize: fontScale(10),
     fontWeight: '500',
+    zIndex: 1, // Текст поверх pill
   },
 });

@@ -31,6 +31,7 @@
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
 | PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)|
 | DS-1 | Design system | 🟠 | ✅ | Аудит токенов/типографики/spacing/states завершён. Контраст textTertiary исправлен (WCAG 2.1 AA). Этап H4: accessibilityRole/Label/Hint во всех новых поверхностях (Фичи 1–7, UX-15): StrengthLevelBadge, WeeklyReviewSection, StatusCard (readiness pips, cycle/injury/forecast/pain chips), ExerciseSettingsSheet (степперы/интенсивность/save), workouts.tsx (sticky/segmented/items/skip sheet). PainTrendSheet/WorkoutForecastSheet — без интерактивных элементов, изменений не требуют. |
+| DS-2 | Design system | 🟠 | ✅ | Bottom Tab Bar: внедрён паттерн Pill Highlight (PRODUCT.md §3.6). Активный таб имеет pill-shaped background (`colors.primary`), контрастный цвет иконки/текста (`textInverse`), увеличенный `strokeWidth` (2) и жирный текст (`600`). Заливка иконок убрана для сохранения calm interface и предотвращения визуальной перегрузки. |
 
 ## 3. Existing product baseline
 
@@ -227,6 +228,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-9 | 🟡 | ✅ | библиотека упражнений: основной список переведён на @shopify/flash-list 2.x (ROADMAP I3) |
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
 | DS-1 | 🟠 | ✅ | Аудит design system завершён: шкала типографики/spacing/состояния проверены. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
+| DS-2 | 🟠 | ✅ | Bottom Tab Bar: внедрён паттерн Pill Highlight (явный active state: `colors.primary` background + filled icon + bold text), haptics, `accessibilityRole="tab"`. 6 табов скомпактизированы (`inset: 2`, `paddingVertical: SPACING.sm`) для предотвращения переноса текста. Соответствует PRODUCT.md §3.1–3.2. |
 | LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: ~74 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
 
 ## 14. Update rule

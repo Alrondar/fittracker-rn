@@ -342,6 +342,8 @@ export default function ProgramsScreen() {
           <TouchableOpacity
             style={cardStyles.searchButton}
             onPress={() => setShowSearch(!showSearch)}
+            accessibilityRole="button"
+            accessibilityLabel={showSearch ? 'Закрыть поиск' : 'Открыть поиск'}
           >
             <Search size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
@@ -368,12 +370,16 @@ export default function ProgramsScreen() {
               setImportError(null);
               setShowImportModal(true);
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Импортировать программу по коду"
           >
             <Link2 size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
           <TouchableOpacity
             style={cardStyles.sortButton}
             onPress={() => setShowSortMenu(!showSortMenu)}
+            accessibilityRole="button"
+            accessibilityLabel="Сортировка"
           >
             <ArrowUpDown size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
@@ -471,7 +477,11 @@ export default function ProgramsScreen() {
         ListEmptyComponent={!loading ? renderEmpty() : null}
         contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}

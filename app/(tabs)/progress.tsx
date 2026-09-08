@@ -27,7 +27,7 @@ import { useStore } from '../../src/store/useStore';
 import { useHistory } from '../../src/hooks/useHistory';
 import { useProgress } from '../../src/hooks/useProgress';
 import { usePainTrend } from '../../src/hooks/usePainTrend';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppCard } from '../../src/components/ui/AppCard';
@@ -201,7 +201,7 @@ export default function ProgressScreen() {
               width: 64,
               height: 64,
               borderRadius: 32,
-              backgroundColor: colors.primary + '15',
+              backgroundColor: withAlpha(colors.primary, 0.08),
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -328,12 +328,17 @@ export default function ProgressScreen() {
                   onPress={() => setSelectedExercise(null)}
                   style={{
                     paddingHorizontal: SPACING.md,
-                    paddingVertical: SPACING.xs,
+                    paddingVertical: SPACING.sm,
+                    minHeight: 44,
                     borderRadius: BORDER_RADIUS.full,
                     backgroundColor: selectedExercise === null ? colors.primary : colors.surface,
                     borderWidth: 1,
                     borderColor: selectedExercise === null ? colors.primary : colors.border,
+                    justifyContent: 'center',
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Показать все упражнения"
+                  accessibilityState={{ selected: selectedExercise === null }}
                 >
                   <Text
                     style={[
@@ -357,12 +362,17 @@ export default function ProgressScreen() {
                       onPress={() => setSelectedExercise(item.name)}
                       style={{
                         paddingHorizontal: SPACING.md,
-                        paddingVertical: SPACING.xs,
+                        paddingVertical: SPACING.sm,
+                        minHeight: 44,
                         borderRadius: BORDER_RADIUS.full,
                         backgroundColor: isSelected ? colors.primary : colors.surface,
                         borderWidth: 1,
                         borderColor: isSelected ? colors.primary : colors.border,
+                        justifyContent: 'center',
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Фильтр по упражнению: ${item.name}`}
+                      accessibilityState={{ selected: isSelected }}
                     >
                       <Text
                         numberOfLines={1}
@@ -445,10 +455,10 @@ export default function ProgressScreen() {
               <View
                 key={record.name}
                 style={{
-                  backgroundColor: colors.warning + '15',
+                  backgroundColor: withAlpha(colors.warning, 0.08),
                   borderRadius: BORDER_RADIUS.lg,
                   borderWidth: 1,
-                  borderColor: colors.warning + '40',
+                  borderColor: withAlpha(colors.warning, 0.25),
                   padding: SPACING.md,
                   marginBottom: SPACING.sm,
                   flexDirection: 'row',
@@ -460,7 +470,7 @@ export default function ProgressScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: colors.warning + '25',
+                    backgroundColor: withAlpha(colors.warning, 0.15),
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: SPACING.md,
@@ -525,7 +535,7 @@ function SectionTitle({
           width: 36,
           height: 36,
           borderRadius: 18,
-          backgroundColor: accent + '1A',
+          backgroundColor: withAlpha(accent, 0.1),
           alignItems: 'center',
           justifyContent: 'center',
           marginRight: SPACING.sm,
