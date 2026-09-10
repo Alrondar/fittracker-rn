@@ -27,7 +27,7 @@ export type Slug =
 export interface BodyPart {
   slug: Slug;
   color?: string;
-  path: {
+  path?: {
     common?: string[];
     left?: string[];
     right?: string[];

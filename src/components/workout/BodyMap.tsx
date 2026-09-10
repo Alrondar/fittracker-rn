@@ -98,7 +98,7 @@ export const BodyMap = memo<BodyMapProps>(
           }
         }
 
-        const commonPaths = (assetPart.path.common || []).map((d, i) => (
+        const commonPaths = (assetPart.path?.common || []).map((d, i) => (
           <Path
             key={`${assetPart.slug}-common-${i}`}
             d={d}
@@ -108,7 +108,7 @@ export const BodyMap = memo<BodyMapProps>(
           />
         ));
 
-        const leftPaths = (assetPart.path.left || []).map((d, i) => {
+        const leftPaths = (assetPart.path?.left || []).map((d, i) => {
           const isOnlyRight = userPart?.side === 'right';
           const fill = isOnlyRight ? defaultFill : fillColor;
           return (
@@ -124,7 +124,7 @@ export const BodyMap = memo<BodyMapProps>(
           );
         });
 
-        const rightPaths = (assetPart.path.right || []).map((d, i) => {
+        const rightPaths = (assetPart.path?.right || []).map((d, i) => {
           const isOnlyLeft = userPart?.side === 'left';
           const fill = isOnlyLeft ? defaultFill : fillColor;
           return (
