@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import {
   ChevronRight,
+  ChevronDown,
   AlertTriangle,
   TrendingUp,
   Activity,
@@ -17,7 +19,6 @@ import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
-import { SheetShell } from '../ui/SheetShell';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
 import type { WeeklyInsight, InsightSeverity } from '../../engine/weeklySummary';
 
@@ -41,9 +42,14 @@ const severityColors: Record<InsightSeverity, { bg: string; icon: string; border
 
 export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
   const { colors } = useTheme();
-  const [showDetails, setShowDetails] = useState<false | 'volume' | 'technique'>(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   // CI-6: session-local dismiss deload card (без persistence, как COACH-1).
   const [deloadDismissed, setDeloadDismissed] = useState(false);
+
+  const toggleExpand = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsExpanded(!isExpanded);
+  };
 
   const { data, isPending, isError, error, refetch } = useWeeklySummary(userId, 0);
 
@@ -180,7 +186,10 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
           </Text>
           <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
             <TouchableOpacity
-              onPress={() => setShowDetails('volume')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsExpanded(true);
+              }}
               style={{
                 flex: 1,
                 paddingHorizontal: SPACING.md,
@@ -194,7 +203,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               }}
               accessibilityRole="button"
               accessibilityLabel="Разгрузочная неделя: снижение объёма"
-              accessibilityHint="Откроет детали плана разгрузки"
+              accessibilityHint="Раскрывает детали плана разгрузки"
             >
               <Moon size={16} color={colors.warning} />
               <Text style={[typography.label, { color: colors.warning, fontWeight: '600' }]}>
@@ -202,7 +211,10 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setShowDetails('technique')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsExpanded(true);
+              }}
               style={{
                 flex: 1,
                 paddingHorizontal: SPACING.md,
@@ -216,7 +228,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               }}
               accessibilityRole="button"
               accessibilityLabel="Техническая неделя: снижение веса с акцентом на технику"
-              accessibilityHint="Откроет детали плана технической недели"
+              accessibilityHint="Раскрывает детали плана технической недели"
             >
               <Target size={16} color={colors.primary} />
               <Text style={[typography.label, { color: colors.primary, fontWeight: '600' }]}>
@@ -227,185 +239,85 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
         </AppCard>
       )}
 
-      <AppCard
-        variant="default"
-        style={{ marginBottom: SPACING.lg }}
-        onPress={() => setShowDetails('volume')}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: SPACING.md,
-          }}
-        >
-          <Text style={[typography.h5, { color: colors.textPrimary }]}>Твоя неделя</Text>
-          <ChevronRight size={20} color={colors.textTertiary} />
-        </View>
-
-        <View style={{ gap: SPACING.sm }}>
-          {topInsights.map((insight) => {
-            const colorMap = severityColors[insight.severity];
-            return (
-              <View
-                key={insight.code}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  gap: SPACING.sm,
-                  padding: SPACING.sm,
-                  backgroundColor: (colors as any)[colorMap.bg] + '40',
-                  borderRadius: BORDER_RADIUS.md,
-                  borderLeftWidth: 3,
-                  borderLeftColor: (colors as any)[colorMap.border],
-                }}
-              >
-                <View style={{ marginTop: 2 }}>{getIcon(insight.severity)}</View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[typography.label, { color: colors.textPrimary, fontWeight: '600' }]}
-                  >
-                    {insight.title}
-                  </Text>
-                  {insight.subtitle && (
-                    <Text
-                      style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}
-                    >
-                      {insight.subtitle}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Training Load L1 Block */}
-        <View
-          style={{
-            marginTop: SPACING.md,
-            paddingTop: SPACING.md,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-          }}
+      <AppCard variant="default" style={{ marginBottom: SPACING.lg }}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={toggleExpand}
+          accessibilityRole="button"
+          accessibilityLabel={isExpanded ? 'Свернуть детали недели' : 'Развернуть детали недели'}
         >
           <View
             style={{
               flexDirection: 'row',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: SPACING.sm,
-              marginBottom: SPACING.xs,
+              marginBottom: SPACING.md,
             }}
           >
-            <Activity
-              size={16}
-              color={
-                data.trainingLoad.level === 'normal'
-                  ? colors.success
-                  : data.trainingLoad.level === 'elevated'
-                    ? colors.warning
-                    : colors.error
-              }
-            />
-            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-              {data.trainingLoad.level === 'normal'
-                ? 'Обычная нагрузка'
-                : data.trainingLoad.level === 'elevated'
-                  ? 'Повышенная нагрузка'
-                  : 'Высокая нагрузка'}
-            </Text>
-          </View>
-          {data.trainingLoad.level === 'normal' ? (
-            <Text style={[typography.caption, { color: colors.textSecondary }]}>
-              Нагрузка стабильна, объём и RPE в пределах твоей нормы.
-            </Text>
-          ) : (
-            <View style={{ gap: SPACING.xs }}>
-              {data.trainingLoad.reasons.slice(0, 2).map((reason, idx) => (
-                <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
-                  • {reason}
-                </Text>
-              ))}
-              {data.trainingLoad.reasons.length > 2 && (
-                <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                  и ещё {data.trainingLoad.reasons.length - 2} фактора
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
-
-        <View
-          style={{
-            marginTop: SPACING.md,
-            paddingTop: SPACING.md,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-          }}
-        >
-          <Text
-            style={[typography.captionSmall, { color: colors.textTertiary, textAlign: 'center' }]}
-          >
-            Нажми, чтобы увидеть полные метрики и детали
-          </Text>
-        </View>
-      </AppCard>
-
-      <SheetShell
-        visible={showDetails !== false}
-        title={showDetails === 'technique' ? 'Техническая неделя' : 'Детали недели'}
-        onClose={() => setShowDetails(false)}
-      >
-        <View style={{ gap: SPACING.lg }}>
-          {/* Consistency */}
-          <DetailBlock
-            icon={<Calendar size={20} color={colors.primary} />}
-            title="Регулярность"
-            color={colors.primary}
-          >
-            <Text style={[typography.body, { color: colors.textPrimary }]}>
-              {data.current.workoutsCount} тренировок за неделю
-            </Text>
-            <Text
-              style={[typography.caption, { color: colors.textSecondary, marginTop: SPACING.xs }]}
-            >
-              Дни: {data.current.workoutDays.map((d) => d.slice(8)).join(', ')}
-            </Text>
-          </DetailBlock>
-
-          {/* Performance */}
-          <DetailBlock
-            icon={<TrendingUp size={20} color={colors.success} />}
-            title="Прогресс"
-            color={colors.success}
-          >
-            {data.current.prs.length > 0 ? (
-              <>
-                <Text style={[typography.body, { color: colors.textPrimary }]}>
-                  {data.current.prs.length} новых рекордов
-                </Text>
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: colors.textSecondary, marginTop: SPACING.xs },
-                  ]}
-                >
-                  {data.current.prs.map((p) => p.exerciseName).join(', ')}
-                </Text>
-              </>
+            <Text style={[typography.h5, { color: colors.textPrimary }]}>Твоя неделя</Text>
+            {isExpanded ? (
+              <ChevronDown size={20} color={colors.textTertiary} />
             ) : (
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Пока без новых рекордов, но ты продолжаешь работать!
-              </Text>
+              <ChevronRight size={20} color={colors.textTertiary} />
             )}
-          </DetailBlock>
+          </View>
 
-          {/* Training Load Context */}
-          <DetailBlock
-            icon={
+          <View style={{ gap: SPACING.sm }}>
+            {topInsights.map((insight) => {
+              const colorMap = severityColors[insight.severity];
+              return (
+                <View
+                  key={insight.code}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: SPACING.sm,
+                    padding: SPACING.sm,
+                    backgroundColor: (colors as any)[colorMap.bg] + '40',
+                    borderRadius: BORDER_RADIUS.md,
+                    borderLeftWidth: 3,
+                    borderLeftColor: (colors as any)[colorMap.border],
+                  }}
+                >
+                  <View style={{ marginTop: 2 }}>{getIcon(insight.severity)}</View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[typography.label, { color: colors.textPrimary, fontWeight: '600' }]}
+                    >
+                      {insight.title}
+                    </Text>
+                    {insight.subtitle && (
+                      <Text
+                        style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}
+                      >
+                        {insight.subtitle}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Training Load L1 Block */}
+          <View
+            style={{
+              marginTop: SPACING.md,
+              paddingTop: SPACING.md,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SPACING.sm,
+                marginBottom: SPACING.xs,
+              }}
+            >
               <Activity
-                size={20}
+                size={16}
                 color={
                   data.trainingLoad.level === 'normal'
                     ? colors.success
@@ -414,381 +326,537 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                       : colors.error
                 }
               />
-            }
-            title="Контекст нагрузки"
-            color={
-              data.trainingLoad.level === 'normal'
-                ? colors.success
-                : data.trainingLoad.level === 'elevated'
-                  ? colors.warning
-                  : colors.error
-            }
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: SPACING.xs,
-                marginBottom: SPACING.sm,
-              }}
-            >
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor:
-                    data.trainingLoad.level === 'normal'
-                      ? colors.success
-                      : data.trainingLoad.level === 'elevated'
-                        ? colors.warning
-                        : colors.error,
-                }}
-              />
               <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
                 {data.trainingLoad.level === 'normal'
-                  ? 'Обычная'
+                  ? 'Обычная нагрузка'
                   : data.trainingLoad.level === 'elevated'
-                    ? 'Повышенная'
-                    : 'Высокая'}
+                    ? 'Повышенная нагрузка'
+                    : 'Высокая нагрузка'}
               </Text>
             </View>
+            {data.trainingLoad.level === 'normal' ? (
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                Нагрузка стабильна, объём и RPE в пределах твоей нормы.
+              </Text>
+            ) : (
+              <View style={{ gap: SPACING.xs }}>
+                {data.trainingLoad.reasons.slice(0, 2).map((reason, idx) => (
+                  <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                    • {reason}
+                  </Text>
+                ))}
+                {data.trainingLoad.reasons.length > 2 && (
+                  <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                    и ещё {data.trainingLoad.reasons.length - 2} фактора
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
 
-            <View style={{ gap: SPACING.xs }}>
-              {data.trainingLoad.reasons.map((reason, idx) => (
-                <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
-                  • {reason}
-                </Text>
-              ))}
-            </View>
-
+          {!isExpanded && (
             <View
               style={{
                 marginTop: SPACING.md,
                 paddingTop: SPACING.md,
                 borderTopWidth: 1,
                 borderTopColor: colors.border,
-                gap: SPACING.xs,
               }}
             >
               <Text
-                style={[typography.captionSmall, { color: colors.textTertiary, fontWeight: '600' }]}
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textTertiary, textAlign: 'center' },
+                ]}
               >
-                Метрики:
+                Нажми, чтобы увидеть полные метрики и детали
               </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Объём: {data.current.totalVolume.toLocaleString()} кг{' '}
-                {data.previous.totalVolume > 0
-                  ? `(${Math.round((data.trainingLoad.signals.volumeTrend - 1) * 100)}% к прошлой неделе)`
-                  : ''}
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* L2: Inline Accordion Content */}
+        {isExpanded && (
+          <View
+            style={{
+              gap: SPACING.lg,
+              marginTop: SPACING.lg,
+              paddingTop: SPACING.lg,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}
+          >
+            {/* Consistency */}
+            <DetailBlock
+              icon={<Calendar size={20} color={colors.primary} />}
+              title="Регулярность"
+              color={colors.primary}
+            >
+              <Text style={[typography.body, { color: colors.textPrimary }]}>
+                {data.current.workoutsCount} тренировок за неделю
               </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Тренировок: {data.current.workoutsCount}{' '}
-                {data.previous.workoutsCount > 0 ? `(было ${data.previous.workoutsCount})` : ''}
+              <Text
+                style={[typography.caption, { color: colors.textSecondary, marginTop: SPACING.xs }]}
+              >
+                Дни: {data.current.workoutDays.map((d) => d.slice(8)).join(', ')}
               </Text>
-              {data.trainingLoad.signals.intensityTrend != null && (
+            </DetailBlock>
+
+            {/* Performance */}
+            <DetailBlock
+              icon={<TrendingUp size={20} color={colors.success} />}
+              title="Прогресс"
+              color={colors.success}
+            >
+              {data.current.prs.length > 0 ? (
+                <>
+                  <Text style={[typography.body, { color: colors.textPrimary }]}>
+                    {data.current.prs.length} новых рекордов
+                  </Text>
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: colors.textSecondary, marginTop: SPACING.xs },
+                    ]}
+                  >
+                    {data.current.prs.map((p) => p.exerciseName).join(', ')}
+                  </Text>
+                </>
+              ) : (
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  RPE: {data.current.rpe.avg?.toFixed(1) ?? 'N/A'}{' '}
-                  {data.previous.rpe.avg != null
-                    ? `(было ${data.previous.rpe.avg.toFixed(1)})`
-                    : ''}
+                  Пока без новых рекордов, но ты продолжаешь работать!
                 </Text>
               )}
-              {data.trainingLoad.signals.readinessTrend != null &&
-                data.current.readiness.avg != null && (
+            </DetailBlock>
+
+            {/* Training Load Context */}
+            <DetailBlock
+              icon={
+                <Activity
+                  size={20}
+                  color={
+                    data.trainingLoad.level === 'normal'
+                      ? colors.success
+                      : data.trainingLoad.level === 'elevated'
+                        ? colors.warning
+                        : colors.error
+                  }
+                />
+              }
+              title="Контекст нагрузки"
+              color={
+                data.trainingLoad.level === 'normal'
+                  ? colors.success
+                  : data.trainingLoad.level === 'elevated'
+                    ? colors.warning
+                    : colors.error
+              }
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: SPACING.xs,
+                  marginBottom: SPACING.sm,
+                }}
+              >
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor:
+                      data.trainingLoad.level === 'normal'
+                        ? colors.success
+                        : data.trainingLoad.level === 'elevated'
+                          ? colors.warning
+                          : colors.error,
+                  }}
+                />
+                <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                  {data.trainingLoad.level === 'normal'
+                    ? 'Обычная'
+                    : data.trainingLoad.level === 'elevated'
+                      ? 'Повышенная'
+                      : 'Высокая'}
+                </Text>
+              </View>
+
+              <View style={{ gap: SPACING.xs }}>
+                {data.trainingLoad.reasons.map((reason, idx) => (
+                  <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                    • {reason}
+                  </Text>
+                ))}
+              </View>
+
+              <View
+                style={{
+                  marginTop: SPACING.md,
+                  paddingTop: SPACING.md,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.border,
+                  gap: SPACING.xs,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textTertiary, fontWeight: '600' },
+                  ]}
+                >
+                  Метрики:
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Объём: {data.current.totalVolume.toLocaleString()} кг{' '}
+                  {data.previous.totalVolume > 0
+                    ? `(${Math.round((data.trainingLoad.signals.volumeTrend - 1) * 100)}% к прошлой неделе)`
+                    : ''}
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Тренировок: {data.current.workoutsCount}{' '}
+                  {data.previous.workoutsCount > 0 ? `(было ${data.previous.workoutsCount})` : ''}
+                </Text>
+                {data.trainingLoad.signals.intensityTrend != null && (
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    Readiness: {data.current.readiness.avg.toFixed(1)}{' '}
-                    {data.previous.readiness.avg != null
-                      ? `(был ${data.previous.readiness.avg.toFixed(1)})`
+                    RPE: {data.current.rpe.avg?.toFixed(1) ?? 'N/A'}{' '}
+                    {data.previous.rpe.avg != null
+                      ? `(было ${data.previous.rpe.avg.toFixed(1)})`
                       : ''}
                   </Text>
                 )}
-            </View>
-          </DetailBlock>
-
-          {/* CI-6: Deload Recommendations (L2) - Volume */}
-          {data.deload.recommended && showDetails === 'volume' && (
-            <DetailBlock
-              icon={<Moon size={20} color={colors.warning} />}
-              title="Разгрузочная неделя (Объём)"
-              color={colors.warning}
-            >
-              <Text
-                style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
-              >
-                Почему это предложение:
-              </Text>
-              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
-                {data.deload.reasons.map((reason, idx) => (
-                  <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
-                    • {reason}
-                  </Text>
-                ))}
-              </View>
-
-              <Text
-                style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
-              >
-                Что обычно включает разгрузочная неделя:
-              </Text>
-              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Объём: −40–60% от обычной недели
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Интенсивность: лёгкая (RPE ≤ 6–7)
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Длительность: обычно 1 неделя
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • После этого — постепенный возврат к обычным нагрузкам
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  padding: SPACING.sm,
-                  backgroundColor: (colors as any).surfaceSecondary ?? colors.background,
-                  borderRadius: BORDER_RADIUS.md,
-                }}
-              >
-                <Text style={[typography.caption, { color: colors.textTertiary }]}>
-                  Это предложение, не команда. Приложение не изменяет твою программу автоматически —
-                  решение всегда за тобой.
-                </Text>
+                {data.trainingLoad.signals.readinessTrend != null &&
+                  data.current.readiness.avg != null && (
+                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                      Readiness: {data.current.readiness.avg.toFixed(1)}{' '}
+                      {data.previous.readiness.avg != null
+                        ? `(был ${data.previous.readiness.avg.toFixed(1)})`
+                        : ''}
+                    </Text>
+                  )}
               </View>
             </DetailBlock>
-          )}
 
-          {/* CI-6: Deload Recommendations (L2) - Technique */}
-          {data.deload.recommended && showDetails === 'technique' && (
+            {/* CI-6: Deload Recommendations (L2) - Volume */}
+            {data.deload.recommended && (
+              <DetailBlock
+                icon={<Moon size={20} color={colors.warning} />}
+                title="Разгрузочная неделя (Объём)"
+                color={colors.warning}
+              >
+                <Text
+                  style={[
+                    typography.label,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Почему это предложение:
+                </Text>
+                <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                  {data.deload.reasons.map((reason, idx) => (
+                    <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                      • {reason}
+                    </Text>
+                  ))}
+                </View>
+
+                <Text
+                  style={[
+                    typography.label,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Что обычно включает разгрузочная неделя:
+                </Text>
+                <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Объём: −40–60% от обычной недели
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Интенсивность: лёгкая (RPE ≤ 6–7)
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Длительность: обычно 1 неделя
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • После этого — постепенный возврат к обычным нагрузкам
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    padding: SPACING.sm,
+                    backgroundColor: (colors as any).surfaceSecondary ?? colors.background,
+                    borderRadius: BORDER_RADIUS.md,
+                  }}
+                >
+                  <Text style={[typography.caption, { color: colors.textTertiary }]}>
+                    Это предложение, не команда. Приложение не изменяет твою программу автоматически
+                    — решение всегда за тобой.
+                  </Text>
+                </View>
+              </DetailBlock>
+            )}
+
+            {/* CI-6: Deload Recommendations (L2) - Technique */}
+            {data.deload.recommended && (
+              <DetailBlock
+                icon={<Target size={20} color={colors.primary} />}
+                title="Техническая неделя"
+                color={colors.primary}
+              >
+                <Text
+                  style={[
+                    typography.label,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Почему это предложение:
+                </Text>
+                <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                  {data.deload.reasons.map((reason, idx) => (
+                    <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
+                      • {reason}
+                    </Text>
+                  ))}
+                </View>
+
+                <Text
+                  style={[
+                    typography.label,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Что включает техническая неделя:
+                </Text>
+                <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Вес: −30–35% от рабочего (65–70% от 1ПМ)
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Фокус: идеальная техника и контроль движения
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • RPE: 6–7 (лёгкое выполнение, без усталости)
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Подходы: сохраняем количество, снижаем только вес
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    typography.label,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
+                  Когда это полезно:
+                </Text>
+                <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Усталость ЦНС (технический распад)
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Восстановление нервной системы без потери навыка
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Закрепление правильной техники
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    padding: SPACING.sm,
+                    backgroundColor: (colors as any).surfaceSecondary ?? colors.background,
+                    borderRadius: BORDER_RADIUS.md,
+                  }}
+                >
+                  <Text style={[typography.caption, { color: colors.textTertiary }]}>
+                    Это предложение, не команда. Приложение не изменяет твою программу автоматически
+                    — решение всегда за тобой.
+                  </Text>
+                </View>
+              </DetailBlock>
+            )}
+
+            {/* CI-4: Muscle Volume Analysis */}
             <DetailBlock
-              icon={<Target size={20} color={colors.primary} />}
-              title="Техническая неделя"
+              icon={<Dumbbell size={20} color={colors.primary} />}
+              title="Нагрузка на мышцы"
               color={colors.primary}
             >
-              <Text
-                style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
-              >
-                Почему это предложение:
-              </Text>
-              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
-                {data.deload.reasons.map((reason, idx) => (
-                  <Text key={idx} style={[typography.caption, { color: colors.textSecondary }]}>
-                    • {reason}
-                  </Text>
-                ))}
-              </View>
+              {Object.keys(data.current.muscleVolume).length > 0 ? (
+                <View style={{ gap: SPACING.xs }}>
+                  {Object.entries(data.current.muscleVolume)
+                    .filter(([_, v]) => v >= 4)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([muscle, sets]) => {
+                      const prevSets = data.previous.muscleVolume[muscle] || 0;
+                      const diff = sets - prevSets;
+                      const diffText =
+                        diff > 0
+                          ? `↑ +${Math.round(diff)}`
+                          : diff < 0
+                            ? `↓ ${Math.round(diff)}`
+                            : '→';
+                      const diffColor =
+                        diff > 0 ? colors.success : diff < 0 ? colors.error : colors.textTertiary;
 
-              <Text
-                style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
-              >
-                Что включает техническая неделя:
-              </Text>
-              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Вес: −30–35% от рабочего (65–70% от 1ПМ)
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Фокус: идеальная техника и контроль движения
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • RPE: 6–7 (лёгкое выполнение, без усталости)
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Подходы: сохраняем количество, снижаем только вес
-                </Text>
-              </View>
-
-              <Text
-                style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
-              >
-                Когда это полезно:
-              </Text>
-              <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Усталость ЦНС (технический распад)
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Восстановление нервной системы без потери навыка
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Закрепление правильной техники
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  padding: SPACING.sm,
-                  backgroundColor: (colors as any).surfaceSecondary ?? colors.background,
-                  borderRadius: BORDER_RADIUS.md,
-                }}
-              >
-                <Text style={[typography.caption, { color: colors.textTertiary }]}>
-                  Это предложение, не команда. Приложение не изменяет твою программу автоматически —
-                  решение всегда за тобой.
-                </Text>
-              </View>
-            </DetailBlock>
-          )}
-
-          {/* CI-4: Muscle Volume Analysis */}
-          <DetailBlock
-            icon={<Dumbbell size={20} color={colors.primary} />}
-            title="Нагрузка на мышцы"
-            color={colors.primary}
-          >
-            {Object.keys(data.current.muscleVolume).length > 0 ? (
-              <View style={{ gap: SPACING.xs }}>
-                {Object.entries(data.current.muscleVolume)
-                  .filter(([_, v]) => v >= 4)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 5)
-                  .map(([muscle, sets]) => {
-                    const prevSets = data.previous.muscleVolume[muscle] || 0;
-                    const diff = sets - prevSets;
-                    const diffText =
-                      diff > 0
-                        ? `↑ +${Math.round(diff)}`
-                        : diff < 0
-                          ? `↓ ${Math.round(diff)}`
-                          : '→';
-                    const diffColor =
-                      diff > 0 ? colors.success : diff < 0 ? colors.error : colors.textTertiary;
-
-                    return (
-                      <View
-                        key={muscle}
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Text style={[typography.body, { color: colors.textPrimary }]}>
-                          {muscle}
-                        </Text>
+                      return (
                         <View
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}
+                          key={muscle}
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
                         >
-                          <Text
-                            style={[typography.caption, { color: diffColor, fontWeight: '600' }]}
+                          <Text style={[typography.body, { color: colors.textPrimary }]}>
+                            {muscle}
+                          </Text>
+                          <View
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}
                           >
-                            {diffText}
-                          </Text>
-                          <Text style={[typography.body, { color: colors.textSecondary }]}>
-                            {Math.round(sets)} сетов
-                          </Text>
+                            <Text
+                              style={[typography.caption, { color: diffColor, fontWeight: '600' }]}
+                            >
+                              {diffText}
+                            </Text>
+                            <Text style={[typography.body, { color: colors.textSecondary }]}>
+                              {Math.round(sets)} сетов
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    );
-                  })}
-                {data.insights.some((i) => i.code === 'MUSCLE_IMBALANCE') && (
-                  <View
-                    style={{
-                      marginTop: SPACING.sm,
-                      padding: SPACING.sm,
-                      backgroundColor: colors.warningLight,
-                      borderRadius: BORDER_RADIUS.md,
-                    }}
-                  >
-                    <Text
-                      style={[typography.caption, { color: colors.warning, fontWeight: '600' }]}
+                      );
+                    })}
+                  {data.insights.some((i) => i.code === 'MUSCLE_IMBALANCE') && (
+                    <View
+                      style={{
+                        marginTop: SPACING.sm,
+                        padding: SPACING.sm,
+                        backgroundColor: colors.warningLight,
+                        borderRadius: BORDER_RADIUS.md,
+                      }}
                     >
-                      ⚠️ Обрати внимание на дисбаланс в распределении нагрузки.
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Недостаточно данных для анализа нагрузки на мышцы.
-              </Text>
-            )}
-          </DetailBlock>
-
-          {/* CI-3: Plateau Detection */}
-          {data.insights.some((i) => i.code === 'PLATEAU_DETECTED') && (
-            <DetailBlock
-              icon={<AlertCircle size={20} color={colors.warning} />}
-              title="Замедление прогресса"
-              color={colors.warning}
-            >
-              <Text
-                style={[typography.body, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
-              >
-                Похоже, прогресс в основных упражнениях замедлился. Ты продолжаешь тренироваться
-                регулярно, но результаты не растут, а усилия (RPE) могут увеличиваться.
-              </Text>
-              <Text
-                style={[typography.label, { color: colors.textPrimary, marginBottom: SPACING.xs }]}
-              >
-                Возможные варианты:
-              </Text>
-              <View style={{ gap: SPACING.xs }}>
+                      <Text
+                        style={[typography.caption, { color: colors.warning, fontWeight: '600' }]}
+                      >
+                        ⚠️ Обрати внимание на дисбаланс в распределении нагрузки.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Сохранить текущую нагрузку (закрепить результат)
+                  Недостаточно данных для анализа нагрузки на мышцы.
                 </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Временно не повышать вес на следующей тренировке
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Изменить диапазон повторов (rep range)
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Рассмотреть альтернативное упражнение
-                </Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  • Рассмотреть разгрузочную неделю (deload), если есть признаки усталости
-                </Text>
-              </View>
+              )}
             </DetailBlock>
-          )}
 
-          {/* Recovery */}
-          <DetailBlock
-            icon={<Heart size={20} color={colors.error} />}
-            title="Восстановление"
-            color={colors.error}
-          >
-            {data.current.readiness.daysLogged >= 3 && data.current.readiness.avg != null ? (
-              <>
-                <Text style={[typography.body, { color: colors.textPrimary }]}>
-                  Средний readiness: {data.current.readiness.avg.toFixed(1)} / 5
+            {/* CI-3: Plateau Detection */}
+            {data.insights.some((i) => i.code === 'PLATEAU_DETECTED') && (
+              <DetailBlock
+                icon={<AlertCircle size={20} color={colors.warning} />}
+                title="Замедление прогресса"
+                color={colors.warning}
+              >
+                <Text
+                  style={[typography.body, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
+                >
+                  Похоже, прогресс в основных упражнениях замедлился. Ты продолжаешь тренироваться
+                  регулярно, но результаты не растут, а усилия (RPE) могут увеличиваться.
                 </Text>
                 <Text
                   style={[
-                    typography.caption,
-                    { color: colors.textSecondary, marginTop: SPACING.xs },
+                    typography.label,
+                    { color: colors.textPrimary, marginBottom: SPACING.xs },
                   ]}
                 >
-                  Отмечено за {data.current.readiness.daysLogged} дней
+                  Возможные варианты:
                 </Text>
-              </>
-            ) : (
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                Недостаточно данных readiness для анализа. Отмечай самочувствие ежедневно для точных
-                выводов.
+                <View style={{ gap: SPACING.xs }}>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Сохранить текущую нагрузку (закрепить результат)
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Временно не повышать вес на следующей тренировке
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Изменить диапазон повторов (rep range)
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Рассмотреть альтернативное упражнение
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                    • Рассмотреть разгрузочную неделю (deload), если есть признаки усталости
+                  </Text>
+                </View>
+              </DetailBlock>
+            )}
+
+            {/* Recovery */}
+            <DetailBlock
+              icon={<Heart size={20} color={colors.error} />}
+              title="Восстановление"
+              color={colors.error}
+            >
+              {data.current.readiness.daysLogged >= 3 && data.current.readiness.avg != null ? (
+                <>
+                  <Text style={[typography.body, { color: colors.textPrimary }]}>
+                    Средний readiness: {data.current.readiness.avg.toFixed(1)} / 5
+                  </Text>
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: colors.textSecondary, marginTop: SPACING.xs },
+                    ]}
+                  >
+                    Отмечено за {data.current.readiness.daysLogged} дней
+                  </Text>
+                </>
+              ) : (
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Недостаточно данных readiness для анализа. Отмечай самочувствие ежедневно для
+                  точных выводов.
+                </Text>
+              )}
+              {data.current.pain.count > 0 && (
+                <View
+                  style={{
+                    marginTop: SPACING.sm,
+                    padding: SPACING.sm,
+                    backgroundColor: colors.errorLight,
+                    borderRadius: BORDER_RADIUS.md,
+                  }}
+                >
+                  <Text style={[typography.caption, { color: colors.error, fontWeight: '600' }]}>
+                    ⚠️ {data.current.pain.count} событий боли за неделю
+                  </Text>
+                </View>
+              )}
+            </DetailBlock>
+
+            {/* Кнопка свернуть */}
+            <TouchableOpacity
+              onPress={toggleExpand}
+              style={{
+                marginTop: SPACING.md,
+                paddingVertical: SPACING.md,
+                alignItems: 'center',
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Свернуть детали недели"
+            >
+              <Text style={[typography.label, { color: colors.primary, fontWeight: '600' }]}>
+                Свернуть
               </Text>
-            )}
-            {data.current.pain.count > 0 && (
-              <View
-                style={{
-                  marginTop: SPACING.sm,
-                  padding: SPACING.sm,
-                  backgroundColor: colors.errorLight,
-                  borderRadius: BORDER_RADIUS.md,
-                }}
-              >
-                <Text style={[typography.caption, { color: colors.error, fontWeight: '600' }]}>
-                  ⚠️ {data.current.pain.count} событий боли за неделю
-                </Text>
-              </View>
-            )}
-          </DetailBlock>
-        </View>
-      </SheetShell>
+            </TouchableOpacity>
+          </View>
+        )}
+      </AppCard>
     </>
   );
 }

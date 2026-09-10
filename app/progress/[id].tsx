@@ -1,34 +1,33 @@
 // app/progress/[id].tsx
 // Workout Report: детальный отчёт по завершённой тренировке (PRODUCT.md §11).
-// Показывает: сводку, задействованные мышцы (инфографика), список упражнений.
+// Показывает: сводку, задействованные мышцы (анатомическая карта), список упражнений.
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Clock, Dumbbell, Flame } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useStore } from '../../src/store/useStore';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { getWorkoutDetail } from '../../src/services/historyService';
+import { profileService } from '../../src/services/profileService';
 import type {
   WorkoutDetail,
   WorkoutDetailExercise,
   WorkoutDetailLog,
 } from '../../src/services/historyService';
 import { useQuery } from '@tanstack/react-query';
-
-interface MuscleLoad {
-  name: string;
-  volume: number;
-  avgRpe: number | null;
-}
+import { calculateMuscleLoad } from '../../src/utils/muscleLoad';
+import { MuscleLoadMap } from '../../src/components/workout/MuscleLoadMap';
 
 export default function WorkoutReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
+  const { userId } = useStore();
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['workoutDetail', id],
@@ -40,8 +39,19 @@ export default function WorkoutReportScreen() {
     enabled: !!id,
   });
 
-  const stats = useMemo(() => {
-    if (!data) return null;
+  const { data: profileData } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      return profileService.getProfileData(userId);
+    },
+    enabled: !!userId,
+  });
+
+  const gender = profileData?.gender === 'female' ? 'female' : 'male';
+
+  const { stats, muscleLoad } = useMemo(() => {
+    if (!data) return { stats: null, muscleLoad: [] };
     let totalVolume = 0;
     let totalSets = 0;
     let totalRpe = 0;
@@ -49,10 +59,13 @@ export default function WorkoutReportScreen() {
 
     data.exercises.forEach((ex: WorkoutDetailExercise) => {
       ex.logs.forEach((log: WorkoutDetailLog) => {
-        const weight = log.weight_kg || 0;
-        const reps = log.reps || 0;
-        totalVolume += weight * reps;
-        totalSets += 1;
+        if (log.is_warmup) return; // разминочные — не в аналитике
+        const w = log.weight_kg ?? 0;
+        const r = log.reps ?? 0;
+        if (w > 0 && r > 0) {
+          totalVolume += w * r;
+          totalSets += 1;
+        }
         if (log.rpe != null) {
           totalRpe += log.rpe;
           rpeCount += 1;
@@ -60,68 +73,32 @@ export default function WorkoutReportScreen() {
       });
     });
 
+    // Нагрузка по мышцам: детерминированная агрегация (src/utils/muscleLoad.ts).
+    // Модель: primary = 100%, secondary = 50% (внутренняя, не мед. истина).
+    // RPE учитывается в loadScore для интенсивности раскраски карты.
+    const muscleLoad = calculateMuscleLoad(
+      data.exercises.map((ex: WorkoutDetailExercise) => ({
+        primaryMuscles: ex.primary_muscles,
+        secondaryMuscles: ex.secondary_muscles,
+        sets: ex.logs.map((log: WorkoutDetailLog) => ({
+          weight: log.weight_kg,
+          reps: log.reps,
+          rpe: log.rpe,
+          isWarmup: log.is_warmup ?? false,
+        })),
+      }))
+    );
+
     return {
-      totalVolume,
-      totalSets,
-      avgRpe: rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null,
-      duration: data.duration_seconds ? Math.round(data.duration_seconds / 60) : null,
+      stats: {
+        totalVolume,
+        totalSets,
+        avgRpe: rpeCount > 0 ? (totalRpe / rpeCount).toFixed(1) : null,
+        duration: data.duration_seconds ? Math.round(data.duration_seconds / 60) : null,
+      },
+      muscleLoad,
     };
   }, [data]);
-
-  const muscleLoads = useMemo((): MuscleLoad[] => {
-    if (!data) return [];
-    const muscleMap = new Map<string, { volume: number; rpeSum: number; rpeCount: number }>();
-
-    data.exercises.forEach((ex: WorkoutDetailExercise) => {
-      const exerciseVolume = ex.logs.reduce(
-        (sum, log) => sum + (log.weight_kg || 0) * (log.reps || 0),
-        0
-      );
-      const exerciseRpe = ex.logs.reduce((sum, log) => sum + (log.rpe || 0), 0);
-      const exerciseRpeCount = ex.logs.filter((log) => log.rpe != null).length;
-
-      const primaryMuscles = ex.primary_muscles || [];
-      const secondaryMuscles = ex.secondary_muscles || [];
-
-      // Primary muscles get 100% of volume credit
-      primaryMuscles.forEach((muscle) => {
-        if (!muscleMap.has(muscle)) muscleMap.set(muscle, { volume: 0, rpeSum: 0, rpeCount: 0 });
-        const entry = muscleMap.get(muscle)!;
-        entry.volume += exerciseVolume;
-        entry.rpeSum += exerciseRpe;
-        entry.rpeCount += exerciseRpeCount;
-      });
-
-      // Secondary muscles get 50% of volume credit
-      secondaryMuscles.forEach((muscle) => {
-        if (!muscleMap.has(muscle)) muscleMap.set(muscle, { volume: 0, rpeSum: 0, rpeCount: 0 });
-        const entry = muscleMap.get(muscle)!;
-        entry.volume += exerciseVolume * 0.5;
-        entry.rpeSum += exerciseRpe * 0.5;
-        entry.rpeCount += exerciseRpeCount * 0.5;
-      });
-    });
-
-    return Array.from(muscleMap.entries())
-      .map(([name, data]) => ({
-        name,
-        volume: data.volume,
-        avgRpe: data.rpeCount > 0 ? data.rpeSum / data.rpeCount : null,
-      }))
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 6);
-  }, [data]);
-
-  const maxMuscleVolume = useMemo(() => {
-    return muscleLoads.length > 0 ? Math.max(...muscleLoads.map((m) => m.volume)) : 0;
-  }, [muscleLoads]);
-
-  const getMuscleColor = (avgRpe: number | null): string => {
-    if (avgRpe == null) return colors.textSecondary;
-    if (avgRpe >= 9) return colors.error;
-    if (avgRpe >= 7) return colors.warning;
-    return colors.success;
-  };
 
   if (isPending) {
     return (
@@ -257,67 +234,15 @@ export default function WorkoutReportScreen() {
           )}
         </View>
 
-        {/* Мышцы — инфографика */}
-        {muscleLoads.length > 0 && (
-          <View style={{ marginBottom: SPACING.xl }}>
-            <Text
-              style={[
-                typography.labelBold,
-                { color: colors.textPrimary, marginBottom: SPACING.md },
-              ]}
-            >
-              Задействованные мышцы
-            </Text>
-            {muscleLoads.map((muscle) => {
-              const barWidth = maxMuscleVolume > 0 ? (muscle.volume / maxMuscleVolume) * 100 : 0;
-              const barColor = getMuscleColor(muscle.avgRpe);
-              return (
-                <View key={muscle.name} style={{ marginBottom: SPACING.sm }}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Text style={[typography.body, { color: colors.textPrimary }]}>
-                      {muscle.name}
-                    </Text>
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      {Math.round(muscle.volume)} кг
-                      {muscle.avgRpe != null && ` · RPE ${muscle.avgRpe.toFixed(1)}`}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      height: 8,
-                      backgroundColor: colors.surfaceSecondary,
-                      borderRadius: BORDER_RADIUS.sm,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: `${barWidth}%`,
-                        height: '100%',
-                        backgroundColor: barColor,
-                        borderRadius: BORDER_RADIUS.sm,
-                      }}
-                    />
-                  </View>
-                </View>
-              );
-            })}
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textTertiary, marginTop: SPACING.xs },
-              ]}
-            >
-              Длина = объём работы · Цвет = интенсивность (RPE)
-            </Text>
-          </View>
-        )}
+        {/* Мышцы — анатомическая карта + нагрузка по группам мышц */}
+        <View style={{ marginBottom: SPACING.xl }}>
+          <MuscleLoadMap
+            muscleLoad={muscleLoad}
+            gender={gender}
+            scale={0.8}
+            title="Задействованные мышцы"
+          />
+        </View>
 
         {/* Упражнения */}
         <Text

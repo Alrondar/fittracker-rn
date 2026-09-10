@@ -43,6 +43,7 @@
     "declarations.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "libs/react-native-body-highlighter/__tests__"
   ]
 }

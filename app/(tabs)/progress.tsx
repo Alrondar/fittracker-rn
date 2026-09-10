@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { Activity, Award, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
@@ -39,6 +40,8 @@ import { RecentWorkouts } from '../../src/components/progress/RecentWorkouts';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
 import { VolumeTrendChart } from '../../src/components/progress/VolumeTrendChart';
 import { WeightTrendRow } from '../../src/components/progress/WeightTrendRow';
+import { MuscleStatsSection } from '../../src/components/progress/MuscleStatsSection';
+import { profileService } from '../../src/services/profileService';
 import type { HistoryWorkout } from '../../src/services/historyService';
 import { useState } from 'react';
 
@@ -61,6 +64,17 @@ export default function ProgressScreen() {
     isFetching: isProgressFetching,
     refetch: refetchProgress,
   } = useProgress(userId);
+
+  // Пол для анатомической карты мышц (дефолт — male, если профиля нет).
+  const { data: profileData } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      return profileService.getProfileData(userId);
+    },
+    enabled: !!userId,
+  });
+  const gender: 'male' | 'female' = profileData?.gender === 'female' ? 'female' : 'male';
 
   // Фича 4: тренд боли по зонам тела.
   const { result: painTrend } = usePainTrend(userId);
@@ -298,6 +312,10 @@ export default function ProgressScreen() {
             chronicPainZones={painTrend.chronicZones}
           />
         </View>
+
+        {/* Зона 2.5: Мышцы (CI-4 Muscle Volume Analysis — новая вкладка)
+            3 вкладки: Нагрузка (по периоду) / Усталость / Сила. */}
+        <MuscleStatsSection userId={userId} gender={gender} />
 
         {/* Зона 3: Динамика и рекорды (L2) */}
         <View style={{ marginBottom: SPACING.lg }}>

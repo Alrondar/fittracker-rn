@@ -63,6 +63,23 @@ Code search — первичный источник фактов; этот фа�
 
 # 2. Highest-priority UX surfaces
 
+## Workout Report
+`app/progress/[id].tsx`
+Main components:
+- `src/components/workout/MuscleLoadMap.tsx` (полноразмерная карта front/back + легенда с сетами/тоннажем; переиспользуется в Progress hub)
+- `src/components/workout/BodyMap.tsx` (внутренний SVG-рендер силуэтов, замена `react-native-body-highlighter`)
+- `src/constants/muscleSvgPaths.ts` (извлечённые SVG `path` данные из `react-native-body-highlighter`)
+- `src/constants/muscleMapSlugs.ts` (маппинг групп мышц `MUSCLE_GROUPS` на slug'и путей)
+- `src/utils/muscleLoad.ts` (чистая функция `calculateMuscleLoad`: primary=100%, secondary=50%, RPE учитывается в loadScore для раскраски)
+- `src/utils/colorScale.ts` (цвет шкалы интенсивности из `colors.primary` темы)
+Main hooks/services:
+- `historyService.getWorkoutDetail`
+- `profileService.getProfileData` (для получения `gender`)
+UX focus:
+- полноразмерная карта (без sheet, L1 only);
+- учёт `gender` для корректного `viewBox` SVG;
+- цвет шкалы интенсивности автоматически меняется при смене темы (`colors.primary`).
+
 ## Workout
 `app/workout/[id].tsx`
 Main components:
@@ -303,6 +320,7 @@ Important components:
 | readinessService|ReadinessSheet (owns StatusCard, AUDIT-6) + quick-set pips StatusCard|
 | painService|PainSheet/ExerciseCard + StatusCard (AUDIT-6: getPainEventsToday) + usePainTrend (Фича 4: getPainEventsInRange)|
 | forecastService|useWorkoutForecast (Фича 7): единственная supabase-граница прогноза следующей тренировки|
+| muscleStatsService|useMuscleStats → MuscleStatsSection (H-MUSCLE-2): агрегированные строки MuscleStatsRow по упражнениям/тренировкам за всю историю для анализа нагрузки/усталости/силы по мышцам|
 | cycleService|useCycle, StatusCard, profile.tsx (settings, check-in)|
 | recommendationFeedbackService|SetsGrid (COACH-3: inline-чипы причин после «Скрыть»)|
 | progressService|useProgress ,  progress  (режим Аналитика/Обзор)|
@@ -451,7 +469,7 @@ update `STATUS.md` if task status changed;
 do not copy technical rules from `CLAUDE.md` here;
 do not copy product decisions from `PRODUCT.md` here.
 
-Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
+Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H-MUSCLE-2)
 `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
 `src/components/dashboard/StatusCard.tsx` — AUDIT-6: «Состояние сегодня» (readiness мини-кольцо + tappable pips, чипы травм, «⚠ Боль сегодня»); ENG-15: передаёт `gender` в `ReadinessSheet` (без прямого supabase)
 `src/components/dashboard/CircularNutritionChart.tsx` — AUDIT-1: SVG-кольца питания
@@ -468,8 +486,16 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6)
 `src/components/progress/StrengthTrendChart.tsx` — UX-11: тренд e1RM с интерактивным селектором упражнений и explainability; Фича 1: StrengthLevelBadge рядом с названием упражнения
 `src/components/progress/StrengthLevelBadge.tsx` — Фича 1: бейдж уровня силы (Novice/Beginner/Intermediate/Advanced/Elite); тап → SheetShell с таблицей нормативов
 `src/components/PersonalRecordsCard.tsx` — FEAT-1.4: PR-карточки; Фича 1: StrengthLevelBadge рядом с e1RM
+`src/utils/colorScale.ts` — H-MUSCLE-1/2: цветовая шкала мышц от `colors.primary` темы (mixHex / intensityColor / buildIntensityScale)
+`src/utils/muscleLoad.ts` — H-MUSCLE-1/2: чистые функции `calculateMuscleLoad`, `pluralizeSets`, `pluralizeDays`, `formatVolumeKg` (модель: primary=1.0, secondary=0.5, RPE-factor=rpe/10, дефолт 0.7)
+`src/components/workout/BodyMap.tsx` — H-MUSCLE-1: внутренний SVG-рендер силуэтов (замена `react-native-body-highlighter`), локальные пути в `src/constants/muscleSvgPaths.ts` и `muscleOutlines.ts`
+`src/components/workout/MuscleLoadMap.tsx` — H-MUSCLE-1/2: переиспользуемый компонент карты + легенды (отчёт + progress hub), цвет из темы
+`src/services/muscleStatsService.ts` — H-MUSCLE-2: единственный Supabase-запрос для вкладки «Мышцы» в Progress hub
+`src/hooks/useMuscleStats.ts` — H-MUSCLE-2: React Query обёртка (staleTime 5 мин)
+`src/components/progress/MuscleStatsSection.tsx` — H-MUSCLE-2: секция «Мышцы» с 3 вкладками (Нагрузка/Усталость/Сила)
 
 **Bugfixes & Maintenance**
+* **UX-11 Inline Accordion (09.09.2026)**: `WeeklyReviewSection` переведён с `SheetShell` на inline accordion. Устранена проблема неудобного скролла к нижнему листу; детали (Регулярность, Прогресс, Контекст нагрузки, Разгрузка, Мышцы, Плато, Восстановление) раскрываются плавно внутри карточки с haptic feedback, сохраняя контекст (PRODUCT.md §3.2 L2 progressive disclosure).
 * ENG-16: Temporary replacement (UX-5) now updates BOTH `workout_exercises.exercise_id` and `pain_events.exercise_id` in DB. This ensures workout logs AND safety/pain context remain correctly attributed to the actually performed exercise, preventing lost injury warnings and false progression recommendations.
 * **ENG-17 (Фича 2)**: RPE-based Autoregulation. `program_exercises` now supports `target_rpe` (1-10). `progression.ts` checks if `actualRpe <= targetRpe - 2` to suggest progression even if max reps aren't reached. `ExerciseSettingsSheet` allows setting this target.
 * **Фича 4 (Pain Trend by Body Part, ENG-18)**: `src/utils/painTrend.ts` + `src/hooks/usePainTrend.ts` + `src/components/dashboard/PainTrendSheet.tsx`. Чистая функция `calculatePainTrend` группирует `pain_events` по `body_part` и ISO-неделям (окно 4 недели назад). Хроническая зона = боль в ≥2 разных неделях. UI: в `StatusCard` кликабельный error-чип "Боль: {зона} · {n} нед." (заменяет warning "Боль сегодня") с `PainTrendSheet` (L2: таблица недель с body part-пилюлями, рекомендация без медицинского диагноза); `ProgressInsights` добавляет инсайт "Устойчивая боль" в начало списка. Не влияет на `progression.ts` — observation для пользователя (PRODUCT.md §8).
