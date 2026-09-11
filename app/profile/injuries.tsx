@@ -25,6 +25,7 @@ import { AppBadge } from '../../src/components/ui/AppBadge';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { InjuryFormSheet } from '../../src/components/profile/InjuryFormSheet';
+import { InjuryBodyMap } from '../../src/components/profile/InjuryBodyMap';
 import {
   getBodyPartColor,
   getBodyPartLabel,
@@ -54,9 +55,22 @@ const InjuryCard = memo(function InjuryCard({
   return (
     // ✅ variant="compact" без хвостового пробела
     <AppCard variant="compact" style={{ borderColor: severityColor, borderWidth: 1 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.sm }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: SPACING.sm,
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <Circle size={20} color={bodyPartColor} fill={bodyPartColor + '20'} strokeWidth={2} style={{ marginRight: SPACING.sm }} />
+          <Circle
+            size={20}
+            color={bodyPartColor}
+            fill={bodyPartColor + '20'}
+            strokeWidth={2}
+            style={{ marginRight: SPACING.sm }}
+          />
           <View style={{ flex: 1 }}>
             <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
               {getBodyPartLabel(injury.body_part)}
@@ -77,7 +91,9 @@ const InjuryCard = memo(function InjuryCard({
         </AppBadge>
       </View>
       {!!injury.description && (
-        <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>
+        <Text
+          style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.sm }]}
+        >
           {injury.description}
         </Text>
       )}
@@ -135,14 +151,29 @@ export default function InjuriesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { userId } = useStore();
-  const { injuries, loading, refetch, createInjury, updateInjury, markRecovered, deleteInjury, saving } =
-    useInjuries(userId);
+  const {
+    injuries,
+    loading,
+    refetch,
+    createInjury,
+    updateInjury,
+    markRecovered,
+    deleteInjury,
+    saving,
+  } = useInjuries(userId);
 
   const [showForm, setShowForm] = useState(false);
   const [editingInjury, setEditingInjury] = useState<Injury | null>(null);
 
   // AUDIT-4: фильтр по зонам тела (arms / torso / legs)
   const [zoneFilter, setZoneFilter] = useState<'arms' | 'torso' | 'legs' | null>(null);
+
+  // Синхронизация InjuryBodyMap с zoneFilter
+  const selectedZones = zoneFilter ? [zoneFilter] : [];
+  const toggleZone = useCallback((zone: 'arms' | 'torso' | 'legs') => {
+    setZoneFilter((prev) => (prev === zone ? null : zone));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
   const ZONE_BODY_PARTS: Record<'arms' | 'torso' | 'legs', string[]> = {
     arms: ['shoulder', 'elbow', 'wrist'],
     torso: ['back', 'neck'],
@@ -157,7 +188,7 @@ export default function InjuriesScreen() {
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch]),
+    }, [refetch])
   );
 
   const activeInjuries = injuries.filter((i) => i.status !== 'recovered');
@@ -257,6 +288,12 @@ export default function InjuriesScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
+        <InjuryBodyMap
+          injuries={injuries}
+          selectedZones={selectedZones}
+          onToggleZone={toggleZone}
+        />
+
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg }}>
           <AppCard variant="compact" style={{ flex: 1, alignItems: 'center' }}>
             <AlertCircle size={24} color={colors.error} />
@@ -275,10 +312,15 @@ export default function InjuriesScreen() {
         </View>
 
         <AppCard variant="compact">
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-              Зоны тела
-            </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: SPACING.md,
+            }}
+          >
+            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Зоны тела</Text>
             {zoneFilter && (
               <TouchableOpacity onPress={() => setZoneFilter(null)}>
                 <Text style={[typography.caption, { color: colors.primary, fontWeight: '600' }]}>
@@ -309,12 +351,7 @@ export default function InjuriesScreen() {
                     borderColor: isActive ? zoneColor : 'transparent',
                   }}
                 >
-                  <Circle
-                    size={16}
-                    color={zoneColor}
-                    fill={zoneColor + '20'}
-                    strokeWidth={2}
-                  />
+                  <Circle size={16} color={zoneColor} fill={zoneColor + '20'} strokeWidth={2} />
                   <Text
                     style={[
                       typography.captionSmall,
@@ -377,7 +414,9 @@ export default function InjuriesScreen() {
         {displayedRecovered.length > 0 && (
           <>
             <SectionHeader
-              title={zoneFilter ? `Восстановленные (${displayedRecovered.length})` : 'Восстановленные'}
+              title={
+                zoneFilter ? `Восстановленные (${displayedRecovered.length})` : 'Восстановленные'
+              }
               style={{ paddingHorizontal: 0, paddingTop: 0, marginTop: SPACING.lg }}
             />
             {displayedRecovered.map((injury) => (

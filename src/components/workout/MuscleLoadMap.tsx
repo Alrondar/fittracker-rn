@@ -15,7 +15,7 @@
 //   - состояние empty: серые контуры + сообщение.
 
 import React, { memo, useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { BodyMap } from './BodyMap';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -38,10 +38,10 @@ export type MuscleLoadMapProps = {
   showSideLabels?: boolean;
   /** Показывать легенду-список мышц под картой (по умолчанию true). */
   showLegend?: boolean;
-  /** Коллбэк при тапе на мышцу на карте (для будущей интерактивности). */
-  onMusclePress?: (slug: Slug) => void;
-  /** Коллбэк при тапе на строку легенды. */
-  onLegendPress?: (slug: Slug) => void;
+  /** Выбранная мышца (подсвечивается обводкой). */
+  selectedSlug?: Slug | null;
+  /** Коллбэк при тапе на мышцу на карте или в легенде (для фильтрации). */
+  onEntryTap?: (slug: Slug) => void;
 };
 
 /**
@@ -90,8 +90,8 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
     title,
     showSideLabels = true,
     showLegend = true,
-    onMusclePress,
-    onLegendPress,
+    selectedSlug,
+    onEntryTap,
   }) => {
     const { colors } = useTheme();
 
@@ -123,7 +123,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
     const maxVolume = hasData ? Math.max(...muscleLoad.map((m) => m.volumeKg)) : 0;
 
     const handleBodyPress = (part: { slug?: Slug }) => {
-      if (onMusclePress && part?.slug) onMusclePress(part.slug);
+      if (onEntryTap && part?.slug) onEntryTap(part.slug);
     };
 
     return (
@@ -162,7 +162,9 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
               gender={gender}
               border="none"
               defaultFill={colors.textTertiary}
-              onBodyPartPress={onMusclePress ? handleBodyPress : undefined}
+              onBodyPartPress={onEntryTap ? handleBodyPress : undefined}
+              selectedSlug={selectedSlug}
+              selectedStrokeColor={colors.textPrimary}
             />
           </View>
           <View style={styles.mapColumn}>
@@ -183,7 +185,9 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
               gender={gender}
               border="none"
               defaultFill={colors.textTertiary}
-              onBodyPartPress={onMusclePress ? handleBodyPress : undefined}
+              onBodyPartPress={onEntryTap ? handleBodyPress : undefined}
+              selectedSlug={selectedSlug}
+              selectedStrokeColor={colors.textPrimary}
             />
           </View>
         </View>
@@ -217,22 +221,30 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                     colors.textTertiary,
                     maxLoadScore > 0 ? entry.loadScore / maxLoadScore : 0
                   );
+                  const isSelected = selectedSlug === entry.slug;
                   return (
-                    <View
+                    <TouchableOpacity
                       key={entry.slug}
                       style={[
                         styles.legendRow,
                         {
                           borderBottomColor: colors.borderLight,
+                          backgroundColor: isSelected ? colors.surfaceSecondary : 'transparent',
                         },
                       ]}
-                      // accessibilityRole для тапа на строку
-                      accessible={!!onLegendPress}
-                      accessibilityRole={onLegendPress ? 'button' : 'none'}
+                      onPress={() => onEntryTap?.(entry.slug)}
+                      activeOpacity={0.7}
+                      accessible
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isSelected }}
                       accessibilityLabel={`${labelForSlug(
                         entry.slug,
                         entry.displayName
-                      )}: ${pluralizeSets(entry.sets)}, ${formatVolumeKg(entry.volumeKg)}`}
+                      )}: ${pluralizeSets(entry.sets)}, ${formatVolumeKg(entry.volumeKg)}. ${
+                        isSelected
+                          ? 'Выбрано, повторный тап снимет фильтр'
+                          : 'Тап для фильтрации упражнений'
+                      }`}
                     >
                       <View style={[styles.pill, { backgroundColor: fill, borderColor: fill }]} />
                       <View style={{ flex: 1, marginLeft: SPACING.sm }}>
@@ -276,20 +288,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                           {formatVolumeKg(entry.volumeKg)}
                         </Text>
                       </View>
-                      {onLegendPress && (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                          }}
-                          // onPress недоступно в View — используем TouchableOpacity-обёртку при необходимости
-                          // Для L1-отчёта onLegendPress не используется.
-                        />
-                      )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </>

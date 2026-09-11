@@ -92,31 +92,29 @@ export function calculateMuscleLoad(items: readonly MuscleLoadInputItem[]): Musc
 
     if (itemSets === 0) continue;
 
-    const allPrimarySlugs: Slug[] = [];
+    // Primary: полный вклад; sets считается полностью (подход — есть подход)
     primary.forEach((m) => {
       const s = getSlugsForMuscle(m);
-      allPrimarySlugs.push(...s.front, ...s.back);
+      // Используем Set, чтобы избежать дублирования, если мышца есть и в front, и в back (напр. trapezius)
+      const uniqueSlugs = Array.from(new Set([...s.front, ...s.back]));
+      for (const slug of uniqueSlugs) {
+        const entry = ensure(slug, m);
+        entry.sets += itemSets;
+        entry.volumeKg += itemVolume * PRIMARY_COEFF;
+        entry.loadScore += itemLoadScore * PRIMARY_COEFF;
+      }
     });
-    const allSecondarySlugs: Slug[] = [];
+    // Secondary: вклад в volume/loadScore уменьшен, sets — полностью
     secondary.forEach((m) => {
       const s = getSlugsForMuscle(m);
-      allSecondarySlugs.push(...s.front, ...s.back);
+      const uniqueSlugs = Array.from(new Set([...s.front, ...s.back]));
+      for (const slug of uniqueSlugs) {
+        const entry = ensure(slug, m);
+        entry.sets += itemSets;
+        entry.volumeKg += itemVolume * SECONDARY_COEFF;
+        entry.loadScore += itemLoadScore * SECONDARY_COEFF;
+      }
     });
-
-    // Primary: полный вклад; sets считается полностью (подход — есть подход)
-    for (const slug of allPrimarySlugs) {
-      const entry = ensure(slug, primary[0] ?? slug);
-      entry.sets += itemSets;
-      entry.volumeKg += itemVolume * PRIMARY_COEFF;
-      entry.loadScore += itemLoadScore * PRIMARY_COEFF;
-    }
-    // Secondary: вклад в volume/loadScore уменьшен, sets — полностью
-    for (const slug of allSecondarySlugs) {
-      const entry = ensure(slug, secondary[0] ?? slug);
-      entry.sets += itemSets;
-      entry.volumeKg += itemVolume * SECONDARY_COEFF;
-      entry.loadScore += itemLoadScore * SECONDARY_COEFF;
-    }
   }
 
   return Array.from(bySlug.values())
@@ -149,4 +147,23 @@ export function pluralizeDays(n: number): string {
   if (last === 1) return `${n} день`;
   if (last >= 2 && last <= 4) return `${n} дня`;
   return `${n} дней`;
+}
+
+/**
+ * Возвращает true, если упражнение затрагивает указанную мышцу (по slug).
+ * Используется для фильтрации списка упражнений в отчёте при тапе на карту.
+ */
+export function exerciseHasMuscle(
+  primaryMuscles: readonly string[] | null,
+  secondaryMuscles: readonly string[] | null,
+  targetSlug: Slug
+): boolean {
+  const allMuscles = [...(primaryMuscles ?? []), ...(secondaryMuscles ?? [])];
+  for (const muscle of allMuscles) {
+    const slugs = getSlugsForMuscle(muscle);
+    if (slugs.front.includes(targetSlug) || slugs.back.includes(targetSlug)) {
+      return true;
+    }
+  }
+  return false;
 }

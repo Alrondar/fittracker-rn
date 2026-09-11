@@ -1,11 +1,11 @@
 // app/progress/[id].tsx
 // Workout Report: детальный отчёт по завершённой тренировке (PRODUCT.md §11).
 // Показывает: сводку, задействованные мышцы (анатомическая карта), список упражнений.
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Clock, Dumbbell, Flame } from 'lucide-react-native';
+import { ChevronLeft, Clock, Dumbbell, Flame, X } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
@@ -20,8 +20,10 @@ import type {
   WorkoutDetailLog,
 } from '../../src/services/historyService';
 import { useQuery } from '@tanstack/react-query';
-import { calculateMuscleLoad } from '../../src/utils/muscleLoad';
+import { calculateMuscleLoad, exerciseHasMuscle } from '../../src/utils/muscleLoad';
 import { MuscleLoadMap } from '../../src/components/workout/MuscleLoadMap';
+import { getMuscleNamesForSlug } from '../../src/constants/muscleMapSlugs';
+import type { Slug } from '../../src/types/muscleMap';
 
 export default function WorkoutReportScreen() {
   const router = useRouter();
@@ -49,6 +51,12 @@ export default function WorkoutReportScreen() {
   });
 
   const gender = profileData?.gender === 'female' ? 'female' : 'male';
+
+  // Состояние фильтрации по мышце (тап по карте или легенде)
+  const [selectedMuscle, setSelectedMuscle] = useState<Slug | null>(null);
+  const toggleMuscle = useCallback((slug: Slug) => {
+    setSelectedMuscle((prev) => (prev === slug ? null : slug));
+  }, []);
 
   const { stats, muscleLoad } = useMemo(() => {
     if (!data) return { stats: null, muscleLoad: [] };
@@ -99,6 +107,15 @@ export default function WorkoutReportScreen() {
       muscleLoad,
     };
   }, [data]);
+
+  // Фильтрация упражнений по выбранной мышце (тап по карте/легенде)
+  const visibleExercises = useMemo(() => {
+    if (!data) return [];
+    if (!selectedMuscle) return data.exercises;
+    return data.exercises.filter((ex) =>
+      exerciseHasMuscle(ex.primary_muscles, ex.secondary_muscles, selectedMuscle)
+    );
+  }, [data, selectedMuscle]);
 
   if (isPending) {
     return (
@@ -241,61 +258,145 @@ export default function WorkoutReportScreen() {
             gender={gender}
             scale={0.8}
             title="Задействованные мышцы"
+            selectedSlug={selectedMuscle}
+            onEntryTap={toggleMuscle}
           />
+          {selectedMuscle && (
+            <View
+              style={{
+                marginTop: SPACING.md,
+                padding: SPACING.sm,
+                backgroundColor: colors.surfaceSecondary,
+                borderRadius: BORDER_RADIUS.md,
+              }}
+            >
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}
+              >
+                <Text
+                  style={[
+                    typography.caption,
+                    { color: colors.textPrimary, flex: 1, fontWeight: '600' },
+                  ]}
+                >
+                  Фильтр по группе мышц
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setSelectedMuscle(null)}
+                  style={{ padding: SPACING.xs }}
+                >
+                  <X size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs }}>
+                {getMuscleNamesForSlug(selectedMuscle).map((name) => (
+                  <View
+                    key={name}
+                    style={{
+                      paddingHorizontal: SPACING.sm,
+                      paddingVertical: SPACING.xs,
+                      backgroundColor: colors.primary,
+                      borderRadius: BORDER_RADIUS.full,
+                    }}
+                  >
+                    <Text style={[typography.captionSmall, { color: colors.textInverse }]}>
+                      {name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Упражнения */}
-        <Text
-          style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: SPACING.sm,
+          }}
         >
-          Упражнения
-        </Text>
-        {data.exercises.map((ex: WorkoutDetailExercise) => (
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Упражнения</Text>
+          {selectedMuscle && (
+            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+              {visibleExercises.length} из {data.exercises.length}
+            </Text>
+          )}
+        </View>
+
+        {visibleExercises.length === 0 && selectedMuscle ? (
           <View
-            key={ex.id}
             style={{
+              padding: SPACING.lg,
               backgroundColor: colors.surface,
               borderRadius: BORDER_RADIUS.md,
               borderWidth: 1,
               borderColor: colors.border,
-              padding: SPACING.md,
-              marginBottom: SPACING.md,
+              alignItems: 'center',
             }}
           >
-            <Text
-              style={[
-                typography.labelBold,
-                { color: colors.textPrimary, marginBottom: SPACING.sm },
-              ]}
-            >
-              {ex.exercise_name}
+            <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}>
+              Нет упражнений для этой мышцы в данной тренировке.
             </Text>
-            {ex.logs.map((log: WorkoutDetailLog) => (
-              <View
-                key={log.id}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  paddingVertical: SPACING.xs,
-                }}
-              >
-                <Text style={[typography.body, { color: colors.textSecondary }]}>
-                  Подход {log.set_number}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-                  <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]}>
-                    {log.weight_kg ?? 0} × {log.reps ?? 0}
-                  </Text>
-                  {log.rpe != null && (
-                    <Text style={[typography.caption, { color: colors.warning }]}>
-                      RPE {log.rpe}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
+            <AppButton
+              title="Сбросить фильтр"
+              variant="secondary"
+              onPress={() => setSelectedMuscle(null)}
+              style={{ marginTop: SPACING.md }}
+            />
           </View>
-        ))}
+        ) : (
+          visibleExercises.map((ex: WorkoutDetailExercise) => (
+            <View
+              key={ex.id}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: SPACING.md,
+                marginBottom: SPACING.md,
+              }}
+            >
+              <Text
+                style={[
+                  typography.labelBold,
+                  { color: colors.textPrimary, marginBottom: SPACING.sm },
+                ]}
+              >
+                {ex.exercise_name}
+              </Text>
+              {ex.logs.map((log: WorkoutDetailLog) => (
+                <View
+                  key={log.id}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    paddingVertical: SPACING.xs,
+                  }}
+                >
+                  <Text style={[typography.body, { color: colors.textSecondary }]}>
+                    Подход {log.set_number}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: SPACING.md }}>
+                    <Text
+                      style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]}
+                    >
+                      {log.weight_kg ?? 0} × {log.reps ?? 0}
+                    </Text>
+                    {log.rpe != null && (
+                      <Text style={[typography.caption, { color: colors.warning }]}>
+                        RPE {log.rpe}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );

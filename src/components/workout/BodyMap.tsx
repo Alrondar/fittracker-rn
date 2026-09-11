@@ -29,6 +29,12 @@ export type BodyMapProps = {
   border?: string | 'none';
   onBodyPartPress?: (part: ExtendedBodyPart, side?: 'left' | 'right') => void;
   colors?: readonly string[];
+  /** Выделенная мышца (обводка поверх заливки). */
+  selectedSlug?: string | null;
+  /** Выделенные мышцы (массив, для подсветки зон). */
+  selectedSlugs?: readonly string[];
+  /** Цвет обводки выделенной мышцы. По умолчанию textPrimary из темы. */
+  selectedStrokeColor?: string;
 };
 
 export const BodyMap = memo<BodyMapProps>(
@@ -41,6 +47,9 @@ export const BodyMap = memo<BodyMapProps>(
     border = 'none',
     onBodyPartPress,
     colors = ['#0984e3', '#74b9ff'],
+    selectedSlug,
+    selectedSlugs,
+    selectedStrokeColor = '#000000',
   }) => {
     const isMale = gender === 'male';
     const isFront = side === 'front';
@@ -55,13 +64,14 @@ export const BodyMap = memo<BodyMapProps>(
         : bodyFemaleBack;
 
     // Выбираем правильный viewBox и контур
+    // Расширяем viewBox на 10px с каждой стороны, чтобы обводка (stroke) выделенных мышц не обрезалась
     const viewBox = isMale
       ? isFront
-        ? '0 0 724 1448'
-        : '724 0 724 1448'
+        ? '-10 -10 744 1468'
+        : '714 -10 744 1468'
       : isFront
-        ? '-50 -40 734 1538'
-        : '756 0 774 1448';
+        ? '-60 -50 754 1558'
+        : '746 -10 794 1468';
 
     const outlinePath = isMale
       ? isFront
@@ -144,6 +154,32 @@ export const BodyMap = memo<BodyMapProps>(
       });
     };
 
+    // Рендер обводки выделенных мышц поверх всех заливок
+    const renderSelectedOutline = () => {
+      const targets = selectedSlugs || (selectedSlug ? [selectedSlug] : []);
+      if (targets.length === 0) return null;
+
+      return basePaths
+        .filter((p: BodyPart) => targets.includes(p.slug))
+        .flatMap((selectedPart: BodyPart) => {
+          const allPaths = [
+            ...(selectedPart.path?.common || []),
+            ...(selectedPart.path?.left || []),
+            ...(selectedPart.path?.right || []),
+          ];
+          return allPaths.map((d, i) => (
+            <Path
+              key={`${selectedPart.slug}-selected-${i}`}
+              d={d}
+              fill="none"
+              stroke={selectedStrokeColor}
+              strokeWidth={2}
+              pointerEvents="none"
+            />
+          ));
+        });
+    };
+
     return (
       <Svg
         viewBox={viewBox}
@@ -158,6 +194,7 @@ export const BodyMap = memo<BodyMapProps>(
           </G>
         )}
         {renderPaths()}
+        {renderSelectedOutline()}
       </Svg>
     );
   }

@@ -1,12 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Share,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sprout, Dumbbell, Flame, Play } from 'lucide-react-native';
@@ -28,6 +21,7 @@ import { PhaseCard } from '../../../src/components/program/PhaseCard';
 import { ProgramHero } from '../../../src/components/program/ProgramHero';
 import { ProgramFabs } from '../../../src/components/program/ProgramFabs';
 import { ProgramDetailModals } from '../../../src/components/program/ProgramDetailModals';
+import { ProgramMuscleMap } from '../../../src/components/program/ProgramMuscleMap';
 import { generateShareCode, formatShareCode } from '../../../src/services/programSharingService';
 
 export default function ProgramDetailScreen() {
@@ -86,7 +80,7 @@ export default function ProgramDetailScreen() {
           };
       }
     },
-    [colors],
+    [colors]
   );
 
   if (loading) {
@@ -165,6 +159,9 @@ export default function ProgramDetailScreen() {
           badgeStyles={badgeStyles}
         />
 
+        {/* ===== Карта мышц программы ===== */}
+        {phases.length > 0 && <ProgramMuscleMap phases={phases} />}
+
         {/* ===== Фазы ===== */}
         <View style={{ paddingTop: SPACING.md }}>
           {phases.map((phase, phaseIndex) => (
@@ -219,7 +216,12 @@ export default function ProgramDetailScreen() {
             <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
             <View style={buttonStyles.content}>
-              <Play size={20} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} />
+              <Play
+                size={20}
+                color={colors.textInverse}
+                strokeWidth={2}
+                fill={colors.textInverse}
+              />
               <Text style={buttonStyles.textPrimary}>Начать программу</Text>
             </View>
           )}
@@ -233,12 +235,7 @@ export default function ProgramDetailScreen() {
         colors={colors}
       />
 
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onHide={hideToast}
-      />
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
       {/* ===== Модалки Detail ===== */}
       <ProgramDetailModals

@@ -18,78 +18,108 @@ export type MuscleSlugs = {
   back: Slug[];
 };
 
+// Ключи отсортированы по длине (от длинных к коротким), чтобы fallback по подстроке
+// находил специфичные названия (напр. "бицепс бедра") раньше, чем общие ("бицепс").
 const MUSCLE_TO_SLUGS: Record<string, MuscleSlugs> = {
-  // ===== ГРУДЬ =====
-  'большая грудная': { front: ['chest'], back: [] },
-  'верхняя часть большой грудной': { front: ['chest'], back: [] },
-  'нижняя часть большой грудной': { front: ['chest'], back: [] },
-  'внутренняя часть большой грудной': { front: ['chest'], back: [] },
-  'малая грудная': { front: ['chest'], back: [] },
-  зубчатые: { front: ['chest'], back: [] },
-
   // ===== СПИНА =====
-  широчайшие: { front: [], back: ['upper-back'] },
-  'широчайшие (верх)': { front: [], back: ['upper-back'] },
   'широчайшие (середина/низ)': { front: [], back: ['upper-back', 'lower-back'] },
-  трапеция: { front: ['trapezius'], back: ['trapezius'] },
-  'верхняя трапеция': { front: ['trapezius'], back: ['trapezius'] },
   'средняя/нижняя трапеция': { front: ['trapezius'], back: ['trapezius', 'upper-back'] },
-  ромбовидные: { front: [], back: ['upper-back'] },
-  'разгибатели спины': { front: [], back: ['lower-back'] },
   'квадратная мышца поясницы': { front: [], back: ['lower-back'] },
-  'большая круглая': { front: [], back: ['upper-back'] },
   'мышцы, поднимающие лопатку': { front: [], back: ['upper-back'] },
   'многораздельные мышцы': { front: [], back: ['lower-back'] },
-
-  // ===== ПЛЕЧИ =====
-  дельтовидные: { front: ['deltoids'], back: ['deltoids'] },
-  'передняя дельта': { front: ['deltoids'], back: [] },
-  'средняя дельта': { front: ['deltoids'], back: ['deltoids'] },
-  'задняя дельта': { front: [], back: ['deltoids'] },
-  'ротаторная манжета': { front: ['deltoids'], back: ['deltoids'] },
-  надостная: { front: [], back: ['deltoids'] },
-  подостная: { front: [], back: ['deltoids'] },
-  'малая круглая': { front: [], back: ['deltoids'] },
-  подлопаточная: { front: [], back: ['deltoids'] },
+  'широчайшие (верх)': { front: [], back: ['upper-back'] },
+  'верхняя трапеция': { front: ['trapezius'], back: ['trapezius'] },
+  'разгибатели спины': { front: [], back: ['lower-back'] },
+  'большая круглая': { front: [], back: ['upper-back'] },
+  широчайшие: { front: [], back: ['upper-back'] },
+  трапеция: { front: ['trapezius'], back: ['trapezius'] },
+  ромбовидные: { front: [], back: ['upper-back'] },
 
   // ===== РУКИ =====
-  бицепс: { front: ['biceps'], back: [] },
   'бицепс (длинная головка)': { front: ['biceps'], back: [] },
   'бицепс (короткая головка)': { front: ['biceps'], back: [] },
-  трицепс: { front: ['triceps'], back: ['triceps'] },
   'трицепс (длинная головка)': { front: ['triceps'], back: ['triceps'] },
   'трицепс (латеральная головка)': { front: ['triceps'], back: ['triceps'] },
   'трицепс (медиальная головка)': { front: ['triceps'], back: ['triceps'] },
-  брахиалис: { front: ['biceps', 'forearm'], back: [] },
-  брахиорадиалис: { front: ['forearm'], back: ['forearm'] },
-  'мышцы предплечья': { front: ['forearm'], back: ['forearm'] },
-  'локтевая мышца': { front: ['forearm'], back: ['triceps'] },
   'сгибатели предплечья': { front: ['forearm'], back: [] },
   'разгибатели предплечья': { front: [], back: ['forearm'] },
   'сгибатели пальцев': { front: ['forearm'], back: ['forearm'] },
+  'мышцы предплечья': { front: ['forearm'], back: ['forearm'] },
+  'локтевая мышца': { front: ['forearm'], back: ['triceps'] },
+  брахиорадиалис: { front: ['forearm'], back: ['forearm'] },
+  бицепс: { front: ['biceps'], back: [] },
+  трицепс: { front: ['triceps'], back: ['triceps'] },
+  брахиалис: { front: ['biceps', 'forearm'], back: [] },
 
   // ===== НОГИ =====
-  квадрицепс: { front: ['quadriceps'], back: [] },
+  'приводящие мышцы бедра': { front: ['adductors'], back: [] },
+  'отводящие мышцы бедра': { front: [], back: ['abductors'] },
+  'подвздошно-поясничная': { front: ['quadriceps', 'adductors'], back: [] },
+  'передняя большеберцовая': { front: ['tibialis'], back: [] },
   'прямая мышца бедра': { front: ['quadriceps'], back: [] },
   'бицепс бедра': { front: [], back: ['hamstring'] },
   'большая ягодичная': { front: [], back: ['gluteal'] },
   'средняя ягодичная': { front: [], back: ['gluteal', 'abductors'] },
   'малая ягодичная': { front: [], back: ['gluteal', 'abductors'] },
   'ягодичные мышцы': { front: [], back: ['gluteal'] },
+  грушевидная: { front: [], back: ['gluteal', 'abductors'] },
+  квадрицепс: { front: ['quadriceps'], back: [] },
   икроножная: { front: ['calves'], back: ['calves'] },
   камбаловидная: { front: ['calves'], back: ['calves'] },
-  'приводящие мышцы бедра': { front: ['adductors'], back: [] },
-  'отводящие мышцы бедра': { front: [], back: ['abductors'] },
-  грушевидная: { front: [], back: ['gluteal', 'abductors'] },
-  'подвздошно-поясничная': { front: ['quadriceps', 'adductors'], back: [] },
-  'передняя большеберцовая': { front: ['tibialis'], back: [] },
+
+  // ===== ПЛЕЧИ =====
+  'ротаторная манжета': { front: ['deltoids'], back: ['deltoids'] },
+  'передняя дельта': { front: ['deltoids'], back: [] },
+  'средняя дельта': { front: ['deltoids'], back: ['deltoids'] },
+  'задняя дельта': { front: [], back: ['deltoids'] },
+  дельтовидные: { front: ['deltoids'], back: ['deltoids'] },
+  надостная: { front: [], back: ['deltoids'] },
+  подостная: { front: [], back: ['deltoids'] },
+  'малая круглая': { front: [], back: ['deltoids'] },
+  подлопаточная: { front: [], back: ['deltoids'] },
+
+  // ===== ГРУДЬ =====
+  'верхняя часть большой грудной': { front: ['chest'], back: [] },
+  'нижняя часть большой грудной': { front: ['chest'], back: [] },
+  'внутренняя часть большой грудной': { front: ['chest'], back: [] },
+  'большая грудная': { front: ['chest'], back: [] },
+  'малая грудная': { front: ['chest'], back: [] },
+  зубчатые: { front: ['chest'], back: [] },
 
   // ===== ПРЕСС И КОР =====
-  'прямая мышца живота': { front: ['abs'], back: [] },
   'нижняя часть прямой мышцы живота': { front: ['abs'], back: [] },
-  'косые мышцы живота': { front: ['obliques'], back: [] },
+  'прямая мышца живота': { front: ['abs'], back: [] },
   'поперечная мышца живота': { front: ['abs'], back: [] },
+  'косые мышцы живота': { front: ['obliques'], back: [] },
 };
+
+/**
+ * Обратный маппинг: slug -> массив названий мышц на русском.
+ * Используется для отображения баблов при выборе группы мышц.
+ */
+export const SLUG_TO_MUSCLE_NAMES: Record<string, string[]> = {
+  chest: ['Грудь', 'Большая грудная', 'Малая грудная'],
+  'upper-back': ['Верх спины', 'Широчайшие', 'Ромбовидные', 'Трапеция (средняя/нижняя)'],
+  'lower-back': ['Низ спины', 'Разгибатели спины', 'Квадратная мышца поясницы'],
+  trapezius: ['Трапеция', 'Верхняя трапеция'],
+  deltoids: ['Дельты', 'Передняя дельта', 'Средняя дельта', 'Задняя дельта'],
+  biceps: ['Бицепс', 'Бицепс (длинная головка)', 'Бицепс (короткая головка)'],
+  triceps: ['Трицепс', 'Трицепс (длинная головка)', 'Трицепс (латеральная головка)'],
+  forearm: ['Предплечья', 'Сгибатели предплечья', 'Разгибатели предплечья'],
+  abs: ['Пресс', 'Прямая мышца живота', 'Косые мышцы'],
+  obliques: ['Косые мышцы'],
+  quadriceps: ['Квадрицепсы', 'Прямая мышца бедра'],
+  hamstring: ['Бицепс бедра'],
+  gluteal: ['Ягодицы', 'Большая ягодичная', 'Средняя ягодичная'],
+  adductors: ['Приводящие мышцы бедра'],
+  abductors: ['Отводящие мышцы бедра'],
+  calves: ['Икры', 'Икроножная', 'Камбаловидная'],
+  tibialis: ['Передняя большеберцовая'],
+};
+
+export function getMuscleNamesForSlug(slug: string): string[] {
+  return SLUG_TO_MUSCLE_NAMES[slug] || [slug];
+}
 
 /**
  * Возвращает slug'и для конкретной мышцы.
