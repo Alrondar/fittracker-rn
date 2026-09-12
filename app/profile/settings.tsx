@@ -29,6 +29,8 @@ import {
   RPE_PROMPT_LABELS,
   RPE_PROMPT_DESCRIPTIONS,
 } from '../../src/hooks/useRpeSettings';
+import { useBarbellSettings } from '../../src/hooks/useBarbellSettings';
+import { BARBELL_EQUIPMENT_NAMES } from '../../src/constants/barbellDefaults';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { SheetShell } from '../../src/components/ui/SheetShell';
 import { PillToggle } from '../../src/components/ui/PillToggle';
@@ -63,6 +65,7 @@ export default function SettingsScreen() {
   const { userId } = useStore();
   const { settings: timerSettings, updateSettings: updateTimerSettings } = useTimerSettings();
   const { settings: rpeSettings, updateSettings: updateRpeSettings } = useRpeSettings();
+  const { settings: barbellSettings, updateSetting: updateBarbellSetting } = useBarbellSettings();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -404,6 +407,60 @@ export default function SettingsScreen() {
                 thumbColor={colors.textInverse}
               />
             </View>
+          </View>
+
+          {/* FEAT-1.5: Настройка веса грифа */}
+          <View
+            style={[
+              cardStyles.compact,
+              { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+              <Ruler size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                  Вес грифа по умолчанию
+                </Text>
+                <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                  Настройте под ваш зал (кг)
+                </Text>
+              </View>
+            </View>
+            {BARBELL_EQUIPMENT_NAMES.filter((eq) => !eq.includes(' ')).map((equip) => (
+              <View
+                key={equip}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: SPACING.sm,
+                  paddingBottom: SPACING.sm,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.borderLight,
+                }}
+              >
+                <Text style={[typography.caption, { color: colors.textSecondary, flex: 1 }]}>
+                  {equip}
+                </Text>
+                <TextInput
+                  style={[
+                    cardStyles.sheetInput,
+                    { width: 80, textAlign: 'right', paddingVertical: 4, paddingHorizontal: 8 },
+                  ]}
+                  placeholder="20"
+                  placeholderTextColor={colors.textTertiary}
+                  value={String(barbellSettings.kg[equip] || 20)}
+                  keyboardType="decimal-pad"
+                  onChangeText={(text) => {
+                    const val = parseFloat(text);
+                    if (!isNaN(val) && val > 0) {
+                      updateBarbellSetting(equip, 'kg', val);
+                    }
+                  }}
+                />
+              </View>
+            ))}
           </View>
 
           {/* Режим карточки упражнения (UX-2) */}

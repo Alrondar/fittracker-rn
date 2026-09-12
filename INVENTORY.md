@@ -105,6 +105,7 @@ Main components:
 `sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
 `sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion; подзаголовки через SectionSubheading (PR7)
 `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне; ENG-5: бейджи relation_type (Прогрессия/Упрощение/Вариант)
+`PlateMathRow.tsx` — компактная строка с иконкой и разборкой веса штанги (FEAT-1.5, Variant B: Balanced)
 `WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle, TimerPill/Panel (PR8)
 `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
 `WorkoutScreenFooter.tsx` — «Начать тренировку» / «Завершить» с LinearGradient (PR8)
@@ -289,6 +290,7 @@ Important components:
 | useRecommendationFeedback|SetsGrid (COACH-3: fire-and-forget запись accepted/rejected + причина).  userId  автоматически берётся из  useStore , чтобы не передавать его через цепочку пропсов.|
 | useTimerSettings|RestTimer/settings|
 | useUnitPreferences|UnitToggle, ExerciseCard, SetsGrid|
+| useBarbellSettings|PlateMathRow, settings (локальное хранение веса грифа, AsyncStorage)|
 | useTheme|all UI|
 | useToast|all screens|
 | useDailyNutrition|Dashboard (AUDIT-1)|
@@ -337,15 +339,16 @@ Important components:
 | constants/theme.ts|theme, spacing, radius|
 | constants/injuries.ts|injury rules/warnings|
 | constants/equipmentIcons.ts|equipment SVG map|
+| constants/barbellDefaults.ts|дефолтные веса грифов и номиналы блинов (FEAT-1.5)|
 | utils/rpe.ts|RPE descriptions/derived values|
 | utils/e1rm.ts|e1RM calculations|
 | utils/streak.ts|streak calculations|
 | utils/trend.ts|trend/moving average/slope|
+| utils/plates.ts|чистая функция расчёта блинов для штанги (FEAT-1.5)|
 | utils/strengthStandards.ts|calculateStrengthStandard (Фича 1): уровень силы (Novice…Elite) по e1RM/вес/пол; null для упражнений без нормативов|
 | utils/painTrend.ts|calculatePainTrend (Фича 4): чистая функция, группирует pain events по body_part/неделям (ISO, 4-недельное окно); возвращает  { chronicZones, weeks } . Хроническая зона = боль в ≥2 разных неделях.|
 | constants/strengthStandards.ts|нормативы 1ПМ/вес для 13 compound-движений (Фича 1); resolveStandardKey (exact + pattern fallback)|
 | utils/workoutForecast.ts|calculateWorkoutForecast (Фича 7): детерминированный прогноз сложности следующей тренировки; thresholds 0.85/1.15; insufficient-data guard (< 3 workouts = unknown)|
-| utils/plates.ts|plate calculation logic; UI pending|
 | utils/csv.ts|CSV builder; service/UI pending|
 | utils/errorMapper.ts|user-facing error mapping|
 | utils/intensityInfo.tsx|getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|

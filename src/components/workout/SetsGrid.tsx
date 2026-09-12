@@ -18,6 +18,7 @@ import { SetData, SetFeedbackPatch, UserRejectionReason } from '../../types/work
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings } from '../../hooks/useRpeSettings';
 import { useRecommendationFeedback } from '../../hooks/useRecommendationFeedback';
+import { useBarbellSettings } from '../../hooks/useBarbellSettings';
 
 import {
   WeightUnit,
@@ -26,6 +27,7 @@ import {
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip, SetFeedbackEditor } from './SetFeedbackControl';
+import { PlateMathRow } from './PlateMathRow';
 import {
   calculateProgression,
   explainProgression,
@@ -280,6 +282,8 @@ interface SetsGridProps {
   /** ENG-3: readiness context (optional signal). Применяется после safety. */
   readinessContext?: ReadinessContext | null;
   unit: WeightUnit;
+  /** FEAT-1.5: тип оборудования для расчёта блинов */
+  equipment?: string | string[];
   updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
@@ -306,6 +310,7 @@ export const SetsGrid = memo(function SetsGrid({
   safetyContext,
   readinessContext,
   unit,
+  equipment,
   updateSet,
   updateSetFeedback,
   addSet,
@@ -316,6 +321,9 @@ export const SetsGrid = memo(function SetsGrid({
   workoutId,
   exerciseId,
 }: SetsGridProps) {
+  // FEAT-1.5: Plate Math UI
+  const { getBarWeight } = useBarbellSettings();
+  const barWeight = getBarWeight(equipment, unit);
   // COACH-3: fire-and-forget запись feedback (ошибки глотаются тихо).
   const { submitFeedback } = useRecommendationFeedback();
   // UX-7: настройка частоты запроса RPE
@@ -847,6 +855,14 @@ export const SetsGrid = memo(function SetsGrid({
                 })}
               </View>
             )}
+            {/* FEAT-1.5: Plate Math Row (Variant B: Balanced) */}
+            <PlateMathRow
+              weight={progressionSet?.weight ? parseFloat(progressionSet.weight) : null}
+              equipment={equipment}
+              barWeight={barWeight}
+              unit={unit}
+              colors={colors}
+            />
           </View>
         )}
 

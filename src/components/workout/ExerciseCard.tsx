@@ -183,7 +183,8 @@ export const ExerciseCard = memo(function ExerciseCard({
           ENG-1: проброс repsRange для детерминированной прогрессии.
           Фича 2: проброс targetRpe для RPE-based autoregulation.
           ENG-4: проброс safetyContext (pain/injury) для safety precedence в engine.
-          COACH-3: проброс workoutId + exercise.id для записи feedback. */}
+          COACH-3: проброс workoutId + exercise.id для записи feedback.
+          FEAT-1.5: проброс equipment для Plate Math UI. */}
       {hasSets && sets.length > 0 && (
         <SetsGrid
           exerciseIndex={exerciseIndex}
@@ -195,6 +196,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           safetyContext={safetyContext}
           readinessContext={readinessContext}
           unit={unit}
+          equipment={equipment}
           updateSet={updateSet}
           updateSetFeedback={updateSetFeedback}
           addSet={addSet}
