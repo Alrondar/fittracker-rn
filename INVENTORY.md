@@ -469,7 +469,7 @@ update `STATUS.md` if task status changed;
 do not copy technical rules from `CLAUDE.md` here;
 do not copy product decisions from `PRODUCT.md` here.
 
-Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H-MUSCLE-2 / H-MUSCLE-3 / H-MUSCLE-4 / H-MUSCLE-5)
+Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H-MUSCLE-2 / H-MUSCLE-3 / H-MUSCLE-4 / H-MUSCLE-5 / H-MUSCLE-6)
 `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
 `src/components/dashboard/StatusCard.tsx` — AUDIT-6: «Состояние сегодня» (readiness мини-кольцо + tappable pips, чипы травм, «⚠ Боль сегодня»); ENG-15: передаёт `gender` в `ReadinessSheet` (без прямого supabase)
 `src/components/dashboard/CircularNutritionChart.tsx` — AUDIT-1: SVG-кольца питания
@@ -487,7 +487,7 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H
 `src/components/progress/StrengthLevelBadge.tsx` — Фича 1: бейдж уровня силы (Novice/Beginner/Intermediate/Advanced/Elite); тап → SheetShell с таблицей нормативов
 `src/components/PersonalRecordsCard.tsx` — FEAT-1.4: PR-карточки; Фича 1: StrengthLevelBadge рядом с e1RM
 `src/utils/colorScale.ts` — H-MUSCLE-1/2: цветовая шкала мышц от `colors.primary` темы (mixHex / intensityColor / buildIntensityScale)
-`src/utils/muscleLoad.ts` — H-MUSCLE-1/2/3: чистые функции `calculateMuscleLoad`, `pluralizeSets`, `pluralizeDays`, `formatVolumeKg` + `exerciseHasMuscle` (фильтрация упражнений по slug)
+`src/utils/muscleLoad.ts` — H-MUSCLE-1/2/3/6: чистые функции `calculateMuscleLoad`, `pluralizeSets`, `pluralizeDays`, `formatVolumeKg` + `exerciseHasMuscle` (фильтрация упражнений по slug). **Модель OpenGym**: интенсивность (`loadScore`) считается ТОЛЬКО по эффективным подходам (`sets`), а не по тоннажу (`weight × reps`), что предотвращает искусственное раздувание нагрузки на мышцы-помощники (трицепс, дельты, трапеция) из-за большого веса в базовых упражнениях. `volumeKg` сохраняется только как справочная информация в легенде.
 `src/components/workout/BodyMap.tsx` — H-MUSCLE-1/3/5: внутренний SVG-рендер силуэтов (замена `react-native-body-highlighter`), добавлена поддержка `selectedSlugs` (массив) для подсветки зон
 `src/components/workout/MuscleLoadMap.tsx` — H-MUSCLE-1/2/3: переиспользуемый компонент карты + легенды (отчёт + progress hub), добавлены `selectedSlug` и `onEntryTap` для фильтрации
 `src/services/muscleStatsService.ts` — H-MUSCLE-2: единственный Supabase-запрос для вкладки «Мышцы» в Progress hub
@@ -496,6 +496,7 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H
 `src/utils/programMuscleLoad.ts` — H-MUSCLE-4: чистая функция `calculateProgramMuscleLoad` для агрегации плановых сетов/неделю по фазам программы
 `src/components/program/ProgramMuscleMap.tsx` — H-MUSCLE-4: карта покрытия мышц в Program Detail (средневзвешенные сеты/неделю)
 `src/components/profile/InjuryBodyMap.tsx` — H-MUSCLE-5: визуальная карта зон травм, синхронизированная с chips-фильтром (arms/torso/legs)
+`src/components/ui/MuscleLoadModeToggle.tsx` — H-MUSCLE-6: сегмент-контрол переключения режима нагрузки (Общий объём / Прямая нагрузка), использующий токены темы (colors.primary / textSecondary)
 
 **Bugfixes & Maintenance**
 * **UX-11 Inline Accordion (09.09.2026)**: `WeeklyReviewSection` переведён с `SheetShell` на inline accordion. Устранена проблема неудобного скролла к нижнему листу; детали (Регулярность, Прогресс, Контекст нагрузки, Разгрузка, Мышцы, Плато, Восстановление) раскрываются плавно внутри карточки с haptic feedback, сохраняя контекст (PRODUCT.md §3.2 L2 progressive disclosure).

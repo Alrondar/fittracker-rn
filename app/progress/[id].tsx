@@ -20,10 +20,15 @@ import type {
   WorkoutDetailLog,
 } from '../../src/services/historyService';
 import { useQuery } from '@tanstack/react-query';
-import { calculateMuscleLoad, exerciseHasMuscle } from '../../src/utils/muscleLoad';
+import {
+  calculateMuscleLoad,
+  exerciseHasMuscle,
+  type MuscleLoadMode,
+} from '../../src/utils/muscleLoad';
 import { MuscleLoadMap } from '../../src/components/workout/MuscleLoadMap';
 import { getMuscleNamesForSlug } from '../../src/constants/muscleMapSlugs';
 import type { Slug } from '../../src/types/muscleMap';
+import { MuscleLoadModeToggle } from '../../src/components/ui/MuscleLoadModeToggle';
 
 export default function WorkoutReportScreen() {
   const router = useRouter();
@@ -58,6 +63,9 @@ export default function WorkoutReportScreen() {
     setSelectedMuscle((prev) => (prev === slug ? null : slug));
   }, []);
 
+  // Состояние режима отображения нагрузки
+  const [loadMode, setLoadMode] = useState<MuscleLoadMode>('total');
+
   const { stats, muscleLoad } = useMemo(() => {
     if (!data) return { stats: null, muscleLoad: [] };
     let totalVolume = 0;
@@ -82,7 +90,8 @@ export default function WorkoutReportScreen() {
     });
 
     // Нагрузка по мышцам: детерминированная агрегация (src/utils/muscleLoad.ts).
-    // Модель: primary = 100%, secondary = 50% (внутренняя, не мед. истина).
+    // Модель: primary = 100%, secondary = 50% (в режиме 'total').
+    // В режиме 'direct' secondary мышцы полностью исключаются.
     // RPE учитывается в loadScore для интенсивности раскраски карты.
     const muscleLoad = calculateMuscleLoad(
       data.exercises.map((ex: WorkoutDetailExercise) => ({
@@ -94,7 +103,8 @@ export default function WorkoutReportScreen() {
           rpe: log.rpe,
           isWarmup: log.is_warmup ?? false,
         })),
-      }))
+      })),
+      loadMode
     );
 
     return {
@@ -253,11 +263,24 @@ export default function WorkoutReportScreen() {
 
         {/* Мышцы — анатомическая карта + нагрузка по группам мышц */}
         <View style={{ marginBottom: SPACING.xl }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: SPACING.sm,
+            }}
+          >
+            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+              Задействованные мышцы
+            </Text>
+            <MuscleLoadModeToggle mode={loadMode} onChange={setLoadMode} />
+          </View>
           <MuscleLoadMap
             muscleLoad={muscleLoad}
             gender={gender}
             scale={0.8}
-            title="Задействованные мышцы"
+            showTitle={false}
             selectedSlug={selectedMuscle}
             onEntryTap={toggleMuscle}
           />

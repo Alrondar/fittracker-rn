@@ -35,6 +35,7 @@ import { useMuscleStats } from '../../hooks/useMuscleStats';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { MuscleLoadMap } from '../workout/MuscleLoadMap';
+import { MuscleLoadModeToggle } from '../ui/MuscleLoadModeToggle';
 import { BodyMap } from '../workout/BodyMap';
 import { intensityColor } from '../../utils/colorScale';
 import {
@@ -42,6 +43,7 @@ import {
   pluralizeSets,
   pluralizeDays,
   formatVolumeKg,
+  type MuscleLoadMode,
 } from '../../utils/muscleLoad';
 import { roundE1rm } from '../../utils/e1rm';
 import { getSlugsForMuscle } from '../../constants/muscleMapSlugs';
@@ -106,7 +108,10 @@ function filterRowsByPeriod(rows: readonly MuscleStatsRow[], period: PeriodKey):
   return (rows as MuscleStatsRow[]).filter((r) => new Date(r.date).getTime() >= cutoff);
 }
 
-function rowsToMuscleLoad(rows: readonly MuscleStatsRow[]): MuscleLoad[] {
+function rowsToMuscleLoad(
+  rows: readonly MuscleStatsRow[],
+  mode: MuscleLoadMode = 'total'
+): MuscleLoad[] {
   // Каждый MuscleStatsRow уже агрегирован на уровне упражнения в тренировке.
   // Для calculateMuscleLoad нужно разложить его обратно в «sets»-входной формат:
   // используем псевдо-один-сет с суммарным весом (weight × reps).
@@ -133,16 +138,18 @@ function rowsToMuscleLoad(rows: readonly MuscleStatsRow[]): MuscleLoad[] {
         const e = ensure(slug, m);
         e.sets += row.sets;
         e.volumeKg += row.volumeKg * PRIMARY_COEFF;
-        e.loadScore += row.loadScore * PRIMARY_COEFF;
+        e.loadScore += row.sets * PRIMARY_COEFF; // Интенсивность = подходы, а не тоннаж
       }
     }
-    for (const m of row.secondaryMuscles) {
-      const slugs = getSlugsForMuscle(m);
-      for (const slug of [...slugs.front, ...slugs.back]) {
-        const e = ensure(slug, m);
-        e.sets += row.sets;
-        e.volumeKg += row.volumeKg * SECONDARY_COEFF;
-        e.loadScore += row.loadScore * SECONDARY_COEFF;
+    if (mode === 'total') {
+      for (const m of row.secondaryMuscles) {
+        const slugs = getSlugsForMuscle(m);
+        for (const slug of [...slugs.front, ...slugs.back]) {
+          const e = ensure(slug, m);
+          e.sets += row.sets * SECONDARY_COEFF;
+          e.volumeKg += row.volumeKg * SECONDARY_COEFF;
+          e.loadScore += row.sets * SECONDARY_COEFF; // Интенсивность = подходы × 0.5
+        }
       }
     }
   }
@@ -298,6 +305,7 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
   const { colors } = useTheme();
   const [tab, setTab] = useState<TabKey>('load');
   const [period, setPeriod] = useState<PeriodKey>('30');
+  const [loadMode, setLoadMode] = useState<MuscleLoadMode>('total');
 
   const { rows, isPending, isFetching } = useMuscleStats(userId);
 
@@ -305,7 +313,10 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
   const rowsPeriod = useMemo(() => filterRowsByPeriod(rowsAll, period), [rowsAll, period]);
 
   // ----- Load tab -----
-  const muscleLoadPeriod = useMemo(() => rowsToMuscleLoad(rowsPeriod), [rowsPeriod]);
+  const muscleLoadPeriod = useMemo(
+    () => rowsToMuscleLoad(rowsPeriod, loadMode),
+    [rowsPeriod, loadMode]
+  );
 
   // ----- Fatigue tab -----
   const fatigue = useMemo(() => computeFatigue(rowsAll), [rowsAll]);
@@ -429,39 +440,64 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
         <View style={{ marginTop: SPACING.sm }}>
           {tab === 'load' && (
             <>
-              {/* Период */}
+              {/* Период и режим */}
               <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: SPACING.sm,
+                }}
+              >
+                <View
+                  style={[
+                    styles.tabRow,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                      flex: 1,
+                      marginRight: SPACING.sm,
+                    },
+                  ]}
+                >
+                  {PERIODS.map((p) => {
+                    const selected = period === p.key;
+                    return (
+                      <TouchableOpacity
+                        key={p.key}
+                        onPress={() => setPeriod(p.key)}
+                        style={[styles.tabButton, selected && { backgroundColor: colors.primary }]}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        accessibilityLabel={`Период: ${p.label}`}
+                      >
+                        <Text
+                          style={[
+                            typography.captionSmall,
+                            {
+                              color: selected ? colors.textInverse : colors.textSecondary,
+                              fontWeight: '600',
+                            },
+                          ]}
+                        >
+                          {p.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <MuscleLoadModeToggle mode={loadMode} onChange={setLoadMode} />
+              </View>
+              <Text
                 style={[
-                  styles.tabRow,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  typography.caption,
+                  { color: colors.textSecondary, marginBottom: SPACING.md },
                 ]}
               >
-                {PERIODS.map((p) => {
-                  const selected = period === p.key;
-                  return (
-                    <TouchableOpacity
-                      key={p.key}
-                      onPress={() => setPeriod(p.key)}
-                      style={[styles.tabButton, selected && { backgroundColor: colors.primary }]}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      accessibilityLabel={`Период: ${p.label}`}
-                    >
-                      <Text
-                        style={[
-                          typography.captionSmall,
-                          {
-                            color: selected ? colors.textInverse : colors.textSecondary,
-                            fontWeight: '600',
-                          },
-                        ]}
-                      >
-                        {p.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                {loadMode === 'total'
+                  ? 'Общий объём включает косвенную нагрузку (secondary мышцы = 50%).'
+                  : 'Прямая нагрузка учитывает только primary мышцы.'}
+              </Text>
               <View style={{ marginTop: SPACING.md }}>
                 <MuscleLoadMap
                   muscleLoad={muscleLoadPeriod}
@@ -481,7 +517,7 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
                   },
                 ]}
               >
-                Интенсивность = Σ(weight × повторы × RPE). RPE без значения = 7.
+                Интенсивность = эффективные подходы (primary = 100%, secondary = 50%).
               </Text>
             </>
           )}

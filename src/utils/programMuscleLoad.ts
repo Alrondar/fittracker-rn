@@ -10,6 +10,7 @@
 
 import type { Slug } from '../types/muscleMap';
 import { getSlugsForMuscle } from '../constants/muscleMapSlugs';
+import type { MuscleLoadMode } from './muscleLoad';
 
 export type ProgramMuscleEntry = {
   slug: Slug;
@@ -34,8 +35,13 @@ type PhaseLike = {
 /**
  * Агрегирует нагрузку на мышцы из фаз программы.
  * Возвращает массив ProgramMuscleEntry, отсортированный по setsPerWeek DESC.
+ *
+ * @param mode - 'total' (primary + secondary) или 'direct' (только primary)
  */
-export function calculateProgramMuscleLoad(phases: readonly PhaseLike[]): ProgramMuscleEntry[] {
+export function calculateProgramMuscleLoad(
+  phases: readonly PhaseLike[],
+  mode: MuscleLoadMode = 'total'
+): ProgramMuscleEntry[] {
   const muscleData = new Map<Slug, { name: string; weightedSets: number }>();
   let totalWeeks = 0;
 
@@ -62,7 +68,9 @@ export function calculateProgramMuscleLoad(phases: readonly PhaseLike[]): Progra
         };
 
         processMuscles(ex.primary_muscles ?? null, 1.0);
-        processMuscles(ex.secondary_muscles ?? null, 0.5);
+        if (mode === 'total') {
+          processMuscles(ex.secondary_muscles ?? null, 0.5);
+        }
       }
     }
   }

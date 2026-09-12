@@ -4,15 +4,15 @@
 // Используется и в Workout Report (одна тренировка), и в Progress hub
 // (неделя / 30 / 90 / все периоды).
 //
-// Модель (внутренняя, НЕ медицинская истина):
-//   - primary мышца получает 100% вклада упражнения
-//   - secondary мышца получает 50% вклада (косвенная нагрузка)
-//   - sets: количество рабочих (не разминочных) подходов, в которых мышца участвовала
-//   - volumeKg = Σ(weight × reps) × коэффициент
-//   - loadScore = Σ(weight × reps × rpeFactor) × коэффициент
-//       rpeFactor = rpe/10, если указан; иначе DEFAULT_RPE_FACTOR = 0.7
-//       (типичный рабочий сет — RPE 7; явно задокументировано, чтобы
-//        не создавать ложной точности)
+// Модель (внутренняя, НЕ медицинская истина, основана на подходе OpenGym):
+//   - Интенсивность подсветки на карте считается ТОЛЬКО по эффективным подходам (sets).
+//     Тоннаж (volumeKg) намеренно НЕ используется для расчёта интенсивности, т.к.
+//     100 кг в жиме ногами против 12 кг в махах в стороны ничего не говорят о том,
+//     какая мышца работала тяжелее.
+//   - primary мышца получает 100% вклада упражнения (1.0 × sets)
+//   - secondary мышца получает 50% вклада (0.5 × sets) как косвенная нагрузка
+//   - volumeKg = Σ(weight × reps) × коэффициент (показывается только как справка в легенде)
+//   - loadScore = Σ(sets) × коэффициент (используется ТОЛЬКО для шкалы интенсивности карты)
 //
 // loadScore используется только для раскраски интенсивности — он объясним
 // и детерминирован; volumeKg и sets — это «что показываем пользователю».
@@ -26,6 +26,8 @@ export type MuscleLoadSet = {
   rpe: number | null;
   isWarmup?: boolean;
 };
+
+export type MuscleLoadMode = 'total' | 'direct';
 
 export type MuscleLoadInputItem = {
   /** Список первичных мышц упражнения (человеко-читаемые названия) */
@@ -57,8 +59,13 @@ const DEFAULT_RPE_FACTOR = 0.7;
  * Агрегирует нагрузку на мышцы из списка упражнений.
  * Возвращает массив MuscleLoad по slug'ам, отсортированный по volumeKg DESC.
  * Slug'и, по которым нет рабочих подходов, отсутствуют в результате.
+ *
+ * @param mode - 'total' (primary + secondary) или 'direct' (только primary)
  */
-export function calculateMuscleLoad(items: readonly MuscleLoadInputItem[]): MuscleLoad[] {
+export function calculateMuscleLoad(
+  items: readonly MuscleLoadInputItem[],
+  mode: MuscleLoadMode = 'total'
+): MuscleLoad[] {
   const bySlug = new Map<Slug, MuscleLoad>();
 
   const ensure = (slug: Slug, displayName: string): MuscleLoad => {
@@ -76,7 +83,6 @@ export function calculateMuscleLoad(items: readonly MuscleLoadInputItem[]): Musc
 
     let itemSets = 0;
     let itemVolume = 0;
-    let itemLoadScore = 0;
 
     for (const set of item.sets) {
       if (set.isWarmup) continue;
@@ -84,15 +90,13 @@ export function calculateMuscleLoad(items: readonly MuscleLoadInputItem[]): Musc
       const r = set.reps ?? 0;
       if (w <= 0 || r <= 0) continue;
       const vol = w * r;
-      const rpeFactor = set.rpe != null ? set.rpe / 10 : DEFAULT_RPE_FACTOR;
       itemSets += 1;
       itemVolume += vol;
-      itemLoadScore += vol * rpeFactor;
     }
 
     if (itemSets === 0) continue;
 
-    // Primary: полный вклад; sets считается полностью (подход — есть подход)
+    // Primary: полный вклад в intensity (loadScore = sets)
     primary.forEach((m) => {
       const s = getSlugsForMuscle(m);
       // Используем Set, чтобы избежать дублирования, если мышца есть и в front, и в back (напр. trapezius)
@@ -101,20 +105,23 @@ export function calculateMuscleLoad(items: readonly MuscleLoadInputItem[]): Musc
         const entry = ensure(slug, m);
         entry.sets += itemSets;
         entry.volumeKg += itemVolume * PRIMARY_COEFF;
-        entry.loadScore += itemLoadScore * PRIMARY_COEFF;
+        entry.loadScore += itemSets * PRIMARY_COEFF; // Интенсивность = подходы, а не тоннаж
       }
     });
-    // Secondary: вклад в volume/loadScore уменьшен, sets — полностью
-    secondary.forEach((m) => {
-      const s = getSlugsForMuscle(m);
-      const uniqueSlugs = Array.from(new Set([...s.front, ...s.back]));
-      for (const slug of uniqueSlugs) {
-        const entry = ensure(slug, m);
-        entry.sets += itemSets;
-        entry.volumeKg += itemVolume * SECONDARY_COEFF;
-        entry.loadScore += itemLoadScore * SECONDARY_COEFF;
-      }
-    });
+    // Secondary: вклад в intensity и sets уменьшен (косвенная нагрузка)
+    // В режиме 'direct' вторичные мышцы полностью игнорируются
+    if (mode === 'total') {
+      secondary.forEach((m) => {
+        const s = getSlugsForMuscle(m);
+        const uniqueSlugs = Array.from(new Set([...s.front, ...s.back]));
+        for (const slug of uniqueSlugs) {
+          const entry = ensure(slug, m);
+          entry.sets += itemSets * SECONDARY_COEFF;
+          entry.volumeKg += itemVolume * SECONDARY_COEFF;
+          entry.loadScore += itemSets * SECONDARY_COEFF; // Интенсивность = подходы × 0.5
+        }
+      });
+    }
   }
 
   return Array.from(bySlug.values())
@@ -122,15 +129,19 @@ export function calculateMuscleLoad(items: readonly MuscleLoadInputItem[]): Musc
     .sort((a, b) => b.volumeKg - a.volumeKg);
 }
 
-/** Плюрализация «сет/сета/сетов» по русским правилам. */
+/** Плюрализация «сет/сета/сетов» по русским правилам (поддерживает дробные значения). */
 export function pluralizeSets(n: number): string {
-  const abs = Math.abs(n);
+  if (!Number.isInteger(n)) {
+    return `${n.toFixed(1)} сета`;
+  }
+  const rounded = Math.round(n);
+  const abs = Math.abs(rounded);
   const last2 = abs % 100;
   const last = abs % 10;
-  if (last2 >= 11 && last2 <= 14) return `${n} сетов`;
-  if (last === 1) return `${n} сет`;
-  if (last >= 2 && last <= 4) return `${n} сета`;
-  return `${n} сетов`;
+  if (last2 >= 11 && last2 <= 14) return `${rounded} сетов`;
+  if (last === 1) return `${rounded} сет`;
+  if (last >= 2 && last <= 4) return `${rounded} сета`;
+  return `${rounded} сетов`;
 }
 
 /** Формат тоннажа: `Math.round(kg)` + ru-RU разделитель тысяч + «кг». */

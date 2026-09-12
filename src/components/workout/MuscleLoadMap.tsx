@@ -22,6 +22,7 @@ import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { intensityColor } from '../../utils/colorScale';
 import { pluralizeSets, formatVolumeKg } from '../../utils/muscleLoad';
+import { getMuscleNamesForSlug } from '../../constants/muscleMapSlugs';
 import type { MuscleLoad } from '../../utils/muscleLoad';
 import type { Slug } from '../../types/muscleMap';
 
@@ -34,6 +35,8 @@ export type MuscleLoadMapProps = {
   scale?: number;
   /** Заголовок секции. Если пусто — не рендерится. */
   title?: string;
+  /** Явно показывать заголовок (по умолчанию true, если title задан). */
+  showTitle?: boolean;
   /** Подпись под картой (например, «Спереди / Сзади»). По умолчанию подписи видны. */
   showSideLabels?: boolean;
   /** Показывать легенду-список мышц под картой (по умолчанию true). */
@@ -88,6 +91,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
     gender = 'male',
     scale = 0.8,
     title,
+    showTitle = true,
     showSideLabels = true,
     showLegend = true,
     selectedSlug,
@@ -136,7 +140,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
           },
         ]}
       >
-        {!!title && (
+        {!!title && showTitle && (
           <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
             {title}
           </Text>
@@ -247,7 +251,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                       }`}
                     >
                       <View style={[styles.pill, { backgroundColor: fill, borderColor: fill }]} />
-                      <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+                      <View style={{ flex: 1, marginLeft: SPACING.sm, marginRight: SPACING.sm }}>
                         <Text
                           numberOfLines={1}
                           style={[
@@ -257,6 +261,36 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                         >
                           {labelForSlug(entry.slug, entry.displayName)}
                         </Text>
+                        {/* Баблы с названиями конкретных мышц */}
+                        <View style={styles.bubblesRow}>
+                          {getMuscleNamesForSlug(entry.slug)
+                            .slice(0, 4)
+                            .map((name, idx) => (
+                              <View
+                                key={idx}
+                                style={[
+                                  styles.bubble,
+                                  {
+                                    backgroundColor: isSelected
+                                      ? colors.primary
+                                      : colors.surfaceSecondary,
+                                    borderColor: isSelected ? colors.primary : colors.border,
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    typography.captionSmall,
+                                    {
+                                      color: isSelected ? colors.surface : colors.textSecondary,
+                                    },
+                                  ]}
+                                >
+                                  {name}
+                                </Text>
+                              </View>
+                            ))}
+                        </View>
                         {/* Мини-бар пропорции */}
                         <View style={[styles.barTrack, { backgroundColor: colors.borderLight }]}>
                           <View
@@ -344,5 +378,17 @@ const styles = StyleSheet.create({
   barFill: {
     height: 4,
     borderRadius: 2,
+  },
+  bubblesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+    gap: 4,
+  },
+  bubble: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    borderWidth: 1,
   },
 });

@@ -4,16 +4,17 @@
 // Показывает средневзвешенные плановые сеты/неделю по всем фазам программы.
 // Не интерактивная (только визуализация).
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { AppCard } from '../ui/AppCard';
 import { SectionHeader } from '../SectionHeader';
 import { MuscleLoadMap } from '../workout/MuscleLoadMap';
+import { MuscleLoadModeToggle } from '../ui/MuscleLoadModeToggle';
 import { calculateProgramMuscleLoad, type ProgramMuscleEntry } from '../../utils/programMuscleLoad';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
-import type { MuscleLoad } from '../../utils/muscleLoad';
+import type { MuscleLoad, MuscleLoadMode } from '../../utils/muscleLoad';
 import { pluralizeSets } from '../../utils/muscleLoad';
 
 type PhaseLike = {
@@ -35,9 +36,10 @@ export type ProgramMuscleMapProps = {
 
 export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
   const { colors } = useTheme();
+  const [mode, setMode] = useState<MuscleLoadMode>('total');
 
   const muscleLoad: MuscleLoad[] = useMemo(() => {
-    const entries = calculateProgramMuscleLoad(phases);
+    const entries = calculateProgramMuscleLoad(phases, mode);
     return entries.map((entry) => ({
       slug: entry.slug,
       displayName: entry.name,
@@ -45,7 +47,7 @@ export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
       volumeKg: entry.setsPerWeek, // Используем volumeKg как proxy для setsPerWeek в MuscleLoadMap
       loadScore: entry.setsPerWeek, // То же для intensity
     }));
-  }, [phases]);
+  }, [phases, mode]);
 
   if (muscleLoad.length === 0) {
     return null; // Не рендерим, если нет данных (программа без упражнений)
@@ -53,22 +55,26 @@ export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
 
   return (
     <AppCard variant="compact" style={{ marginTop: SPACING.md }}>
-      <SectionHeader title="Мышцы программы" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: SPACING.sm,
+        }}
+      >
+        <SectionHeader
+          title="Мышцы программы"
+          style={{ paddingHorizontal: 0, paddingTop: 0, marginBottom: 0 }}
+        />
+        <MuscleLoadModeToggle mode={mode} onChange={setMode} />
+      </View>
       <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>
-        Плановые сеты за неделю, усреднено по фазам
+        {mode === 'total'
+          ? 'Плановые сеты за неделю (вкл. косвенную нагрузку), усреднено по фазам'
+          : 'Плановые сеты за неделю (только прямая нагрузка), усреднено по фазам'}
       </Text>
-      <MuscleLoadMap
-        muscleLoad={muscleLoad}
-        gender="male"
-        scale={0.6}
-        showLegend={true}
-        // Переопределяем формат значения для легенды
-        // (в MuscleLoadMap используется formatVolumeKg, но мы передаём volumeKg = setsPerWeek,
-        //  поэтому отображение будет "X.X кг", что не идеально, но для L1-превью допустимо.
-        //  Для идеального отображения можно было бы расширить MuscleLoadMap, но пока оставим так,
-        //  или лучше сделать кастомный рендер легенды? Сделаем кастомный рендер легенды ниже,
-        //  а MuscleLoadMap используем только для карты).
-      />
+      <MuscleLoadMap muscleLoad={muscleLoad} gender="male" scale={0.6} showLegend={false} />
       {/* Кастомная легенда для sets/week */}
       <View
         style={{
