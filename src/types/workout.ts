@@ -1,5 +1,8 @@
 export type Difficulty = 'easy' | 'moderate' | 'hard' | 'max';
 
+// P1.1: Политики прогрессии
+export type ProgressionPolicy = 'linear' | 'double_progression' | 'greyskull' | 'time_based';
+
 export type SetFeedbackPatch = Partial<
   Pick<SetData, 'rpe' | 'rir' | 'difficulty' | 'isWarmup' | 'estimatedReps'>
 >;
@@ -7,6 +10,8 @@ export type SetFeedbackPatch = Partial<
 export interface SetData {
   weight: string;
   reps: string;
+  reps_left?: string; // P0.2: для unilateral-упражнений
+  reps_right?: string; // P0.2: для unilateral-упражнений
   rpe?: number | null;
   rir?: number | null;
   difficulty?: Difficulty | null;
@@ -56,6 +61,8 @@ export interface ExerciseData {
   target_rpe?: number | null;
   // PR6: pain state из pain_events (null = не отмечено в этой тренировке)
   painState?: ExercisePainState | null;
+  /** P1.1: Политика прогрессии (linear, double_progression, greyskull, time_based) */
+  progression_policy?: ProgressionPolicy;
 }
 
 export interface AlternativeExercise {

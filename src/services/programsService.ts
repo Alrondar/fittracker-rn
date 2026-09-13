@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { ProgressionPolicy } from '../types/workout';
 
 // ============================================================================
 // ТИПЫ
@@ -58,6 +59,8 @@ export interface ProgramExercise {
   primary_muscles?: string[];
   /** Фича 2: Целевой RPE для упражнения (1-10). */
   target_rpe?: number | null;
+  /** P1.1: Политика прогрессии. */
+  progression_policy?: ProgressionPolicy;
   isNew?: boolean;
 }
 
@@ -155,6 +158,8 @@ interface ProgramExerciseRow {
   position: number;
   /** Фича 2: Целевой RPE для упражнения (1-10). */
   target_rpe: number | null;
+  /** P1.1: Политика прогрессии. */
+  progression_policy: string | null;
   exercises: { primary_muscles: string[] } | null;
 }
 
@@ -188,6 +193,7 @@ function mapExercise(ex: ProgramExerciseRow): ProgramExercise {
     position: ex.position,
     primary_muscles: ex.exercises?.primary_muscles || [],
     target_rpe: ex.target_rpe,
+    progression_policy: (ex.progression_policy as ProgressionPolicy) || 'linear',
   };
 }
 

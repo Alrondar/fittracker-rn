@@ -16,6 +16,8 @@ interface LogRow {
   set_number: number;
   weight_kg: number | null;
   reps: number | null;
+  reps_left: number | null;
+  reps_right: number | null;
   rpe: number | null;
   rir: number | null;
   difficulty: string | null;
@@ -57,6 +59,8 @@ export function buildExercisesData(
             ...sets[index],
             weight: log.weight_kg != null ? String(log.weight_kg) : '',
             reps: log.reps != null ? String(log.reps) : '',
+            reps_left: log.reps_left != null ? String(log.reps_left) : '',
+            reps_right: log.reps_right != null ? String(log.reps_right) : '',
             rpe: log.rpe ?? null,
             rir: log.rir ?? null,
             difficulty: (log.difficulty as SetData['difficulty']) ?? null,

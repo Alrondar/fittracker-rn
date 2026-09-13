@@ -68,24 +68,34 @@ interface WorkoutWeekRow {
   started_at: string | null;
   finished_at: string | null;
   duration_seconds: number | null;
-  workout_exercises: {
-    id: string;
-    exercise_id: string;
-    exercises: { name: string } | { name: string }[] | null;
-    workout_logs: {
-      set_number: number;
-      weight_kg: number | string | null;
-      reps: number | null;
-      rpe: number | null;
-      completed_at: string | null;
-      /** ENG-13: флаг разминочного сета (исключается из аналитики) */
-      is_warmup?: boolean;
-    }[];
-  }[] | null;
+  workout_exercises:
+    | {
+        id: string;
+        exercise_id: string;
+        reps_range?: string | null;
+        exercises:
+          | { name: string; primary_muscles?: string[]; secondary_muscles?: string[] }
+          | { name: string; primary_muscles?: string[]; secondary_muscles?: string[] }[]
+          | null;
+        workout_logs: {
+          set_number: number;
+          weight_kg: number | string | null;
+          reps: number | null;
+          rpe: number | null;
+          completed_at: string | null;
+          /** ENG-13: флаг разминочного сета (исключается из аналитики) */
+          is_warmup?: boolean;
+        }[];
+      }[]
+    | null;
 }
 
 /** Effective date тренировки: когда она фактически завершилась/началась. */
-function workoutEffectiveDate(w: { finished_at: string | null; started_at: string | null; created_at: string }): string {
+function workoutEffectiveDate(w: {
+  finished_at: string | null;
+  started_at: string | null;
+  created_at: string;
+}): string {
   return w.finished_at ?? w.started_at ?? w.created_at;
 }
 
@@ -117,7 +127,7 @@ function toNumber(v: number | string | null | undefined): number {
  */
 async function calculateChronicVolume(
   userId: string,
-  endDateISO: string, // exclusive upper bound (nextStartISO текущей недели)
+  endDateISO: string // exclusive upper bound (nextStartISO текущей недели)
 ): Promise<number> {
   const fourWeeksAgo = new Date(endDateISO);
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
@@ -125,11 +135,13 @@ async function calculateChronicVolume(
 
   const { data, error } = await supabase
     .from('workouts')
-    .select(`
+    .select(
+      `
       workout_exercises(
         workout_logs(weight_kg, reps, is_warmup)
       )
-    `)
+    `
+    )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', 'null')
@@ -139,7 +151,15 @@ async function calculateChronicVolume(
   if (error || !data) return 0;
 
   let totalVolume = 0;
-  for (const w of data as unknown as { workout_exercises: { workout_logs: { weight_kg: number | string | null; reps: number | null; is_warmup?: boolean }[] }[] }[]) {
+  for (const w of data as unknown as {
+    workout_exercises: {
+      workout_logs: {
+        weight_kg: number | string | null;
+        reps: number | null;
+        is_warmup?: boolean;
+      }[];
+    }[];
+  }[]) {
     for (const we of w.workout_exercises ?? []) {
       for (const log of we.workout_logs ?? []) {
         // ENG-13: разминочные сеты исключаются из метрик нагрузки
@@ -158,15 +178,13 @@ async function calculateChronicVolume(
 /**
  * Агрегирует данные одной недели: workouts + logs + pain + readiness + pre-week PRs.
  */
-async function aggregateWeek(
-  userId: string,
-  range: WeekRange,
-): Promise<WeeklySummaryData> {
+async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySummaryData> {
   // 3 параллельных запроса на неделю
   const [workoutsRes, painRes, readinessRes] = await Promise.all([
     supabase
       .from('workouts')
-      .select(`
+      .select(
+        `
         id,
         created_at,
         started_at,
@@ -175,10 +193,12 @@ async function aggregateWeek(
         workout_exercises(
           id,
           exercise_id,
+          reps_range,
           exercises(name, primary_muscles, secondary_muscles),
           workout_logs(set_number, weight_kg, reps, rpe, completed_at, is_warmup)
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .is('skipped_at', 'null')
@@ -220,17 +240,60 @@ async function aggregateWeek(
     { name: string; maxWeight: number; e1rm: number; date: string }
   >();
   const exercisedIds = new Set<string>();
+  const lastCompletedSetsMap = new Map<
+    string,
+    {
+      exerciseId: string;
+      exerciseName: string;
+      lastWeight: number;
+      lastReps: number;
+      repsRange: [number, number];
+      date: string;
+    }
+  >();
 
   for (const w of workoutsRows) {
     const wDate = new Date(workoutEffectiveDate(w));
     workoutDaysSet.add(toDateKey(wDate));
     for (const we of w.workout_exercises ?? []) {
       exercisedIds.add(we.exercise_id);
-      const ex = asOne(we.exercises) as { name: string; primary_muscles?: string[]; secondary_muscles?: string[] } | null;
+      const ex = asOne(we.exercises) as {
+        name: string;
+        primary_muscles?: string[];
+        secondary_muscles?: string[];
+      } | null;
       const name = ex?.name ?? 'Упражнение';
       const primary = ex?.primary_muscles ?? [];
       const secondary = ex?.secondary_muscles ?? [];
-      
+
+      const validLogs = (we.workout_logs ?? []).filter((log) => !log.is_warmup);
+      if (validLogs.length > 0) {
+        const lastLog = validLogs.sort((a, b) => (b.set_number || 0) - (a.set_number || 0))[0];
+        const weight = toNumber(lastLog.weight_kg);
+        const reps = lastLog.reps ?? 0;
+
+        let repsRange: [number, number] = [8, 12];
+        if (we.reps_range) {
+          const parts = we.reps_range.split('-').map(Number);
+          if (parts.length === 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
+            repsRange = [parts[0], parts[1]];
+          }
+        }
+
+        const lastLogDate = lastLog.completed_at ?? workoutEffectiveDate(w);
+        const currentBest = lastCompletedSetsMap.get(we.exercise_id);
+        if (!currentBest || lastLogDate > currentBest.date) {
+          lastCompletedSetsMap.set(we.exercise_id, {
+            exerciseId: we.exercise_id,
+            exerciseName: name,
+            lastWeight: weight,
+            lastReps: reps,
+            repsRange: repsRange,
+            date: lastLogDate,
+          });
+        }
+      }
+
       for (const log of we.workout_logs ?? []) {
         // ENG-13: разминочные сеты исключаются из всех метрик недели
         if (log.is_warmup) continue;
@@ -238,7 +301,7 @@ async function aggregateWeek(
         const weight = toNumber(log.weight_kg);
         const reps = log.reps ?? 0;
         totalVolume += weight * reps;
-        
+
         // CI-4: Muscle volume aggregation (primary = 1.0, secondary = 0.5)
         for (const m of primary) {
           muscleVolume[m] = (muscleVolume[m] || 0) + 1.0;
@@ -275,12 +338,9 @@ async function aggregateWeek(
   }
 
   // ---- Агрегация readiness ----
-  const readinessVals = readinessRows
-    .map((r) => r.readiness)
-    .filter((v): v is number => v != null);
+  const readinessVals = readinessRows.map((r) => r.readiness).filter((v): v is number => v != null);
   const daysLogged = readinessVals.length;
-  const rAvg =
-    daysLogged > 0 ? readinessVals.reduce((a, b) => a + b, 0) / daysLogged : null;
+  const rAvg = daysLogged > 0 ? readinessVals.reduce((a, b) => a + b, 0) / daysLogged : null;
   const rMin = daysLogged > 0 ? Math.min(...readinessVals) : null;
   const rMax = daysLogged > 0 ? Math.max(...readinessVals) : null;
 
@@ -357,6 +417,7 @@ async function aggregateWeek(
     },
     muscleVolume,
     prs,
+    lastCompletedSets: Array.from(lastCompletedSetsMap.values()).map(({ date, ...rest }) => rest),
   };
 }
 
@@ -366,12 +427,12 @@ async function aggregateWeek(
  */
 export async function getWeeklySummary(
   userId: string,
-  weekOffset: number = 0,
+  weekOffset: number = 0
 ): Promise<WeeklySummaryResult> {
   const now = new Date();
   const currentRange = computeWeekRange(weekOffset, now);
   const previousRange = computeWeekRange(weekOffset - 1, now);
-  
+
   // CI-2 / CI-5: параллельно загружаем цель, хронический объём (4 недели для ACWR) и данные недель
   const [current, previous, profileRes, chronicVol] = await Promise.all([
     aggregateWeek(userId, currentRange),
@@ -379,9 +440,9 @@ export async function getWeeklySummary(
     supabase.from('profiles').select('goal').eq('id', userId).single(),
     calculateChronicVolume(userId, currentRange.nextStartISO),
   ]);
-  
+
   const primaryGoal = profileRes.data?.goal ?? null;
-  
+
   // Активируем ACWR в engine, передавая chronicVolume
   const currentWithChronic: WeeklySummaryData = {
     ...current,
@@ -392,6 +453,6 @@ export async function getWeeklySummary(
   const trainingLoad = calculateTrainingLoadContext(currentWithChronic, previous);
   // CI-6: расчёт рекомендации разгрузки после инсайтов и контекста нагрузки.
   const deload = calculateDeloadContext(currentWithChronic, previous, trainingLoad, insights);
-  
+
   return { current: currentWithChronic, previous, insights, trainingLoad, deload };
 }

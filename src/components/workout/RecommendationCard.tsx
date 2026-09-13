@@ -19,6 +19,7 @@ import type {
   ReadinessOverride,
   ExplanationItem,
 } from '../../engine/progression';
+import { ProgressionPolicy } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 
 interface RecommendationCardProps {
@@ -46,6 +47,8 @@ interface RecommendationCardProps {
   acceptDisabled: boolean;
   /** «Изменить» активен (чипы раскрыты) — подсвечиваем кнопку. */
   chipsOpen: boolean;
+  /** P1.1: Политика прогрессии. */
+  policy?: ProgressionPolicy;
 }
 
 /** Формат primary value: 87.5 кг × 8 — или только вес, если reps нет. */
@@ -53,7 +56,7 @@ function formatPrimaryValue(
   suggestedWeight: number | null | undefined,
   suggestedReps: number | null | undefined,
   toDisplay: (kg: string) => string,
-  unit: WeightUnit,
+  unit: WeightUnit
 ): string {
   if (suggestedWeight == null) return '—';
   const weightText = `${toDisplay(String(suggestedWeight))} ${unit}`;
@@ -75,6 +78,7 @@ export const RecommendationCard = memo(function RecommendationCard({
   onDismiss,
   acceptDisabled,
   chipsOpen,
+  policy,
 }: RecommendationCardProps) {
   // Иконка действия
   const Icon =
@@ -90,12 +94,20 @@ export const RecommendationCard = memo(function RecommendationCard({
     recommendation.readinessOverride?.ruText ??
     recommendation.reason.ruText;
 
+  // P1.1: Label политики
+  const policyLabels: Record<ProgressionPolicy, string> = {
+    linear: 'Линейная',
+    double_progression: 'Двойная',
+    greyskull: 'Greyskull',
+    time_based: 'Время',
+  };
+
   // Primary value
   const primaryValue = formatPrimaryValue(
     recommendation.suggestedWeight,
     recommendation.suggestedReps,
     toDisplay,
-    unit,
+    unit
   );
 
   // Для suppressed (action=no_data) — не рендерим карточку (caller'ы уже фильтруют).
@@ -127,19 +139,13 @@ export const RecommendationCard = memo(function RecommendationCard({
       >
         <Icon size={14} color={accentColor} strokeWidth={2.2} />
         <Text
-          style={[
-            typography.captionSmall,
-            { color: accentColor, fontWeight: '700', flex: 1 },
-          ]}
+          style={[typography.captionSmall, { color: accentColor, fontWeight: '700', flex: 1 }]}
           numberOfLines={2}
         >
           {oneLinerText}
         </Text>
         <Text
-          style={[
-            typography.captionSmall,
-            { color: accentColor, fontWeight: '600', opacity: 0.8 },
-          ]}
+          style={[typography.captionSmall, { color: accentColor, fontWeight: '600', opacity: 0.8 }]}
         >
           Почему?
         </Text>
@@ -152,6 +158,25 @@ export const RecommendationCard = memo(function RecommendationCard({
           }}
         />
       </TouchableOpacity>
+
+      {/* P1.1: Бейдж политики */}
+      {policy && policy !== 'linear' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            marginBottom: SPACING.sm,
+          }}
+        >
+          <Target size={12} color={colors.textTertiary} strokeWidth={2} />
+          <Text
+            style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '500' }]}
+          >
+            {policyLabels[policy]}
+          </Text>
+        </View>
+      )}
 
       {/* === PRIMARY: weight × reps (large, accent color) === */}
       <Text
@@ -299,10 +324,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           >
             <EyeOff size={12} color={colors.textTertiary} strokeWidth={2} />
             <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textTertiary, fontWeight: '500' },
-              ]}
+              style={[typography.captionSmall, { color: colors.textTertiary, fontWeight: '500' }]}
             >
               Скрыть
             </Text>

@@ -44,6 +44,7 @@
   ],
   "exclude": [
     "node_modules",
-    "libs/react-native-body-highlighter/__tests__"
+    "libs/react-native-body-highlighter/__tests__",
+    "admin"
   ]
 }

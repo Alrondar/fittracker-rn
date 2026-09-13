@@ -70,6 +70,15 @@ export interface WeeklySummaryData {
     /** ISO datetime PR-сета. */
     date: string;
   }[];
+
+  /** P1.2: Последние завершённые сеты по упражнениям для расчёта плана deload. */
+  lastCompletedSets: {
+    exerciseId: string;
+    exerciseName: string;
+    lastWeight: number;
+    lastReps: number;
+    repsRange: [number, number];
+  }[];
 }
 
 export interface WeeklyInsight {
@@ -106,6 +115,15 @@ export interface TrainingLoadContext {
 export type DeloadSignalKey =
   'highLoad' | 'plateau' | 'readinessDecline' | 'rpeRisingNoImprovement';
 
+export interface DeloadPlanItem {
+  exerciseId: string;
+  exerciseName: string;
+  currentWeight: number;
+  currentReps: number;
+  newWeight: number;
+  newReps: number;
+}
+
 export interface DeloadContext {
   recommended: boolean;
   signals: Record<DeloadSignalKey, boolean>;
@@ -113,6 +131,8 @@ export interface DeloadContext {
   reasons: string[];
   /** Фича 5: доступные типы разгрузки (volume = объём, technique = техника). */
   availableTypes: ('volume' | 'technique')[];
+  /** P1.2: Конкретный план с весами, кратными 2.5 кг (только compound-упражнения). */
+  plan?: DeloadPlanItem[];
 }
 
 export interface WeeklySummaryResult {
@@ -657,5 +677,53 @@ export function calculateDeloadContext(
   // Фича 5: если разгрузка рекомендована, предлагаем оба варианта (объём и техника)
   const availableTypes: ('volume' | 'technique')[] = recommended ? ['volume', 'technique'] : [];
 
-  return { recommended, signals, reasons, availableTypes };
+  // P1.2: Расчёт конкретного плана deload (только compound-упражнения, −30% объёма, snap-to-grid)
+  let plan: DeloadPlanItem[] | undefined;
+  if (recommended && current.lastCompletedSets.length > 0) {
+    plan = [];
+    const compoundMuscles = ['chest', 'back', 'legs', 'shoulders'];
+
+    for (const ex of current.lastCompletedSets) {
+      // Фильтр только по compound-упражнениям (упрощённо: если в названии есть ключевые слова или это основные группы)
+      // Для точности проверяем, что это не изоляция (упрощённая эвристика по названию)
+      const nameLower = ex.exerciseName.toLowerCase();
+      const isCompound =
+        nameLower.includes('жим') ||
+        nameLower.includes('press') ||
+        nameLower.includes('присед') ||
+        nameLower.includes('squat') ||
+        nameLower.includes('тяга') ||
+        nameLower.includes('row') ||
+        nameLower.includes('deadlift') ||
+        nameLower.includes('подтягивания') ||
+        nameLower.includes('pullup') ||
+        nameLower.includes('pull-down');
+
+      if (!isCompound) continue;
+
+      // Расчёт текущего 1RM по Epley
+      const current1RM = ex.lastWeight * (1 + ex.lastReps / 30);
+      // Целевой 1RM = −30%
+      const target1RM = current1RM * 0.7;
+      // Целевые повторения = середина диапазона или дефолт 6
+      const targetReps = Math.round((ex.repsRange[0] + ex.repsRange[1]) / 2) || 6;
+
+      // Обратный расчёт веса с snap-to-grid (2.5 кг)
+      const newWeight = Math.max(ex.lastWeight * 0.7, 2.5); // Минимум 2.5 кг
+      // Более точный расчёт через weightForTarget1RM, но для простоты и надёжности используем прямой % от веса,
+      // округлённый до 2.5 кг, так как deload обычно именно процентный.
+      const roundedNewWeight = Math.round((ex.lastWeight * 0.7) / 2.5) * 2.5;
+
+      plan.push({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        currentWeight: ex.lastWeight,
+        currentReps: ex.lastReps,
+        newWeight: Math.max(roundedNewWeight, 2.5),
+        newReps: targetReps,
+      });
+    }
+  }
+
+  return { recommended, signals, reasons, availableTypes, plan };
 }

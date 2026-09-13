@@ -51,6 +51,8 @@
 | FEAT-1.4 | Progress | ✅ | e1RM / PR |
 | FEAT-1.STD | Progress | ✅ | **Strength Standards** (Фича 1): бейдж силового уровня (Novice/Beginner/Intermediate/Advanced/Elite) в Progress Hub (StrengthTrendChart) и PR-карточках (PersonalRecordsCard). Тап → SheetShell с таблицей нормативов (e1RM/вес). Нормативы для 13 compound-движений, male/female; для упражнений без нормативов — бейдж не рендерится (честный fallback) |
 | FEAT-1.5 | Tracker | ✅ | plate calculation logic + UI (PlateMathRow, настройки веса грифа в profile/settings) |
+| P0.2 | Tracker | ✅ | Reps per side (unilateral exercises: reps_left/reps_right + UI + engine fallback) |
+| P1.1 | Training Engine | ✅ | Progression policies (linear, double_progression, greyskull, time-based) + UI picker + explanation
 | FEAT-1.6 | History | 🟡 | CSV builder есть, service/UI отложены |
 | FEAT-1.7 | Tracker | ✅ | RPE 1–10, tappable scale — канон |
 | FEAT-1.8 | Context | ✅ | optional daily readiness (P0: expanded with sleep/stress details, auto-calculation, and L3 trends) |

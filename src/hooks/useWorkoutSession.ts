@@ -94,20 +94,28 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     const now = new Date();
 
     const promises = entries.map(async ([workoutExerciseId, exerciseLogs]) => {
+      // Сначала маппим с сохранением оригинального индекса (set_number), затем фильтруем пустые
       const formattedLogs = exerciseLogs
-        .filter((set) => set.weight !== '' || set.reps !== '')
         .map((set, index) => ({
           set_number: index + 1,
           weight_kg: set.weight ? parseFloat(set.weight) : null,
           reps: set.reps ? parseInt(set.reps) : null,
+          reps_left: set.reps_left ? parseInt(set.reps_left) : null,
+          reps_right: set.reps_right ? parseInt(set.reps_right) : null,
           completed_at: now.toISOString(),
           rpe: set.rpe ?? null,
           rir: set.rir ?? null,
           difficulty: set.difficulty ?? null,
-          // ENG-13: warmup + estimated reps
           is_warmup: set.isWarmup ?? false,
           is_estimated_reps: set.reps === '' && set.estimatedReps != null,
-        }));
+        }))
+        .filter(
+          (log) =>
+            log.weight_kg !== null ||
+            log.reps !== null ||
+            log.reps_left !== null ||
+            log.reps_right !== null
+        );
 
       if (formattedLogs.length === 0) return;
 
@@ -267,7 +275,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   }, [flushPendingLogs]);
 
   const updateSet = useCallback(
-    (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => {
+    (
+      exerciseIndex: number,
+      setIndex: number,
+      field: 'weight' | 'reps' | 'reps_left' | 'reps_right',
+      value: string
+    ) => {
       setExercises((prev) => {
         const updated = [...prev];
         const exercise = { ...updated[exerciseIndex] };
@@ -327,7 +340,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   );
 
   const isSetCompleted = useCallback((set: SetData): boolean => {
-    return set.weight !== '' || set.reps !== '';
+    return set.weight !== '' || set.reps !== '' || set.reps_left !== '' || set.reps_right !== '';
   }, []);
 
   const updateExerciseSettings = useCallback(
@@ -341,6 +354,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           sets.push({
             weight: '',
             reps: '',
+            reps_left: '',
+            reps_right: '',
             previousWeight: lastSetWithHistory?.previousWeight ?? null,
             previousReps: lastSetWithHistory?.previousReps ?? null,
             previousRpe: lastSetWithHistory?.previousRpe ?? null,
@@ -365,6 +380,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const newSet: SetData = {
         weight: '',
         reps: '',
+        reps_left: '',
+        reps_right: '',
         previousWeight: lastSetWithHistory?.previousWeight ?? null,
         previousReps: lastSetWithHistory?.previousReps ?? null,
         previousRpe: lastSetWithHistory?.previousRpe ?? null,

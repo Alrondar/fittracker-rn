@@ -19,12 +19,7 @@ import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
 import { WorkoutCardDisplayMode } from '../../types/workout';
 import { AlternativeExerciseCard } from './AlternativeExerciseCard';
-import {
-  ExerciseData,
-  AlternativeExercise,
-  SetData,
-  SetFeedbackPatch,
-} from '../../types/workout';
+import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import { AlternativeSourceInput } from '../../engine/alternatives';
 import type { FetchAlternativesResult } from '../../hooks/workout/useWorkoutSession.loader';
@@ -51,19 +46,15 @@ interface ExerciseSliderProps {
   displayMode: WorkoutCardDisplayMode;
   loadAlternatives: (
     id: string,
-    source: AlternativeSourceInput,
+    source: AlternativeSourceInput
   ) => Promise<FetchAlternativesResult>;
   updateSet: (
     exIndex: number,
     setIndex: number,
-    field: 'weight' | 'reps',
-    value: string,
+    field: 'weight' | 'reps' | 'reps_left' | 'reps_right',
+    value: string
   ) => void;
-  updateSetFeedback: (
-    exIndex: number,
-    setIndex: number,
-    patch: SetFeedbackPatch,
-  ) => void;
+  updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   // UX-5 Feature 1: запрос замены (caller выбирает temp vs program)
@@ -201,25 +192,16 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 
   const snapOffsets = useMemo(
     () => Array.from({ length: childCount }, (_, i) => i * (cardWidth + H_GAP)),
-    [childCount, cardWidth],
+    [childCount, cardWidth]
   );
 
   return (
     <View style={{ marginTop: SPACING.lg }}>
       {isReplaced && (
-        <View
-          style={[
-            cardStyles.replacedBadgeContainer,
-            { backgroundColor: colors.primaryLight },
-          ]}
-        >
-          <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>
-            Заменено
-          </Text>
+        <View style={[cardStyles.replacedBadgeContainer, { backgroundColor: colors.primaryLight }]}>
+          <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>Заменено</Text>
           <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
-            <Text style={[cardStyles.replacedResetText, { color: colors.primary }]}>
-              Вернуть
-            </Text>
+            <Text style={[cardStyles.replacedResetText, { color: colors.primary }]}>Вернуть</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -234,29 +216,29 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
         <View style={{ width: cardWidth }}>
-<ExerciseCard
-  exercise={exercise}
-  isMain
-  isReplaced={isReplaced}
-  exerciseIndex={exerciseIndex}
-  alternatives={alternatives}
-  displayMode={displayMode}
-  updateSet={updateSet}
-  updateSetFeedback={updateSetFeedback}
-  applyProgression={applyProgression}
-  isSetCompleted={isSetCompleted}
-  startRestTimer={startRestTimer}
-  getIntensityInfo={getIntensityInfo}
-  onOpenSettings={onOpenSettings}
-  onOpenPain={onOpenPain}
-  colors={colors}
-  cardStyles={cardStyles}
-  unit={unit}
-  warning={warning}
-  readinessContext={readinessContext}
-  workoutId={workoutId}
-  addSet={addSet}
-/>
+          <ExerciseCard
+            exercise={exercise}
+            isMain
+            isReplaced={isReplaced}
+            exerciseIndex={exerciseIndex}
+            alternatives={alternatives}
+            displayMode={displayMode}
+            updateSet={updateSet}
+            updateSetFeedback={updateSetFeedback}
+            applyProgression={applyProgression}
+            isSetCompleted={isSetCompleted}
+            startRestTimer={startRestTimer}
+            getIntensityInfo={getIntensityInfo}
+            onOpenSettings={onOpenSettings}
+            onOpenPain={onOpenPain}
+            colors={colors}
+            cardStyles={cardStyles}
+            unit={unit}
+            warning={warning}
+            readinessContext={readinessContext}
+            workoutId={workoutId}
+            addSet={addSet}
+          />
         </View>
 
         {showPlaceholder && (
@@ -271,9 +253,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             }}
           >
             <ActivityIndicator color={colors.primary} />
-            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-              Загружаем замены…
-            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Загружаем замены…</Text>
           </View>
         )}
 

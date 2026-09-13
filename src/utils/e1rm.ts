@@ -11,7 +11,7 @@
 export function calculateE1rm(weight: number, reps: number): number {
   if (!isFinite(weight) || !isFinite(reps) || weight <= 0 || reps <= 0) return 0;
   if (reps <= 1) return weight;
-  
+
   if (reps <= 10) {
     // Epley: w × (1 + reps/30)
     return weight * (1 + reps / 30);
@@ -20,7 +20,7 @@ export function calculateE1rm(weight: number, reps: number): number {
     return weight * (36 / (37 - reps));
   } else {
     // Wathan для high-rep (>12), где другие формулы теряют валидность
-    return 100 * weight / (48.8 + (53.8 * Math.exp(-0.075 * reps)));
+    return (100 * weight) / (48.8 + 53.8 * Math.exp(-0.075 * reps));
   }
 }
 
@@ -28,9 +28,7 @@ export function calculateE1rm(weight: number, reps: number): number {
 export const epley = calculateE1rm;
 
 /** Лучший e1RM по набору сетов (0, если валидных сетов нет). */
-export function bestE1rm(
-  sets: readonly { weight: number | null; reps: number | null }[],
-): number {
+export function bestE1rm(sets: readonly { weight: number | null; reps: number | null }[]): number {
   let max = 0;
   for (const s of sets) {
     const v = epley(s.weight ?? 0, s.reps ?? 0);
@@ -42,4 +40,19 @@ export function bestE1rm(
 /** Округление для отображения (шаг 0.5 кг). */
 export function roundE1rm(value: number): number {
   return Math.round(value * 2) / 2;
+}
+
+/**
+ * P1.2: Обратный расчёт веса для целевого 1RM с учётом шага нагрузки (snap-to-grid).
+ * Использует формулу Epley: 1RM = weight × (1 + reps/30)
+ * Обратная: weight = 1RM / (1 + reps/30)
+ * @param target1RM Целевой 1RM после deload
+ * @param reps Целевое количество повторений
+ * @param stepKg Шаг нагрузки (например, 2.5)
+ * @returns Вес, кратный stepKg, который даёт target1RM при reps повторениях
+ */
+export function weightForTarget1RM(target1RM: number, reps: number, stepKg: number): number {
+  if (reps <= 0 || stepKg <= 0) return 0;
+  const rawWeight = target1RM / (1 + reps / 30);
+  return Math.round(rawWeight / stepKg) * stepKg;
 }

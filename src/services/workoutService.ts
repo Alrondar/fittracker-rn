@@ -283,6 +283,8 @@ export interface WorkoutSessionData {
       set_number: number;
       weight_kg: number | null;
       reps: number | null;
+      reps_left: number | null;
+      reps_right: number | null;
       rpe: number | null;
       rir: number | null;
       difficulty: string | null;
@@ -341,7 +343,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
       ? supabase
           .from('workout_logs')
           .select(
-            'workout_exercise_id, set_number, weight_kg, reps, rpe, rir, difficulty, is_warmup, is_estimated_reps'
+            'workout_exercise_id, set_number, weight_kg, reps, reps_left, reps_right, rpe, rir, difficulty, is_warmup, is_estimated_reps'
           )
           .in('workout_exercise_id', workoutExerciseIds)
       : Promise.resolve({ data: null, error: null }),
@@ -528,6 +530,8 @@ export async function upsertWorkoutLogs(
     set_number: number;
     weight_kg: number | null;
     reps: number | null;
+    reps_left: number | null;
+    reps_right: number | null;
     completed_at: string;
     rpe: number | null;
     rir: number | null;

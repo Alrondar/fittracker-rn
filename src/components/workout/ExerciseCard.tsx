@@ -24,6 +24,7 @@ import {
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import type { ReadinessContext } from '../../engine/progression';
+import { isUnilateralExercise } from '../../utils/exerciseHelpers';
 
 type RepsRangeHolder = { reps_range?: string };
 
@@ -34,7 +35,12 @@ interface ExerciseCardProps {
   exerciseIndex: number;
   alternatives: AlternativeExercise[];
   displayMode: WorkoutCardDisplayMode;
-  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
+  updateSet: (
+    exIndex: number,
+    setIndex: number,
+    field: 'weight' | 'reps' | 'reps_left' | 'reps_right',
+    value: string
+  ) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
   addSet: (exerciseIndex: number) => void;
@@ -97,6 +103,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
   const equipment = exercise.equipment ?? [];
+  const isUnilateral = isUnilateralExercise(exercise);
 
   // ENG-4: safety context для SetsGrid (pain/injury → recommendation precedence).
   // Стабильная ссылка через useMemo; пересчёт только при смене exercise.painState
@@ -197,6 +204,8 @@ export const ExerciseCard = memo(function ExerciseCard({
           readinessContext={readinessContext}
           unit={unit}
           equipment={equipment}
+          isUnilateral={isUnilateral}
+          policy={(exercise as ExerciseData).progression_policy}
           updateSet={updateSet}
           updateSetFeedback={updateSetFeedback}
           addSet={addSet}

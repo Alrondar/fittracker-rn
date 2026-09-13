@@ -14,7 +14,12 @@ import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
-import { SetData, SetFeedbackPatch, UserRejectionReason } from '../../types/workout';
+import {
+  SetData,
+  SetFeedbackPatch,
+  UserRejectionReason,
+  ProgressionPolicy,
+} from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings } from '../../hooks/useRpeSettings';
 import { useRecommendationFeedback } from '../../hooks/useRecommendationFeedback';
@@ -147,7 +152,12 @@ interface SetRowProps {
   startIndex: number;
   rowIndex: number;
   exerciseIndex: number;
-  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
+  updateSet: (
+    exIndex: number,
+    setIndex: number,
+    field: 'weight' | 'reps' | 'reps_left' | 'reps_right',
+    value: string
+  ) => void;
   isSetCompleted: (set: SetData) => boolean;
   unit: WeightUnit;
   toDisplay: (kg: string) => string;
@@ -159,6 +169,8 @@ interface SetRowProps {
   onToggleWarmup: (setIndex: number) => void;
   // UX-7: predicate для показа чипа RPE (already-filled всегда показываются)
   shouldShowRpeChip: (set: SetData, setIndex: number) => boolean;
+  // P0.2: односторонние упражнения
+  isUnilateral: boolean;
 }
 
 const SetRow = memo(function SetRow({
@@ -176,6 +188,7 @@ const SetRow = memo(function SetRow({
   onOpenFeedback,
   onToggleWarmup,
   shouldShowRpeChip,
+  isUnilateral,
 }: SetRowProps) {
   return (
     <View key={rowIndex} style={cardStyles.setRow}>
@@ -206,18 +219,44 @@ const SetRow = memo(function SetRow({
         ))}
       </View>
       <View style={cardStyles.setInputsRow}>
-        {rowSets.map((set, si) => (
-          <SetInput
-            key={`r-${startIndex + si}-${unit}`}
-            value={set.reps}
-            placeholder="повт."
-            keyboardType="number-pad"
-            completed={isSetCompleted(set)}
-            onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
-            colors={colors}
-            cardStyles={cardStyles}
-          />
-        ))}
+        {rowSets.map((set, si) =>
+          isUnilateral ? (
+            <View
+              key={`r-${startIndex + si}-${unit}`}
+              style={{ flexDirection: 'row', gap: 4, flex: 1 }}
+            >
+              <SetInput
+                value={set.reps_left ?? ''}
+                placeholder="L"
+                keyboardType="number-pad"
+                completed={isSetCompleted(set)}
+                onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_left', v)}
+                colors={colors}
+                cardStyles={cardStyles}
+              />
+              <SetInput
+                value={set.reps_right ?? ''}
+                placeholder="R"
+                keyboardType="number-pad"
+                completed={isSetCompleted(set)}
+                onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_right', v)}
+                colors={colors}
+                cardStyles={cardStyles}
+              />
+            </View>
+          ) : (
+            <SetInput
+              key={`r-${startIndex + si}-${unit}`}
+              value={set.reps}
+              placeholder="повт."
+              keyboardType="number-pad"
+              completed={isSetCompleted(set)}
+              onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
+              colors={colors}
+              cardStyles={cardStyles}
+            />
+          )
+        )}
       </View>
       <View style={cardStyles.setInputsRow}>
         {rowSets.map((set, si) => (
@@ -284,7 +323,16 @@ interface SetsGridProps {
   unit: WeightUnit;
   /** FEAT-1.5: тип оборудования для расчёта блинов */
   equipment?: string | string[];
-  updateSet: (exIndex: number, setIndex: number, field: 'weight' | 'reps', value: string) => void;
+  /** P0.2: односторонние упражнения */
+  isUnilateral: boolean;
+  /** P1.1: политика прогрессии. */
+  policy?: ProgressionPolicy;
+  updateSet: (
+    exIndex: number,
+    setIndex: number,
+    field: 'weight' | 'reps' | 'reps_left' | 'reps_right',
+    value: string
+  ) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
   addSet: (exerciseIndex: number) => void;
@@ -311,6 +359,8 @@ export const SetsGrid = memo(function SetsGrid({
   readinessContext,
   unit,
   equipment,
+  isUnilateral,
+  policy,
   updateSet,
   updateSetFeedback,
   addSet,
@@ -447,11 +497,12 @@ export const SetsGrid = memo(function SetsGrid({
       repsRange: repsRange ?? null,
       targetSetIndex: progressionSetIndex ?? undefined,
       targetRpe,
+      policy,
     });
     const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
     // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
     return applyReadinessContext(afterSafety, readinessContext ?? null);
-  }, [sets, repsRange, targetRpe, safetyContext, readinessContext, progressionSetIndex]);
+  }, [sets, repsRange, targetRpe, safetyContext, readinessContext, progressionSetIndex, policy]);
 
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
   // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)
@@ -748,6 +799,7 @@ export const SetsGrid = memo(function SetsGrid({
                 onDismiss={handleDismiss}
                 acceptDisabled={progressionSetIndex === null}
                 chipsOpen={chipsOpen}
+                policy={policy}
               />
             )}
             {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
@@ -887,6 +939,7 @@ export const SetsGrid = memo(function SetsGrid({
               onOpenFeedback={handleOpenFeedback}
               onToggleWarmup={handleToggleWarmup}
               shouldShowRpeChip={shouldShowRpeChip}
+              isUnilateral={isUnilateral}
             />
           );
         })}

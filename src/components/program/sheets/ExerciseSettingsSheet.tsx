@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react-native';
+import { Plus, Minus, TrendingUp, TrendingDown, Target } from 'lucide-react-native';
 import { ProgramExercise } from '../../../services/programsService';
+import { ProgressionPolicy } from '../../../types/workout';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 
@@ -27,6 +28,16 @@ export function ExerciseSettingsSheet({
   const [intensity, setIntensity] = useState<'high' | 'medium' | 'low'>(
     (exercise?.intensity as 'high' | 'medium' | 'low') || 'medium'
   );
+  const [progressionPolicy, setProgressionPolicy] = useState<ProgressionPolicy>(
+    (exercise?.progression_policy as ProgressionPolicy) || 'linear'
+  );
+
+  const policies: { value: ProgressionPolicy; label: string; description: string }[] = [
+    { value: 'linear', label: 'Линейная', description: 'Достиг повторов → повысил вес' },
+    { value: 'double_progression', label: 'Двойная', description: 'Сначала повторы, потом вес' },
+    { value: 'greyskull', label: 'Greyskull', description: '2 рабочих + 1 на максимум' },
+    { value: 'time_based', label: 'Время', description: 'Прогрессия за счёт времени' },
+  ];
 
   const intensities = [
     { value: 'low' as const, label: 'Низкая', color: colors.success, icon: TrendingDown },
@@ -234,6 +245,59 @@ export function ExerciseSettingsSheet({
         </View>
       </View>
 
+      {/* Политика прогрессии (P1.1) */}
+      <View style={{ marginBottom: SPACING.lg }}>
+        <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+          Политика прогрессии
+        </Text>
+        <View style={{ gap: SPACING.sm }}>
+          {policies.map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              onPress={() => setProgressionPolicy(item.value)}
+              accessibilityRole="button"
+              accessibilityLabel={`Политика прогрессии: ${item.label}${progressionPolicy === item.value ? ', выбрано' : ''}`}
+              accessibilityState={{ selected: progressionPolicy === item.value }}
+              style={{
+                padding: SPACING.md,
+                borderRadius: BORDER_RADIUS.md,
+                borderWidth: 2,
+                borderColor: progressionPolicy === item.value ? colors.primary : colors.border,
+                backgroundColor:
+                  progressionPolicy === item.value ? colors.primary + '15' : colors.surface,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <Target
+                  size={16}
+                  color={progressionPolicy === item.value ? colors.primary : colors.textSecondary}
+                  strokeWidth={2}
+                />
+                <Text
+                  style={[
+                    typography.labelBold,
+                    {
+                      color:
+                        progressionPolicy === item.value ? colors.primary : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textTertiary, marginTop: SPACING.xs },
+                ]}
+              >
+                {item.description}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       {/* Интенсивность */}
       <View style={{ marginBottom: SPACING.lg }}>
         <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
@@ -287,6 +351,7 @@ export function ExerciseSettingsSheet({
             target_rpe: targetRpe,
             rest_seconds: restSeconds,
             intensity,
+            progression_policy: progressionPolicy,
           })
         }
         accessibilityRole="button"

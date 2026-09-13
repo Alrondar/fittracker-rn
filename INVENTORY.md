@@ -333,7 +333,7 @@ Important components:
 | Location|Role|
 | ---|---|
 | types/database.types.ts|generated Supabase types|
-| types/workout.ts|ExerciseData, AlternativeExercise, SetData, feedback types|
+| types/workout.ts|ExerciseData, AlternativeExercise, SetData (reps_left/reps_right added P0.2), feedback types|
 | constants/semanticColors.ts|level/macro/severity/body-part semantics|
 | constants/phaseTypes.ts|phase metadata/color|
 | constants/theme.ts|theme, spacing, radius|
@@ -345,6 +345,7 @@ Important components:
 | utils/streak.ts|streak calculations|
 | utils/trend.ts|trend/moving average/slope|
 | utils/plates.ts|чистая функция расчёта блинов для штанги (FEAT-1.5)|
+| utils/exerciseHelpers.ts|P0.2: isUnilateralExercise helper|
 | utils/strengthStandards.ts|calculateStrengthStandard (Фича 1): уровень силы (Novice…Elite) по e1RM/вес/пол; null для упражнений без нормативов|
 | utils/painTrend.ts|calculatePainTrend (Фича 4): чистая функция, группирует pain events по body_part/неделям (ISO, 4-недельное окно); возвращает  { chronicZones, weeks } . Хроническая зона = боль в ≥2 разных неделях.|
 | constants/strengthStandards.ts|нормативы 1ПМ/вес для 13 compound-движений (Фича 1); resolveStandardKey (exact + pattern fallback)|

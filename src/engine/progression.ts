@@ -15,7 +15,7 @@
 //   7. anyBelowMin                       → hold · MISSED_REPS
 //   8. fallback                          → hold · INCONCLUSIVE
 
-import type { SetData } from '../types/workout';
+import type { SetData, ProgressionPolicy } from '../types/workout';
 
 // ============================================================================
 // ТИПЫ
@@ -84,6 +84,8 @@ export interface ProgressionInput {
   cyclePhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | null;
   /** Фича 2: Целевой RPE для упражнения (1-10). Если задан, прогрессия учитывает не только повторы, но и субъективную сложность. */
   targetRpe?: number | null;
+  /** P1.1: Политика прогрессии. */
+  policy?: ProgressionPolicy;
 }
 
 // ============================================================================
@@ -112,6 +114,183 @@ export function parseRepsRange(
     min: Math.min(first, second),
     max: Math.max(first, second),
   };
+}
+
+// ============================================================================
+// P1.1: АЛЬТЕРНАТИВНЫЕ ПОЛИТИКИ ПРОГРЕССИИ
+// ============================================================================
+
+function calculateDoubleProgression(
+  input: ProgressionInput,
+  targetRange: { min: number; max: number } | null,
+  effectiveStepKg: number,
+  baseWeight: number,
+  shouldConsiderDeload: boolean
+): ProgressionResult {
+  const { sets } = input;
+  const currentCompleted = sets.filter(
+    (s) =>
+      !s.isWarmup &&
+      s.weight !== '' &&
+      (s.reps !== '' || (s.reps_left && s.reps_right) || s.estimatedReps != null)
+  );
+  const getReps = (s: SetData): number => {
+    if (s.reps !== '') return parseInt(s.reps, 10);
+    if (s.reps_left && s.reps_right) return parseInt(s.reps_left, 10) + parseInt(s.reps_right, 10);
+    return s.estimatedReps ?? 0;
+  };
+  const evalReps = currentCompleted.length > 0 ? currentCompleted.map(getReps) : [];
+
+  const factors: ProgressionReason['factors'] = {
+    lastWeight: baseWeight,
+    lastReps: null,
+    lastRpe: null,
+    completedSets: currentCompleted.length,
+    targetRange,
+  };
+
+  const increaseResult = (code: string, ruText: string): ProgressionResult => ({
+    action: 'increase',
+    suggestedWeight: round2(baseWeight + effectiveStepKg),
+    suggestedReps: targetRange ? targetRange.min : null,
+    reason: { code, ruText, factors },
+  });
+  const holdResult = (code: string, ruText: string): ProgressionResult => ({
+    action: 'hold',
+    suggestedWeight: baseWeight,
+    suggestedReps: targetRange ? targetRange.max : null,
+    reason: { code, ruText, factors },
+  });
+
+  if (shouldConsiderDeload) {
+    return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+  }
+
+  if (targetRange && evalReps.length > 0 && evalReps.every((r) => r >= targetRange.max)) {
+    return increaseResult(
+      'DOUBLE_ALL_MAX',
+      `Все подходы ≥ ${targetRange.max} повт. → повышаем вес, сбрасываем повторения`
+    );
+  }
+
+  return holdResult('DOUBLE_CONSOLIDATE', 'Набираем повторения в диапазоне');
+}
+
+function calculateGreyskull(
+  input: ProgressionInput,
+  targetRange: { min: number; max: number } | null,
+  effectiveStepKg: number,
+  baseWeight: number,
+  shouldConsiderDeload: boolean
+): ProgressionResult {
+  const { sets } = input;
+  const currentCompleted = sets.filter(
+    (s) =>
+      !s.isWarmup &&
+      s.weight !== '' &&
+      (s.reps !== '' || (s.reps_left && s.reps_right) || s.estimatedReps != null)
+  );
+  const getReps = (s: SetData): number => {
+    if (s.reps !== '') return parseInt(s.reps, 10);
+    if (s.reps_left && s.reps_right) return parseInt(s.reps_left, 10) + parseInt(s.reps_right, 10);
+    return s.estimatedReps ?? 0;
+  };
+
+  const factors: ProgressionReason['factors'] = {
+    lastWeight: baseWeight,
+    lastReps: null,
+    lastRpe: null,
+    completedSets: currentCompleted.length,
+    targetRange,
+  };
+
+  const increaseResult = (code: string, ruText: string): ProgressionResult => ({
+    action: 'increase',
+    suggestedWeight: round2(baseWeight + effectiveStepKg * 2), // большой шаг для greyskull
+    suggestedReps: targetRange ? targetRange.min : null,
+    reason: { code, ruText, factors },
+  });
+  const holdResult = (code: string, ruText: string): ProgressionResult => ({
+    action: 'hold',
+    suggestedWeight: baseWeight,
+    suggestedReps: targetRange ? targetRange.min : null,
+    reason: { code, ruText, factors },
+  });
+
+  if (shouldConsiderDeload) {
+    return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+  }
+
+  if (currentCompleted.length >= 2) {
+    const amrapSet = currentCompleted[currentCompleted.length - 1]; // последний сет = AMRAP
+    const amrapReps = getReps(amrapSet);
+    const targetReps = targetRange ? targetRange.min : 5;
+
+    if (amrapReps >= targetReps * 2) {
+      return increaseResult(
+        'GREYSKULL_AMRAP_SUCCESS',
+        `AMRAP ≥ ${targetReps * 2} повт. → повышаем вес`
+      );
+    }
+  }
+
+  return holdResult('GREYSKULL_HOLD', 'AMRAP не достигнут, закрепляем вес');
+}
+
+function calculateTimeBased(
+  input: ProgressionInput,
+  targetRange: { min: number; max: number } | null,
+  effectiveStepKg: number,
+  baseWeight: number,
+  shouldConsiderDeload: boolean
+): ProgressionResult {
+  const { sets } = input;
+  const currentCompleted = sets.filter(
+    (s) =>
+      !s.isWarmup &&
+      s.weight !== '' &&
+      (s.reps !== '' || (s.reps_left && s.reps_right) || s.estimatedReps != null)
+  );
+  const getReps = (s: SetData): number => {
+    if (s.reps !== '') return parseInt(s.reps, 10);
+    if (s.reps_left && s.reps_right) return parseInt(s.reps_left, 10) + parseInt(s.reps_right, 10);
+    return s.estimatedReps ?? 0;
+  };
+  const evalReps = currentCompleted.length > 0 ? currentCompleted.map(getReps) : [];
+
+  const factors: ProgressionReason['factors'] = {
+    lastWeight: baseWeight,
+    lastReps: null,
+    lastRpe: null,
+    completedSets: currentCompleted.length,
+    targetRange,
+  };
+
+  const increaseResult = (code: string, ruText: string): ProgressionResult => ({
+    action: 'increase',
+    suggestedWeight: baseWeight, // вес не меняется
+    suggestedReps: targetRange ? targetRange.min : null, // сбрасываем к минимуму
+    reason: { code, ruText, factors },
+  });
+  const holdResult = (code: string, ruText: string): ProgressionResult => ({
+    action: 'hold',
+    suggestedWeight: baseWeight,
+    suggestedReps: targetRange ? targetRange.max : null,
+    reason: { code, ruText, factors },
+  });
+
+  if (shouldConsiderDeload) {
+    return holdResult('AUTO_DELOAD_SUGGESTION', '6+ недель в фазе — рассмотрите разгрузку');
+  }
+
+  if (targetRange && evalReps.length > 0 && evalReps.every((r) => r >= targetRange.max)) {
+    return increaseResult(
+      'TIME_ALL_MAX',
+      `Все подходы ≥ ${targetRange.max} сек → увеличиваем время`
+    );
+  }
+
+  return holdResult('TIME_HOLD', 'Увеличиваем время удержания');
 }
 
 // ============================================================================
@@ -180,17 +359,28 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     null;
 
   // 3. Текущие завершённые РАБОЧИЕ сеты — для оценки усталости
-  // (weight !== '' && reps !== '' = завершён; !isWarmup = рабочий)
-  // ENG-13: если reps пустое, но есть estimatedReps — тоже учитываем (оценка пользователя)
+  // (weight !== '' && (reps !== '' || (reps_left && reps_right)) = завершён; !isWarmup = рабочий)
+  // ENG-13: если reps пустое, но есть estimatedReps или reps_left/right — тоже учитываем
   const currentCompleted = sets.filter(
-    (s) => !s.isWarmup && s.weight !== '' && (s.reps !== '' || s.estimatedReps != null)
+    (s) =>
+      !s.isWarmup &&
+      s.weight !== '' &&
+      (s.reps !== '' || (s.reps_left && s.reps_right) || s.estimatedReps != null)
   );
 
+  // P0.2: хелпер для получения общего количества повторений (сумма L+R для unilateral)
+  const getReps = (s: SetData): number => {
+    if (s.reps !== '') return parseInt(s.reps, 10);
+    if (s.reps_left && s.reps_right) {
+      return parseInt(s.reps_left, 10) + parseInt(s.reps_right, 10);
+    }
+    return s.estimatedReps ?? 0;
+  };
+
   // 4. Оценка: если есть currentCompleted, используем их; иначе fallback на прошлые данные
-  // ENG-13: evalReps учитывает estimatedReps если reps пустое
   const evalReps =
     currentCompleted.length > 0
-      ? currentCompleted.map((s) => (s.reps !== '' ? parseInt(s.reps, 10) : (s.estimatedReps ?? 0)))
+      ? currentCompleted.map(getReps)
       : workingSetsWithHistory.map((s) => s.previousReps as number);
   const evalRpe =
     currentCompleted.length > 0
@@ -217,6 +407,41 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
   if (input.currentPhaseType === 'hypertrophy') effectiveStepKg = 1.25;
   else if (input.currentPhaseType === 'endurance') effectiveStepKg = 1.0;
   // strength остаётся 2.5 (дефолт)
+
+  // P1.2: Флаг необходимости рассмотреть разгрузку (>6 недель в блоке)
+  // Примечание: currentPhaseType !== 'deload' уже гарантирован, так как deload-фаза
+  // обрабатывается и возвращает результат выше.
+  const shouldConsiderDeload = input.weeksInBlock != null && input.weeksInBlock > 6;
+
+  // P1.1: Ветвление по политике прогрессии
+  if (input.policy === 'double_progression') {
+    return calculateDoubleProgression(
+      input,
+      targetRange,
+      effectiveStepKg,
+      baseWeight,
+      shouldConsiderDeload
+    );
+  }
+  if (input.policy === 'greyskull') {
+    return calculateGreyskull(
+      input,
+      targetRange,
+      effectiveStepKg,
+      baseWeight,
+      shouldConsiderDeload
+    );
+  }
+  if (input.policy === 'time_based') {
+    return calculateTimeBased(
+      input,
+      targetRange,
+      effectiveStepKg,
+      baseWeight,
+      shouldConsiderDeload
+    );
+  }
+  // default: linear (текущая логика ниже)
 
   // Вспомогалки для построения результата
   const increaseResult = (code: string, ruText: string): ProgressionResult => ({
@@ -318,11 +543,6 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     };
   }
 
-  // P1.2: Флаг необходимости рассмотреть разгрузку (>6 недель в блоке)
-  // Примечание: currentPhaseType !== 'deload' уже гарантирован, так как deload-фаза
-  // обрабатывается и возвращает результат выше (строка ~280).
-  const shouldConsiderDeload = input.weeksInBlock != null && input.weeksInBlock > 6;
-
   // 1. Полный отказ
   if (evalRpe === 10) {
     return decreaseResult('MAX_EFFORT', 'Отказ — снижаем вес');
@@ -338,7 +558,7 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     (s) =>
       !s.isWarmup &&
       s.weight !== '' &&
-      s.reps !== '' &&
+      (s.reps !== '' || (s.reps_left && s.reps_right)) &&
       s.previousWeight != null &&
       s.previousWeight > 0
   );
@@ -670,6 +890,28 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
         label: 'Плато',
         value: 'стабильные результаты 3+ недели подряд',
         emphasis: 'warning',
+      });
+      break;
+
+    case 'DOUBLE_ALL_MAX':
+    case 'TIME_ALL_MAX':
+      items.push({
+        kind: 'signal',
+        label: 'Достижение',
+        value:
+          reason.code === 'DOUBLE_ALL_MAX'
+            ? 'все подходы на верхней границе диапазона'
+            : 'все подходы достигли целевого времени',
+        emphasis: 'success',
+      });
+      break;
+
+    case 'GREYSKULL_AMRAP_SUCCESS':
+      items.push({
+        kind: 'signal',
+        label: 'AMRAP',
+        value: 'последний подход на максимум превзошёл цель в 2 раза',
+        emphasis: 'success',
       });
       break;
 
