@@ -115,6 +115,22 @@ interface PreWeekLogRow {
   workout_exercises: { exercise_id: string } | { exercise_id: string }[] | null;
 }
 
+interface MuscleLogRow {
+  finished_at: string;
+  workout_exercises: {
+    exercises:
+      | { name: string; primary_muscles?: string[]; secondary_muscles?: string[] }
+      | { name: string; primary_muscles?: string[]; secondary_muscles?: string[] }[]
+      | null;
+    workout_logs: {
+      weight_kg: number | string | null;
+      reps: number | null;
+      completed_at: string | null;
+      is_warmup?: boolean;
+    }[];
+  }[];
+}
+
 function toNumber(v: number | string | null | undefined): number {
   if (v == null) return 0;
   const n = typeof v === 'number' ? v : Number(v);
@@ -416,9 +432,84 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
       mixed: 0,
     },
     muscleVolume,
+    muscleFatigue: {},
+    muscleStrength: {},
     prs,
     lastCompletedSets: Array.from(lastCompletedSetsMap.values()).map(({ date, ...rest }) => rest),
   };
+}
+
+/**
+ * P2: Агрегация усталости и силы по мышечным группам за последние 14 дней.
+ * Fatigue: weight * reps * (weight / e1rm)^1.5 * (0.5 ^ (daysAgo / 3))
+ * Strength: min daysAgo, max e1rm
+ */
+async function aggregateMuscleData(userId: string, now: Date) {
+  const fourteenDaysAgo = new Date(now);
+  fourteenDaysAgo.setDate(now.getDate() - 14);
+  const fourteenDaysAgoISO = fourteenDaysAgo.toISOString();
+
+  const { data, error } = await supabase
+    .from('workouts')
+    .select(
+      `
+      finished_at,
+      workout_exercises(
+        exercises(name, primary_muscles, secondary_muscles),
+        workout_logs(weight_kg, reps, completed_at, is_warmup)
+      )
+    `
+    )
+    .eq('user_id', userId)
+    .not('finished_at', 'is', null)
+    .is('skipped_at', 'null')
+    .gte('finished_at', fourteenDaysAgoISO);
+
+  if (error || !data) return { muscleFatigue: {}, muscleStrength: {} };
+
+  const muscleFatigue: Record<string, number> = {};
+  const muscleStrength: Record<string, { daysAgo: number; current1RM: number }> = {};
+
+  for (const w of data as unknown as MuscleLogRow[]) {
+    const finishedAt = new Date(w.finished_at);
+    const daysAgo = (now.getTime() - finishedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+    for (const we of w.workout_exercises ?? []) {
+      const ex = asOne(we.exercises) as {
+        name: string;
+        primary_muscles?: string[];
+        secondary_muscles?: string[];
+      } | null;
+      const primary = ex?.primary_muscles ?? [];
+      const secondary = ex?.secondary_muscles ?? [];
+
+      for (const log of we.workout_logs ?? []) {
+        if (log.is_warmup) continue;
+        const weight = toNumber(log.weight_kg);
+        const reps = log.reps ?? 0;
+        if (weight === 0 || reps === 0) continue;
+
+        const e1rm = epley(weight, reps);
+        const intensityFactor = Math.pow(weight / e1rm, 1.5);
+        const decayFactor = Math.pow(0.5, daysAgo / 3);
+        const fatigueContribution = weight * reps * intensityFactor * decayFactor;
+
+        const updateMuscle = (m: string, multiplier: number) => {
+          muscleFatigue[m] = (muscleFatigue[m] || 0) + fatigueContribution * multiplier;
+          if (!muscleStrength[m] || daysAgo < muscleStrength[m].daysAgo) {
+            muscleStrength[m] = { daysAgo, current1RM: e1rm };
+          } else if (e1rm > muscleStrength[m].current1RM) {
+            muscleStrength[m].current1RM = e1rm;
+          }
+        };
+
+        for (const m of primary) updateMuscle(m, 1.0);
+        for (const m of secondary) updateMuscle(m, 0.5);
+      }
+    }
+  }
+
+  return { muscleFatigue, muscleStrength };
 }
 
 /**
@@ -433,20 +524,23 @@ export async function getWeeklySummary(
   const currentRange = computeWeekRange(weekOffset, now);
   const previousRange = computeWeekRange(weekOffset - 1, now);
 
-  // CI-2 / CI-5: параллельно загружаем цель, хронический объём (4 недели для ACWR) и данные недель
-  const [current, previous, profileRes, chronicVol] = await Promise.all([
+  // CI-2 / CI-5 / P2: параллельно загружаем цель, хронический объём, данные недель и muscle data (14 дней)
+  const [current, previous, profileRes, chronicVol, muscleData] = await Promise.all([
     aggregateWeek(userId, currentRange),
     aggregateWeek(userId, previousRange),
     supabase.from('profiles').select('goal').eq('id', userId).single(),
     calculateChronicVolume(userId, currentRange.nextStartISO),
+    aggregateMuscleData(userId, now),
   ]);
 
   const primaryGoal = profileRes.data?.goal ?? null;
 
-  // Активируем ACWR в engine, передавая chronicVolume
+  // Активируем ACWR в engine, передавая chronicVolume и P2 muscle data
   const currentWithChronic: WeeklySummaryData = {
     ...current,
     chronicVolume: chronicVol,
+    muscleFatigue: muscleData.muscleFatigue,
+    muscleStrength: muscleData.muscleStrength,
   };
 
   const insights = buildWeeklyInsights(currentWithChronic, previous, { primaryGoal });

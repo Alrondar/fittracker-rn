@@ -14,11 +14,13 @@ import {
   Moon,
   X,
   Target,
+  Zap,
 } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
+import { PillToggle } from '../ui/PillToggle';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
 import type { WeeklyInsight, InsightSeverity } from '../../engine/weeklySummary';
 
@@ -45,6 +47,8 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   // CI-6: session-local dismiss deload card (без persistence, как COACH-1).
   const [deloadDismissed, setDeloadDismissed] = useState(false);
+  // P2: Переключатель режима карты мышц
+  const [muscleView, setMuscleView] = useState<'balance' | 'fatigue' | 'strength'>('balance');
 
   const toggleExpand = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -679,72 +683,182 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               </DetailBlock>
             )}
 
-            {/* CI-4: Muscle Volume Analysis */}
+            {/* P2: Muscle Map (Balance / Fatigue / Strength) */}
             <DetailBlock
               icon={<Dumbbell size={20} color={colors.primary} />}
-              title="Нагрузка на мышцы"
+              title="Карта мышц"
               color={colors.primary}
             >
+              <View style={{ marginBottom: SPACING.md }}>
+                <PillToggle
+                  options={[
+                    { key: 'balance' as const, label: 'Объём' },
+                    { key: 'fatigue' as const, label: 'Усталость', icon: Zap },
+                    { key: 'strength' as const, label: 'Сила', icon: TrendingUp },
+                  ]}
+                  value={muscleView}
+                  onChange={setMuscleView}
+                />
+              </View>
+
               {Object.keys(data.current.muscleVolume).length > 0 ? (
-                <View style={{ gap: SPACING.xs }}>
+                <View style={{ gap: SPACING.sm }}>
                   {Object.entries(data.current.muscleVolume)
                     .filter(([_, v]) => v >= 4)
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 5)
                     .map(([muscle, sets]) => {
-                      const prevSets = data.previous.muscleVolume[muscle] || 0;
-                      const diff = sets - prevSets;
-                      const diffText =
-                        diff > 0
-                          ? `↑ +${Math.round(diff)}`
-                          : diff < 0
-                            ? `↓ ${Math.round(diff)}`
-                            : '→';
-                      const diffColor =
-                        diff > 0 ? colors.success : diff < 0 ? colors.error : colors.textTertiary;
+                      if (muscleView === 'balance') {
+                        const prevSets = data.previous.muscleVolume[muscle] || 0;
+                        const diff = sets - prevSets;
+                        const diffText =
+                          diff > 0
+                            ? `↑ +${Math.round(diff)}`
+                            : diff < 0
+                              ? `↓ ${Math.round(diff)}`
+                              : '→';
+                        const diffColor =
+                          diff > 0 ? colors.success : diff < 0 ? colors.error : colors.textTertiary;
 
-                      return (
-                        <View
-                          key={muscle}
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <Text style={[typography.body, { color: colors.textPrimary }]}>
-                            {muscle}
-                          </Text>
+                        return (
                           <View
-                            style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}
+                            key={muscle}
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
                           >
-                            <Text
-                              style={[typography.caption, { color: diffColor, fontWeight: '600' }]}
-                            >
-                              {diffText}
+                            <Text style={[typography.body, { color: colors.textPrimary }]}>
+                              {muscle}
                             </Text>
-                            <Text style={[typography.body, { color: colors.textSecondary }]}>
-                              {Math.round(sets)} сетов
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: SPACING.sm,
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  typography.caption,
+                                  { color: diffColor, fontWeight: '600' },
+                                ]}
+                              >
+                                {diffText}
+                              </Text>
+                              <Text style={[typography.body, { color: colors.textSecondary }]}>
+                                {Math.round(sets)} сетов
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      }
+
+                      if (muscleView === 'fatigue') {
+                        const fatigue = data.current.muscleFatigue?.[muscle] || 0;
+                        // Цветовая кодировка: зелёный < 10000, жёлтый 10000–20000, красный > 20000
+                        let fatigueColor = colors.success;
+                        if (fatigue > 20000) fatigueColor = colors.error;
+                        else if (fatigue > 10000) fatigueColor = colors.warning;
+
+                        return (
+                          <View key={muscle} style={{ gap: SPACING.xs }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <Text style={[typography.body, { color: colors.textPrimary }]}>
+                                {muscle}
+                              </Text>
+                              <Text
+                                style={[
+                                  typography.caption,
+                                  { color: fatigueColor, fontWeight: '600' },
+                                ]}
+                              >
+                                {Math.round(fatigue)}
+                              </Text>
+                            </View>
+                            <View
+                              style={{
+                                height: 6,
+                                backgroundColor: colors.surfaceSecondary,
+                                borderRadius: 3,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <View
+                                style={{
+                                  height: '100%',
+                                  width: `${Math.min((fatigue / 25000) * 100, 100)}%`,
+                                  backgroundColor: fatigueColor,
+                                  borderRadius: 3,
+                                }}
+                              />
+                            </View>
+                          </View>
+                        );
+                      }
+
+                      if (muscleView === 'strength') {
+                        const strength = data.current.muscleStrength?.[muscle];
+                        if (!strength) return null;
+
+                        return (
+                          <View
+                            key={muscle}
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Text style={[typography.body, { color: colors.textPrimary }]}>
+                              {muscle}
+                            </Text>
+                            <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                              {Math.round(strength.daysAgo)} дн. назад ·{' '}
+                              {Math.round(strength.current1RM)} кг 1RM
                             </Text>
                           </View>
-                        </View>
-                      );
+                        );
+                      }
+
+                      return null;
                     })}
-                  {data.insights.some((i) => i.code === 'MUSCLE_IMBALANCE') && (
-                    <View
-                      style={{
-                        marginTop: SPACING.sm,
-                        padding: SPACING.sm,
-                        backgroundColor: colors.warningLight,
-                        borderRadius: BORDER_RADIUS.md,
-                      }}
-                    >
-                      <Text
-                        style={[typography.caption, { color: colors.warning, fontWeight: '600' }]}
+
+                  {muscleView === 'balance' &&
+                    data.insights.some((i) => i.code === 'MUSCLE_IMBALANCE') && (
+                      <View
+                        style={{
+                          marginTop: SPACING.sm,
+                          padding: SPACING.sm,
+                          backgroundColor: colors.warningLight,
+                          borderRadius: BORDER_RADIUS.md,
+                        }}
                       >
-                        ⚠️ Обрати внимание на дисбаланс в распределении нагрузки.
-                      </Text>
-                    </View>
+                        <Text
+                          style={[typography.caption, { color: colors.warning, fontWeight: '600' }]}
+                        >
+                          ⚠️ Обрати внимание на дисбаланс в распределении нагрузки.
+                        </Text>
+                      </View>
+                    )}
+
+                  {muscleView === 'fatigue' && (
+                    <Text
+                      style={[
+                        typography.captionSmall,
+                        { color: colors.textTertiary, marginTop: SPACING.xs },
+                      ]}
+                    >
+                      Усталость рассчитывается с учётом интенсивности и экспоненциально затухает
+                      (период полураспада 3 дня).
+                    </Text>
                   )}
                 </View>
               ) : (

@@ -18,8 +18,13 @@ import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 export const createWorkoutCardStyles = (colors: any) =>
   StyleSheet.create({
     // ===== КАРТОЧКА УПРАЖНЕНИЯ =====
+    // UX-16 F1: marginBottom обнуляем — вертикальный ритм задаётся
+    // внешним ExerciseSlider (marginTop: SPACING.md). Раньше card
+    // имел marginBottom: SPACING.md (из base.container), что давало
+    // суммарный gap ~24pt между упражнениями (слишком разряженно).
     workoutExerciseCard: {
       marginHorizontal: 0,
+      marginBottom: 0,
     } as ViewStyle,
     workoutExerciseHeader: {
       flexDirection: 'row',
@@ -56,8 +61,9 @@ export const createWorkoutCardStyles = (colors: any) =>
       fontWeight: '600',
     } as TextStyle,
     // ===== СЕКЦИЯ ПОДХОДОВ =====
+    // UX-16 F1: внутренний ритм карточки — SPACING.md (12) вместо lg (16)
     setsContainer: {
-      marginTop: SPACING.lg,
+      marginTop: SPACING.md,
       borderWidth: 1.5,
       borderRadius: BORDER_RADIUS.md,
       overflow: 'hidden',
@@ -82,11 +88,11 @@ export const createWorkoutCardStyles = (colors: any) =>
       flexDirection: 'row',
       gap: 8,
     } as ViewStyle,
-setNumber: {
-  flex: 1,
-  minWidth: 0,
-  alignItems: 'center',
-} as ViewStyle,
+    setNumber: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'center',
+    } as ViewStyle,
     setNumberText: {
       fontSize: 14,
       fontWeight: 'bold',
@@ -96,13 +102,13 @@ setNumber: {
       gap: 8,
       marginTop: 8,
     } as ViewStyle,
-  setInputContainer: {
-    flex: 1,
-    minWidth: 0,
-    padding: 8,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-  } as ViewStyle,
+    setInputContainer: {
+      flex: 1,
+      minWidth: 0,
+      padding: 8,
+      borderRadius: BORDER_RADIUS.md,
+      alignItems: 'center',
+    } as ViewStyle,
     setInput: {
       fontSize: 12,
       textAlign: 'center',

@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 12.09.2026 (main) [H-MUSCLE-6: Muscle load mode toggle (total/direct)]
+Срез: 14.09.2026 (main) [UX-16 visual refinements]
 
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
@@ -81,6 +81,7 @@
 | UX-12 | 🔴 | ✅ | display modes для workout cards (training/balanced/learn) + picker в settings |
 | UX-13 | 🟠 | ✅ | секционная структура ExerciseCard + вынос Equipment из accordion + подзаголовки через SectionSubheading в «Техника выполнения» и «Важно знать» (единообразие, PR7) + финальная UX-корректировка: SetsGrid перемещён выше Technique/Knowledge (главный рабочий блок карточки) |
 | UX-15 | 🟠 | ✅ | workouts.tsx: Sticky-карточка «Следующая» + фильтр «Предстоящие/Все» (Гибрид А+Б). Решает проблему скролла к нужной неделе, сохраняет историю доступной в 1 тап. |
+| UX-16 | 🔴 | ✅ | **Уплотнение карточки упражнения**: старт/финиш в header (pill вместо footer), exclusive tags equipment/muscles, Info-tabs вместо двух аккордеонов, RPE onboarding-overlay над таблицей, recommendation под 💡 в header сетов, rest pill + Info в один ряд. **Визуальные фиксы (14.09.2026)**: gap между карточками (SPACING.md), per-cell green (только введённые значения), RPE overlay на всю ширину с анимацией из тапнутой колонки, pill «Таймер» (без пресета), secondary muscles текст читаемый (textSecondary + цветная точка), overflow protection (maxWidth+ellipsis+wrap) |
 
 ### Остаточные аудиты экранов (из архивного `UX_AUDIT_PLAN.md`, Этап H)
 
@@ -142,7 +143,7 @@
 | CI-1 | 🔴 | ✅ | Weekly Training Review: consistency + performance + load + recovery/safety context + explainable next-step context; расширяет baseline ENG-6/COACH-5. UI реализован в Progress hub (WeeklyReviewSection + SheetShell). |
 | CI-2 | 🔴 | ✅ | Training Load Context: normal/elevated/high на основе volume/frequency/RPE/readiness trends + **ACWR (4-недельное скользящее среднее)** для оценки риска травм; deterministic, без opaque score. UI интегрирован в WeeklyReviewSection (L1/L2). |
 | CI-3 | 🟠 | ✅ | Plateau Detection: L2-блок с observation и вариантами действий при PLATEAU_DETECTED (ROADMAP C8) |
-| CI-4 | 🟠 | ✅ | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals (L2-блок в WeeklyReviewSection) |
+| CI-4 | 🟠 | ✅ | Muscle Volume Analysis: weekly sets, распределение по мышечным группам, тренды и explainable imbalance signals (L2-блок в WeeklyReviewSection). **P2**: расширено до 3D Muscle Map (Balance / Fatigue с затуханием / Strength с 1RM) с переключателем режимов. |
 | CI-5 | 🟠 | ✅ | Goal-aware Insights (Вариант B: Balanced): цель из профиля (`profiles.goal`) учитывается в `buildWeeklyInsights` — приоритеты инсайтов и контекстная адаптация текста («почему это важно для твоей цели»). Чистая логика в `engine/weeklySummary.ts`, интеграция в `weeklySummaryService.ts`, UI доверяет отсортированному массиву. Без дублирования экранов. |
 | CI-6 | 🟡 | ✅ | Deload Recommendations + **Фича 5: Technique Week** — выполнено (Вариант B, ROADMAP C11): `calculateDeloadContext` в `engine/weeklySummary.ts` (4 объяснимых сигнала: highLoad/plateau/readinessDecline/rpeRisingNoImprovement; рекомендация при ≥3 сигналах или highLoad+plateau/readinessDecline; insufficient-data guard для первой недели; `DeloadContext.availableTypes: ['volume', 'technique']` при `recommended: true`); `WeeklyReviewSection` L1-карточка с Moon/warning + **2 кнопки выбора стратегии (Объём/Техника)** + session-local dismiss; L2 SheetShell содержит два независимых блока: «Разгрузочная неделя (Объём)» (−40–60% объёма, RPE ≤ 6–7) и «Техническая неделя» (вес 65–70% от рабочего, акцент на идеальную технику, RPE 6–7, сохранение количества подходов — восстановление ЦНС без потери навыка) с disclaimer «не меняет программу автоматически»; без автоизменения программы (PRODUCT.md §3.3 user control) |
 | CI-7 | 🟡 | 🔲 | Optional AI Explanations: AI объясняет structured facts/reason codes; зависит от Coaching Intelligence и AI foundation |

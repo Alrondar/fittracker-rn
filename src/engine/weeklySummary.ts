@@ -56,6 +56,12 @@ export interface WeeklySummaryData {
   /** CI-4: Агрегация сетов по мышечным группам (primary = 1.0, secondary = 0.5). */
   muscleVolume: Record<string, number>;
 
+  /** P2: Накопленная усталость по мышечным группам (с экспоненциальным затуханием, формула openGym). */
+  muscleFatigue: Record<string, number>;
+
+  /** P2: Как давно тренировалась мышца и её текущий расчётный 1RM. */
+  muscleStrength: Record<string, { daysAgo: number; current1RM: number }>;
+
   /** ACWR: Средний объём за последние 4 недели (хроническая нагрузка). */
   chronicVolume?: number;
 
@@ -79,6 +85,10 @@ export interface WeeklySummaryData {
     lastReps: number;
     repsRange: [number, number];
   }[];
+
+  /** P2: Внутреннее поле для передачи данных в UI (не используется в engine insights напрямую, но нужно для типа). */
+  _muscleStrength?: Record<string, { daysAgo: number; current1RM: number }>;
+  _muscleFatigue?: Record<string, number>;
 }
 
 export interface WeeklyInsight {

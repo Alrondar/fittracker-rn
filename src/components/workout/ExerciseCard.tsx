@@ -5,16 +5,16 @@
 // PR6: проброс hasPainRecord в ExerciseCardHeader.
 // ENG-1: проброс repsRange в SetsGrid для детерминированной прогрессии.
 // ENG-4: safetyContext (pain/injury) для safety precedence в engine.
-import React, { useMemo, memo } from 'react';
+// UX-16: ActionsRow (rest pill + Info), Info tabs, TagsRow, 💡 в SetsGrid.
+import React, { useMemo, memo, useState, useCallback } from 'react';
 import { View } from 'react-native';
 import { createCardStyles } from '../../styles/components/card';
 import { SetsGrid } from './SetsGrid';
 import { ExerciseCardHeader } from './sections/ExerciseCardHeader';
-import { ExerciseCardEquipment } from './sections/ExerciseCardEquipment';
+import { ExerciseCardTags } from './sections/ExerciseCardTags';
 import { ExerciseWarningBanner } from './sections/ExerciseWarningBanner';
-import { ExerciseCardMuscles } from './sections/ExerciseCardMuscles';
-import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
-import { ExerciseCardKnowledge } from './sections/ExerciseCardKnowledge';
+import { ExerciseCardActions } from './sections/ExerciseCardActions';
+import { ExerciseCardInfo } from './sections/ExerciseCardInfo';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -105,6 +105,23 @@ export const ExerciseCard = memo(function ExerciseCard({
   const equipment = exercise.equipment ?? [];
   const isUnilateral = isUnilateralExercise(exercise);
 
+  // UX-16 D3/D6: state для Info block и ActionsRow
+  const [infoOpen, setInfoOpen] = useState(false);
+  const handleToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
+  const handleStartRest = useCallback(
+    () => startRestTimer(restSeconds),
+    [startRestTimer, restSeconds]
+  );
+
+  // Определяем, есть ли контент для Info блока (с учётом display mode)
+  // UX-16 §4.6: в training mode knowledge скрыт, только technique
+  const hasTechniqueContent = !!(exercise.technique || mediaUrl || settingsText);
+  const hasKnowledgeContent =
+    displayMode !== 'training' &&
+    isMain &&
+    !!(exercise.benefits || exercise.risks || exercise.injuries.length > 0);
+  const hasInfoContent = hasTechniqueContent || hasKnowledgeContent;
+
   // ENG-4: safety context для SetsGrid (pain/injury → recommendation precedence).
   // Стабильная ссылка через useMemo; пересчёт только при смене exercise.painState
   // или warning.level. ExerciseWarningBanner уже показывает причину на L1,
@@ -122,7 +139,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   // PR 4c: в Training mode скрываем мышцы и knowledge для основной карточки,
   // но техника остаётся доступной всегда (safety: правильная техника = безопасность).
   // Для альтернативных карточек (!isMain) все секции видны всегда.
-  const hideSecondaryInTraining = displayMode === 'training' && isMain;
+  // Note: hideSecondaryInTraining removed — handled inside ExerciseCardTags/Info.
 
   // PR6: есть ли запись боли в pain_events для этого упражнения — для visual affordance в header
   const hasPainRecord = !!(exercise as ExerciseData).painState;
@@ -171,20 +188,16 @@ export const ExerciseCard = memo(function ExerciseCard({
         cardStyles={cardStyles}
       />
 
-      {/* 2. Equipment: bubbles сразу под header (PR 4a) */}
-      <ExerciseCardEquipment equipment={equipment} primaryMuscles={exercise.primary_muscles} />
+      {/* 2. TagsRow: equipment + muscles с exclusive toggle (UX-16 D2) */}
+      <ExerciseCardTags
+        equipment={equipment}
+        primaryMuscles={exercise.primary_muscles}
+        secondaryMuscles={exercise.secondary_muscles}
+        colors={colors}
+      />
 
       {/* 3. Warning banner (только основная карточка) */}
       {warning && isMain && <ExerciseWarningBanner warning={warning} colors={colors} />}
-
-      {/* 4. Muscles: скрыты в Training mode для основной карточки (PR 4c) */}
-      {!hideSecondaryInTraining && (
-        <ExerciseCardMuscles
-          primaryMuscles={exercise.primary_muscles}
-          secondaryMuscles={exercise.secondary_muscles}
-          colors={colors}
-        />
-      )}
 
       {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК.
           ENG-1: проброс repsRange для детерминированной прогрессии.
@@ -219,22 +232,25 @@ export const ExerciseCard = memo(function ExerciseCard({
         />
       )}
 
-      {/* 6. Technique: доступна во ВСЕХ режимах (safety), включая Training (PR 4f) */}
-      <ExerciseCardTechnique
-        technique={exercise.technique}
-        mediaUrl={mediaUrl}
-        settingsText={settingsText}
-        defaultExpanded={displayMode === 'learn'}
+      {/* UX-16 D6: ActionsRow — rest pill + Info button */}
+      <ExerciseCardActions
+        restSeconds={restSeconds}
+        onStartRest={handleStartRest}
+        onOpenInfo={handleToggleInfo}
+        infoVisible={infoOpen}
+        hasInfoContent={hasInfoContent}
         colors={colors}
       />
 
-      {/* 7. Knowledge: скрыт в Training mode, только основная карточка (PR 4c) */}
-      {displayMode !== 'training' && isMain && (
-        <ExerciseCardKnowledge
+      {/* UX-16 D3: Info tabs (техника + важно знать) */}
+      {infoOpen && hasInfoContent && (
+        <ExerciseCardInfo
+          technique={exercise.technique}
+          mediaUrl={mediaUrl}
+          settingsText={settingsText}
           benefits={exercise.benefits}
           risks={exercise.risks}
           injuries={exercise.injuries}
-          defaultExpanded={displayMode === 'learn'}
           colors={colors}
         />
       )}

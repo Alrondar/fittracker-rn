@@ -3,6 +3,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
   AlertCircle,
@@ -16,6 +17,7 @@ import {
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useInjuries } from '../../src/hooks/useInjuries';
+import { profileService } from '../../src/services/profileService';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { BODY_ZONE_COLORS } from '../../src/constants/semanticColors';
 import { commonStyles } from '../../src/styles/common';
@@ -162,6 +164,15 @@ export default function InjuriesScreen() {
     saving,
   } = useInjuries(userId);
 
+  const { data: profileGender } = useQuery({
+    queryKey: ['profile-gender', userId],
+    queryFn: () => profileService.getProfileData(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    select: (data) => (data?.gender === 'female' ? ('female' as const) : ('male' as const)),
+  });
+  const bodyMapGender = profileGender ?? 'male';
+
   const [showForm, setShowForm] = useState(false);
   const [editingInjury, setEditingInjury] = useState<Injury | null>(null);
 
@@ -292,6 +303,7 @@ export default function InjuriesScreen() {
           injuries={injuries}
           selectedZones={selectedZones}
           onToggleZone={toggleZone}
+          gender={bodyMapGender}
         />
 
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg }}>

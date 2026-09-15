@@ -9,7 +9,7 @@
 // возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
 import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, Clock, X } from 'lucide-react-native';
+import { TrendingUp, X, Lightbulb } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -31,7 +31,8 @@ import {
   weightFromDisplay,
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
-import { SetFeedbackChip, SetFeedbackEditor } from './SetFeedbackControl';
+import { SetFeedbackChip } from './SetFeedbackControl';
+import { RpeOverlay } from './RpeOverlay';
 import { PlateMathRow } from './PlateMathRow';
 import {
   calculateProgression,
@@ -83,7 +84,9 @@ interface SetInputProps {
   value: string;
   placeholder: string;
   keyboardType: 'decimal-pad' | 'number-pad';
-  completed: boolean;
+  // UX-16 F2: per-cell green — зелёный фон только когда в этой конкретной
+  // ячейке есть введённое значение (а не когда сет «завершён» целиком).
+  hasValue: boolean;
   onChangeText: (v: string) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
@@ -93,7 +96,7 @@ const SetInput = memo(function SetInput({
   value,
   placeholder,
   keyboardType,
-  completed,
+  hasValue,
   onChangeText,
   colors,
   cardStyles,
@@ -110,14 +113,17 @@ const SetInput = memo(function SetInput({
     }
   }, [value]);
 
-  const isFilled = local.trim() !== '';
-
+  // UX-16 F2: зелёный фон только когда значение введено в ЭТОЙ ячейке.
+  // Пустая ячейка — нейтральный surfaceSecondary (визуально «не введено»).
+  // Prefill из прошлой сессии (previousWeight) — не считается «введённым»;
+  // set.weight становится не-пустым только когда пользователь вводит значение
+  // в текущей сессии (flushPendingLogs). Именно это делает ячейку зелёной.
   return (
     <View
       style={[
         cardStyles.setInputContainer,
         {
-          backgroundColor: isFilled || completed ? colors.successLight : colors.surfaceSecondary,
+          backgroundColor: hasValue ? colors.successLight : colors.surfaceSecondary,
         },
       ]}
     >
@@ -158,7 +164,6 @@ interface SetRowProps {
     field: 'weight' | 'reps' | 'reps_left' | 'reps_right',
     value: string
   ) => void;
-  isSetCompleted: (set: SetData) => boolean;
   unit: WeightUnit;
   toDisplay: (kg: string) => string;
   fromDisplay: (disp: string) => string;
@@ -179,7 +184,6 @@ const SetRow = memo(function SetRow({
   rowIndex,
   exerciseIndex,
   updateSet,
-  isSetCompleted,
   unit,
   toDisplay,
   fromDisplay,
@@ -209,7 +213,7 @@ const SetRow = memo(function SetRow({
             value={toDisplay(set.weight)}
             placeholder={weightPlaceholder(unit)}
             keyboardType="decimal-pad"
-            completed={isSetCompleted(set)}
+            hasValue={!!set.weight}
             onChangeText={(v) =>
               updateSet(exerciseIndex, startIndex + si, 'weight', fromDisplay(v))
             }
@@ -229,7 +233,7 @@ const SetRow = memo(function SetRow({
                 value={set.reps_left ?? ''}
                 placeholder="L"
                 keyboardType="number-pad"
-                completed={isSetCompleted(set)}
+                hasValue={!!set.reps_left}
                 onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_left', v)}
                 colors={colors}
                 cardStyles={cardStyles}
@@ -238,7 +242,7 @@ const SetRow = memo(function SetRow({
                 value={set.reps_right ?? ''}
                 placeholder="R"
                 keyboardType="number-pad"
-                completed={isSetCompleted(set)}
+                hasValue={!!set.reps_right}
                 onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_right', v)}
                 colors={colors}
                 cardStyles={cardStyles}
@@ -250,7 +254,7 @@ const SetRow = memo(function SetRow({
               value={set.reps}
               placeholder="повт."
               keyboardType="number-pad"
-              completed={isSetCompleted(set)}
+              hasValue={!!set.reps}
               onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
               colors={colors}
               cardStyles={cardStyles}
@@ -533,6 +537,8 @@ export const SetsGrid = memo(function SetsGrid({
   // COACH-3: feedbackState для inline-запроса причины отклонения
   // ============================================================================
   const [expanded, setExpanded] = useState(false);
+  // UX-16 D5: collapsed state for RecommendationCard (controlled by 💡 button)
+  const [recommendationCollapsed, setRecommendationCollapsed] = useState(true);
   // dismissed — скрывает recommendation на сессию (не persist — COACH-3 territory)
   const [dismissed, setDismissed] = useState(false);
   // COACH-1: chips are hidden by default and revealed by the "Изменить" button
@@ -558,6 +564,12 @@ export const SetsGrid = memo(function SetsGrid({
   const toggleExpanded = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setExpanded((v) => !v);
+  }, []);
+
+  // UX-16 D5: toggle RecommendationCard via 💡 button
+  const toggleRecommendation = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRecommendationCollapsed((v) => !v);
   }, []);
 
   // COACH-3: «Скрыть» → показываем inline-чипы причин (reasonPrompt).
@@ -740,11 +752,36 @@ export const SetsGrid = memo(function SetsGrid({
           {allSetsDone ? '✓ ' : ''}
           {completedSets}/{sets.length}
         </Text>
+        {/* UX-16 D5: 💡 button для раскрытия RecommendationCard */}
+        {recommendation && recommendation.action !== 'no_data' && (
+          <TouchableOpacity
+            onPress={toggleRecommendation}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={
+              recommendationCollapsed ? 'Показать рекомендацию' : 'Скрыть рекомендацию'
+            }
+            style={{
+              marginLeft: SPACING.sm,
+              padding: SPACING.xs,
+              borderRadius: BORDER_RADIUS.sm,
+              backgroundColor: recommendationCollapsed
+                ? colors.primary + '15'
+                : colors.primary + '30',
+              borderWidth: 1,
+              borderColor: recommendationCollapsed ? colors.primary + '40' : colors.primary + '60',
+            }}
+          >
+            <Lightbulb size={16} color={colors.primary} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
-        {/* FEAT-1.1 v2: хинт активного сета + чипы прогрессии */}
-        {progressionSetIndex !== null && prevWeight !== null && (
+        {/* FEAT-1.1 v2: хинт активного сета + рекомендации + калькулятор блинов.
+            Структура разделена: предыдущие данные — опциональны,
+            RecommendationCard и PlateMathRow — всегда видимы при наличии данных. */}
+        {progressionSetIndex !== null && (
           <View
             style={{
               marginBottom: SPACING.sm,
@@ -755,53 +792,64 @@ export const SetsGrid = memo(function SetsGrid({
               borderColor: colors.primary + '20',
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: SPACING.sm,
-              }}
-            >
-              <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
-              <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                Подход {progressionSetIndex + 1} · прошлый раз:{' '}
-                <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-                  {toDisplay(String(prevWeight))} {unit}
+            {/* Previous session data — only when available */}
+            {prevWeight !== null && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: SPACING.sm,
+                  marginBottom: SPACING.sm,
+                }}
+              >
+                <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
+                <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                  Подход {progressionSetIndex + 1} · прошлый раз:{' '}
+                  <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                    {toDisplay(String(prevWeight))} {unit}
+                  </Text>
+                  {prevReps != null && (
+                    <>
+                      {' × '}
+                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                        {prevReps}
+                      </Text>
+                    </>
+                  )}
+                  {prevRpe != null && (
+                    <>
+                      {' · RPE '}
+                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                        {prevRpe}
+                      </Text>
+                    </>
+                  )}
                 </Text>
-                {prevReps != null && (
-                  <>
-                    {' × '}
-                    <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{prevReps}</Text>
-                  </>
-                )}
-                {prevRpe != null && (
-                  <>
-                    {' · RPE '}
-                    <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{prevRpe}</Text>
-                  </>
-                )}
-              </Text>
-            </View>
-            {/* COACH-1: Recommendation Card (replaces ENG-2 one-liner + expandable) */}
-            {recommendation && recommendation.action !== 'no_data' && !dismissed && (
-              <RecommendationCard
-                recommendation={recommendation}
-                explanationItems={explanationItems}
-                accentColor={recommendationColor}
-                colors={colors}
-                toDisplay={toDisplay}
-                unit={unit}
-                expanded={expanded}
-                onToggleExpand={toggleExpanded}
-                onAccept={handleAccept}
-                onChange={handleChipsToggle}
-                onDismiss={handleDismiss}
-                acceptDisabled={progressionSetIndex === null}
-                chipsOpen={chipsOpen}
-                policy={policy}
-              />
+              </View>
             )}
+            {/* COACH-1: Recommendation Card — показывается только при 💡 тапе (UX-16 D5) */}
+            {recommendation &&
+              recommendation.action !== 'no_data' &&
+              !recommendationCollapsed &&
+              !dismissed && (
+                <RecommendationCard
+                  recommendation={recommendation}
+                  explanationItems={explanationItems}
+                  accentColor={recommendationColor}
+                  colors={colors}
+                  toDisplay={toDisplay}
+                  unit={unit}
+                  expanded={expanded}
+                  onToggleExpand={toggleExpanded}
+                  onAccept={handleAccept}
+                  onChange={handleChipsToggle}
+                  onDismiss={handleDismiss}
+                  acceptDisabled={progressionSetIndex === null}
+                  chipsOpen={chipsOpen}
+                  policy={policy}
+                />
+              )}
             {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
                 PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
                 «×» справа = пропустить причину (записать rejected без userReasonCode). */}
@@ -868,8 +916,9 @@ export const SetsGrid = memo(function SetsGrid({
                 </View>
               </View>
             )}
-            {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить" */}
-            {chipsOpen && (
+            {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить".
+                Only shown when there's previous weight to add steps to. */}
+            {chipsOpen && prevWeight !== null && (
               <View
                 style={{
                   flexDirection: 'row',
@@ -907,7 +956,8 @@ export const SetsGrid = memo(function SetsGrid({
                 })}
               </View>
             )}
-            {/* FEAT-1.5: Plate Math Row (Variant B: Balanced) */}
+            {/* FEAT-1.5: Plate Math Row — показывается при любом весе в текущем сете,
+                не зависит от наличия предыдущих данных. */}
             <PlateMathRow
               weight={progressionSet?.weight ? parseFloat(progressionSet.weight) : null}
               equipment={equipment}
@@ -930,7 +980,6 @@ export const SetsGrid = memo(function SetsGrid({
               rowIndex={rowIndex}
               exerciseIndex={exerciseIndex}
               updateSet={updateSet}
-              isSetCompleted={isSetCompleted}
               unit={unit}
               toDisplay={toDisplay}
               fromDisplay={fromDisplay}
@@ -944,30 +993,29 @@ export const SetsGrid = memo(function SetsGrid({
           );
         })}
 
-        {/* FEAT-7 v2: редактор RPE (тапабельная шкала, «Готово» = коммит) */}
-        {feedbackSetIndex !== null && activeSet !== null && isSetCompleted(activeSet) && (
-          <SetFeedbackEditor
-            key={feedbackSetIndex}
-            setNumber={feedbackSetIndex + 1}
-            rpe={activeSet.rpe ?? null}
-            onChange={(patch) => updateSetFeedback(exerciseIndex, feedbackSetIndex, patch)}
-            onClose={() => setFeedbackSetIndex(null)}
-            colors={colors}
-          />
-        )}
-
-        {/* FEAT-1.2: ручной старт отдыха — фолбэк, когда автостарт выключен */}
-        <TouchableOpacity
-          style={[cardStyles.restButton, { backgroundColor: colors.primary }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            startRestTimer(restSeconds);
-          }}
-        >
-          <Clock size={16} color={colors.textInverse} strokeWidth={2} />
-          <Text style={cardStyles.restButtonText}>Отдых {restSeconds}с</Text>
-        </TouchableOpacity>
+        {/* UX-16 D6: кнопка отдыха перенесена в ActionsRow (ExerciseCard) */}
       </View>
+
+      {/* UX-16 D4/F3: RPE overlay над таблицей (absolute position, covers entire SetsGrid).
+          F3: передаём setIndex/totalSets для анимации из тапнутой колонки. */}
+      {feedbackSetIndex !== null && activeSet !== null && isSetCompleted(activeSet) && (
+        <RpeOverlay
+          key={`rpe-${feedbackSetIndex}`}
+          setNumber={feedbackSetIndex + 1}
+          setIndex={feedbackSetIndex}
+          totalSets={sets.length}
+          rpe={activeSet.rpe ?? null}
+          weight={toDisplay(activeSet.weight)}
+          reps={
+            isUnilateral
+              ? `${activeSet.reps_left ?? '?'}/${activeSet.reps_right ?? '?'}`
+              : activeSet.reps
+          }
+          onChange={(patch) => updateSetFeedback(exerciseIndex, feedbackSetIndex, patch)}
+          onClose={() => setFeedbackSetIndex(null)}
+          colors={colors}
+        />
+      )}
     </View>
   );
 });

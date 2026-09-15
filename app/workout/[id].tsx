@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Dumbbell } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
@@ -43,7 +43,6 @@ import {
 import { PainSheet } from '../../src/components/workout/PainSheet';
 import { WorkoutScreenHeader } from '../../src/components/workout/WorkoutScreenHeader';
 import { WorkoutInjuryBanner } from '../../src/components/workout/WorkoutInjuryBanner';
-import { WorkoutScreenFooter } from '../../src/components/workout/WorkoutScreenFooter';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
@@ -53,8 +52,9 @@ export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
-  const { colors, gradients } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  // UX-16 D1: WorkoutScreenFooter удалён — insets.bottom больше не нужен
+  // const insets = useSafeAreaInsets();
   const { unit, setUnit } = useUnitPreferences();
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
@@ -67,39 +67,38 @@ export default function WorkoutSessionScreen() {
     perfMark('tti:mount');
   }
 
-const {
-  workoutName,
-  exercises,
-  loading,
-  saving,
-  isWorkoutActive,
-  setIsWorkoutActive,
-  initialTime,
-  restTimer,
-  restTimeLeft,
-  isRestFinished,
-  adjustRestTimer,
-  replacements,
-  handleTimerTick,
-  handleTimerStart,
-  handleTimerStop,
-  loadAlternatives,
-  updateSet,
-  updateSetFeedback,
-  applyProgression,
-  isSetCompleted,
-  updateExerciseSettings,
-  programId,
-  replaceExercise,
-  replaceExerciseInProgram,
-  resetToOriginal,
-  savePainState,
-  clearPainState,
-  startRestTimer,
-  stopRestTimer,
-  addSet,
-  saveWorkout,
-} = useWorkoutSession(id as string, userId);
+  const {
+    workoutName,
+    exercises,
+    loading,
+    saving,
+    isWorkoutActive,
+    initialTime,
+    restTimer,
+    restTimeLeft,
+    isRestFinished,
+    adjustRestTimer,
+    replacements,
+    handleTimerTick,
+    handleTimerStart,
+    handleTimerStop,
+    loadAlternatives,
+    updateSet,
+    updateSetFeedback,
+    applyProgression,
+    isSetCompleted,
+    updateExerciseSettings,
+    programId,
+    replaceExercise,
+    replaceExerciseInProgram,
+    resetToOriginal,
+    savePainState,
+    clearPainState,
+    startRestTimer,
+    stopRestTimer,
+    addSet,
+    saveWorkout,
+  } = useWorkoutSession(id as string, userId);
 
   const { data: workoutProgramInfo } = useQuery({
     queryKey: ['workoutProgramInfo', id],
@@ -113,10 +112,7 @@ const {
   // ENG-3: today readiness (1-5) — optional signal для recommendation engine.
   // null (check-in не сделан) не блокирует и не меняет recommendation (PRODUCT.md §7).
   const { data: todayReadiness } = useTodayReadiness(userId);
-  const readinessContext = useMemo(
-    () => ({ readiness: todayReadiness ?? null }),
-    [todayReadiness],
-  );
+  const readinessContext = useMemo(() => ({ readiness: todayReadiness ?? null }), [todayReadiness]);
 
   const warmupSource = useMemo(
     () =>
@@ -126,7 +122,7 @@ const {
         secondary_muscles: e.secondary_muscles,
         equipment: e.equipment,
       })),
-    [exercises],
+    [exercises]
   );
 
   const {
@@ -160,7 +156,7 @@ const {
       if (painIndex === null) return;
       await savePainState(painIndex, painState);
     },
-    [painIndex, savePainState],
+    [painIndex, savePainState]
   );
 
   const clearPainForCurrent = useCallback(async () => {
@@ -211,7 +207,7 @@ const {
       const currentSets: SetData[] = exercisesRef.current[exerciseIndex]?.sets ?? [];
       setSettingsTarget({ exerciseIndex, setsCount, restSeconds, currentSets });
     },
-    [],
+    []
   );
   const closeExerciseSettings = useCallback(() => setSettingsTarget(null), []);
   const saveExerciseSettings = useCallback(
@@ -219,14 +215,31 @@ const {
       updateExerciseSettings(exerciseIndex, setsCount, restSeconds);
       setSettingsTarget(null);
     },
-    [updateExerciseSettings],
+    [updateExerciseSettings]
   );
 
   // PR8: чистая функция из utils/intensityInfo
   const getIntensityInfo = useCallback(
     (intensity: string) => getIntensityInfoUtil(intensity, colors),
-    [colors],
+    [colors]
   );
+
+  // UX-16 D1: сводка подходов для confirm sheet
+  const { completedSetsCount, totalSetsCount } = useMemo(() => {
+    let completed = 0;
+    let total = 0;
+    for (const exercise of exercises) {
+      if ('sets' in exercise && exercise.sets.length > 0) {
+        for (const set of exercise.sets) {
+          total++;
+          if (isSetCompleted(set)) {
+            completed++;
+          }
+        }
+      }
+    }
+    return { completedSetsCount: completed, totalSetsCount: total };
+  }, [exercises, isSetCompleted]);
 
   // UX-5 Feature 1: выбор типа замены (temp vs program)
   // - Без программы: только временная замена (без выбора).
@@ -255,76 +268,74 @@ const {
             style: 'destructive',
             onPress: () => replaceExerciseInProgram(exerciseIndex, alternativeId),
           },
-        ],
+        ]
       );
     },
-    [programId, replaceExercise, replaceExerciseInProgram],
+    [programId, replaceExercise, replaceExerciseInProgram]
   );
 
-const renderItem = useCallback(
-  ({ item, index }: { item: any; index: number }) => (
-    <ExerciseSlider
-      exercise={item}
-      exerciseIndex={index}
-      isReplaced={!!replacements[item.workout_exercise_id]}
-      displayMode={displayMode}
-      loadAlternatives={loadAlternatives}
-      updateSet={updateSet}
-      updateSetFeedback={updateSetFeedback}
-      applyProgression={applyProgression}
-      isSetCompleted={isSetCompleted}
-      onRequestReplace={handleReplaceChoice}
-      resetToOriginal={resetToOriginal}
-      startRestTimer={startRestTimer}
-      getIntensityInfo={getIntensityInfo}
-      onOpenSettings={openExerciseSettings}
-      onOpenPain={openPain}
-      colors={colors}
-      cardStyles={cardStyles}
-      unit={unit}
-      warning={exerciseWarnings[item.id] || null}
-      readinessContext={readinessContext}
-      workoutId={id as string}
-      addSet={addSet}
-    />
-  ),
-  [
-    id,
-    replacements,
-    displayMode,
-    loadAlternatives,
-    updateSet,
-    updateSetFeedback,
-    applyProgression,
-    isSetCompleted,
-    handleReplaceChoice,
-    resetToOriginal,
-    startRestTimer,
-    getIntensityInfo,
-    openExerciseSettings,
-    openPain,
-    colors,
-    cardStyles,
-    unit,
-    exerciseWarnings,
-    readinessContext,
-    addSet,
-  ],
-);
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <ExerciseSlider
+        exercise={item}
+        exerciseIndex={index}
+        isReplaced={!!replacements[item.workout_exercise_id]}
+        displayMode={displayMode}
+        loadAlternatives={loadAlternatives}
+        updateSet={updateSet}
+        updateSetFeedback={updateSetFeedback}
+        applyProgression={applyProgression}
+        isSetCompleted={isSetCompleted}
+        onRequestReplace={handleReplaceChoice}
+        resetToOriginal={resetToOriginal}
+        startRestTimer={startRestTimer}
+        getIntensityInfo={getIntensityInfo}
+        onOpenSettings={openExerciseSettings}
+        onOpenPain={openPain}
+        colors={colors}
+        cardStyles={cardStyles}
+        unit={unit}
+        warning={exerciseWarnings[item.id] || null}
+        readinessContext={readinessContext}
+        workoutId={id as string}
+        addSet={addSet}
+      />
+    ),
+    [
+      id,
+      replacements,
+      displayMode,
+      loadAlternatives,
+      updateSet,
+      updateSetFeedback,
+      applyProgression,
+      isSetCompleted,
+      handleReplaceChoice,
+      resetToOriginal,
+      startRestTimer,
+      getIntensityInfo,
+      openExerciseSettings,
+      openPain,
+      colors,
+      cardStyles,
+      unit,
+      exerciseWarnings,
+      readinessContext,
+      addSet,
+    ]
+  );
 
   const renderEmpty = useCallback(
     () => (
       <View style={commonStyles.emptyContainer}>
         <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
-        <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
-          Нет упражнений
-        </Text>
+        <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>Нет упражнений</Text>
         <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
           В этой тренировке пока нет упражнений
         </Text>
       </View>
     ),
-    [colors],
+    [colors]
   );
 
   if (loading) {
@@ -365,6 +376,12 @@ const renderItem = useCallback(
           unit={unit}
           onUnitChange={setUnit}
           colors={colors}
+          isWorkoutActive={isWorkoutActive}
+          saving={saving}
+          onStart={handleTimerStart}
+          onFinish={saveWorkout}
+          completedSetsCount={completedSetsCount}
+          totalSetsCount={totalSetsCount}
         />
       </WorkoutTimerProvider>
 
@@ -459,7 +476,7 @@ const renderItem = useCallback(
 
       {/* FEAT-1.9 + PR6: шторка боли с prefill и upsert/delete */}
       <PainSheet
-        exercise={painIndex !== null ? exercises[painIndex] ?? null : null}
+        exercise={painIndex !== null ? (exercises[painIndex] ?? null) : null}
         workoutId={id as string}
         userId={userId}
         onClose={closePain}
@@ -475,16 +492,7 @@ const renderItem = useCallback(
         cardStyles={cardStyles}
       />
 
-      {/* PR8: footer вынесен в WorkoutScreenFooter */}
-      <WorkoutScreenFooter
-  isWorkoutActive={isWorkoutActive}
-  saving={saving}
-  onStart={handleTimerStart}  // ✅ Теперь записывает started_at
-  onFinish={saveWorkout}
-  colors={colors}
-  gradients={gradients}
-  insetsBottom={insets.bottom}
-/>
+      {/* UX-16 D1: WorkoutScreenFooter удалён — старт/финиш теперь в шапке */}
     </SafeAreaView>
   );
 }

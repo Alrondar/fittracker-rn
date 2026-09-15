@@ -39,9 +39,16 @@ export type InjuryBodyMapProps = {
   injuries: Injury[];
   selectedZones: Zone[];
   onToggleZone: (zone: Zone) => void;
+  /** Пол пользователя для силуэта BodyMap. Default 'male'. */
+  gender?: 'male' | 'female';
 };
 
-export function InjuryBodyMap({ injuries, selectedZones, onToggleZone }: InjuryBodyMapProps) {
+export function InjuryBodyMap({
+  injuries,
+  selectedZones,
+  onToggleZone,
+  gender = 'male',
+}: InjuryBodyMapProps) {
   const { colors } = useTheme();
 
   // Определяем цвет для каждого slug на основе максимальной severity травмы в этой зоне
@@ -142,7 +149,7 @@ export function InjuryBodyMap({ injuries, selectedZones, onToggleZone }: InjuryB
             side="front"
             data={bodyData}
             scale={0.6}
-            gender="male"
+            gender={gender}
             border="none"
             defaultFill={hasActiveInjuries ? colors.textTertiary : colors.surfaceSecondary}
             onBodyPartPress={handleBodyPress}
@@ -163,7 +170,7 @@ export function InjuryBodyMap({ injuries, selectedZones, onToggleZone }: InjuryB
             side="back"
             data={bodyData}
             scale={0.6}
-            gender="male"
+            gender={gender}
             border="none"
             defaultFill={hasActiveInjuries ? colors.textTertiary : colors.surfaceSecondary}
             onBodyPartPress={handleBodyPress}

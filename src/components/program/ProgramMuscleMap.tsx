@@ -7,6 +7,9 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useStore } from '../../store/useStore';
+import { useQuery } from '@tanstack/react-query';
+import { profileService } from '../../services/profileService';
 import { AppCard } from '../ui/AppCard';
 import { SectionHeader } from '../SectionHeader';
 import { MuscleLoadMap } from '../workout/MuscleLoadMap';
@@ -36,7 +39,18 @@ export type ProgramMuscleMapProps = {
 
 export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
   const { colors } = useTheme();
+  const { userId } = useStore();
   const [mode, setMode] = useState<MuscleLoadMode>('total');
+
+  // Пол пользователя для силуэта BodyMap (мужской/женский контур)
+  const { data: profileGender } = useQuery({
+    queryKey: ['profile-gender', userId],
+    queryFn: () => profileService.getProfileData(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    select: (data) => (data?.gender === 'female' ? ('female' as const) : ('male' as const)),
+  });
+  const bodyMapGender = profileGender ?? 'male';
 
   const muscleLoad: MuscleLoad[] = useMemo(() => {
     const entries = calculateProgramMuscleLoad(phases, mode);
@@ -74,7 +88,12 @@ export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
           ? 'Плановые сеты за неделю (вкл. косвенную нагрузку), усреднено по фазам'
           : 'Плановые сеты за неделю (только прямая нагрузка), усреднено по фазам'}
       </Text>
-      <MuscleLoadMap muscleLoad={muscleLoad} gender="male" scale={0.6} showLegend={false} />
+      <MuscleLoadMap
+        muscleLoad={muscleLoad}
+        gender={bodyMapGender}
+        scale={0.6}
+        showLegend={false}
+      />
       {/* Кастомная легенда для sets/week */}
       <View
         style={{

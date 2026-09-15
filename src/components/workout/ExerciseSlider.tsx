@@ -25,7 +25,7 @@ import { AlternativeSourceInput } from '../../engine/alternatives';
 import type { FetchAlternativesResult } from '../../hooks/workout/useWorkoutSession.loader';
 import type { ReadinessContext } from '../../engine/progression';
 
-const H_GAP = 16;
+const H_GAP = SPACING.md; // UX-16 F1: плотный ритм между карточками
 const PAD = 16;
 
 /** ENG-5: плюрализация «N вариант скрыт / варианта скрыто / вариантов скрыто». */
@@ -196,7 +196,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   );
 
   return (
-    <View style={{ marginTop: SPACING.lg }}>
+    <View style={{ marginTop: SPACING.md }}>
       {isReplaced && (
         <View style={[cardStyles.replacedBadgeContainer, { backgroundColor: colors.primaryLight }]}>
           <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>Заменено</Text>

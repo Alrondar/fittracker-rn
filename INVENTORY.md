@@ -1,6 +1,6 @@
 FitTracker — Code & Screen Inventory
 
-Срез: 08.09.2026 (main) [H4 Accessibility polish, SheetShell scroll fix]
+Срез: 14.09.2026 (main) [UX-16 visual refinements]
 
 Этот файл отвечает только на вопросы «где находится код?», «что он делает?» и «что затронет изменение?». Статусы задач находятся в `STATUS.md`, технические правила — в `CLAUDE.md`, продуктовая модель — в `PRODUCT.md`.
 
@@ -100,15 +100,15 @@ Main components:
 `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
 `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») с PR6 pain affordance
 `sections/ExerciseWarningBanner.tsx` — caution/avoid warning
-`sections/ExerciseCardEquipment.tsx` — EquipmentBubbles (вынесено из accordion)
-`sections/ExerciseCardMuscles.tsx` — primary/secondary muscle bubbles
-`sections/ExerciseCardTechnique.tsx` — техника + media + настройки (доступна во всех display modes)
-`sections/ExerciseCardKnowledge.tsx` — benefits/risks/injuries accordion; подзаголовки через SectionSubheading (PR7)
+`sections/ExerciseCardTags.tsx` — exclusive toggle equipment/muscles (UX-16 D2)
+`sections/ExerciseCardTechnique.tsx` — техника + media + настройки (используется в AlternativeExerciseCard; UX-16 D3: основной ExerciseCard использует ExerciseCardInfo)
+`sections/ExerciseCardActions.tsx` — rest pill + Info button (UX-16 D6)
+`sections/ExerciseCardInfo.tsx` — tabs техника/важно знать с PillToggle (UX-16 D3)
 `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне; ENG-5: бейджи relation_type (Прогрессия/Упрощение/Вариант)
+`RpeOverlay.tsx` — onboarding-overlay для RPE над таблицей (UX-16 D4)
 `PlateMathRow.tsx` — компактная строка с иконкой и разборкой веса штанги (FEAT-1.5, Variant B: Balanced)
-`WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle, TimerPill/Panel (PR8)
+`WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, pill старт/финиш (UX-16 D1), UnitToggle, TimerPill/Panel
 `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
-`WorkoutScreenFooter.tsx` — «Начать тренировку» / «Завершить» с LinearGradient (PR8)
 Main hooks/services:
 `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
 `workout/useWorkoutSession.types.ts` — внутренние типы join-структур
@@ -356,7 +356,7 @@ Important components:
 | utils/macroCalculator.ts|macro calculations|
 | engine/progression.ts|calculateProgression (ENG-1); explainProgression (ENG-2); applySafetyPrecedence (ENG-4); applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety). Чистые функции|
 | engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция|
-| engine/weeklySummary.ts|buildWeeklyInsights (ENG-6) + CI-5 goal-aware + calculateTrainingLoadContext (CI-2) + calculateDeloadContext (CI-6, 4 сигнала, threshold ≥3 или highLoad+(plateau|readinessDecline)); типы WeeklySummaryData/Insight/TrainingLoadContext/DeloadContext. Чистые функции |
+| engine/weeklySummary.ts|buildWeeklyInsights (ENG-6) + CI-5 goal-aware + calculateTrainingLoadContext (CI-2) + calculateDeloadContext (CI-6, 4 сигнала, threshold ≥3 или highLoad+(plateau/readinessDecline)). **P2**: добавлены `muscleFatigue` и `muscleStrength` в `WeeklySummaryData` для 3D Muscle Map. Чистые функции |
 
 # 10. Database / migrations
 Important migrations include:
@@ -413,7 +413,7 @@ WeightTrendChart and MetricSparkline exist.
 Body metrics schema (FEAT-2.3): `body_metrics` таблица содержит `thigh_left_cm` и `thigh_right_cm` (numeric, nullable) для консистентности с другими конечностями (biceps_left/right, forearm_left/right, calf_left/right). `thigh_cm` — legacy колонка (как `arm_cm`), остаётся для обратной совместимости; миграция `20260823_split_thigh_cm.sql` копирует существующие данные `thigh_cm` в обе новые колонки. UI автоматически поддерживает через `METRIC_FIELDS` в `src/types/metrics.ts` — форма и история рендерятся из этого массива.
 Program editing is already split into multiple components/sheets, but the UX hierarchy remains a major audit target.
 Display modes (training/balanced/learn) реализованы через `useWorkoutDisplayMode` + `WorkoutDisplayModePicker` в settings (feature branch).
-ExerciseCard разбит на секции в `sections/`; порядок секций: Header → Equipment → Warning → [Muscles] → SetsGrid → Technique → [Knowledge]. SetsGrid — главный рабочий блок, всегда выше справочной информации (Technique/Knowledge). Muscles/Knowledge скрыты в training mode.
+ExerciseCard разбит на секции в `sections/`; порядок секций (UX-16): Header → TagsRow (exclusive toggle equipment/muscles) → Warning/Banners → SetsGrid (💡 + collapsible Recommendation + RPE overlay) → ActionsRow (rest pill + Info) → [Info tabs]. SetsGrid — главный рабочий блок, всегда выше справочной информации. Knowledge скрыт в training mode; technique доступен во всех режимах.
 Equipment вынесен из accordion в отдельную секцию `ExerciseCardEquipment`.
 Technique accordion доступна во всех display modes (safety: правильная техника = безопасность).
 Media/slider content монтируется только при раскрытии accordion (CLAUDE.md §8).
@@ -473,7 +473,11 @@ update `STATUS.md` if task status changed;
 do not copy technical rules from `CLAUDE.md` here;
 do not copy product decisions from `PRODUCT.md` here.
 
-Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H-MUSCLE-2 / H-MUSCLE-3 / H-MUSCLE-4 / H-MUSCLE-5 / H-MUSCLE-6)
+Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H-MUSCLE-2 / H-MUSCLE-3 / H-MUSCLE-4 / H-MUSCLE-5 / H-MUSCLE-6 / UX-16)
+`src/components/workout/sections/ExerciseCardTags.tsx` — UX-16 D2: exclusive toggle equipment/muscles
+`src/components/workout/sections/ExerciseCardActions.tsx` — UX-16 D6: rest pill + Info button
+`src/components/workout/sections/ExerciseCardInfo.tsx` — UX-16 D3: tabs техника/важно знать
+`src/components/workout/RpeOverlay.tsx` — UX-16 D4: onboarding-overlay для RPE
 `src/components/dashboard/ContextInsightCard.tsx` — COACH-4: компактный инсайт на Dashboard (L1)
 `src/components/dashboard/StatusCard.tsx` — AUDIT-6: «Состояние сегодня» (readiness мини-кольцо + tappable pips, чипы травм, «⚠ Боль сегодня»); ENG-15: передаёт `gender` в `ReadinessSheet` (без прямого supabase)
 `src/components/dashboard/CircularNutritionChart.tsx` — AUDIT-1: SVG-кольца питания
