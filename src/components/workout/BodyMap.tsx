@@ -82,16 +82,17 @@ export const BodyMap = memo<BodyMapProps>(
         : FEMALE_BACK_OUTLINE;
 
     // Создаем lookup map для пользовательских данных
+    // trim() для совместимости с данными, содержащими trailing пробелы в slug
     const userDataMap = new Map<string, ExtendedBodyPart>();
     data.forEach((part) => {
       if (part.slug) {
-        userDataMap.set(part.slug, part);
+        userDataMap.set(part.slug.trim(), part);
       }
     });
 
     const renderPaths = () => {
       return basePaths.map((assetPart: BodyPart) => {
-        const userPart = userDataMap.get(assetPart.slug);
+        const userPart = userDataMap.get(assetPart.slug.trim());
 
         // Определяем цвет заливки
         let fillColor = defaultFill;

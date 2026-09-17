@@ -516,7 +516,6 @@ export const bodyBack: BodyPart[] = [
   },
 ];
 
-// Для женских силуэтов используем те же пути, что и для мужских (упрощение).
-// В будущем можно добавить специфичные женские пути из bodyFemaleFront/bodyFemaleBack.
-export const bodyFemaleFront: BodyPart[] = bodyFront;
-export const bodyFemaleBack: BodyPart[] = bodyBack;
+// Женские силуэты — отдельные пути из react-native-body-highlighter.
+export { bodyFemaleFront } from './bodyFemaleFront';
+export { bodyFemaleBack } from './bodyFemaleBack';
