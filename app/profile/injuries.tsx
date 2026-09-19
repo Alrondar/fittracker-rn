@@ -165,7 +165,7 @@ export default function InjuriesScreen() {
   } = useInjuries(userId);
 
   const { data: profileGender } = useQuery({
-    queryKey: ['profile-gender', userId],
+    queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,

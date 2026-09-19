@@ -44,7 +44,7 @@ export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
 
   // Пол пользователя для силуэта BodyMap (мужской/женский контур)
   const { data: profileGender } = useQuery({
-    queryKey: ['profile-gender', userId],
+    queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
