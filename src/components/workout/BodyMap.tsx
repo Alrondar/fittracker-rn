@@ -7,8 +7,8 @@
 import React, { memo } from 'react';
 import Svg, { Path, G } from 'react-native-svg';
 import {
-  bodyFront,
-  bodyBack,
+  bodyMaleFront,
+  bodyMaleBack,
   bodyFemaleFront,
   bodyFemaleBack,
 } from '../../constants/muscleSvgPaths';
@@ -57,8 +57,8 @@ export const BodyMap = memo<BodyMapProps>(
     // Выбираем правильные пути мышц
     const basePaths = isMale
       ? isFront
-        ? bodyFront
-        : bodyBack
+        ? bodyMaleFront
+        : bodyMaleBack
       : isFront
         ? bodyFemaleFront
         : bodyFemaleBack;
