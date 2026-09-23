@@ -13,6 +13,7 @@
 //   - secondary мышца получает 50% вклада (0.5 × sets) как косвенная нагрузка
 //   - volumeKg = Σ(weight × reps) × коэффициент (показывается только как справка в легенде)
 //   - loadScore = Σ(sets) × коэффициент (используется ТОЛЬКО для шкалы интенсивности карты)
+//   - RPE/RIR не участвуют в расчёте: они относятся к отдельному сигналу субъективной интенсивности.
 //
 // loadScore используется только для раскраски интенсивности — он объясним
 // и детерминирован; volumeKg и sets — это «что показываем пользователю».
@@ -23,7 +24,6 @@ import { getSlugsForMuscle } from '../constants/muscleMapSlugs';
 export type MuscleLoadSet = {
   weight: number | null;
   reps: number | null;
-  rpe: number | null;
   isWarmup?: boolean;
 };
 

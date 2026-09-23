@@ -88,7 +88,7 @@ export default function WorkoutReportScreen() {
     // Нагрузка по мышцам: детерминированная агрегация (src/utils/muscleLoad.ts).
     // Модель: primary = 100%, secondary = 50% (в режиме 'total').
     // В режиме 'direct' secondary мышцы полностью исключаются.
-    // RPE учитывается в loadScore для интенсивности раскраски карты.
+    // RPE показывается отдельно в сводке и не меняет цвет карты.
     const muscleLoad = calculateMuscleLoad(
       data.exercises.map((ex: WorkoutDetailExercise) => ({
         primaryMuscles: ex.primary_muscles,
@@ -96,7 +96,6 @@ export default function WorkoutReportScreen() {
         sets: ex.logs.map((log: WorkoutDetailLog) => ({
           weight: log.weight_kg,
           reps: log.reps,
-          rpe: log.rpe,
           isWarmup: log.is_warmup ?? false,
         })),
       })),
