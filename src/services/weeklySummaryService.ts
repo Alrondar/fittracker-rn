@@ -72,7 +72,7 @@ interface WorkoutWeekRow {
     | {
         id: string;
         exercise_id: string;
-        reps_range?: string | null;
+        target_reps_range?: string | null;
         exercises:
           | { name: string; primary_muscles?: string[]; secondary_muscles?: string[] }
           | { name: string; primary_muscles?: string[]; secondary_muscles?: string[] }[]
@@ -209,7 +209,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
         workout_exercises(
           id,
           exercise_id,
-          reps_range,
+          target_reps_range,
           exercises(name, primary_muscles, secondary_muscles),
           workout_logs(set_number, weight_kg, reps, rpe, completed_at, is_warmup)
         )
@@ -289,8 +289,8 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
         const reps = lastLog.reps ?? 0;
 
         let repsRange: [number, number] = [8, 12];
-        if (we.reps_range) {
-          const parts = we.reps_range.split('-').map(Number);
+        if (we.target_reps_range) {
+          const parts = we.target_reps_range.split('-').map(Number);
           if (parts.length === 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
             repsRange = [parts[0], parts[1]];
           }
