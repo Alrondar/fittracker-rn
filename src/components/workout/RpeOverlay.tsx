@@ -25,6 +25,7 @@ import {
   deriveDifficulty,
   DIFFICULTY_LABELS,
 } from '../../utils/rpe';
+import type { WeightUnit } from '../../hooks/useUnitPreferences';
 
 const RPE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 const DEFAULT_RPE = 7;
@@ -37,6 +38,8 @@ interface RpeOverlayProps {
   totalSets: number;
   rpe: number | null;
   weight: string;
+  /** Единица отображения веса (хранилище всегда кг; подписи «кг»/«lb»). */
+  unit: WeightUnit;
   reps: string;
   onChange: (patch: SetFeedbackPatch) => void;
   onClose: () => void;
@@ -49,6 +52,7 @@ export const RpeOverlay = memo(function RpeOverlay({
   totalSets,
   rpe,
   weight,
+  unit,
   reps,
   onChange,
   onClose,
@@ -230,7 +234,7 @@ export const RpeOverlay = memo(function RpeOverlay({
                 RPE для подхода {setNumber}
               </Text>
               <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-                {weight} {weight ? 'кг' : ''} × {reps}
+                {weight} {weight ? (unit === 'kg' ? 'кг' : 'lb') : ''} × {reps}
               </Text>
             </View>
             <TouchableOpacity

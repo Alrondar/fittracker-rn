@@ -22,6 +22,7 @@ import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import { PillToggle } from '../ui/PillToggle';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import type { InsightSeverity } from '../../engine/weeklySummary';
 
 interface WeeklyReviewSectionProps {
@@ -44,6 +45,7 @@ const severityColors: Record<InsightSeverity, { bg: string; icon: string; border
 
 export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const [isExpanded, setIsExpanded] = useState(false);
   // CI-6: session-local dismiss deload card (без persistence, как COACH-1).
   const [deloadDismissed, setDeloadDismissed] = useState(false);
@@ -512,7 +514,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                   Метрики:
                 </Text>
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  Объём: {data.current.totalVolume.toLocaleString()} кг{' '}
+                  Объём: {kgToUnit(data.current.totalVolume).toLocaleString('ru-RU')} {unitLabel}{' '}
                   {data.previous.totalVolume > 0
                     ? `(${Math.round((data.trainingLoad.signals.volumeTrend - 1) * 100)}% к прошлой неделе)`
                     : ''}
@@ -822,7 +824,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                             </Text>
                             <Text style={[typography.caption, { color: colors.textSecondary }]}>
                               {Math.round(strength.daysAgo)} дн. назад ·{' '}
-                              {Math.round(strength.current1RM)} кг 1RM
+                              {Math.round(kgToUnit(strength.current1RM))} {unitLabel} 1RM
                             </Text>
                           </View>
                         );

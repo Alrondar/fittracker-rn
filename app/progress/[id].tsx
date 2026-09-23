@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Clock, Dumbbell, Flame, X } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { useStore } from '../../src/store/useStore';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
@@ -30,6 +31,7 @@ export default function WorkoutReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const { userId } = useStore();
 
   const { data, isPending, isError, refetch } = useQuery({
@@ -223,9 +225,11 @@ export default function WorkoutReportScreen() {
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Dumbbell size={20} color={colors.primary} />
             <Text style={[typography.h4, { color: colors.textPrimary, marginTop: SPACING.xs }]}>
-              {stats?.totalVolume.toLocaleString('ru-RU') ?? 0}
+              {kgToUnit(stats?.totalVolume ?? 0).toLocaleString('ru-RU')}
             </Text>
-            <Text style={[typography.caption, { color: colors.textSecondary }]}>кг объём</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>
+              {unitLabel} объём
+            </Text>
           </View>
           <View style={{ width: 1, backgroundColor: colors.border }} />
           <View style={{ flex: 1, alignItems: 'center' }}>
@@ -402,7 +406,7 @@ export default function WorkoutReportScreen() {
                     <Text
                       style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]}
                     >
-                      {log.weight_kg ?? 0} × {log.reps ?? 0}
+                      {log.weight_kg != null ? kgToUnit(log.weight_kg) : 0} × {log.reps ?? 0}
                     </Text>
                     {log.rpe != null && (
                       <Text style={[typography.caption, { color: colors.warning }]}>

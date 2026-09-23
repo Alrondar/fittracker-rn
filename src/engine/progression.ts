@@ -719,14 +719,22 @@ export interface ExplanationItem {
  *
  * Pattern: input (прошлый результат) → signal (что учли) → conclusion (рекомендация).
  */
-export function explainProgression(result: ProgressionResult): ExplanationItem[] {
+export function explainProgression(
+  result: ProgressionResult,
+  unit: 'kg' | 'lb' = 'kg'
+): ExplanationItem[] {
   const { action, reason, suggestedWeight, suggestedReps } = result;
   const { lastWeight, lastReps, lastRpe, targetRange } = reason.factors;
   const items: ExplanationItem[] = [];
 
+  // P1-A: движок остаётся чистым (без импортов хуков) — единица приходит параметром,
+  // коэффициент идентичен kgToLb из useUnitPreferences.
+  const w = (kg: number) => (unit === 'kg' ? `${kg}` : `${Math.round(kg * 2.20462)}`);
+  const uL = unit === 'kg' ? 'кг' : 'lb';
+
   // 1. INPUT — прошлый результат (если есть)
   if (lastWeight != null && lastReps != null) {
-    let inputText = `${lastWeight} кг × ${lastReps}`;
+    let inputText = `${w(lastWeight)} ${uL} × ${lastReps}`;
     if (lastRpe != null) inputText += ` · RPE ${lastRpe}`;
     items.push({ kind: 'input', label: 'Прошлый результат', value: inputText });
   } else {
@@ -1021,7 +1029,7 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
     items.push({
       kind: 'conclusion',
       label: 'Рекомендуем',
-      value: `${suggestedWeight} кг${repsPart}`,
+      value: `${w(suggestedWeight)} ${uL}${repsPart}`,
       emphasis: 'success',
     });
   } else if (action === 'decrease' && suggestedWeight != null) {
@@ -1032,14 +1040,14 @@ export function explainProgression(result: ProgressionResult): ExplanationItem[]
     items.push({
       kind: 'conclusion',
       label: isDeload ? 'Разгрузка' : 'Снизить до',
-      value: `${suggestedWeight} кг${repsPart}`,
+      value: `${w(suggestedWeight)} ${uL}${repsPart}`,
       emphasis: 'warning',
     });
   } else if (suggestedWeight != null) {
     items.push({
       kind: 'conclusion',
       label: 'Закрепить',
-      value: `${suggestedWeight} кг${repsPart}`,
+      value: `${w(suggestedWeight)} ${uL}${repsPart}`,
       emphasis: 'primary',
     });
   } else {

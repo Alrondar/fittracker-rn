@@ -8,6 +8,7 @@ import { View, Text } from 'react-native';
 import { Feather, Minus, TrendingUp } from 'lucide-react-native';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { typography } from '../../styles/typography';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import type { ForecastDifficulty } from '../../utils/workoutForecast';
@@ -61,15 +62,17 @@ function difficultyLabel(difficulty: ForecastDifficulty): string {
   }
 }
 
-function formatVolume(volume: number): string {
-  if (volume >= 1000) {
-    return `${(volume / 1000).toFixed(1)} т`;
+function formatVolume(volume: number, kgToUnit: (kg: number) => number, unitLabel: string): string {
+  const value = kgToUnit(volume);
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)} т`;
   }
-  return `${Math.round(volume)} кг`;
+  return `${Math.round(value)} ${unitLabel}`;
 }
 
 export function WorkoutForecastSheet({ visible, onClose, result }: Props) {
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
 
   // SheetShell требует children; если данных ещё нет — просто не рендерим.
   // Пользователь увидит sheet только после того, как данные будут готовы.
@@ -129,7 +132,7 @@ export function WorkoutForecastSheet({ visible, onClose, result }: Props) {
       >
         <View style={{ alignItems: 'center' }}>
           <Text style={[typography.h4, { color: colors.textPrimary }]}>
-            {formatVolume(result.forecastVolume)}
+            {formatVolume(result.forecastVolume, kgToUnit, unitLabel)}
           </Text>
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
             Ожидаемый объём
@@ -143,7 +146,7 @@ export function WorkoutForecastSheet({ visible, onClose, result }: Props) {
         />
         <View style={{ alignItems: 'center' }}>
           <Text style={[typography.h4, { color: colors.textPrimary }]}>
-            {formatVolume(result.avgWorkoutVolume)}
+            {formatVolume(result.avgWorkoutVolume, kgToUnit, unitLabel)}
           </Text>
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
             Средняя тренировка
@@ -178,7 +181,7 @@ export function WorkoutForecastSheet({ visible, onClose, result }: Props) {
               </Text>
             </View>
             <Text style={[typography.labelBold, { color: colors.textSecondary }]}>
-              {ex.sessionCount === 0 ? '—' : formatVolume(ex.avgVolume)}
+              {ex.sessionCount === 0 ? '—' : formatVolume(ex.avgVolume, kgToUnit, unitLabel)}
             </Text>
           </View>
         );

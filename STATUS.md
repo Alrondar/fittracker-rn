@@ -99,6 +99,16 @@
 | NUTRI-1|🔴|✅|сожжённые калории на Dashboard: исправлен фильтр по finished_at (завершённые тренировки) вместо created_at; тренировка, завершённая вчера, теперь корректно учитывается|
 | NUTRI-2|🟠|✅|CRUD записей питания: список за день в L2-модалке (NutritionLogListModal), редактирование через prefill NutritionAddModal, удаление с подтверждением; инвалидация daily/weekly/nutritionLogs кэшей|
 
+### Дизайн-аудит 23.09.2026 (полная поверка всех поверхностей по PRODUCT.md §3.1–3.6)
+
+Вердикт: тренировочный флоу, списки и семантика состояний — сильные стороны; системные дефекты сфокусированы в нескольких повторяющихся местах (единицы кг/lb только в workout-флоу, SheetShell без анимации и с фиксированной полувысотой, тап-зоны <44pt кластером, 3 паттерна loading, error рендерится как empty на 2 экранах).
+
+| ID | Пр. | Статус | Цель |
+|---|---:|---|---|
+| DA-P0 | 🔴 | ✅ | Три функциональных дефекта: (1) чек-ин цикла с Dashboard не сохранялся — заглушки в `StatusCard` заменены на реальные вызовы `cycleService.upsertCycleEvent/deleteCycleEvent` + инвалидация `['cycleEvents', userId]` (паттерн profile.tsx); (2) `useProfile` глотал ошибку (вечная «Загрузка...») — добавлен флаг `error`, на профиле error-ветка с «Повторить»; (3) мёртвый тернарник единиц в `ExerciseProgressCard` (`'кг' : 'кг'`) — значение и единица теперь учитывают `useUnitPreferences` (kg/lb). Gates: tsc ✅, eslint ✅ |
+| DA-P1 | 🟠 | ✅ | (A) единицы кг/lb в аналитике — ✅ (hook `useWeightDisplay`, ~20 мест: metrics/progress/profile/records/day-summary/weekly-review/strength-badge/insights/rpe/forecast + engine-строки progression/weeklySummary/muscleLoad через параметр `unit`, React Query кэш-ключ с unit); (B) SheetShell — ✅ (slide-up 240мс, высота по контенту ≤85%, grabber, swipe-dismiss, API-совместимость с 21 потребителем); (C) тап-зоны — ✅ (pill старт/финиш и чипы StatusCard/ProgramCard/фильтров через hitSlop без визуальных изменений; search/sort-кнопки 40→44, табы minHeight 44); (D) loading — ✅ (ListSkeleton вместо spinner/текста/пустого списка: dashboard, progress, profile, programs, workout/[id]); (E) error-state — ✅ (progress.tsx: error-ветка useHistory/useProgress с «Повторить»; programs.tsx: `error`/`retry` из usePrograms, renderError вместо empty). Gates: tsc ✅, eslint ✅ |
+| DA-P2 | 🟡 | ⏳ | Консистентность: унификация сегмент-контролов на PillToggle (4 реализации), один паттерн монтирования SheetShell (+ лист сортировки внутри ListHeader в programs.tsx), анимация CustomTabBar, мульти-акцент в строках статистики (dashboard/profile), withAlpha вместо `+'15'` (110 мест / 45 файлов), удаление dead code (SetFeedbackEditor, WorkoutScreenFooter, progressBar*-стили), a11y-роли в списках/профиле, split экранов >500 строк (5 шт.) |
+
 ## 5. Training Engine
 
 | ID | Пр. | Статус | Цель |

@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { ListSkeleton } from '../../src/components/Skeleton';
 import { useToast } from '../../src/hooks/useToast';
 import { usePrograms } from '../../src/hooks/usePrograms';
 import { ProgramCard } from '../../src/components/ProgramCard';
@@ -37,6 +38,7 @@ import {
   Sprout,
   Dumbbell,
   Flame,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
@@ -72,6 +74,8 @@ export default function ProgramsScreen() {
     setActiveTab,
     programs,
     loading,
+    error,
+    retry,
     refreshing,
     loadingMore,
     searchQuery,
@@ -265,6 +269,22 @@ export default function ProgramsScreen() {
     ]
   );
 
+  const renderError = () => (
+    <View style={cardStyles.emptyState}>
+      <AlertTriangle size={64} color={colors.warning} strokeWidth={1.5} />
+      <Text style={cardStyles.emptyStateTitle}>Не удалось загрузить программы</Text>
+      <Text style={cardStyles.emptyStateText}>Проверьте соединение и попробуйте снова</Text>
+      <TouchableOpacity
+        style={[buttonStyles.primary, { paddingHorizontal: SPACING.xl, marginTop: SPACING.md }]}
+        onPress={retry}
+        accessibilityRole="button"
+        accessibilityLabel="Повторить загрузку программ"
+      >
+        <Text style={buttonStyles.textPrimary}>Повторить</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderEmpty = () => (
     <View style={cardStyles.emptyState}>
       <Trophy size={64} color={colors.textTertiary} strokeWidth={1.5} />
@@ -424,6 +444,7 @@ export default function ProgramsScreen() {
                 key={option.value}
                 style={[cardStyles.filterChip, isActive && cardStyles.filterChipActive]}
                 onPress={() => toggleLevel(option.value)}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Icon
@@ -444,6 +465,7 @@ export default function ProgramsScreen() {
             <TouchableOpacity
               style={cardStyles.filterChip}
               onPress={() => selectedLevels.forEach((l) => toggleLevel(l))}
+              hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
             >
               <Text style={cardStyles.filterChipText}>Сбросить</Text>
             </TouchableOpacity>
@@ -473,7 +495,9 @@ export default function ProgramsScreen() {
         renderItem={renderProgramCard}
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={!loading ? renderEmpty() : null}
+        ListEmptyComponent={
+          loading ? <ListSkeleton count={4} /> : error ? renderError() : renderEmpty()
+        }
         contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 100 }}
         refreshControl={
           <RefreshControl

@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type { HistoryWorkout } from '../../services/historyService';
@@ -32,13 +33,14 @@ function formatDayLabel(dateKey: string): string {
 
 export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySummaryCardProps) {
   const router = useRouter();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
 
   const dayWorkouts = useMemo(() => {
     if (!selectedDay) return [];
     return workouts.filter((w) => {
       const dt = new Date(w.date);
       const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(
-        dt.getDate(),
+        dt.getDate()
       ).padStart(2, '0')}`;
       return key === selectedDay;
     });
@@ -50,18 +52,15 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
       onClose();
       router.push(`/progress/${id}`);
     },
-    [onClose, router],
+    [onClose, router]
   );
 
   return (
-    <Modal
-      transparent
-      visible={!!selectedDay}
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal transparent visible={!!selectedDay} animationType="slide" onRequestClose={onClose}>
       <SheetShell title={selectedDay ? formatDayLabel(selectedDay) : ''} onClose={onClose}>
-        <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+        <Text
+          style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}
+        >
           Тренировок: {dayWorkouts.length}
         </Text>
         {dayWorkouts.map((w) => (
@@ -88,7 +87,7 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
                 {w.name}
               </Text>
               <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                {w.sets} подходов · {w.volume.toLocaleString('ru-RU')} кг объём
+                {w.sets} подходов · {kgToUnit(w.volume).toLocaleString('ru-RU')} {unitLabel} объём
               </Text>
             </View>
             <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />

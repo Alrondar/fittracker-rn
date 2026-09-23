@@ -4,16 +4,11 @@
 // (Тело / Руки / Ноги). FEAT-2.3: бедро — левое/правое, как остальные конечности.
 import React, { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
@@ -52,15 +47,9 @@ export default function MetricsScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-  const {
-    metrics,
-    latestMetric,
-    weightChange,
-    isLoading,
-    createMetric,
-    deleteMetric,
-    isCreating,
-  } = useBodyMetrics(userId);
+  const { unitLabel, kgToUnit, fmt } = useWeightDisplay();
+  const { metrics, latestMetric, weightChange, isLoading, createMetric, deleteMetric, isCreating } =
+    useBodyMetrics(userId);
 
   // P0 Вариант B: тренд восстановления за 7 дней
   const { data: recoveryData, isLoading: isRecoveryLoading } = useRecoveryTrend(7);
@@ -71,7 +60,7 @@ export default function MetricsScreen() {
       metrics
         .filter((m) => m.weight_kg != null)
         .map((m) => ({ date: m.metric_date, weightKg: m.weight_kg as number })),
-    [metrics],
+    [metrics]
   );
 
   // FEAT-2.2: выбор графиков замеров хранится в AsyncStorage
@@ -114,16 +103,16 @@ export default function MetricsScreen() {
     const pts = metrics
       .filter((m) => m[key] != null)
       .map((m) => ({ date: m.metric_date, value: m[key] as number }));
-    
+
     if (pts.length < 2) return null;
-    
+
     const sorted = [...pts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const latest = sorted[0];
     const previous = sorted[1];
-    
+
     const diff = latest.value - previous.value;
     const percent = previous.value !== 0 ? (diff / previous.value) * 100 : 0;
-    
+
     return {
       latestValue: latest.value,
       latestDate: latest.date,
@@ -198,7 +187,7 @@ export default function MetricsScreen() {
   const renderChangeText = () => {
     if (!weightChange) return 'Нет данных';
     const sign = weightChange.value > 0 ? '+' : '';
-    return `${sign}${weightChange.value.toFixed(1)} кг (${sign}${weightChange.percent.toFixed(1)}%)`;
+    return `${sign}${kgToUnit(weightChange.value).toFixed(1)} ${unitLabel} (${sign}${weightChange.percent.toFixed(1)}%)`;
   };
 
   const renderChangeColor = () => {
@@ -247,17 +236,29 @@ export default function MetricsScreen() {
             }}
           >
             <View>
-              <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.xs }]}>
+              <Text
+                style={[
+                  typography.caption,
+                  { color: colors.textSecondary, marginBottom: SPACING.xs },
+                ]}
+              >
                 Текущий вес
               </Text>
               <Text style={[typography.h1, { color: colors.textPrimary }]}>
-                {latestMetric?.weight_kg ? `${latestMetric.weight_kg} кг` : '--'}
+                {latestMetric?.weight_kg ? fmt(latestMetric.weight_kg) : '--'}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}
+              >
                 {renderChangeIcon()}
-                <Text style={[typography.labelBold, { color: renderChangeColor(), marginLeft: SPACING.xs }]}>
+                <Text
+                  style={[
+                    typography.labelBold,
+                    { color: renderChangeColor(), marginLeft: SPACING.xs },
+                  ]}
+                >
                   {renderChangeText()}
                 </Text>
               </View>
@@ -276,8 +277,18 @@ export default function MetricsScreen() {
 
           {/* FEAT-2.2: графики замеров с чипами-тумблерами */}
           <View style={{ marginBottom: SPACING.xl }}>
-            <SectionHeader title="Графики замеров" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md }}>
+            <SectionHeader
+              title="Графики замеров"
+              style={{ paddingHorizontal: 0, paddingTop: 0 }}
+            />
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: SPACING.xs,
+                marginBottom: SPACING.md,
+              }}
+            >
               {sparkFields.map((f) => {
                 const active = selectedMetrics.includes(f.key);
                 return (
@@ -300,7 +311,10 @@ export default function MetricsScreen() {
                     <Text
                       style={[
                         typography.captionSmall,
-                        { color: active ? colors.primary : colors.textSecondary, fontWeight: '600' },
+                        {
+                          color: active ? colors.primary : colors.textSecondary,
+                          fontWeight: '600',
+                        },
                       ]}
                     >
                       {f.label}
@@ -309,51 +323,76 @@ export default function MetricsScreen() {
                 );
               })}
             </View>
-            {longPressedMetric && (() => {
-              const trend = getMetricTrend(longPressedMetric);
-              const field = sparkFields.find((f) => f.key === longPressedMetric);
-              if (!trend || !field) return null;
+            {longPressedMetric &&
+              (() => {
+                const trend = getMetricTrend(longPressedMetric);
+                const field = sparkFields.find((f) => f.key === longPressedMetric);
+                if (!trend || !field) return null;
 
-              const isUp = trend.direction === 'up';
-              const isDown = trend.direction === 'down';
-              const trendColor = isUp ? colors.error : isDown ? colors.success : colors.textSecondary;
-              const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
+                const isUp = trend.direction === 'up';
+                const isDown = trend.direction === 'down';
+                const trendColor = isUp
+                  ? colors.error
+                  : isDown
+                    ? colors.success
+                    : colors.textSecondary;
+                const TrendIcon = isUp ? TrendingUp : isDown ? TrendingDown : Minus;
 
-              return (
-                <FadeIn>
-                  <AppCard variant="compact" style={{ marginTop: SPACING.md, marginBottom: SPACING.md }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View>
-                        <Text style={[typography.caption, { color: colors.textSecondary }]}>{field.label}</Text>
-                        <Text style={[typography.h3, { color: colors.textPrimary }]}>
-                          {trend.latestValue} {field.unit}
-                        </Text>
-                        <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                          {new Date(trend.latestDate).toLocaleDateString('ru-RU')}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <TrendIcon size={18} color={trendColor} />
-                          <Text style={[typography.labelBold, { color: trendColor, marginLeft: SPACING.xs }]}>
-                            {trend.diff > 0 ? '+' : ''}{trend.diff.toFixed(1)} {field.unit}
+                return (
+                  <FadeIn>
+                    <AppCard
+                      variant="compact"
+                      style={{ marginTop: SPACING.md, marginBottom: SPACING.md }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <View>
+                          <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                            {field.label}
+                          </Text>
+                          <Text style={[typography.h3, { color: colors.textPrimary }]}>
+                            {trend.latestValue} {field.unit}
+                          </Text>
+                          <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                            {new Date(trend.latestDate).toLocaleDateString('ru-RU')}
                           </Text>
                         </View>
-                        <Text style={[typography.captionSmall, { color: trendColor }]}>
-                          {trend.percent > 0 ? '+' : ''}{trend.percent.toFixed(1)}%
-                        </Text>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <TrendIcon size={18} color={trendColor} />
+                            <Text
+                              style={[
+                                typography.labelBold,
+                                { color: trendColor, marginLeft: SPACING.xs },
+                              ]}
+                            >
+                              {trend.diff > 0 ? '+' : ''}
+                              {trend.diff.toFixed(1)} {field.unit}
+                            </Text>
+                          </View>
+                          <Text style={[typography.captionSmall, { color: trendColor }]}>
+                            {trend.percent > 0 ? '+' : ''}
+                            {trend.percent.toFixed(1)}%
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                    <TouchableOpacity 
-                      style={{ marginTop: SPACING.sm, alignItems: 'center' }}
-                      onPress={() => setLongPressedMetric(null)}
-                    >
-                      <Text style={[typography.captionSmall, { color: colors.primary }]}>Закрыть</Text>
-                    </TouchableOpacity>
-                  </AppCard>
-                </FadeIn>
-              );
-            })()}
+                      <TouchableOpacity
+                        style={{ marginTop: SPACING.sm, alignItems: 'center' }}
+                        onPress={() => setLongPressedMetric(null)}
+                      >
+                        <Text style={[typography.captionSmall, { color: colors.primary }]}>
+                          Закрыть
+                        </Text>
+                      </TouchableOpacity>
+                    </AppCard>
+                  </FadeIn>
+                );
+              })()}
 
             {chartsReady &&
               selectedMetrics.map((key, i) => {
@@ -384,45 +423,70 @@ export default function MetricsScreen() {
           </View>
 
           {/* P0 Вариант B: Восстановление (7 дней) */}
-          {!isRecoveryLoading && recoveryData && (recoveryData.sleepHours.some(d => d.value !== null) || recoveryData.stress.some(d => d.value !== null)) && (
-            <View style={{ marginBottom: SPACING.xl }}>
-              <SectionHeader title="Восстановление (7 дней)" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
-              
-              {recoveryData.sleepHours.some(d => d.value !== null) && (
-                <MetricSparkline
-                  label="Сон"
-                  unit="ч"
-                  color={recoveryData.avgSleepHours < 7 ? colors.warning : colors.success}
-                  points={recoveryData.sleepHours.filter((d): d is { date: string; value: number } => d.value !== null)}
+          {!isRecoveryLoading &&
+            recoveryData &&
+            (recoveryData.sleepHours.some((d) => d.value !== null) ||
+              recoveryData.stress.some((d) => d.value !== null)) && (
+              <View style={{ marginBottom: SPACING.xl }}>
+                <SectionHeader
+                  title="Восстановление (7 дней)"
+                  style={{ paddingHorizontal: 0, paddingTop: 0 }}
                 />
-              )}
-              
-              {recoveryData.stress.some(d => d.value !== null) && (
-                <MetricSparkline
-                  label="Стресс"
-                  unit="/5"
-                  color={recoveryData.avgStress >= 4 ? colors.error : colors.success}
-                  points={recoveryData.stress.filter((d): d is { date: string; value: number } => d.value !== null)}
-                />
-              )}
 
-              {recoveryData.avgSleepHours > 0 && recoveryData.avgSleepHours < 7 && (
-                <View style={{ backgroundColor: colors.warning + '20', padding: SPACING.md, borderRadius: BORDER_RADIUS.md, marginTop: SPACING.sm }}>
-                  <Text style={[typography.caption, { color: colors.warning }]}>
-                    ⚠️ Средний сон: {recoveryData.avgSleepHours.toFixed(1)}ч (рекомендуется 7–9ч)
-                  </Text>
-                </View>
-              )}
+                {recoveryData.sleepHours.some((d) => d.value !== null) && (
+                  <MetricSparkline
+                    label="Сон"
+                    unit="ч"
+                    color={recoveryData.avgSleepHours < 7 ? colors.warning : colors.success}
+                    points={recoveryData.sleepHours.filter(
+                      (d): d is { date: string; value: number } => d.value !== null
+                    )}
+                  />
+                )}
 
-              {recoveryData.avgStress > 0 && recoveryData.avgStress >= 4 && (
-                <View style={{ backgroundColor: colors.error + '20', padding: SPACING.md, borderRadius: BORDER_RADIUS.md, marginTop: SPACING.sm }}>
-                  <Text style={[typography.caption, { color: colors.error }]}>
-                    ⚠️ Высокий уровень стресса ({recoveryData.avgStress.toFixed(1)}/5). Рассмотрите снижение нагрузки.
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
+                {recoveryData.stress.some((d) => d.value !== null) && (
+                  <MetricSparkline
+                    label="Стресс"
+                    unit="/5"
+                    color={recoveryData.avgStress >= 4 ? colors.error : colors.success}
+                    points={recoveryData.stress.filter(
+                      (d): d is { date: string; value: number } => d.value !== null
+                    )}
+                  />
+                )}
+
+                {recoveryData.avgSleepHours > 0 && recoveryData.avgSleepHours < 7 && (
+                  <View
+                    style={{
+                      backgroundColor: colors.warning + '20',
+                      padding: SPACING.md,
+                      borderRadius: BORDER_RADIUS.md,
+                      marginTop: SPACING.sm,
+                    }}
+                  >
+                    <Text style={[typography.caption, { color: colors.warning }]}>
+                      ⚠️ Средний сон: {recoveryData.avgSleepHours.toFixed(1)}ч (рекомендуется 7–9ч)
+                    </Text>
+                  </View>
+                )}
+
+                {recoveryData.avgStress > 0 && recoveryData.avgStress >= 4 && (
+                  <View
+                    style={{
+                      backgroundColor: colors.error + '20',
+                      padding: SPACING.md,
+                      borderRadius: BORDER_RADIUS.md,
+                      marginTop: SPACING.sm,
+                    }}
+                  >
+                    <Text style={[typography.caption, { color: colors.error }]}>
+                      ⚠️ Высокий уровень стресса ({recoveryData.avgStress.toFixed(1)}/5).
+                      Рассмотрите снижение нагрузки.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
 
           {/* Кнопка добавления */}
           <AppButton
@@ -440,7 +504,10 @@ export default function MetricsScreen() {
           {/* История замеров */}
           <SectionHeader title="История" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
           {metrics.length === 0 ? (
-            <AppCard variant="compact" style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
+            <AppCard
+              variant="compact"
+              style={{ alignItems: 'center', paddingVertical: SPACING.xl }}
+            >
               <Weight size={48} color={colors.textTertiary} />
               <Text
                 style={[
@@ -467,7 +534,11 @@ export default function MetricsScreen() {
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Calendar size={18} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+                      <Calendar
+                        size={18}
+                        color={colors.primary}
+                        style={{ marginRight: SPACING.sm }}
+                      />
                       <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
                         {new Date(item.metric_date).toLocaleDateString('ru-RU', {
                           day: 'numeric',
@@ -496,7 +567,12 @@ export default function MetricsScreen() {
                         >
                           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
                             {field.label}:{' '}
-                            <Text style={[typography.caption, { color: colors.textPrimary, fontWeight: '600' }]}>
+                            <Text
+                              style={[
+                                typography.caption,
+                                { color: colors.textPrimary, fontWeight: '600' },
+                              ]}
+                            >
                               {value} {field.unit}
                             </Text>
                           </Text>
@@ -542,11 +618,7 @@ export default function MetricsScreen() {
 
       {/* Sheet добавления замера (INVENTORY §6: SheetShell паттерн).
           Рендер вне SafeAreaView, в конце экрана — как модалки Dashboard (грабля AUDIT-1). */}
-      <SheetShell
-        visible={showAddModal}
-        title="Новый замер"
-        onClose={() => setShowAddModal(false)}
-      >
+      <SheetShell visible={showAddModal} title="Новый замер" onClose={() => setShowAddModal(false)}>
         <AppInput
           label="Дата"
           value={formData.metric_date}

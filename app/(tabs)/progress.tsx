@@ -9,20 +9,14 @@
 // - длинная история не рендерится: последние тренировки ограничены slice(0, 5).
 
 import React, { useCallback, useMemo } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Award, TrendingUp } from 'lucide-react-native';
+import { Award, TrendingUp, AlertTriangle } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { useStore } from '../../src/store/useStore';
 import { useHistory } from '../../src/hooks/useHistory';
 import { useProgress } from '../../src/hooks/useProgress';
@@ -31,11 +25,13 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppCard } from '../../src/components/ui/AppCard';
+import { AppButton } from '../../src/components/ui/AppButton';
 import { ProgressHero } from '../../src/components/progress/ProgressHero';
 import { ProgressStats } from '../../src/components/progress/ProgressStats';
 import { WeeklyReviewSection } from '../../src/components/progress/WeeklyReviewSection';
 import { ProgressInsights } from '../../src/components/progress/ProgressInsights';
 import { RecentWorkouts } from '../../src/components/progress/RecentWorkouts';
+import { ListSkeleton } from '../../src/components/Skeleton';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
 import { VolumeTrendChart } from '../../src/components/progress/VolumeTrendChart';
 import { WeightTrendRow } from '../../src/components/progress/WeightTrendRow';
@@ -48,12 +44,14 @@ export default function ProgressScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
 
   const {
     data: historyData,
     isPending: isHistoryPending,
     isFetching: isHistoryFetching,
+    isError: isHistoryError,
     refetch: refetchHistory,
   } = useHistory(userId);
 
@@ -61,6 +59,7 @@ export default function ProgressScreen() {
     data: progressData,
     isPending: isProgressPending,
     isFetching: isProgressFetching,
+    isError: isProgressError,
     refetch: refetchProgress,
   } = useProgress(userId);
 
@@ -179,17 +178,54 @@ export default function ProgressScreen() {
     );
   }
 
+  if (isHistoryError || isProgressError) {
+    return (
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}
+        >
+          <AlertTriangle size={48} color={colors.warning} strokeWidth={1.5} />
+          <Text
+            style={[
+              typography.h4,
+              { color: colors.textPrimary, marginTop: SPACING.md, textAlign: 'center' },
+            ]}
+          >
+            Не удалось загрузить прогресс
+          </Text>
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, marginTop: SPACING.xs, textAlign: 'center' },
+            ]}
+          >
+            Проверьте соединение и попробуйте снова
+          </Text>
+          <AppButton
+            title="Повторить"
+            variant="primary"
+            onPress={() => {
+              refetchHistory();
+              refetchProgress();
+            }}
+            style={{ marginTop: SPACING.lg, paddingHorizontal: SPACING.xl }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView
         style={[commonStyles.container, { backgroundColor: colors.background }]}
         edges={['top']}
       >
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-            Загружаем твой прогресс…
-          </Text>
+        <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
+          <ListSkeleton count={4} />
         </View>
       </SafeAreaView>
     );
@@ -536,10 +572,10 @@ export default function ProgressScreen() {
                     </View>
                     <View style={{ alignItems: 'flex-end', marginRight: SPACING.xs }}>
                       <Text style={[typography.h3, { color: colors.warning, fontWeight: '700' }]}>
-                        {record.maxWeight}
+                        {kgToUnit(record.maxWeight)}
                       </Text>
                       <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                        кг × {record.reps}
+                        {unitLabel} × {record.reps}
                       </Text>
                     </View>
                   </View>

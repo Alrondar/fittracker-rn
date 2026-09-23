@@ -13,6 +13,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { SheetShell } from '../ui/SheetShell';
@@ -36,6 +37,7 @@ export function StrengthLevelBadge({
   bodyWeightKg,
 }: StrengthLevelBadgeProps) {
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   if (!result) return null;
@@ -105,7 +107,8 @@ export function StrengthLevelBadge({
                   {result.levelLabel}
                 </Text>
                 <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
-                  e1RM {e1rm.toFixed(0)} кг · вес {bodyWeightKg.toFixed(0)} кг
+                  e1RM {kgToUnit(e1rm).toFixed(0)} {unitLabel} · вес{' '}
+                  {kgToUnit(bodyWeightKg).toFixed(0)} {unitLabel}
                 </Text>
               </View>
               <Text style={[typography.labelBold, { color: colors.textPrimary, fontSize: 18 }]}>

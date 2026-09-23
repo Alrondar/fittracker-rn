@@ -32,7 +32,9 @@ import { useInjuries } from '../../hooks/useInjuries';
 import { readinessService } from '../../services/readinessService';
 import { useProfile } from '../../hooks/useProfile';
 import { useCycle } from '../../hooks/useCycle';
+import { cycleService } from '../../services/cycleService';
 import { CycleCheckInSheet } from '../cycle/CycleCheckInSheet';
+import type { CycleEventType } from '../../types/cycle';
 import { getCyclePhaseColor, getCyclePhaseLabel } from '../../utils/cycle';
 
 const RING_SIZE = scale(72);
@@ -109,19 +111,24 @@ export function StatusCard() {
     [userId, quickSetMutation]
   );
 
+  // Паттерн profile.tsx:71 — end-события выводятся из start-типа (_start → _end).
   const handleSaveCycleEvent = async (
-    _eventType: 'menstruation_start' | 'menstruation_end' | 'ovulation_start' | 'ovulation_end',
-    _date: string,
-    _isStart: boolean
+    eventType: CycleEventType,
+    date: string,
+    isStart: boolean
   ) => {
     if (!userId) return;
-    // Здесь должна быть логика сохранения через cycleService
-    // Для краткости оставляем заглушку — реальная реализация в ReadinessSheet
+    const actualEventType = (
+      isStart ? eventType : eventType.replace('_start', '_end')
+    ) as CycleEventType;
+    await cycleService.upsertCycleEvent(userId, actualEventType, date);
+    queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
   };
 
-  const handleDeleteCycleEvent = async (_eventId: string) => {
+  const handleDeleteCycleEvent = async (eventId: string) => {
     if (!userId) return;
-    // Здесь должна быть логика удаления через cycleService
+    await cycleService.deleteCycleEvent(eventId);
+    queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
   };
 
   const hint = useMemo(() => {
@@ -148,6 +155,7 @@ export function StatusCard() {
         <Text style={[typography.h5, { color: colors.textPrimary }]}>Состояние сегодня</Text>
         <TouchableOpacity
           onPress={() => setSheetOpen(true)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel={readiness == null ? 'Отметить готовность' : 'Обновить готовность'}
           accessibilityHint="Откроет детальный чек-ин"
@@ -323,6 +331,7 @@ export function StatusCard() {
       {forecast && forecast.difficulty !== 'unknown' && (
         <TouchableOpacity
           onPress={() => setForecastSheetOpen(true)}
+          hitSlop={{ top: 6, bottom: 6 }}
           accessibilityRole="button"
           accessibilityLabel={`Следующая тренировка: ${forecast.difficulty}, открой подробности`}
           style={{
@@ -377,6 +386,7 @@ export function StatusCard() {
           {currentPhase ? (
             <TouchableOpacity
               onPress={() => setCycleCheckInOpen(true)}
+              hitSlop={{ top: 6, bottom: 6 }}
               accessibilityRole="button"
               accessibilityLabel={`Цикл: день ${currentPhase.dayNumber}, ${getCyclePhaseLabel(currentPhase.phase)}`}
               accessibilityHint="Откроет чек-ин цикла"
@@ -404,6 +414,7 @@ export function StatusCard() {
           ) : (
             <TouchableOpacity
               onPress={() => setCycleCheckInOpen(true)}
+              hitSlop={{ top: 6, bottom: 6 }}
               accessibilityRole="button"
               accessibilityLabel="Отметить начало цикла"
               style={{
@@ -442,6 +453,7 @@ export function StatusCard() {
                 <TouchableOpacity
                   key={inj.id}
                   onPress={() => router.push('/profile/injuries')}
+                  hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                   accessibilityRole="button"
                   accessibilityLabel={`Активная травма: ${(BODY_PART_LABELS as Record<string, string>)[inj.body_part] || inj.body_part}. Нажми для подробностей`}
                   style={{
@@ -473,6 +485,7 @@ export function StatusCard() {
             {activeInjuries.length > 2 && (
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/profile/injuries')}
+                hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Ещё ${activeInjuries.length - 2} активных травм. Нажми для просмотра`}
                 style={{
@@ -495,6 +508,7 @@ export function StatusCard() {
             {hasChronic && topChronic && (
               <TouchableOpacity
                 onPress={() => setPainTrendSheetOpen(true)}
+                hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                 accessibilityRole="button"
                 accessibilityLabel="Устойчивая боль: открой подробности"
                 accessibilityHint="Откроет тренд боли по зонам за 4 недели"

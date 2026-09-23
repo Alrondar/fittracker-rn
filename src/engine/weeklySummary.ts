@@ -104,6 +104,8 @@ export interface WeeklyInsight {
 export interface BuildInsightsOptions {
   /** CI-5: основная цель пользователя из профиля. Влияет на приоритеты и текст инсайтов. */
   primaryGoal?: string | null;
+  /** P1-A: единица отображения массовых строк (хранение — всегда кг). */
+  unit?: 'kg' | 'lb';
 }
 
 export interface TrainingLoadContext {
@@ -165,6 +167,10 @@ export function buildWeeklyInsights(
   options: BuildInsightsOptions = {}
 ): WeeklyInsight[] {
   const insights: WeeklyInsight[] = [];
+  const unit = options.unit ?? 'kg';
+  const uL = unit === 'lb' ? 'lb' : 'кг';
+  // Движок остаётся чистым: коэффициент идентичен kgToLb из useUnitPreferences.
+  const vw = (kg: number) => Math.round(unit === 'lb' ? kg * 2.20462 : kg).toLocaleString('ru-RU');
   const add = (code: string, title: string, severity: InsightSeverity, subtitle?: string) =>
     insights.push({ code, title, subtitle, severity });
 
@@ -198,21 +204,21 @@ export function buildWeeklyInsights(
         'VOLUME_UP',
         `Объём вырос на ${Math.round((ratio - 1) * 100)}%`,
         'positive',
-        `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`
+        `по сравнению с прошлой неделей (${vw(previous.totalVolume)} → ${vw(current.totalVolume)} ${uL})`
       );
     } else if (ratio <= thresholdDown) {
       add(
         'VOLUME_DOWN',
         `Объём снизился на ${Math.round((1 - ratio) * 100)}%`,
         'caution',
-        `по сравнению с прошлой неделей (${Math.round(previous.totalVolume)} → ${Math.round(current.totalVolume)} кг)`
+        `по сравнению с прошлой неделей (${vw(previous.totalVolume)} → ${vw(current.totalVolume)} ${uL})`
       );
     } else {
       add(
         'VOLUME_STABLE',
         'Стабильный объём',
         'neutral',
-        `примерно как прошлая неделя (${Math.round(current.totalVolume)} кг)`
+        `примерно как прошлая неделя (${vw(current.totalVolume)} ${uL})`
       );
     }
   }
@@ -226,7 +232,7 @@ export function buildWeeklyInsights(
         : `${current.prs.length} личных рекорда`;
     const subtitle =
       current.prs.length === 1
-        ? `${first.maxWeight} кг · ${first.e1rm} кг 1RM`
+        ? `${vw(first.maxWeight)} ${uL} · ${vw(first.e1rm)} ${uL} 1RM`
         : current.prs
             .map((p) => p.exerciseName)
             .slice(0, 3)

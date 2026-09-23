@@ -59,3 +59,22 @@ export const weightFromDisplay = (displayStr: string, unit: WeightUnit): string 
 
 export const weightPlaceholder = (unit: WeightUnit): string =>
   unit === 'kg' ? 'вес (кг)' : 'вес (lbs)';
+
+/**
+ * P1-A (дизайн-аудит 23.09.2026): единый хелпер отображения массы.
+ * Хранение — всегда кг; конвертация только на границе показа.
+ */
+export function useWeightDisplay() {
+  const { unit } = useUnitPreferences();
+  const unitLabel = unit === 'kg' ? 'кг' : 'lb';
+  const kgToUnit = useCallback(
+    (kg: number) => roundToHalf(unit === 'kg' ? kg : kgToLb(kg)),
+    [unit]
+  );
+  /** «82 кг» / «181 lb» — целые по умолчанию. */
+  const fmt = useCallback(
+    (kg: number, digits = 0) => `${kgToUnit(kg).toFixed(digits)} ${unitLabel}`,
+    [kgToUnit, unitLabel]
+  );
+  return { unit, unitLabel, kgToUnit, fmt };
+}

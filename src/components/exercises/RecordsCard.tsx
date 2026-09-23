@@ -11,6 +11,7 @@ import Animated, {
 import { Trophy, Calendar } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
@@ -35,8 +36,10 @@ const formatRelativeDate = (iso: string): string => {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 };
 
-const formatVolume = (kg: number): string =>
-  kg >= 1000 ? `${(kg / 1000).toFixed(1)} т` : `${Math.round(kg)} кг`;
+const formatVolume = (kg: number, kgToUnit: (kg: number) => number, unitLabel: string): string => {
+  const value = kgToUnit(kg);
+  return value >= 1000 ? `${(value / 1000).toFixed(1)} т` : `${Math.round(value)} ${unitLabel}`;
+};
 
 // Count-up: плавный «набегающий» счётчик для главного рекорда
 function CountUp({ value, decimals }: { value: number; decimals: number }) {
@@ -77,6 +80,7 @@ export function RecordsCard({
   cardStyles,
 }: RecordsCardProps) {
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const pulse = useSharedValue(0.35);
 
   useEffect(() => {
@@ -167,14 +171,15 @@ export function RecordsCard({
 
   const r = records as ExerciseRecords;
   const hasWeight = r.maxWeight !== null && r.maxWeight > 0;
-  const weightDecimals = hasWeight && (r.maxWeight as number) % 1 !== 0 ? 1 : 0;
+  const displayMaxWeight = hasWeight ? kgToUnit(r.maxWeight as number) : null;
+  const weightDecimals = displayMaxWeight !== null && displayMaxWeight % 1 !== 0 ? 1 : 0;
 
   // Вторичные рекорды (1ПМ — всегда только при наличии веса)
   const stats: { label: string; value: string; styleKey: 'primary' | 'success' | 'warning' }[] = [];
   if (r.estimatedOneRM !== null) {
     stats.push({
       label: 'Расчётный 1ПМ',
-      value: `${Math.round(r.estimatedOneRM)} кг`,
+      value: `${Math.round(kgToUnit(r.estimatedOneRM))} ${unitLabel}`,
       styleKey: 'primary',
     });
   }
@@ -182,7 +187,11 @@ export function RecordsCard({
     stats.push({ label: 'Макс. повторы', value: `×${r.maxReps}`, styleKey: 'success' });
   }
   if (r.totalVolume > 0) {
-    stats.push({ label: 'Общий тоннаж', value: formatVolume(r.totalVolume), styleKey: 'warning' });
+    stats.push({
+      label: 'Общий тоннаж',
+      value: formatVolume(r.totalVolume, kgToUnit, unitLabel),
+      styleKey: 'warning',
+    });
   }
 
   const valueStyleByKey = {
@@ -258,7 +267,7 @@ export function RecordsCard({
                   { color: accentColor, fontWeight: '800', fontVariant: ['tabular-nums'] },
                 ]}
               >
-                <CountUp value={r.maxWeight as number} decimals={weightDecimals} />
+                <CountUp value={displayMaxWeight ?? 0} decimals={weightDecimals} />
               </Text>
               <Text
                 style={[
@@ -266,7 +275,7 @@ export function RecordsCard({
                   { color: colors.textSecondary, marginLeft: 6, marginBottom: 3 },
                 ]}
               >
-                кг
+                {unitLabel}
               </Text>
             </View>
             {r.repsAtMaxWeight > 0 && (

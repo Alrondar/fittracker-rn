@@ -32,10 +32,12 @@ export function useProfile(userId: string | null) {
   });
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const loadAllData = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
+    setError(false);
     try {
       const [profile, statsData, targetsData, nutrition, records] = await Promise.all([
         profileService.getProfileData(userId),
@@ -52,6 +54,7 @@ export function useProfile(userId: string | null) {
       setPersonalRecords(records);
     } catch (e) {
       console.error('Ошибка загрузки профиля:', e);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -93,6 +96,7 @@ export function useProfile(userId: string | null) {
     todayNutrition,
     personalRecords,
     loading,
+    error,
     refresh: loadAllData,
     saveNutrition,
   };

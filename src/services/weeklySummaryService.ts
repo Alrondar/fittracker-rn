@@ -520,7 +520,8 @@ async function aggregateMuscleData(userId: string, now: Date) {
  */
 export async function getWeeklySummary(
   userId: string,
-  weekOffset: number = 0
+  weekOffset: number = 0,
+  unit: 'kg' | 'lb' = 'kg'
 ): Promise<WeeklySummaryResult> {
   const now = new Date();
   const currentRange = computeWeekRange(weekOffset, now);
@@ -545,7 +546,7 @@ export async function getWeeklySummary(
     muscleStrength: muscleData.muscleStrength,
   };
 
-  const insights = buildWeeklyInsights(currentWithChronic, previous, { primaryGoal });
+  const insights = buildWeeklyInsights(currentWithChronic, previous, { primaryGoal, unit });
   const trainingLoad = calculateTrainingLoadContext(currentWithChronic, previous);
   // CI-6: расчёт рекомендации разгрузки после инсайтов и контекста нагрузки.
   const deload = calculateDeloadContext(currentWithChronic, previous, trainingLoad, insights);

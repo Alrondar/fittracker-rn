@@ -7,7 +7,6 @@ import {
   View,
   Text,
   FlatList,
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   InteractionManager,
@@ -29,7 +28,6 @@ import { useUnitPreferences } from '../../src/hooks/useUnitPreferences';
 import { getWorkoutProgramInfo } from '../../src/services/programsService';
 import { SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
-import { typography } from '../../src/styles/typography';
 import { SetData, ExercisePainState } from '../../src/types/workout';
 import { RestTimer } from '../../src/components/workout/RestTimer';
 import { WorkoutTimerProvider } from '../../src/components/workout/WorkoutTimer';
@@ -43,6 +41,7 @@ import {
 import { PainSheet } from '../../src/components/workout/PainSheet';
 import { WorkoutScreenHeader } from '../../src/components/workout/WorkoutScreenHeader';
 import { WorkoutInjuryBanner } from '../../src/components/workout/WorkoutInjuryBanner';
+import { ListSkeleton } from '../../src/components/Skeleton';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
@@ -344,11 +343,8 @@ export default function WorkoutSessionScreen() {
         style={[commonStyles.container, { backgroundColor: colors.background }]}
         edges={['top']}
       >
-        <View style={commonStyles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-            Загрузка...
-          </Text>
+        <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
+          <ListSkeleton count={3} />
         </View>
       </SafeAreaView>
     );

@@ -22,6 +22,7 @@ import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { intensityColor } from '../../utils/colorScale';
 import { pluralizeSets, formatVolumeKg } from '../../utils/muscleLoad';
+import { useUnitPreferences } from '../../hooks/useUnitPreferences';
 import { getMuscleNamesForSlug } from '../../constants/muscleMapSlugs';
 import type { MuscleLoad } from '../../utils/muscleLoad';
 import type { Slug } from '../../types/muscleMap';
@@ -98,6 +99,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
     onEntryTap,
   }) => {
     const { colors } = useTheme();
+    const { unit } = useUnitPreferences();
 
     // Нормализуем loadScore → 0..1 для раскраски (максимальный = 1).
     const { maxLoadScore, slugToLoad } = useMemo(() => {
@@ -244,7 +246,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                       accessibilityLabel={`${labelForSlug(
                         entry.slug,
                         entry.displayName
-                      )}: ${pluralizeSets(entry.sets)}, ${formatVolumeKg(entry.volumeKg)}. ${
+                      )}: ${pluralizeSets(entry.sets)}, ${formatVolumeKg(entry.volumeKg, unit)}. ${
                         isSelected
                           ? 'Выбрано, повторный тап снимет фильтр'
                           : 'Тап для фильтрации упражнений'
@@ -319,7 +321,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                             { color: colors.textTertiary, marginTop: 2 },
                           ]}
                         >
-                          {formatVolumeKg(entry.volumeKg)}
+                          {formatVolumeKg(entry.volumeKg, unit)}
                         </Text>
                       </View>
                     </TouchableOpacity>

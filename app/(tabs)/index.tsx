@@ -24,6 +24,7 @@ import { StreakCard } from '../../src/components/dashboard/StreakCard';
 import { ContextInsightCard } from '../../src/components/dashboard/ContextInsightCard';
 import { StatusCard } from '../../src/components/dashboard/StatusCard';
 import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
+import { ListSkeleton } from '../../src/components/Skeleton';
 import { NutritionAddModal } from '../../src/components/dashboard/NutritionAddModal';
 import { NutritionLogListModal } from '../../src/components/dashboard/NutritionLogListModal';
 import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
@@ -173,14 +174,8 @@ export default function DashboardScreen() {
   if (isPending) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
+          <ListSkeleton count={3} />
         </View>
       </SafeAreaView>
     );

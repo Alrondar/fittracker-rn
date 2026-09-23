@@ -30,6 +30,8 @@ export interface UseProgramsReturn {
   // Данные
   programs: Program[];
   loading: boolean;
+  error: boolean;
+  retry: () => void;
   refreshing: boolean;
   hasMore: boolean;
   loadingMore: boolean;
@@ -92,6 +94,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
   const {
     data,
     isLoading,
+    isError,
     isRefetching,
     fetchNextPage,
     hasNextPage,
@@ -148,22 +151,22 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     },
   });
 
-const deleteMutation = useMutation({
-  mutationFn: async (programId: string) => {
-    await deleteProgram(programId, userId!);
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['programs'] });
-    queryClient.invalidateQueries({ queryKey: ['userProgramsStatus'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-    queryClient.invalidateQueries({ queryKey: ['workouts'] });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showToast('Программа удалена', 'success');
-  },
-  onError: (error: any) => {
-    showToast(error.message || 'Не удалось удалить', 'error');
-  },
-});
+  const deleteMutation = useMutation({
+    mutationFn: async (programId: string) => {
+      await deleteProgram(programId, userId!);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      queryClient.invalidateQueries({ queryKey: ['userProgramsStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('Программа удалена', 'success');
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Не удалось удалить', 'error');
+    },
+  });
 
   // ===== ОБЁРТКИ БЕЗ АНИМАЦИИ (PROG-1: LayoutAnimation убран — CLAUDE.md §9 anti-pattern) =====
   const setActiveTab = (tab: TabType) => {
@@ -176,8 +179,8 @@ const deleteMutation = useMutation({
 
   const toggleLevel = (level: LevelFilter) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedLevels(prev =>
-      prev.includes(level) ? prev.filter(l => l !== level) : [...prev, level]
+    setSelectedLevels((prev) =>
+      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]
     );
   };
 
@@ -236,34 +239,30 @@ const deleteMutation = useMutation({
     if (activeTabState !== 'my') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    Alert.alert(
-      'Действия с программой',
-      `"${program.name}"`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Редактировать',
-          onPress: () => {
-            setEditingProgram(program);
-            setFormName(program.name);
-            setFormDescription(program.description);
-            setFormDuration(program.duration.toString());
-            setFormLevel(program.level);
-            setShowCreateModal(true);
-          },
+    Alert.alert('Действия с программой', `"${program.name}"`, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Редактировать',
+        onPress: () => {
+          setEditingProgram(program);
+          setFormName(program.name);
+          setFormDescription(program.description);
+          setFormDuration(program.duration.toString());
+          setFormLevel(program.level);
+          setShowCreateModal(true);
         },
-        {
-          text: 'Удалить',
-          style: 'destructive',
-          onPress: () => deleteMutation.mutate(program.id),
-        },
-      ]
-    );
+      },
+      {
+        text: 'Удалить',
+        style: 'destructive',
+        onPress: () => deleteMutation.mutate(program.id),
+      },
+    ]);
   };
 
   const handleProgramPress = (program: Program) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     if (activeTabState === 'ready' && !program.id.startsWith('user_')) {
       Alert.alert(
         'Редактировать программу?',
@@ -314,6 +313,8 @@ const deleteMutation = useMutation({
     setActiveTab,
     programs,
     loading: isLoading,
+    error: isError && programs.length === 0,
+    retry: refetch,
     refreshing: isRefetching,
     hasMore: hasNextPage ?? false,
     loadingMore: isFetchingNextPage,

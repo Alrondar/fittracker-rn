@@ -20,6 +20,7 @@
 
 import type { Slug } from '../types/muscleMap';
 import { getSlugsForMuscle } from '../constants/muscleMapSlugs';
+import { kgToLb } from '../hooks/useUnitPreferences';
 
 export type MuscleLoadSet = {
   weight: number | null;
@@ -142,9 +143,10 @@ export function pluralizeSets(n: number): string {
   return `${rounded} сетов`;
 }
 
-/** Формат тоннажа: `Math.round(kg)` + ru-RU разделитель тысяч + «кг». */
-export function formatVolumeKg(kg: number): string {
-  return `${Math.round(kg).toLocaleString('ru-RU')} кг`;
+/** Формат тоннажа: `Math.round(kg)` + ru-RU разделитель тысяч + единица из предпочтений. */
+export function formatVolumeKg(kg: number, unit: 'kg' | 'lb' = 'kg'): string {
+  const value = unit === 'lb' ? kgToLb(kg) : kg;
+  return `${Math.round(value).toLocaleString('ru-RU')} ${unit === 'lb' ? 'lb' : 'кг'}`;
 }
 
 /** Плюрализация «день/дня/дней» (для вкладки «Усталость»). */

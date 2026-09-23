@@ -558,8 +558,8 @@ export const SetsGrid = memo(function SetsGrid({
 
   const explanationItems = useMemo<ExplanationItem[]>(() => {
     if (!recommendation || recommendation.action === 'no_data') return [];
-    return explainProgression(recommendation);
-  }, [recommendation]);
+    return explainProgression(recommendation, unit);
+  }, [recommendation, unit]);
 
   const toggleExpanded = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1006,6 +1006,7 @@ export const SetsGrid = memo(function SetsGrid({
           totalSets={sets.length}
           rpe={activeSet.rpe ?? null}
           weight={toDisplay(activeSet.weight)}
+          unit={unit}
           reps={
             isUnilateral
               ? `${activeSet.reps_left ?? '?'}/${activeSet.reps_right ?? '?'}`

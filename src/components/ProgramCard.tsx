@@ -222,7 +222,11 @@ export const ProgramCard = memo(function ProgramCard({
         {/* Футер: редактирование + активация + «Подробнее» */}
         <View style={cardStyles.programCardFooter}>
           {isMyProgram && (
-            <TouchableOpacity onPress={handleEdit} style={cardStyles.programCardEditButton}>
+            <TouchableOpacity
+              onPress={handleEdit}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              style={cardStyles.programCardEditButton}
+            >
               <Edit2 size={16} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           )}
@@ -233,6 +237,7 @@ export const ProgramCard = memo(function ProgramCard({
             <TouchableOpacity
               onPress={handleActivate}
               activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',

@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { TREND_COLORS } from '../constants/semanticColors';
 import { typography } from '../styles/typography';
+import { useUnitPreferences, kgToLb } from '../hooks/useUnitPreferences';
 import Svg, { Polyline, Path, Circle } from 'react-native-svg';
 
 interface ProgressPoint {
@@ -31,6 +32,7 @@ export function ExerciseProgressCard({
   selectedMetric,
   colors,
 }: ExerciseProgressCardProps) {
+  const { unit } = useUnitPreferences();
   if (history.length < 2) return null;
 
   // Получаем значения для выбранной метрики
@@ -67,6 +69,9 @@ export function ExerciseProgressCard({
 
   // Путь для области под линией
   const areaPath = `M ${points[0].x},${chartHeight - padding} L ${points.map((p) => `${p.x},${p.y}`).join(' L ')} L ${points[points.length - 1].x},${chartHeight - padding} Z`;
+
+  const displayValue = unit === 'lb' ? kgToLb(currentValue) : currentValue;
+  const unitLabel = unit === 'lb' ? 'lb' : 'кг';
 
   return (
     <View
@@ -137,7 +142,7 @@ export function ExerciseProgressCard({
             {selectedMetric === 'weight' ? 'Макс. вес' : 'Объём'}
           </Text>
           <Text style={[typography.h4, { color: colors.textPrimary }]}>
-            {currentValue.toFixed(1)} {selectedMetric === 'weight' ? 'кг' : 'кг'}
+            {displayValue.toFixed(1)} {unitLabel}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>

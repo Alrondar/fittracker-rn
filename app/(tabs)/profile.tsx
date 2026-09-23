@@ -8,8 +8,10 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { useStore } from '../../src/store/useStore';
 import { useProfile } from '../../src/hooks/useProfile';
+import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { signOut } from '../../src/services/authService';
 import { AppButton } from '../../src/components/ui/AppButton';
+import { ListSkeleton } from '../../src/components/Skeleton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -34,6 +36,7 @@ import {
   Award,
   Ruler,
   Pencil,
+  AlertTriangle,
 } from 'lucide-react-native';
 
 // Фиксированная палитра рангов (золото/серебро/бронза) — семантика медалей,
@@ -44,7 +47,9 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-  const { userData, stats, personalRecords, loading, saveNutrition } = useProfile(userId);
+  const { userData, stats, personalRecords, loading, error, refresh, saveNutrition } =
+    useProfile(userId);
+  const { fmt } = useWeightDisplay();
 
   const [showNutritionSheet, setShowNutritionSheet] = useState(false);
   const [inputCalories, setInputCalories] = useState('');
@@ -121,11 +126,43 @@ export default function ProfileScreen() {
     setInputWater('');
   };
 
-  if (loading || !userData) {
+  if (error && !userData) {
     return (
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <View style={commonStyles.center}>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+          <AlertTriangle size={48} color={colors.warning} strokeWidth={1.5} />
+          <Text
+            style={[
+              typography.h4,
+              { color: colors.textPrimary, marginTop: SPACING.md, textAlign: 'center' },
+            ]}
+          >
+            Не удалось загрузить профиль
+          </Text>
+          <Text
+            style={[
+              typography.body,
+              { color: colors.textSecondary, marginTop: SPACING.xs, textAlign: 'center' },
+            ]}
+          >
+            Проверьте соединение и попробуйте снова
+          </Text>
+          <AppButton
+            title="Повторить"
+            variant="primary"
+            onPress={refresh}
+            style={{ marginTop: SPACING.lg, paddingHorizontal: SPACING.xl }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loading || !userData) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
+          <ListSkeleton count={4} />
         </View>
       </SafeAreaView>
     );
@@ -313,7 +350,7 @@ export default function ProfileScreen() {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={[typography.h5, { color: colors.primary }]}>
-                        {record.maxWeight} кг
+                        {fmt(record.maxWeight)}
                       </Text>
                       <Text style={[typography.caption, { color: colors.textSecondary }]}>
                         × {record.reps}

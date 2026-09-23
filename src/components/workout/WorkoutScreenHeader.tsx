@@ -118,6 +118,7 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Начать тренировку"
+              hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -148,6 +149,7 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Завершить тренировку"
+              hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',

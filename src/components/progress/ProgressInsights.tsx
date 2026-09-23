@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Activity, AlertTriangle, Award, Scale, Sparkles, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
@@ -32,6 +33,7 @@ export function ProgressInsights({
   chronicPainZones = [],
 }: ProgressInsightsProps) {
   const { colors } = useTheme();
+  const { unitLabel, kgToUnit } = useWeightDisplay();
 
   const insights = useMemo(() => {
     const result: { icon: React.ReactNode; title: string; subtitle: string }[] = [];
@@ -57,7 +59,7 @@ export function ProgressInsights({
           result.push({
             icon: <TrendingUp size={18} color={colors.success} />,
             title: 'Становишься сильнее',
-            subtitle: `${topExercise.exerciseName}: ${first.toFixed(0)} → ${last.toFixed(0)} кг e1RM`,
+            subtitle: `${topExercise.exerciseName}: ${kgToUnit(first).toFixed(0)} → ${kgToUnit(last).toFixed(0)} ${unitLabel} e1RM`,
           });
         }
       }
@@ -94,7 +96,7 @@ export function ProgressInsights({
         result.push({
           icon: <Scale size={18} color={delta > 0 ? colors.warning : colors.success} />,
           title: 'Изменение веса',
-          subtitle: `За последние замеры: ${delta > 0 ? '+' : ''}${delta.toFixed(1)} кг`,
+          subtitle: `За последние замеры: ${delta > 0 ? '+' : ''}${kgToUnit(delta).toFixed(1)} ${unitLabel}`,
         });
       }
     }
@@ -105,7 +107,7 @@ export function ProgressInsights({
       result.push({
         icon: <Award size={18} color={colors.primary} />,
         title: 'Новый рекорд',
-        subtitle: `${latestPR.name}: ${latestPR.maxWeight} кг × ${latestPR.reps}`,
+        subtitle: `${latestPR.name}: ${kgToUnit(latestPR.maxWeight)} ${unitLabel} × ${latestPR.reps}`,
       });
     }
 
@@ -127,7 +129,16 @@ export function ProgressInsights({
     }
 
     return result.slice(0, 4); // максимум 4 инсайта (хроническая боль + 3 основных)
-  }, [weeklyVolume, strengthTrend, weightTrend, personalRecords, chronicPainZones, colors]);
+  }, [
+    weeklyVolume,
+    strengthTrend,
+    weightTrend,
+    personalRecords,
+    chronicPainZones,
+    colors,
+    unitLabel,
+    kgToUnit,
+  ]);
 
   if (insights.length === 0) {
     return (
