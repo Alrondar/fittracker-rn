@@ -14,7 +14,7 @@ import { Droplet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { readinessService } from '../../services/readinessService';
 import { cycleService } from '../../services/cycleService';
@@ -52,7 +52,9 @@ function ScaleRow({
                 borderRadius: BORDER_RADIUS.md,
                 borderWidth: 1,
                 borderColor: active ? colors.primary : colors.border,
-                backgroundColor: active ? colors.primary + '20' : colors.surfaceSecondary,
+                backgroundColor: active
+                  ? withAlpha(colors.primary, 0.125)
+                  : colors.surfaceSecondary,
               }}
             >
               <Text
@@ -233,9 +235,9 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
                 justifyContent: 'center',
                 paddingVertical: SPACING.md,
                 borderRadius: BORDER_RADIUS.md,
-                backgroundColor: colors.primary + '15',
+                backgroundColor: withAlpha(colors.primary, 0.082),
                 borderWidth: 1,
-                borderColor: colors.primary + '40',
+                borderColor: withAlpha(colors.primary, 0.251),
               }}
             >
               <Droplet size={20} color={colors.primary} style={{ marginRight: SPACING.xs }} />

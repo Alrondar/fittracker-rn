@@ -23,6 +23,7 @@ import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
 import { ImportProgramSheet } from '../../src/components/program/sheets/ImportProgramSheet';
 import { SheetShell } from '../../src/components/ui/SheetShell';
+import { PillToggle } from '../../src/components/ui/PillToggle';
 import { importProgramByCode } from '../../src/services/programSharingService';
 import { getUserProgramsStatus, activateProgram } from '../../src/services/programsService';
 import { FadeIn } from '../../src/components/FadeIn';
@@ -336,23 +337,15 @@ export default function ProgramsScreen() {
       </View>
 
       {/* Табы */}
-      <View style={cardStyles.tabContainer}>
-        <TouchableOpacity
-          style={[cardStyles.tab, activeTab === 'my' && cardStyles.tabActive]}
-          onPress={() => setActiveTab('my')}
-        >
-          <Text style={[cardStyles.tabText, activeTab === 'my' && cardStyles.tabTextActive]}>
-            Мои программы
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[cardStyles.tab, activeTab === 'ready' && cardStyles.tabActive]}
-          onPress={() => setActiveTab('ready')}
-        >
-          <Text style={[cardStyles.tabText, activeTab === 'ready' && cardStyles.tabTextActive]}>
-            Готовые
-          </Text>
-        </TouchableOpacity>
+      <View style={{ marginBottom: SPACING.md }}>
+        <PillToggle
+          options={[
+            { key: 'my', label: 'Мои программы' },
+            { key: 'ready', label: 'Готовые' },
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
       </View>
 
       {/* Панель поиска, импорта и сортировки */}
@@ -403,37 +396,6 @@ export default function ProgramsScreen() {
             <ArrowUpDown size={20} color={colors.textSecondary} strokeWidth={2} />
           </TouchableOpacity>
         </View>
-        {showSortMenu && (
-          <SheetShell title="Сортировка" onClose={() => setShowSortMenu(false)}>
-            {SORT_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={{
-                  paddingVertical: SPACING.md,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-                onPress={() => {
-                  setSortBy(option.value);
-                  setShowSortMenu(false);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Text
-                  style={[
-                    typography.body,
-                    {
-                      color: sortBy === option.value ? colors.primary : colors.textPrimary,
-                      fontWeight: sortBy === option.value ? '600' : '400',
-                    },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </SheetShell>
-        )}
         {/* Чипы фильтров по уровню */}
         <View style={cardStyles.filterChips}>
           {LEVEL_OPTIONS.map((option) => {
@@ -518,6 +480,43 @@ export default function ProgramsScreen() {
       )}
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
+
+      {/* Sheet сортировки (INVENTORY §6: SheetShell монтируется на корне экрана, не в ListHeader) */}
+      {showSortMenu && (
+        <SheetShell title="Сортировка" onClose={() => setShowSortMenu(false)}>
+          {SORT_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={{
+                paddingVertical: SPACING.md,
+                minHeight: 44,
+                justifyContent: 'center',
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+              onPress={() => {
+                setSortBy(option.value);
+                setShowSortMenu(false);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Сортировать: ${option.label}`}
+            >
+              <Text
+                style={[
+                  typography.body,
+                  {
+                    color: sortBy === option.value ? colors.primary : colors.textPrimary,
+                    fontWeight: sortBy === option.value ? '600' : '400',
+                  },
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </SheetShell>
+      )}
 
       {/* Sheet формы (INVENTORY §6: SheetShell паттерн) */}
       {showCreateModal && (

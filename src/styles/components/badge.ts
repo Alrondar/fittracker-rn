@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../typography';
 
 export const createBadgeStyles = (colors: any) =>
@@ -44,7 +44,7 @@ export const createBadgeStyles = (colors: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: colors.textInverse + '30', // ✅ ИСПРАВЛЕНО
+      backgroundColor: withAlpha(colors.textInverse, 0.188), // ✅ ИСПРАВЛЕНО
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import type { IconComponent } from '../../constants/goals';
@@ -87,7 +87,7 @@ export function GenderCard({
         paddingVertical: SPACING.lg,
         borderColor: selected ? colors.primary : colors.border,
         borderWidth: 2,
-        backgroundColor: selected ? colors.primary + '15' : colors.surface,
+        backgroundColor: selected ? withAlpha(colors.primary, 0.082) : colors.surface,
         borderRadius: BORDER_RADIUS.lg,
       }}
     >
@@ -130,7 +130,7 @@ export function SelectableRow({
         alignItems: 'center',
         borderColor: selected ? accentColor : colors.border,
         borderWidth: 2,
-        backgroundColor: selected ? accentColor + '18' : colors.surface,
+        backgroundColor: selected ? withAlpha(accentColor, 0.094) : colors.surface,
         marginBottom: SPACING.sm,
         padding: SPACING.lg,
         borderRadius: BORDER_RADIUS.lg,
@@ -143,10 +143,7 @@ export function SelectableRow({
       />
       <View style={{ flex: 1 }}>
         <Text
-          style={[
-            typography.labelBold,
-            { color: selected ? accentColor : colors.textPrimary },
-          ]}
+          style={[typography.labelBold, { color: selected ? accentColor : colors.textPrimary }]}
         >
           {title}
         </Text>

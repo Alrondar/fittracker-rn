@@ -3,7 +3,7 @@
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
 import { ShieldAlert } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 
 interface ExerciseWarningBannerProps {
   warning: { level: 'avoid' | 'caution'; message: string } | null;
@@ -23,7 +23,7 @@ export const ExerciseWarningBanner = memo(function ExerciseWarningBanner({
       style={{
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: warningColor + '15',
+        backgroundColor: withAlpha(warningColor, 0.082),
         borderColor: warningColor,
         borderWidth: 1,
         borderRadius: BORDER_RADIUS.sm,

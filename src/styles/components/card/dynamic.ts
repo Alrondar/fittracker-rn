@@ -1,5 +1,5 @@
 import { ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 
 // Стили для цветной обводки карточек упражнений
 export const createExerciseCardBorderStyles = (colors: any, borderColor: string) => ({
@@ -8,7 +8,7 @@ export const createExerciseCardBorderStyles = (colors: any, borderColor: string)
     borderLeftColor: borderColor,
   },
   exerciseListItemIconColored: {
-    backgroundColor: borderColor + '15',
+    backgroundColor: withAlpha(borderColor, 0.082),
   },
 });
 
@@ -20,8 +20,8 @@ export const getMuscleGroupChipStyle = (groupColor: string, isActive: boolean): 
   flexDirection: 'row',
   alignItems: 'center',
   gap: 6,
-  backgroundColor: isActive ? `${groupColor}40` : `${groupColor}15`,
-  borderColor: isActive ? groupColor : `${groupColor}50`,
+  backgroundColor: isActive ? withAlpha(groupColor, 0.251) : withAlpha(groupColor, 0.082),
+  borderColor: isActive ? groupColor : withAlpha(groupColor, 0.314),
   borderWidth: isActive ? 2 : 1,
   marginHorizontal: 4,
 });
@@ -39,7 +39,7 @@ export const getMuscleGroupBadgeStyle = (groupColor: string, isActive: boolean):
   justifyContent: 'center',
   alignItems: 'center',
   paddingHorizontal: 4,
-  backgroundColor: isActive ? groupColor : `${groupColor}50`,
+  backgroundColor: isActive ? groupColor : withAlpha(groupColor, 0.314),
 });
 
 export const getMuscleGroupBadgeTextStyle = (groupColor: string, isActive: boolean): TextStyle => ({
@@ -60,7 +60,7 @@ export const getMuscleSubgroupItemStyle = (
   borderWidth: 1.5,
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: isSelected ? `${muscleColor}25` : surfaceColor,
+  backgroundColor: isSelected ? withAlpha(muscleColor, 0.145) : surfaceColor,
   borderColor: isSelected ? muscleColor : borderColor,
 });
 
@@ -105,12 +105,12 @@ export const getExerciseIconExtraStyle = (
 });
 
 export const getMuscleBubbleStyle = (muscleColor: string): ViewStyle => ({
-  backgroundColor: `${muscleColor}20`,
+  backgroundColor: withAlpha(muscleColor, 0.125),
   paddingHorizontal: 8,
   paddingVertical: 4,
   borderRadius: 12,
   borderWidth: 1,
-  borderColor: `${muscleColor}40`,
+  borderColor: withAlpha(muscleColor, 0.251),
 });
 
 export const getMuscleBubbleTextStyle = (muscleColor: string): TextStyle => ({

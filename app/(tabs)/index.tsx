@@ -2,9 +2,9 @@
 // Dashboard: сводка + виджеты. PRODUCT.md §12: «Что мне делать сегодня?»
 // FEAT-1.3 (стрик), FEAT-1.8 (readiness check-in — внутри StatusCard, не гейт старта),
 // COACH-4 (contextual insight), AUDIT-1 (питание), AUDIT-6 (блок «Состояние сегодня»),
-// NUTRI-2 (CRUD записей питания).
+// NUTRI-2 (CRUD записей питания). DA-P2-8: календарь и «Коротко о неделе» — в src/components/dashboard/.
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Hand, ListChecks } from 'lucide-react-native';
@@ -23,6 +23,8 @@ import { ProgramProgressCard } from '../../src/components/ProgramProgressCard';
 import { StreakCard } from '../../src/components/dashboard/StreakCard';
 import { ContextInsightCard } from '../../src/components/dashboard/ContextInsightCard';
 import { StatusCard } from '../../src/components/dashboard/StatusCard';
+import { TrainingCalendarCard } from '../../src/components/dashboard/TrainingCalendarCard';
+import { WeeklyInsightsSection } from '../../src/components/dashboard/WeeklyInsightsSection';
 import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { NutritionAddModal } from '../../src/components/dashboard/NutritionAddModal';
@@ -35,14 +37,6 @@ import { DashboardNutritionCard } from '../../src/components/dashboard/Dashboard
 import type { HistoryWorkout } from '../../src/services/historyService';
 import type { NutritionLog } from '../../src/services/profileService';
 
-const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
-const dayKey = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
-    2,
-    '0'
-  )}`;
-
 export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
@@ -52,8 +46,7 @@ export default function DashboardScreen() {
 
   const { data, isPending, isError, refetch } = useDashboard(userId);
 
-  // Календарь на Dashboard:
-  // те же данные, что и в «Мой прогресс».
+  // Календарь на Dashboard: те же данные, что и в «Мой прогресс».
   const { data: historyData } = useHistory(userId);
 
   const flatWorkouts = useMemo(
@@ -61,40 +54,6 @@ export default function DashboardScreen() {
       (historyData?.sections ?? []).reduce((acc, s) => acc.concat(s.data), [] as HistoryWorkout[]),
     [historyData?.sections]
   );
-
-  const workoutDates = useMemo(() => {
-    const set = new Set<string>();
-
-    flatWorkouts.forEach((w) => set.add(dayKey(new Date(w.date))));
-
-    return set;
-  }, [flatWorkouts]);
-
-  // Компактный календарь Dashboard:
-  // последние 2 недели.
-  const lastTwoWeeks = useMemo(() => {
-    const mondayThisWeek = new Date();
-
-    const dow = mondayThisWeek.getDay();
-
-    mondayThisWeek.setDate(mondayThisWeek.getDate() + (dow === 0 ? -6 : 1 - dow));
-
-    const start = new Date(mondayThisWeek);
-
-    start.setDate(start.getDate() - 7);
-
-    const days: Date[] = [];
-
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(start);
-
-      d.setDate(start.getDate() + i);
-
-      days.push(d);
-    }
-
-    return days;
-  }, []);
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
@@ -104,12 +63,10 @@ export default function DashboardScreen() {
 
   const closeDaySheet = useCallback(() => setSelectedDay(null), []);
 
-  // AUDIT-1:
-  // модалка добавления питания.
+  // AUDIT-1: модалка добавления питания.
   const [nutritionModalVisible, setNutritionModalVisible] = useState(false);
 
-  // NUTRI-2:
-  // модалка списка записей + редактирование.
+  // NUTRI-2: модалка списка записей + редактирование.
   const [nutritionLogListVisible, setNutritionLogListVisible] = useState(false);
 
   const [editingNutritionLog, setEditingNutritionLog] = useState<NutritionLog | null>(null);
@@ -117,8 +74,7 @@ export default function DashboardScreen() {
   // COACH-4: Contextual tips
   const { data: weeklyData } = useWeeklySummary(userId, 0);
 
-  // ENG-3 / COACH-4:
-  // readiness для readinessWarning.
+  // ENG-3 / COACH-4: readiness для readinessWarning.
   const { data: readiness } = useTodayReadiness(userId);
 
   // AUDIT-1: L1-summary питания
@@ -138,8 +94,7 @@ export default function DashboardScreen() {
 
   const readinessWarning = readiness != null && readiness < 3;
 
-  // Старт ближайшей тренировки
-  // программы — без readiness-гейта.
+  // Старт ближайшей тренировки программы — без readiness-гейта.
   const handleStartWorkout = useCallback(() => {
     if (data?.activeProgram) {
       router.push(`/workout/create?programId=${data.activeProgram.programId}`);
@@ -149,21 +104,8 @@ export default function DashboardScreen() {
   if (!userId) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text
-            style={[
-              typography.body,
-              {
-                color: colors.textSecondary,
-              },
-            ]}
-          >
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>
             Пользователь не авторизован
           </Text>
         </View>
@@ -193,13 +135,7 @@ export default function DashboardScreen() {
           }}
         >
           <Text
-            style={[
-              typography.body,
-              {
-                color: colors.textSecondary,
-                marginBottom: SPACING.lg,
-              },
-            ]}
+            style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
           >
             Не удалось загрузить данные
           </Text>
@@ -216,21 +152,9 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: SPACING.sm,
-            }}
-          >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Text
-              style={[
-                styles.headerTitle,
-                {
-                  flexShrink: 1,
-                  marginBottom: 0,
-                },
-              ]}
+              style={[styles.headerTitle, { flexShrink: 1, marginBottom: 0 }]}
               numberOfLines={1}
             >
               Привет, {displayName}!
@@ -282,12 +206,7 @@ export default function DashboardScreen() {
             />
           ) : (
             <AppCard variant="default">
-              <View
-                style={{
-                  alignItems: 'center',
-                  paddingVertical: SPACING.lg,
-                }}
-              >
+              <View style={{ alignItems: 'center', paddingVertical: SPACING.lg }}>
                 <View
                   style={{
                     width: scale(48),
@@ -303,13 +222,7 @@ export default function DashboardScreen() {
                 </View>
 
                 <Text
-                  style={[
-                    typography.h5,
-                    {
-                      color: colors.textPrimary,
-                      marginBottom: SPACING.xs,
-                    },
-                  ]}
+                  style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.xs }]}
                 >
                   Нет активной программы
                 </Text>
@@ -317,11 +230,7 @@ export default function DashboardScreen() {
                 <Text
                   style={[
                     typography.body,
-                    {
-                      color: colors.textSecondary,
-                      textAlign: 'center',
-                      marginBottom: SPACING.lg,
-                    },
+                    { color: colors.textSecondary, textAlign: 'center', marginBottom: SPACING.lg },
                   ]}
                 >
                   Выберите программу, чтобы начать тренировки
@@ -346,13 +255,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           {isNutritionPending ? (
             <AppCard variant="default">
-              <View
-                style={{
-                  height: 120,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
+              <View style={{ height: 120, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
             </AppCard>
@@ -366,258 +269,26 @@ export default function DashboardScreen() {
           ) : null}
         </View>
 
-        {/* AUDIT-1:
-            КОРОТКО О НЕДЕЛЕ */}
+        {/* AUDIT-1: КОРОТКО О НЕДЕЛЕ */}
         {weeklyData?.insights && weeklyData.insights.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title="Коротко о неделе" />
-
-            <AppCard variant="default">
-              {weeklyData.insights.slice(0, 3).map((insight, idx) => {
-                const isLast = idx === Math.min(2, weeklyData.insights.length - 1);
-
-                return (
-                  <View
-                    key={insight.code || idx}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'flex-start',
-                      gap: SPACING.sm,
-                      marginBottom: isLast ? 0 : SPACING.md,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: scale(6),
-                        height: scale(6),
-                        borderRadius: scale(3),
-                        backgroundColor:
-                          insight.severity === 'warning' ? colors.warning : colors.success,
-                        marginTop: scale(6),
-                      }}
-                    />
-
-                    <Text
-                      style={[
-                        typography.body,
-                        {
-                          color: colors.textPrimary,
-                          flex: 1,
-                        },
-                      ]}
-                    >
-                      {insight.title}
-                    </Text>
-                  </View>
-                );
-              })}
-
-              <TouchableOpacity
-                style={{
-                  marginTop: SPACING.md,
-                  alignItems: 'flex-end',
-                }}
-                onPress={() => router.push('/(tabs)/progress')}
-              >
-                <Text
-                  style={[
-                    typography.caption,
-                    {
-                      color: colors.primary,
-                    },
-                  ]}
-                >
-                  Посмотреть прогресс
-                </Text>
-              </TouchableOpacity>
-            </AppCard>
+            <WeeklyInsightsSection
+              insights={weeklyData.insights}
+              onOpenProgress={() => router.push('/(tabs)/progress')}
+            />
           </View>
         )}
 
         {/* Календарь тренировок */}
         <View style={styles.section}>
           <SectionHeader title="Календарь тренировок" />
-
-          <AppCard variant="default">
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-around',
-                marginBottom: SPACING.md,
-              }}
-            >
-              <View
-                style={{
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    typography.h4,
-                    {
-                      color: colors.primary,
-                    },
-                  ]}
-                >
-                  {historyData?.monthlyStats.totalWorkouts ?? 0}
-                </Text>
-
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
-                >
-                  за месяц
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    typography.h4,
-                    {
-                      color: colors.success,
-                    },
-                  ]}
-                >
-                  {((historyData?.monthlyStats.totalVolume ?? 0) / 1000).toFixed(1)}т
-                </Text>
-
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
-                >
-                  объём
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  alignItems: 'center',
-                }}
-              >
-                <Text
-                  style={[
-                    typography.h4,
-                    {
-                      color: colors.warning,
-                    },
-                  ]}
-                >
-                  {Math.round(historyData?.monthlyStats.bestWorkout ?? 0)}
-                </Text>
-
-                <Text
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: colors.textSecondary,
-                    },
-                  ]}
-                >
-                  лучшая, кг
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                marginBottom: SPACING.xs,
-              }}
-            >
-              {WEEKDAY_LABELS.map((label) => (
-                <Text
-                  key={label}
-                  style={[
-                    typography.captionSmall,
-                    {
-                      color: colors.textTertiary,
-                      flex: 1,
-                      textAlign: 'center',
-                    },
-                  ]}
-                >
-                  {label}
-                </Text>
-              ))}
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-              }}
-            >
-              {lastTwoWeeks.map((date) => {
-                const key = dayKey(date);
-
-                const hasWorkout = workoutDates.has(key);
-
-                const isToday = key === dayKey(new Date());
-
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    disabled={!hasWorkout}
-                    onPress={() => handleDayPress(key)}
-                    style={{
-                      width: `${100 / 7}%`,
-                      alignItems: 'center',
-                      paddingVertical: SPACING.xs,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: scale(30),
-                        height: scale(30),
-                        borderRadius: scale(15),
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: hasWorkout
-                          ? withAlpha(colors.primary, 0.13)
-                          : 'transparent',
-                        borderWidth: isToday ? 1 : 0,
-                        borderColor: isToday ? colors.primary : 'transparent',
-                      }}
-                    >
-                      <Text
-                        style={[
-                          typography.caption,
-                          {
-                            color: hasWorkout ? colors.primary : colors.textSecondary,
-                          },
-                        ]}
-                      >
-                        {date.getDate()}
-                      </Text>
-                    </View>
-
-                    <View
-                      style={{
-                        width: 4,
-                        height: 4,
-                        borderRadius: 2,
-                        marginTop: 2,
-                        backgroundColor: hasWorkout ? colors.success : 'transparent',
-                      }}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </AppCard>
+          <TrainingCalendarCard
+            workouts={flatWorkouts}
+            monthlyStats={
+              historyData?.monthlyStats ?? { totalWorkouts: 0, totalVolume: 0, bestWorkout: 0 }
+            }
+            onDayPress={handleDayPress}
+          />
         </View>
       </ScrollView>
 
@@ -629,9 +300,7 @@ export default function DashboardScreen() {
         colors={colors}
       />
 
-      {/* AUDIT-1 / NUTRI-2:
-          модалка добавления/редактирования питания.
-          Рендер вне ScrollView. */}
+      {/* AUDIT-1 / NUTRI-2: модалка добавления/редактирования питания. Рендер вне ScrollView. */}
       <NutritionAddModal
         visible={nutritionModalVisible}
         onClose={() => {
@@ -641,9 +310,7 @@ export default function DashboardScreen() {
         editingLog={editingNutritionLog}
       />
 
-      {/* NUTRI-2:
-          список записей за сегодня.
-          Рендер вне ScrollView. */}
+      {/* NUTRI-2: список записей за сегодня. Рендер вне ScrollView. */}
       <NutritionLogListModal
         visible={nutritionLogListVisible}
         onClose={() => setNutritionLogListVisible(false)}

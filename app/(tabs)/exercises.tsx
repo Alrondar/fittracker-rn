@@ -1,129 +1,36 @@
-import { useState, useRef, useCallback, memo } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  RefreshControl,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+// app/(tabs)/exercises.tsx
+// Справочник упражнений: поиск, фильтры (группы мышц/мышцы/категории/оборудование/
+// активация), сортировка, FlashList со строками-карточками.
+// DA-P2-8: split — ExerciseRow, MuscleGroupFilters, ExerciseSearchBar,
+// ExerciseSortSheet, ActivationFilterChip в src/components/exercises/.
+import { useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import * as Haptics from 'expo-haptics';
-import { Search, Check, X, ArrowUpDown, AlertTriangle, Flame, Zap } from 'lucide-react-native';
+import { Search, X, ArrowUpDown, AlertTriangle } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useExercises } from '../../src/hooks/useExercises';
-import { ExerciseListItem, ExerciseSortBy } from '../../src/services/exercisesService';
-import { MUSCLE_GROUPS } from '../../src/constants/muscleGroups';
-import { getMuscleColor, MUSCLE_COLORS } from '../../src/constants/muscleColors';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
+import { SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppBadge } from '../../src/components/ui/AppBadge';
-import { EquipmentIcon } from '../../src/components/EquipmentIcon';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
-import { SheetShell } from '../../src/components/ui/SheetShell';
-
-// Цвет группы мышц — из единых констант (fallback — semantic token)
-// getGroupColor теперь принимает colors для fallback
-const getGroupColor = (groupName: string, colors: any): string =>
-  MUSCLE_COLORS[groupName.toLowerCase()] || colors.textSecondary;
-
-// ===== Мемоизированная строка списка =====
-interface ExerciseRowProps {
-  item: ExerciseListItem;
-  onPress: (id: string) => void;
-}
-
-const ExerciseRow = memo(function ExerciseRow({ item, onPress }: ExerciseRowProps) {
-  const { colors } = useTheme();
-  const borderColor =
-    item.primary_muscles.length > 0 ? getMuscleColor(item.primary_muscles[0]) : colors.border;
-  return (
-    <TouchableOpacity
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: SPACING.md,
-        backgroundColor: colors.surface,
-        borderRadius: BORDER_RADIUS.lg,
-        marginBottom: SPACING.sm,
-        marginHorizontal: SPACING.lg,
-        borderWidth: 1,
-        borderColor: borderColor,
-        borderLeftWidth: 4,
-      }}
-      onPress={() => onPress(item.id)}
-      activeOpacity={0.7}
-    >
-      <View
-        style={{
-          width: 50,
-          height: 50,
-          borderRadius: 25,
-          backgroundColor: withAlpha(borderColor, 0.13),
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginRight: SPACING.md,
-        }}
-      >
-        <EquipmentIcon
-          name={item.equipment[0] || 'Тренажер'}
-          primaryMuscles={item.primary_muscles}
-          size={32}
-          scale={0.9}
-        />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
-          {item.name}
-        </Text>
-        {item.primary_muscles.length > 0 && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-            {item.primary_muscles.slice(0, 2).map((muscle, idx) => (
-              <AppBadge
-                key={idx}
-                variant="default"
-                size="small"
-                style={{ backgroundColor: withAlpha(getMuscleColor(muscle), 0.08) }}
-                textStyle={{ color: getMuscleColor(muscle) }}
-              >
-                {muscle}
-              </AppBadge>
-            ))}
-          </View>
-        )}
-        {(item.popularity ?? 0) > 0 && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
-            <Flame size={11} color={colors.warning} />
-            <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-              {item.popularity}
-            </Text>
-          </View>
-        )}
-        {item.can_be_activation && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
-            <Zap size={11} color={colors.warning} />
-            <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '600' }]}>
-              Активация
-            </Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-});
+import { ExerciseRow } from '../../src/components/exercises/ExerciseRow';
+import { MuscleGroupFilters } from '../../src/components/exercises/MuscleGroupFilters';
+import { ExerciseSearchBar } from '../../src/components/exercises/ExerciseSearchBar';
+import { ExerciseSortSheet } from '../../src/components/exercises/ExerciseSortSheet';
+import { ActivationFilterChip } from '../../src/components/exercises/ActivationFilterChip';
+import type { TextInput } from 'react-native';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
-  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const {
     exercises,
     loading,
@@ -169,11 +76,6 @@ export default function ExercisesScreen() {
     } else {
       closeSearch();
     }
-  };
-
-  const toggleGroup = (groupName: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveGroup((prev) => (prev === groupName ? null : groupName));
   };
 
   const handleExercisePress = useCallback(
@@ -256,14 +158,6 @@ export default function ExercisesScreen() {
     return null;
   };
 
-  const groupNames = Object.keys(MUSCLE_GROUPS);
-
-  // Memoized group color getter with theme fallback
-  const getGroupColorForTheme = useCallback(
-    (groupName: string): string => getGroupColor(groupName, colors),
-    [colors]
-  );
-
   return (
     <SafeAreaView
       style={[commonStyles.container, { backgroundColor: colors.background }]}
@@ -325,54 +219,14 @@ export default function ExercisesScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        {/* Поиск: живой спиннер + подсветка рамки + подсказка */}
         {showSearch && (
-          <View style={{ marginTop: SPACING.md }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.surface,
-                borderRadius: BORDER_RADIUS.lg,
-                paddingHorizontal: SPACING.md,
-                borderWidth: 1,
-                borderColor: searchTooShort ? colors.warning : colors.border,
-              }}
-            >
-              {isSearching ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Search size={18} color={colors.textTertiary} strokeWidth={2} />
-              )}
-              <TextInput
-                ref={searchInputRef}
-                style={{ flex: 1, padding: SPACING.md, fontSize: 16, color: colors.textPrimary }}
-                placeholder="Поиск упражнения"
-                placeholderTextColor={colors.textTertiary}
-                value={searchInput}
-                onChangeText={setSearchInput}
-                returnKeyType="search"
-              />
-              {searchInput.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchInput('')}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <X size={18} color={colors.textTertiary} strokeWidth={2} />
-                </TouchableOpacity>
-              )}
-            </View>
-            {searchTooShort && (
-              <Text
-                style={[
-                  typography.captionSmall,
-                  { color: colors.warning, marginTop: SPACING.xs, paddingHorizontal: SPACING.xs },
-                ]}
-              >
-                Введите минимум 2 символа
-              </Text>
-            )}
-          </View>
+          <ExerciseSearchBar
+            inputRef={searchInputRef}
+            value={searchInput}
+            onChangeText={setSearchInput}
+            isSearching={isSearching}
+            tooShort={searchTooShort}
+          />
         )}
       </View>
 
@@ -399,121 +253,8 @@ export default function ExercisesScreen() {
         </View>
       )}
 
-      {/* Фильтр по группам мышц */}
       <View style={{ backgroundColor: colors.background }}>
-        <FlatList
-          horizontal
-          data={groupNames}
-          keyExtractor={(item) => item}
-          renderItem={({ item: groupName }) => {
-            const muscles = MUSCLE_GROUPS[groupName];
-            const isActive = activeGroup === groupName;
-            const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
-            const groupColor = getGroupColorForTheme(groupName);
-            return (
-              <TouchableOpacity
-                key={groupName}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: SPACING.md,
-                  paddingVertical: SPACING.sm,
-                  borderRadius: BORDER_RADIUS.full,
-                  backgroundColor: isActive ? withAlpha(groupColor, 0.13) : colors.surface,
-                  borderWidth: 1,
-                  borderColor: isActive ? groupColor : colors.border,
-                }}
-                onPress={() => toggleGroup(groupName)}
-                activeOpacity={0.6}
-              >
-                <Text
-                  style={[
-                    typography.label,
-                    {
-                      fontWeight: '600',
-                      color: isActive ? groupColor : colors.textPrimary,
-                    },
-                  ]}
-                >
-                  {groupName}
-                </Text>
-                {selectedInGroup > 0 && (
-                  <View
-                    style={{
-                      marginLeft: SPACING.xs,
-                      backgroundColor: groupColor,
-                      borderRadius: 10,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        typography.captionSmall,
-                        { fontWeight: '600', color: colors.textInverse },
-                      ]}
-                    >
-                      {selectedInGroup}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          }}
-          contentContainerStyle={{
-            paddingHorizontal: SPACING.lg,
-            paddingVertical: SPACING.md,
-            gap: SPACING.sm,
-          }}
-          showsHorizontalScrollIndicator={false}
-        />
-        {activeGroup && (
-          <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-              {MUSCLE_GROUPS[activeGroup].map((muscle) => {
-                const isSelected = selectedMuscles.includes(muscle);
-                const muscleColor = getMuscleColor(muscle);
-                return (
-                  <TouchableOpacity
-                    key={muscle}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingHorizontal: SPACING.md,
-                      paddingVertical: SPACING.sm,
-                      borderRadius: BORDER_RADIUS.md,
-                      backgroundColor: isSelected ? withAlpha(muscleColor, 0.13) : colors.surface,
-                      borderWidth: 1,
-                      borderColor: isSelected ? muscleColor : colors.border,
-                    }}
-                    onPress={() => toggleMuscle(muscle)}
-                    activeOpacity={0.6}
-                  >
-                    {isSelected && (
-                      <Check
-                        size={12}
-                        color={muscleColor}
-                        strokeWidth={2.5}
-                        style={{ marginRight: 4 }}
-                      />
-                    )}
-                    <Text
-                      style={[
-                        typography.caption,
-                        {
-                          color: isSelected ? muscleColor : colors.textSecondary,
-                          fontWeight: '500',
-                        },
-                      ]}
-                    >
-                      {muscle}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
+        <MuscleGroupFilters selectedMuscles={selectedMuscles} onToggleMuscle={toggleMuscle} />
         {/* Лента категорий + триггер оборудования */}
         <CategoryStrip
           selectedCategories={selectedCategories}
@@ -525,42 +266,7 @@ export default function ExercisesScreen() {
             setShowEquipmentSheet(true);
           }}
         />
-        {/* Фильтр «Только активация» */}
-        <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm }}>
-          <TouchableOpacity
-            onPress={toggleActivation}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              alignSelf: 'flex-start',
-              gap: 6,
-              paddingHorizontal: SPACING.md,
-              paddingVertical: SPACING.sm,
-              borderRadius: BORDER_RADIUS.full,
-              backgroundColor: activationOnly ? withAlpha(colors.warning, 0.13) : colors.surface,
-              borderWidth: 1,
-              borderColor: activationOnly ? colors.warning : colors.border,
-            }}
-          >
-            <Zap
-              size={14}
-              color={activationOnly ? colors.warning : colors.textSecondary}
-              strokeWidth={2}
-            />
-            <Text
-              style={[
-                typography.caption,
-                {
-                  color: activationOnly ? colors.warning : colors.textSecondary,
-                  fontWeight: activationOnly ? '700' : '500',
-                },
-              ]}
-            >
-              Только активация
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <ActivationFilterChip active={activationOnly} onToggle={toggleActivation} />
       </View>
 
       {/* Список упражнений */}
@@ -600,50 +306,12 @@ export default function ExercisesScreen() {
         />
       )}
 
-      {/* Лист сортировки */}
-      <SheetShell
+      <ExerciseSortSheet
         visible={showSortSheet}
-        title="Сортировка"
+        sortBy={sortBy}
+        onSelect={setSortBy}
         onClose={() => setShowSortSheet(false)}
-      >
-        {(
-          [
-            { key: 'name-asc', label: 'По названию (А-Я)' },
-            { key: 'name-desc', label: 'По названию (Я-А)' },
-            { key: 'popularity', label: 'По популярности' },
-          ] as { key: ExerciseSortBy; label: string }[]
-        ).map((option, idx, arr) => (
-          <TouchableOpacity
-            key={option.key}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: SPACING.md,
-              borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-              borderBottomColor: colors.border,
-            }}
-            onPress={() => {
-              setSortBy(option.key);
-              setShowSortSheet(false);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-          >
-            <Text
-              style={[
-                typography.body,
-                {
-                  color: sortBy === option.key ? colors.primary : colors.textPrimary,
-                  fontWeight: sortBy === option.key ? '600' : '400',
-                },
-              ]}
-            >
-              {option.label}
-            </Text>
-            {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
-          </TouchableOpacity>
-        ))}
-      </SheetShell>
+      />
     </SafeAreaView>
   );
 }

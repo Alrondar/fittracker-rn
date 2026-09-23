@@ -4,7 +4,7 @@ import { View, Text } from 'react-native';
 import { Activity, AlertTriangle, Award, Scale, Sparkles, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
-import { SPACING } from '../../constants/theme';
+import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import { BODY_PART_LABELS } from '../../constants/injuries';
@@ -160,7 +160,7 @@ export function ProgressInsights({
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: colors.primary + '1A',
+            backgroundColor: withAlpha(colors.primary, 0.102),
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: SPACING.sm,

@@ -14,7 +14,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { SheetShell } from '../ui/SheetShell';
 import type { StrengthStandardResult } from '../../utils/strengthStandards';
@@ -44,7 +44,7 @@ export function StrengthLevelBadge({
   if (!bodyWeightKg || bodyWeightKg <= 0) return null;
 
   const levelColor = result.color;
-  const levelBg = levelColor + '1A'; // 10% opacity
+  const levelBg = withAlpha(levelColor, 0.102); // 10% opacity
 
   return (
     <>
@@ -58,7 +58,7 @@ export function StrengthLevelBadge({
           styles.badge,
           {
             backgroundColor: levelBg,
-            borderColor: levelColor + '60',
+            borderColor: withAlpha(levelColor, 0.376),
           },
         ]}
       >
@@ -138,7 +138,7 @@ export function StrengthLevelBadge({
 
           {result.standards.map((std) => {
             const isCurrent = std.level === result.level;
-            const rowBg = isCurrent ? std.color + '15' : 'transparent';
+            const rowBg = isCurrent ? withAlpha(std.color, 0.082) : 'transparent';
             return (
               <View
                 key={std.level}

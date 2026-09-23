@@ -15,6 +15,7 @@ import { ExerciseCardTags } from './sections/ExerciseCardTags';
 import { ExerciseWarningBanner } from './sections/ExerciseWarningBanner';
 import { ExerciseCardActions } from './sections/ExerciseCardActions';
 import { ExerciseCardInfo } from './sections/ExerciseCardInfo';
+import { withAlpha } from '../../constants/theme';
 import {
   ExerciseData,
   AlternativeExercise,
@@ -156,7 +157,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           : isReplaced
             ? colors.primary
             : done
-              ? colors.success + '60'
+              ? withAlpha(colors.success, 0.376)
               : colors.border;
     return { borderColor: border };
   }, [sets, isSetCompleted, hasSets, isReplaced, warning?.level, colors]);

@@ -5,7 +5,7 @@
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Settings, HeartPulse, ChevronRight } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { createCardStyles } from '../../../styles/components/card';
 
@@ -116,13 +116,18 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
               }}
             >
               <Text
-                style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700' }]}
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textSecondary, fontWeight: '700' },
+                ]}
               >
                 {repsRange} повт.
               </Text>
             </View>
           )}
-          <View style={[cardStyles.workoutIntensityBadge, { backgroundColor: intensityInfo.bgColor }]}>
+          <View
+            style={[cardStyles.workoutIntensityBadge, { backgroundColor: intensityInfo.bgColor }]}
+          >
             {intensityInfo.icon}
             <Text style={[cardStyles.workoutIntensityText, { color: intensityInfo.color }]}>
               {intensityInfo.label}
@@ -141,7 +146,7 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
                   hasPainRecord
                     ? {
                         ...bubbleStyle,
-                        backgroundColor: colors.warning + '15',
+                        backgroundColor: withAlpha(colors.warning, 0.082),
                         borderColor: colors.warning,
                       }
                     : bubbleStyle
@@ -171,7 +176,10 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
               >
                 <ChevronRight size={14} color={colors.textSecondary} strokeWidth={2} />
                 <Text
-                  style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textSecondary, fontWeight: '600' },
+                  ]}
                 >
                   {formatAlternativesCount(alternativesCount)}
                 </Text>

@@ -9,7 +9,7 @@ import Animated, {
 import { Flame, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 export type WorkoutTabKey = 'warmup' | 'workout';
@@ -109,7 +109,9 @@ export function WorkoutTabs({
           <View
             style={{
               backgroundColor:
-                activeTab === 'warmup' ? colors.textInverse + '30' : colors.warning + '20',
+                activeTab === 'warmup'
+                  ? withAlpha(colors.textInverse, 0.188)
+                  : withAlpha(colors.warning, 0.125),
               borderRadius: BORDER_RADIUS.full,
               paddingHorizontal: 6,
               paddingVertical: 1,

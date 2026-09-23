@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../typography';
 
 export const createSheetCardStyles = (colors: any) =>
@@ -71,10 +71,10 @@ export const createSheetCardStyles = (colors: any) =>
 
     // Блок расписания
     scheduleBlock: {
-      backgroundColor: colors.textInverse + '30',
+      backgroundColor: withAlpha(colors.textInverse, 0.188),
       borderWidth: 1,
       padding: SPACING.md,
-      borderColor: colors.textInverse + '40',
+      borderColor: withAlpha(colors.textInverse, 0.251),
       borderRadius: BORDER_RADIUS.md,
     } as ViewStyle,
     scheduleHeader: {
@@ -119,7 +119,7 @@ export const createSheetCardStyles = (colors: any) =>
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: SPACING.md,
-      backgroundColor: colors.primary + '20',
+      backgroundColor: withAlpha(colors.primary, 0.125),
     } as ViewStyle,
     dayCardNumberText: {
       ...typography.h5,
@@ -148,42 +148,42 @@ export const createSheetCardStyles = (colors: any) =>
       paddingHorizontal: SPACING.md,
       paddingBottom: SPACING.md,
     } as ViewStyle,
-dayCardExerciseItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: SPACING.sm,
-  padding: SPACING.md,
-  backgroundColor: colors.surfaceSecondary,
-  borderRadius: BORDER_RADIUS.md,
-  marginBottom: SPACING.xs,
-} as ViewStyle,
-dayCardExerciseItemGrip: {
-  paddingVertical: SPACING.xs,
-} as ViewStyle,
-dayCardExerciseItemBody: {
-  flex: 1,
-} as ViewStyle,
-dayCardExerciseItemName: {
-  ...typography.labelBold,
-  color: colors.textPrimary,
-  lineHeight: 20,
-  marginBottom: 2,
-} as TextStyle,
-dayCardExerciseSchemePill: {
-  paddingHorizontal: SPACING.md,
-  paddingVertical: SPACING.sm,
-  borderRadius: BORDER_RADIUS.md,
-  backgroundColor: colors.surface,
-  borderWidth: 1,
-  borderColor: colors.border,
-} as ViewStyle,
-dayCardExerciseSchemePillText: {
-  ...typography.labelBold,
-  color: colors.primary,
-} as TextStyle,
-dayCardExerciseDeleteButton: {
-  padding: SPACING.sm,
-} as ViewStyle,
+    dayCardExerciseItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+      padding: SPACING.md,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: BORDER_RADIUS.md,
+      marginBottom: SPACING.xs,
+    } as ViewStyle,
+    dayCardExerciseItemGrip: {
+      paddingVertical: SPACING.xs,
+    } as ViewStyle,
+    dayCardExerciseItemBody: {
+      flex: 1,
+    } as ViewStyle,
+    dayCardExerciseItemName: {
+      ...typography.labelBold,
+      color: colors.textPrimary,
+      lineHeight: 20,
+      marginBottom: 2,
+    } as TextStyle,
+    dayCardExerciseSchemePill: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    } as ViewStyle,
+    dayCardExerciseSchemePillText: {
+      ...typography.labelBold,
+      color: colors.primary,
+    } as TextStyle,
+    dayCardExerciseDeleteButton: {
+      padding: SPACING.sm,
+    } as ViewStyle,
     dayCardAddButton: {
       flexDirection: 'row',
       alignItems: 'center',

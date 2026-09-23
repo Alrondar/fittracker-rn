@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { X, Search, Check, ArrowUpDown, Zap, Flame, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { useExercises } from '../../../hooks/useExercises';
 import { ExerciseListItem, ExerciseSortBy } from '../../../services/exercisesService';
@@ -62,7 +62,7 @@ const PickerRow = memo(function PickerRow({ item, onPress, colors }: PickerRowPr
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: borderColor + '20',
+          backgroundColor: withAlpha(borderColor, 0.125),
           justifyContent: 'center',
           alignItems: 'center',
         }}
@@ -85,7 +85,7 @@ const PickerRow = memo(function PickerRow({ item, onPress, colors }: PickerRowPr
                 key={idx}
                 variant="default"
                 size="small"
-                style={{ backgroundColor: getMuscleColor(muscle) + '15' }}
+                style={{ backgroundColor: withAlpha(getMuscleColor(muscle), 0.082) }}
                 textStyle={{ color: getMuscleColor(muscle) }}
               >
                 {muscle}
@@ -202,7 +202,7 @@ export function ExercisePickerSheet({
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.sm,
                 borderRadius: BORDER_RADIUS.full,
-                backgroundColor: isActive ? groupColor + '20' : colors.surface,
+                backgroundColor: isActive ? withAlpha(groupColor, 0.125) : colors.surface,
                 borderWidth: 1,
                 borderColor: isActive ? groupColor : colors.border,
               }}
@@ -252,7 +252,7 @@ export function ExercisePickerSheet({
                     paddingHorizontal: SPACING.md,
                     paddingVertical: SPACING.sm,
                     borderRadius: BORDER_RADIUS.md,
-                    backgroundColor: isSelected ? muscleColor + '20' : colors.surface,
+                    backgroundColor: isSelected ? withAlpha(muscleColor, 0.125) : colors.surface,
                     borderWidth: 1,
                     borderColor: isSelected ? muscleColor : colors.border,
                   }}
@@ -311,7 +311,7 @@ export function ExercisePickerSheet({
             paddingHorizontal: SPACING.md,
             paddingVertical: SPACING.sm,
             borderRadius: BORDER_RADIUS.full,
-            backgroundColor: activationOnly ? colors.warning + '20' : colors.surface,
+            backgroundColor: activationOnly ? withAlpha(colors.warning, 0.125) : colors.surface,
             borderWidth: 1,
             borderColor: activationOnly ? colors.warning : colors.border,
           }}

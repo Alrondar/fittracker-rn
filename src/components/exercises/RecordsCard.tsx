@@ -12,7 +12,7 @@ import { Trophy, Calendar } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseRecords } from '../../services/exercisesService';
@@ -116,10 +116,10 @@ export function RecordsCard({
     return (
       <View
         style={{
-          backgroundColor: colors.error + '08',
+          backgroundColor: withAlpha(colors.error, 0.031),
           borderRadius: BORDER_RADIUS.lg,
           borderWidth: 1,
-          borderColor: colors.error + '40',
+          borderColor: withAlpha(colors.error, 0.251),
           padding: SPACING.md,
           marginTop: SPACING.lg,
         }}
@@ -206,7 +206,7 @@ export function RecordsCard({
         backgroundColor: colors.surface,
         borderRadius: BORDER_RADIUS.lg,
         borderWidth: 1,
-        borderColor: accentColor + '40',
+        borderColor: withAlpha(accentColor, 0.251),
         borderLeftWidth: 4,
         borderLeftColor: accentColor,
         padding: SPACING.md,
@@ -220,7 +220,7 @@ export function RecordsCard({
             width: 32,
             height: 32,
             borderRadius: 16,
-            backgroundColor: accentColor + '20',
+            backgroundColor: withAlpha(accentColor, 0.125),
             justifyContent: 'center',
             alignItems: 'center',
             marginRight: SPACING.sm,
@@ -244,7 +244,7 @@ export function RecordsCard({
         </Text>
         <View
           style={{
-            backgroundColor: accentColor + '15',
+            backgroundColor: withAlpha(accentColor, 0.082),
             paddingHorizontal: SPACING.sm,
             paddingVertical: 3,
             borderRadius: BORDER_RADIUS.full,

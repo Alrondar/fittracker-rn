@@ -15,7 +15,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import {
   BODY_PARTS,
@@ -273,7 +273,7 @@ export function PainSheet({
                       borderRadius: BORDER_RADIUS.md,
                       borderWidth: 1,
                       borderColor: active ? color : colors.border,
-                      backgroundColor: active ? color + '20' : colors.surfaceSecondary,
+                      backgroundColor: active ? withAlpha(color, 0.125) : colors.surfaceSecondary,
                     }}
                   >
                     <Text
@@ -323,7 +323,9 @@ export function PainSheet({
                           borderRadius: BORDER_RADIUS.md,
                           borderWidth: 1,
                           borderColor: active ? colors.warning : colors.border,
-                          backgroundColor: active ? colors.warning + '20' : colors.surfaceSecondary,
+                          backgroundColor: active
+                            ? withAlpha(colors.warning, 0.125)
+                            : colors.surfaceSecondary,
                         }}
                       >
                         <Text
@@ -369,7 +371,9 @@ export function PainSheet({
                       borderRadius: BORDER_RADIUS.md,
                       borderWidth: 1,
                       borderColor: active ? colors.error : colors.border,
-                      backgroundColor: active ? colors.error + '20' : colors.surfaceSecondary,
+                      backgroundColor: active
+                        ? withAlpha(colors.error, 0.125)
+                        : colors.surfaceSecondary,
                     }}
                   >
                     <Text

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BORDER_RADIUS, SPACING } from '../../constants/theme';
+import { BORDER_RADIUS, SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
 import { AppInput } from '../ui/AppInput';
@@ -58,7 +58,13 @@ export function InjuryFormSheet({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: colors.textPrimary + '80', justifyContent: 'flex-end' }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: withAlpha(colors.textPrimary, 0.502),
+          justifyContent: 'flex-end',
+        }}
+      >
         <View
           style={{
             backgroundColor: colors.background,
@@ -87,10 +93,22 @@ export function InjuryFormSheet({
 
           <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
             {/* Часть тела */}
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.sm },
+              ]}
+            >
               Часть тела *
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: SPACING.sm,
+                marginBottom: SPACING.lg,
+              }}
+            >
               {BODY_PARTS.map((bp) => (
                 <TouchableOpacity
                   key={bp.value}
@@ -103,7 +121,8 @@ export function InjuryFormSheet({
                     borderRadius: BORDER_RADIUS.md,
                     borderWidth: 1,
                     borderColor: bodyPart === bp.value ? bp.color : colors.border,
-                    backgroundColor: bodyPart === bp.value ? bp.color + '20' : colors.surface,
+                    backgroundColor:
+                      bodyPart === bp.value ? withAlpha(bp.color, 0.125) : colors.surface,
                   }}
                 >
                   <Circle
@@ -126,10 +145,22 @@ export function InjuryFormSheet({
             </View>
 
             {/* Тип травмы */}
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.sm },
+              ]}
+            >
               Тип травмы *
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: SPACING.sm,
+                marginBottom: SPACING.lg,
+              }}
+            >
               {INJURY_TYPES.map((it) => (
                 <TouchableOpacity
                   key={it.value}
@@ -156,7 +187,12 @@ export function InjuryFormSheet({
             </View>
 
             {/* Тяжесть */}
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.sm },
+              ]}
+            >
               Тяжесть
             </Text>
             <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg }}>
@@ -172,7 +208,8 @@ export function InjuryFormSheet({
                       borderRadius: BORDER_RADIUS.md,
                       borderWidth: 2,
                       borderColor: severity === level ? levelColor : colors.border,
-                      backgroundColor: severity === level ? levelColor + '20' : colors.surface,
+                      backgroundColor:
+                        severity === level ? withAlpha(levelColor, 0.125) : colors.surface,
                       alignItems: 'center',
                     }}
                   >

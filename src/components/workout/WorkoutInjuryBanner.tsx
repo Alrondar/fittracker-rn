@@ -5,7 +5,7 @@ import React, { useState, memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ShieldAlert, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../constants/injuries';
 import { WorkoutTabKey } from './WorkoutTabs';
@@ -85,7 +85,8 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
   return (
     <View
       style={{
-        backgroundColor: avoidCount > 0 ? colors.error + '15' : colors.warning + '15',
+        backgroundColor:
+          avoidCount > 0 ? withAlpha(colors.error, 0.082) : withAlpha(colors.warning, 0.082),
         borderColor: avoidCount > 0 ? colors.error : colors.warning,
         borderWidth: 1,
         margin: SPACING.md,

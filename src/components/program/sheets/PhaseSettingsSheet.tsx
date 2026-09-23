@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Plus, Minus } from 'lucide-react-native';
 import { ProgramPhase } from '../../../services/programsService';
 import { PHASE_TYPES, getPhaseColor, PhaseType } from '../../../constants/phaseTypes';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 
 interface PhaseSettingsSheetProps {
@@ -82,7 +82,7 @@ export function PhaseSettingsSheet({
                   borderRadius: BORDER_RADIUS.md,
                   borderWidth: 2,
                   borderColor: isSelected ? phaseColor : colors.border,
-                  backgroundColor: isSelected ? phaseColor + '15' : colors.surface,
+                  backgroundColor: isSelected ? withAlpha(phaseColor, 0.082) : colors.surface,
                 }}
               >
                 <Icon

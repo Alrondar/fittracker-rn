@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Plus, Minus, TrendingUp, TrendingDown, Target } from 'lucide-react-native';
 import { ProgramExercise } from '../../../services/programsService';
 import { ProgressionPolicy } from '../../../types/workout';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 
 interface ExerciseSettingsSheetProps {
@@ -264,7 +264,9 @@ export function ExerciseSettingsSheet({
                 borderWidth: 2,
                 borderColor: progressionPolicy === item.value ? colors.primary : colors.border,
                 backgroundColor:
-                  progressionPolicy === item.value ? colors.primary + '15' : colors.surface,
+                  progressionPolicy === item.value
+                    ? withAlpha(colors.primary, 0.082)
+                    : colors.surface,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
@@ -317,7 +319,8 @@ export function ExerciseSettingsSheet({
                 borderRadius: BORDER_RADIUS.md,
                 borderWidth: 2,
                 borderColor: intensity === item.value ? item.color : colors.border,
-                backgroundColor: intensity === item.value ? item.color + '15' : colors.surface,
+                backgroundColor:
+                  intensity === item.value ? withAlpha(item.color, 0.082) : colors.surface,
                 alignItems: 'center',
               }}
             >

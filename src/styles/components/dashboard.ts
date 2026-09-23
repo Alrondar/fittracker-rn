@@ -1,4 +1,4 @@
-import { SPACING, BORDER_RADIUS, fontScale } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, fontScale, withAlpha } from '../../constants/theme';
 
 // Локальный alias, чтобы не тянуть import в каждое поле; fontScale уже учитывает ширину.
 const fs = fontScale;
@@ -48,7 +48,7 @@ export const createDashboardStyles = (colors: any) => ({
   },
   programProgress: {
     height: 8,
-    backgroundColor: colors.textInverse + '30',
+    backgroundColor: withAlpha(colors.textInverse, 0.188),
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: SPACING.md,

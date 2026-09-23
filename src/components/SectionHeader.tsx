@@ -1,26 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../constants/theme';
 import { typography } from '../styles/typography';
 
 interface SectionHeaderProps {
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
-  color?: string;      // акцентный цвет (иконка/фон); по умолчанию colors.textPrimary
-  count?: number;      // счётчик справа (например, число тренировок)
+  color?: string; // акцентный цвет (иконка/фон); по умолчанию colors.textPrimary
+  count?: number; // счётчик справа (например, число тренировок)
   style?: ViewStyle;
 }
 
-export function SectionHeader({
-  title,
-  subtitle,
-  icon,
-  color,
-  count,
-  style,
-}: SectionHeaderProps) {
+export function SectionHeader({ title, subtitle, icon, color, count, style }: SectionHeaderProps) {
   const { colors } = useTheme();
   const accentColor = color || colors.textPrimary;
 
@@ -28,7 +21,7 @@ export function SectionHeader({
     <View style={[styles.container, { backgroundColor: colors.background }, style]}>
       <View style={styles.content}>
         {icon && (
-          <View style={[styles.iconWrapper, { backgroundColor: accentColor + '18' }]}>
+          <View style={[styles.iconWrapper, { backgroundColor: withAlpha(accentColor, 0.094) }]}>
             {icon}
           </View>
         )}
@@ -48,10 +41,7 @@ export function SectionHeader({
         {count !== undefined && (
           <View style={[styles.countBadge, { backgroundColor: colors.surfaceSecondary }]}>
             <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textSecondary, fontWeight: '600' },
-              ]}
+              style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}
             >
               {count}
             </Text>

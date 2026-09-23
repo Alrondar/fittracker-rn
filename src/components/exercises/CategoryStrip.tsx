@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Dumbbell, ChevronDown } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { EXERCISE_CATEGORIES } from '../../constants/exerciseCategories';
 
 interface CategoryStripProps {
@@ -35,7 +35,8 @@ export function CategoryStrip({
         paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.sm,
         borderRadius: BORDER_RADIUS.full,
-        backgroundColor: equipmentSelectedCount > 0 ? colors.primary + '15' : colors.surface,
+        backgroundColor:
+          equipmentSelectedCount > 0 ? withAlpha(colors.primary, 0.082) : colors.surface,
         borderWidth: 1,
         borderStyle: 'dashed',
         borderColor: equipmentSelectedCount > 0 ? colors.primary : colors.border,
@@ -94,7 +95,7 @@ export function CategoryStrip({
               paddingHorizontal: SPACING.md,
               paddingVertical: SPACING.sm,
               borderRadius: BORDER_RADIUS.full,
-              backgroundColor: isActive ? colors.primary + '15' : colors.surface,
+              backgroundColor: isActive ? withAlpha(colors.primary, 0.082) : colors.surface,
               borderWidth: 1,
               borderColor: isActive ? colors.primary : colors.border,
             }}

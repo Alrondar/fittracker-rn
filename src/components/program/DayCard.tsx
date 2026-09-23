@@ -15,7 +15,7 @@ import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
 import { getMuscleColor } from '../../constants/muscleColors';
 import { typography } from '../../styles/typography';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 
 // Мост к данным мышц из join exercises. Локальный опциональный тип: компонент
 // компилируется и работает ДО того, как primary_muscles придёт из БД.
@@ -36,9 +36,9 @@ function ExerciseMuscles({ muscles, colors }: { muscles: string[]; colors: any }
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: c + '1A',
+              backgroundColor: withAlpha(c, 0.102),
               borderWidth: 1,
-              borderColor: c + '55',
+              borderColor: withAlpha(c, 0.333),
               paddingHorizontal: 6,
               paddingVertical: 2,
               borderRadius: BORDER_RADIUS.full,

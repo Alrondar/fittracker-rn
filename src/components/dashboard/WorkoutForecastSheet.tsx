@@ -10,7 +10,7 @@ import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { typography } from '../../styles/typography';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import type { ForecastDifficulty } from '../../utils/workoutForecast';
 import type { WorkoutForecastWithNames } from '../../services/forecastService';
 
@@ -93,9 +93,9 @@ export function WorkoutForecastSheet({ visible, onClose, result }: Props) {
           gap: SPACING.md,
           padding: SPACING.md,
           borderRadius: BORDER_RADIUS.lg,
-          backgroundColor: color + '15',
+          backgroundColor: withAlpha(color, 0.082),
           borderWidth: 1,
-          borderColor: color + '40',
+          borderColor: withAlpha(color, 0.251),
           marginBottom: SPACING.lg,
         }}
       >
@@ -104,7 +104,7 @@ export function WorkoutForecastSheet({ visible, onClose, result }: Props) {
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: color + '25',
+            backgroundColor: withAlpha(color, 0.145),
             alignItems: 'center',
             justifyContent: 'center',
           }}

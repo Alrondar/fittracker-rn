@@ -2,8 +2,8 @@
 // UX-16 D3: Info tabs вместо двух отдельных аккордеонов Technique/Knowledge.
 // PillToggle для переключения табов "Техника" / "Важно знать".
 // Lazy mount: контент не монтируется до первого открытия.
-import React, { memo, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { memo, useState } from 'react';
+import { View, Text } from 'react-native';
 import {
   BookOpen,
   PlayCircle,
@@ -13,9 +13,9 @@ import {
   ShieldAlert,
   Sparkles,
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
+import { PillToggle } from '../../ui/PillToggle';
 import { TechniqueMediaSlider } from '../TechniqueMediaSlider';
 import { SectionSubheading } from './ExerciseCardTechnique';
 
@@ -47,99 +47,21 @@ export const ExerciseCardInfo = memo(function ExerciseCardInfo({
   const hasBoth = hasTechnique && hasKnowledge;
   const [activeTab, setActiveTab] = useState<InfoTab>(hasTechnique ? 'technique' : 'knowledge');
 
-  const handleTabChange = useCallback((tab: InfoTab) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveTab(tab);
-  }, []);
-
   if (!hasTechnique && !hasKnowledge) return null;
 
   return (
     <View style={{ marginTop: SPACING.md }}>
       {/* PillToggle для табов */}
       {hasBoth && (
-        <View
-          style={{
-            flexDirection: 'row',
-            backgroundColor: colors.surfaceSecondary,
-            borderRadius: BORDER_RADIUS.md,
-            padding: 2,
-            marginBottom: SPACING.md,
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => handleTabChange('technique')}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeTab === 'technique' }}
-            accessibilityLabel="Техника"
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.xs,
-              paddingVertical: SPACING.sm,
-              borderRadius: BORDER_RADIUS.sm,
-              backgroundColor: activeTab === 'technique' ? colors.primary : 'transparent',
-              minHeight: 44,
-            }}
-          >
-            <BookOpen
-              size={16}
-              color={activeTab === 'technique' ? colors.textInverse : colors.textSecondary}
-              strokeWidth={activeTab === 'technique' ? 2 : 1.5}
-            />
-            <Text
-              style={[
-                typography.label,
-                {
-                  color: activeTab === 'technique' ? colors.textInverse : colors.textSecondary,
-                  fontWeight: activeTab === 'technique' ? '600' : '400',
-                },
-              ]}
-              numberOfLines={1}
-            >
-              Техника
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => handleTabChange('knowledge')}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeTab === 'knowledge' }}
-            accessibilityLabel="Важно знать"
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.xs,
-              paddingVertical: SPACING.sm,
-              borderRadius: BORDER_RADIUS.sm,
-              backgroundColor: activeTab === 'knowledge' ? colors.primary : 'transparent',
-              minHeight: 44,
-            }}
-          >
-            <ShieldAlert
-              size={16}
-              color={activeTab === 'knowledge' ? colors.textInverse : colors.textSecondary}
-              strokeWidth={activeTab === 'knowledge' ? 2 : 1.5}
-            />
-            <Text
-              style={[
-                typography.label,
-                {
-                  color: activeTab === 'knowledge' ? colors.textInverse : colors.textSecondary,
-                  fontWeight: activeTab === 'knowledge' ? '600' : '400',
-                },
-              ]}
-              numberOfLines={1}
-            >
-              Важно знать
-            </Text>
-          </TouchableOpacity>
+        <View style={{ marginBottom: SPACING.md }}>
+          <PillToggle
+            options={[
+              { key: 'technique' as const, label: 'Техника', icon: BookOpen },
+              { key: 'knowledge' as const, label: 'Важно знать', icon: ShieldAlert },
+            ]}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
         </View>
       )}
 

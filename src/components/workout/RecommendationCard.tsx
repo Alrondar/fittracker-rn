@@ -11,7 +11,7 @@
 import { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Target, TrendingDown, Minus, ChevronDown, EyeOff } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type {
   ProgressionResult,
@@ -120,7 +120,7 @@ export const RecommendationCard = memo(function RecommendationCard({
       style={{
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: accentColor + '40',
+        borderColor: withAlpha(accentColor, 0.251),
         borderRadius: BORDER_RADIUS.sm,
         padding: SPACING.sm,
         marginTop: SPACING.sm,
@@ -227,7 +227,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           activeOpacity={0.7}
           style={{
             flex: 1,
-            backgroundColor: chipsOpen ? accentColor + '20' : 'transparent',
+            backgroundColor: chipsOpen ? withAlpha(accentColor, 0.125) : 'transparent',
             borderWidth: 1,
             borderColor: accentColor,
             paddingVertical: 10,
@@ -258,7 +258,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             paddingTop: SPACING.sm,
             paddingLeft: SPACING.sm,
             borderLeftWidth: 2,
-            borderLeftColor: accentColor + '60',
+            borderLeftColor: withAlpha(accentColor, 0.376),
           }}
         >
           {explanationItems.map((item, idx) => {

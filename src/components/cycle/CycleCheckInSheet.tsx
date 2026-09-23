@@ -5,7 +5,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Droplet, Egg } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { AppButton } from '../ui/AppButton';
 import { SheetShell } from '../ui/SheetShell';
 import type { CycleEvent, CycleEventType } from '../../types/cycle';
@@ -35,9 +35,7 @@ export function CycleCheckInSheet({
   // Проверяем, есть ли уже событие этого типа на выбранную дату
   const existingEvent = useMemo(() => {
     if (!selectedType) return null;
-    return events.find(
-      (e) => e.event_type === selectedType && e.event_date === defaultDate
-    );
+    return events.find((e) => e.event_type === selectedType && e.event_date === defaultDate);
   }, [events, selectedType, defaultDate]);
 
   const handleSave = async () => {
@@ -86,15 +84,23 @@ export function CycleCheckInSheet({
               borderRadius: BORDER_RADIUS.md,
               borderWidth: 2,
               borderColor: selectedType?.includes('menstruation') ? colors.error : colors.border,
-              backgroundColor: selectedType?.includes('menstruation') ? colors.error + '1A' : colors.surface,
+              backgroundColor: selectedType?.includes('menstruation')
+                ? withAlpha(colors.error, 0.102)
+                : colors.surface,
               alignItems: 'center',
             }}
           >
-            <Droplet size={24} color={selectedType?.includes('menstruation') ? colors.error : colors.textSecondary} style={{ marginBottom: SPACING.xs }} />
+            <Droplet
+              size={24}
+              color={selectedType?.includes('menstruation') ? colors.error : colors.textSecondary}
+              style={{ marginBottom: SPACING.xs }}
+            />
             <Text
               style={[
                 typography.labelBold,
-                { color: selectedType?.includes('menstruation') ? colors.error : colors.textPrimary },
+                {
+                  color: selectedType?.includes('menstruation') ? colors.error : colors.textPrimary,
+                },
               ]}
             >
               Менструация
@@ -112,15 +118,23 @@ export function CycleCheckInSheet({
               borderRadius: BORDER_RADIUS.md,
               borderWidth: 2,
               borderColor: selectedType?.includes('ovulation') ? colors.warning : colors.border,
-              backgroundColor: selectedType?.includes('ovulation') ? colors.warning + '1A' : colors.surface,
+              backgroundColor: selectedType?.includes('ovulation')
+                ? withAlpha(colors.warning, 0.102)
+                : colors.surface,
               alignItems: 'center',
             }}
           >
-            <Egg size={24} color={selectedType?.includes('ovulation') ? colors.warning : colors.textSecondary} style={{ marginBottom: SPACING.xs }} />
+            <Egg
+              size={24}
+              color={selectedType?.includes('ovulation') ? colors.warning : colors.textSecondary}
+              style={{ marginBottom: SPACING.xs }}
+            />
             <Text
               style={[
                 typography.labelBold,
-                { color: selectedType?.includes('ovulation') ? colors.warning : colors.textPrimary },
+                {
+                  color: selectedType?.includes('ovulation') ? colors.warning : colors.textPrimary,
+                },
               ]}
             >
               Овуляция
@@ -182,7 +196,12 @@ export function CycleCheckInSheet({
 
             {/* Дата */}
             <View style={{ marginBottom: SPACING.lg }}>
-              <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.xs }]}>
+              <Text
+                style={[
+                  typography.label,
+                  { color: colors.textSecondary, marginBottom: SPACING.xs },
+                ]}
+              >
                 Дата
               </Text>
               <View
@@ -202,8 +221,11 @@ export function CycleCheckInSheet({
                   })}
                 </Text>
               </View>
-              <Text style={[typography.caption, { color: colors.textTertiary, marginTop: SPACING.xs }]}>
-                * В текущей версии дата фиксируется на сегодня. Выбор даты через календарь будет добавлен позже.
+              <Text
+                style={[typography.caption, { color: colors.textTertiary, marginTop: SPACING.xs }]}
+              >
+                * В текущей версии дата фиксируется на сегодня. Выбор даты через календарь будет
+                добавлен позже.
               </Text>
             </View>
 

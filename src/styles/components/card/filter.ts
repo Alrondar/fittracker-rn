@@ -4,33 +4,6 @@ import { typography } from '../../typography';
 
 export const createFilterCardStyles = (colors: any) =>
   StyleSheet.create({
-    // Табы
-    tabContainer: {
-      flexDirection: 'row',
-      paddingHorizontal: SPACING.lg,
-      marginBottom: SPACING.md,
-      gap: SPACING.sm,
-    } as ViewStyle,
-    tab: {
-      flex: 1,
-      minHeight: 44,
-      justifyContent: 'center',
-      paddingVertical: SPACING.md,
-      borderRadius: BORDER_RADIUS.md,
-      alignItems: 'center',
-      backgroundColor: colors.surfaceSecondary,
-    } as ViewStyle,
-    tabActive: {
-      backgroundColor: colors.primary,
-    } as ViewStyle,
-    tabText: {
-      ...typography.labelBold,
-      color: colors.textSecondary,
-    } as TextStyle,
-    tabTextActive: {
-      color: colors.textInverse,
-    } as TextStyle,
-
     // Панель фильтров и поиска
     filterBar: {
       paddingHorizontal: SPACING.lg,

@@ -18,7 +18,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useInjuries } from '../../src/hooks/useInjuries';
 import { profileService } from '../../src/services/profileService';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { BODY_ZONE_COLORS } from '../../src/constants/semanticColors';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
@@ -69,7 +69,7 @@ const InjuryCard = memo(function InjuryCard({
           <Circle
             size={20}
             color={bodyPartColor}
-            fill={bodyPartColor + '20'}
+            fill={withAlpha(bodyPartColor, 0.125)}
             strokeWidth={2}
             style={{ marginRight: SPACING.sm }}
           />
@@ -86,7 +86,7 @@ const InjuryCard = memo(function InjuryCard({
         <AppBadge
           variant="default"
           size="small"
-          style={{ backgroundColor: severityColor + '20' }}
+          style={{ backgroundColor: withAlpha(severityColor, 0.125) }}
           textStyle={{ color: severityColor }}
         >
           {getSeverityLabel(injury.severity)}
@@ -123,7 +123,7 @@ const InjuryCard = memo(function InjuryCard({
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: colors.success + '20',
+              backgroundColor: withAlpha(colors.success, 0.125),
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -136,7 +136,7 @@ const InjuryCard = memo(function InjuryCard({
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: colors.error + '20',
+              backgroundColor: withAlpha(colors.error, 0.125),
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -358,12 +358,17 @@ export default function InjuriesScreen() {
                     paddingHorizontal: SPACING.md,
                     paddingVertical: SPACING.sm,
                     borderRadius: BORDER_RADIUS.md,
-                    backgroundColor: isActive ? zoneColor + '20' : 'transparent',
+                    backgroundColor: isActive ? withAlpha(zoneColor, 0.125) : 'transparent',
                     borderWidth: 1,
                     borderColor: isActive ? zoneColor : 'transparent',
                   }}
                 >
-                  <Circle size={16} color={zoneColor} fill={zoneColor + '20'} strokeWidth={2} />
+                  <Circle
+                    size={16}
+                    color={zoneColor}
+                    fill={withAlpha(zoneColor, 0.125)}
+                    strokeWidth={2}
+                  />
                   <Text
                     style={[
                       typography.captionSmall,

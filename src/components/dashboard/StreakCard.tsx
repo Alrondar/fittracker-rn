@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { View, Text } from 'react-native';
 import { Flame, Trophy } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { StreakStats } from '../../utils/streak';
 
@@ -28,9 +28,9 @@ export const StreakCard = memo(function StreakCard({ streak, colors }: StreakCar
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.warning + '12',
+        backgroundColor: withAlpha(colors.warning, 0.071),
         borderWidth: 1,
-        borderColor: colors.warning + '35',
+        borderColor: withAlpha(colors.warning, 0.208),
         borderRadius: BORDER_RADIUS.lg,
         padding: SPACING.md,
         gap: SPACING.md,
@@ -41,16 +41,12 @@ export const StreakCard = memo(function StreakCard({ streak, colors }: StreakCar
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: colors.warning + '20',
+          backgroundColor: withAlpha(colors.warning, 0.125),
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Flame
-          size={22}
-          color={active ? colors.warning : colors.textTertiary}
-          strokeWidth={2}
-        />
+        <Flame size={22} color={active ? colors.warning : colors.textTertiary} strokeWidth={2} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[typography.h4, { color: colors.textPrimary }]}>

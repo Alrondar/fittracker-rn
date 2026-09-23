@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Beef, Droplet, Flame, Pill, RefreshCw, Save, Wheat } from 'lucide-react-native';
-import { SPACING } from '../../constants/theme';
+import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
@@ -71,7 +71,7 @@ export function GoalsStep3({
           style={{
             borderColor: colors.warning,
             borderWidth: 1,
-            backgroundColor: colors.warning + '10',
+            backgroundColor: withAlpha(colors.warning, 0.063),
             marginBottom: SPACING.lg,
           }}
         >
@@ -85,7 +85,10 @@ export function GoalsStep3({
       )}
 
       {/* Калории */}
-      <AppCard variant="highlighted" style={{ backgroundColor: colors.primary, marginBottom: SPACING.lg }}>
+      <AppCard
+        variant="highlighted"
+        style={{ backgroundColor: colors.primary, marginBottom: SPACING.lg }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
           <Flame size={24} color={colors.textInverse} />
           <Text style={[typography.h5, { color: colors.textInverse, marginLeft: SPACING.sm }]}>
@@ -100,14 +103,34 @@ export function GoalsStep3({
 
       {/* Макросы */}
       <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-        <MacroCard icon={Beef} value={proteins} label="Белки" color={MACRO_COLORS.proteins} colors={colors} />
-        <MacroCard icon={Droplet} value={fats} label="Жиры" color={MACRO_COLORS.fats} colors={colors} />
-        <MacroCard icon={Wheat} value={carbs} label="Углеводы" color={MACRO_COLORS.carbs} colors={colors} />
+        <MacroCard
+          icon={Beef}
+          value={proteins}
+          label="Белки"
+          color={MACRO_COLORS.proteins}
+          colors={colors}
+        />
+        <MacroCard
+          icon={Droplet}
+          value={fats}
+          label="Жиры"
+          color={MACRO_COLORS.fats}
+          colors={colors}
+        />
+        <MacroCard
+          icon={Wheat}
+          value={carbs}
+          label="Углеводы"
+          color={MACRO_COLORS.carbs}
+          colors={colors}
+        />
       </View>
 
       {/* Соотношение макросов */}
       <AppCard variant="compact">
-        <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}>
+        <Text
+          style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.md }]}
+        >
           Соотношение макросов
         </Text>
         <View
@@ -119,7 +142,9 @@ export function GoalsStep3({
             marginBottom: SPACING.sm,
           }}
         >
-          <View style={{ width: `${macroRatio.proteins}%`, backgroundColor: MACRO_COLORS.proteins }} />
+          <View
+            style={{ width: `${macroRatio.proteins}%`, backgroundColor: MACRO_COLORS.proteins }}
+          />
           <View style={{ width: `${macroRatio.fats}%`, backgroundColor: MACRO_COLORS.fats }} />
           <View style={{ flex: 1, backgroundColor: MACRO_COLORS.carbs }} />
         </View>
@@ -138,7 +163,9 @@ export function GoalsStep3({
 
       {/* Как рассчитано */}
       <AppCard variant="compact" style={{ marginTop: SPACING.lg, marginBottom: SPACING.xl }}>
-        <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+        <Text
+          style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
+        >
           ℹ️ Как рассчитано
         </Text>
         <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
@@ -146,9 +173,11 @@ export function GoalsStep3({
             ? `Использована формула Кэтча-МакАрдла (по сухому весу, % жира ${bodyFatPercentage}%) с учетом твоего уровня активности.`
             : 'Использована формула Миффлина-Сан Жеора с учетом твоего пола, возраста, роста, веса и уровня активности.'}
           {goal === 'lose' && ' Для похудения создан дефицит 15%.'}
-          {goal === 'gain' && ' Для набора массы создан профицит 15%.'}{' '}
-          Соотношение макросов: белки 2г/кг, жиры 1г/кг, углеводы — остаток калорий.
-          {usePharma && pharmaType === 'steroids' && ' С учетом АС: белок увеличен до 3г/кг, калории +10%.'}
+          {goal === 'gain' && ' Для набора массы создан профицит 15%.'} Соотношение макросов: белки
+          2г/кг, жиры 1г/кг, углеводы — остаток калорий.
+          {usePharma &&
+            pharmaType === 'steroids' &&
+            ' С учетом АС: белок увеличен до 3г/кг, калории +10%.'}
           {usePharma && pharmaType === 'gh' && ' С учетом ГР: жиры снижены на 20%.'}
           {usePharma && pharmaType === 'combo' && ' С учетом комбо: белок 3г/кг, жиры -20%.'}
         </Text>

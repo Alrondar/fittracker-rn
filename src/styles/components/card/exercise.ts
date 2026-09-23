@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../typography';
 
 export const createExerciseCardStyles = (colors: any) =>
@@ -142,7 +142,7 @@ export const createExerciseCardStyles = (colors: any) =>
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: colors.textTertiary + '60',
+      backgroundColor: withAlpha(colors.textTertiary, 0.376),
     } as ViewStyle,
 
     // Оборудование

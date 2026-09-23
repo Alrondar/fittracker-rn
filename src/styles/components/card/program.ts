@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../typography';
 
 export const createProgramCardStyles = (colors: any) =>
@@ -56,7 +56,7 @@ export const createProgramCardStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: SPACING.sm,
-      backgroundColor: colors.textInverse + '30',
+      backgroundColor: withAlpha(colors.textInverse, 0.188),
       paddingVertical: SPACING.md,
       borderRadius: BORDER_RADIUS.lg,
     } as ViewStyle,
@@ -121,7 +121,7 @@ export const createProgramCardStyles = (colors: any) =>
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.sm,
       borderRadius: BORDER_RADIUS.full,
-      backgroundColor: colors.primary + '15',
+      backgroundColor: withAlpha(colors.primary, 0.082),
     } as ViewStyle,
     programCardFooterPillText: {
       ...typography.buttonTiny,
@@ -148,7 +148,7 @@ export const createProgramCardStyles = (colors: any) =>
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.sm,
-      backgroundColor: colors.primary + '20',
+      backgroundColor: withAlpha(colors.primary, 0.125),
     } as ViewStyle,
     myProgramBadgeText: {
       fontSize: 10,
@@ -188,10 +188,10 @@ export const createProgramCardStyles = (colors: any) =>
     } as TextStyle,
     // Блок расписания
     scheduleBlock: {
-      backgroundColor: colors.textInverse + '30',
+      backgroundColor: withAlpha(colors.textInverse, 0.188),
       borderWidth: 1,
       padding: SPACING.md,
-      borderColor: colors.textInverse + '40',
+      borderColor: withAlpha(colors.textInverse, 0.251),
       borderRadius: BORDER_RADIUS.md,
     } as ViewStyle,
     scheduleHeader: {

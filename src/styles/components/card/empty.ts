@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../typography';
 
 export const createEmptyCardStyles = (colors: any) =>
@@ -63,7 +63,7 @@ export const createEmptyCardStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.md,
     } as ViewStyle,
     actionMenuItemDanger: {
-      backgroundColor: colors.error + '10',
+      backgroundColor: withAlpha(colors.error, 0.063),
     } as ViewStyle,
     actionMenuText: {
       ...typography.labelBold,

@@ -56,6 +56,7 @@ export function AppCard({ children, variant = 'default', style, onPress }: AppCa
   if (onPress) {
     return (
       <TouchableOpacity
+        accessibilityRole="button"
         onPress={onPress}
         activeOpacity={0.7}
         style={cardStyle}
@@ -65,11 +66,7 @@ export function AppCard({ children, variant = 'default', style, onPress }: AppCa
     );
   }
 
-  return (
-    <View style={cardStyle}>
-      {renderChildren()}
-    </View>
-  );
+  return <View style={cardStyle}>{renderChildren()}</View>;
 }
 
 const styles = StyleSheet.create({

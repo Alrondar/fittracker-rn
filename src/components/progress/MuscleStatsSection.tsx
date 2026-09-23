@@ -21,7 +21,7 @@
 //   - empty state: дружелюбный текст, без фейковых данных.
 
 import React, { memo, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Activity } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useMuscleStats } from '../../hooks/useMuscleStats';
@@ -29,6 +29,7 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { MuscleLoadMap } from '../workout/MuscleLoadMap';
 import { MuscleLoadModeToggle } from '../ui/MuscleLoadModeToggle';
+import { PillToggle } from '../ui/PillToggle';
 import { BodyMap } from '../workout/BodyMap';
 import { intensityColor } from '../../utils/colorScale';
 import { pluralizeDays, type MuscleLoadMode } from '../../utils/muscleLoad';
@@ -359,35 +360,7 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
       </View>
 
       {/* Tabs */}
-      <View
-        style={[styles.tabRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      >
-        {TABS.map((t) => {
-          const selected = tab === t.key;
-          return (
-            <TouchableOpacity
-              key={t.key}
-              onPress={() => setTab(t.key)}
-              style={[styles.tabButton, selected && { backgroundColor: colors.primary }]}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              accessibilityLabel={`Вкладка: ${t.label}`}
-            >
-              <Text
-                style={[
-                  typography.captionSmall,
-                  {
-                    color: selected ? colors.textInverse : colors.textSecondary,
-                    fontWeight: '600',
-                  },
-                ]}
-              >
-                {t.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <PillToggle options={TABS} value={tab} onChange={setTab} />
 
       {isPending ? (
         <View
@@ -435,42 +408,8 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
                   marginBottom: SPACING.sm,
                 }}
               >
-                <View
-                  style={[
-                    styles.tabRow,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                      flex: 1,
-                      marginRight: SPACING.sm,
-                    },
-                  ]}
-                >
-                  {PERIODS.map((p) => {
-                    const selected = period === p.key;
-                    return (
-                      <TouchableOpacity
-                        key={p.key}
-                        onPress={() => setPeriod(p.key)}
-                        style={[styles.tabButton, selected && { backgroundColor: colors.primary }]}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        accessibilityLabel={`Период: ${p.label}`}
-                      >
-                        <Text
-                          style={[
-                            typography.captionSmall,
-                            {
-                              color: selected ? colors.textInverse : colors.textSecondary,
-                              fontWeight: '600',
-                            },
-                          ]}
-                        >
-                          {p.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                <View style={{ flex: 1, marginRight: SPACING.sm }}>
+                  <PillToggle options={PERIODS} value={period} onChange={setPeriod} />
                 </View>
                 <MuscleLoadModeToggle mode={loadMode} onChange={setLoadMode} />
               </View>
@@ -810,22 +749,6 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
 MuscleStatsSection.displayName = 'MuscleStatsSection';
 
 const styles = StyleSheet.create({
-  tabRow: {
-    flexDirection: 'row',
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1,
-    padding: 2,
-    gap: 2,
-  },
-  tabButton: {
-    flex: 1,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   card: {
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,

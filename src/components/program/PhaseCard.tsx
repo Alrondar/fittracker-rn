@@ -16,7 +16,7 @@ import { ScaleDecorator, NestableDraggableFlatList } from 'react-native-draggabl
 import { DayCard } from './DayCard';
 import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
 import { getPhaseMeta, getPhaseColor } from '../../constants/phaseTypes';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 interface PhaseCardProps {
@@ -122,10 +122,10 @@ export function PhaseCard({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: phaseColor + '12',
+          backgroundColor: withAlpha(phaseColor, 0.071),
           borderRadius: BORDER_RADIUS.lg,
           borderWidth: 1,
-          borderColor: phaseColor + '40',
+          borderColor: withAlpha(phaseColor, 0.251),
           paddingHorizontal: SPACING.md,
           paddingVertical: SPACING.md,
         }}
@@ -143,7 +143,7 @@ export function PhaseCard({
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: phaseColor + '20',
+              backgroundColor: withAlpha(phaseColor, 0.125),
               justifyContent: 'center',
               alignItems: 'center',
               marginRight: SPACING.sm,
@@ -237,7 +237,7 @@ export function PhaseCard({
                         borderRadius: BORDER_RADIUS.md,
                         borderWidth: 1.5,
                         borderColor: isSelected ? phaseColor : colors.border,
-                        backgroundColor: isSelected ? phaseColor + '18' : colors.surface,
+                        backgroundColor: isSelected ? withAlpha(phaseColor, 0.094) : colors.surface,
                       }}
                     >
                       <Text
@@ -266,7 +266,7 @@ export function PhaseCard({
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                backgroundColor: colors.warning + '12',
+                backgroundColor: withAlpha(colors.warning, 0.071),
                 borderRadius: BORDER_RADIUS.md,
                 padding: SPACING.sm,
                 marginBottom: SPACING.sm,

@@ -15,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { X, RotateCcw } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { SetFeedbackPatch } from '../../types/workout';
 import {
@@ -307,10 +307,10 @@ export const RpeOverlay = memo(function RpeOverlay({
             style={{
               marginTop: SPACING.md,
               padding: SPACING.md,
-              backgroundColor: selectedColor + '15',
+              backgroundColor: withAlpha(selectedColor, 0.082),
               borderRadius: BORDER_RADIUS.md,
               borderWidth: 1,
-              borderColor: selectedColor + '40',
+              borderColor: withAlpha(selectedColor, 0.251),
             }}
           >
             <Text

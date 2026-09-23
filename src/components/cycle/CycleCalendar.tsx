@@ -5,7 +5,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import type { CycleEvent, CycleSettings, CalculatedCyclePhase } from '../../types/cycle';
 import { getCyclePhaseColor, getCyclePhaseLabel, getPhaseForDate } from '../../utils/cycle';
 
@@ -155,7 +155,7 @@ export function CycleCalendar({
                 style={{
                   flex: 1,
                   borderRadius: BORDER_RADIUS.sm,
-                  backgroundColor: phase ? phaseColor + '22' : 'transparent',
+                  backgroundColor: phase ? withAlpha(phaseColor, 0.133) : 'transparent',
                   borderWidth: isToday ? 2 : isTappable ? 1.5 : 1,
                   borderColor: isToday
                     ? colors.primary
@@ -207,7 +207,7 @@ export function CycleCalendar({
                 width: 12,
                 height: 12,
                 borderRadius: 6,
-                backgroundColor: colors[getCyclePhaseColor(phase)] + '44',
+                backgroundColor: withAlpha(colors[getCyclePhaseColor(phase)], 0.267),
                 borderWidth: 1,
                 borderColor: colors[getCyclePhaseColor(phase)],
               }}

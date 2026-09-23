@@ -8,7 +8,7 @@ import { View, Text } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import { BODY_PART_LABELS } from '../../constants/injuries';
@@ -97,7 +97,7 @@ export function PainTrendSheet({ visible, onClose, result }: PainTrendSheetProps
         <AppCard
           variant="default"
           style={{
-            borderColor: colors.success + '88',
+            borderColor: withAlpha(colors.success, 0.533),
             borderWidth: 1,
             marginBottom: SPACING.md,
           }}
@@ -166,9 +166,9 @@ export function PainTrendSheet({ visible, onClose, result }: PainTrendSheetProps
                           paddingHorizontal: 8,
                           paddingVertical: 4,
                           borderRadius: BORDER_RADIUS.full,
-                          backgroundColor: c + '1A',
+                          backgroundColor: withAlpha(c, 0.102),
                           borderWidth: 1,
-                          borderColor: c + '66',
+                          borderColor: withAlpha(c, 0.4),
                         }}
                       >
                         <View

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Program } from '../services/programsService';
 import { Sprout, Dumbbell, Flame } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../constants/theme';
 import { LEVEL_COLORS } from '../constants/semanticColors';
 import { createCardStyles } from '../styles/components/card';
 import { createButtonStyles } from '../styles/components/button';
@@ -107,7 +107,7 @@ export function ProgramFormSheet({
                     borderRadius: BORDER_RADIUS.md,
                     borderWidth: 2,
                     borderColor: isSelected ? levelColor : colors.border,
-                    backgroundColor: isSelected ? levelColor + '15' : colors.surface,
+                    backgroundColor: isSelected ? withAlpha(levelColor, 0.082) : colors.surface,
                     alignItems: 'center',
                   }}
                   activeOpacity={0.7}

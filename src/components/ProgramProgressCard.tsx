@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../constants/theme';
 import { typography } from '../styles/typography';
 import { Play } from 'lucide-react-native';
 import { getPhaseMeta, getPhaseColor } from '../constants/phaseTypes';
@@ -9,10 +9,10 @@ import { getPhaseMeta, getPhaseColor } from '../constants/phaseTypes';
 interface ProgramProgressCardProps {
   programName: string;
   dayName?: string;
-  currentPhase?: number;   // ✅ НОВОЕ
-  phaseName?: string;      // ✅ НОВОЕ
-  phaseType?: string;      // ✅ НОВОЕ
-  totalPhases?: number;    // ✅ НОВОЕ
+  currentPhase?: number; // ✅ НОВОЕ
+  phaseName?: string; // ✅ НОВОЕ
+  phaseType?: string; // ✅ НОВОЕ
+  totalPhases?: number; // ✅ НОВОЕ
   currentWeek: number;
   currentDay: number;
   totalDays: number;
@@ -38,20 +38,24 @@ export function ProgramProgressCard({
   const PhaseIcon = phaseMeta?.icon;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}
+    >
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{programName}</Text>
 
           {/* ✅ Бейдж фазы */}
           {phaseName && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}
+            >
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 4,
-                  backgroundColor: phaseColor + '18',
+                  backgroundColor: withAlpha(phaseColor, 0.094),
                   paddingHorizontal: SPACING.sm,
                   paddingVertical: 2,
                   borderRadius: BORDER_RADIUS.sm,
@@ -71,7 +75,9 @@ export function ProgramProgressCard({
           )}
 
           {dayName && (
-            <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>{dayName}</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
+              {dayName}
+            </Text>
           )}
         </View>
 
@@ -81,17 +87,28 @@ export function ProgramProgressCard({
             style={[styles.startButton, { backgroundColor: colors.primary }]}
             activeOpacity={0.8}
           >
-    <Play size={16} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} />
-    <Text style={[typography.labelBold, { color: colors.textInverse, marginLeft: SPACING.xs }]}>Начать</Text>
-  </TouchableOpacity>
+            <Play size={16} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} />
+            <Text
+              style={[typography.labelBold, { color: colors.textInverse, marginLeft: SPACING.xs }]}
+            >
+              Начать
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.progressContainer}>
         <View style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}>
-          <View style={[styles.progressFill, { width: `${progress}%` as const, backgroundColor: phaseColor }]} />
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${progress}%` as const, backgroundColor: phaseColor },
+            ]}
+          />
         </View>
-        <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}>
+        <Text
+          style={[typography.captionSmall, { color: colors.textSecondary, marginTop: SPACING.xs }]}
+        >
           Неделя {currentWeek} · День {currentDay} из {totalDays}
         </Text>
       </View>

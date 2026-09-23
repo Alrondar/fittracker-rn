@@ -1,10 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,15 +7,10 @@ import Animated, {
   withRepeat,
   Easing,
 } from 'react-native-reanimated';
-import {
-  Flame,
-  RefreshCw,
-  SkipForward,
-  AlertTriangle,
-} from 'lucide-react-native';
+import { Flame, RefreshCw, SkipForward, AlertTriangle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
 import { WarmupExerciseCard } from './WarmupExerciseCard';
@@ -76,7 +66,7 @@ export function WarmupBlock({
       pulse.value = withRepeat(
         withTiming(0.85, { duration: 700, easing: Easing.inOut(Easing.ease) }),
         -1,
-        true,
+        true
       );
     }
   }, [isLoading, pulse]);
@@ -111,7 +101,11 @@ export function WarmupBlock({
       <View style={{ marginHorizontal: SPACING.lg, marginTop: SPACING.md }}>
         <Animated.View
           style={[
-            { backgroundColor: colors.surfaceSecondary, borderRadius: BORDER_RADIUS.lg, height: 132 },
+            {
+              backgroundColor: colors.surfaceSecondary,
+              borderRadius: BORDER_RADIUS.lg,
+              height: 132,
+            },
             pulseStyle,
           ]}
         />
@@ -142,9 +136,9 @@ export function WarmupBlock({
   return (
     <View
       style={{
-        backgroundColor: colors.warning + '0D',
+        backgroundColor: withAlpha(colors.warning, 0.051),
         borderBottomWidth: 1,
-        borderBottomColor: colors.warning + '30',
+        borderBottomColor: withAlpha(colors.warning, 0.188),
       }}
     >
       {/* Заголовок */}
@@ -162,7 +156,7 @@ export function WarmupBlock({
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: colors.warning + '20',
+            backgroundColor: withAlpha(colors.warning, 0.125),
             justifyContent: 'center',
             alignItems: 'center',
             marginRight: SPACING.sm,
@@ -175,18 +169,13 @@ export function WarmupBlock({
             <Text style={[typography.h4, { color: colors.textPrimary }]}>Разминка</Text>
             <View
               style={{
-                backgroundColor: colors.warning + '20',
+                backgroundColor: withAlpha(colors.warning, 0.125),
                 paddingHorizontal: SPACING.sm,
                 paddingVertical: 2,
                 borderRadius: BORDER_RADIUS.sm,
               }}
             >
-              <Text
-                style={[
-                  typography.captionSmall,
-                  { color: colors.warning, fontWeight: '700' },
-                ]}
-              >
+              <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
                 ~{mins} мин
               </Text>
             </View>
@@ -268,9 +257,7 @@ export function WarmupBlock({
           style={{ flex: 1 }}
         />
         <View style={{ flex: 1.3 }}>
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}
-          >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
             <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
               Выполнено
             </Text>

@@ -1,16 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Dumbbell, BookOpen, Activity, User } from 'lucide-react-native';
+import { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
+
+const PILL_DURATION = 250;
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
   // ✅ Резерв под системную навигацию: кнопки Android больше не перекрывают подписи.
   const insets = useSafeAreaInsets();
+  const [tabWidth, setTabWidth] = useState(0);
+
+  const translateX = useSharedValue(0);
+  useEffect(() => {
+    translateX.value = withTiming(state.index * tabWidth, {
+      duration: PILL_DURATION,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [state.index, tabWidth, translateX]);
+
+  const pillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    opacity: tabWidth > 0 ? 1 : 0,
+  }));
 
   return (
     <View
@@ -19,7 +36,27 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         { backgroundColor: 'transparent', paddingBottom: insets.bottom + SPACING.sm },
       ]}
     >
-      <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
+      <View
+        style={[styles.tabBar, { backgroundColor: colors.surface }]}
+        onLayout={(e) => {
+          const inner = e.nativeEvent.layout.width - SPACING.xs * 2;
+          setTabWidth(inner / state.routes.length);
+        }}
+      >
+        {/* Скользящий pill-индикатор */}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.pill,
+            {
+              width: Math.max(tabWidth - 4, 0),
+              left: SPACING.xs + 2,
+              backgroundColor: colors.primary,
+              shadowColor: colors.primary,
+            },
+            pillStyle,
+          ]}
+        />
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label = options.tabBarLabel || options.title || route.name;
@@ -58,19 +95,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               style={styles.tab}
               activeOpacity={0.8}
             >
-              {/* Pill Highlight Background для активного состояния */}
-              {isFocused && (
-                <View
-                  style={[
-                    styles.pill,
-                    {
-                      backgroundColor: colors.primary,
-                      shadowColor: colors.primary,
-                    },
-                  ]}
-                />
-              )}
-
               <View style={styles.iconContainer}>
                 {getTabIcon(route.name, iconColor, strokeWidth)}
               </View>
@@ -137,12 +161,14 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: 'absolute',
-    inset: 2, // Компактный отступ от краев таба, чтобы pill был виден
+    top: SPACING.xs + 2,
+    bottom: SPACING.xs + 2,
     borderRadius: BORDER_RADIUS.full,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
+    zIndex: 0,
   },
   iconContainer: {
     alignItems: 'center',

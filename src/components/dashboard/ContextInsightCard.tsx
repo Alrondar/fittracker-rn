@@ -6,7 +6,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING } from '../../constants/theme';
+import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import type { WeeklyInsight } from '../../engine/weeklySummary';
@@ -49,7 +49,9 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
         style={[
           styles.card,
           {
-            borderColor: isPositive ? colors.success + '40' : colors.warning + '40',
+            borderColor: isPositive
+              ? withAlpha(colors.success, 0.251)
+              : withAlpha(colors.warning, 0.251),
             borderWidth: 1,
           },
         ]}

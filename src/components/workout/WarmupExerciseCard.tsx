@@ -22,7 +22,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
@@ -82,7 +82,9 @@ function WarmupAlternativeCard({ alt, onPress, cardWidth }: WarmupAlternativeCar
         </View>
         <View
           style={{
-            backgroundColor: alt.can_be_activation ? colors.warning + '20' : colors.info + '20',
+            backgroundColor: alt.can_be_activation
+              ? withAlpha(colors.warning, 0.125)
+              : withAlpha(colors.info, 0.125),
             paddingHorizontal: 6,
             paddingVertical: 1,
             borderRadius: BORDER_RADIUS.sm,
@@ -197,13 +199,13 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
     <Animated.View entering={FadeInDown.delay(index * 70).duration(300)}>
       <View
         style={{
-          backgroundColor: isActive ? colors.warning + '12' : colors.surface,
+          backgroundColor: isActive ? withAlpha(colors.warning, 0.071) : colors.surface,
           borderRadius: BORDER_RADIUS.lg,
           borderWidth: 1,
           borderColor: isActive
             ? colors.warning
             : completed
-              ? colors.success + '60'
+              ? withAlpha(colors.success, 0.376)
               : colors.border,
           marginBottom: SPACING.sm,
           overflow: 'hidden',
@@ -218,7 +220,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
               width: 34,
               height: 34,
               borderRadius: 17,
-              backgroundColor: completed ? colors.success : colors.warning + '20',
+              backgroundColor: completed ? colors.success : withAlpha(colors.warning, 0.125),
               justifyContent: 'center',
               alignItems: 'center',
               marginRight: SPACING.md,
@@ -252,8 +254,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
               <View
                 style={{
                   backgroundColor: exercise.can_be_activation
-                    ? colors.warning + '20'
-                    : colors.info + '20',
+                    ? withAlpha(colors.warning, 0.125)
+                    : withAlpha(colors.info, 0.125),
                   paddingHorizontal: 6,
                   paddingVertical: 1,
                   borderRadius: BORDER_RADIUS.sm,
@@ -326,7 +328,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
           <View
             style={{
               height: 4,
-              backgroundColor: colors.warning + '25',
+              backgroundColor: withAlpha(colors.warning, 0.145),
               marginTop: SPACING.md,
               borderRadius: 2,
               overflow: 'hidden',
@@ -348,9 +350,9 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
               <View
                 key={`p-${m}`}
                 style={{
-                  backgroundColor: colors.primary + '15',
+                  backgroundColor: withAlpha(colors.primary, 0.082),
                   borderWidth: 1,
-                  borderColor: colors.primary + '40',
+                  borderColor: withAlpha(colors.primary, 0.251),
                   paddingHorizontal: SPACING.sm,
                   paddingVertical: 3,
                   borderRadius: BORDER_RADIUS.full,

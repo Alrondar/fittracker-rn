@@ -35,7 +35,7 @@ import { ExerciseInfoAccordion } from '../../src/components/workout/ExerciseInfo
 import { RecordsCard } from '../../src/components/exercises/RecordsCard';
 import { EXERCISE_CATEGORIES } from '../../src/constants/exerciseCategories';
 import { getMuscleColor } from '../../src/constants/muscleColors';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { createCardStyles } from '../../src/styles/components/card';
@@ -242,9 +242,9 @@ export default function ExerciseDetailScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 5,
-                    backgroundColor: colors.primary + '15',
+                    backgroundColor: withAlpha(colors.primary, 0.082),
                     borderWidth: 1,
-                    borderColor: colors.primary + '40',
+                    borderColor: withAlpha(colors.primary, 0.251),
                     paddingHorizontal: SPACING.sm,
                     paddingVertical: 4,
                     borderRadius: BORDER_RADIUS.full,
@@ -264,9 +264,9 @@ export default function ExerciseDetailScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 5,
-                    backgroundColor: colors.warning + '15',
+                    backgroundColor: withAlpha(colors.warning, 0.082),
                     borderWidth: 1,
-                    borderColor: colors.warning + '40',
+                    borderColor: withAlpha(colors.warning, 0.251),
                     paddingHorizontal: SPACING.sm,
                     paddingVertical: 4,
                     borderRadius: BORDER_RADIUS.full,
@@ -292,7 +292,7 @@ export default function ExerciseDetailScreen() {
                   backgroundColor: colors.surface,
                   borderRadius: BORDER_RADIUS.lg,
                   borderWidth: 1,
-                  borderColor: accentColor + '40',
+                  borderColor: withAlpha(accentColor, 0.251),
                   borderLeftWidth: 4,
                   borderLeftColor: accentColor,
                   padding: SPACING.md,
@@ -521,7 +521,7 @@ export default function ExerciseDetailScreen() {
                           width: 44,
                           height: 44,
                           borderRadius: 22,
-                          backgroundColor: altAccent + '20',
+                          backgroundColor: withAlpha(altAccent, 0.125),
                           justifyContent: 'center',
                           alignItems: 'center',
                           marginRight: SPACING.md,

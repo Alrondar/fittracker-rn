@@ -1,7 +1,7 @@
 // src/components/workout/SetsGrid.tsx
 // Сетка подходов + чипы RPE + прогрессия (FEAT-1.1) + автостарт отдыха (FEAT-1.2).
 // 05.08.2026: инлайн-дубли чипа/ползунка удалены — используются SetFeedbackChip
-// и SetFeedbackEditor из SetFeedbackControl.tsx (FEAT-7 v2, тапабельная шкала).
+// из SetFeedbackControl.tsx и RpeOverlay.tsx (FEAT-7 v2 / UX-16, тапабельная шкала).
 // 06.08.2026 (FEAT-1.1 v2): хинт показывает прошлые данные АКТИВНОГО сета (первого
 // незавершённого) и переключается по мере заполнения; прогрессия — чипами
 // +2.5/+5/+10/+15/+20 в активный сет; custom-ввод удалён.
@@ -11,7 +11,7 @@ import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { TrendingUp, X, Lightbulb } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import {
@@ -766,10 +766,12 @@ export const SetsGrid = memo(function SetsGrid({
               padding: SPACING.xs,
               borderRadius: BORDER_RADIUS.sm,
               backgroundColor: recommendationCollapsed
-                ? colors.primary + '15'
-                : colors.primary + '30',
+                ? withAlpha(colors.primary, 0.082)
+                : withAlpha(colors.primary, 0.188),
               borderWidth: 1,
-              borderColor: recommendationCollapsed ? colors.primary + '40' : colors.primary + '60',
+              borderColor: recommendationCollapsed
+                ? withAlpha(colors.primary, 0.251)
+                : withAlpha(colors.primary, 0.376),
             }}
           >
             <Lightbulb size={16} color={colors.primary} strokeWidth={2} />
@@ -786,10 +788,10 @@ export const SetsGrid = memo(function SetsGrid({
             style={{
               marginBottom: SPACING.sm,
               padding: SPACING.sm,
-              backgroundColor: colors.primary + '08',
+              backgroundColor: withAlpha(colors.primary, 0.031),
               borderRadius: BORDER_RADIUS.sm,
               borderWidth: 1,
-              borderColor: colors.primary + '20',
+              borderColor: withAlpha(colors.primary, 0.125),
             }}
           >
             {/* Previous session data — only when available */}
@@ -859,7 +861,7 @@ export const SetsGrid = memo(function SetsGrid({
                   marginTop: SPACING.sm,
                   paddingTop: SPACING.sm,
                   borderTopWidth: 1,
-                  borderTopColor: colors.primary + '20',
+                  borderTopColor: withAlpha(colors.primary, 0.125),
                 }}
               >
                 <View

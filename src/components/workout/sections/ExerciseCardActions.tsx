@@ -6,7 +6,7 @@ import React, { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Clock, Info } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 
 interface ExerciseCardActionsProps {
@@ -62,12 +62,12 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
             flexDirection: 'row',
             alignItems: 'center',
             gap: SPACING.xs,
-            backgroundColor: colors.primary + '15',
+            backgroundColor: withAlpha(colors.primary, 0.082),
             paddingHorizontal: SPACING.md,
             paddingVertical: 10,
             borderRadius: BORDER_RADIUS.md,
             borderWidth: 1,
-            borderColor: colors.primary + '40',
+            borderColor: withAlpha(colors.primary, 0.251),
             flex: 1,
             minHeight: 44,
           }}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 
 interface ScheduleEditorSheetProps {
@@ -83,7 +83,9 @@ export function ScheduleEditorSheet({
                 borderRadius: BORDER_RADIUS.md,
                 borderWidth: 2,
                 borderColor: isSelected ? colors.primary : colors.border,
-                backgroundColor: isSelected ? colors.primary + '20' : colors.surfaceSecondary,
+                backgroundColor: isSelected
+                  ? withAlpha(colors.primary, 0.125)
+                  : colors.surfaceSecondary,
                 alignItems: 'center',
               }}
             >

@@ -17,7 +17,7 @@ import {
   Zap,
 } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import { PillToggle } from '../ui/PillToggle';
@@ -161,7 +161,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
             marginBottom: SPACING.md,
             borderWidth: 1,
             borderColor: colors.warning,
-            backgroundColor: (colors as any).warningLight + '30',
+            backgroundColor: withAlpha((colors as any).warningLight, 0.188),
           }}
         >
           <View
@@ -200,7 +200,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                 flex: 1,
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.sm,
-                backgroundColor: colors.warning + '20',
+                backgroundColor: withAlpha(colors.warning, 0.125),
                 borderRadius: BORDER_RADIUS.md,
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -225,7 +225,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                 flex: 1,
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.sm,
-                backgroundColor: colors.primary + '20',
+                backgroundColor: withAlpha(colors.primary, 0.125),
                 borderRadius: BORDER_RADIUS.md,
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -279,7 +279,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                     alignItems: 'flex-start',
                     gap: SPACING.sm,
                     padding: SPACING.sm,
-                    backgroundColor: (colors as any)[colorMap.bg] + '40',
+                    backgroundColor: withAlpha((colors as any)[colorMap.bg], 0.251),
                     borderRadius: BORDER_RADIUS.md,
                     borderLeftWidth: 3,
                     borderLeftColor: (colors as any)[colorMap.border],
@@ -1002,7 +1002,13 @@ function DetailBlock({
         {icon}
         <Text style={[typography.labelBold, { color: colors.textPrimary }]}>{title}</Text>
       </View>
-      <View style={{ paddingLeft: SPACING.xl, borderLeftWidth: 2, borderLeftColor: color + '40' }}>
+      <View
+        style={{
+          paddingLeft: SPACING.xl,
+          borderLeftWidth: 2,
+          borderLeftColor: withAlpha(color, 0.251),
+        }}
+      >
         {children}
       </View>
     </View>

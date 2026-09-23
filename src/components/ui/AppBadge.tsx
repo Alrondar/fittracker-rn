@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
@@ -29,17 +29,41 @@ export function AppBadge({
   const getVariantStyles = () => {
     switch (variant) {
       case 'primary':
-        return { backgroundColor: colors.primaryLight, textColor: colors.primary, borderColor: colors.primary };
+        return {
+          backgroundColor: colors.primaryLight,
+          textColor: colors.primary,
+          borderColor: colors.primary,
+        };
       case 'success':
-        return { backgroundColor: colors.successLight, textColor: colors.success, borderColor: colors.success };
+        return {
+          backgroundColor: colors.successLight,
+          textColor: colors.success,
+          borderColor: colors.success,
+        };
       case 'warning':
-        return { backgroundColor: colors.warningLight, textColor: colors.warning, borderColor: colors.warning };
+        return {
+          backgroundColor: colors.warningLight,
+          textColor: colors.warning,
+          borderColor: colors.warning,
+        };
       case 'error':
-        return { backgroundColor: colors.errorLight, textColor: colors.error, borderColor: colors.error };
+        return {
+          backgroundColor: colors.errorLight,
+          textColor: colors.error,
+          borderColor: colors.error,
+        };
       case 'info':
-        return { backgroundColor: colors.info + '20', textColor: colors.info, borderColor: colors.info };
+        return {
+          backgroundColor: withAlpha(colors.info, 0.125),
+          textColor: colors.info,
+          borderColor: colors.info,
+        };
       default:
-        return { backgroundColor: colors.surfaceSecondary, textColor: colors.textSecondary, borderColor: colors.border };
+        return {
+          backgroundColor: colors.surfaceSecondary,
+          textColor: colors.textSecondary,
+          borderColor: colors.border,
+        };
     }
   };
 

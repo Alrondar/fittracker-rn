@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Zap,
 } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS, fontScale } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, fontScale, withAlpha } from '../constants/theme';
 import { typography } from '../styles/typography';
 import { createCardStyles } from '../styles/components/card';
 import { createBadgeStyles } from '../styles/components/badge';
@@ -137,14 +137,24 @@ export const ProgramCard = memo(function ProgramCard({
               </View>
             )}
 
-            <View style={[badgeStyles.programBadge, { backgroundColor: levelInfo.color + '15' }]}>
+            <View
+              style={[
+                badgeStyles.programBadge,
+                { backgroundColor: withAlpha(levelInfo.color, 0.082) },
+              ]}
+            >
               {levelInfo.icon}
               <Text style={[badgeStyles.programBadgeText, { color: levelInfo.color }]}>
                 {levelInfo.label}
               </Text>
             </View>
 
-            <View style={[badgeStyles.programBadge, { backgroundColor: colors.primary + '15' }]}>
+            <View
+              style={[
+                badgeStyles.programBadge,
+                { backgroundColor: withAlpha(colors.primary, 0.082) },
+              ]}
+            >
               <Calendar size={12} color={colors.primary} strokeWidth={2} />
               <Text style={[badgeStyles.programBadgeText, { color: colors.primary }]}>
                 {item.duration} нед
@@ -210,7 +220,10 @@ export const ProgramCard = memo(function ProgramCard({
               {item.schedule.map((day, idx) => (
                 <View
                   key={idx}
-                  style={[badgeStyles.dayChip, { backgroundColor: colors.primary + '15' }]}
+                  style={[
+                    badgeStyles.dayChip,
+                    { backgroundColor: withAlpha(colors.primary, 0.082) },
+                  ]}
                 >
                   <Text style={[badgeStyles.dayChipText, { color: colors.primary }]}>{day}</Text>
                 </View>
@@ -224,6 +237,8 @@ export const ProgramCard = memo(function ProgramCard({
           {isMyProgram && (
             <TouchableOpacity
               onPress={handleEdit}
+              accessibilityRole="button"
+              accessibilityLabel={`Редактировать программу ${item.name}`}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={cardStyles.programCardEditButton}
             >
@@ -236,6 +251,8 @@ export const ProgramCard = memo(function ProgramCard({
           {isMyProgram && !isActive && (
             <TouchableOpacity
               onPress={handleActivate}
+              accessibilityRole="button"
+              accessibilityLabel={`Активировать программу ${item.name}`}
               activeOpacity={0.7}
               hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               style={{
@@ -245,9 +262,9 @@ export const ProgramCard = memo(function ProgramCard({
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.sm,
                 borderRadius: BORDER_RADIUS.full,
-                backgroundColor: colors.primary + '15',
+                backgroundColor: withAlpha(colors.primary, 0.082),
                 borderWidth: 1,
-                borderColor: colors.primary + '40',
+                borderColor: withAlpha(colors.primary, 0.251),
                 marginRight: SPACING.sm,
               }}
             >

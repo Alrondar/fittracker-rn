@@ -22,7 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { getMuscleColor } from '../../../constants/muscleColors';
 import { EquipmentIcon } from '../../EquipmentIcon';
@@ -86,12 +86,12 @@ const Bubble = memo(function Bubble({
 
   const bgColor =
     variant === 'primary-equipment' || variant === 'primary-muscle'
-      ? accentColor + '1A'
+      ? withAlpha(accentColor, 0.102)
       : colors.surfaceSecondary;
 
   const borderColor =
     variant === 'primary-equipment' || variant === 'primary-muscle'
-      ? accentColor + '55'
+      ? withAlpha(accentColor, 0.333)
       : colors.border;
 
   const inner = (

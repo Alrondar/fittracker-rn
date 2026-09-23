@@ -13,7 +13,7 @@ import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import { useStore } from '../../store/useStore';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
-import { SPACING, BORDER_RADIUS, scale } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, scale, withAlpha } from '../../constants/theme';
 import { profileService } from '../../services/profileService';
 import { useWeeklyNutrition } from '../../hooks/useWeeklyNutrition';
 import { calculateWeeklyCaloricBalance } from '../../utils/weeklyCaloricBalance';
@@ -71,7 +71,7 @@ export function WeeklyBalanceChip() {
           paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: BORDER_RADIUS.full,
-          backgroundColor: chipColor + '1A',
+          backgroundColor: withAlpha(chipColor, 0.102),
         }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityLabel={`Недельный баланс: ${label} ккал. Нажми для деталей.`}
@@ -323,7 +323,7 @@ function GoalAwareInsight({
     <View
       style={{
         padding: SPACING.md,
-        backgroundColor: insight.color + '12',
+        backgroundColor: withAlpha(insight.color, 0.071),
         borderRadius: BORDER_RADIUS.md,
         borderLeftWidth: 3,
         borderLeftColor: insight.color,

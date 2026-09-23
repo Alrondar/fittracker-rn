@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { CalendarDays } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { MACRO_COLORS } from '../../constants/semanticColors';
 import { useWeeklyNutrition } from '../../hooks/useWeeklyNutrition';
@@ -18,9 +18,9 @@ function Chip({ label, color }: { label: string; color: string }) {
   return (
     <View
       style={{
-        backgroundColor: color + '1A',
+        backgroundColor: withAlpha(color, 0.102),
         borderWidth: 1,
-        borderColor: color + '55',
+        borderColor: withAlpha(color, 0.333),
         paddingHorizontal: SPACING.sm,
         paddingVertical: 3,
         borderRadius: BORDER_RADIUS.full,
@@ -58,7 +58,9 @@ export function NutritionWeekCard({ userId, targets }: NutritionWeekCardProps) {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
         <CalendarDays size={18} color={MACRO_COLORS.calories} strokeWidth={2} />
-        <Text style={[typography.h5, { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 }]}>
+        <Text
+          style={[typography.h5, { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 }]}
+        >
           Неделя питания
         </Text>
         {week.daysWithLogs > 0 && (
@@ -74,7 +76,14 @@ export function NutritionWeekCard({ userId, targets }: NutritionWeekCardProps) {
         </Text>
       ) : (
         <>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.xs, marginBottom: SPACING.xs }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              gap: SPACING.xs,
+              marginBottom: SPACING.xs,
+            }}
+          >
             {days.map((d) => {
               const h = Math.max(4, Math.round((d.calories / maxCal) * 60));
               const within =
@@ -89,8 +98,13 @@ export function NutritionWeekCard({ userId, targets }: NutritionWeekCardProps) {
                     ? colors.warning
                     : colors.primary;
               return (
-                <View key={d.date} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 64 }}>
-                  <View style={{ width: '100%', height: h, borderRadius: 3, backgroundColor: barColor }} />
+                <View
+                  key={d.date}
+                  style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 64 }}
+                >
+                  <View
+                    style={{ width: '100%', height: h, borderRadius: 3, backgroundColor: barColor }}
+                  />
                 </View>
               );
             })}
@@ -99,7 +113,10 @@ export function NutritionWeekCard({ userId, targets }: NutritionWeekCardProps) {
             {days.map((d) => (
               <Text
                 key={d.date}
-                style={[typography.captionSmall, { color: colors.textTertiary, flex: 1, textAlign: 'center' }]}
+                style={[
+                  typography.captionSmall,
+                  { color: colors.textTertiary, flex: 1, textAlign: 'center' },
+                ]}
               >
                 {DAY_LABELS[new Date(d.date).getDay()]}
               </Text>
@@ -112,8 +129,11 @@ export function NutritionWeekCard({ userId, targets }: NutritionWeekCardProps) {
             <Chip label={`Жиры ${week.fats.label}`} color={MACRO_COLORS.fats} />
             <Chip label={`Углеводы ${week.carbs.label}`} color={MACRO_COLORS.carbs} />
           </View>
-          <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.sm }]}>
-            В среднем за {week.daysWithLogs} дн: {week.avgCalories} ккал · цель {targets.calories} ккал
+          <Text
+            style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.sm }]}
+          >
+            В среднем за {week.daysWithLogs} дн: {week.avgCalories} ккал · цель {targets.calories}{' '}
+            ккал
           </Text>
         </>
       )}

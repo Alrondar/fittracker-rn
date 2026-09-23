@@ -1,80 +1,31 @@
 import { useCallback, useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  SectionList,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, SectionList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import {
-  ClipboardList,
-  Dumbbell,
-  Check,
-  Clock,
-  SkipForward,
-  ArrowRight,
-  SlidersHorizontal,
-} from 'lucide-react-native';
+import { Dumbbell, ArrowRight, SlidersHorizontal } from 'lucide-react-native';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWorkouts } from '../../src/hooks/useWorkouts';
 import { useWorkoutForecast } from '../../src/hooks/useWorkoutForecast';
 import { WorkoutForecastSheet } from '../../src/components/dashboard/WorkoutForecastSheet';
-import type { ForecastDifficulty } from '../../src/utils/workoutForecast';
-import type { ActiveProgram, WorkoutSection } from '../../src/services/workoutsService';
+import type { WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
-import { AppCard } from '../../src/components/ui/AppCard';
-import { AppBadge } from '../../src/components/ui/AppBadge';
-import { SheetShell } from '../../src/components/ui/SheetShell';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { getPhaseMeta, getPhaseColor } from '../../src/constants/phaseTypes';
+import { getWorkoutStatus } from '../../src/utils/workoutsList';
+import type { FilterMode } from '../../src/utils/workoutsList';
+import { WorkoutListItemCard } from '../../src/components/workout/WorkoutListItemCard';
+import { ActiveProgramHeaderCard } from '../../src/components/workout/ActiveProgramHeaderCard';
+import { WorkoutsFilterSheet } from '../../src/components/workout/WorkoutsFilterSheet';
+import { SkipWorkoutSheet } from '../../src/components/workout/SkipWorkoutSheet';
 
-type WorkoutStatus = 'completed' | 'skipped' | 'next' | 'in_progress' | 'upcoming';
-type FilterMode = 'upcoming' | 'all' | 'this_week';
-
-// Фича 7: цветовые хелперы для L1-прогноз-бейджа в Sticky-карточке.
-function forecastDifficultyColor(d: ForecastDifficulty, colors: any): string {
-  if (d === 'hard') return colors.warning;
-  if (d === 'easy') return colors.success;
-  return colors.textSecondary;
-}
-function forecastDifficultyBorderColor(d: ForecastDifficulty, colors: any): string {
-  const base = forecastDifficultyColor(d, colors);
-  return withAlpha(base, 0.53);
-}
-function forecastDifficultyBg(d: ForecastDifficulty, colors: any): string {
-  const base = forecastDifficultyColor(d, colors);
-  return withAlpha(base, 0.1);
-}
-
-function getWorkoutStatus(w: any, activeProgram: ActiveProgram | null): WorkoutStatus {
-  // UX-5 Feature 2: пропуск — отдельный статус (skipped_at заполнен)
-  if (w.skipped_at) return 'skipped';
-  if (w.finished_at) return 'completed';
-  if (
-    activeProgram &&
-    w.phase_number === activeProgram.currentPhase &&
-    w.week_number === activeProgram.currentWeek &&
-    w.day_index === activeProgram.currentDay
-  ) {
-    return 'next';
-  }
-  if (w.started_at) return 'in_progress';
-  return 'upcoming';
-}
-
-function formatDuration(seconds: number): string {
-  return `${Math.floor(seconds / 60)} мин`;
-}
+// DA-P2-8: карточка элемента, шапка программы, sheet-ы и хелперы вынесены
+// в src/components/workout/* и src/utils/workoutsList.ts (было 726 строк).
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
@@ -163,6 +114,11 @@ export default function WorkoutsScreen() {
     [router]
   );
 
+  const handleSkipRequest = useCallback((target: { id: string; name: string }) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSkipTarget(target);
+  }, []);
+
   // UX-5 Feature 2: пропуск тренировки (sequential + retry, паттерн saveWorkout)
   const handleSkip = useCallback(async () => {
     if (!skipTarget || !activeProgram) return;
@@ -180,83 +136,6 @@ export default function WorkoutsScreen() {
       setSkipping(false);
     }
   }, [skipTarget, activeProgram, skip]);
-
-  // ===== Шапка: прогресс программы + «Следующая» =====
-  const renderHeader = useCallback(() => {
-    if (!activeProgram) return null;
-    const currentPhaseObj = activeProgram.phases.find(
-      (p: any) => p.phase_number === activeProgram.currentPhase
-    );
-    const phaseColor = currentPhaseObj
-      ? getPhaseColor(currentPhaseObj.phase_type, colors)
-      : colors.primary;
-    const phaseMeta = currentPhaseObj ? getPhaseMeta(currentPhaseObj.phase_type) : null;
-    const PhaseIcon = phaseMeta?.icon;
-    const progressPct = progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
-    return (
-      <View style={{ padding: SPACING.lg, paddingBottom: 0 }}>
-        <AppCard variant="default">
-          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-            {activeProgram.name}
-          </Text>
-
-          {currentPhaseObj && (
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: withAlpha(phaseColor, 0.09),
-                  paddingHorizontal: SPACING.sm,
-                  paddingVertical: 2,
-                  borderRadius: BORDER_RADIUS.sm,
-                }}
-              >
-                {PhaseIcon && <PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
-                <Text style={[typography.captionSmall, { color: phaseColor, fontWeight: '700' }]}>
-                  {currentPhaseObj.name}
-                </Text>
-              </View>
-              <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                Фаза {activeProgram.currentPhase}/{activeProgram.phases.length} · Неделя{' '}
-                {activeProgram.currentWeek}
-              </Text>
-            </View>
-          )}
-          <View style={{ marginTop: SPACING.md }}>
-            <View
-              style={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: colors.surfaceSecondary,
-                overflow: 'hidden',
-              }}
-            >
-              <View
-                style={{
-                  height: '100%',
-                  width: `${progressPct}%`,
-                  backgroundColor: phaseColor,
-                  borderRadius: 4,
-                }}
-              />
-            </View>
-            <Text
-              style={[
-                typography.captionSmall,
-                { color: colors.textSecondary, marginTop: SPACING.xs },
-              ]}
-            >
-              Выполнено {progress.completed} из {progress.total} тренировок
-            </Text>
-          </View>
-        </AppCard>
-      </View>
-    );
-  }, [activeProgram, progress, colors]);
 
   // ===== Заголовок секции (фаза + неделя) =====
   const renderSectionHeader = useCallback(
@@ -277,182 +156,19 @@ export default function WorkoutsScreen() {
     [colors]
   );
 
-  // ===== Карточка тренировки (со статусом) =====
   const renderWorkoutItem = useCallback(
-    ({ item, section }: { item: any; section: WorkoutSection }) => {
-      const status = getWorkoutStatus(item, activeProgram);
-      const isNext = status === 'next';
-      const phaseColor = getPhaseColor(section.phaseType, colors);
-      const phaseMeta = getPhaseMeta(section.phaseType);
-      const PhaseIcon = phaseMeta.icon;
-
-      // FIT-8: effective date (finished_at ?? started_at ?? created_at)
-      const effectiveDate = item.finished_at || item.started_at || item.created_at;
-      const dateStr = new Date(effectiveDate).toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-      });
-
-      const borderColor =
-        status === 'next'
-          ? colors.primary
-          : status === 'in_progress'
-            ? colors.warning
-            : status === 'completed'
-              ? withAlpha(colors.success, 0.38)
-              : colors.border;
-
-      // UX-5 Feature 2: long press только для «Следующая» (скоуп подтверждён)
-      const handleLongPress = () => {
-        if (status !== 'next') return;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        setSkipTarget({ id: item.id, name: item.name });
-      };
-
-      return (
-        <TouchableOpacity
-          onPress={() => navigateToWorkout(item.id)}
-          onLongPress={handleLongPress}
-          delayLongPress={500}
-          activeOpacity={0.85}
-          disabled={status === 'skipped'}
-          accessibilityRole="button"
-          accessibilityLabel={`${item.name}, ${status === 'completed' ? 'выполнена' : isNext ? 'следующая' : status === 'in_progress' ? 'в процессе' : status === 'skipped' ? 'пропущена' : 'предстоит'}`}
-          style={{ marginHorizontal: SPACING.lg }}
-        >
-          <AppCard
-            variant="compact"
-            style={{
-              borderColor,
-              borderWidth: isNext ? 1.5 : 1,
-              backgroundColor: isNext ? withAlpha(colors.primary, 0.06) : undefined,
-              opacity: status === 'upcoming' ? 0.7 : status === 'skipped' ? 0.6 : 1,
-            }}
-          >
-            <View style={{ flexDirection: 'row', gap: SPACING.xs, flexWrap: 'wrap' }}>
-              <AppBadge
-                variant="default"
-                size="small"
-                icon={<PhaseIcon size={12} color={phaseColor} strokeWidth={2} />}
-                style={{ backgroundColor: withAlpha(phaseColor, 0.09) }}
-                textStyle={{ color: phaseColor }}
-              >
-                {section.phaseName}
-              </AppBadge>
-              <AppBadge
-                variant="primary"
-                size="small"
-                icon={<ClipboardList size={12} color={colors.primary} strokeWidth={2} />}
-              >
-                Нед {item.week_number}, День {item.day_index}
-              </AppBadge>
-              {isNext && (
-                <AppBadge variant="primary" size="small">
-                  Следующая
-                </AppBadge>
-              )}
-              {isNext && forecast && forecast.difficulty !== 'unknown' && (
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    setForecastSheetOpen(true);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Прогноз: ${forecast.difficulty}, открой подробности`}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: SPACING.sm,
-                    paddingVertical: 4,
-                    borderRadius: BORDER_RADIUS.full,
-                    borderWidth: 1,
-                    borderColor: forecastDifficultyBorderColor(forecast.difficulty, colors),
-                    backgroundColor: forecastDifficultyBg(forecast.difficulty, colors),
-                  }}
-                >
-                  <Text
-                    style={[
-                      typography.captionSmall,
-                      {
-                        color: forecastDifficultyColor(forecast.difficulty, colors),
-                        fontWeight: '700',
-                      },
-                    ]}
-                  >
-                    {forecast.difficulty === 'hard'
-                      ? 'Тяжёлая'
-                      : forecast.difficulty === 'easy'
-                        ? 'Лёгкая'
-                        : 'Обычная'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {status === 'completed' && (
-                <AppBadge
-                  variant="success"
-                  size="small"
-                  icon={<Check size={12} color={colors.success} strokeWidth={2} />}
-                >
-                  Выполнена
-                </AppBadge>
-              )}
-              {status === 'skipped' && (
-                <AppBadge
-                  variant="default"
-                  size="small"
-                  icon={<SkipForward size={12} color={colors.textSecondary} strokeWidth={2} />}
-                >
-                  Пропущена
-                </AppBadge>
-              )}
-              {status === 'in_progress' && (
-                <AppBadge variant="warning" size="small">
-                  В процессе
-                </AppBadge>
-              )}
-            </View>
-            <Text
-              style={[typography.h5, { color: colors.textPrimary, marginTop: SPACING.xs }]}
-              numberOfLines={2}
-            >
-              {item.name}
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: SPACING.md,
-              }}
-            >
-              {status === 'completed' ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  {item.duration_seconds ? (
-                    <>
-                      <Clock size={12} color={colors.textSecondary} strokeWidth={1.5} />
-                      <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                        {formatDuration(item.duration_seconds)}
-                      </Text>
-                    </>
-                  ) : null}
-                  <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    {item.duration_seconds ? `· ${dateStr}` : dateStr}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>{dateStr}</Text>
-              )}
-              {(status === 'next' || status === 'in_progress') && (
-                <Text style={[typography.labelBold, { color: colors.primary }]}>
-                  {status === 'in_progress' ? 'Продолжить →' : 'Начать →'}
-                </Text>
-              )}
-            </View>
-          </AppCard>
-        </TouchableOpacity>
-      );
-    },
-    [activeProgram, colors, navigateToWorkout, forecast]
+    ({ item, section }: { item: any; section: WorkoutSection }) => (
+      <WorkoutListItemCard
+        item={item}
+        section={section}
+        activeProgram={activeProgram}
+        forecast={forecast}
+        onOpen={navigateToWorkout}
+        onSkipRequest={handleSkipRequest}
+        onForecastPress={() => setForecastSheetOpen(true)}
+      />
+    ),
+    [activeProgram, forecast, navigateToWorkout, handleSkipRequest]
   );
 
   const renderEmpty = () => {
@@ -571,7 +287,9 @@ export default function WorkoutsScreen() {
         <ListSkeleton count={4} />
       ) : (
         <>
-          {renderHeader()}
+          {activeProgram && (
+            <ActiveProgramHeaderCard activeProgram={activeProgram} progress={progress} />
+          )}
 
           <View style={{ flex: 1 }}>
             <SectionList
@@ -599,128 +317,22 @@ export default function WorkoutsScreen() {
             result={forecast}
           />
 
-          {/* SheetShell для фильтрации */}
-          <SheetShell
+          <WorkoutsFilterSheet
             visible={filterSheetOpen}
-            title="Фильтр тренировок"
+            filterMode={filterMode}
+            onSelect={setFilterMode}
             onClose={() => setFilterSheetOpen(false)}
-          >
-            <View style={{ gap: SPACING.sm }}>
-              {(['upcoming', 'this_week', 'all'] as FilterMode[]).map((mode) => {
-                const isActive = filterMode === mode;
-                return (
-                  <TouchableOpacity
-                    key={mode}
-                    onPress={() => {
-                      setFilterMode(mode);
-                      setFilterSheetOpen(false);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Выбрать фильтр: ${mode === 'upcoming' ? 'Предстоящие' : mode === 'this_week' ? 'Эта неделя' : 'Все тренировки'}`}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingVertical: SPACING.md,
-                      paddingHorizontal: SPACING.md,
-                      borderRadius: BORDER_RADIUS.md,
-                      backgroundColor: isActive ? withAlpha(colors.primary, 0.1) : 'transparent',
-                    }}
-                  >
-                    <Text
-                      style={[
-                        typography.body,
-                        {
-                          color: isActive ? colors.primary : colors.textPrimary,
-                          fontWeight: isActive ? '600' : '400',
-                        },
-                      ]}
-                    >
-                      {mode === 'upcoming'
-                        ? 'Предстоящие (без завершённых)'
-                        : mode === 'this_week'
-                          ? 'Эта неделя (с завершёнными)'
-                          : 'Все тренировки'}
-                    </Text>
-                    {isActive && <Check size={20} color={colors.primary} strokeWidth={2.5} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </SheetShell>
+          />
         </>
       )}
 
       {/* UX-5 Feature 2: skip workout — bottom sheet с подтверждением */}
-      <SheetShell
-        visible={!!skipTarget}
-        title="Пропустить тренировку?"
-        onClose={() => !skipping && setSkipTarget(null)}
-      >
-        {skipTarget && (
-          <>
-            <Text
-              style={[
-                typography.body,
-                { color: colors.textPrimary, fontWeight: '600', marginBottom: SPACING.xs },
-              ]}
-            >
-              {skipTarget.name}
-            </Text>
-            <Text
-              style={[
-                typography.bodySmall,
-                { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.lg },
-              ]}
-            >
-              Программа перейдёт к следующему дню. Подходы не будут записаны. Это действие нельзя
-              отменить.
-            </Text>
-            <TouchableOpacity
-              onPress={handleSkip}
-              disabled={skipping}
-              accessibilityRole="button"
-              accessibilityLabel="Подтвердить пропуск тренировки"
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: SPACING.sm,
-                paddingVertical: SPACING.md,
-                borderRadius: BORDER_RADIUS.lg,
-                backgroundColor: colors.warning,
-                marginBottom: SPACING.sm,
-              }}
-            >
-              {skipping ? (
-                <ActivityIndicator color={colors.textInverse} size="small" />
-              ) : (
-                <>
-                  <SkipForward size={18} color={colors.textInverse} strokeWidth={2} />
-                  <Text style={[typography.button, { color: colors.textInverse }]}>
-                    Пропустить тренировку
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setSkipTarget(null)}
-              disabled={skipping}
-              accessibilityRole="button"
-              accessibilityLabel="Отменить пропуск"
-              style={{
-                alignItems: 'center',
-                paddingVertical: SPACING.md,
-                borderRadius: BORDER_RADIUS.lg,
-                backgroundColor: colors.surfaceSecondary,
-              }}
-            >
-              <Text style={[typography.button, { color: colors.textSecondary }]}>Отмена</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </SheetShell>
+      <SkipWorkoutSheet
+        target={skipTarget}
+        skipping={skipping}
+        onConfirm={handleSkip}
+        onCancel={() => !skipping && setSkipTarget(null)}
+      />
     </SafeAreaView>
   );
 }

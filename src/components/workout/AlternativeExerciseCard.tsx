@@ -5,8 +5,16 @@
 // Техника выполнения — аккордеон с lazy mount (CLAUDE.md §8).
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { RotateCcw, Sparkles, ShieldAlert, AlertTriangle, TrendingUp, TrendingDown, Shuffle } from 'lucide-react-native';
-import { SPACING } from '../../constants/theme';
+import {
+  RotateCcw,
+  Sparkles,
+  ShieldAlert,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  Shuffle,
+} from 'lucide-react-native';
+import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import { EquipmentBubbles } from './EquipmentBubbles';
@@ -56,11 +64,10 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   colors,
   cardStyles,
 }: AlternativeExerciseCardProps) {
-const hasTechniqueBlock =
-  !!exercise.technique || !!exercise.media_url || !!exercise.settings;
-const hasBenefits = !!exercise.benefits;
-const hasRisks = !!exercise.risks;
-const hasInjuries = exercise.injuries.length > 0;
+  const hasTechniqueBlock = !!exercise.technique || !!exercise.media_url || !!exercise.settings;
+  const hasBenefits = !!exercise.benefits;
+  const hasRisks = !!exercise.risks;
+  const hasInjuries = exercise.injuries.length > 0;
 
   return (
     <View
@@ -89,7 +96,7 @@ const hasInjuries = exercise.injuries.length > 0;
             alignItems: 'center',
             alignSelf: 'flex-start',
             gap: 4,
-            backgroundColor: colors.primary + '15',
+            backgroundColor: withAlpha(colors.primary, 0.082),
             paddingHorizontal: SPACING.sm,
             paddingVertical: 3,
             borderRadius: SPACING.sm,
@@ -109,7 +116,7 @@ const hasInjuries = exercise.injuries.length > 0;
             alignItems: 'center',
             alignSelf: 'flex-start',
             gap: 4,
-            backgroundColor: colors.warning + '15',
+            backgroundColor: withAlpha(colors.warning, 0.082),
             paddingHorizontal: SPACING.sm,
             paddingVertical: 3,
             borderRadius: SPACING.sm,
@@ -137,7 +144,9 @@ const hasInjuries = exercise.injuries.length > 0;
           }}
         >
           <Shuffle size={12} color={colors.textSecondary} strokeWidth={2} />
-          <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}>
+          <Text
+            style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}
+          >
             Вариант
           </Text>
         </View>
@@ -202,9 +211,7 @@ const hasInjuries = exercise.injuries.length > 0;
               key={i}
               style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}
             >
-              <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>
-                •
-              </Text>
+              <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
               <Text
                 style={[
                   typography.bodySmall,

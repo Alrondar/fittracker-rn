@@ -350,7 +350,6 @@ Important components:
 | utils/painTrend.ts|calculatePainTrend (Фича 4): чистая функция, группирует pain events по body_part/неделям (ISO, 4-недельное окно); возвращает  { chronicZones, weeks } . Хроническая зона = боль в ≥2 разных неделях.|
 | constants/strengthStandards.ts|нормативы 1ПМ/вес для 13 compound-движений (Фича 1); resolveStandardKey (exact + pattern fallback)|
 | utils/workoutForecast.ts|calculateWorkoutForecast (Фича 7): детерминированный прогноз сложности следующей тренировки; thresholds 0.85/1.15; insufficient-data guard (< 3 workouts = unknown)|
-| utils/csv.ts|CSV builder; service/UI pending|
 | utils/errorMapper.ts|user-facing error mapping|
 | utils/intensityInfo.tsx|getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | utils/macroCalculator.ts|macro calculations|
@@ -474,8 +473,7 @@ do not copy technical rules from `CLAUDE.md` here;
 do not copy product decisions from `PRODUCT.md` here.
 
 Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H-MUSCLE-2 / H-MUSCLE-3 / H-MUSCLE-4 / H-MUSCLE-5 / H-MUSCLE-6 / UX-16)
-`src/constants/bodyFemaleFront.ts` — H-MUSCLE-2: отдельные SVG-пути для женской анатомии (спереди) вместо заглушки
-`src/constants/bodyFemaleBack.ts` — H-MUSCLE-2: отдельные SVG-пути для женской анатомии (сзади) вместо заглушки
+`src/constants/muscleSvgPaths.ts` — H-MUSCLE-2: экспорты `bodyFemaleFront` / `bodyFemaleBack` — отдельные SVG-пути для женской анатомии (спереди/сзади) вместо заглушки
 `src/components/workout/sections/ExerciseCardTags.tsx` — UX-16 D2: exclusive toggle equipment/muscles
 `src/components/workout/sections/ExerciseCardActions.tsx` — UX-16 D6: rest pill + Info button
 `src/components/workout/sections/ExerciseCardInfo.tsx` — UX-16 D3: tabs техника/важно знать

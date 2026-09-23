@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { Moon, Zap, Droplet } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
-import { SPACING, scale, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, scale, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { SEVERITY_COLORS } from '../../constants/semanticColors';
 import { BODY_PART_LABELS } from '../../constants/injuries';
 import { AppCard } from '../ui/AppCard';
@@ -163,7 +163,7 @@ export function StatusCard() {
             paddingHorizontal: SPACING.md,
             paddingVertical: 6,
             borderRadius: BORDER_RADIUS.md,
-            backgroundColor: colors.primary + '15',
+            backgroundColor: withAlpha(colors.primary, 0.082),
           }}
         >
           <Text style={[typography.buttonTiny, { color: colors.primary }]}>
@@ -274,9 +274,12 @@ export function StatusCard() {
                 paddingVertical: 4,
                 borderRadius: BORDER_RADIUS.full,
                 borderWidth: 1,
-                borderColor: recovery.sleepHours < 6 ? colors.warning + '88' : colors.border,
+                borderColor:
+                  recovery.sleepHours < 6 ? withAlpha(colors.warning, 0.533) : colors.border,
                 backgroundColor:
-                  recovery.sleepHours < 6 ? colors.warning + '1A' : colors.surfaceSecondary,
+                  recovery.sleepHours < 6
+                    ? withAlpha(colors.warning, 0.102)
+                    : colors.surfaceSecondary,
               }}
             >
               <Moon
@@ -303,9 +306,12 @@ export function StatusCard() {
                 paddingVertical: 4,
                 borderRadius: BORDER_RADIUS.full,
                 borderWidth: 1,
-                borderColor: recovery.stressLevel >= 4 ? colors.warning + '88' : colors.border,
+                borderColor:
+                  recovery.stressLevel >= 4 ? withAlpha(colors.warning, 0.533) : colors.border,
                 backgroundColor:
-                  recovery.stressLevel >= 4 ? colors.warning + '1A' : colors.surfaceSecondary,
+                  recovery.stressLevel >= 4
+                    ? withAlpha(colors.warning, 0.102)
+                    : colors.surfaceSecondary,
               }}
             >
               <Zap
@@ -340,19 +346,23 @@ export function StatusCard() {
             paddingVertical: SPACING.xs,
             paddingHorizontal: SPACING.sm,
             borderRadius: BORDER_RADIUS.sm,
-            backgroundColor:
-              (forecast.difficulty === 'hard'
+            backgroundColor: withAlpha(
+              forecast.difficulty === 'hard'
                 ? colors.warning
                 : forecast.difficulty === 'easy'
                   ? colors.success
-                  : colors.primary) + '15',
+                  : colors.primary,
+              0.082
+            ),
             borderWidth: 1,
-            borderColor:
-              (forecast.difficulty === 'hard'
+            borderColor: withAlpha(
+              forecast.difficulty === 'hard'
                 ? colors.warning
                 : forecast.difficulty === 'easy'
                   ? colors.success
-                  : colors.primary) + '40',
+                  : colors.primary,
+              0.251
+            ),
             alignSelf: 'flex-start',
             marginTop: SPACING.md,
           }}
@@ -396,9 +406,9 @@ export function StatusCard() {
                 paddingVertical: SPACING.xs,
                 paddingHorizontal: SPACING.sm,
                 borderRadius: BORDER_RADIUS.sm,
-                backgroundColor: getCyclePhaseColor(currentPhase.phase) + '20',
+                backgroundColor: withAlpha(getCyclePhaseColor(currentPhase.phase), 0.125),
                 borderWidth: 1,
-                borderColor: getCyclePhaseColor(currentPhase.phase) + '40',
+                borderColor: withAlpha(getCyclePhaseColor(currentPhase.phase), 0.251),
                 alignSelf: 'flex-start',
               }}
             >
@@ -423,9 +433,9 @@ export function StatusCard() {
                 paddingVertical: SPACING.xs,
                 paddingHorizontal: SPACING.sm,
                 borderRadius: BORDER_RADIUS.sm,
-                backgroundColor: colors.primary + '15',
+                backgroundColor: withAlpha(colors.primary, 0.082),
                 borderWidth: 1,
-                borderColor: colors.primary + '40',
+                borderColor: withAlpha(colors.primary, 0.251),
                 alignSelf: 'flex-start',
               }}
             >
@@ -463,8 +473,8 @@ export function StatusCard() {
                     paddingVertical: 4,
                     borderRadius: BORDER_RADIUS.full,
                     borderWidth: 1,
-                    borderColor: sevColor + '88',
-                    backgroundColor: sevColor + '1A',
+                    borderColor: withAlpha(sevColor, 0.533),
+                    backgroundColor: withAlpha(sevColor, 0.102),
                   }}
                 >
                   <View
@@ -519,8 +529,8 @@ export function StatusCard() {
                   paddingVertical: 4,
                   borderRadius: BORDER_RADIUS.full,
                   borderWidth: 1,
-                  borderColor: colors.error + '88',
-                  backgroundColor: colors.error + '1A',
+                  borderColor: withAlpha(colors.error, 0.533),
+                  backgroundColor: withAlpha(colors.error, 0.102),
                 }}
               >
                 <Text style={[typography.captionSmall, { color: colors.error, fontWeight: '700' }]}>
@@ -540,8 +550,8 @@ export function StatusCard() {
                   paddingVertical: 4,
                   borderRadius: BORDER_RADIUS.full,
                   borderWidth: 1,
-                  borderColor: colors.warning + '88',
-                  backgroundColor: colors.warning + '1A',
+                  borderColor: withAlpha(colors.warning, 0.533),
+                  backgroundColor: withAlpha(colors.warning, 0.102),
                 }}
               >
                 <Text

@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native'
 import { Search, Check, X } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { FilterOption } from '../../services/exercisesService';
@@ -16,34 +16,45 @@ interface EquipmentSheetProps {
   onClose: () => void;
 }
 
-export function EquipmentSheet({ options, selected, onToggle, onReset, onClose }: EquipmentSheetProps) {
+export function EquipmentSheet({
+  options,
+  selected,
+  onToggle,
+  onReset,
+  onClose,
+}: EquipmentSheetProps) {
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
 
   const filteredOptions = useMemo(() => {
     const q = query.toLowerCase().trim();
     if (!q) return options;
-    return options.filter(o => o.value.toLowerCase().includes(q));
+    return options.filter((o) => o.value.toLowerCase().includes(q));
   }, [options, query]);
 
   return (
     <>
-{/* Подложка */}
-<TouchableOpacity
-  style={{
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: colors.overlay,
-  }}
-  onPress={onClose}
-  activeOpacity={1}
-/>
+      {/* Подложка */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: colors.overlay,
+        }}
+        onPress={onClose}
+        activeOpacity={1}
+      />
 
       {/* Панель */}
       <View
         style={{
           position: 'absolute',
-          bottom: 0, left: 0, right: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
           backgroundColor: colors.surface,
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
@@ -101,7 +112,10 @@ export function EquipmentSheet({ options, selected, onToggle, onReset, onClose }
             onChangeText={setQuery}
           />
           {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              onPress={() => setQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <X size={16} color={colors.textTertiary} strokeWidth={2} />
             </TouchableOpacity>
           )}
@@ -122,7 +136,7 @@ export function EquipmentSheet({ options, selected, onToggle, onReset, onClose }
                   alignItems: 'center',
                   paddingHorizontal: SPACING.lg,
                   paddingVertical: SPACING.sm,
-                  backgroundColor: isSelected ? colors.primary + '08' : 'transparent',
+                  backgroundColor: isSelected ? withAlpha(colors.primary, 0.031) : 'transparent',
                 }}
               >
                 <View
@@ -144,7 +158,12 @@ export function EquipmentSheet({ options, selected, onToggle, onReset, onClose }
                 >
                   {option.value}
                 </Text>
-                <Text style={[typography.captionSmall, { color: colors.textTertiary, marginRight: SPACING.md }]}>
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    { color: colors.textTertiary, marginRight: SPACING.md },
+                  ]}
+                >
                   {option.count}
                 </Text>
                 <View

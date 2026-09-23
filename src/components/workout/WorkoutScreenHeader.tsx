@@ -8,7 +8,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Play, Square, AlertCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { commonStyles } from '../../styles/common';
 import { typography } from '../../styles/typography';
 import { UnitToggle } from './UnitToggle';
@@ -225,10 +225,10 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
               alignItems: 'flex-start',
               gap: SPACING.sm,
               padding: SPACING.md,
-              backgroundColor: colors.warning + '15',
+              backgroundColor: withAlpha(colors.warning, 0.082),
               borderRadius: BORDER_RADIUS.md,
               borderWidth: 1,
-              borderColor: colors.warning + '40',
+              borderColor: withAlpha(colors.warning, 0.251),
               marginBottom: SPACING.lg,
             }}
           >

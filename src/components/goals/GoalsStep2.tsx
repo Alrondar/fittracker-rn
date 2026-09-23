@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Activity, Calculator, Pill, AlertTriangle } from 'lucide-react-native';
-import { SPACING } from '../../constants/theme';
+import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
 import { AppCard } from '../ui/AppCard';
@@ -90,7 +90,9 @@ export function GoalsStep2({
 
       {/* Тумблер фармакологии */}
       <AppCard variant="compact">
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Pill
               size={20}
@@ -141,7 +143,9 @@ export function GoalsStep2({
           >
             Тип фармакологии
           </Text>
-          <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
+          <Text
+            style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}
+          >
             Выбери, что используешь
           </Text>
           <View style={{ marginBottom: SPACING.xl }}>
@@ -167,7 +171,7 @@ export function GoalsStep2({
             style={{
               borderColor: colors.warning,
               borderWidth: 1,
-              backgroundColor: colors.warning + '10',
+              backgroundColor: withAlpha(colors.warning, 0.063),
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
@@ -187,8 +191,8 @@ export function GoalsStep2({
                 </Text>
                 <Text style={[typography.caption, { color: colors.textSecondary, lineHeight: 18 }]}>
                   Использование фармакологических препаратов может нанести серьёзный вред здоровью.
-                  Расчет КБЖУ с учетом фармакологии является приблизительным. Настоятельно рекомендуем
-                  проконсультироваться с врачом перед началом курса.
+                  Расчет КБЖУ с учетом фармакологии является приблизительным. Настоятельно
+                  рекомендуем проконсультироваться с врачом перед началом курса.
                 </Text>
               </View>
             </View>

@@ -13,7 +13,7 @@ import { View, Text, Dimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore } from '../../store/useStore';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { CHART_LINE_COLORS } from '../../constants/semanticColors';
 import { typography } from '../../styles/typography';
 import { StrengthSeries } from '../../services/progressService';
@@ -77,7 +77,7 @@ export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: colors.primary + '1A',
+            backgroundColor: withAlpha(colors.primary, 0.102),
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: SPACING.sm,

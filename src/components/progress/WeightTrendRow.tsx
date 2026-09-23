@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Scale } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { WeightPoint } from '../../services/progressService';
 
@@ -24,27 +24,27 @@ export function WeightTrendRow({ weightTrend }: Props) {
 
   return (
     <View>
-<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
-  <View
-    style={{
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.warning + '1A',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: SPACING.sm,
-    }}
-  >
-    <Scale size={18} color={colors.warning} />
-  </View>
-  <View style={{ flex: 1 }}>
-    <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Вес</Text>
-    <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
-      Последние измерения
-    </Text>
-  </View>
-</View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: withAlpha(colors.warning, 0.102),
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: SPACING.sm,
+          }}
+        >
+          <Scale size={18} color={colors.warning} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Вес</Text>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary, marginTop: 2 }]}>
+            Последние измерения
+          </Text>
+        </View>
+      </View>
       <View
         style={{
           backgroundColor: colors.surface,
@@ -58,9 +58,7 @@ export function WeightTrendRow({ weightTrend }: Props) {
       >
         <Scale size={20} color={colors.primary} strokeWidth={1.8} />
         <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-          <Text style={[typography.body, { color: colors.textPrimary }]}>
-            {last.toFixed(1)} кг
-          </Text>
+          <Text style={[typography.body, { color: colors.textPrimary }]}>{last.toFixed(1)} кг</Text>
           <Text style={[typography.overline, { color: colors.textTertiary }]}>
             {weightTrend.length} замеров за 8 недель
           </Text>
@@ -70,16 +68,15 @@ export function WeightTrendRow({ weightTrend }: Props) {
             paddingHorizontal: SPACING.sm,
             paddingVertical: SPACING.xs,
             borderRadius: BORDER_RADIUS.sm,
-            backgroundColor: delta <= 0 ? colors.success + '20' : colors.warning + '20',
+            backgroundColor:
+              delta <= 0 ? withAlpha(colors.success, 0.125) : withAlpha(colors.warning, 0.125),
           }}
         >
           <Text
-            style={[
-              typography.labelBold,
-              { color: delta <= 0 ? colors.success : colors.warning },
-            ]}
+            style={[typography.labelBold, { color: delta <= 0 ? colors.success : colors.warning }]}
           >
-            {delta > 0 ? '+' : ''}{delta.toFixed(1)} кг
+            {delta > 0 ? '+' : ''}
+            {delta.toFixed(1)} кг
           </Text>
         </View>
       </View>

@@ -8,13 +8,7 @@ import React, {
   useMemo,
   memo,
 } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  AppState,
-  type AppStateStatus,
-} from 'react-native';
+import { View, Text, TouchableOpacity, AppState, type AppStateStatus } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,7 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Play, Pause, Clock, ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 // ===== Форматирование =====
@@ -55,9 +49,7 @@ const WorkoutTimerContext = createContext<WorkoutTimerContextValue | null>(null)
 function useWorkoutTimerCtx(): WorkoutTimerContextValue {
   const ctx = useContext(WorkoutTimerContext);
   if (!ctx) {
-    throw new Error(
-      'WorkoutTimer* components must be used within WorkoutTimerProvider',
-    );
+    throw new Error('WorkoutTimer* components must be used within WorkoutTimerProvider');
   }
   return ctx;
 }
@@ -111,9 +103,7 @@ export function WorkoutTimerProvider({
   }, [onStop]);
 
   const recompute = useCallback(() => {
-    const live = startedAtRef.current
-      ? Math.floor((Date.now() - startedAtRef.current) / 1000)
-      : 0;
+    const live = startedAtRef.current ? Math.floor((Date.now() - startedAtRef.current) / 1000) : 0;
     const elapsed = accumulatedRef.current + live;
     setSeconds(elapsed);
     onTickRef.current(elapsed);
@@ -131,9 +121,7 @@ export function WorkoutTimerProvider({
   const pauseInternal = useCallback(() => {
     if (!runningRef.current) return;
     if (startedAtRef.current) {
-      accumulatedRef.current += Math.floor(
-        (Date.now() - startedAtRef.current) / 1000,
-      );
+      accumulatedRef.current += Math.floor((Date.now() - startedAtRef.current) / 1000);
       startedAtRef.current = null;
     }
     runningRef.current = false;
@@ -219,14 +207,10 @@ export function WorkoutTimerProvider({
       toggle,
       toggleExpand,
     }),
-    [seconds, running, phase, expanded, toggle, toggleExpand],
+    [seconds, running, phase, expanded, toggle, toggleExpand]
   );
 
-  return (
-    <WorkoutTimerContext.Provider value={value}>
-      {children}
-    </WorkoutTimerContext.Provider>
-  );
+  return <WorkoutTimerContext.Provider value={value}>{children}</WorkoutTimerContext.Provider>;
 }
 
 // ===== Свёрнутое состояние: пилюля в правый слот шапки =====
@@ -235,13 +219,7 @@ export function WorkoutTimerProvider({
  * Пульсирующая точка-индикатор. Живой элемент: при running точка «дышит»
  * (reanimated withRepeat), на паузе/до старта — статична. Цвет кодирует фазу.
  */
-const PulseDot = memo(function PulseDot({
-  phase,
-  color,
-}: {
-  phase: TimerPhase;
-  color: string;
-}) {
+const PulseDot = memo(function PulseDot({ phase, color }: { phase: TimerPhase; color: string }) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
@@ -250,18 +228,18 @@ const PulseDot = memo(function PulseDot({
       scale.value = withRepeat(
         withSequence(
           withTiming(1.45, { duration: 700, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
-        true,
+        true
       );
       opacity.value = withRepeat(
         withSequence(
           withTiming(0.45, { duration: 700, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) })
         ),
         -1,
-        true,
+        true
       );
     } else {
       scale.value = withTiming(1, { duration: 200 });
@@ -276,19 +254,12 @@ const PulseDot = memo(function PulseDot({
 
   return (
     <Animated.View
-      style={[
-        { width: 7, height: 7, borderRadius: 4, backgroundColor: color },
-        dotStyle,
-      ]}
+      style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }, dotStyle]}
     />
   );
 });
 
-export const WorkoutTimerPill = memo(function WorkoutTimerPill({
-  colors,
-}: {
-  colors: any;
-}) {
+export const WorkoutTimerPill = memo(function WorkoutTimerPill({ colors }: { colors: any }) {
   const { formatted, phase, expanded, toggleExpand } = useWorkoutTimerCtx();
 
   const accent =
@@ -311,9 +282,9 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
         paddingVertical: 5,
         borderRadius: BORDER_RADIUS.full,
         backgroundColor:
-          phase === 'running' ? colors.success + '1A' : colors.surfaceSecondary,
+          phase === 'running' ? withAlpha(colors.success, 0.102) : colors.surfaceSecondary,
         borderWidth: 1,
-        borderColor: phase === 'running' ? colors.success + '40' : colors.border,
+        borderColor: phase === 'running' ? withAlpha(colors.success, 0.251) : colors.border,
       }}
     >
       <PulseDot phase={phase} color={accent} />
@@ -338,11 +309,7 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
 
 // ===== Раскрытое состояние: аккордеон-панель под шапкой =====
 
-export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
-  colors,
-}: {
-  colors: any;
-}) {
+export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({ colors }: { colors: any }) {
   const { formatted, running, phase, expanded, toggle } = useWorkoutTimerCtx();
 
   const progress = useSharedValue(0);
@@ -367,11 +334,7 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
         : colors.textTertiary;
 
   const statusLabel =
-    phase === 'running'
-      ? 'Тренировка идёт'
-      : phase === 'paused'
-        ? 'Пауза'
-        : 'Не начата';
+    phase === 'running' ? 'Тренировка идёт' : phase === 'paused' ? 'Пауза' : 'Не начата';
 
   return (
     <Animated.View

@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Activity, ChevronRight, Clock, Dumbbell, Flame, Target } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type { HistoryWorkout } from '../../services/historyService';
 
@@ -49,7 +49,7 @@ function formatVolume(value: number): string {
 function getGradientColors(id: string, avgRpe: number | null, colors: any): [string, string] {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
-    hash = ((hash << 5) - hash) + id.charCodeAt(i);
+    hash = (hash << 5) - hash + id.charCodeAt(i);
     hash |= 0;
   }
   const index = Math.abs(hash) % 4;
@@ -57,16 +57,16 @@ function getGradientColors(id: string, avgRpe: number | null, colors: any): [str
   // Градиент между двумя цветами (не к прозрачному) — карточка выразительная,
   // но текст остаётся читаемым за счёт умеренной прозрачности.
   if (avgRpe != null) {
-    if (avgRpe >= 9) return [colors.error + '35', colors.warning + '20'];
-    if (avgRpe >= 7) return [colors.warning + '35', colors.primary + '20'];
-    return [colors.success + '35', colors.primary + '20'];
+    if (avgRpe >= 9) return [withAlpha(colors.error, 0.208), withAlpha(colors.warning, 0.125)];
+    if (avgRpe >= 7) return [withAlpha(colors.warning, 0.208), withAlpha(colors.primary, 0.125)];
+    return [withAlpha(colors.success, 0.208), withAlpha(colors.primary, 0.125)];
   }
 
   const palettes: [string, string][] = [
-    [colors.primary + '35', colors.success + '20'],
-    [colors.success + '35', colors.warning + '20'],
-    [colors.warning + '35', colors.error + '20'],
-    [colors.primary + '30', colors.textSecondary + '15'],
+    [withAlpha(colors.primary, 0.208), withAlpha(colors.success, 0.125)],
+    [withAlpha(colors.success, 0.208), withAlpha(colors.warning, 0.125)],
+    [withAlpha(colors.warning, 0.208), withAlpha(colors.error, 0.125)],
+    [withAlpha(colors.primary, 0.188), withAlpha(colors.textSecondary, 0.082)],
   ];
   return palettes[index];
 }
@@ -85,7 +85,7 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: colors.primary + '1A',
+            backgroundColor: withAlpha(colors.primary, 0.102),
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: SPACING.sm,
@@ -106,9 +106,14 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
       {recent.map((workout) => {
         const duration = formatDuration(workout.duration_seconds);
         const [colorStart, colorEnd] = getGradientColors(workout.id, workout.avg_rpe, colors);
-        const rpeColor = workout.avg_rpe != null 
-          ? (workout.avg_rpe >= 9 ? colors.error : workout.avg_rpe >= 7 ? colors.warning : colors.success)
-          : colors.primary;
+        const rpeColor =
+          workout.avg_rpe != null
+            ? workout.avg_rpe >= 9
+              ? colors.error
+              : workout.avg_rpe >= 7
+                ? colors.warning
+                : colors.success
+            : colors.primary;
 
         return (
           <TouchableOpacity
@@ -137,20 +142,37 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
                   >
                     {workout.name}
                   </Text>
-                  
+
                   {workout.program_name ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: SPACING.xs }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        marginBottom: SPACING.xs,
+                      }}
+                    >
                       <Target size={12} color={colors.textSecondary} />
                       <Text
                         numberOfLines={1}
-                        style={[typography.caption, { color: colors.textSecondary, fontWeight: '500' }]}
+                        style={[
+                          typography.caption,
+                          { color: colors.textSecondary, fontWeight: '500' },
+                        ]}
                       >
                         {workout.program_name}
                       </Text>
                     </View>
                   ) : null}
 
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, alignItems: 'center' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: SPACING.sm,
+                      alignItems: 'center',
+                    }}
+                  >
                     <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
                       {formatDate(workout.date)}
                     </Text>
@@ -187,11 +209,16 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
                             paddingHorizontal: SPACING.xs,
                             paddingVertical: 1,
                             borderRadius: BORDER_RADIUS.sm,
-                            backgroundColor: colors.surface + '80',
+                            backgroundColor: withAlpha(colors.surface, 0.502),
                           }}
                         >
                           <Flame size={11} color={rpeColor} />
-                          <Text style={[typography.captionSmall, { color: rpeColor, fontWeight: '600' }]}>
+                          <Text
+                            style={[
+                              typography.captionSmall,
+                              { color: rpeColor, fontWeight: '600' },
+                            ]}
+                          >
                             RPE {workout.avg_rpe.toFixed(1)}
                           </Text>
                         </View>
@@ -199,7 +226,11 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
                     )}
                   </View>
                 </View>
-                <ChevronRight size={18} color={colors.textTertiary} style={{ marginLeft: SPACING.sm }} />
+                <ChevronRight
+                  size={18}
+                  color={colors.textTertiary}
+                  style={{ marginLeft: SPACING.sm }}
+                />
               </View>
             </LinearGradient>
           </TouchableOpacity>
