@@ -3,13 +3,26 @@
 // stop-тумблер, осторожность в профиль травм, заметка.
 // PR6 (Scope 2): prefill из существующей записи боли + «Боль прошла» для удаления.
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
-import { BODY_PARTS, BODY_PART_LABELS, BodyPart, targetsInjuredMuscle } from '../../constants/injuries';
+import {
+  BODY_PARTS,
+  BODY_PART_LABELS,
+  BodyPart,
+  targetsInjuredMuscle,
+} from '../../constants/injuries';
 import { painService, PainType } from '../../services/painService';
 import { ExerciseData, ExercisePainState } from '../../types/workout';
 
@@ -49,7 +62,12 @@ function ToggleRow({
         paddingVertical: SPACING.sm,
       }}
     >
-      <Text style={[typography.caption, { color: colors.textPrimary, flex: 1, marginRight: SPACING.sm }]}>
+      <Text
+        style={[
+          typography.caption,
+          { color: colors.textPrimary, flex: 1, marginRight: SPACING.sm },
+        ]}
+      >
         {label}
       </Text>
       <View
@@ -88,7 +106,14 @@ interface PainSheetProps {
   onClearPain?: () => Promise<void>;
 }
 
-export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, onClearPain }: PainSheetProps) {
+export function PainSheet({
+  exercise,
+  workoutId,
+  userId,
+  onClose,
+  onSavePain,
+  onClearPain,
+}: PainSheetProps) {
   const { colors } = useTheme();
   const [painLevel, setPainLevel] = useState(0);
   const [painType, setPainType] = useState<PainType | null>(null);
@@ -112,9 +137,9 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
         setBodyPart(
           (ps.bodyPart as BodyPart) ??
             (Object.keys(BODY_PARTS) as BodyPart[]).find((bp) =>
-              targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp),
+              targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp)
             ) ??
-            null,
+            null
         );
       } else {
         // Нет записи — сброс + prefill bodyPart по мышцам
@@ -125,7 +150,7 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
         setNotes('');
         const pre =
           (Object.keys(BODY_PARTS) as BodyPart[]).find((bp) =>
-            targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp),
+            targetsInjuredMuscle(exercise.primary_muscles, exercise.secondary_muscles, bp)
           ) ?? null;
         setBodyPart(pre);
       }
@@ -163,7 +188,7 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
           userId,
           bodyPart,
           painLevel === 3 ? 'high' : 'medium',
-          notes.trim() || null,
+          notes.trim() || null
         );
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -176,7 +201,19 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
     } finally {
       setSaving(false);
     }
-  }, [exercise, userId, workoutId, painLevel, painType, bodyPart, stopExercise, addCaution, notes, onClose, onSavePain]);
+  }, [
+    exercise,
+    userId,
+    workoutId,
+    painLevel,
+    painType,
+    bodyPart,
+    stopExercise,
+    addCaution,
+    notes,
+    onClose,
+    onSavePain,
+  ]);
 
   // PR6: «Боль прошла» — удалить запись боли
   const handleClear = useCallback(async () => {
@@ -202,14 +239,24 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
 
   return (
     <Modal transparent visible={!!exercise} animationType="slide" onRequestClose={onClose}>
-      <SheetShell title="Боль во время упражнения" onClose={onClose}>
+      <SheetShell isModal title="Боль во время упражнения" onClose={onClose}>
         {exercise && (
           <>
-            <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+            <Text
+              style={[
+                typography.caption,
+                { color: colors.textSecondary, marginBottom: SPACING.md },
+              ]}
+            >
               {exercise.name}
             </Text>
 
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.sm },
+              ]}
+            >
               Уровень боли
             </Text>
             <View style={{ flexDirection: 'row', gap: SPACING.xs, marginBottom: SPACING.md }}>
@@ -232,7 +279,11 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
                     <Text
                       style={[
                         typography.captionSmall,
-                        { color: active ? color : colors.textSecondary, fontWeight: '700', textAlign: 'center' },
+                        {
+                          color: active ? color : colors.textSecondary,
+                          fontWeight: '700',
+                          textAlign: 'center',
+                        },
                       ]}
                     >
                       {l.label}
@@ -244,10 +295,22 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
 
             {painLevel > 0 && (
               <>
-                <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+                <Text
+                  style={[
+                    typography.labelBold,
+                    { color: colors.textPrimary, marginBottom: SPACING.sm },
+                  ]}
+                >
                   Тип
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: SPACING.xs,
+                    marginBottom: SPACING.md,
+                  }}
+                >
                   {PAIN_TYPES.map((t) => {
                     const active = painType === t.key;
                     return (
@@ -263,7 +326,12 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
                           backgroundColor: active ? colors.warning + '20' : colors.surfaceSecondary,
                         }}
                       >
-                        <Text style={[typography.captionSmall, { color: active ? colors.warning : colors.textSecondary }]}>
+                        <Text
+                          style={[
+                            typography.captionSmall,
+                            { color: active ? colors.warning : colors.textSecondary },
+                          ]}
+                        >
                           {t.label}
                         </Text>
                       </TouchableOpacity>
@@ -273,10 +341,22 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
               </>
             )}
 
-            <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+            <Text
+              style={[
+                typography.labelBold,
+                { color: colors.textPrimary, marginBottom: SPACING.sm },
+              ]}
+            >
               Часть тела
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: SPACING.xs,
+                marginBottom: SPACING.md,
+              }}
+            >
               {(Object.keys(BODY_PARTS) as BodyPart[]).map((bp) => {
                 const active = bodyPart === bp;
                 return (
@@ -292,7 +372,12 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
                       backgroundColor: active ? colors.error + '20' : colors.surfaceSecondary,
                     }}
                   >
-                    <Text style={[typography.captionSmall, { color: active ? colors.error : colors.textSecondary }]}>
+                    <Text
+                      style={[
+                        typography.captionSmall,
+                        { color: active ? colors.error : colors.textSecondary },
+                      ]}
+                    >
                       {BODY_PART_LABELS[bp] ?? bp}
                     </Text>
                   </TouchableOpacity>
@@ -300,7 +385,12 @@ export function PainSheet({ exercise, workoutId, userId, onClose, onSavePain, on
               })}
             </View>
 
-            <ToggleRow label="Завершить это упражнение" value={stopExercise} onChange={setStopExercise} colors={colors} />
+            <ToggleRow
+              label="Завершить это упражнение"
+              value={stopExercise}
+              onChange={setStopExercise}
+              colors={colors}
+            />
 
             {painLevel >= 2 && bodyPart && (
               <ToggleRow

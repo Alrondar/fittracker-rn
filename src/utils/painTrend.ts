@@ -51,7 +51,13 @@ function getMonday(date: Date): Date {
 }
 
 function fmtIsoDate(d: Date): string {
-  return d.toISOString().split('T')[0];
+  // Локальные компоненты, НЕ toISOString(): UTC-сдвиг может перекинуть полночь
+  // на соседнюю дату, и ключ недели разъедется с getMonday/setHours,
+  // которые работают в локальном времени.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function shortLabel(d: Date, locale: string): string {
@@ -82,8 +88,10 @@ export function calculatePainTrend(
   today: Date = new Date()
 ): PainTrendResult {
   const weeks = buildWeekBuckets(weeksBack, today);
-  const windowStart = new Date(weeks[0].weekStart + 'T00:00:00Z');
-  const windowEnd = new Date(weeks[weeks.length - 1].weekStart + 'T00:00:00Z');
+  // Без 'Z': weekStart от fmtIsoDate — локальная дата, парсим как локальную полночь,
+  // иначе для UTC+X окно сдвинется на день относительно getMonday.
+  const windowStart = new Date(weeks[0].weekStart + 'T00:00:00');
+  const windowEnd = new Date(weeks[weeks.length - 1].weekStart + 'T00:00:00');
   windowEnd.setDate(windowEnd.getDate() + 7);
 
   const inWindow = events.filter((e) => {

@@ -128,25 +128,25 @@ function parseExerciseProgress(recentWorkouts: any[]): DashboardExerciseProgress
     });
   });
 
-return Object.values(exerciseMap)
-  .map((exercise: any) => {
-    // recentWorkouts приходят в порядке убывания даты.
-    // history разворачиваем в хронологический порядок: старые → новые.
-    const history: DashboardExerciseProgressHistoryItem[] = exercise.history.slice().reverse();
+  return Object.values(exerciseMap)
+    .map((exercise: any) => {
+      // recentWorkouts приходят в порядке убывания даты.
+      // history разворачиваем в хронологический порядок: старые → новые.
+      const history: DashboardExerciseProgressHistoryItem[] = exercise.history.slice().reverse();
 
-    const current = history[history.length - 1];
-    const previous = history[history.length - 2];
+      const current = history[history.length - 1];
+      const previous = history[history.length - 2];
 
-    const currentMaxWeight = current?.maxWeight || 0;
-    const previousMaxWeight = previous?.maxWeight || 0;
-    const currentVolume = current?.volume || 0;
+      const currentMaxWeight = current?.maxWeight || 0;
+      const previousMaxWeight = previous?.maxWeight || 0;
+      const currentVolume = current?.volume || 0;
 
-    const trend: DashboardExerciseProgress['trend'] =
-      currentMaxWeight > previousMaxWeight
-        ? 'up'
-        : currentMaxWeight < previousMaxWeight
-          ? 'down'
-          : 'stable';
+      const trend: DashboardExerciseProgress['trend'] =
+        currentMaxWeight > previousMaxWeight
+          ? 'up'
+          : currentMaxWeight < previousMaxWeight
+            ? 'down'
+            : 'stable';
 
       return {
         exerciseId: exercise.exerciseId,
@@ -161,24 +161,25 @@ return Object.values(exerciseMap)
 }
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-const [
-  profileResult,
-  activeProgramResult,
-  workoutDatesResult,
-  weeklyStatsResult,
-  lastWorkoutResult,
-  totalWorkoutsResult,
-  recentWorkoutsResult,
-] = await Promise.allSettled([
-supabase
-  .from('profiles')
-  .select('full_name, username, current_weight_kg')
-  .eq('id', userId)
-  .maybeSingle(),
+  const [
+    profileResult,
+    activeProgramResult,
+    workoutDatesResult,
+    weeklyStatsResult,
+    lastWorkoutResult,
+    totalWorkoutsResult,
+    recentWorkoutsResult,
+  ] = await Promise.allSettled([
+    supabase
+      .from('profiles')
+      .select('full_name, username, current_weight_kg')
+      .eq('id', userId)
+      .maybeSingle(),
 
     supabase
       .from('user_programs')
-      .select(`
+      .select(
+        `
         program_id,
         current_phase,
         current_week,
@@ -199,7 +200,8 @@ supabase
             )
           )
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .eq('is_active', true)
       .limit(1)
@@ -210,18 +212,19 @@ supabase
       .select('created_at, started_at, finished_at')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
-      .gte('created_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()),
+      .gte('finished_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()),
 
     supabase
       .from('workouts')
       .select('workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+      .gte('finished_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
 
     supabase
       .from('workouts')
-      .select(`
+      .select(
+        `
         id,
         name,
         created_at,
@@ -236,7 +239,8 @@ supabase
             is_warmup
           )
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .order('finished_at', { ascending: false, nullsFirst: false })
@@ -251,7 +255,8 @@ supabase
 
     supabase
       .from('workouts')
-      .select(`
+      .select(
+        `
         id,
         created_at,
         started_at,
@@ -267,19 +272,16 @@ supabase
             is_warmup
           )
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .order('finished_at', { ascending: false, nullsFirst: false })
       .limit(20),
-
   ]);
 
   if (__DEV__) {
-    const warnIfError = (
-      name: string,
-      result: PromiseSettledResult<any>
-    ) => {
+    const warnIfError = (name: string, result: PromiseSettledResult<any>) => {
       if (result.status === 'rejected') {
         console.warn(`[dashboard] ${name} rejected:`, result.reason);
         return;
@@ -324,24 +326,19 @@ supabase
     const currentDay = userProgram.current_day ?? 1;
 
     const currentPhase =
-      phases.find((phase: any) => phase.phase_number === currentPhaseNumber) ||
-      phases[0];
+      phases.find((phase: any) => phase.phase_number === currentPhaseNumber) || phases[0];
 
-    const phaseDays = (currentPhase?.program_days || [])
-      .slice()
-      .sort((a: any, b: any) => {
-        if ((a.week_number ?? 1) !== (b.week_number ?? 1)) {
-          return (a.week_number ?? 1) - (b.week_number ?? 1);
-        }
+    const phaseDays = (currentPhase?.program_days || []).slice().sort((a: any, b: any) => {
+      if ((a.week_number ?? 1) !== (b.week_number ?? 1)) {
+        return (a.week_number ?? 1) - (b.week_number ?? 1);
+      }
 
-        return a.day_number - b.day_number;
-      });
+      return a.day_number - b.day_number;
+    });
 
     const currentDayObject =
       phaseDays.find(
-        (day: any) =>
-          (day.week_number ?? 1) === currentWeek &&
-          day.day_number === currentDay
+        (day: any) => (day.week_number ?? 1) === currentWeek && day.day_number === currentDay
       ) ||
       phaseDays.find((day: any) => day.day_number === currentDay) ||
       phaseDays[0];
@@ -376,35 +373,29 @@ supabase
       .filter(Boolean);
   }
 
-let weeklyStats = {
-  workoutsCount: 0,
-  totalVolume: 0,
-  burnedCalories: 0,
-};
-if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
-  const workouts = weeklyStatsResult.value.data;
-  const workoutsCount = workouts?.length || 0;
-  const totalVolume = parseVolumeFromWorkouts(workouts);
-
-  // Персонализированная формула калорий (едина с profileService)
-  let userWeight = 70; // fallback
-  if (profileResult.status === 'fulfilled' && profileResult.value.data?.current_weight_kg) {
-    userWeight = parseFloat(profileResult.value.data.current_weight_kg) || 70;
-  }
-
-  let burnedCalories = 0;
-  try {
-    burnedCalories = (await profileService.getBurnedCalories(userId, 7)) ?? 0;
-  } catch {
-    burnedCalories = workoutsCount * 300; // graceful fallback
-  }
-
-  weeklyStats = {
-    workoutsCount,
-    totalVolume,
-    burnedCalories,
+  let weeklyStats = {
+    workoutsCount: 0,
+    totalVolume: 0,
+    burnedCalories: 0,
   };
-}
+  if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
+    const workouts = weeklyStatsResult.value.data;
+    const workoutsCount = workouts?.length || 0;
+    const totalVolume = parseVolumeFromWorkouts(workouts);
+
+    let burnedCalories = 0;
+    try {
+      burnedCalories = (await profileService.getBurnedCalories(userId, 7)) ?? 0;
+    } catch {
+      burnedCalories = workoutsCount * 300; // graceful fallback
+    }
+
+    weeklyStats = {
+      workoutsCount,
+      totalVolume,
+      burnedCalories,
+    };
+  }
 
   let lastWorkout: DashboardLastWorkout | null = null;
 
@@ -444,10 +435,7 @@ if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
 
   let totalWorkouts = 0;
 
-  if (
-    totalWorkoutsResult.status === 'fulfilled' &&
-    totalWorkoutsResult.value.count !== undefined
-  ) {
+  if (totalWorkoutsResult.status === 'fulfilled' && totalWorkoutsResult.value.count !== undefined) {
     totalWorkouts = totalWorkoutsResult.value.count || 0;
   }
 
@@ -457,48 +445,56 @@ if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
     exerciseProgress = parseExerciseProgress(recentWorkoutsResult.value.data);
   }
 
-// PR без bias: переиспользуем корректную группировку из profileService
-let personalRecords: DashboardPersonalRecord[] = [];
-try {
-  const records = await profileService.getPersonalRecords(userId);
-      personalRecords = records.map((record) => ({
-        exerciseName: record.name,
-        maxWeight: record.maxWeight,
-        maxReps: record.reps,
-        e1rm: roundE1rm(record.e1rm),
-        recordDate: '',
-      }));
-    } catch {
-      personalRecords = [];
-    }
+  // PR без bias: переиспользуем корректную группировку из profileService
+  let personalRecords: DashboardPersonalRecord[] = [];
+  try {
+    const records = await profileService.getPersonalRecords(userId);
+    personalRecords = records.map((record) => ({
+      exerciseName: record.name,
+      maxWeight: record.maxWeight,
+      maxReps: record.reps,
+      e1rm: roundE1rm(record.e1rm),
+      recordDate: '',
+    }));
+  } catch {
+    personalRecords = [];
+  }
 
-    // FEAT-1.3: стрик по ВСЕЙ истории (workoutDates ограничен 14 днями для календаря)
-    let streak: StreakStats = { current: 0, best: 0, activeThisWeek: false };
-    try {
-      const { data: streakDates } = await supabase
-        .from('workouts')
-        .select('created_at, started_at, finished_at')
-        .eq('user_id', userId)
-        .not('finished_at', 'is', null);
-      streak = computeStreaks(
-        (streakDates ?? []).map((w: { created_at: string | null; started_at: string | null; finished_at: string | null }) => {
-          // Effective date: finished_at ?? started_at ?? created_at
-          return w.finished_at ?? w.started_at ?? w.created_at;
-        }).filter(Boolean) as string[],
-      );
-    } catch {
-      streak = { current: 0, best: 0, activeThisWeek: false };
-    }
+  // FEAT-1.3: стрик по ВСЕЙ истории (workoutDates ограничен 14 днями для календаря)
+  let streak: StreakStats = { current: 0, best: 0, activeThisWeek: false };
+  try {
+    const { data: streakDates } = await supabase
+      .from('workouts')
+      .select('created_at, started_at, finished_at')
+      .eq('user_id', userId)
+      .not('finished_at', 'is', null);
+    streak = computeStreaks(
+      (streakDates ?? [])
+        .map(
+          (w: {
+            created_at: string | null;
+            started_at: string | null;
+            finished_at: string | null;
+          }) => {
+            // Effective date: finished_at ?? started_at ?? created_at
+            return w.finished_at ?? w.started_at ?? w.created_at;
+          }
+        )
+        .filter(Boolean) as string[]
+    );
+  } catch {
+    streak = { current: 0, best: 0, activeThisWeek: false };
+  }
 
-    return {
-      userName,
-      activeProgram,
-      workoutDates,
-      weeklyStats,
-      exerciseProgress,
-      personalRecords,
-      lastWorkout,
-      totalWorkouts,
-      streak,
-    };
+  return {
+    userName,
+    activeProgram,
+    workoutDates,
+    weeklyStats,
+    exerciseProgress,
+    personalRecords,
+    lastWorkout,
+    totalWorkouts,
+    streak,
+  };
 }

@@ -2,7 +2,7 @@
 // v2 (05.08.2026): Pill-режим + пресеты (+30/+60) + вибрация до сброса + sticky-оверлей.
 // Sticky-позиция реализуется в [id].tsx (обёртка в Animated.View с absoluteFillObject).
 import React, { useState, useEffect, memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -63,11 +63,8 @@ export const RestTimer = memo(function RestTimer({
   useEffect(() => {
     if (timeLeft <= 3 && timeLeft > 0 && !isFinished) {
       scale.value = withRepeat(
-        withSequence(
-          withTiming(1.1, { duration: 500 }),
-          withTiming(1, { duration: 500 }),
-        ),
-        -1,
+        withSequence(withTiming(1.1, { duration: 500 }), withTiming(1, { duration: 500 })),
+        -1
       );
     } else {
       cancelAnimation(scale);
@@ -103,10 +100,10 @@ export const RestTimer = memo(function RestTimer({
   const timeColor = isFinished
     ? colors.success
     : timeLeft <= 10
-    ? colors.error
-    : timeLeft <= 30
-    ? colors.warning
-    : colors.textPrimary;
+      ? colors.error
+      : timeLeft <= 30
+        ? colors.warning
+        : colors.textPrimary;
 
   // Анимированные props для SVG circle
   const animatedProps = useAnimatedProps(() => ({
@@ -186,14 +183,9 @@ export const RestTimer = memo(function RestTimer({
         <Animated.View style={[{ width: '100%' }, panelStyle]}>
           {/* Шапка */}
           <View
-            style={[
-              workoutStyles.workoutTimerHeader,
-              { width: '100%', paddingHorizontal: 16 },
-            ]}
+            style={[workoutStyles.workoutTimerHeader, { width: '100%', paddingHorizontal: 16 }]}
           >
-            <Text
-              style={[workoutStyles.workoutTimerTitle, { color: colors.textSecondary }]}
-            >
+            <Text style={[workoutStyles.workoutTimerTitle, { color: colors.textSecondary }]}>
               {isFinished ? 'Отдых окончен' : 'Таймер отдыха'}
             </Text>
             <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
@@ -321,10 +313,7 @@ export const RestTimer = memo(function RestTimer({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Minus size={18} color={colors.textSecondary} strokeWidth={2} />
                   <Text
-                    style={[
-                      workoutStyles.workoutTimerControlText,
-                      { color: colors.textSecondary },
-                    ]}
+                    style={[workoutStyles.workoutTimerControlText, { color: colors.textSecondary }]}
                   >
                     15с
                   </Text>
@@ -336,9 +325,7 @@ export const RestTimer = memo(function RestTimer({
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Plus size={18} color={colors.primary} strokeWidth={2} />
-                  <Text
-                    style={[workoutStyles.workoutTimerControlText, { color: colors.primary }]}
-                  >
+                  <Text style={[workoutStyles.workoutTimerControlText, { color: colors.primary }]}>
                     30с
                   </Text>
                 </View>
@@ -349,9 +336,7 @@ export const RestTimer = memo(function RestTimer({
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Plus size={18} color={colors.primary} strokeWidth={2} />
-                  <Text
-                    style={[workoutStyles.workoutTimerControlText, { color: colors.primary }]}
-                  >
+                  <Text style={[workoutStyles.workoutTimerControlText, { color: colors.primary }]}>
                     60с
                   </Text>
                 </View>

@@ -15,6 +15,7 @@
 import {
   StrengthLevel,
   STRENGTH_LEVEL_LABELS,
+  STRENGTH_LEVEL_COLORS,
   STRENGTH_STANDARD_RATIOS,
   resolveStandardKey,
 } from '../constants/strengthStandards';
@@ -31,15 +32,6 @@ export interface StrengthStandardResult {
   /** Все 5 уровней с их ratio — для L2-таблицы стандартов. */
   standards: { level: StrengthLevel; label: string; ratio: number; color: string }[];
 }
-
-/** Цвета уровней силы (mid-tone, читаемы в обеих темах). */
-export const STRENGTH_LEVEL_COLORS: Record<StrengthLevel, string> = {
-  novice: '#94a3b8',
-  beginner: '#4CAF50',
-  intermediate: '#FF9800',
-  advanced: '#E91E63',
-  elite: '#7C3AED',
-};
 
 /**
  * Рассчитать силовой уровень для упражнения.

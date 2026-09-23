@@ -35,17 +35,6 @@ export function PersonalRecordsCard({ records, colors }: PersonalRecordsCardProp
 
   if (records.length === 0) return null;
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
   return (
     <View>
       <View

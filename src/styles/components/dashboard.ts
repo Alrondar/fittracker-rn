@@ -1,4 +1,3 @@
-import { Dimensions } from 'react-native';
 import { SPACING, BORDER_RADIUS, fontScale } from '../../constants/theme';
 
 // Локальный alias, чтобы не тянуть import в каждое поле; fontScale уже учитывает ширину.

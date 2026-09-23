@@ -41,20 +41,25 @@ export function calculateCyclePhases(
 
   const refTime = normalizeDate(referenceDate).getTime();
   const startDate = normalizeDate(lastMenstruationStart.event_date);
-  
+
   // Если referenceDate раньше начала месячных, данных недостаточно
   if (refTime < startDate.getTime()) return null;
 
   // Находим конец текущих месячных (если есть)
   const menstruationEnd = sortedEvents
-    .filter((e) => e.event_type === 'menstruation_end' && normalizeDate(e.event_date).getTime() >= startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'menstruation_end' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
     .pop();
 
-  const menstruationEndDate = menstruationEnd 
-    ? normalizeDate(menstruationEnd.event_date) 
-    : null;
+  const menstruationEndDate = menstruationEnd ? normalizeDate(menstruationEnd.event_date) : null;
 
-  // Проверяем, идут ли сейчас месячные
+  // Проверяем, идут ли сейчас месячные.
+  // Граница фаз включает последний день фазы: день menstruation_end ещё относится
+  // к менструальной фазе (аналогично ovulation_end — к овуляции, см. ниже),
+  // поэтому сравнение через +1 сутки.
   if (!menstruationEndDate || refTime <= menstruationEndDate.getTime() + 86400000) {
     return {
       phase: 'menstrual',
@@ -67,7 +72,11 @@ export function calculateCyclePhases(
 
   // Ищем следующее начало месячных (для расчёта овуляции и конца цикла)
   const nextMenstruationStart = sortedEvents
-    .filter((e) => e.event_type === 'menstruation_start' && normalizeDate(e.event_date).getTime() > startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'menstruation_start' &&
+        normalizeDate(e.event_date).getTime() > startDate.getTime()
+    )
     .shift();
 
   // Определяем даты овуляции
@@ -76,11 +85,19 @@ export function calculateCyclePhases(
   let isEstimatedOvulation = false;
 
   const userOvulationStart = sortedEvents
-    .filter((e) => e.event_type === 'ovulation_start' && normalizeDate(e.event_date).getTime() >= startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'ovulation_start' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
     .pop();
 
   const userOvulationEnd = sortedEvents
-    .filter((e) => e.event_type === 'ovulation_end' && normalizeDate(e.event_date).getTime() >= startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'ovulation_end' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
     .pop();
 
   if (userOvulationStart && userOvulationEnd) {
@@ -95,7 +112,9 @@ export function calculateCyclePhases(
   } else {
     // Если следующего начала нет, предполагаем стандартный цикл 28 дней
     const estimatedNextStart = normalizeDate(new Date(startDate.getTime() + 28 * 86400000));
-    ovulationStart = normalizeDate(new Date(estimatedNextStart.getTime() - lutealLength * 86400000));
+    ovulationStart = normalizeDate(
+      new Date(estimatedNextStart.getTime() - lutealLength * 86400000)
+    );
     ovulationEnd = normalizeDate(new Date(ovulationStart.getTime() + 86400000));
     isEstimatedOvulation = true;
   }
@@ -113,10 +132,10 @@ export function calculateCyclePhases(
 
   // Проверяем, находимся ли мы в лютеиновой фазе
   if (refTime > ovulationEnd.getTime() + 86400000) {
-    const cycleEndDate = nextMenstruationStart 
+    const cycleEndDate = nextMenstruationStart
       ? normalizeDate(nextMenstruationStart.event_date)
       : normalizeDate(new Date(startDate.getTime() + 28 * 86400000));
-    
+
     return {
       phase: 'luteal',
       dayNumber: Math.floor((refTime - startDate.getTime()) / 86400000) + 1,
@@ -130,7 +149,9 @@ export function calculateCyclePhases(
   return {
     phase: 'follicular',
     dayNumber: Math.floor((refTime - startDate.getTime()) / 86400000) + 1,
-    startDate: menstruationEndDate ? normalizeDate(new Date(menstruationEndDate.getTime() + 86400000)) : startDate,
+    startDate: menstruationEndDate
+      ? normalizeDate(new Date(menstruationEndDate.getTime() + 86400000))
+      : startDate,
     endDate: ovulationStart,
     isEstimated: isEstimatedOvulation,
   };
@@ -189,15 +210,22 @@ export function getPhaseForDate(
   const targetTime = normalizeDate(targetDate).getTime();
 
   const lastMenstruationStart = sortedEvents
-    .filter((e) => e.event_type === 'menstruation_start' && normalizeDate(e.event_date).getTime() <= targetTime)
+    .filter(
+      (e) =>
+        e.event_type === 'menstruation_start' && normalizeDate(e.event_date).getTime() <= targetTime
+    )
     .pop();
 
   if (!lastMenstruationStart) return null;
 
   const startDate = normalizeDate(lastMenstruationStart.event_date);
-  
+
   const menstruationEnd = sortedEvents
-    .filter((e) => e.event_type === 'menstruation_end' && normalizeDate(e.event_date).getTime() >= startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'menstruation_end' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
     .pop();
   const menstruationEndDate = menstruationEnd ? normalizeDate(menstruationEnd.event_date) : null;
 
@@ -206,17 +234,29 @@ export function getPhaseForDate(
   }
 
   const nextMenstruationStart = sortedEvents
-    .filter((e) => e.event_type === 'menstruation_start' && normalizeDate(e.event_date).getTime() > startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'menstruation_start' &&
+        normalizeDate(e.event_date).getTime() > startDate.getTime()
+    )
     .shift();
 
   let ovulationStart: Date;
   let ovulationEnd: Date;
 
   const userOvulationStart = sortedEvents
-    .filter((e) => e.event_type === 'ovulation_start' && normalizeDate(e.event_date).getTime() >= startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'ovulation_start' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
     .pop();
   const userOvulationEnd = sortedEvents
-    .filter((e) => e.event_type === 'ovulation_end' && normalizeDate(e.event_date).getTime() >= startDate.getTime())
+    .filter(
+      (e) =>
+        e.event_type === 'ovulation_end' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
     .pop();
 
   if (userOvulationStart && userOvulationEnd) {
@@ -228,7 +268,9 @@ export function getPhaseForDate(
     ovulationEnd = normalizeDate(new Date(ovulationStart.getTime() + 86400000));
   } else {
     const estimatedNextStart = normalizeDate(new Date(startDate.getTime() + 28 * 86400000));
-    ovulationStart = normalizeDate(new Date(estimatedNextStart.getTime() - lutealLength * 86400000));
+    ovulationStart = normalizeDate(
+      new Date(estimatedNextStart.getTime() - lutealLength * 86400000)
+    );
     ovulationEnd = normalizeDate(new Date(ovulationStart.getTime() + 86400000));
   }
 

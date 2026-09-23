@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { ThemeAccent, ThemeKey, themes } from '../../src/constants/theme';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createButtonStyles } from '../../src/styles/components/button';
@@ -24,11 +24,7 @@ import { LayoutGrid } from 'lucide-react-native';
 import { sendPasswordReset } from '../../src/services/authService';
 import { useStore } from '../../src/store/useStore';
 import { useTimerSettings } from '../../src/hooks/useTimerSettings';
-import {
-  useRpeSettings,
-  RPE_PROMPT_LABELS,
-  RPE_PROMPT_DESCRIPTIONS,
-} from '../../src/hooks/useRpeSettings';
+import { useRpeSettings, RPE_PROMPT_DESCRIPTIONS } from '../../src/hooks/useRpeSettings';
 import { useBarbellSettings } from '../../src/hooks/useBarbellSettings';
 import { BARBELL_EQUIPMENT_NAMES } from '../../src/constants/barbellDefaults';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -51,7 +47,6 @@ import {
   Info,
   HelpCircle,
   ArrowUpDown,
-  X,
   Volume2,
   BellRing,
   Vibrate,
@@ -73,7 +68,6 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [useImperial, setUseImperial] = useState(false);
   const [workoutReminders, setWorkoutReminders] = useState(true);
-  const [nutritionReminders, setNutritionReminders] = useState(true);
 
   // ✅ Фабрики стилей — через useMemo (правило CLAUDE.md)
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);

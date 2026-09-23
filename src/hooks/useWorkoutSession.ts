@@ -8,13 +8,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import {
-  ExerciseData,
-  AlternativeExercise,
-  SetData,
-  SetFeedbackPatch,
-  ExercisePainState,
-} from '../types/workout';
+import { ExerciseData, SetData, SetFeedbackPatch, ExercisePainState } from '../types/workout';
 import { advanceProgramProgress, replaceExerciseInProgram } from '../services/programsService';
 import { getActiveInjuries } from '../services/profileService';
 import { painService, PainType } from '../services/painService';
@@ -456,7 +450,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       // (UX-5 Feature 1) в [id].tsx; при отсутствии программы — действие настолько
       // лёгкое, что подтверждение не требуется (haptic + мгновенная замена).
     },
-    [loadAlternatives]
+    [loadAlternatives, userId, workoutId]
   );
 
   const resetToOriginal = useCallback(

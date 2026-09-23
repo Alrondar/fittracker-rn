@@ -11,7 +11,6 @@
 import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
   ScrollView,
   Text,
@@ -22,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, Award, TrendingUp } from 'lucide-react-native';
+import { Award, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useStore } from '../../src/store/useStore';
 import { useHistory } from '../../src/hooks/useHistory';

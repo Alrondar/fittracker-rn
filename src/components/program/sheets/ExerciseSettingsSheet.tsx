@@ -19,7 +19,7 @@ export function ExerciseSettingsSheet({
   colors,
   buttonStyles,
   onSave,
-  onClose,
+  onClose: _onClose,
 }: ExerciseSettingsSheetProps) {
   const [sets, setSets] = useState(exercise?.sets || 3);
   const [repsRange, setRepsRange] = useState(exercise?.reps_range || '8-12');

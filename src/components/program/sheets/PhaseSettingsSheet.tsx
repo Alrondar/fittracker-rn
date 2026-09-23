@@ -24,11 +24,11 @@ export function PhaseSettingsSheet({
   colors,
   buttonStyles,
   onSave,
-  onClose,
+  onClose: _onClose,
 }: PhaseSettingsSheetProps) {
   const [name, setName] = useState(phase?.name || '');
   const [phaseType, setPhaseType] = useState<PhaseType>(
-    (phase?.phase_type as PhaseType) || 'custom',
+    (phase?.phase_type as PhaseType) || 'custom'
   );
   const [weeksCount, setWeeksCount] = useState(phase?.weeks_count || 1);
   const [description, setDescription] = useState(phase?.description || '');
@@ -85,7 +85,11 @@ export function PhaseSettingsSheet({
                   backgroundColor: isSelected ? phaseColor + '15' : colors.surface,
                 }}
               >
-                <Icon size={16} color={isSelected ? phaseColor : colors.textSecondary} strokeWidth={2} />
+                <Icon
+                  size={16}
+                  color={isSelected ? phaseColor : colors.textSecondary}
+                  strokeWidth={2}
+                />
                 <Text
                   style={[
                     typography.labelBold,
@@ -131,7 +135,12 @@ export function PhaseSettingsSheet({
           >
             <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
           </TouchableOpacity>
-          <Text style={[typography.h3, { color: colors.textPrimary, minWidth: 40, textAlign: 'center' }]}>
+          <Text
+            style={[
+              typography.h3,
+              { color: colors.textPrimary, minWidth: 40, textAlign: 'center' },
+            ]}
+          >
             {weeksCount}
           </Text>
           <TouchableOpacity

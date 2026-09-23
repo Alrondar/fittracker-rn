@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Check, X, Info } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TOAST_COLORS } from '../constants/semanticColors';
 
 interface ToastProps {
   message: string;
@@ -18,13 +19,7 @@ interface ToastProps {
   duration?: number;
 }
 
-export function Toast({
-  message,
-  type = 'success',
-  visible,
-  onHide,
-  duration = 2500,
-}: ToastProps) {
+export function Toast({ message, type = 'success', visible, onHide, duration = 2500 }: ToastProps) {
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-150);
   const opacity = useSharedValue(0);
@@ -55,21 +50,16 @@ export function Toast({
 
   if (!visible) return null;
 
-  // ⚠️ Хардкод цветов — остаточный долг ARCH-5 (не часть ARCH-4, не усугубляю).
   const config = {
-    success: { icon: Check, bgColor: '#10b981' },
-    error: { icon: X, bgColor: '#ef4444' },
-    info: { icon: Info, bgColor: '#7c3aed' },
+    success: { icon: Check, bgColor: TOAST_COLORS.success },
+    error: { icon: X, bgColor: TOAST_COLORS.error },
+    info: { icon: Info, bgColor: TOAST_COLORS.info },
   };
   const { icon: Icon, bgColor } = config[type];
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        { top: insets.top + 16, backgroundColor: bgColor },
-        animatedStyle,
-      ]}
+      style={[styles.container, { top: insets.top + 16, backgroundColor: bgColor }, animatedStyle]}
     >
       <View style={styles.iconWrapper}>
         <Icon size={20} color="#fff" strokeWidth={2.5} />

@@ -21,7 +21,7 @@ interface CycleCalendarProps {
 export function CycleCalendar({
   events,
   settings,
-  currentPhase,
+  currentPhase: _currentPhase,
   onSettingsPress,
   isEditMode = false,
   onDayPress,
@@ -34,10 +34,10 @@ export function CycleCalendar({
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    
+
     const daysInMonth = lastDay.getDate();
     const startDayOfWeek = firstDay.getDay() || 7; // 1 = Monday
-    
+
     const days = [];
     for (let i = 1; i < startDayOfWeek; i++) {
       days.push(null); // Empty cells
@@ -63,18 +63,33 @@ export function CycleCalendar({
 
   const nextMonth = () => {
     const now = new Date();
-    if (currentMonth.getMonth() < now.getMonth() || currentMonth.getFullYear() < now.getFullYear()) {
+    if (
+      currentMonth.getMonth() < now.getMonth() ||
+      currentMonth.getFullYear() < now.getFullYear()
+    ) {
       setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
     }
   };
 
-  const canGoNext = currentMonth.getMonth() < new Date().getMonth() || currentMonth.getFullYear() < new Date().getFullYear();
+  const canGoNext =
+    currentMonth.getMonth() < new Date().getMonth() ||
+    currentMonth.getFullYear() < new Date().getFullYear();
 
   return (
     <View style={{ marginBottom: SPACING.md }}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-        <TouchableOpacity onPress={prevMonth} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: SPACING.md,
+        }}
+      >
+        <TouchableOpacity
+          onPress={prevMonth}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <ChevronLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[typography.h5, { color: colors.textPrimary }]}>
@@ -82,15 +97,15 @@ export function CycleCalendar({
         </Text>
         <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
           {onSettingsPress && (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={onSettingsPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Settings size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity 
-            onPress={nextMonth} 
+          <TouchableOpacity
+            onPress={nextMonth}
             disabled={!canGoNext}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -118,7 +133,7 @@ export function CycleCalendar({
           const phase = getDayPhase(date);
           const dayEvents = getDayEvents(date);
           const isToday = date.toDateString() === new Date().toDateString();
-          
+
           const phaseColor = phase ? colors[getCyclePhaseColor(phase)] : 'transparent';
           const hasEvent = dayEvents.length > 0;
 
@@ -145,8 +160,8 @@ export function CycleCalendar({
                   borderColor: isToday
                     ? colors.primary
                     : isTappable
-                    ? colors.textSecondary
-                    : colors.border,
+                      ? colors.textSecondary
+                      : colors.border,
                   borderStyle: isTappable ? 'dashed' : 'solid',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -182,7 +197,9 @@ export function CycleCalendar({
       </View>
 
       {/* Legend */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md }}>
+      <View
+        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md }}
+      >
         {(['menstrual', 'follicular', 'ovulation', 'luteal'] as const).map((phase) => (
           <View key={phase} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View

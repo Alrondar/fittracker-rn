@@ -23,6 +23,7 @@ export function perfSince(from: string, label?: string): void {
   if (!ENABLED) return;
   const start = marks.get(from);
   if (start == null) return;
+  // eslint-disable-next-line no-console -- dev-only перф-логгер (выключается ENABLED=false)
   console.log(`[PERF] ${label ?? from}: ${Math.round(now() - start)} ms`);
 }
 
@@ -31,18 +32,19 @@ export function perfSince(from: string, label?: string): void {
  * Если JS занят дольше порога — колбэк setInterval опаздывает, логируем.
  */
 export function useFreezeDetector(thresholdMs = 100): void {
-const FREEZE_IN_RELEASE = true; // ← false перед релизом
-useEffect(() => {
-  if (!__DEV__ && !FREEZE_IN_RELEASE) return;
+  const FREEZE_IN_RELEASE = true; // ← false перед релизом
+  useEffect(() => {
+    if (!__DEV__ && !FREEZE_IN_RELEASE) return;
     let lastTick = Date.now();
     const timer = setInterval(() => {
       const now = Date.now();
       const blocked = now - lastTick - 50;
       if (blocked > thresholdMs) {
+        // eslint-disable-next-line no-console -- dev-only детектор фризов
         console.log(`[FREEZE] JS-поток занят ~${Math.round(blocked + 50)} ms`);
       }
       lastTick = now;
     }, 50);
     return () => clearInterval(timer);
-  }, [thresholdMs]);
+  }, [thresholdMs, FREEZE_IN_RELEASE]);
 }

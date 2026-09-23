@@ -122,7 +122,7 @@ export const createEquipmentBadgeStyles = (colors: any) => ({
   },
 });
 
-export const createMuscleBadgeStyles = (colors: any) => ({
+export const createMuscleBadgeStyles = (_colors: any) => ({
   muscleBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,

@@ -8,9 +8,6 @@
 // Нигде в сервисе нет .in()-цепочек (источник 400 Bad Request) — только вложенные
 // embed-запросы по FK (паттерн, доказанный в runtime).
 // UI не ходит в supabase напрямую — только через этот сервис (CLAUDE.md §2).
-//
-// TEMP(tracing): console.log '[progress] ...' — временная трассировка для диагностики;
-// снять после подтверждения зелёного рантайма.
 import { supabase } from '../lib/supabase';
 import { epley } from '../utils/e1rm';
 import { computeStreaks } from '../utils/streak';
@@ -62,8 +59,6 @@ export interface ProgressData {
  * ошибка → блок деградирует в [], экран живёт; причина — в console.error (Metro).
  */
 export async function getProgressData(userId: string): Promise<ProgressData> {
-  console.log('[progress] fetch start'); // TEMP(tracing)
-
   const [stats, weeklyVolume, streakData] = await Promise.all([
     required('stats', profileService.getStats(userId)),
     required('weeklyVolume', getWeeklyVolume(userId, 8)),
@@ -77,8 +72,6 @@ export async function getProgressData(userId: string): Promise<ProgressData> {
     optional('strengthTrend', getStrengthTrend(userId, 8), []),
     optional('weightTrend', getWeightTrend(userId, 8), []),
   ]);
-
-  console.log('[progress] fetch done'); // TEMP(tracing)
 
   return {
     weeklyVolume,
@@ -98,11 +91,9 @@ const errDetail = (e: any) =>
 /** Core-блок: логирует ok/FAILED и пробрасывает ошибку с меткой источника. */
 async function required<T>(label: string, p: Promise<T>): Promise<T> {
   try {
-    const v = await p;
-    console.log(`[progress] ${label} ok`); // TEMP(tracing)
-    return v;
+    return await p;
   } catch (e: any) {
-    console.error(`[progress] ${label} FAILED:`, errDetail(e)); // TEMP(tracing)
+    console.error(`[progress] ${label} FAILED:`, errDetail(e));
     throw new Error(`progress:${label}: ${e?.message ?? e}`);
   }
 }
@@ -110,11 +101,9 @@ async function required<T>(label: string, p: Promise<T>): Promise<T> {
 /** Опциональный блок: деградирует в fallback, причина — в console.error. */
 async function optional<T>(label: string, p: Promise<T>, fallback: T): Promise<T> {
   try {
-    const v = await p;
-    console.log(`[progress] ${label} ok`); // TEMP(tracing)
-    return v;
+    return await p;
   } catch (e: any) {
-    console.error(`[progress] ${label} FAILED:`, errDetail(e)); // TEMP(tracing)
+    console.error(`[progress] ${label} FAILED:`, errDetail(e));
     return fallback;
   }
 }
@@ -130,7 +119,9 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
 
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
+    .select(
+      'created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps, is_warmup))'
+    )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null) // FIT-7: пропуски не считаем
@@ -190,11 +181,11 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
  */
 async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
   const { data: workouts, error } = await supabase
-  .from('workouts')
-  .select(
-  'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at, is_warmup))',
-  )
-  .eq('user_id', userId);
+    .from('workouts')
+    .select(
+      'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at, is_warmup))'
+    )
+    .eq('user_id', userId);
 
   if (error) throw error;
   if (!workouts || workouts.length === 0) return [];
@@ -220,27 +211,27 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
         const recordDate = workoutDate || log.completed_at || '';
 
         const existing = exerciseRecords[exerciseId];
-if (!existing) {
-  exerciseRecords[exerciseId] = {
-    exercise_id: exerciseId,
-    name: exerciseName,
-    maxWeight: weight,
-    reps,
-    e1rm: setE1rm,
-    recordDate,
-    workoutId: workout.id,
-  };
-} else {
-  if (weight > existing.maxWeight) {
-    existing.maxWeight = weight;
-    existing.reps = reps;
-  }
-  if (setE1rm > existing.e1rm) {
-    existing.e1rm = setE1rm;
-    existing.recordDate = recordDate;
-    existing.workoutId = workout.id;
-  }
-}
+        if (!existing) {
+          exerciseRecords[exerciseId] = {
+            exercise_id: exerciseId,
+            name: exerciseName,
+            maxWeight: weight,
+            reps,
+            e1rm: setE1rm,
+            recordDate,
+            workoutId: workout.id,
+          };
+        } else {
+          if (weight > existing.maxWeight) {
+            existing.maxWeight = weight;
+            existing.reps = reps;
+          }
+          if (setE1rm > existing.e1rm) {
+            existing.e1rm = setE1rm;
+            existing.recordDate = recordDate;
+            existing.workoutId = workout.id;
+          }
+        }
       });
     });
   });
@@ -262,7 +253,9 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
 
   const { data: workouts, error } = await supabase
     .from('workouts')
-    .select('created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, is_warmup))')
+    .select(
+      'created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, is_warmup))'
+    )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
     .is('skipped_at', null)
@@ -353,9 +346,11 @@ async function getStreakData(userId: string): Promise<{ current: number; best: n
   }
 
   // Effective date: finished_at ?? started_at ?? created_at
-  const dates = workouts.map((w: any) => {
-    return w.finished_at ?? w.started_at ?? w.created_at;
-  }).filter((d): d is string => !!d);
+  const dates = workouts
+    .map((w: any) => {
+      return w.finished_at ?? w.started_at ?? w.created_at;
+    })
+    .filter((d): d is string => !!d);
   if (dates.length === 0) return { current: 0, best: 0 };
 
   const streak = computeStreaks(dates);

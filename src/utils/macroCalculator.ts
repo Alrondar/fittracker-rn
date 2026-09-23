@@ -50,7 +50,11 @@ export function calculateMacros(input: MacroInput): MacroResult {
   // BMR (базовый метаболизм)
   let bmr: number;
   // P1.1: Если известен % жира, используем формулу Кэтча-МакАрдла (точнее для рекомпозиции)
-  if (input.bodyFatPercentage != null && input.bodyFatPercentage > 0 && input.bodyFatPercentage < 100) {
+  if (
+    input.bodyFatPercentage != null &&
+    input.bodyFatPercentage > 0 &&
+    input.bodyFatPercentage < 100
+  ) {
     const leanMass = w * (1 - input.bodyFatPercentage / 100);
     bmr = 370 + 21.6 * leanMass;
   } else {
@@ -80,12 +84,10 @@ export function calculateMacros(input: MacroInput): MacroResult {
 
   // Безопасные ограничения (вместо опасных фармакологических эвристик)
   // PRODUCT.md §14: AI/приложение не должно назначать фармакологию или поощрять опасные протоколы.
-  if (input.usePharma) {
-    // Даже на фармакологии белок не превышает физиологический потолок усвоения
-    targetProteins = Math.min(Math.round(w * 2.4), targetProteins);
-    // Жиры не опускаем ниже гормонального минимума
-    targetFats = Math.max(Math.round(w * 1.0), targetFats);
-  }
+  // Caps применяются всегда: белок не превышает физиологический потолок усвоения,
+  // жиры не опускаются ниже гормонального минимума — независимо от usePharma.
+  targetProteins = Math.min(targetProteins, Math.round(w * 2.4));
+  targetFats = Math.max(targetFats, Math.round(w * 1.0));
 
   // Углеводы — остаток калорий
   const proteinCalories = targetProteins * 4;

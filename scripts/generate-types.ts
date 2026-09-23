@@ -64,6 +64,7 @@ async function generateTypes() {
   output += `  }\n}\n`;
 
   fs.writeFileSync('src/types/database.types.ts', output, 'utf-8');
+  // eslint-disable-next-line no-console
   console.log('Types generated successfully!');
 
   await client.end();
@@ -71,24 +72,24 @@ async function generateTypes() {
 
 function mapPostgresType(pgType: string): string {
   const typeMap: Record<string, string> = {
-    'integer': 'number',
-    'bigint': 'number',
-    'smallint': 'number',
-    'real': 'number',
+    integer: 'number',
+    bigint: 'number',
+    smallint: 'number',
+    real: 'number',
     'double precision': 'number',
-    'numeric': 'number',
-    'boolean': 'boolean',
-    'text': 'string',
+    numeric: 'number',
+    boolean: 'boolean',
+    text: 'string',
     'character varying': 'string',
-    'varchar': 'string',
-    'char': 'string',
-    'date': 'string',
-    'timestamp': 'string',
+    varchar: 'string',
+    char: 'string',
+    date: 'string',
+    timestamp: 'string',
     'timestamp with time zone': 'string',
     'timestamp without time zone': 'string',
-    'json': 'any',
-    'jsonb': 'any',
-    'uuid': 'string',
+    json: 'any',
+    jsonb: 'any',
+    uuid: 'string',
   };
   return typeMap[pgType] || 'any';
 }

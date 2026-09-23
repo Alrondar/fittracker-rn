@@ -1,4 +1,4 @@
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { ViewStyle, TextStyle } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 
 // Стили для цветной обводки карточек упражнений

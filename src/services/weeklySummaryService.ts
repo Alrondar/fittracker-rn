@@ -435,7 +435,9 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
     muscleFatigue: {},
     muscleStrength: {},
     prs,
-    lastCompletedSets: Array.from(lastCompletedSetsMap.values()).map(({ date, ...rest }) => rest),
+    lastCompletedSets: Array.from(lastCompletedSetsMap.values()).map(
+      ({ date: _date, ...rest }) => rest
+    ),
   };
 }
 

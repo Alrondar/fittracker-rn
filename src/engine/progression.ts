@@ -286,7 +286,7 @@ function calculateTimeBased(
   if (targetRange && evalReps.length > 0 && evalReps.every((r) => r >= targetRange.max)) {
     return increaseResult(
       'TIME_ALL_MAX',
-      `Все подходы ≥ ${targetRange.max} сек → увеличиваем время`
+      `Все подходы ≥ ${targetRange.max} сек → усложняем вариант, время сбрасываем к минимуму`
     );
   }
 

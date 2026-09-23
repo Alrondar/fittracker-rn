@@ -70,7 +70,7 @@ Main components:
 - `src/components/workout/BodyMap.tsx` (внутренний SVG-рендер силуэтов, замена `react-native-body-highlighter`)
 - `src/constants/muscleSvgPaths.ts` (извлечённые SVG `path` данные из `react-native-body-highlighter`)
 - `src/constants/muscleMapSlugs.ts` (маппинг групп мышц `MUSCLE_GROUPS` на slug'и путей)
-- `src/utils/muscleLoad.ts` (чистая функция `calculateMuscleLoad`: primary=100%, secondary=50%, RPE учитывается в loadScore для раскраски)
+- `src/utils/muscleLoad.ts` (чистая функция `calculateMuscleLoad`: primary=100%, secondary=50%, loadScore = эффективные подходы × коэффициент — шкала интенсивности карты, без RPE)
 - `src/utils/colorScale.ts` (цвет шкалы интенсивности из `colors.primary` темы)
 Main hooks/services:
 - `historyService.getWorkoutDetail`

@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 
@@ -36,7 +36,9 @@ export function ProgressStats({
         </View>
         <View style={{ width: 1, backgroundColor: colors.border, marginVertical: SPACING.xs }} />
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={[typography.h3, { color: colors.textPrimary }]}>{formatVolume(totalVolume)}</Text>
+          <Text style={[typography.h3, { color: colors.textPrimary }]}>
+            {formatVolume(totalVolume)}
+          </Text>
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>кг объём</Text>
         </View>
         <View style={{ width: 1, backgroundColor: colors.border, marginVertical: SPACING.xs }} />

@@ -16,10 +16,10 @@ interface ProgressHeroProps {
 
 export function ProgressHero({
   totalWorkouts,
-  currentStreak,
+  currentStreak: _currentStreak,
   weeklyWorkoutDelta,
-  currentWeekVolume,
-  previousWeekVolume,
+  currentWeekVolume: _currentWeekVolume,
+  previousWeekVolume: _previousWeekVolume,
 }: ProgressHeroProps) {
   const { colors } = useTheme();
 
@@ -51,9 +51,7 @@ export function ProgressHero({
           <Text style={[typography.h4, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
             {title}
           </Text>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>
-            {subtitle}
-          </Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>{subtitle}</Text>
         </View>
       </View>
     </AppCard>

@@ -54,6 +54,39 @@ export const PHARMA_COLORS = {
 } as const;
 export type PharmaKey = keyof typeof PHARMA_COLORS;
 
+// ===== Направление тренда (мини-графики прогресса) =====
+export const TREND_COLORS = {
+  up: '#4CAF50',
+  down: '#F44336',
+} as const;
+
+// ===== Типы Toast =====
+export const TOAST_COLORS = {
+  success: '#10b981',
+  error: '#ef4444',
+  info: '#7c3aed',
+} as const;
+
+// ===== Палитра линий графиков (серии e1RM и т.п., до 3 рядов на график) =====
+export const CHART_LINE_COLORS = ['#6C5CE7', '#00B894', '#FDCB6E'] as const;
+
+// ===== Анатомическая карта: fallback-заливки, когда данных по мышце нет =====
+export const BODY_MAP_FALLBACK_COLORS = {
+  defaultFill: '#3f3f3f',
+  /** Градация по intensity: индекс 0 = intensity 1, индекс 1 = intensity 2. */
+  palette: ['#0984e3', '#74b9ff'],
+  selectedStroke: '#000000',
+} as const;
+
+/**
+ * Светлый цвет поверх НЕтемизируемых цветных фонов: статичный hero-градиент
+ * (GRADIENTS.hero) одинаков в обеих темах, поэтому текст/иконки на нём
+ * фиксированно светлые. colors.textInverse сюда НЕ подходит — это токен
+ * для текста на surface. Прецедент в проекте: TechniqueMediaSlider рисует
+ * лейбл на тёмном скриме тем же '#FFFFFF'.
+ */
+export const ON_STATIC_GRADIENT_COLOR = '#FFFFFF';
+
 // ===== Группы зон тела (легенда) =====
 export const BODY_ZONE_COLORS = {
   arms: '#2196F3', // синий (руки: плечо, локоть, запястье)

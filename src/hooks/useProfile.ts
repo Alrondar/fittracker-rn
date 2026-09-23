@@ -1,21 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { profileService, ProfileData, ProfileStats, NutritionTargets, DailyNutrition, PersonalRecord } from '../services/profileService';
+import {
+  profileService,
+  ProfileData,
+  ProfileStats,
+  NutritionTargets,
+  DailyNutrition,
+  PersonalRecord,
+} from '../services/profileService';
 import * as Haptics from 'expo-haptics';
 
 export function useProfile(userId: string | null) {
   const [userData, setUserData] = useState<ProfileData | null>(null);
-  const [stats, setStats] = useState<ProfileStats>({ totalWorkouts: 0, totalPrograms: 0, totalVolume: 0 });
-  const [targets, setTargets] = useState<NutritionTargets>({ calories: 0, proteins: 0, fats: 0, carbs: 0 });
-const [todayNutrition, setTodayNutrition] = useState<DailyNutrition>({ calories: 0, proteins: 0, fats: 0, carbs: 0, water_ml: 0 });
-const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
+  const [stats, setStats] = useState<ProfileStats>({
+    totalWorkouts: 0,
+    totalPrograms: 0,
+    totalVolume: 0,
+  });
+  const [targets, setTargets] = useState<NutritionTargets>({
+    calories: 0,
+    proteins: 0,
+    fats: 0,
+    carbs: 0,
+  });
+  const [todayNutrition, setTodayNutrition] = useState<DailyNutrition>({
+    calories: 0,
+    proteins: 0,
+    fats: 0,
+    carbs: 0,
+    water_ml: 0,
+  });
+  const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (userId) loadAllData();
-  }, [userId]);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     try {
@@ -37,9 +55,19 @@ const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
-  const saveNutrition = async (data: { calories: string; proteins: string; fats: string; carbs: string; water_ml: string }) => {
+  useEffect(() => {
+    if (userId) loadAllData();
+  }, [userId, loadAllData]);
+
+  const saveNutrition = async (data: {
+    calories: string;
+    proteins: string;
+    fats: string;
+    carbs: string;
+    water_ml: string;
+  }) => {
     if (!userId) return;
     try {
       await profileService.saveNutritionLog(userId, {

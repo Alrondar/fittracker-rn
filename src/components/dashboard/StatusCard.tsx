@@ -62,7 +62,7 @@ export function StatusCard() {
   const { result: forecast } = useWorkoutForecast(userId);
   const { userData } = useProfile(userId);
   const gender = userData?.gender;
-  const { currentPhase, events, settings } = useCycle(gender);
+  const { currentPhase, events } = useCycle(gender);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
@@ -110,16 +110,16 @@ export function StatusCard() {
   );
 
   const handleSaveCycleEvent = async (
-    eventType: 'menstruation_start' | 'menstruation_end' | 'ovulation_start' | 'ovulation_end',
-    date: string,
-    isStart: boolean
+    _eventType: 'menstruation_start' | 'menstruation_end' | 'ovulation_start' | 'ovulation_end',
+    _date: string,
+    _isStart: boolean
   ) => {
     if (!userId) return;
     // Здесь должна быть логика сохранения через cycleService
     // Для краткости оставляем заглушку — реальная реализация в ReadinessSheet
   };
 
-  const handleDeleteCycleEvent = async (eventId: string) => {
+  const handleDeleteCycleEvent = async (_eventId: string) => {
     if (!userId) return;
     // Здесь должна быть логика удаления через cycleService
   };

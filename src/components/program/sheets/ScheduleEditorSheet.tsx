@@ -26,7 +26,7 @@ const WEEKDAYS = [
 export function ScheduleEditorSheet({
   schedule,
   onSave,
-  onClose,
+  onClose: _onClose,
   colors,
   buttonStyles,
   badgeStyles,
@@ -53,15 +53,12 @@ export function ScheduleEditorSheet({
   // ✅ ФИКС: копия перед sort — раньше .sort() мутировал массив состояния in-place
   //    прямо в рендере (без setState), что давало непредсказуемое поведение.
   const orderedSelected = [...selectedDays].sort(
-    (a, b) =>
-      WEEKDAYS.findIndex((d) => d.value === a) - WEEKDAYS.findIndex((d) => d.value === b)
+    (a, b) => WEEKDAYS.findIndex((d) => d.value === a) - WEEKDAYS.findIndex((d) => d.value === b)
   );
 
   return (
     <>
-      <Text
-        style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
-      >
+      <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}>
         Выберите дни недели, в которые будут проходить тренировки
       </Text>
 
@@ -177,16 +174,13 @@ export function ScheduleEditorSheet({
         style={[
           buttonStyles.primary,
           {
-            backgroundColor:
-              selectedDays.length === 0 ? colors.textTertiary : colors.primary,
+            backgroundColor: selectedDays.length === 0 ? colors.textTertiary : colors.primary,
             opacity: selectedDays.length === 0 ? 0.5 : 1,
           },
         ]}
       >
         <Text style={buttonStyles.textPrimary}>
-          {selectedDays.length === 0
-            ? 'Выберите хотя бы один день'
-            : 'Сохранить расписание'}
+          {selectedDays.length === 0 ? 'Выберите хотя бы один день' : 'Сохранить расписание'}
         </Text>
       </TouchableOpacity>
     </>

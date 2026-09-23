@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
-  useAnimatedReaction,
 } from 'react-native-reanimated';
 import { Flame, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -104,10 +103,7 @@ export function WorkoutTabs({
           zIndex: 1,
         }}
       >
-        <Flame
-          size={15}
-          color={activeTab === 'warmup' ? colors.textInverse : colors.warning}
-        />
+        <Flame size={15} color={activeTab === 'warmup' ? colors.textInverse : colors.warning} />
         <Text style={tabLabel(activeTab === 'warmup')}>Разминка</Text>
         {warmupCount > 0 && (
           <View
@@ -128,8 +124,8 @@ export function WorkoutTabs({
                     activeTab === 'warmup'
                       ? colors.textInverse
                       : warmupCompleted
-                      ? colors.success
-                      : colors.warning,
+                        ? colors.success
+                        : colors.warning,
                 },
               ]}
             >

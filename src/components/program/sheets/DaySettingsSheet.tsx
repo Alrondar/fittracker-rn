@@ -17,16 +17,14 @@ export function DaySettingsSheet({
   colors,
   buttonStyles,
   onSave,
-  onClose,
+  onClose: _onClose,
 }: DaySettingsSheetProps) {
   const [dayName, setDayName] = useState(day?.name || '');
 
   return (
     <>
       <View style={{ marginBottom: SPACING.lg }}>
-        <Text
-          style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}
-        >
+        <Text style={[typography.label, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
           Название дня
         </Text>
         <TextInput

@@ -7,7 +7,7 @@
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BORDER_RADIUS, SPACING } from '../../constants/theme';
+import { BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 export type MuscleLoadMode = 'total' | 'direct';

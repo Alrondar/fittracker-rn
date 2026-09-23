@@ -14,7 +14,6 @@ import { X, Search, Check, ArrowUpDown, Zap, Flame, Dumbbell } from 'lucide-reac
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
-import { useTheme } from '../../../hooks/useTheme';
 import { useExercises } from '../../../hooks/useExercises';
 import { ExerciseListItem, ExerciseSortBy } from '../../../services/exercisesService';
 import { MUSCLE_GROUPS } from '../../../constants/muscleGroups';
@@ -122,7 +121,7 @@ export function ExercisePickerSheet({
   onSelectExercise,
   onClose,
   colors,
-  badgeStyles,
+  badgeStyles: _badgeStyles,
 }: ExercisePickerSheetProps) {
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const {
@@ -361,7 +360,9 @@ export function ExercisePickerSheet({
           }}
         >
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[typography.caption, { color: colors.textSecondary }]}>Загружаем ещё...</Text>
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>
+            Загружаем ещё...
+          </Text>
         </View>
       );
     }
@@ -435,7 +436,9 @@ export function ExercisePickerSheet({
                 marginBottom: SPACING.md,
               }}
             >
-              <Text style={[typography.h5, { color: colors.textPrimary }]}>Добавить упражнение</Text>
+              <Text style={[typography.h5, { color: colors.textPrimary }]}>
+                Добавить упражнение
+              </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
                 <TouchableOpacity
                   onPress={() => setShowSortSheet(true)}
@@ -443,7 +446,8 @@ export function ExercisePickerSheet({
                     width: 36,
                     height: 36,
                     borderRadius: 18,
-                    backgroundColor: sortBy !== 'name-asc' ? colors.primaryLight : colors.surfaceSecondary,
+                    backgroundColor:
+                      sortBy !== 'name-asc' ? colors.primaryLight : colors.surfaceSecondary,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
@@ -512,12 +516,7 @@ export function ExercisePickerSheet({
             </View>
           ) : isError && exercises.length === 0 ? (
             <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
-              <Text
-                style={[
-                  typography.body,
-                  { color: colors.textSecondary, textAlign: 'center' },
-                ]}
-              >
+              <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}>
                 Не удалось загрузить упражнения
               </Text>
               <TouchableOpacity onPress={() => refetch()} style={{ marginTop: SPACING.md }}>
@@ -641,12 +640,14 @@ export function ExercisePickerSheet({
                 >
                   {option.label}
                 </Text>
-                {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
+                {sortBy === option.key && (
+                  <Check size={20} color={colors.primary} strokeWidth={2} />
+                )}
               </TouchableOpacity>
             ))}
           </View>
         </>
       )}
-</KeyboardAvoidingView>
+    </KeyboardAvoidingView>
   );
 }

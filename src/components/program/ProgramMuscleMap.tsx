@@ -14,11 +14,10 @@ import { AppCard } from '../ui/AppCard';
 import { SectionHeader } from '../SectionHeader';
 import { MuscleLoadMap } from '../workout/MuscleLoadMap';
 import { MuscleLoadModeToggle } from '../ui/MuscleLoadModeToggle';
-import { calculateProgramMuscleLoad, type ProgramMuscleEntry } from '../../utils/programMuscleLoad';
+import { calculateProgramMuscleLoad } from '../../utils/programMuscleLoad';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type { MuscleLoad, MuscleLoadMode } from '../../utils/muscleLoad';
-import { pluralizeSets } from '../../utils/muscleLoad';
 
 type PhaseLike = {
   id: string;

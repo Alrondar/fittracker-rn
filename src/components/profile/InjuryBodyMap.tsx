@@ -5,7 +5,7 @@
 // Тап по мышце переключает фильтр соответствующей зоны.
 
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { BodyMap } from '../workout/BodyMap';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -54,7 +54,6 @@ export function InjuryBodyMap({
   // Определяем цвет для каждого slug на основе максимальной severity травмы в этой зоне
   const muscleColors = useMemo(() => {
     const colorMap = new Map<Slug, string>();
-    const severityOrder = { low: 1, medium: 2, high: 3 };
 
     for (const injury of injuries) {
       if (injury.status === 'recovered') continue;

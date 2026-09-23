@@ -9,10 +9,7 @@ import {
   Plus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import {
-  ScaleDecorator,
-  NestableDraggableFlatList,
-} from 'react-native-draggable-flatlist';
+import { ScaleDecorator, NestableDraggableFlatList } from 'react-native-draggable-flatlist';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
 import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
@@ -73,7 +70,12 @@ function ExerciseMuscles({ muscles, colors }: { muscles: string[]; colors: any }
             borderRadius: BORDER_RADIUS.full,
           }}
         >
-          <Text style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700', fontSize: 10 }]}>
+          <Text
+            style={[
+              typography.captionSmall,
+              { color: colors.textSecondary, fontWeight: '700', fontSize: 10 },
+            ]}
+          >
             +{extra}
           </Text>
         </View>
@@ -100,10 +102,10 @@ interface DayCardProps {
 
 export function DayCard({
   day,
-  dayIndex,
+  dayIndex: _dayIndex,
   colors,
   cardStyles,
-  badgeStyles,
+  badgeStyles: _badgeStyles,
   editMode,
   isActive,
   onDrag,
@@ -237,32 +239,30 @@ export function DayCard({
       {/* Тело дня (список упражнений) */}
       {expanded && (
         <View style={cardStyles.dayCardExercisesContainer}>
-            {editMode && onExerciseDragEnd ? (
-              <NestableDraggableFlatList
-                data={exercises}
-                onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
-                keyExtractor={(item: ProgramExercise) => item.id}
-                renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
-                  const exIndex = exercises.indexOf(exercise as ProgramExercise);
-                  return (
-                    <ScaleDecorator>
-                      {renderExerciseItem({
-                        exercise: exercise as ProgramExercise,
-                        exIndex,
-                        drag,
-                        isDragging: isExerciseActive,
-                      })}
-                    </ScaleDecorator>
-                  );
-                }}
-              />
-            ) : (
-              exercises.map((exercise: ProgramExercise, exIndex: number) => (
-                <View key={exercise.id}>
-                  {renderExerciseItem({ exercise, exIndex })}
-                </View>
-              ))
-            )}
+          {editMode && onExerciseDragEnd ? (
+            <NestableDraggableFlatList
+              data={exercises}
+              onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
+              keyExtractor={(item: ProgramExercise) => item.id}
+              renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
+                const exIndex = exercises.indexOf(exercise as ProgramExercise);
+                return (
+                  <ScaleDecorator>
+                    {renderExerciseItem({
+                      exercise: exercise as ProgramExercise,
+                      exIndex,
+                      drag,
+                      isDragging: isExerciseActive,
+                    })}
+                  </ScaleDecorator>
+                );
+              }}
+            />
+          ) : (
+            exercises.map((exercise: ProgramExercise, exIndex: number) => (
+              <View key={exercise.id}>{renderExerciseItem({ exercise, exIndex })}</View>
+            ))
+          )}
           {editMode && (
             <TouchableOpacity onPress={onAddExercise} style={cardStyles.dayCardAddButton}>
               <Plus size={16} color={colors.primary} strokeWidth={2} />

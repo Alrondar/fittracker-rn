@@ -1,7 +1,15 @@
 // src/components/dashboard/ReadinessSheet.tsx
 // FEAT-1.8: чек-ин состояния перед тренировкой (раз в день).
 import React, { useState, useCallback } from 'react';
-import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { Droplet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
@@ -50,7 +58,11 @@ function ScaleRow({
               <Text
                 style={[
                   typography.captionSmall,
-                  { color: active ? colors.primary : colors.textSecondary, fontWeight: '700', textAlign: 'center' },
+                  {
+                    color: active ? colors.primary : colors.textSecondary,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  },
                 ]}
               >
                 {v}
@@ -95,9 +107,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
   const [stress, setStress] = useState(3);
   const [saving, setSaving] = useState(false);
   // готовность: качество сна + инверсии усталости/боли/стресса
-  const readiness = Math.round(
-    (sleepQuality + (6 - fatigue) + (6 - soreness) + (6 - stress)) / 4,
-  );
+  const readiness = Math.round((sleepQuality + (6 - fatigue) + (6 - soreness) + (6 - stress)) / 4);
   const readinessColor =
     readiness <= 2 ? colors.error : readiness === 3 ? colors.warning : colors.success;
 
@@ -125,7 +135,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
       if (readiness <= 2) {
         Alert.alert(
           'Готовность низкая',
-          'Сегодня лучше снизить рабочие веса ~на 10% или выбрать лёгкие варианты упражнений',
+          'Сегодня лучше снизить рабочие веса ~на 10% или выбрать лёгкие варианты упражнений'
         );
       }
       onDone(true);
@@ -134,16 +144,20 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
     } finally {
       setSaving(false);
     }
-  }, [userId, sleepHours, sleepQuality, fatigue, soreness, stress, readiness, onDone]);
+  }, [userId, sleepHours, sleepQuality, fatigue, soreness, stress, readiness, onDone, queryClient]);
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={() => onDone(true)}>
-      <SheetShell title="Как ты сегодня?" onClose={() => onDone(true)}>
-        <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
+      <SheetShell isModal title="Как ты сегодня?" onClose={() => onDone(true)}>
+        <Text
+          style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}
+        >
           30 секунд — и тренировка адаптируется под твоё состояние
         </Text>
 
-        <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+        <Text
+          style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.sm }]}
+        >
           Сон, часов
         </Text>
         <TextInput
@@ -162,24 +176,55 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
           placeholderTextColor={colors.textTertiary}
         />
         {parseFloat(sleepHours.replace(',', '.')) < 6 && (
-          <Text style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}>
+          <Text
+            style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}
+          >
             ⚠ Менее 6ч сна — система не предложит повышение веса
           </Text>
         )}
 
-        <ScaleRow label="Качество сна (5 — отлично)" value={sleepQuality} onChange={setSleepQuality} colors={colors} />
-        <ScaleRow label="Усталость (1 — свежий)" value={fatigue} onChange={setFatigue} colors={colors} />
-        <ScaleRow label="Боль в мышцах (1 — нет)" value={soreness} onChange={setSoreness} colors={colors} />
-        
-        <ScaleRow label="Стресс (1 — спокойно)" value={stress} onChange={setStress} colors={colors} />
+        <ScaleRow
+          label="Качество сна (5 — отлично)"
+          value={sleepQuality}
+          onChange={setSleepQuality}
+          colors={colors}
+        />
+        <ScaleRow
+          label="Усталость (1 — свежий)"
+          value={fatigue}
+          onChange={setFatigue}
+          colors={colors}
+        />
+        <ScaleRow
+          label="Боль в мышцах (1 — нет)"
+          value={soreness}
+          onChange={setSoreness}
+          colors={colors}
+        />
+
+        <ScaleRow
+          label="Стресс (1 — спокойно)"
+          value={stress}
+          onChange={setStress}
+          colors={colors}
+        />
         {stress >= 4 && (
-          <Text style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}>
+          <Text
+            style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}
+          >
             ⚠ Высокий стресс — закрепляем вес для безопасности
           </Text>
         )}
 
         {gender === 'female' && (
-          <View style={{ marginTop: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View
+            style={{
+              marginTop: SPACING.md,
+              paddingTop: SPACING.md,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}
+          >
             <TouchableOpacity
               onPress={() => setCycleCheckInOpen(true)}
               style={{
@@ -194,9 +239,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
               }}
             >
               <Droplet size={20} color={colors.primary} style={{ marginRight: SPACING.xs }} />
-<Text style={[typography.labelBold, { color: colors.primary }]}>
-  Отметить цикл
-</Text>
+              <Text style={[typography.labelBold, { color: colors.primary }]}>Отметить цикл</Text>
             </TouchableOpacity>
           </View>
         )}

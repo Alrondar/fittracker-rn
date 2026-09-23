@@ -290,7 +290,7 @@ export function buildWeeklyInsights(
     const ratio = current.totalVolume / previous.totalVolume;
     if (ratio >= 0.95 && ratio <= 1.05) {
       let subtitle =
-        'Стабильные результаты 3+ недели. Рассмотрите неделю разгрузки или смену схемы';
+        'Объём стабилен 2 недели подряд (±5%), PR нет. Рассмотрите неделю разгрузки или смену схемы';
       let severity: InsightSeverity = 'caution';
 
       // Усиленный сигнал: рост RPE при стабильном объёме (ROADMAP C8)
@@ -646,10 +646,10 @@ export function calculateDeloadContext(
     );
   }
 
-  // 2. Прогресс замедлился 3+ недели (зависит от CI-3).
+  // 2. Прогресс замедлился (объём стабилен 2 недели подряд — см. PLATEAU_DETECTED).
   if (insights.some((i) => i.code === 'PLATEAU_DETECTED')) {
     signals.plateau = true;
-    reasons.push('Прогресс замедлился 3+ недели');
+    reasons.push('Прогресс замедлился: объём стабилен 2 недели подряд');
   }
 
   // 3. Readiness устойчиво снизился (тренд ≤ −0.5 и текущее значение ≤ 3.5,
@@ -691,11 +691,9 @@ export function calculateDeloadContext(
   let plan: DeloadPlanItem[] | undefined;
   if (recommended && current.lastCompletedSets.length > 0) {
     plan = [];
-    const compoundMuscles = ['chest', 'back', 'legs', 'shoulders'];
 
     for (const ex of current.lastCompletedSets) {
-      // Фильтр только по compound-упражнениям (упрощённо: если в названии есть ключевые слова или это основные группы)
-      // Для точности проверяем, что это не изоляция (упрощённая эвристика по названию)
+      // Фильтр только по compound-упражнениям (упрощённая эвристика по названию)
       const nameLower = ex.exerciseName.toLowerCase();
       const isCompound =
         nameLower.includes('жим') ||
@@ -711,17 +709,10 @@ export function calculateDeloadContext(
 
       if (!isCompound) continue;
 
-      // Расчёт текущего 1RM по Epley
-      const current1RM = ex.lastWeight * (1 + ex.lastReps / 30);
-      // Целевой 1RM = −30%
-      const target1RM = current1RM * 0.7;
       // Целевые повторения = середина диапазона или дефолт 6
       const targetReps = Math.round((ex.repsRange[0] + ex.repsRange[1]) / 2) || 6;
 
-      // Обратный расчёт веса с snap-to-grid (2.5 кг)
-      const newWeight = Math.max(ex.lastWeight * 0.7, 2.5); // Минимум 2.5 кг
-      // Более точный расчёт через weightForTarget1RM, но для простоты и надёжности используем прямой % от веса,
-      // округлённый до 2.5 кг, так как deload обычно именно процентный.
+      // Прямой процент от веса, округлённый до 2.5 кг (snap-to-grid) — deload обычно именно процентный.
       const roundedNewWeight = Math.round((ex.lastWeight * 0.7) / 2.5) * 2.5;
 
       plan.push({

@@ -82,8 +82,8 @@ export default function WorkoutsScreen() {
   const router = useRouter();
   const { data, isPending, isFetching, refetch, skip } = useWorkouts(userId);
   const activeProgram = data?.activeProgram ?? null;
-  const sections = data?.sections ?? [];
-  const progress = data?.progress ?? { completed: 0, total: 0 };
+  const sections = useMemo(() => data?.sections ?? [], [data]);
+  const progress = useMemo(() => data?.progress ?? { completed: 0, total: 0 }, [data]);
   const loading = isPending;
   const refreshing = isFetching && !isPending;
 
@@ -452,7 +452,7 @@ export default function WorkoutsScreen() {
         </TouchableOpacity>
       );
     },
-    [activeProgram, colors, navigateToWorkout]
+    [activeProgram, colors, navigateToWorkout, forecast]
   );
 
   const renderEmpty = () => {

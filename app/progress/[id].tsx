@@ -14,11 +14,7 @@ import { commonStyles } from '../../src/styles/common';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { getWorkoutDetail } from '../../src/services/historyService';
 import { profileService } from '../../src/services/profileService';
-import type {
-  WorkoutDetail,
-  WorkoutDetailExercise,
-  WorkoutDetailLog,
-} from '../../src/services/historyService';
+import type { WorkoutDetailExercise, WorkoutDetailLog } from '../../src/services/historyService';
 import { useQuery } from '@tanstack/react-query';
 import {
   calculateMuscleLoad,
@@ -116,7 +112,7 @@ export default function WorkoutReportScreen() {
       },
       muscleLoad,
     };
-  }, [data]);
+  }, [data, loadMode]);
 
   // Фильтрация упражнений по выбранной мышце (тап по карте/легенде)
   const visibleExercises = useMemo(() => {

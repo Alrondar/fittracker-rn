@@ -12,10 +12,7 @@ import {
   GripVertical,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import {
-  ScaleDecorator,
-  NestableDraggableFlatList,
-} from 'react-native-draggable-flatlist';
+import { ScaleDecorator, NestableDraggableFlatList } from 'react-native-draggable-flatlist';
 import { DayCard } from './DayCard';
 import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
 import { getPhaseMeta, getPhaseColor } from '../../constants/phaseTypes';
@@ -56,8 +53,8 @@ interface PhaseCardProps {
 
 export function PhaseCard({
   phase,
-  phaseIndex,
-  phaseCount,
+  phaseIndex: _phaseIndex,
+  phaseCount: _phaseCount,
   days,
   allDays,
   editMode,
@@ -158,7 +155,9 @@ export function PhaseCard({
             <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={1}>
               {phase.name}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 2 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: 2 }}
+            >
               <Text style={[typography.captionSmall, { color: phaseColor, fontWeight: '700' }]}>
                 {meta.label}
               </Text>
@@ -178,7 +177,9 @@ export function PhaseCard({
         </TouchableOpacity>
 
         {editMode && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: SPACING.sm }}>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: SPACING.sm }}
+          >
             {onDrag && (
               <TouchableOpacity
                 onLongPress={onDrag}
@@ -214,7 +215,11 @@ export function PhaseCard({
         <View style={{ marginTop: SPACING.sm }}>
           {/* Селектор недель */}
           {weeksCount > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.sm }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: SPACING.sm }}
+            >
               <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
                 {Array.from({ length: weeksCount }, (_, i) => i + 1).map((w) => {
                   const wOverridden = w === 1 || days.some((d) => (d.week_number ?? 1) === w);
@@ -276,7 +281,9 @@ export function PhaseCard({
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 >
                   <Copy size={14} color={colors.primary} strokeWidth={2} />
-                  <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+                  <Text
+                    style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}
+                  >
                     Переопределить
                   </Text>
                 </TouchableOpacity>

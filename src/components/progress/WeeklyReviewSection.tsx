@@ -22,7 +22,7 @@ import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
 import { PillToggle } from '../ui/PillToggle';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
-import type { WeeklyInsight, InsightSeverity } from '../../engine/weeklySummary';
+import type { InsightSeverity } from '../../engine/weeklySummary';
 
 interface WeeklyReviewSectionProps {
   userId: string | null;
@@ -55,7 +55,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
     setIsExpanded(!isExpanded);
   };
 
-  const { data, isPending, isError, error, refetch } = useWeeklySummary(userId, 0);
+  const { data, isPending, isError, refetch } = useWeeklySummary(userId, 0);
 
   // CI-6: количество сработавших сигналов для L1-карточки.
   const deloadSignalCount = useMemo(() => {

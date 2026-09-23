@@ -14,14 +14,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore } from '../../store/useStore';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { CHART_LINE_COLORS } from '../../constants/semanticColors';
 import { typography } from '../../styles/typography';
 import { StrengthSeries } from '../../services/progressService';
 import { profileService } from '../../services/profileService';
 import { TrendingUp } from 'lucide-react-native';
 import { useStrengthStandards } from '../../hooks/useStrengthStandards';
 import { StrengthLevelBadge } from './StrengthLevelBadge';
-
-const LINE_COLORS = ['#6C5CE7', '#00B894', '#FDCB6E'];
 
 function formatShort(dateStr: string): string {
   const [, m, d] = dateStr.split('-').map(Number);
@@ -163,7 +162,7 @@ function StrengthSeriesRow({
             width: 10,
             height: 10,
             borderRadius: 5,
-            backgroundColor: LINE_COLORS[idx % LINE_COLORS.length],
+            backgroundColor: CHART_LINE_COLORS[idx % CHART_LINE_COLORS.length],
             marginRight: SPACING.xs,
           }}
         />
@@ -181,7 +180,7 @@ function StrengthSeriesRow({
         points={series.points.map((p) => p.e1rm)}
         labels={series.points.map((p) => formatShort(p.weekStart))}
         weekStarts={series.points.map((p) => p.weekStart)}
-        color={LINE_COLORS[idx % LINE_COLORS.length]}
+        color={CHART_LINE_COLORS[idx % CHART_LINE_COLORS.length]}
         width={chartWidth}
       />
     </View>

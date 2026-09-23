@@ -26,7 +26,7 @@ import { importProgramByCode } from '../../src/services/programSharingService';
 import { getUserProgramsStatus, activateProgram } from '../../src/services/programsService';
 import { FadeIn } from '../../src/components/FadeIn';
 import { Toast } from '../../src/components/Toast';
-import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { SPACING } from '../../src/constants/theme';
 import {
   Search,
   Plus,
@@ -73,7 +73,6 @@ export default function ProgramsScreen() {
     programs,
     loading,
     refreshing,
-    hasMore,
     loadingMore,
     searchQuery,
     setSearchQuery,

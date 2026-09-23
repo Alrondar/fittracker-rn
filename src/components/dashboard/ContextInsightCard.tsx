@@ -25,7 +25,6 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
   }
 
   const isPositive = insight?.severity === 'positive';
-  const isWarning = insight?.severity === 'warning' || readinessWarning;
 
   const icon = isPositive ? (
     <TrendingUp size={20} color={colors.success} strokeWidth={2} />
@@ -33,13 +32,11 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
     <AlertTriangle size={20} color={colors.warning} strokeWidth={2} />
   );
 
-  const title = readinessWarning
-    ? 'Низкая готовность сегодня'
-    : insight?.title ?? 'Инсайт';
+  const title = readinessWarning ? 'Низкая готовность сегодня' : (insight?.title ?? 'Инсайт');
 
   const subtitle = readinessWarning
     ? 'Рекомендуем снизить нагрузку или сделать разминку'
-    : insight?.subtitle ?? '';
+    : (insight?.subtitle ?? '');
 
   return (
     <TouchableOpacity
@@ -64,7 +61,10 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
               {title}
             </Text>
             {subtitle !== '' && (
-              <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={2}>
+              <Text
+                style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}
+                numberOfLines={2}
+              >
                 {subtitle}
               </Text>
             )}

@@ -3,8 +3,6 @@ import { useColorScheme } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  lightTheme,
-  darkTheme,
   themes,
   themeGroups,
   Theme,
@@ -81,8 +79,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
 
   const getTheme = (): Theme => {
-    const isDarkMode = themeMode === 'dark' ||
-      (themeMode === 'system' && systemColorScheme === 'dark');
+    const isDarkMode =
+      themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark');
     const suffix = isDarkMode ? '-dark' : '-light';
     const themeKey = `${themeAccent}${suffix}` as ThemeKey;
     return themes[themeKey] || themes['purple-light'];

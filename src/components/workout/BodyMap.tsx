@@ -19,6 +19,7 @@ import {
   FEMALE_BACK_OUTLINE,
 } from '../../constants/muscleOutlines';
 import type { BodyPart, ExtendedBodyPart } from '../../types/muscleMap';
+import { BODY_MAP_FALLBACK_COLORS } from '../../constants/semanticColors';
 
 export type BodyMapProps = {
   data: readonly ExtendedBodyPart[];
@@ -43,13 +44,13 @@ export const BodyMap = memo<BodyMapProps>(
     side = 'front',
     gender = 'male',
     scale = 1,
-    defaultFill = '#3f3f3f',
+    defaultFill = BODY_MAP_FALLBACK_COLORS.defaultFill,
     border = 'none',
     onBodyPartPress,
-    colors = ['#0984e3', '#74b9ff'],
+    colors = BODY_MAP_FALLBACK_COLORS.palette,
     selectedSlug,
     selectedSlugs,
-    selectedStrokeColor = '#000000',
+    selectedStrokeColor = BODY_MAP_FALLBACK_COLORS.selectedStroke,
   }) => {
     const isMale = gender === 'male';
     const isFront = side === 'front';

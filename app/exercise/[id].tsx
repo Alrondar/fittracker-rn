@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, DimensionValue } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,8 +44,6 @@ import { EquipmentIcon } from '../../src/components/EquipmentIcon';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
 
-type SectionKey = 'benefits' | 'risks' | 'injuries' | 'settings';
-
 // ===== Скелетон загрузки =====
 function DetailSkeleton() {
   const { colors } = useTheme();
@@ -58,7 +56,7 @@ function DetailSkeleton() {
       true
     );
     return () => cancelAnimation(pulse);
-  }, []);
+  }, [pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
   const block = (height: number, width: DimensionValue = '100%') => ({
@@ -69,7 +67,10 @@ function DetailSkeleton() {
   });
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <View style={{ padding: SPACING.lg, gap: SPACING.md }}>
         <Animated.View style={[block(220), pulseStyle]} />
         <Animated.View style={[block(30, '72%'), pulseStyle]} />
@@ -85,7 +86,10 @@ function DetailSkeleton() {
 function ErrorState({ onRetry, message }: { onRetry: () => void; message?: string | null }) {
   const { colors } = useTheme();
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <View style={commonStyles.center}>
         <AlertTriangle size={64} color={colors.warning} strokeWidth={1.5} />
         <Text style={[typography.h4, { color: colors.textPrimary, marginTop: SPACING.md }]}>
@@ -127,7 +131,10 @@ function ErrorState({ onRetry, message }: { onRetry: () => void; message?: strin
 function NotFoundState({ onBack }: { onBack: () => void }) {
   const { colors } = useTheme();
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <View style={commonStyles.center}>
         <Dumbbell size={64} color={colors.textTertiary} strokeWidth={1.5} />
         <Text style={[typography.h4, { color: colors.textPrimary, marginTop: SPACING.md }]}>
@@ -168,25 +175,34 @@ export default function ExerciseDetailScreen() {
   if (isError) return <ErrorState onRetry={() => refetch()} message={errorMessage} />;
   if (!exercise) return <NotFoundState onBack={() => router.back()} />;
 
-const categoryMeta = exercise.category
-  ? EXERCISE_CATEGORIES.find(c => c.value === exercise.category)
-  : undefined;
+  const categoryMeta = exercise.category
+    ? EXERCISE_CATEGORIES.find((c) => c.value === exercise.category)
+    : undefined;
 
-const injuries = exercise.injuries ?? [];
-const equipment = exercise.equipment ?? [];
-const primaryMuscles = exercise.primary_muscles ?? [];
-const secondaryMuscles = exercise.secondary_muscles ?? [];
+  const injuries = exercise.injuries ?? [];
+  const equipment = exercise.equipment ?? [];
+  const primaryMuscles = exercise.primary_muscles ?? [];
+  const secondaryMuscles = exercise.secondary_muscles ?? [];
   const CategoryIcon = categoryMeta?.icon;
 
   // Акцент экрана — цвет целевой группы мышц
-  const accentColor = exercise.primary_muscles.length > 0
-    ? getMuscleColor(exercise.primary_muscles[0])
-    : colors.primary;
+  const accentColor =
+    exercise.primary_muscles.length > 0
+      ? getMuscleColor(exercise.primary_muscles[0])
+      : colors.primary;
 
   return (
-    <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[commonStyles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       {/* Шапка */}
-      <View style={[commonStyles.navHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          commonStyles.navHeader,
+          { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
         </TouchableOpacity>
@@ -196,7 +212,10 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero: слайдер техники (0.jpg ↔ 1.jpg, автоплей) */}
         {exercise.media_url ? (
           <FadeIn>
@@ -206,12 +225,12 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
           </FadeIn>
         ) : null}
 
-        <View style={{ padding: SPACING.lg, paddingTop: exercise.media_url ? SPACING.md : SPACING.lg }}>
+        <View
+          style={{ padding: SPACING.lg, paddingTop: exercise.media_url ? SPACING.md : SPACING.lg }}
+        >
           {/* Название */}
           <FadeIn delay={60}>
-            <Text style={[typography.h2, { color: colors.textPrimary }]}>
-              {exercise.name}
-            </Text>
+            <Text style={[typography.h2, { color: colors.textPrimary }]}>{exercise.name}</Text>
           </FadeIn>
 
           {/* Категория + оборудование */}
@@ -232,37 +251,41 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
                   }}
                 >
                   <CategoryIcon size={13} color={colors.primary} strokeWidth={2} />
-                  <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+                  <Text
+                    style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}
+                  >
                     {categoryMeta.label}
                   </Text>
                 </View>
               ) : null}
               {exercise.can_be_activation && (
-  <View
-    style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      backgroundColor: colors.warning + '15',
-      borderWidth: 1,
-      borderColor: colors.warning + '40',
-      paddingHorizontal: SPACING.sm,
-      paddingVertical: 4,
-      borderRadius: BORDER_RADIUS.full,
-    }}
-  >
-    <Zap size={13} color={colors.warning} strokeWidth={2} />
-    <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
-      Активация
-    </Text>
-  </View>
-)}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    backgroundColor: colors.warning + '15',
+                    borderWidth: 1,
+                    borderColor: colors.warning + '40',
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 4,
+                    borderRadius: BORDER_RADIUS.full,
+                  }}
+                >
+                  <Zap size={13} color={colors.warning} strokeWidth={2} />
+                  <Text
+                    style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}
+                  >
+                    Активация
+                  </Text>
+                </View>
+              )}
               <EquipmentBubbles equipment={equipment} primaryMuscles={primaryMuscles} />
             </View>
           </FadeIn>
 
           {/* Целевые и вспомогательные мышцы (акцент — цвет целевой группы) */}
-          {(primaryMuscles.length > 0 || secondaryMuscles.length > 0) ? (
+          {primaryMuscles.length > 0 || secondaryMuscles.length > 0 ? (
             <FadeIn delay={180}>
               <View
                 style={{
@@ -278,7 +301,13 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
               >
                 {primaryMuscles.length > 0 && (
                   <>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginBottom: SPACING.sm,
+                      }}
+                    >
                       <Target size={16} color={accentColor} strokeWidth={2} />
                       <Text
                         style={[
@@ -324,7 +353,7 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
                         Вспомогательные
                       </Text>
                     </View>
-                   <MuscleBubbles secondaryMuscles={secondaryMuscles} />
+                    <MuscleBubbles secondaryMuscles={secondaryMuscles} />
                   </>
                 )}
               </View>
@@ -357,7 +386,9 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
                   marginTop: SPACING.lg,
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}
+                >
                   <BookOpen size={16} color={colors.primary} strokeWidth={2} />
                   <Text
                     style={[
@@ -385,11 +416,11 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
           <FadeIn delay={360}>
             <View style={{ marginTop: SPACING.lg }}>
               {exercise.benefits ? (
-<ExerciseInfoAccordion
-  icon={<Sparkles size={14} color={colors.success} />}
-  title="Польза"
-  titleColor={colors.success}
->
+                <ExerciseInfoAccordion
+                  icon={<Sparkles size={14} color={colors.success} />}
+                  title="Польза"
+                  titleColor={colors.success}
+                >
                   <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22 }]}>
                     {exercise.benefits}
                   </Text>
@@ -408,16 +439,26 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
                 </ExerciseInfoAccordion>
               ) : null}
 
-{injuries.length > 0 ? (
-  <ExerciseInfoAccordion
-    icon={<ShieldAlert size={14} color={colors.error} />}
-    title="Противопоказания"
-    titleColor={colors.error}
-  >
-    {injuries.map((injury, idx) => (
-                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
-                      <Text style={[typography.body, { color: colors.error, marginRight: 6 }]}>•</Text>
-                      <Text style={[typography.body, { color: colors.textSecondary, lineHeight: 22, flex: 1 }]}>
+              {injuries.length > 0 ? (
+                <ExerciseInfoAccordion
+                  icon={<ShieldAlert size={14} color={colors.error} />}
+                  title="Противопоказания"
+                  titleColor={colors.error}
+                >
+                  {injuries.map((injury, idx) => (
+                    <View
+                      key={idx}
+                      style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}
+                    >
+                      <Text style={[typography.body, { color: colors.error, marginRight: 6 }]}>
+                        •
+                      </Text>
+                      <Text
+                        style={[
+                          typography.body,
+                          { color: colors.textSecondary, lineHeight: 22, flex: 1 },
+                        ]}
+                      >
                         {injury}
                       </Text>
                     </View>
@@ -443,13 +484,18 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
           {alternatives.length > 0 && (
             <FadeIn delay={420}>
               <View style={{ marginTop: SPACING.xl }}>
-<SectionHeader title="Альтернативные упражнения" count={alternatives.length} style={{ paddingHorizontal: 0, paddingTop: 0 }} />
-{alternatives.map(alt => {
-  const altPrimaryMuscles = alt.primary_muscles ?? [];
-  const altEquipment = alt.equipment ?? [];
-  const altAccent = altPrimaryMuscles.length > 0
-    ? getMuscleColor(altPrimaryMuscles[0])
-    : colors.border;
+                <SectionHeader
+                  title="Альтернативные упражнения"
+                  count={alternatives.length}
+                  style={{ paddingHorizontal: 0, paddingTop: 0 }}
+                />
+                {alternatives.map((alt) => {
+                  const altPrimaryMuscles = alt.primary_muscles ?? [];
+                  const altEquipment = alt.equipment ?? [];
+                  const altAccent =
+                    altPrimaryMuscles.length > 0
+                      ? getMuscleColor(altPrimaryMuscles[0])
+                      : colors.border;
                   return (
                     <TouchableOpacity
                       key={alt.id}
@@ -481,18 +527,24 @@ const secondaryMuscles = exercise.secondary_muscles ?? [];
                           marginRight: SPACING.md,
                         }}
                       >
-  <EquipmentIcon
-    name={altEquipment[0] || 'Тренажер'}
-    primaryMuscles={altPrimaryMuscles}
-    size={28}
-    scale={0.9}
+                        <EquipmentIcon
+                          name={altEquipment[0] || 'Тренажер'}
+                          primaryMuscles={altPrimaryMuscles}
+                          size={28}
+                          scale={0.9}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
+                        <Text
+                          style={[typography.labelBold, { color: colors.textPrimary }]}
+                          numberOfLines={2}
+                        >
                           {alt.name}
                         </Text>
-                        <MuscleBubbles primaryMuscles={altPrimaryMuscles.slice(0, 2)} style={{ marginTop: 4 }} />
+                        <MuscleBubbles
+                          primaryMuscles={altPrimaryMuscles.slice(0, 2)}
+                          style={{ marginTop: 4 }}
+                        />
                       </View>
                       <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
                     </TouchableOpacity>

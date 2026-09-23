@@ -3,17 +3,11 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Calendar, Pencil } from 'lucide-react-native';
 import { SPACING, GRADIENTS } from '../../constants/theme';
+import { ON_STATIC_GRADIENT_COLOR } from '../../constants/semanticColors';
 import { typography } from '../../styles/typography';
 import { FadeIn } from '../FadeIn';
 import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
-
-// Светлый цвет поверх НЕтемизируемых цветных фонов: статичный hero-градиент
-// (GRADIENTS.hero) одинаков в обеих темах, поэтому текст/иконки на нём
-// фиксированно светлые. colors.textInverse сюда НЕ подходит — это токен
-// для текста на surface. Прецедент в проекте: TechniqueMediaSlider рисует
-// лейбл на тёмном скриме тем же '#FFFFFF'.
-const ON_COLOR = '#FFFFFF';
 
 interface ProgramHeroProps {
   programName: string;
@@ -40,7 +34,7 @@ export function ProgramHero({
   levelInfo,
   editMode,
   onOpenScheduleEditor,
-  colors,
+  colors: _colors,
   cardStyles,
   badgeStyles,
 }: ProgramHeroProps) {
@@ -56,13 +50,15 @@ export function ProgramHero({
       }}
     >
       <FadeIn>
-        <Text style={[typography.h3, { color: ON_COLOR, marginBottom: SPACING.sm }]}>
+        <Text
+          style={[typography.h3, { color: ON_STATIC_GRADIENT_COLOR, marginBottom: SPACING.sm }]}
+        >
           {programName}
         </Text>
         <Text
           style={[
             typography.body,
-            { color: ON_COLOR, marginBottom: SPACING.lg, opacity: 0.9 },
+            { color: ON_STATIC_GRADIENT_COLOR, marginBottom: SPACING.lg, opacity: 0.9 },
           ]}
         >
           {programDescription}
@@ -82,11 +78,11 @@ export function ProgramHero({
             </View>
           )}
           <View style={badgeStyles.metaBadge}>
-            <Clock size={14} color={ON_COLOR} strokeWidth={1.5} />
+            <Clock size={14} color={ON_STATIC_GRADIENT_COLOR} strokeWidth={1.5} />
             <Text style={badgeStyles.metaBadgeText}>{duration} недель</Text>
           </View>
           <View style={badgeStyles.metaBadge}>
-            <Calendar size={14} color={ON_COLOR} strokeWidth={1.5} />
+            <Calendar size={14} color={ON_STATIC_GRADIENT_COLOR} strokeWidth={1.5} />
             <Text style={badgeStyles.metaBadgeText}>{schedule.length} дн/нед</Text>
           </View>
         </View>
@@ -95,7 +91,7 @@ export function ProgramHero({
             <Text
               style={[
                 typography.caption,
-                { color: ON_COLOR, fontWeight: '600', opacity: 0.9 },
+                { color: ON_STATIC_GRADIENT_COLOR, fontWeight: '600', opacity: 0.9 },
               ]}
             >
               Расписание:
@@ -106,7 +102,7 @@ export function ProgramHero({
                 style={cardStyles.scheduleEditButton}
                 activeOpacity={0.7}
               >
-                <Pencil size={16} color={ON_COLOR} strokeWidth={2} />
+                <Pencil size={16} color={ON_STATIC_GRADIENT_COLOR} strokeWidth={2} />
               </TouchableOpacity>
             )}
           </View>

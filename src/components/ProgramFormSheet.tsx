@@ -1,15 +1,7 @@
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Program } from '../services/programsService';
 import { Sprout, Dumbbell, Flame } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
-import { typography } from '../styles/typography';
 import { LEVEL_COLORS } from '../constants/semanticColors';
 import { createCardStyles } from '../styles/components/card';
 import { createButtonStyles } from '../styles/components/button';

@@ -20,10 +20,10 @@ const COLUMNS = 7;
 
 export function ActivityCalendar({ workoutDates }: ActivityCalendarProps) {
   const { colors } = useTheme();
-  const dates = workoutDates ?? [];
 
   // Последние 14 дней (2 ряда по 7)
   const calendarDays = useMemo<CalendarDay[]>(() => {
+    const dates = workoutDates ?? [];
     const days: CalendarDay[] = [];
     const today = new Date();
     for (let i = 13; i >= 0; i--) {
@@ -39,7 +39,7 @@ export function ActivityCalendar({ workoutDates }: ActivityCalendarProps) {
       });
     }
     return days;
-  }, [dates]);
+  }, [workoutDates]);
 
   // Разбиваем на ряды по 7 — детерминированная геометрия без процентов и без схлопывания
   const rows = useMemo<CalendarDay[][]>(() => {
@@ -61,13 +61,10 @@ export function ActivityCalendar({ workoutDates }: ActivityCalendarProps) {
       borderWidth: 1,
       borderColor: colors.border,
     }),
-    [colors],
+    [colors]
   );
 
-  const rowStyle = useMemo(
-    () => ({ flexDirection: 'row' as const, gap: SPACING.xs }),
-    [],
-  );
+  const rowStyle = useMemo(() => ({ flexDirection: 'row' as const, gap: SPACING.xs }), []);
 
   const columnStyle = useMemo(() => ({ gap: SPACING.xs }), []);
 
@@ -94,8 +91,8 @@ interface DayCellProps {
 function DayCell({ day, colors }: DayCellProps) {
   const cellStyle = useMemo(
     () => ({
-      flex: 1,                 // 7 ячеек делят ряд ровно — без процентов и переполнения
-      aspectRatio: 1,          // стабильная высота → блок НЕ схлопывается в линию
+      flex: 1, // 7 ячеек делят ряд ровно — без процентов и переполнения
+      aspectRatio: 1, // стабильная высота → блок НЕ схлопывается в линию
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
       borderRadius: BORDER_RADIUS.sm,
@@ -103,7 +100,7 @@ function DayCell({ day, colors }: DayCellProps) {
       borderWidth: day.isToday ? 2 : 0,
       borderColor: day.isToday ? colors.primary : 'transparent',
     }),
-    [day.hasWorkout, day.isToday, colors],
+    [day.hasWorkout, day.isToday, colors]
   );
 
   return (

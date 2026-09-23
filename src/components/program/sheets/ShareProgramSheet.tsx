@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { X, Share2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
@@ -14,11 +14,23 @@ interface ShareProgramSheetProps {
   onClose: () => void;
 }
 
-export function ShareProgramSheet({ code, loading, programName, onShare, onClose }: ShareProgramSheetProps) {
+export function ShareProgramSheet({
+  code,
+  loading,
+  programName,
+  onShare,
+  onClose,
+}: ShareProgramSheetProps) {
   const { colors } = useTheme();
   return (
-<View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-        <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+    <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+      <View
+        style={{
+          backgroundColor: colors.background,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+        }}
+      >
         <View
           style={{
             flexDirection: 'row',
@@ -38,14 +50,19 @@ export function ShareProgramSheet({ code, loading, programName, onShare, onClose
           {loading ? (
             <View style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
+              <Text
+                style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}
+              >
                 Создаём код...
               </Text>
             </View>
           ) : code ? (
             <>
-              <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.md }]}>
-                Отправьте код другу — он добавит вашу программу «{programName}» через «Программы → Импорт по коду».
+              <Text
+                style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.md }]}
+              >
+                Отправьте код другу — он добавит вашу программу «{programName}» через «Программы →
+                Импорт по коду».
               </Text>
               <View
                 style={{
@@ -56,7 +73,12 @@ export function ShareProgramSheet({ code, loading, programName, onShare, onClose
                   marginBottom: SPACING.lg,
                 }}
               >
-                <Text style={[typography.h2, { color: colors.primary, fontWeight: '800', letterSpacing: 1 }]}>
+                <Text
+                  style={[
+                    typography.h2,
+                    { color: colors.primary, fontWeight: '800', letterSpacing: 1 },
+                  ]}
+                >
                   {formatShareCode(code)}
                 </Text>
               </View>
@@ -74,7 +96,9 @@ export function ShareProgramSheet({ code, loading, programName, onShare, onClose
                 }}
               >
                 <Share2 size={20} color={colors.textInverse} strokeWidth={2} />
-                <Text style={[typography.labelBold, { color: colors.textInverse }]}>Поделиться через...</Text>
+                <Text style={[typography.labelBold, { color: colors.textInverse }]}>
+                  Поделиться через...
+                </Text>
               </TouchableOpacity>
             </>
           ) : (

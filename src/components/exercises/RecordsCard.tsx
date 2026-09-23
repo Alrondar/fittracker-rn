@@ -69,7 +69,13 @@ interface RecordsCardProps {
   cardStyles: ReturnType<typeof createCardStyles>;
 }
 
-export function RecordsCard({ records, loading, error, accentColor, cardStyles }: RecordsCardProps) {
+export function RecordsCard({
+  records,
+  loading,
+  error,
+  accentColor,
+  cardStyles,
+}: RecordsCardProps) {
   const { colors } = useTheme();
   const pulse = useSharedValue(0.35);
 
@@ -82,7 +88,7 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
       );
       return () => cancelAnimation(pulse);
     }
-  }, [loading]);
+  }, [loading, pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
@@ -102,7 +108,7 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
       />
     );
   }
-   if (error) {
+  if (error) {
     return (
       <View
         style={{
@@ -142,10 +148,17 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
         }}
       >
         <Trophy size={28} color={colors.textTertiary} strokeWidth={1.5} />
-        <Text style={[typography.labelBold, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
+        <Text
+          style={[typography.labelBold, { color: colors.textSecondary, marginTop: SPACING.sm }]}
+        >
           Вы ещё не выполняли это упражнение
         </Text>
-        <Text style={[typography.captionSmall, { color: colors.textTertiary, marginTop: 2, textAlign: 'center' }]}>
+        <Text
+          style={[
+            typography.captionSmall,
+            { color: colors.textTertiary, marginTop: 2, textAlign: 'center' },
+          ]}
+        >
           Проведите первую тренировку — рекорды появятся здесь
         </Text>
       </View>
@@ -159,7 +172,11 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
   // Вторичные рекорды (1ПМ — всегда только при наличии веса)
   const stats: { label: string; value: string; styleKey: 'primary' | 'success' | 'warning' }[] = [];
   if (r.estimatedOneRM !== null) {
-    stats.push({ label: 'Расчётный 1ПМ', value: `${Math.round(r.estimatedOneRM)} кг`, styleKey: 'primary' });
+    stats.push({
+      label: 'Расчётный 1ПМ',
+      value: `${Math.round(r.estimatedOneRM)} кг`,
+      styleKey: 'primary',
+    });
   }
   if (hasWeight && r.maxReps !== null && r.maxReps > 0) {
     stats.push({ label: 'Макс. повторы', value: `×${r.maxReps}`, styleKey: 'success' });
@@ -243,13 +260,19 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
               >
                 <CountUp value={r.maxWeight as number} decimals={weightDecimals} />
               </Text>
-              <Text style={[typography.h5, { color: colors.textSecondary, marginLeft: 6, marginBottom: 3 }]}>
+              <Text
+                style={[
+                  typography.h5,
+                  { color: colors.textSecondary, marginLeft: 6, marginBottom: 3 },
+                ]}
+              >
                 кг
               </Text>
             </View>
             {r.repsAtMaxWeight > 0 && (
               <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
-                × {r.repsAtMaxWeight} {pluralize(r.repsAtMaxWeight, 'повтор', 'повтора', 'повторов')} в лучшем подходе
+                × {r.repsAtMaxWeight}{' '}
+                {pluralize(r.repsAtMaxWeight, 'повтор', 'повтора', 'повторов')} в лучшем подходе
               </Text>
             )}
           </>
@@ -264,7 +287,12 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
               >
                 ×<CountUp value={r.maxReps ?? 0} decimals={0} />
               </Text>
-              <Text style={[typography.h5, { color: colors.textSecondary, marginLeft: 6, marginBottom: 3 }]}>
+              <Text
+                style={[
+                  typography.h5,
+                  { color: colors.textSecondary, marginLeft: 6, marginBottom: 3 },
+                ]}
+              >
                 повторов
               </Text>
             </View>
@@ -280,7 +308,7 @@ export function RecordsCard({ records, loading, error, accentColor, cardStyles }
         <>
           <View style={{ height: 1, backgroundColor: colors.border }} />
           <View style={cardStyles.recordsContainer}>
-            {stats.map(stat => (
+            {stats.map((stat) => (
               <View key={stat.label} style={cardStyles.recordItem}>
                 <Text style={[cardStyles.recordValue, valueStyleByKey[stat.styleKey]]}>
                   {stat.value}

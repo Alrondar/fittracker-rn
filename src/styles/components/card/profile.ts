@@ -2,7 +2,7 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../typography';
 
-export const createProfileCardStyles = (colors: any) =>
+export const createProfileCardStyles = (_colors: any) =>
   StyleSheet.create({
     profileHeader: {
       alignItems: 'center',

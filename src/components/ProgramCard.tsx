@@ -37,11 +37,23 @@ function getLevelInfo(level: string, colors: any) {
   const color = LEVEL_COLORS[level as LevelKey] ?? colors.textSecondary;
   switch (level) {
     case 'beginner':
-      return { label: 'Новичок', color, icon: <Sprout size={14} color={color} strokeWidth={1.5} /> };
+      return {
+        label: 'Новичок',
+        color,
+        icon: <Sprout size={14} color={color} strokeWidth={1.5} />,
+      };
     case 'intermediate':
-      return { label: 'Средний', color, icon: <Dumbbell size={14} color={color} strokeWidth={1.5} /> };
+      return {
+        label: 'Средний',
+        color,
+        icon: <Dumbbell size={14} color={color} strokeWidth={1.5} />,
+      };
     case 'advanced':
-      return { label: 'Продвинутый', color, icon: <Flame size={14} color={color} strokeWidth={1.5} /> };
+      return {
+        label: 'Продвинутый',
+        color,
+        icon: <Flame size={14} color={color} strokeWidth={1.5} />,
+      };
     default:
       return {
         label: level,
@@ -53,7 +65,7 @@ function getLevelInfo(level: string, colors: any) {
 
 export const ProgramCard = memo(function ProgramCard({
   item,
-  index,
+  index: _index,
   isMyProgram,
   isActive,
   onPress,
@@ -73,7 +85,7 @@ export const ProgramCard = memo(function ProgramCard({
       e?.stopPropagation?.();
       onActivatePress();
     },
-    [onActivatePress],
+    [onActivatePress]
   );
 
   const handleEdit = useCallback(
@@ -81,7 +93,7 @@ export const ProgramCard = memo(function ProgramCard({
       e?.stopPropagation?.();
       onEditPress();
     },
-    [onEditPress],
+    [onEditPress]
   );
 
   return (
@@ -187,13 +199,19 @@ export const ProgramCard = memo(function ProgramCard({
             }}
           >
             <Text
-              style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.sm }]}
+              style={[
+                typography.caption,
+                { color: colors.textSecondary, marginBottom: SPACING.sm },
+              ]}
             >
               Расписание:
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
               {item.schedule.map((day, idx) => (
-                <View key={idx} style={[badgeStyles.dayChip, { backgroundColor: colors.primary + '15' }]}>
+                <View
+                  key={idx}
+                  style={[badgeStyles.dayChip, { backgroundColor: colors.primary + '15' }]}
+                >
                   <Text style={[badgeStyles.dayChipText, { color: colors.primary }]}>{day}</Text>
                 </View>
               ))}

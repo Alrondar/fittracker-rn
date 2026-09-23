@@ -233,7 +233,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | DS-1 | 🟠 | ✅ | Аудит design system завершён: шкала типографики/spacing/состояния проверены. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 | DS-2 | 🟠 | ✅ | Bottom Tab Bar: внедрён паттерн Pill Highlight (явный active state: `colors.primary` background + filled icon + bold text), haptics, `accessibilityRole="tab"`. 6 табов скомпактизированы (`inset: 2`, `paddingVertical: SPACING.sm`) для предотвращения переноса текста. Соответствует PRODUCT.md §3.1–3.2. |
 | DS-3 | 🟠 | ✅ | Segmented Controls: создан универсальный компонент `PillToggle` (PRODUCT.md §3.6). Заменены все хардкодные реализации в `workouts.tsx`, `settings.tsx` и `WorkoutDisplayModePicker`. Явный active state: `colors.primary` background, `textInverse`, `fontWeight: 600`, shadow, tap target ≥ 44pt. |
-| LINT-1|🟠|🟡|ESLint настроен (eslint-config-expo + TS v8); baseline: ~74 warnings (unused vars, react-hooks/exhaustive-deps, Array<T> syntax, console statements) — не блокируют merge; исправлять по мере рефакторинга соответствующих файлов|
+| LINT-1|🟠|✅|ESLint (eslint-config-expo + TS v8): **baseline 0 errors / 0 warnings** по всему репо (2026-09-23). Прежний baseline ~74 warning очищен в ходе аудита: unused imports/vars (profile.tsx, settings.tsx, programs.tsx, progress.tsx, exercise/[id].tsx), exhaustive-deps (workouts.tsx, progress/[id].tsx, useProfile, useWorkoutSession), hardcoded colors вынесены в constants. Чистота поддерживается как merge gate вместе с `tsc --noEmit`|
 
 ## 14. Feature 2: Muscle Map Visualization (Stage H)
 

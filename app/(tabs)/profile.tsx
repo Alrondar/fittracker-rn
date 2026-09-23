@@ -12,12 +12,8 @@ import { signOut } from '../../src/services/authService';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
-import { MacroPieChart } from '../../src/components/profile/MacroPieChart';
-// FEAT-2.1: недельная карточка (создать файл, если ещё нет)
-import { NutritionWeekCard } from '../../src/components/profile/NutritionWeekCard';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { SheetShell } from '../../src/components/ui/SheetShell';
-import { MACRO_COLORS } from '../../src/constants/semanticColors';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 // P1: Цикл
@@ -27,7 +23,6 @@ import { CycleSettingsSheet } from '../../src/components/cycle/CycleSettingsShee
 import { CycleCheckInSheet } from '../../src/components/cycle/CycleCheckInSheet';
 import { cycleService } from '../../src/services/cycleService';
 import {
-  User,
   Settings,
   Target,
   Activity,
@@ -36,15 +31,8 @@ import {
   Trophy,
   Dumbbell,
   Calendar,
-  Flame,
-  Beef,
-  Droplet,
-  Wheat,
-  Plus,
-  X,
   Award,
   Ruler,
-  TrendingUp,
   Pencil,
 } from 'lucide-react-native';
 
@@ -56,8 +44,7 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-  const { userData, stats, targets, todayNutrition, personalRecords, loading, saveNutrition } =
-    useProfile(userId);
+  const { userData, stats, personalRecords, loading, saveNutrition } = useProfile(userId);
 
   const [showNutritionSheet, setShowNutritionSheet] = useState(false);
   const [inputCalories, setInputCalories] = useState('');
@@ -132,55 +119,6 @@ export default function ProfileScreen() {
     setInputFats('');
     setInputCarbs('');
     setInputWater('');
-  };
-
-  const renderProgressBar = (
-    icon: React.ReactNode,
-    label: string,
-    current: number,
-    target: number,
-    unit: string,
-    color: string
-  ) => {
-    const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
-    const isOver = current > target;
-    return (
-      <View style={{ marginBottom: SPACING.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs }}>
-          {icon}
-          <Text
-            style={[
-              typography.labelBold,
-              { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 },
-            ]}
-          >
-            {label}
-          </Text>
-          <Text
-            style={[typography.caption, { color: isOver ? colors.error : colors.textSecondary }]}
-          >
-            {current}/{target} {unit}
-          </Text>
-        </View>
-        <View
-          style={{
-            height: 8,
-            backgroundColor: colors.surfaceSecondary,
-            borderRadius: 4,
-            overflow: 'hidden',
-          }}
-        >
-          <View
-            style={{
-              height: '100%',
-              width: `${percentage}%`,
-              backgroundColor: isOver ? colors.error : color,
-              borderRadius: 4,
-            }}
-          />
-        </View>
-      </View>
-    );
   };
 
   if (loading || !userData) {

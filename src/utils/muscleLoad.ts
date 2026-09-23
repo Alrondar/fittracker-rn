@@ -46,14 +46,12 @@ export type MuscleLoad = {
   sets: number;
   /** Тоннаж (Σ вес × повторы) с учётом коэффициента primary/secondary */
   volumeKg: number;
-  /** Взвешенный объём с учётом RPE — используется для шкалы интенсивности */
+  /** Эффективные подходы с коэффициентом primary/secondary — шкала интенсивности карты */
   loadScore: number;
 };
 
 const PRIMARY_COEFF = 1.0;
 const SECONDARY_COEFF = 0.5;
-/** Дефолт для подходов без RPE (типичный рабочий сет ~ RPE 7). */
-const DEFAULT_RPE_FACTOR = 0.7;
 
 /**
  * Агрегирует нагрузку на мышцы из списка упражнений.

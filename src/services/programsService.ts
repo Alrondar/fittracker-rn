@@ -283,7 +283,8 @@ export async function updateProgram(
   programId: string,
   updates: Partial<Program>
 ): Promise<Program> {
-  const { phases, days, ...rest } = updates;
+  // phases/days — вложенные объекты, их нельзя писать напрямую в колонки programs
+  const { phases: _phases, days: _days, ...rest } = updates;
   const { data, error } = await supabase
     .from('programs')
     .update(rest)

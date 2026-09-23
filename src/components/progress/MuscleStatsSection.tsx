@@ -21,14 +21,7 @@
 //   - empty state: дружелюбный текст, без фейковых данных.
 
 import React, { memo, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Activity } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useMuscleStats } from '../../hooks/useMuscleStats';
@@ -38,13 +31,7 @@ import { MuscleLoadMap } from '../workout/MuscleLoadMap';
 import { MuscleLoadModeToggle } from '../ui/MuscleLoadModeToggle';
 import { BodyMap } from '../workout/BodyMap';
 import { intensityColor } from '../../utils/colorScale';
-import {
-  calculateMuscleLoad,
-  pluralizeSets,
-  pluralizeDays,
-  formatVolumeKg,
-  type MuscleLoadMode,
-} from '../../utils/muscleLoad';
+import { pluralizeDays, type MuscleLoadMode } from '../../utils/muscleLoad';
 import { roundE1rm } from '../../utils/e1rm';
 import { getSlugsForMuscle } from '../../constants/muscleMapSlugs';
 import type { MuscleLoad } from '../../utils/muscleLoad';
@@ -309,7 +296,7 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
 
   const { rows, isPending, isFetching } = useMuscleStats(userId);
 
-  const rowsAll = rows ?? [];
+  const rowsAll = useMemo(() => rows ?? [], [rows]);
   const rowsPeriod = useMemo(() => filterRowsByPeriod(rowsAll, period), [rowsAll, period]);
 
   // ----- Load tab -----
@@ -322,7 +309,6 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
   const fatigue = useMemo(() => computeFatigue(rowsAll), [rowsAll]);
 
   const fatigueBodyData = useMemo(() => {
-    const base = colors.textTertiary;
     return fatigue.map((f) => {
       const bucket = fatigueBucket(f.daysSince);
       // Интенсивность: чем меньше дней — тем ярче цвет (но цвет не primary,

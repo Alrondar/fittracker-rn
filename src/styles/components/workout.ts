@@ -3,7 +3,7 @@ import { SPACING } from '../../constants/theme';
 
 // Параметр colors сохранён для единообразия сигнатур фабрик
 // (вызывающий код передаёт его во все create*Styles)
-export const createWorkoutStyles = (colors: any) =>
+export const createWorkoutStyles = (_colors: any) =>
   StyleSheet.create({
     // ===== ТАЙМЕР ОТДЫХА (RestTimer) =====
     workoutTimerContainer: {

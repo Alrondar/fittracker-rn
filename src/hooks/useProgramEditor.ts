@@ -243,9 +243,8 @@ export function useProgramEditor(
       }
 
       // Синхронизация правок с будущими тренировками (FIT-2)
-      let syncInfo = null;
       try {
-        syncInfo = await syncProgramChanges(editedProgram.id);
+        await syncProgramChanges(editedProgram.id);
       } catch (syncError: any) {
         console.error('[saveProgram] Sync failed:', syncError);
         // Не блокируем сохранение, но возвращаем ошибку для отображения Toast

@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -43,8 +37,6 @@ const formatTime = (seconds: number) =>
 
 const formatEquipmentName = (name: string) =>
   name.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-
-type SectionKey = 'technique' | 'benefits' | 'risks' | 'injuries';
 
 // ===== Компактная карточка альтернативы разминки (горизонтальный слайдер) =====
 interface WarmupAlternativeCardProps {
@@ -154,8 +146,6 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
   const { width: screenWidth } = useWindowDimensions();
   const altCardWidth = screenWidth * 0.7;
   const progress = useSharedValue(0);
-  // Ленивый монтаж: слайдер техники создаётся только после первого открытия
-  const [everOpened, setEverOpened] = useState<Set<SectionKey>>(new Set());
   // Альтернативы разминки (горизонтальный слайдер замен)
   const [alts, setAlts] = useState<WarmupExercise[]>([]);
   const [loadingAlts, setLoadingAlts] = useState(false);
@@ -184,7 +174,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onReplace(index, alt);
     },
-    [index, onReplace],
+    [index, onReplace]
   );
 
   // Плавный прогресс-бар таймера (синхронизирован с тиком раз в секунду)
@@ -213,8 +203,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
           borderColor: isActive
             ? colors.warning
             : completed
-            ? colors.success + '60'
-            : colors.border,
+              ? colors.success + '60'
+              : colors.border,
           marginBottom: SPACING.sm,
           overflow: 'hidden',
           opacity: completed && !isActive ? 0.7 : 1,
@@ -239,9 +229,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
                 <Check size={18} color={colors.textInverse} strokeWidth={3} />
               </Animated.View>
             ) : (
-              <Text style={[typography.labelBold, { color: colors.warning }]}>
-                {index + 1}
-              </Text>
+              <Text style={[typography.labelBold, { color: colors.warning }]}>{index + 1}</Text>
             )}
           </View>
           <View style={{ flex: 1 }}>
@@ -288,10 +276,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
           {isActive ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
               <Text
-                style={[
-                  typography.h5,
-                  { color: colors.warning, fontVariant: ['tabular-nums'] },
-                ]}
+                style={[typography.h5, { color: colors.warning, fontVariant: ['tabular-nums'] }]}
               >
                 {formatTime(timeLeft)}
               </Text>
@@ -358,9 +343,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
 
         {/* Бейджи мышц */}
         {(exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0) && (
-          <View
-            style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}
-          >
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
             {exercise.primary_muscles.map((m) => (
               <View
                 key={`p-${m}`}
@@ -374,10 +357,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
                 }}
               >
                 <Text
-                  style={[
-                    typography.captionSmall,
-                    { color: colors.primary, fontWeight: '600' },
-                  ]}
+                  style={[typography.captionSmall, { color: colors.primary, fontWeight: '600' }]}
                 >
                   {m}
                 </Text>
@@ -401,8 +381,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
 
         {/* Оборудование: отдельный чип на каждую единицу */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.md }}>
-{equipment.length > 0 ? (
-  equipment.map((eq, i) => (
+          {equipment.length > 0 ? (
+            equipment.map((eq, i) => (
               <View
                 key={`eq-${i}-${eq}`}
                 style={{
@@ -444,10 +424,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             >
               <Dumbbell size={12} color={colors.textTertiary} />
               <Text
-                style={[
-                  typography.captionSmall,
-                  { color: colors.textTertiary, fontWeight: '600' },
-                ]}
+                style={[typography.captionSmall, { color: colors.textTertiary, fontWeight: '600' }]}
               >
                 Без оборудования
               </Text>
@@ -500,9 +477,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             titleColor={colors.primary}
             maxHeight={TECHNIQUE_MAX_HEIGHT}
           >
-            {everOpened.has('technique') && (
-<TechniqueMediaSlider mediaUrl={exercise.media_url ?? null} autoPlay />
-            )}
+            {/* ExerciseInfoAccordion сам лениво монтирует children после первого открытия */}
+            <TechniqueMediaSlider mediaUrl={exercise.media_url ?? null} autoPlay />
             {exercise.technique ? (
               <Text
                 style={[

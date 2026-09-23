@@ -22,6 +22,15 @@ export const STRENGTH_LEVEL_LABELS: Record<StrengthLevel, string> = {
   elite: 'Элитный',
 };
 
+/** Цвета уровней силы (mid-tone, читаемы в обеих темах). */
+export const STRENGTH_LEVEL_COLORS: Record<StrengthLevel, string> = {
+  novice: '#94a3b8',
+  beginner: '#4CAF50',
+  intermediate: '#FF9800',
+  advanced: '#E91E63',
+  elite: '#7C3AED',
+};
+
 /**
  * Коэффициенты 1ПМ / собственный вес для 5 уровней.
  * Ключ — canonical-имя движения (нижний регистр, латиница).

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
+import { TREND_COLORS } from '../constants/semanticColors';
 import { typography } from '../styles/typography';
 import Svg, { Polyline, Path, Circle } from 'react-native-svg';
 
@@ -33,16 +34,18 @@ export function ExerciseProgressCard({
   if (history.length < 2) return null;
 
   // Получаем значения для выбранной метрики
-  const values = history.map(h => selectedMetric === 'weight' ? h.maxWeight : h.volume);
+  const values = history.map((h) => (selectedMetric === 'weight' ? h.maxWeight : h.volume));
   const currentValue = selectedMetric === 'weight' ? currentMaxWeight : currentVolume;
   const previousValue = values[values.length - 2] || 0;
-  
+
   // Расчёт изменения
   const change = previousValue > 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
-  const changeText = change > 0 ? `+${change.toFixed(1)}%` : change < 0 ? `${change.toFixed(1)}%` : '0%';
-  
+  const changeText =
+    change > 0 ? `+${change.toFixed(1)}%` : change < 0 ? `${change.toFixed(1)}%` : '0%';
+
   // Цвет тренда
-  const trendColor = trend === 'up' ? '#4CAF50' : trend === 'down' ? '#F44336' : colors.textSecondary;
+  const trendColor =
+    trend === 'up' ? TREND_COLORS.up : trend === 'down' ? TREND_COLORS.down : colors.textSecondary;
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
 
   // Расчёт SVG координат
@@ -55,26 +58,36 @@ export function ExerciseProgressCard({
 
   const points = values.map((value, index) => {
     const x = padding + (index / (values.length - 1)) * (chartWidth - 2 * padding);
-    const y = chartHeight - padding - ((value - minValue) / valueRange) * (chartHeight - 2 * padding);
+    const y =
+      chartHeight - padding - ((value - minValue) / valueRange) * (chartHeight - 2 * padding);
     return { x, y, value };
   });
 
-  const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
-  
+  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
+
   // Путь для области под линией
-  const areaPath = `M ${points[0].x},${chartHeight - padding} L ${points.map(p => `${p.x},${p.y}`).join(' L ')} L ${points[points.length - 1].x},${chartHeight - padding} Z`;
+  const areaPath = `M ${points[0].x},${chartHeight - padding} L ${points.map((p) => `${p.x},${p.y}`).join(' L ')} L ${points[points.length - 1].x},${chartHeight - padding} Z`;
 
   return (
-    <View style={{
-      backgroundColor: colors.surface,
-      borderRadius: BORDER_RADIUS.md,
-      padding: SPACING.md,
-      marginBottom: SPACING.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-    }}>
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderRadius: BORDER_RADIUS.md,
+        padding: SPACING.md,
+        marginBottom: SPACING.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
       {/* Заголовок */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: SPACING.md,
+        }}
+      >
         <View style={{ flex: 1 }}>
           <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={2}>
             {exerciseName}
@@ -92,11 +105,7 @@ export function ExerciseProgressCard({
       <View style={{ marginBottom: SPACING.md }}>
         <Svg width={chartWidth} height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
           {/* Область под линией */}
-          <Path
-            d={areaPath}
-            fill={trendColor}
-            opacity={0.1}
-          />
+          <Path d={areaPath} fill={trendColor} opacity={0.1} />
           {/* Линия тренда */}
           <Polyline
             points={polylinePoints}
@@ -132,9 +141,7 @@ export function ExerciseProgressCard({
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-            Тренировок
-          </Text>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>Тренировок</Text>
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
             {history.length}
           </Text>
