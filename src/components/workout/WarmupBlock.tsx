@@ -16,10 +16,6 @@ import { AppButton } from '../ui/AppButton';
 import { WarmupExerciseCard } from './WarmupExerciseCard';
 import { WarmupExercise, InjuryExclusion } from '../../services/warmupService';
 
-// PERF-5: модульные константы SCREEN_WIDTH / ALT_CARD_WIDTH УДАЛЕНЫ.
-// Ширина окна читается реактивно через useWindowDimensions() внутри
-// WarmupExerciseCard и прокидывается в WarmupAlternativeCard пропом cardWidth.
-
 interface WarmupBlockProps {
   warmupExercises: WarmupExercise[];
   isLoading: boolean;
@@ -34,8 +30,8 @@ interface WarmupBlockProps {
   onStopTimer: () => void;
   onMarkCompleted: (id: string) => void;
   onSkip: () => void;
-  loadWarmupAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
-  onReplaceWarmup: (index: number, alt: WarmupExercise) => void;
+  /** Открыть L2 лист разминки (рендерится в корне экрана, WARMUP-1). */
+  onOpenDetails: (index: number) => void;
 }
 
 export function WarmupBlock({
@@ -52,8 +48,7 @@ export function WarmupBlock({
   onStopTimer,
   onMarkCompleted,
   onSkip,
-  loadWarmupAlternatives,
-  onReplaceWarmup,
+  onOpenDetails,
 }: WarmupBlockProps) {
   const { colors } = useTheme();
   const pulse = useSharedValue(0.35);
@@ -230,8 +225,7 @@ export function WarmupBlock({
               onStartTimer={onStartTimer}
               onStopTimer={onStopTimer}
               onMarkCompleted={onMarkCompleted}
-              loadAlternatives={loadWarmupAlternatives}
-              onReplace={onReplaceWarmup}
+              onOpen={onOpenDetails}
             />
           );
         })}

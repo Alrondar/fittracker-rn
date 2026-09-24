@@ -95,7 +95,8 @@ Main components:
 `ExerciseInfoAccordion`
 `TechniqueMediaSlider`
 `WarmupBlock`
-`WarmupExerciseCard`
+`WarmupExerciseCard.tsx` — компактный L1: номер-чекбокс + миниатюра техники + таймер; тап по карточке → WarmupExerciseSheet (WARMUP-1)
+`WarmupExerciseSheet.tsx` — L2 разминки (Modal + SheetShell isModal, рендер в корне workout/[id].tsx, паттерн PainSheet): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1)
 `PainSheet`
 `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
 `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») с PR6 pain affordance
@@ -421,7 +422,7 @@ AlternativeExerciseCard (PR5): Польза/Риски/Противопоказ�
 Pain persistent state (PR6): painService.getPainEventsForWorkout загружает pain_events при fetchWorkoutSession; painState маппится в ExerciseData через buildPainStateMap; savePainState/clearPainState с оптимистичным обновлением + откат; PainSheet prefill из painState + «Боль прошла» для delete; visual affordance «⚠ Боль отмечена» в header bubble; UNIQUE constraint (user_id, workout_id, exercise_id) предотвращает дубли.
 workout/[id].tsx split (PR8): WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo; showInjuryBanner state инкапсулирован в WorkoutInjuryBanner; файл уменьшен с ~673 до ~400 строк (CLAUDE.md §2).
 Knowledge disclosure cleanup (PR7): ExerciseCardKnowledge использует SectionSubheading из ExerciseCardTechnique; единообразие подзаголовков между «Техника выполнения» и «Важно знать»; lazy mount через everOpened в ExerciseInfoAccordion.
-UX-3 decision (закрыто): warm-up реализован через вкладку WorkoutTabs + WarmupBlock (useWarmup), отдельного sheet не требуется. History per-exercise частично закрыт per-set previous data в SetsGrid (FEAT-1.1) + вкладка History с деталями тренировок (historyService.getWorkoutDetail). Notes отложены — нет таблицы exercise_notes, не подтверждена потребность; вернуться после сбора feedback от пользователей.
+UX-3 decision (закрыто): warm-up реализован через вкладку WorkoutTabs + WarmupBlock (useWarmup). WARMUP-1 (24.09.2026): лист для разминки всё же появился — WarmupExerciseSheet (техника с картинками + изучаемые аналоги), но decision UX-3 по-прежнему верна для контекста вне карточек. History per-exercise частично закрыт per-set previous data в SetsGrid (FEAT-1.1) + вкладка History с деталями тренировок (historyService.getWorkoutDetail). Notes отложены — нет таблицы exercise_notes, не подтверждена потребность; вернуться после сбора feedback от пользователей.
 RPE frequency settings (UX-7): useRpeSettings — 3 опции (always / last-set default / off); SetsGrid проверяет predicate shouldShowRpeChip: уже введённые значения (rpe != null) показываются всегда, новые запросы — по настройке. Picker в profile/settings.tsx с segmented control и живым описанием.
 
 **Scientific formulas audit (2026-08-28)**:

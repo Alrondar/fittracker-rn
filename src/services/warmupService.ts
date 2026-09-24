@@ -1,11 +1,9 @@
 import { supabase } from '../lib/supabase';
-import {
-  UserInjury,
-  targetsInjuredMuscle,
-  BODY_PART_LABELS,
-} from '../constants/injuries';
+import { UserInjury, targetsInjuredMuscle, BODY_PART_LABELS } from '../constants/injuries';
 import { getExerciseContraindications } from './injuriesService';
 import { getExerciseReferenceData } from './exerciseReferenceService';
+
+export type WarmupRelationType = 'variation' | 'alternative' | 'regression' | 'progression';
 
 export interface WarmupExercise {
   id: string;
@@ -22,6 +20,8 @@ export interface WarmupExercise {
   relevance_score: number;
   category: string | null;
   can_be_activation: boolean;
+  /** ENG-5-семантика: тип связи с исходным упражнением разминки (бейдж в WarmupExerciseSheet). */
+  relation_type?: WarmupRelationType | null;
 }
 
 /** Сводка исключённых из-за травм упражнений (для чипа в WarmupBlock) */
@@ -37,14 +37,23 @@ export interface WarmupGenerationResult {
 }
 
 // ===== Константы подбора =====
-const WARMUP_TOTAL = 7;    // всего упражнений в разминке
-const MAX_ACTIVATION = 3;  // не более активаций (остальное — растяжка)
+const WARMUP_TOTAL = 7; // всего упражнений в разминке
+const MAX_ACTIVATION = 3; // не более активаций (остальное — растяжка)
 
 // Тренажёрное оборудование (приоритет в силовые дни)
 const MACHINE_KEYWORDS = ['тренаж', 'кроссовер', 'блок', 'pec deck', 'рукоят', 'смит', 'манжет'];
 
 // Оборудование силовой тренировки
-const STRENGTH_EQUIPMENT_KEYWORDS = ['штанг', 'гантел', 'тренаж', 'кроссовер', 'блок', 'смит', 'гриф', 'гиря'];
+const STRENGTH_EQUIPMENT_KEYWORDS = [
+  'штанг',
+  'гантел',
+  'тренаж',
+  'кроссовер',
+  'блок',
+  'смит',
+  'гриф',
+  'гиря',
+];
 
 // Штраф за нагрузку на травмированную зону (high → полное исключение)
 const SEVERITY_PENALTY: Record<string, number> = { medium: 5, low: 2 };
@@ -76,18 +85,18 @@ interface WarmupCandidate {
 }
 
 const isMachineEquipment = (equipment: string[]): boolean =>
-  equipment.some(eq => {
+  equipment.some((eq) => {
     const lower = eq.toLowerCase();
-    return MACHINE_KEYWORDS.some(kw => lower.includes(kw));
+    return MACHINE_KEYWORDS.some((kw) => lower.includes(kw));
   });
 
 /** Силовая ли тренировка (по оборудованию основных упражнений) */
 const isStrengthFocused = (mainExercises: { equipment?: string[] }[]): boolean =>
-  mainExercises.some(ex =>
-    (ex.equipment || []).some(eq => {
+  mainExercises.some((ex) =>
+    (ex.equipment || []).some((eq) => {
       const lower = eq.toLowerCase();
-      return STRENGTH_EQUIPMENT_KEYWORDS.some(kw => lower.includes(kw));
-    }),
+      return STRENGTH_EQUIPMENT_KEYWORDS.some((kw) => lower.includes(kw));
+    })
   );
 
 export const warmupService = {
@@ -112,17 +121,17 @@ export const warmupService = {
       equipment?: string[];
     }[],
     activeInjuries: UserInjury[] = [],
-    activationFirst: boolean = false,
+    activationFirst: boolean = false
   ): Promise<WarmupGenerationResult> {
     try {
       // 1. Целевые мышцы с приоритетами
       const muscleScores: Record<string, number> = {};
-      mainExercises.forEach(ex => {
-        ex.primary_muscles?.forEach(m => {
+      mainExercises.forEach((ex) => {
+        ex.primary_muscles?.forEach((m) => {
           const key = m.toLowerCase();
           muscleScores[key] = (muscleScores[key] || 0) + 2;
         });
-        ex.secondary_muscles?.forEach(m => {
+        ex.secondary_muscles?.forEach((m) => {
           const key = m.toLowerCase();
           muscleScores[key] = (muscleScores[key] || 0) + 1;
         });
@@ -143,29 +152,26 @@ export const warmupService = {
 
       // ARCH-8: lookup противопоказаний по таблице (уровень 1) вместо keyword-эвристики.
       // Загружаем один раз для всех кандидатов, только если есть активные травмы.
-const candidateIds = candidates.map(c => c.id);
+      const candidateIds = candidates.map((c) => c.id);
 
-const referenceData = await getExerciseReferenceData(candidateIds);
+      const referenceData = await getExerciseReferenceData(candidateIds);
 
-const contraindications =
-  activeInjuries.length > 0
-    ? await getExerciseContraindications(candidateIds)
-    : {};
+      const contraindications =
+        activeInjuries.length > 0 ? await getExerciseContraindications(candidateIds) : {};
 
       // 3. Ранжирование + фильтрация по травмам (на лёгких полях)
       const exclusionCounts: Record<string, number> = {};
       const scored: WarmupCandidate[] = [];
       for (const ex of candidates) {
-  const refs = referenceData[ex.id] ?? {
-    equipment: [],
-    injuries: [],
-    alternativeIds: [],
-  };
+        const refs = referenceData[ex.id] ?? {
+          equipment: [],
+          injuries: [],
+          alternativeIds: [],
+        };
 
-  const exMuscles = [
-    ...(ex.primary_muscles || []),
-          ...(ex.secondary_muscles || []),
-        ].map(m => m.toLowerCase());
+        const exMuscles = [...(ex.primary_muscles || []), ...(ex.secondary_muscles || [])].map(
+          (m) => m.toLowerCase()
+        );
         let score = exMuscles.reduce((sum, m) => sum + (muscleScores[m] || 0), 0);
         if (score <= 0) continue;
 
@@ -185,7 +191,7 @@ const contraindications =
         for (const injury of activeInjuries) {
           // Уровень 1: прямое противопоказание → исключаем (lookup по таблице)
           const hasContra = exContras.some(
-            c => c.body_part === injury.body_part || c.injury_type === injury.injury_type,
+            (c) => c.body_part === injury.body_part || c.injury_type === injury.injury_type
           );
           if (hasContra) {
             excluded = true;
@@ -193,7 +199,13 @@ const contraindications =
             break;
           }
           // Уровень 2: нагрузка на травмированную зону
-          if (targetsInjuredMuscle(ex.primary_muscles || [], ex.secondary_muscles || [], injury.body_part)) {
+          if (
+            targetsInjuredMuscle(
+              ex.primary_muscles || [],
+              ex.secondary_muscles || [],
+              injury.body_part
+            )
+          ) {
             if (injury.severity === 'high') {
               excluded = true;
               exclusionCounts[injury.body_part] = (exclusionCounts[injury.body_part] || 0) + 1;
@@ -206,36 +218,33 @@ const contraindications =
         score -= penalty;
 
         // Длительность из settings или дефолт 30 сек
-        let duration = 30;
-        if (ex.settings) {
-          const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
-          if (match) duration = parseInt(match[1]);
-        }
-scored.push({
-  id: ex.id,
-  name: ex.name,
-  injuries: refs.injuries,
-  equipment: refs.equipment,
-  primary_muscles: ex.primary_muscles || [],
-  secondary_muscles: ex.secondary_muscles || [],
-  duration_seconds: duration,
-  relevance_score: score,
-  category: ex.category ?? null,
-  can_be_activation: ex.can_be_activation ?? false,
-});
+        const duration = parseWarmupDuration(ex.settings);
+        scored.push({
+          id: ex.id,
+          name: ex.name,
+          injuries: refs.injuries,
+          equipment: refs.equipment,
+          primary_muscles: ex.primary_muscles || [],
+          secondary_muscles: ex.secondary_muscles || [],
+          duration_seconds: duration,
+          relevance_score: score,
+          category: ex.category ?? null,
+          can_be_activation: ex.can_be_activation ?? false,
+        });
       }
 
       // 4. Сбалансированный отбор: не более MAX_ACTIVATION активаций
-      const byScore = (a: WarmupCandidate, b: WarmupCandidate) => b.relevance_score - a.relevance_score;
-      const activationPool = scored.filter(ex => ex.can_be_activation).sort(byScore);
-      const stretchingPool = scored.filter(ex => !ex.can_be_activation).sort(byScore);
+      const byScore = (a: WarmupCandidate, b: WarmupCandidate) =>
+        b.relevance_score - a.relevance_score;
+      const activationPool = scored.filter((ex) => ex.can_be_activation).sort(byScore);
+      const stretchingPool = scored.filter((ex) => !ex.can_be_activation).sort(byScore);
       const activationSelected = activationPool.slice(0, MAX_ACTIVATION);
       const stretchingSelected = stretchingPool.slice(0, WARMUP_TOTAL - activationSelected.length);
       let selected = [...stretchingSelected, ...activationSelected];
       // Если растяжки не хватило — добираем лучшей активацией сверх лимита
       if (selected.length < WARMUP_TOTAL) {
-        const usedIds = new Set(selected.map(e => e.id));
-        const remaining = scored.filter(e => !usedIds.has(e.id)).sort(byScore);
+        const usedIds = new Set(selected.map((e) => e.id));
+        const remaining = scored.filter((e) => !usedIds.has(e.id)).sort(byScore);
         selected = selected.concat(remaining.slice(0, WARMUP_TOTAL - selected.length));
       }
 
@@ -266,14 +275,14 @@ scored.push({
       if (finalLight.length === 0) {
         return { exercises: [], excludedByInjury };
       }
-      const finalIds = finalLight.map(e => e.id);
+      const finalIds = finalLight.map((e) => e.id);
       const { data: heavyRows } = await supabase
         .from('exercises')
         .select('id, technique, benefits, risks, media_url')
         .in('id', finalIds);
-      const heavyById = new Map((heavyRows || []).map(h => [h.id, h] as const));
+      const heavyById = new Map((heavyRows || []).map((h) => [h.id, h] as const));
 
-      const exercises: WarmupExercise[] = finalLight.map(c => {
+      const exercises: WarmupExercise[] = finalLight.map((c) => {
         const h = heavyById.get(c.id);
         return {
           id: c.id,
@@ -300,77 +309,138 @@ scored.push({
   },
 
   /**
-   * Альтернативы для упражнения РАЗМИНКИ: только stretching / активация,
-   * пересекающиеся по целевым мышцам. Не тянет силовые упражнения в замены.
+   * Варианты для упражнения РАЗМИНКИ: только stretching / активация.
+   * Сначала — именованные аналоги из exercise_relationships (с relation_type,
+   * как в ENG-5 для основных упражнений), затем добор по пересечению мышц.
    * Возвращает объекты в той же форме WarmupExercise (с duration_seconds),
-   * чтобы карточка разминки рендерила замену без адаптеров.
+   * чтобы лист разминки рендерил вариант без адаптеров.
    *
-   * Примечание: двухфазный запрос здесь НЕ применяется — альтернативы грузятся
-   * лениво (по одному упражнению, с кэшем в useWarmup), и любая из 20 может
-   * стать основной при замене → тяжёлые поля нужны для всех 20.
+   * Грузится лениво (по открытию WarmupExerciseSheet, кэш в useWarmup),
+   * тяжёлые тексты нужны для всех отображаемых вариантов.
    */
-async getWarmupAlternatives(
-  exerciseId: string,
-  primaryMuscles: string[],
-): Promise<WarmupExercise[]> {
-  try {
-    let query = supabase
-      .from('exercises')
-      .select(
-        'id, name, technique, benefits, risks, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation',
-      )
-      .neq('id', exerciseId)
-      .or('category.eq.stretching,can_be_activation.is.true')
-      .limit(20);
+  async getWarmupAlternatives(
+    exerciseId: string,
+    primaryMuscles: string[]
+  ): Promise<WarmupExercise[]> {
+    try {
+      const ALT_LIMIT = 20;
+      const POOL_OR = 'category.eq.stretching,can_be_activation.is.true';
+      const ALT_FIELDS =
+        'id, name, technique, benefits, risks, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation';
 
-    if (primaryMuscles.length > 0) {
-      query = query.overlaps('primary_muscles', primaryMuscles);
-    }
+      // 1. Именованные аналоги из графа связей (тот же источник, что у основных карточек).
+      const { data: relRows } = await supabase
+        .from('exercise_relationships')
+        .select('related_exercise_id, relation_type')
+        .eq('exercise_id', exerciseId)
+        .in('status', ['approved', 'suggested'])
+        .limit(ALT_LIMIT);
 
-    const { data, error } = await query;
-
-    if (error || !data) return [];
-
-    const referenceData = await getExerciseReferenceData(
-      data.map((ex) => ex.id),
-    );
-
-    return data.map((ex): WarmupExercise => {
-      let duration = 30;
-
-      if (ex.settings) {
-        const match = ex.settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
-        if (match) duration = parseInt(match[1], 10);
+      const relationById = new Map<string, WarmupRelationType>();
+      for (const r of relRows ?? []) {
+        if (r.related_exercise_id !== exerciseId && !relationById.has(r.related_exercise_id)) {
+          relationById.set(
+            r.related_exercise_id,
+            normalizeRelationType(r.relation_type) ?? 'alternative'
+          );
+        }
       }
 
-      const refs = referenceData[ex.id] ?? {
-        equipment: [],
-        injuries: [],
-        alternativeIds: [],
-      };
+      const candidateIds = [...relationById.keys()];
+      let curated: WarmupAltRow[] = [];
+      if (candidateIds.length > 0) {
+        const { data } = await supabase
+          .from('exercises')
+          .select(ALT_FIELDS)
+          .in('id', candidateIds)
+          .or(POOL_OR);
+        curated = data ?? [];
+      }
+      // Аналоги, не попавшие в пул разминки, не предлагаем.
+      for (const ex of curated) relationById.set(ex.id, relationById.get(ex.id) ?? 'alternative');
+      const curatedIds = new Set(curated.map((ex) => ex.id));
 
-      return {
-        id: ex.id,
-        name: ex.name,
-        technique: ex.technique || '',
-        benefits: ex.benefits || '',
-        risks: ex.risks || '',
-        injuries: refs.injuries,
-        equipment: refs.equipment,
-        media_url: ex.media_url || null,
-        primary_muscles: ex.primary_muscles || [],
-        secondary_muscles: ex.secondary_muscles || [],
-        duration_seconds: duration,
-        relevance_score: 0,
-        category: ex.category ?? null,
-        can_be_activation: ex.can_be_activation ?? false,
-      };
-    });
-  } catch (e) {
-    console.error('Ошибка загрузки альтернатив разминки:', e);
-    return [];
-  }
+      // 2. Добор по пересечению целевых мышц (аналогов не хватило до лимита).
+      let muscleFill: WarmupAltRow[] = [];
+      const remaining = ALT_LIMIT - curated.length;
+      if (remaining > 0) {
+        let query = supabase
+          .from('exercises')
+          .select(ALT_FIELDS)
+          .neq('id', exerciseId)
+          .or(POOL_OR)
+          .limit(remaining + curated.length);
+        if (primaryMuscles.length > 0) {
+          query = query.overlaps('primary_muscles', primaryMuscles);
+        }
+        const { data } = await query;
+        muscleFill = (data ?? []).filter((ex) => !curatedIds.has(ex.id)).slice(0, remaining);
+      }
+
+      const rows = [...curated, ...muscleFill];
+      if (rows.length === 0) return [];
+
+      const referenceData = await getExerciseReferenceData(rows.map((ex) => ex.id));
+
+      return rows.map((ex) => {
+        const refs = referenceData[ex.id] ?? { equipment: [], injuries: [], alternativeIds: [] };
+        return {
+          id: ex.id,
+          name: ex.name,
+          technique: ex.technique || '',
+          benefits: ex.benefits || '',
+          risks: ex.risks || '',
+          injuries: refs.injuries,
+          equipment: refs.equipment,
+          media_url: ex.media_url || null,
+          primary_muscles: ex.primary_muscles || [],
+          secondary_muscles: ex.secondary_muscles || [],
+          duration_seconds: parseWarmupDuration(ex.settings),
+          relevance_score: 0,
+          category: ex.category ?? null,
+          can_be_activation: ex.can_be_activation ?? false,
+          relation_type: relationById.get(ex.id) ?? null,
+        };
+      });
+    } catch (e) {
+      console.error('Ошибка загрузки альтернатив разминки:', e);
+      return [];
+    }
   },
+};
+
+interface WarmupAltRow {
+  id: string;
+  name: string;
+  technique: string | null;
+  benefits: string | null;
+  risks: string | null;
+  media_url: string | null;
+  primary_muscles: string[] | null;
+  secondary_muscles: string[] | null;
+  settings: string | null;
+  category: string | null;
+  can_be_activation: boolean | null;
+}
+
+const normalizeRelationType = (value: unknown): WarmupRelationType | null => {
+  switch (value) {
+    case 'variation':
+    case 'alternative':
+    case 'regression':
+    case 'progression':
+      return value;
+    default:
+      return null;
+  }
+};
+
+export const parseWarmupDuration = (settings: string | null | undefined): number => {
+  if (settings) {
+    const match = settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
+    if (match) return parseInt(match[1], 10);
+  }
+  return 30;
 };
 
 // ============================================================================
@@ -392,7 +462,7 @@ export interface WarmupSet {
  */
 export function generateWarmupSets(
   workingWeight: number,
-  exerciseType: 'compound' | 'isolation',
+  exerciseType: 'compound' | 'isolation'
 ): WarmupSet[] {
   if (workingWeight <= 0) return [];
 
@@ -406,8 +476,16 @@ export function generateWarmupSets(
   } else {
     // Изоляция: фокус на приток крови, без утомления ЦНС
     return [
-      { weight: Math.round(workingWeight * 0.4 * 2) / 2, reps: 12, note: 'Лёгкая разминка (кровоток)' },
-      { weight: Math.round(workingWeight * 0.6 * 2) / 2, reps: 6, note: 'Подготовка к рабочему весу' },
+      {
+        weight: Math.round(workingWeight * 0.4 * 2) / 2,
+        reps: 12,
+        note: 'Лёгкая разминка (кровоток)',
+      },
+      {
+        weight: Math.round(workingWeight * 0.6 * 2) / 2,
+        reps: 6,
+        note: 'Подготовка к рабочему весу',
+      },
     ];
   }
 }

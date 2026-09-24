@@ -17,6 +17,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Dumbbell } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { perfMark, perfSince, useFreezeDetector } from '../../src/utils/perf';
@@ -33,6 +34,7 @@ import { RestTimer } from '../../src/components/workout/RestTimer';
 import { WorkoutTimerProvider } from '../../src/components/workout/WorkoutTimer';
 import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
 import { WarmupBlock } from '../../src/components/workout/WarmupBlock';
+import { WarmupExerciseSheet } from '../../src/components/workout/WarmupExerciseSheet';
 import { WorkoutTabs, WorkoutTabKey } from '../../src/components/workout/WorkoutTabs';
 import {
   ExerciseSettingsModal,
@@ -164,6 +166,16 @@ export default function WorkoutSessionScreen() {
 
   const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
   const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
+
+  // WARMUP-1: L2 лист разминки. State и рендер — в корне экрана, вне ScrollView
+  // (паттерн PainSheet): Modal/оверлей, вложенный в скролл-контент, на Android
+  // обрезается клипом и перехватывает незавершённый жест тапа (открытие-и-закрытие).
+  const [warmupDetailIndex, setWarmupDetailIndex] = useState<number | null>(null);
+  const openWarmupDetails = useCallback((i: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setWarmupDetailIndex(i);
+  }, []);
+  const closeWarmupDetails = useCallback(() => setWarmupDetailIndex(null), []);
 
   // FEAT-1.9: шторка боли
   const [painIndex, setPainIndex] = useState<number | null>(null);
@@ -442,8 +454,7 @@ export default function WorkoutSessionScreen() {
             onStopTimer={stopWarmupTimer}
             onMarkCompleted={markWarmupCompleted}
             onSkip={() => setActiveTab('workout')}
-            loadWarmupAlternatives={loadWarmupAlternatives}
-            onReplaceWarmup={replaceWarmupExercise}
+            onOpenDetails={openWarmupDetails}
           />
         </ScrollView>
       )}
@@ -501,6 +512,20 @@ export default function WorkoutSessionScreen() {
         onClose={closePain}
         onSavePain={savePainForCurrent}
         onClearPain={clearPainForCurrent}
+      />
+
+      {/* WARMUP-1: L2 лист техники/аналогов разминки — в корне экрана (паттерн PainSheet) */}
+      <WarmupExerciseSheet
+        exercise={warmupDetailIndex !== null ? (warmupExercises[warmupDetailIndex] ?? null) : null}
+        index={warmupDetailIndex ?? 0}
+        completed={
+          warmupDetailIndex !== null &&
+          isWarmupExerciseCompleted(warmupExercises[warmupDetailIndex]?.id ?? '')
+        }
+        onClose={closeWarmupDetails}
+        onMarkCompleted={markWarmupCompleted}
+        loadAlternatives={loadWarmupAlternatives}
+        onReplace={replaceWarmupExercise}
       />
 
       <ExerciseSettingsModal
