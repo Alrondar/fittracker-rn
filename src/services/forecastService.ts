@@ -10,6 +10,7 @@
 // CLAUDE.md §8 — три параллельных запроса, без N+1.
 
 import { supabase } from '../lib/supabase';
+import { effectiveReps } from '../utils/reps';
 import {
   ForecastExerciseInput,
   ForecastInput,
@@ -47,8 +48,10 @@ interface WorkoutExerciseRow {
 
 interface LogRow {
   workout_exercise_id: string;
-  weight: number | null;
+  weight_kg: number | null;
   reps: number | null;
+  reps_left?: number | null;
+  reps_right?: number | null;
   // Supabase join `.select('workout_exercises!inner(exercise_id)')` возвращает массив.
   workout_exercises: { exercise_id: string | null }[] | null;
 }
@@ -56,8 +59,10 @@ interface LogRow {
 interface RecentWorkoutVolumeRow {
   id: string;
   workout_logs: {
-    weight: number | null;
+    weight_kg: number | null;
     reps: number | null;
+    reps_left?: number | null;
+    reps_right?: number | null;
     is_warmup: boolean | null;
   }[];
 }
@@ -134,13 +139,15 @@ export async function getWorkoutForecast(userId: string): Promise<WorkoutForecas
   const [logsRes, workoutVolumesRes] = await Promise.all([
     supabase
       .from('workout_logs')
-      .select('workout_exercise_id, weight, reps, workout_exercises!inner (exercise_id)')
+      .select(
+        'workout_exercise_id, weight_kg, reps, reps_left, reps_right, workout_exercises!inner (exercise_id)'
+      )
       .in('workout_exercises.exercise_id', exerciseIds)
       .eq('is_warmup', false)
       .gte('created_at', sinceIso),
     supabase
       .from('workouts')
-      .select('id, workout_logs ( weight, reps, is_warmup )')
+      .select('id, workout_logs ( weight_kg, reps, reps_left, reps_right, is_warmup )')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .is('skipped_at', null)
@@ -167,8 +174,8 @@ export async function getWorkoutForecast(userId: string): Promise<WorkoutForecas
     const exerciseId = we.exercise_id;
     weIdToExerciseId.set(log.workout_exercise_id, exerciseId);
 
-    const weight = log.weight ?? 0;
-    const reps = log.reps ?? 0;
+    const weight = log.weight_kg ?? 0;
+    const reps = effectiveReps(log);
     const prev = volumePerWeId.get(log.workout_exercise_id) ?? 0;
     volumePerWeId.set(log.workout_exercise_id, prev + weight * reps);
   }
@@ -199,8 +206,8 @@ export async function getWorkoutForecast(userId: string): Promise<WorkoutForecas
     let sum = 0;
     for (const l of w.workout_logs ?? []) {
       if (l.is_warmup) continue;
-      const weight = l.weight ?? 0;
-      const reps = l.reps ?? 0;
+      const weight = l.weight_kg ?? 0;
+      const reps = effectiveReps(l);
       sum += weight * reps;
     }
     return sum;

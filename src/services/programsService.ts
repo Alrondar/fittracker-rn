@@ -103,6 +103,8 @@ export interface WorkoutProgramInfo {
   programName: string;
   phaseName?: string;
   phaseType?: string;
+  /** FD-1: номер недели текущей тренировки (для weeksInBlock в движке прогрессии). */
+  weekNumber?: number;
 }
 
 // ============================================================================
@@ -875,7 +877,7 @@ export async function replaceExerciseInProgram(
 export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutProgramInfo | null> {
   const { data: workout, error } = await supabase
     .from('workouts')
-    .select('program_id, phase_number, programs ( name )')
+    .select('program_id, phase_number, week_number, programs ( name )')
     .eq('id', workoutId)
     .maybeSingle();
   if (error || !workout?.program_id) return null;
@@ -897,6 +899,7 @@ export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutP
     programName: program?.name || 'Программа',
     phaseName,
     phaseType,
+    weekNumber: workout.week_number ?? undefined,
   };
 }
 

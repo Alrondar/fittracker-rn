@@ -50,9 +50,7 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
     };
   }
 
-  const prog = Array.isArray(userProgram.programs)
-    ? userProgram.programs[0]
-    : userProgram.programs;
+  const prog = Array.isArray(userProgram.programs) ? userProgram.programs[0] : userProgram.programs;
   const phases = prog?.program_phases || [];
   const curPhase = userProgram.current_phase ?? 1;
   const curWeek = userProgram.current_week ?? 1;
@@ -83,8 +81,8 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
 
   const list = workouts || [];
 
-  // 3. Прогресс (выполнено / всего)
-  const completed = list.filter((w) => w.finished_at).length;
+  // 3. Прогресс (выполнено / всего) — FIT-7: пропуск (skipped_at) не считается выполненным
+  const completed = list.filter((w) => w.finished_at && !w.skipped_at).length;
 
   // 4. Секции по (фаза, неделя)
   const phaseMap = new Map<number, any>(phases.map((p: any) => [p.phase_number, p]));
@@ -123,7 +121,7 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
 export async function skipWorkout(
   workoutId: string,
   userId: string,
-  programId: string,
+  programId: string
 ): Promise<void> {
   const { error: updateError } = await supabase
     .from('workouts')

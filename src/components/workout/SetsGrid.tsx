@@ -46,6 +46,7 @@ import {
   ReadinessContext,
   ReadinessOverride,
 } from '../../engine/progression';
+import type { ProgressionContext } from '../../engine/progression';
 import { RecommendationCard } from './RecommendationCard';
 
 // COACH-3: фиксированный набор причин отклонения (ROADMAP C2).
@@ -324,6 +325,8 @@ interface SetsGridProps {
   safetyContext?: SafetyContext | null;
   /** ENG-3: readiness context (optional signal). Применяется после safety. */
   readinessContext?: ReadinessContext | null;
+  /** FD-1: контекст прогрессии (фаза программы / восстановление / цикл). */
+  progressionContext?: ProgressionContext | null;
   unit: WeightUnit;
   /** FEAT-1.5: тип оборудования для расчёта блинов */
   equipment?: string | string[];
@@ -361,6 +364,7 @@ export const SetsGrid = memo(function SetsGrid({
   targetRpe,
   safetyContext,
   readinessContext,
+  progressionContext,
   unit,
   equipment,
   isUnilateral,
@@ -502,11 +506,21 @@ export const SetsGrid = memo(function SetsGrid({
       targetSetIndex: progressionSetIndex ?? undefined,
       targetRpe,
       policy,
+      ...(progressionContext ?? {}),
     });
     const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
     // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
     return applyReadinessContext(afterSafety, readinessContext ?? null);
-  }, [sets, repsRange, targetRpe, safetyContext, readinessContext, progressionSetIndex, policy]);
+  }, [
+    sets,
+    repsRange,
+    targetRpe,
+    safetyContext,
+    readinessContext,
+    progressionSetIndex,
+    policy,
+    progressionContext,
+  ]);
 
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
   // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)

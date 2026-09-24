@@ -3,7 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Dumbbell, BookOpen, Activity, User } from 'lucide-react-native';
-import { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
@@ -44,7 +49,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         }}
       >
         {/* Скользящий pill-индикатор */}
-        <View
+        <Animated.View
           pointerEvents="none"
           style={[
             styles.pill,

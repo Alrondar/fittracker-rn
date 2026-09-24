@@ -153,12 +153,16 @@ export const painService = {
    * в StatusCard). Информационный сигнал, не блокирует тренировку.
    */
   async getPainEventsToday(userId: string): Promise<number> {
-    const today = new Date().toISOString().split('T')[0];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
     const { data, error } = await supabase
       .from('pain_events')
       .select('id')
       .eq('user_id', userId)
-      .gte('occurred_at', `${today}T00:00:00+00:00`);
+      .gte('occurred_at', start.toISOString())
+      .lte('occurred_at', end.toISOString());
     if (error) throw error;
     return (data ?? []).length;
   },

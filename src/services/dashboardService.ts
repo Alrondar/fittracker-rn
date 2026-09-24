@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { profileService } from './profileService';
 import { computeStreaks, StreakStats } from '../utils/streak';
+import { toDateKeyFromIso } from '../utils/dateKey';
+import { effectiveReps } from '../utils/reps';
 import { roundE1rm } from '../utils/e1rm';
 
 export interface DashboardActiveProgram {
@@ -75,7 +77,7 @@ function parseVolumeFromWorkouts(workouts: any[]): number {
         // ENG-13: разминка не учитывается в недельном объёме
         if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
-        const reps = parseInt(log.reps) || 0;
+        const reps = effectiveReps(log);
         volume += weight * reps;
       });
     });
@@ -100,7 +102,7 @@ function parseExerciseProgress(recentWorkouts: any[]): DashboardExerciseProgress
 
         const exerciseName = exercise.exercises?.name || 'Упражнение';
         const weight = parseFloat(log.weight_kg) || 0;
-        const reps = parseInt(log.reps) || 0;
+        const reps = effectiveReps(log);
         const volume = weight * reps;
 
         if (!exerciseMap[exerciseId]) {
@@ -212,13 +214,17 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       .select('created_at, started_at, finished_at')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
+      .is('skipped_at', null) // FIT-7: пропуски не считаются активностью
       .gte('finished_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()),
 
     supabase
       .from('workouts')
-      .select('workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
+      .select(
+        'workout_exercises (workout_logs (weight_kg, reps, reps_left, reps_right, is_warmup))'
+      )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
+      .is('skipped_at', null) // FIT-7: недельный объём не считает пропуски
       .gte('finished_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
 
     supabase
@@ -236,6 +242,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
           workout_logs (
             weight_kg,
             reps,
+            reps_left,
+            reps_right,
             is_warmup
           )
         )
@@ -243,6 +251,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
+      .is('skipped_at', null) // FIT-7: «последняя тренировка» — реальная, не пропуск
       .order('finished_at', { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle(),
@@ -251,7 +260,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       .from('workouts')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .not('finished_at', 'is', null),
+      .not('finished_at', 'is', null)
+      .is('skipped_at', null), // FIT-7: пропуски не входят в счётчик тренировок
 
     supabase
       .from('workouts')
@@ -269,6 +279,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
           workout_logs (
             weight_kg,
             reps,
+            reps_left,
+            reps_right,
             is_warmup
           )
         )
@@ -276,6 +288,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
+      .is('skipped_at', null) // FIT-7: прогресс упражнений ignores пропуски
       .order('finished_at', { ascending: false, nullsFirst: false })
       .limit(20),
   ]);
@@ -366,11 +379,11 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   if (workoutDatesResult.status === 'fulfilled' && workoutDatesResult.value.data) {
     workoutDates = workoutDatesResult.value.data
       .map((workout: any) => {
-        // Effective date: finished_at ?? started_at ?? created_at
+        // Effective date: finished_at ?? started_at ?? created_at → ЛОКАЛЬный ключ дня
         const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
-        return effectiveDate?.split('T')[0];
+        return toDateKeyFromIso(effectiveDate);
       })
-      .filter(Boolean);
+      .filter((d): d is string => d !== null);
   }
 
   let weeklyStats = {
@@ -415,7 +428,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
           // ENG-13: разминка не считается в объёме последней тренировки
           if (log.is_warmup) return;
           const weight = parseFloat(log.weight_kg) || 0;
-          const reps = parseInt(log.reps) || 0;
+          const reps = effectiveReps(log);
           totalVolume += weight * reps;
         });
       }
@@ -467,7 +480,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       .from('workouts')
       .select('created_at, started_at, finished_at')
       .eq('user_id', userId)
-      .not('finished_at', 'is', null);
+      .not('finished_at', 'is', null)
+      .is('skipped_at', null); // FIT-7: стрик не строится на пропусках
     streak = computeStreaks(
       (streakDates ?? [])
         .map(

@@ -21,10 +21,14 @@
 import type { Slug } from '../types/muscleMap';
 import { getSlugsForMuscle } from '../constants/muscleMapSlugs';
 import { kgToLb } from '../hooks/useUnitPreferences';
+import { effectiveReps } from './reps';
 
 export type MuscleLoadSet = {
   weight: number | null;
   reps: number | null;
+  /** unilateral: повторения левой/правой стороны (когда общий reps пуст) */
+  reps_left?: number | null;
+  reps_right?: number | null;
   isWarmup?: boolean;
 };
 
@@ -86,7 +90,7 @@ export function calculateMuscleLoad(
     for (const set of item.sets) {
       if (set.isWarmup) continue;
       const w = set.weight ?? 0;
-      const r = set.reps ?? 0;
+      const r = effectiveReps(set);
       if (w <= 0 || r <= 0) continue;
       const vol = w * r;
       itemSets += 1;

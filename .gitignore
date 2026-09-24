@@ -36,6 +36,9 @@ yarn-error.*
 .env.production
 .env.development
 
+# MCP local config (contains Supabase PAT)
+.qoder/settings.local.json
+
 # typescript
 *.tsbuildinfo
 

@@ -24,7 +24,7 @@ import {
   WorkoutCardDisplayMode,
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
-import type { ReadinessContext } from '../../engine/progression';
+import type { ProgressionContext, ReadinessContext } from '../../engine/progression';
 import { isUnilateralExercise } from '../../utils/exerciseHelpers';
 
 type RepsRangeHolder = { reps_range?: string };
@@ -63,6 +63,8 @@ interface ExerciseCardProps {
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
   /** ENG-3: today readiness context (optional signal, PRODUCT.md §7). */
   readinessContext?: ReadinessContext | null;
+  /** FD-1: контекст прогрессии (фаза/восстановление/цикл). */
+  progressionContext?: ProgressionContext | null;
   // COACH-3: идентификаторы для записи feedback (пробрасываются в SetsGrid).
   workoutId: string;
 }
@@ -89,6 +91,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   unit,
   warning = null,
   readinessContext = null,
+  progressionContext = null,
   workoutId,
 }: ExerciseCardProps) {
   const hasSets = 'sets' in exercise;
@@ -216,6 +219,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           targetRpe={targetRpe}
           safetyContext={safetyContext}
           readinessContext={readinessContext}
+          progressionContext={progressionContext}
           unit={unit}
           equipment={equipment}
           isUnilateral={isUnilateral}

@@ -3,6 +3,7 @@
 // P0 Вариант B: добавлена авто-калькуляция readiness и getRecoveryTrend.
 import { supabase } from '../lib/supabase';
 import { calculateReadinessFromDetails } from '../utils/readiness';
+import { todayKey, toDateKey } from '../utils/dateKey';
 
 export interface ReadinessInput {
   sleepHours: number | null;
@@ -16,7 +17,7 @@ export interface ReadinessInput {
 export const readinessService = {
   /** Есть ли уже запись за сегодня. */
   async getToday(userId: string): Promise<boolean> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKey();
     const { data, error } = await supabase
       .from('daily_readiness')
       .select('id')
@@ -33,7 +34,7 @@ export const readinessService = {
    * (PRODUCT.md §7: отсутствие check-in не блокирует и не переписывает программу).
    */
   async getTodayReadiness(userId: string): Promise<number | null> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKey();
     const { data, error } = await supabase
       .from('daily_readiness')
       .select('readiness')
@@ -44,15 +45,39 @@ export const readinessService = {
     return data?.readiness ?? null;
   },
 
+  /**
+   * FD-1: детали восстановления за сегодня (сон ч / стресс 1-5) для движка прогрессии.
+   * null = check-in не сделан — движок не применяет LOW_SLEEP / HIGH_STRESS.
+   */
+  async getTodayRecoveryDetails(
+    userId: string
+  ): Promise<{ sleepHours: number | null; stressLevel: number | null }> {
+    const today = todayKey();
+    const { data, error } = await supabase
+      .from('daily_readiness')
+      .select('sleep_hours, stress')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .maybeSingle();
+    if (error) throw error;
+    return {
+      sleepHours: data?.sleep_hours ?? null,
+      stressLevel: data?.stress ?? null,
+    };
+  },
+
   /** Insert или update за сегодня (не зависит от наличия unique-констрейнта). */
   async upsertToday(userId: string, input: ReadinessInput): Promise<void> {
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = todayKey();
+
     // P0 Вариант B: авто-расчёт readiness, если введены детали
     // Если пользователь ввёл детали — авто-score перезаписывает manual (если manual не задан явно)
-    const hasDetails = input.sleepHours !== null || input.sleepQuality !== null || 
-                       input.stress !== null || input.soreness !== null;
-    
+    const hasDetails =
+      input.sleepHours !== null ||
+      input.sleepQuality !== null ||
+      input.stress !== null ||
+      input.soreness !== null;
+
     let finalReadiness = input.readiness ?? null;
     if (hasDetails && finalReadiness === null) {
       finalReadiness = calculateReadinessFromDetails(
@@ -79,10 +104,11 @@ export const readinessService = {
       .maybeSingle();
 
     if (existing) {
-      const { error } = await supabase
-        .from('daily_readiness')
-        .update(payload)
-        .eq('id', existing.id);
+      // Quick-set из StatusCard присылает details=null — update только ненулевых полей,
+      // иначе он затирает sleep/fatigue/soreness/stress из полного чек-ина
+      const patch = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== null));
+      if (Object.keys(patch).length === 0) return;
+      const { error } = await supabase.from('daily_readiness').update(patch).eq('id', existing.id);
       if (error) throw error;
     } else {
       const { error } = await supabase
@@ -99,23 +125,25 @@ export const readinessService = {
   async getRecoveryTrend(userId: string, days: number) {
     const since = new Date();
     since.setDate(since.getDate() - days);
-    
+
     const { data, error } = await supabase
       .from('daily_readiness')
       .select('date, sleep_hours, sleep_quality, stress, readiness')
       .eq('user_id', userId)
-      .gte('date', since.toISOString().split('T')[0])
+      .gte('date', toDateKey(since))
       .order('date', { ascending: true });
-    
+
     if (error) throw error;
-    
-    const sleepHours = data.map(d => d.sleep_hours).filter((v): v is number => v !== null);
-    const stress = data.map(d => d.stress).filter((v): v is number => v !== null);
-    
+
+    const sleepHours = data.map((d) => d.sleep_hours).filter((v): v is number => v !== null);
+    const stress = data.map((d) => d.stress).filter((v): v is number => v !== null);
+
     return {
-      sleepHours: data.map(d => ({ date: d.date, value: d.sleep_hours })),
-      stress: data.map(d => ({ date: d.date, value: d.stress })),
-      avgSleepHours: sleepHours.length ? sleepHours.reduce((a, b) => a + b, 0) / sleepHours.length : 0,
+      sleepHours: data.map((d) => ({ date: d.date, value: d.sleep_hours })),
+      stress: data.map((d) => ({ date: d.date, value: d.stress })),
+      avgSleepHours: sleepHours.length
+        ? sleepHours.reduce((a, b) => a + b, 0) / sleepHours.length
+        : 0,
       avgStress: stress.length ? stress.reduce((a, b) => a + b, 0) / stress.length : 0,
     };
   },

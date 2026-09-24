@@ -1,4 +1,5 @@
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllPages } from '../lib/supabase';
+import { effectiveReps } from '../utils/reps';
 
 // ============================================================================
 // ПУБЛИЧНЫЕ ТИПЫ (контракт для history.tsx / history/[id].tsx — не менять)
@@ -47,6 +48,8 @@ export interface HistoryData {
 interface HistoryLogRow {
   weight_kg: number | null;
   reps: number | null;
+  reps_left?: number | null;
+  reps_right?: number | null;
   rpe: number | null;
   /** ENG-13: флаг разминочного сета (исключается из аналитики volume/sets/avg_rpe) */
   is_warmup?: boolean;
@@ -61,6 +64,7 @@ interface HistoryWorkoutRow {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  skipped_at?: string | null;
   duration_seconds: number | null;
   program_id: string | null;
   workout_exercises: HistoryExerciseRow[] | null;
@@ -77,7 +81,7 @@ function calculateVolume(workout: HistoryWorkoutRow): number {
     (ex.workout_logs ?? []).forEach((log) => {
       // ENG-13: разминочные сеты исключаются из аналитики
       if (log.is_warmup) return;
-      volume += (Number(log.weight_kg) || 0) * (Number(log.reps) || 0);
+      volume += (Number(log.weight_kg) || 0) * effectiveReps(log);
     });
   });
   return volume;
@@ -146,21 +150,27 @@ export async function getHistory(userId: string): Promise<HistoryData> {
   // Запрашиваем started_at для корректной effective date.
   // PostgREST не умеет ORDER BY COALESCE(finished_at, started_at, created_at),
   // поэтому сортируем по effective date на клиенте — ниже, после маппинга.
-  const { data, error } = await supabase
-    .from('workouts')
-    .select(
-      'id, name, created_at, started_at, finished_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, rpe, is_warmup ) )',
-    )
-    .eq('user_id', userId);
+  // FD-6: обходим лимит PostgREST (1000 строк) пагинацией по всей истории.
+  // Порядок по `id` — детерминированный, чтобы страницы не дублировались/не терялись.
+  const { data, error } = await fetchAllPages<HistoryWorkoutRow>((from, to) =>
+    supabase
+      .from('workouts')
+      .select(
+        'id, name, created_at, started_at, finished_at, skipped_at, duration_seconds, program_id, workout_exercises ( id, workout_logs ( weight_kg, reps, reps_left, reps_right, rpe, is_warmup ) )'
+      )
+      .eq('user_id', userId)
+      .order('id')
+      .range(from, to)
+  );
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as HistoryWorkoutRow[];
+  const rows = data;
 
   // Батч-запрос имён программ: собираем уникальные program_id и одним запросом
   // вытаскиваем name. Ошибка здесь не должна ронять всю историю — ловим локально.
   const programIds = Array.from(
-    new Set(rows.map((r) => r.program_id).filter((v): v is string => !!v)),
+    new Set(rows.map((r) => r.program_id).filter((v): v is string => !!v))
   );
   let programNames: Record<string, string> = {};
   if (programIds.length > 0) {
@@ -180,8 +190,9 @@ export async function getHistory(userId: string): Promise<HistoryData> {
   const completed: HistoryWorkout[] = rows
     .filter(
       (w) =>
-        w.finished_at !== null ||
-        (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0),
+        w.skipped_at == null && // FIT-7: пропущенные тренировки не входят в историю
+        (w.finished_at !== null ||
+          (w.workout_exercises ?? []).some((ex) => (ex.workout_logs?.length ?? 0) > 0))
     )
     .map((w) => ({
       id: w.id,
@@ -214,6 +225,8 @@ interface WorkoutDetailLogRow {
   set_number: number;
   weight_kg: number | null;
   reps: number | null;
+  reps_left?: number | null;
+  reps_right?: number | null;
   rpe: number | null;
   rir: number | null;
   difficulty: string | null;
@@ -226,7 +239,11 @@ interface WorkoutDetailExerciseRow {
   target_sets: number | null;
   target_reps_range: string | null;
   rest_seconds: number | null;
-  exercises: { name: string; primary_muscles: string[] | null; secondary_muscles: string[] | null } | null;
+  exercises: {
+    name: string;
+    primary_muscles: string[] | null;
+    secondary_muscles: string[] | null;
+  } | null;
   workout_logs: WorkoutDetailLogRow[] | null;
 }
 interface WorkoutDetailRow {
@@ -247,6 +264,8 @@ export interface WorkoutDetailLog {
   set_number: number;
   weight_kg: number | null;
   reps: number | null;
+  reps_left?: number | null;
+  reps_right?: number | null;
   rpe: number | null;
   rir: number | null;
   difficulty: string | null;
@@ -285,13 +304,13 @@ export interface WorkoutDetailError {
 }
 
 export async function getWorkoutDetail(
-  workoutId: string,
+  workoutId: string
 ): Promise<{ data: WorkoutDetail | null; error: WorkoutDetailError | null }> {
   const { data, error } = await supabase
     .from('workouts')
     .select(
       `id, name, created_at, started_at, finished_at, duration_seconds, program_id, week_number, day_index,
-       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name, primary_muscles, secondary_muscles ), workout_logs ( id, set_number, weight_kg, reps, rpe, rir, difficulty, is_warmup ) )`,
+       workout_exercises ( id, exercise_id, target_sets, target_reps_range, rest_seconds, exercises ( name, primary_muscles, secondary_muscles ), workout_logs ( id, set_number, weight_kg, reps, reps_left, reps_right, rpe, rir, difficulty, is_warmup ) )`
     )
     .eq('id', workoutId)
     .maybeSingle();
@@ -325,6 +344,8 @@ export async function getWorkoutDetail(
         set_number: log.set_number,
         weight_kg: log.weight_kg,
         reps: log.reps,
+        reps_left: log.reps_left ?? null,
+        reps_right: log.reps_right ?? null,
         rpe: log.rpe,
         rir: log.rir,
         difficulty: log.difficulty,

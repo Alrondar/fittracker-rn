@@ -44,6 +44,8 @@ export function useBodyMetrics(userId: string | null) {
         forearm_left_cm: data.forearm_left_cm ? parseFloat(data.forearm_left_cm) : null,
         forearm_right_cm: data.forearm_right_cm ? parseFloat(data.forearm_right_cm) : null,
         thigh_cm: data.thigh_cm ? parseFloat(data.thigh_cm) : null,
+        thigh_left_cm: data.thigh_left_cm ? parseFloat(data.thigh_left_cm) : null,
+        thigh_right_cm: data.thigh_right_cm ? parseFloat(data.thigh_right_cm) : null,
         calf_left_cm: data.calf_left_cm ? parseFloat(data.calf_left_cm) : null,
         calf_right_cm: data.calf_right_cm ? parseFloat(data.calf_right_cm) : null,
         arm_cm: data.arm_cm ? parseFloat(data.arm_cm) : null,
@@ -61,7 +63,7 @@ export function useBodyMetrics(userId: string | null) {
 
   // Мутация: удалить замер
   const deleteMutation = useMutation({
-    mutationFn: (metricId: string) => metricsService.deleteMetric(metricId),
+    mutationFn: (metricId: string) => metricsService.deleteMetric(userId!, metricId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['body_metrics', userId] });
     },

@@ -78,16 +78,31 @@ export function calculateMacros(input: MacroInput): MacroResult {
   // Макросы: научно обоснованные диапазоны (NSCA/ACSM)
   // Белок: MPS (muscle protein synthesis) достигает плато при ~2.2–2.4 г/кг.
   // Выше 2.4 г/кг избыток окисляется для энергии, создавая нагрузку на ЖКТ/почки.
-  let targetProteins = Math.round(w * 2.0);
   // Жиры: минимум 1.0 г/кг критичен для гормональной системы и усвоения витаминов.
+  //
+  // Безопасные ограничения (вместо опасных фармакологических эвристик).
+  // PRODUCT.md §14: приложение не назначает фармакологию и не поощряет опасные
+  // протоколы — Caps/floors применяются ВСЕГДА независимо от usePharma.
+  // Clamp'ы привязаны и к г/кг, и к доле целевых калорий, поэтому реально
+  // срабатывают на границах (низкие калории при большой массе и наоборот),
+  // а базовые 2.0/1.0 г/кг остаются для типового пользователя.
+  const PROTEIN_MAX_G_PER_KG = 2.4; // физиологический потолок усвоения
+  const PROTEIN_MAX_CALORIE_SHARE = 0.35; // белок не более 35% целевых калорий
+  const FAT_MIN_G_PER_KG = 1.0; // гормональный минимум
+  const FAT_MIN_CALORIE_SHARE = 0.2; // жиры не менее 20% целевых калорий
+
+  let targetProteins = Math.round(w * 2.0);
   let targetFats = Math.round(w * 1.0);
 
-  // Безопасные ограничения (вместо опасных фармакологических эвристик)
-  // PRODUCT.md §14: AI/приложение не должно назначать фармакологию или поощрять опасные протоколы.
-  // Caps применяются всегда: белок не превышает физиологический потолок усвоения,
-  // жиры не опускаются ниже гормонального минимума — независимо от usePharma.
-  targetProteins = Math.min(targetProteins, Math.round(w * 2.4));
-  targetFats = Math.max(targetFats, Math.round(w * 1.0));
+  // Верхняя граница белка: минимум из г/кг-потолка и доли калорий.
+  const proteinCapByWeight = Math.round(w * PROTEIN_MAX_G_PER_KG);
+  const proteinCapByCalories = Math.round((targetCalories * PROTEIN_MAX_CALORIE_SHARE) / 4);
+  targetProteins = Math.min(targetProteins, proteinCapByWeight, proteinCapByCalories);
+
+  // Нижняя граница жиров: максимум из г/кг-минимума и доли калорий.
+  const fatFloorByWeight = Math.round(w * FAT_MIN_G_PER_KG);
+  const fatFloorByCalories = Math.round((targetCalories * FAT_MIN_CALORIE_SHARE) / 9);
+  targetFats = Math.max(targetFats, fatFloorByWeight, fatFloorByCalories);
 
   // Углеводы — остаток калорий
   const proteinCalories = targetProteins * 4;

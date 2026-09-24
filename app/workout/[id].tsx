@@ -46,6 +46,10 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
 import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
+import { useTodayRecovery } from '../../src/hooks/useTodayRecovery';
+import { useProfile } from '../../src/hooks/useProfile';
+import { useCycle } from '../../src/hooks/useCycle';
+import type { ProgressionContext } from '../../src/engine/progression';
 
 export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
@@ -112,6 +116,23 @@ export default function WorkoutSessionScreen() {
   // null (check-in не сделан) не блокирует и не меняет recommendation (PRODUCT.md §7).
   const { data: todayReadiness } = useTodayReadiness(userId);
   const readinessContext = useMemo(() => ({ readiness: todayReadiness ?? null }), [todayReadiness]);
+
+  // FD-1: контекст прогрессии (фаза программы / восстановление / цикл).
+  // Движок охраняет каждое поле через `!= null`, поэтому отсутствие check-in
+  // или программы не меняет рекомендацию (PRODUCT.md §7).
+  const { data: recoveryDetails } = useTodayRecovery(userId);
+  const { userData } = useProfile(userId);
+  const { currentPhase } = useCycle(userData?.gender);
+  const progressionContext = useMemo<ProgressionContext>(() => {
+    const phaseType = workoutProgramInfo?.phaseType;
+    return {
+      currentPhaseType: phaseType as ProgressionContext['currentPhaseType'],
+      weeksInBlock: workoutProgramInfo?.weekNumber,
+      sleepHours: recoveryDetails?.sleepHours ?? null,
+      stressLevel: recoveryDetails?.stressLevel ?? null,
+      cyclePhase: currentPhase?.phase ?? null,
+    };
+  }, [workoutProgramInfo, recoveryDetails, currentPhase]);
 
   const warmupSource = useMemo(
     () =>
@@ -296,6 +317,7 @@ export default function WorkoutSessionScreen() {
         unit={unit}
         warning={exerciseWarnings[item.id] || null}
         readinessContext={readinessContext}
+        progressionContext={progressionContext}
         workoutId={id as string}
         addSet={addSet}
       />
@@ -320,6 +342,7 @@ export default function WorkoutSessionScreen() {
       unit,
       exerciseWarnings,
       readinessContext,
+      progressionContext,
       addSet,
     ]
   );

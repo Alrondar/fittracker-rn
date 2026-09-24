@@ -22,6 +22,7 @@ import {
   exerciseHasMuscle,
   type MuscleLoadMode,
 } from '../../src/utils/muscleLoad';
+import { effectiveReps } from '../../src/utils/reps';
 import { MuscleLoadMap } from '../../src/components/workout/MuscleLoadMap';
 import { getMuscleNamesForSlug } from '../../src/constants/muscleMapSlugs';
 import type { Slug } from '../../src/types/muscleMap';
@@ -75,7 +76,7 @@ export default function WorkoutReportScreen() {
       ex.logs.forEach((log: WorkoutDetailLog) => {
         if (log.is_warmup) return; // разминочные — не в аналитике
         const w = log.weight_kg ?? 0;
-        const r = log.reps ?? 0;
+        const r = effectiveReps(log);
         if (w > 0 && r > 0) {
           totalVolume += w * r;
           totalSets += 1;
@@ -98,6 +99,8 @@ export default function WorkoutReportScreen() {
         sets: ex.logs.map((log: WorkoutDetailLog) => ({
           weight: log.weight_kg,
           reps: log.reps,
+          reps_left: log.reps_left ?? null,
+          reps_right: log.reps_right ?? null,
           isWarmup: log.is_warmup ?? false,
         })),
       })),
@@ -406,7 +409,7 @@ export default function WorkoutReportScreen() {
                     <Text
                       style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]}
                     >
-                      {log.weight_kg != null ? kgToUnit(log.weight_kg) : 0} × {log.reps ?? 0}
+                      {log.weight_kg != null ? kgToUnit(log.weight_kg) : 0} × {effectiveReps(log)}
                     </Text>
                     {log.rpe != null && (
                       <Text style={[typography.caption, { color: colors.warning }]}>

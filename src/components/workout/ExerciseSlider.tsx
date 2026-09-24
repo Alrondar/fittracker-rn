@@ -23,7 +23,7 @@ import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '..
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import { AlternativeSourceInput } from '../../engine/alternatives';
 import type { FetchAlternativesResult } from '../../hooks/workout/useWorkoutSession.loader';
-import type { ReadinessContext } from '../../engine/progression';
+import type { ProgressionContext, ReadinessContext } from '../../engine/progression';
 
 const H_GAP = SPACING.md; // UX-16 F1: плотный ритм между карточками
 const PAD = 16;
@@ -76,6 +76,8 @@ interface ExerciseSliderProps {
   warning?: { level: 'avoid' | 'caution'; message: string } | null;
   /** ENG-3: today readiness context (optional signal). */
   readinessContext?: ReadinessContext | null;
+  /** FD-1: контекст прогрессии (фаза/восстановление/цикл). */
+  progressionContext?: ProgressionContext | null;
   // COACH-3: идентификатор тренировки для записи feedback (пробрасывается в ExerciseCard).
   workoutId: string;
   // ENG-13: добавить новый сет (для warmup toggle auto-add)
@@ -103,6 +105,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   unit,
   warning = null,
   readinessContext = null,
+  progressionContext = null,
   workoutId,
   addSet,
 }: ExerciseSliderProps) {
@@ -236,6 +239,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             unit={unit}
             warning={warning}
             readinessContext={readinessContext}
+            progressionContext={progressionContext}
             workoutId={workoutId}
             addSet={addSet}
           />

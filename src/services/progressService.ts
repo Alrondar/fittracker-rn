@@ -8,8 +8,10 @@
 // Нигде в сервисе нет .in()-цепочек (источник 400 Bad Request) — только вложенные
 // embed-запросы по FK (паттерн, доказанный в runtime).
 // UI не ходит в supabase напрямую — только через этот сервис (CLAUDE.md §2).
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllPages } from '../lib/supabase';
 import { epley } from '../utils/e1rm';
+import { toDateKey } from '../utils/dateKey';
+import { effectiveReps } from '../utils/reps';
 import { computeStreaks } from '../utils/streak';
 import { profileService, PersonalRecord } from './profileService';
 
@@ -120,7 +122,7 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
   const { data: workouts, error } = await supabase
     .from('workouts')
     .select(
-      'created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps, is_warmup))'
+      'created_at, started_at, finished_at, workout_exercises (workout_logs (weight_kg, reps, reps_left, reps_right, is_warmup))'
     )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
@@ -148,7 +150,7 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
         // ENG-13: разминка не учитывается в объёме
         if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
-        const reps = parseInt(log.reps) || 0;
+        const reps = effectiveReps(log);
         week.volume += weight * reps;
       });
     });
@@ -161,7 +163,7 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
     const weekStartStr = getMondayISO(weekStart);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    const weekEndStr = toDateKey(weekEnd);
 
     const data = byWeek.get(weekStartStr) || { volume: 0, count: 0 };
     result.push({
@@ -180,12 +182,17 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
  * которая давала 400 Bad Request.
  */
 async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
-  const { data: workouts, error } = await supabase
-    .from('workouts')
-    .select(
-      'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, completed_at, is_warmup))'
-    )
-    .eq('user_id', userId);
+  // FD-6: PR считаются по всей истории → пагинация (лимит 1000), порядок по `id`.
+  const { data: workouts, error } = await fetchAllPages<any>((from, to) =>
+    supabase
+      .from('workouts')
+      .select(
+        'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, reps_left, reps_right, completed_at, is_warmup))'
+      )
+      .eq('user_id', userId)
+      .order('id')
+      .range(from, to)
+  );
 
   if (error) throw error;
   if (!workouts || workouts.length === 0) return [];
@@ -204,7 +211,7 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
         // ENG-13: разминка не может быть PR
         if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
-        const reps = parseInt(log.reps) || 0;
+        const reps = effectiveReps(log);
         if (weight <= 0 || reps <= 0) return;
 
         const setE1rm = epley(weight, reps);
@@ -254,7 +261,7 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
   const { data: workouts, error } = await supabase
     .from('workouts')
     .select(
-      'created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, is_warmup))'
+      'created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, reps_left, reps_right, is_warmup))'
     )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
@@ -278,7 +285,7 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
         // ENG-13: разминочные сеты не попадают в тренд силы
         if (log.is_warmup) return;
         const weight = parseFloat(log.weight_kg) || 0;
-        const reps = parseInt(log.reps) || 0;
+        const reps = effectiveReps(log);
         if (weight <= 0 || reps <= 0) return;
 
         if (!exerciseWeeks.has(name)) exerciseWeeks.set(name, new Map());
@@ -310,7 +317,7 @@ async function getStrengthTrend(userId: string, weeks: number): Promise<Strength
 async function getWeightTrend(userId: string, weeks: number): Promise<WeightPoint[]> {
   const startMs = Date.now() - weeks * 7 * 24 * 60 * 60 * 1000;
   // metric_date — date (YYYY-MM-DD): сравниваем с date-only строкой
-  const startDate = new Date(startMs).toISOString().split('T')[0];
+  const startDate = toDateKey(new Date(startMs));
 
   const { data: metrics, error } = await supabase
     .from('body_metrics')
@@ -333,12 +340,17 @@ async function getWeightTrend(userId: string, weeks: number): Promise<WeightPoin
  * Streak (current + best) через utils/streak.ts.
  */
 async function getStreakData(userId: string): Promise<{ current: number; best: number }> {
-  const { data: workouts, error } = await supabase
-    .from('workouts')
-    .select('created_at, started_at, finished_at')
-    .eq('user_id', userId)
-    .not('finished_at', 'is', null)
-    .is('skipped_at', null);
+  // FD-6: стрик считается по всей истории → пагинация (лимит 1000), порядок по `id`.
+  const { data: workouts, error } = await fetchAllPages<any>((from, to) =>
+    supabase
+      .from('workouts')
+      .select('created_at, started_at, finished_at')
+      .eq('user_id', userId)
+      .not('finished_at', 'is', null)
+      .is('skipped_at', null)
+      .order('id')
+      .range(from, to)
+  );
 
   if (error) throw error;
   if (!workouts || workouts.length === 0) {
@@ -365,5 +377,5 @@ function getMondayISO(date: Date): string {
   const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, ...
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   d.setDate(d.getDate() + mondayOffset);
-  return d.toISOString().split('T')[0];
+  return toDateKey(d);
 }

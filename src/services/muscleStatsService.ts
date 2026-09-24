@@ -10,8 +10,9 @@
 //
 // Blast-radius: новый export в services; consumers — useMuscleStats → MuscleStatsSection.
 
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllPages } from '../lib/supabase';
 import { calculateE1rm } from '../utils/e1rm';
+import { effectiveReps } from '../utils/reps';
 
 export type MuscleStatsRow = {
   workoutId: string;
@@ -34,6 +35,8 @@ export type MuscleStatsRow = {
 interface LogRow {
   weight_kg: number | null;
   reps: number | null;
+  reps_left?: number | null;
+  reps_right?: number | null;
   rpe: number | null;
   is_warmup?: boolean;
 }
@@ -52,6 +55,7 @@ interface WorkoutRow {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  skipped_at?: string | null;
   workout_exercises: ExerciseRow[] | null;
 }
 
@@ -68,29 +72,35 @@ function effectiveDate(w: WorkoutRow): string {
  * консистентно с FIT-7 / historyService.
  */
 export async function getMuscleStats(userId: string): Promise<MuscleStatsRow[]> {
-  const { data, error } = await supabase
-    .from('workouts')
-    .select(
-      `id, created_at, started_at, finished_at,
-       workout_exercises (
-         id,
-         exercise_id,
-         exercises ( name, primary_muscles, secondary_muscles ),
-         workout_logs ( weight_kg, reps, rpe, is_warmup )
-       )`
-    )
-    .eq('user_id', userId);
+  // FD-6: пагинация по всей истории (лимит PostgREST 1000 строк), порядок по `id`.
+  const { data, error } = await fetchAllPages<WorkoutRow>((from, to) =>
+    supabase
+      .from('workouts')
+      .select(
+        `id, created_at, started_at, finished_at, skipped_at,
+         workout_exercises (
+           id,
+           exercise_id,
+           exercises ( name, primary_muscles, secondary_muscles ),
+           workout_logs ( weight_kg, reps, reps_left, reps_right, rpe, is_warmup )
+         )`
+      )
+      .eq('user_id', userId)
+      .order('id')
+      .range(from, to)
+  );
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as WorkoutRow[];
+  const rows = data;
   const result: MuscleStatsRow[] = [];
 
   for (const w of rows) {
     const date = effectiveDate(w);
     const exercises = w.workout_exercises ?? [];
-    // Исключаем «пропущенные» тренировки (FIT-7): нет finished_at и ни одного лога.
+    // Исключаем «пропущенные» тренировки (FIT-7): skipped_at, либо нет finished_at и ни одного лога.
     const hasLogs = exercises.some((ex) => (ex.workout_logs?.length ?? 0) > 0);
+    if (w.skipped_at != null) continue;
     if (!w.finished_at && !hasLogs) continue;
 
     for (const ex of exercises) {
@@ -103,7 +113,7 @@ export async function getMuscleStats(userId: string): Promise<MuscleStatsRow[]> 
       for (const log of logs) {
         if (log.is_warmup) continue;
         const wgt = log.weight_kg ?? 0;
-        const rps = log.reps ?? 0;
+        const rps = effectiveReps(log);
         if (wgt <= 0 || rps <= 0) continue;
 
         const vol = wgt * rps;

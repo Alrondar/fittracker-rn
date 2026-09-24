@@ -88,6 +88,17 @@ export interface ProgressionInput {
   policy?: ProgressionPolicy;
 }
 
+/**
+ * FD-1: контекст сессии (фаза программы, восстановление, цикл), который
+ * пробрасывается из экрана тренировки в движок прогрессии. Все поля опциональны:
+ * движок охраняет их через `!= null`, поэтому отсутствие check-in не меняет
+ * рекомендацию (PRODUCT.md §7).
+ */
+export type ProgressionContext = Pick<
+  ProgressionInput,
+  'currentPhaseType' | 'isDeloadWeek' | 'weeksInBlock' | 'sleepHours' | 'stressLevel' | 'cyclePhase'
+>;
+
 // ============================================================================
 // ПАРСЕР repsRange
 // ============================================================================

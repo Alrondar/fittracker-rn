@@ -93,7 +93,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         .map((set, index) => ({
           set_number: index + 1,
           weight_kg: set.weight ? parseFloat(set.weight) : null,
-          reps: set.reps ? parseInt(set.reps) : null,
+          reps: set.reps ? parseInt(set.reps) : (set.estimatedReps ?? null),
           reps_left: set.reps_left ? parseInt(set.reps_left) : null,
           reps_right: set.reps_right ? parseInt(set.reps_right) : null,
           completed_at: now.toISOString(),
@@ -334,7 +334,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   );
 
   const isSetCompleted = useCallback((set: SetData): boolean => {
-    return set.weight !== '' || set.reps !== '' || set.reps_left !== '' || set.reps_right !== '';
+    // `?? ''` — защита от отсутствующих ключей reps_left/right: undefined !== '' иначе
+    // считает пустой сет завершённым (ломает RecommendationCard, RPE-чипы, автостарт отдыха)
+    return (
+      set.weight !== '' ||
+      set.reps !== '' ||
+      (set.reps_left ?? '') !== '' ||
+      (set.reps_right ?? '') !== ''
+    );
   }, []);
 
   const updateExerciseSettings = useCallback(

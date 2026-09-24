@@ -78,7 +78,7 @@ export function GoalsStep3({
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Pill size={16} color={colors.warning} style={{ marginRight: SPACING.sm }} />
             <Text style={[typography.caption, { color: colors.textSecondary }]}>
-              Расчет с учетом фармакологии: {pharmaLabel}
+              Указанная фармакология: {pharmaLabel} (не влияет на расчёт КБЖУ)
             </Text>
           </View>
         </AppCard>
@@ -175,11 +175,6 @@ export function GoalsStep3({
           {goal === 'lose' && ' Для похудения создан дефицит 15%.'}
           {goal === 'gain' && ' Для набора массы создан профицит 15%.'} Соотношение макросов: белки
           2г/кг, жиры 1г/кг, углеводы — остаток калорий.
-          {usePharma &&
-            pharmaType === 'steroids' &&
-            ' С учетом АС: белок увеличен до 3г/кг, калории +10%.'}
-          {usePharma && pharmaType === 'gh' && ' С учетом ГР: жиры снижены на 20%.'}
-          {usePharma && pharmaType === 'combo' && ' С учетом комбо: белок 3г/кг, жиры -20%.'}
         </Text>
       </AppCard>
 

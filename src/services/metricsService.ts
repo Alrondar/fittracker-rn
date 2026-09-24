@@ -1,5 +1,30 @@
 import { supabase } from '../lib/supabase';
 import { BodyMetric } from '../types/metrics';
+import { todayKey, toDateKey } from '../utils/dateKey';
+
+/**
+ * FD-10: привести profiles.current_weight_kg в соответствие с замером, у которого
+ * наибольшая metric_date (при ничьей за одну дату — последний по created_at).
+ * Вызывается после create/delete, чтобы бэкфил за прошлую дату не затирал вес.
+ */
+async function syncCurrentWeight(userId: string): Promise<void> {
+  const { data } = await supabase
+    .from('body_metrics')
+    .select('weight_kg')
+    .eq('user_id', userId)
+    .not('weight_kg', 'is', null)
+    .order('metric_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return;
+
+  await supabase
+    .from('profiles')
+    .update({ current_weight_kg: data.weight_kg, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+}
 
 export const metricsService = {
   // Получить все замеры пользователя (отсортированные по дате)
@@ -8,7 +33,9 @@ export const metricsService = {
       .from('body_metrics')
       .select('*')
       .eq('user_id', userId)
-      .order('metric_date', { ascending: false });
+      .order('metric_date', { ascending: false })
+      // FD-10: детерминированный тай-брейк за одну дату — metrics[0]/[1] стабильны.
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -21,6 +48,7 @@ export const metricsService = {
       .select('*')
       .eq('user_id', userId)
       .order('metric_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -34,7 +62,7 @@ export const metricsService = {
       .from('body_metrics')
       .insert({
         user_id: userId,
-        metric_date: metric.metric_date || new Date().toISOString().split('T')[0],
+        metric_date: metric.metric_date || todayKey(),
         weight_kg: metric.weight_kg,
         shoulder_cm: metric.shoulder_cm,
         chest_cm: metric.chest_cm,
@@ -60,39 +88,35 @@ export const metricsService = {
 
     if (error) throw error;
 
-    // Обновляем profiles.current_weight_kg для совместимости с расчётом КБЖУ
-    if (metric.weight_kg) {
-      await supabase
-        .from('profiles')
-        .update({ current_weight_kg: metric.weight_kg, updated_at: new Date().toISOString() })
-        .eq('id', userId);
-    }
+    // FD-10: profiles.current_weight_kg = вес ЗАМЕРА С ПОСЛЕДНЕЙ ДАТОЙ, а не
+    // только что вставленной строки — иначе бэкфил за прошлую дату затирал
+    // актуальный вес (используется в расчёте КБЖУ).
+    await syncCurrentWeight(userId);
 
     return data;
   },
 
   // Обновить замер
   async updateMetric(metricId: string, updates: Partial<BodyMetric>): Promise<void> {
-    const { error } = await supabase
-      .from('body_metrics')
-      .update(updates)
-      .eq('id', metricId);
+    const { error } = await supabase.from('body_metrics').update(updates).eq('id', metricId);
 
     if (error) throw error;
   },
 
   // Удалить замер
-  async deleteMetric(metricId: string): Promise<void> {
-    const { error } = await supabase
-      .from('body_metrics')
-      .delete()
-      .eq('id', metricId);
+  async deleteMetric(userId: string, metricId: string): Promise<void> {
+    const { error } = await supabase.from('body_metrics').delete().eq('id', metricId);
 
     if (error) throw error;
+
+    await syncCurrentWeight(userId);
   },
 
   // Получить замеры за период
-  async getMetricsByPeriod(userId: string, period: 'week' | 'month' | '3months' | 'year'): Promise<BodyMetric[]> {
+  async getMetricsByPeriod(
+    userId: string,
+    period: 'week' | 'month' | '3months' | 'year'
+  ): Promise<BodyMetric[]> {
     const now = new Date();
     let startDate: Date;
 
@@ -115,7 +139,7 @@ export const metricsService = {
       .from('body_metrics')
       .select('*')
       .eq('user_id', userId)
-      .gte('metric_date', startDate.toISOString().split('T')[0])
+      .gte('metric_date', toDateKey(startDate))
       .order('metric_date', { ascending: true });
 
     if (error) throw error;
@@ -123,7 +147,10 @@ export const metricsService = {
   },
 
   // Рассчитать изменение между двумя замерами
-  calculateChange(latest: number | null, previous: number | null): { value: number; percent: number } | null {
+  calculateChange(
+    latest: number | null,
+    previous: number | null
+  ): { value: number; percent: number } | null {
     if (latest === null || previous === null || previous === 0) return null;
     const value = latest - previous;
     const percent = (value / previous) * 100;

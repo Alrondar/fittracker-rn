@@ -3,8 +3,10 @@
 // Четыре параллельных запроса на неделю (workouts + pain + readiness + pre-week PR logs).
 // Skip-тренировки (FIT-7: finished_at + skipped_at) исключены через .is('skipped_at', 'null').
 // Упражнения без exercise_name в workout_exercises — имя через embed exercises(name).
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllPages } from '../lib/supabase';
 import { epley, roundE1rm } from '../utils/e1rm';
+import { toDateKey } from '../utils/dateKey';
+import { effectiveReps } from '../utils/reps';
 import {
   buildWeeklyInsights,
   calculateTrainingLoadContext,
@@ -25,17 +27,6 @@ interface WeekRange {
 
 const asOne = <T>(value: T | T[] | null): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : value;
-
-/**
- * Локальная дата → 'YYYY-MM-DD'.
- * Используется для daily_readiness.date и для уникальных workoutDays.
- */
-function toDateKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
 
 /**
  * Вычисляет границы недели (понедельник → воскресенье) с учётом offset.
@@ -81,6 +72,8 @@ interface WorkoutWeekRow {
           set_number: number;
           weight_kg: number | string | null;
           reps: number | null;
+          reps_left?: number | null;
+          reps_right?: number | null;
           rpe: number | null;
           completed_at: string | null;
           /** ENG-13: флаг разминочного сета (исключается из аналитики) */
@@ -112,6 +105,8 @@ interface ReadinessWeekRow {
 interface PreWeekLogRow {
   weight_kg: number | string | null;
   reps: number | null;
+  reps_left?: number | null;
+  reps_right?: number | null;
   workout_exercises: { exercise_id: string } | { exercise_id: string }[] | null;
 }
 
@@ -125,6 +120,8 @@ interface MuscleLogRow {
     workout_logs: {
       weight_kg: number | string | null;
       reps: number | null;
+      reps_left?: number | null;
+      reps_right?: number | null;
       completed_at: string | null;
       is_warmup?: boolean;
     }[];
@@ -154,7 +151,7 @@ async function calculateChronicVolume(
     .select(
       `
       workout_exercises(
-        workout_logs(weight_kg, reps, is_warmup)
+        workout_logs(weight_kg, reps, reps_left, reps_right, is_warmup)
       )
     `
     )
@@ -172,6 +169,8 @@ async function calculateChronicVolume(
       workout_logs: {
         weight_kg: number | string | null;
         reps: number | null;
+        reps_left?: number | null;
+        reps_right?: number | null;
         is_warmup?: boolean;
       }[];
     }[];
@@ -181,7 +180,7 @@ async function calculateChronicVolume(
         // ENG-13: разминочные сеты исключаются из метрик нагрузки
         if (log.is_warmup) continue;
         const weight = toNumber(log.weight_kg);
-        const reps = log.reps ?? 0;
+        const reps = effectiveReps(log);
         totalVolume += weight * reps;
       }
     }
@@ -211,7 +210,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
           exercise_id,
           target_reps_range,
           exercises(name, primary_muscles, secondary_muscles),
-          workout_logs(set_number, weight_kg, reps, rpe, completed_at, is_warmup)
+          workout_logs(set_number, weight_kg, reps, reps_left, reps_right, rpe, completed_at, is_warmup)
         )
       `
       )
@@ -286,7 +285,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
       if (validLogs.length > 0) {
         const lastLog = validLogs.sort((a, b) => (b.set_number || 0) - (a.set_number || 0))[0];
         const weight = toNumber(lastLog.weight_kg);
-        const reps = lastLog.reps ?? 0;
+        const reps = effectiveReps(lastLog);
 
         let repsRange: [number, number] = [8, 12];
         if (we.target_reps_range) {
@@ -315,7 +314,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
         if (log.is_warmup) continue;
         totalSets += 1;
         const weight = toNumber(log.weight_kg);
-        const reps = log.reps ?? 0;
+        const reps = effectiveReps(log);
         totalVolume += weight * reps;
 
         // CI-4: Muscle volume aggregation (primary = 1.0, secondary = 0.5)
@@ -366,17 +365,23 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
   const exercisedIdsArr = Array.from(exercisedIds);
   const preBest = new Map<string, number>();
   if (exercisedIdsArr.length > 0) {
-    const { data: preRows, error: preError } = await supabase
-      .from('workout_logs')
-      .select('weight_kg, reps, workout_exercises!inner(exercise_id)')
-      .in('workout_exercises.exercise_id', exercisedIdsArr)
-      .eq('is_warmup', false) // ENG-13: baseline для PR — только рабочие сеты
-      .lt('completed_at', range.startISO);
-    if (!preError && preRows) {
-      for (const row of preRows as unknown as PreWeekLogRow[]) {
+    // FD-6: baseline по всей предшествующей истории для этих упражнений может
+    // превысить лимит PostgREST 1000 строк → пагинация, порядок по `id`.
+    const { data: preRows, error: preError } = await fetchAllPages<PreWeekLogRow>((from, to) =>
+      supabase
+        .from('workout_logs')
+        .select('weight_kg, reps, reps_left, reps_right, workout_exercises!inner(exercise_id)')
+        .in('workout_exercises.exercise_id', exercisedIdsArr)
+        .eq('is_warmup', false) // ENG-13: baseline для PR — только рабочие сеты
+        .lt('completed_at', range.startISO)
+        .order('id')
+        .range(from, to)
+    );
+    if (!preError) {
+      for (const row of preRows) {
         const we = asOne(row.workout_exercises);
         if (!we) continue;
-        const e = epley(toNumber(row.weight_kg), row.reps ?? 0);
+        const e = epley(toNumber(row.weight_kg), effectiveReps(row));
         const prev = preBest.get(we.exercise_id) ?? 0;
         if (e > prev) preBest.set(we.exercise_id, e);
       }
@@ -458,7 +463,7 @@ async function aggregateMuscleData(userId: string, now: Date) {
       finished_at,
       workout_exercises(
         exercises(name, primary_muscles, secondary_muscles),
-        workout_logs(weight_kg, reps, completed_at, is_warmup)
+        workout_logs(weight_kg, reps, reps_left, reps_right, completed_at, is_warmup)
       )
     `
     )
@@ -488,7 +493,7 @@ async function aggregateMuscleData(userId: string, now: Date) {
       for (const log of we.workout_logs ?? []) {
         if (log.is_warmup) continue;
         const weight = toNumber(log.weight_kg);
-        const reps = log.reps ?? 0;
+        const reps = effectiveReps(log);
         if (weight === 0 || reps === 0) continue;
 
         const e1rm = epley(weight, reps);

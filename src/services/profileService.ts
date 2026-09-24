@@ -1,7 +1,9 @@
 // src/services/profileService.ts
 // Профиль, статистика, питание (день + неделя FEAT-2.1), личные рекорды (FEAT-1.4: e1RM), травмы.
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllPages } from '../lib/supabase';
 import { epley } from '../utils/e1rm';
+import { todayKey, toDateKey } from '../utils/dateKey';
+import { effectiveReps } from '../utils/reps';
 import { UserInjury, WarningRule } from '../constants/injuries';
 
 export interface ProfileData {
@@ -105,10 +107,18 @@ export const profileService = {
   },
 
   async getStats(userId: string): Promise<ProfileStats> {
-    const { data: workouts } = await supabase
-      .from('workouts')
-      .select('id, workout_exercises (workout_logs (weight_kg, reps, is_warmup))')
-      .eq('user_id', userId);
+    // FD-6: суммарный объём/число тренировок считаются по всей истории →
+    // пагинация (лимит PostgREST 1000), порядок по `id`.
+    const { data: workouts } = await fetchAllPages<any>((from, to) =>
+      supabase
+        .from('workouts')
+        .select(
+          'id, workout_exercises (workout_logs (weight_kg, reps, reps_left, reps_right, is_warmup))'
+        )
+        .eq('user_id', userId)
+        .order('id')
+        .range(from, to)
+    );
 
     const { data: programs } = await supabase
       .from('user_programs')
@@ -132,7 +142,7 @@ export const profileService = {
           ex.workout_logs?.forEach((log: any) => {
             // ENG-13: разминка не учитывается в общем объёме
             if (log.is_warmup) return;
-            totalVolume += (parseFloat(log.weight_kg) || 0) * (parseInt(log.reps) || 0);
+            totalVolume += (parseFloat(log.weight_kg) || 0) * effectiveReps(log);
           });
         });
       }
@@ -164,7 +174,7 @@ export const profileService = {
   },
 
   async getDailyNutrition(userId: string): Promise<DailyNutrition> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKey();
 
     const { data } = await supabase
       .from('nutrition_logs')
@@ -206,7 +216,7 @@ export const profileService = {
   async getWeeklyNutrition(userId: string, days: number = 7): Promise<WeeklyNutritionDay[]> {
     const now = new Date();
     const startMs = now.getTime() - (days - 1) * 24 * 60 * 60 * 1000;
-    const startISO = new Date(startMs).toISOString().split('T')[0];
+    const startISO = toDateKey(new Date(startMs));
 
     const { data, error } = await supabase
       .from('nutrition_logs')
@@ -221,7 +231,7 @@ export const profileService = {
     const byDate = new Map<string, WeeklyNutritionDay>();
 
     for (let i = 0; i < days; i++) {
-      const d = new Date(startMs + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const d = toDateKey(new Date(startMs + i * 24 * 60 * 60 * 1000));
 
       byDate.set(d, {
         date: d,
@@ -269,7 +279,7 @@ export const profileService = {
     let endISO: string;
 
     if (days === 1) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayKey();
 
       startISO = `${today}T00:00:00+00:00`;
       endISO = `${today}T23:59:59+00:00`;
@@ -291,6 +301,7 @@ export const profileService = {
       .select('id, finished_at')
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
+      .is('skipped_at', null) // FIT-7: пропуски не считаются завершёнными тренировками
       .gte('finished_at', startISO)
       .lte('finished_at', endISO);
 
@@ -343,77 +354,54 @@ export const profileService = {
   },
 
   async getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
-    const { data: userWorkouts } = await supabase
-      .from('workouts')
-      .select('id')
-      .eq('user_id', userId);
+    // FD-6: единый paginated embed-запрос (тот же паттерн, что progressService.
+    // getPersonalRecordsWithDates) вместо цепочки .in()
+    // (workouts → workout_exercises → workout_logs), которая упиралась в лимит
+    // PostgREST 1000 строк и разрастание .in()-списков. Порядок по `id` — для
+    // детерминированных страниц.
+    const { data: workouts, error } = await fetchAllPages<any>((from, to) =>
+      supabase
+        .from('workouts')
+        .select(
+          'workout_exercises ( exercise_id, exercises ( name ), workout_logs ( weight_kg, reps, reps_left, reps_right, is_warmup ) )'
+        )
+        .eq('user_id', userId)
+        .order('id')
+        .range(from, to)
+    );
 
-    if (!userWorkouts || userWorkouts.length === 0) {
-      return [];
-    }
-
-    const workoutIds = userWorkouts.map((w) => w.id);
-
-    const { data: workoutExercises } = await supabase
-      .from('workout_exercises')
-      .select('id, exercise_id')
-      .in('workout_id', workoutIds);
-
-    if (!workoutExercises || workoutExercises.length === 0) {
-      return [];
-    }
-
-    const exerciseIds = [...new Set(workoutExercises.map((we) => we.exercise_id))];
-
-    const workoutExerciseIds = workoutExercises.map((we) => we.id);
-
-    const { data: exercises } = await supabase
-      .from('exercises')
-      .select('id, name')
-      .in('id', exerciseIds);
-
-    const exerciseNameMap = new Map(exercises?.map((e) => [e.id, e.name]) || []);
-
-    const { data: logs } = await supabase
-      .from('workout_logs')
-      .select('workout_exercise_id, weight_kg, reps, is_warmup')
-      .in('workout_exercise_id', workoutExerciseIds)
-      .eq('is_warmup', false) // ENG-13: PR считаются только по рабочим сетам
-      .order('weight_kg', { ascending: false });
+    if (error) throw error;
 
     const exerciseRecords: Record<string, PersonalRecord> = {};
 
-    logs?.forEach((log: any) => {
-      const workoutExercise = workoutExercises.find((we) => we.id === log.workout_exercise_id);
+    for (const workout of workouts) {
+      for (const we of workout.workout_exercises ?? []) {
+        const exerciseId: string | null = we.exercise_id;
+        const exerciseName: string | null = we.exercises?.name ?? null;
+        if (!exerciseId || !exerciseName) continue;
 
-      if (!workoutExercise) return;
+        for (const log of we.workout_logs ?? []) {
+          if (log.is_warmup) continue; // ENG-13: PR только по рабочим сетам
+          const weight = parseFloat(log.weight_kg) || 0;
+          if (weight <= 0) continue;
+          const reps = effectiveReps(log);
+          const setE1rm = epley(weight, reps);
 
-      const exerciseId = workoutExercise.exercise_id;
-
-      const exerciseName = exerciseNameMap.get(exerciseId);
-
-      if (!exerciseName) return;
-
-      const weight = parseFloat(log.weight_kg) || 0;
-
-      const reps = parseInt(log.reps) || 0;
-
-      const setE1rm = epley(weight, reps);
-
-      const existing = exerciseRecords[exerciseId];
-
-      if (!existing || weight > existing.maxWeight) {
-        exerciseRecords[exerciseId] = {
-          exercise_id: exerciseId,
-          name: exerciseName,
-          maxWeight: weight,
-          reps,
-          e1rm: Math.max(setE1rm, existing?.e1rm ?? 0),
-        };
-      } else if (setE1rm > existing.e1rm) {
-        existing.e1rm = setE1rm;
+          const existing = exerciseRecords[exerciseId];
+          if (!existing || weight > existing.maxWeight) {
+            exerciseRecords[exerciseId] = {
+              exercise_id: exerciseId,
+              name: exerciseName,
+              maxWeight: weight,
+              reps,
+              e1rm: Math.max(setE1rm, existing?.e1rm ?? 0),
+            };
+          } else if (setE1rm > existing.e1rm) {
+            existing.e1rm = setE1rm;
+          }
+        }
       }
-    });
+    }
 
     return Object.values(exerciseRecords)
       .filter((record) => record.maxWeight > 0)
@@ -432,7 +420,7 @@ export const profileService = {
       meal_type: string;
     }
   ): Promise<void> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayKey();
 
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: userId,
@@ -445,7 +433,7 @@ export const profileService = {
 
   // NUTRI-2: CRUD записей питания за день.
   async getNutritionLogs(userId: string, date?: string): Promise<NutritionLog[]> {
-    const logDate = date || new Date().toISOString().split('T')[0];
+    const logDate = date || todayKey();
 
     const { data, error } = await supabase
       .from('nutrition_logs')

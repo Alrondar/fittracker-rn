@@ -48,7 +48,9 @@ export function buildExercisesData(
       const targetSets = we.target_sets ?? 3;
       const sets: SetData[] = [];
       for (let i = 0; i < targetSets; i++) {
-        sets.push({ weight: '', reps: '' });
+        // reps_left/right инициализируются пустыми строками: без ключей
+        // isSetCompleted (set.reps_left !== '') считает пустой сет завершённым
+        sets.push({ weight: '', reps: '', reps_left: '', reps_right: '' });
       }
 
       const savedLogs = logsByWorkoutExercise[we.id] || [];
