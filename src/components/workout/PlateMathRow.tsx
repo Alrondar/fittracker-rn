@@ -16,6 +16,25 @@ interface PlateMathRowProps {
   colors: any;
 }
 
+/**
+ * Тот же набор условий, что и рендер компонента. Экспортирован, чтобы
+ * SetsGrid мог не рисовать рамку подсказки, когда внутри неё нечего показать.
+ */
+export function plateMathVisible(
+  weight: number | null,
+  equipment: string | string[] | undefined,
+  barWeight: number,
+  unit: 'kg' | 'lb'
+): boolean {
+  if (weight === null || weight <= barWeight) return false;
+  const equipArray = Array.isArray(equipment) ? equipment : [equipment || ''];
+  const isBarbell = equipArray.some((eq) =>
+    BARBELL_EQUIPMENT_NAMES.some((barbellEq) => eq.toLowerCase().includes(barbellEq.toLowerCase()))
+  );
+  if (!isBarbell) return false;
+  return calculatePlates(weight, barWeight, unit) !== null;
+}
+
 export const PlateMathRow = React.memo(function PlateMathRow({
   weight,
   equipment,
@@ -24,19 +43,8 @@ export const PlateMathRow = React.memo(function PlateMathRow({
   colors,
 }: PlateMathRowProps) {
   const plates = useMemo(() => {
-    if (weight === null || weight <= barWeight) return null;
-
-    // Проверка: является ли оборудование штанговым
-    const equipArray = Array.isArray(equipment) ? equipment : [equipment || ''];
-    const isBarbell = equipArray.some((eq) =>
-      BARBELL_EQUIPMENT_NAMES.some((barbellEq) =>
-        eq.toLowerCase().includes(barbellEq.toLowerCase())
-      )
-    );
-
-    if (!isBarbell) return null;
-
-    return calculatePlates(weight, barWeight, unit);
+    if (!plateMathVisible(weight, equipment, barWeight, unit)) return null;
+    return calculatePlates(weight as number, barWeight, unit);
   }, [weight, equipment, barWeight, unit]);
 
   if (!plates) return null;

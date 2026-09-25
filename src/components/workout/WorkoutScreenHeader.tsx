@@ -1,12 +1,13 @@
 // src/components/workout/WorkoutScreenHeader.tsx
 // PR8: nav header workout screen — back button, program context, workout name,
 // UnitToggle, WorkoutTimerPill, WorkoutTimerPanel.
-// UX-16: pill старт/финиш в шапке + confirm sheet (D1).
+// UX-16: confirm sheet финиша (D1). UX-TIMER: кнопка «Начать» убрана — старт/
+// пауза/возобновление объединены в pill-таймере (WorkoutTimer.tsx).
 // Должен рендериться внутри WorkoutTimerProvider (Pill/Panel используют контекст).
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Play, Square, AlertCircle } from 'lucide-react-native';
+import { ChevronLeft, Square, AlertCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { commonStyles } from '../../styles/common';
@@ -23,10 +24,9 @@ interface WorkoutScreenHeaderProps {
   unit: WeightUnit;
   onUnitChange: (unit: WeightUnit) => void;
   colors: any;
-  /** UX-16 D1: pill старт/финиш */
+  /** UX-TIMER: «Завершить» показываем только для активной/сохраняемой сессии. */
   isWorkoutActive: boolean;
   saving: boolean;
-  onStart: () => void;
   onFinish: () => void;
   /** Для confirm sheet: сколько сетов залогировано */
   completedSetsCount?: number;
@@ -42,18 +42,12 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
   colors,
   isWorkoutActive,
   saving,
-  onStart,
   onFinish,
   completedSetsCount = 0,
   totalSetsCount = 0,
 }: WorkoutScreenHeaderProps) {
   const router = useRouter();
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
-
-  const handleStart = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onStart();
-  }, [onStart]);
 
   const handleFinishPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -110,39 +104,9 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
           )}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-          {/* UX-16 D1: pill старт/финиш в шапке */}
-          {!isWorkoutActive ? (
-            <TouchableOpacity
-              onPress={handleStart}
-              disabled={saving}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Начать тренировку"
-              hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: SPACING.xs,
-                backgroundColor: colors.success,
-                paddingHorizontal: SPACING.md,
-                paddingVertical: 8,
-                borderRadius: BORDER_RADIUS.md,
-                minHeight: 36,
-              }}
-            >
-              <Play
-                size={14}
-                color={colors.textInverse}
-                fill={colors.textInverse}
-                strokeWidth={2}
-              />
-              <Text
-                style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
-              >
-                Начать
-              </Text>
-            </TouchableOpacity>
-          ) : (
+          {/* UX-TIMER: кнопка «Начать» убрана — старт в pill-таймере; «Завершить»
+              видно только для активной или сохраняемой сессии */}
+          {(isWorkoutActive || saving) && (
             <TouchableOpacity
               onPress={handleFinishPress}
               disabled={saving}

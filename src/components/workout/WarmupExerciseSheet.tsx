@@ -157,7 +157,7 @@ interface WarmupExerciseSheetProps {
   onClose: () => void;
   onMarkCompleted: (id: string) => void;
   loadAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
-  onReplace: (index: number, alt: WarmupExercise) => void;
+  onReplace: (index: number, alt: WarmupExercise, originId?: string) => void;
 }
 
 export function WarmupExerciseSheet({
@@ -217,10 +217,11 @@ export function WarmupExerciseSheet({
   }, []);
 
   const handleReplace = useCallback(() => {
-    if (!viewingAlt) return;
-    onReplace(index, viewingAlt);
+    if (!viewingAlt || !main) return;
+    // WARMUP-2: передаём originId (main.id) — хук запомнит предпочтение.
+    onReplace(index, viewingAlt, main.id);
     onClose();
-  }, [viewingAlt, index, onReplace, onClose]);
+  }, [viewingAlt, main, index, onReplace, onClose]);
 
   if (!main || !displayed) return null;
 
@@ -331,14 +332,20 @@ export function WarmupExerciseSheet({
 
       {/* Действия над выбранным аналогом */}
       {isViewingAlt && (
-        <AppButton
-          title={`Заменить на «${displayed.name}»`}
-          variant="primary"
-          size="medium"
-          icon={<RotateCcw size={16} color={colors.textInverse} />}
-          onPress={handleReplace}
-          style={{ marginTop: SPACING.md }}
-        />
+        <View style={{ marginTop: SPACING.md, gap: SPACING.xs }}>
+          <AppButton
+            title={`Заменить на «${displayed.name}»`}
+            variant="primary"
+            size="medium"
+            icon={<RotateCcw size={16} color={colors.textInverse} />}
+            onPress={handleReplace}
+          />
+          {/* WARMUP-2: честное описание семантики — см. warmup_preferences */}
+          <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+            Замена запомнится: будущие разминки будут предлагать этот вариант. Сброс — долгим
+            нажатием на ⟳ в шапке разминки.
+          </Text>
+        </View>
       )}
 
       {/* Похожие варианты — изучаемы до замены */}

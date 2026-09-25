@@ -162,7 +162,8 @@ export default function WorkoutSessionScreen() {
     isCompleted: isWarmupExerciseCompleted,
     loadWarmupAlternatives,
     replaceWarmupExercise,
-  } = useWarmup(warmupSource, activeInjuries);
+    clearWarmupPreferences,
+  } = useWarmup(warmupSource, activeInjuries, userId);
 
   const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
   const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
@@ -176,6 +177,14 @@ export default function WorkoutSessionScreen() {
     setWarmupDetailIndex(i);
   }, []);
   const closeWarmupDetails = useCallback(() => setWarmupDetailIndex(null), []);
+
+  // WARMUP-2: сброс запомненных замен (long-press ⟳ в WarmupBlock) → регенерация
+  const handleResetWarmupPreferences = useCallback(() => {
+    clearWarmupPreferences()
+      .then(() => generateWarmup())
+      .catch((e) => console.error('Не удалось сбросить замены разминки:', e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearWarmupPreferences, generateWarmup]);
 
   // FEAT-1.9: шторка боли
   const [painIndex, setPainIndex] = useState<number | null>(null);
@@ -409,7 +418,6 @@ export default function WorkoutSessionScreen() {
           colors={colors}
           isWorkoutActive={isWorkoutActive}
           saving={saving}
-          onStart={handleTimerStart}
           onFinish={saveWorkout}
           completedSetsCount={completedSetsCount}
           totalSetsCount={totalSetsCount}
@@ -455,13 +463,17 @@ export default function WorkoutSessionScreen() {
             onMarkCompleted={markWarmupCompleted}
             onSkip={() => setActiveTab('workout')}
             onOpenDetails={openWarmupDetails}
+            onResetPreferences={handleResetWarmupPreferences}
           />
         </ScrollView>
       )}
 
       {(!hasWarmup || activeTab === 'workout') && (
         <>
-          {/* PERF: removeClippedSubviews + батчинг для плавного скролла */}
+          {/* PERF: батчинг + windowSize. removeClippedSubviews УБРАН: он
+              отцепляет нативные вью у карточек с TextInput — после детача
+              ячейки SetsGrid теряли responder (некликабельны) и blur
+              не доставлялся (залипший focus). Не возвращать. */}
           <FlatList
             data={exercises}
             keyExtractor={(item) => item.workout_exercise_id}
@@ -471,7 +483,6 @@ export default function WorkoutSessionScreen() {
             contentContainerStyle={{ paddingBottom: 120 }}
             showsVerticalScrollIndicator={false}
             windowSize={5}
-            removeClippedSubviews={true}
             initialNumToRender={3}
             maxToRenderPerBatch={2}
             updateCellsBatchingPeriod={50}

@@ -14,6 +14,7 @@ export interface WarmupSourceExercise {
 export function useWarmup(
   exercises: WarmupSourceExercise[],
   activeInjuries: UserInjury[] = [],
+  userId?: string | null
 ) {
   const [warmupExercises, setWarmupExercises] = useState<WarmupExercise[]>([]);
   const [excludedByInjury, setExcludedByInjury] = useState<InjuryExclusion[]>([]);
@@ -62,7 +63,12 @@ export function useWarmup(
     setActiveTimerId(null);
     setTimeLeft(0);
     try {
-      const result = await warmupService.generateWarmup(exercises, activeInjuries, activationFirst);
+      const result = await warmupService.generateWarmup(
+        exercises,
+        activeInjuries,
+        activationFirst,
+        userId
+      );
       setWarmupExercises(result.exercises);
       setExcludedByInjury(result.excludedByInjury);
       setCompletedIds(new Set());
@@ -73,18 +79,21 @@ export function useWarmup(
     }
   };
 
-  const startExerciseTimer = useCallback((exerciseId: string) => {
-    const exercise = warmupExercises.find((e) => e.id === exerciseId);
-    if (!exercise) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setActiveTimerId(exerciseId);
-    setTimeLeft(exercise.duration_seconds);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warmupExercises]);
+  const startExerciseTimer = useCallback(
+    (exerciseId: string) => {
+      const exercise = warmupExercises.find((e) => e.id === exerciseId);
+      if (!exercise) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setActiveTimerId(exerciseId);
+      setTimeLeft(exercise.duration_seconds);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => Math.max(0, prev - 1));
+      }, 1000);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [warmupExercises]
+  );
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -109,12 +118,11 @@ export function useWarmup(
 
   const isCompleted = (exerciseId: string) => completedIds.has(exerciseId);
 
-  const isAllCompleted =
-    warmupExercises.length > 0 && completedIds.size >= warmupExercises.length;
+  const isAllCompleted = warmupExercises.length > 0 && completedIds.size >= warmupExercises.length;
 
   const totalDuration = useMemo(
     () => warmupExercises.reduce((sum, ex) => sum + ex.duration_seconds, 0),
-    [warmupExercises],
+    [warmupExercises]
   );
 
   const targetMuscles = useMemo(() => {
@@ -133,19 +141,37 @@ export function useWarmup(
       warmupAltsCacheRef.current = { ...warmupAltsCacheRef.current, [exerciseId]: alts };
       return alts;
     },
-    [],
+    []
   );
 
-  // ✅ Локальная замена упражнения разминки на альтернативу (по индексу в списке).
-  const replaceWarmupExercise = useCallback((index: number, alternative: WarmupExercise) => {
-    setWarmupExercises((prev) => {
-      const next = [...prev];
-      if (index < 0 || index >= next.length) return prev;
-      next[index] = alternative;
-      return next;
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, []);
+  // ✅ Локальная замена упражнения разминки (по индексу) + WARMUP-2:
+  // запомнить предпочтение в warmup_preferences (originId — упражнение ДО свапа,
+  // его передаёт лист, где известен main). upsert идемпотентен
+  // (user_id, origin_exercise_id); ошибка сети не откатывает локальную замену —
+  // в текущей тренировке она видна в любом случае.
+  const replaceWarmupExercise = useCallback(
+    (index: number, alternative: WarmupExercise, originId?: string) => {
+      setWarmupExercises((prev) => {
+        const next = [...prev];
+        if (index < 0 || index >= next.length) return prev;
+        next[index] = alternative;
+        return next;
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (userId && originId && originId !== alternative.id) {
+        warmupService
+          .setWarmupPreference(userId, originId, alternative.id)
+          .catch((e) => console.error('warmup preference не сохранён:', e));
+      }
+    },
+    [userId]
+  );
+
+  // WARMUP-2: забыть все запомненные замены (генерацию перезапускает caller).
+  const clearWarmupPreferences = useCallback(async () => {
+    if (!userId) return;
+    await warmupService.clearWarmupPreferences(userId);
+  }, [userId]);
 
   return {
     warmupExercises,
@@ -164,5 +190,6 @@ export function useWarmup(
     isCompleted,
     loadWarmupAlternatives,
     replaceWarmupExercise,
+    clearWarmupPreferences,
   };
 }

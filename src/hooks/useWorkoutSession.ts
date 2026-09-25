@@ -153,6 +153,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         if (elapsed > 0 && elapsed < 86400) {
           setInitialTime(elapsed);
           currentTimeRef.current = elapsed;
+          startedSavedRef.current = true; // started_at уже в БД — не перезаписывать автостартом
           setIsWorkoutActive(true);
         }
       }
@@ -213,9 +214,17 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     currentTimeRef.current = seconds;
   }, []);
 
+  // UX-TIMER: идемпотентность записи started_at — старт вызывается и из pill,
+  // и из эффекта автозапуска провайдера при смене isActive.
+  const startedSavedRef = useRef(false);
+
   const handleTimerStart = useCallback(() => {
     setIsWorkoutActive(true);
-    if (currentTimeRef.current === 0) {
+    // UX-TIMER: старт идёт ТОЛЬКО через WorkoutTimerProvider (pill/панель),
+    // но эффект автозапуска провайдера может дёрнуть onStart повторно в том же
+    // тике смены isActive — write started_at идемпотентен по флагу.
+    if (!startedSavedRef.current) {
+      startedSavedRef.current = true;
       updateWorkout(workoutId, {
         started_at: new Date().toISOString(),
         duration_seconds: 0,
@@ -641,7 +650,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
-      Alert.alert('Тренировка не начата', 'Нажмите "Начать тренировку" перед завершением');
+      Alert.alert('Тренировка не начата', 'Нажмите «Начать» на таймере в шапке, затем завершайте');
       return;
     }
 
@@ -650,40 +659,57 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     const secs = durationSeconds % 60;
     const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-    Alert.alert(
-      'Завершить тренировку?',
-      `Время тренировки: ${formattedTime}\nВсе данные будут сохранены`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Завершить',
-          onPress: async () => {
-            setSaving(true);
-            setIsFinishing(true);
-            isFinishingRef.current = true;
+    // UX-TIMER: подтверждение делает confirm-лист в шапке (UX-16 D1) — второй
+    // Alert здесь убран, иначе пользователь подтверждал завершение дважды.
+    {
+      {
+        setSaving(true);
+        setIsFinishing(true);
+        isFinishingRef.current = true;
 
+        try {
+          await flushPendingLogs();
+
+          try {
+            await updateWorkout(workoutId, {
+              finished_at: new Date().toISOString(),
+              duration_seconds: durationSeconds,
+            });
+          } catch (error) {
+            throw error;
+          }
+
+          let totalLogs = 0;
+          exercisesRef.current.forEach((ex) => {
+            ex.sets.forEach((s) => {
+              if (s.weight !== '' || s.reps !== '') totalLogs++;
+            });
+          });
+
+          if (programId && userId) {
             try {
-              await flushPendingLogs();
-
-              try {
-                await updateWorkout(workoutId, {
-                  finished_at: new Date().toISOString(),
-                  duration_seconds: durationSeconds,
-                });
-              } catch (error) {
-                throw error;
+              const progress = await advanceProgramProgress(userId, programId);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              if (progress.isCompleted) {
+                Alert.alert(
+                  'Программа завершена!',
+                  'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
+                );
+                router.replace('/(tabs)/programs');
+              } else {
+                Alert.alert(
+                  'Тренировка завершена!',
+                  `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
+                );
+                router.replace('/(tabs)/workouts');
               }
+            } catch (progressError: any) {
+              console.error('Ошибка обновления прогресса:', progressError);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
-              let totalLogs = 0;
-              exercisesRef.current.forEach((ex) => {
-                ex.sets.forEach((s) => {
-                  if (s.weight !== '' || s.reps !== '') totalLogs++;
-                });
-              });
-
-              if (programId && userId) {
+              const retryAdvance = async () => {
                 try {
-                  const progress = await advanceProgramProgress(userId, programId);
+                  const progress = await advanceProgramProgress(userId!, programId!);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   if (progress.isCompleted) {
                     Alert.alert(
@@ -692,70 +718,49 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                     );
                     router.replace('/(tabs)/programs');
                   } else {
-                    Alert.alert(
-                      'Тренировка завершена!',
-                      `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
-                    );
                     router.replace('/(tabs)/workouts');
                   }
-                } catch (progressError: any) {
-                  console.error('Ошибка обновления прогресса:', progressError);
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
-                  const retryAdvance = async () => {
-                    try {
-                      const progress = await advanceProgramProgress(userId!, programId!);
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                      if (progress.isCompleted) {
-                        Alert.alert(
-                          'Программа завершена!',
-                          'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
-                        );
-                        router.replace('/(tabs)/programs');
-                      } else {
-                        router.replace('/(tabs)/workouts');
-                      }
-                    } catch (e: any) {
-                      Alert.alert(
-                        'Не удалось продвинуть прогресс',
-                        e?.message ||
-                          'Прогресс можно продвинуть автоматически при следующей тренировке.'
-                      );
-                    }
-                  };
-
+                } catch (e: any) {
                   Alert.alert(
-                    'Тренировка сохранена',
-                    `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
-                      `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
-                    [
-                      {
-                        text: 'Позже',
-                        style: 'cancel',
-                        onPress: () => router.replace('/(tabs)/workouts'),
-                      },
-                      { text: 'Повторить', onPress: retryAdvance },
-                    ]
+                    'Не удалось продвинуть прогресс',
+                    e?.message ||
+                      'Прогресс можно продвинуть автоматически при следующей тренировке.'
                   );
                 }
-              } else {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert(
-                  'Успех',
-                  `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
-                );
-                router.replace('/(tabs)/history');
-              }
-            } catch (error: any) {
-              console.error('[useWorkoutSession] saveWorkout:', error);
-              Alert.alert('Ошибка', mapError(error));
-            } finally {
-              setSaving(false);
+              };
+
+              Alert.alert(
+                'Тренировка сохранена',
+                `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
+                  `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
+                [
+                  {
+                    text: 'Позже',
+                    style: 'cancel',
+                    onPress: () => router.replace('/(tabs)/workouts'),
+                  },
+                  { text: 'Повторить', onPress: retryAdvance },
+                ]
+              );
             }
-          },
-        },
-      ]
-    );
+          } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert(
+              'Успех',
+              `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
+            );
+            // FIX-ROUTES: вкладки history больше нет (UX-11) — RecentWorkouts
+            // живёт в прогресс-хабе.
+            router.replace('/(tabs)/progress');
+          }
+        } catch (error: any) {
+          console.error('[useWorkoutSession] saveWorkout:', error);
+          Alert.alert('Ошибка', mapError(error));
+        } finally {
+          setSaving(false);
+        }
+      }
+    }
   }, [isWorkoutActive, workoutId, programId, userId, router, flushPendingLogs]);
 
   return {

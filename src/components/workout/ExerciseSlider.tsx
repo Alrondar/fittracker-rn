@@ -214,7 +214,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
         decelerationRate="fast"
-        removeClippedSubviews={true} // PERF P1-A: выгружаем невидимые карточки
+        // removeClippedSubviews убран (см. workout/[id].tsx): карточки содержат
+        // TextInput, детач вью ронял responder/blur ячеек SetsGrid. Не возвращать.
         onScrollBeginDrag={handleScrollBeginDrag}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >

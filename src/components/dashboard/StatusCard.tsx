@@ -494,7 +494,7 @@ export function StatusCard() {
             })}
             {activeInjuries.length > 2 && (
               <TouchableOpacity
-                onPress={() => router.push('/(tabs)/profile/injuries')}
+                onPress={() => router.push('/profile/injuries')}
                 hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Ещё ${activeInjuries.length - 2} активных травм. Нажми для просмотра`}

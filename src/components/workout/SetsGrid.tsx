@@ -33,7 +33,7 @@ import {
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip } from './SetFeedbackControl';
 import { RpeOverlay } from './RpeOverlay';
-import { PlateMathRow } from './PlateMathRow';
+import { PlateMathRow, plateMathVisible } from './PlateMathRow';
 import {
   calculateProgression,
   explainProgression,
@@ -105,14 +105,46 @@ const SetInput = memo(function SetInput({
   const [local, setLocal] = useState(value);
   const focusedRef = useRef(false);
   const lastSentRef = useRef(value);
+  const localRef = useRef(local);
+  localRef.current = local;
+  const commitRef = useRef(onChangeText);
+  commitRef.current = onChangeText;
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Коммит только при расхождении с последним отправленным — идемпотентен,
+  // безопасен из blur, unmount и debounce-таймера.
+  const commitNow = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (localRef.current !== lastSentRef.current) {
+      lastSentRef.current = localRef.current;
+      commitRef.current(localRef.current);
+    }
+  }, []);
+
+  // Долгие нажатия без blur (переход между полями, свайп карточки, reflow
+  // строк при addSet): коммитим через 350 мс после последнего keystroke.
+  // Раньше коммит был ТОЛЬКО в onBlur — при залипании blur (детач нативного
+  // вью) набранный текст терялся, а focusedRef=true навечно глушил sync ниже.
+  const scheduleCommit = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(commitNow, 350);
+  }, [commitNow]);
 
   useEffect(() => {
     if (focusedRef.current) return;
     if (value !== lastSentRef.current) {
       setLocal(value);
+      localRef.current = value;
       lastSentRef.current = value;
     }
   }, [value]);
+
+  // Финальный шанс: размонтирование без blur (строки пересобираются при
+  // изменении числа подходов) — не даём набитому тексту пропасть.
+  useEffect(() => commitNow, [commitNow]);
 
   // UX-16 F2: зелёный фон только когда значение введено в ЭТОЙ ячейке.
   // Пустая ячейка — нейтральный surfaceSecondary (визуально «не введено»).
@@ -134,14 +166,15 @@ const SetInput = memo(function SetInput({
         value={local}
         onChangeText={(v) => {
           setLocal(v);
-          lastSentRef.current = v;
+          localRef.current = v;
+          scheduleCommit();
         }}
         onFocus={() => {
           focusedRef.current = true;
         }}
         onBlur={() => {
           focusedRef.current = false;
-          onChangeText(local);
+          commitNow();
         }}
         keyboardType={keyboardType}
         placeholderTextColor={colors.textTertiary}
@@ -743,6 +776,21 @@ export const SetsGrid = memo(function SetsGrid({
     [sets, exerciseIndex, updateSetFeedback, addSet, targetSets]
   );
 
+  // Фикс «пустой рамки»: обёртка подсказки рендерится только если хотя бы один
+  // ребёнок видим (прошлые данные / карточка рекомендации / prompt причин /
+  // чипы / строка блинов). Раньше при свёрнутой 💡 карточке и отсутствии
+  // истории оставалась пустая тонированная рамка под «Подходы».
+  const plateWeight = progressionSet?.weight ? parseFloat(progressionSet.weight) : null;
+  const hintVisible =
+    prevWeight !== null ||
+    (recommendation !== null &&
+      recommendation.action !== 'no_data' &&
+      !recommendationCollapsed &&
+      !dismissed) ||
+    (dismissed && feedbackState.status === 'reasonPrompt') ||
+    (chipsOpen && prevWeight !== null) ||
+    plateMathVisible(plateWeight, equipment, barWeight, unit);
+
   return (
     <View
       style={[
@@ -797,7 +845,7 @@ export const SetsGrid = memo(function SetsGrid({
         {/* FEAT-1.1 v2: хинт активного сета + рекомендации + калькулятор блинов.
             Структура разделена: предыдущие данные — опциональны,
             RecommendationCard и PlateMathRow — всегда видимы при наличии данных. */}
-        {progressionSetIndex !== null && (
+        {progressionSetIndex !== null && hintVisible && (
           <View
             style={{
               marginBottom: SPACING.sm,
@@ -975,7 +1023,7 @@ export const SetsGrid = memo(function SetsGrid({
             {/* FEAT-1.5: Plate Math Row — показывается при любом весе в текущем сете,
                 не зависит от наличия предыдущих данных. */}
             <PlateMathRow
-              weight={progressionSet?.weight ? parseFloat(progressionSet.weight) : null}
+              weight={plateWeight}
               equipment={equipment}
               barWeight={barWeight}
               unit={unit}

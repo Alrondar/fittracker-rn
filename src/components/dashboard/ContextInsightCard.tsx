@@ -41,7 +41,9 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => router.push('/profile/progress')}
+      // FIX-ROUTES: '/profile/progress' удалён вместе с миграцией Progress hub
+      // в bottom-tab (UX-11) — вёл на Unmatched Route.
+      onPress={() => router.push('/(tabs)/progress')}
       style={styles.container}
     >
       <AppCard

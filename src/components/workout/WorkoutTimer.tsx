@@ -259,8 +259,23 @@ const PulseDot = memo(function PulseDot({ phase, color }: { phase: TimerPhase; c
   );
 });
 
+/**
+ * Единый контролл сессии в шапке (UX-TIMER): кнопка «Начать» в шапке убрана,
+ * старт/пауза/возобновление живут здесь.
+ * idle    — тап сразу стартует тренировку;
+ * running — тап раскрывает панель (там пауза и детали);
+ * paused  — тап возобновляет.
+ */
 export const WorkoutTimerPill = memo(function WorkoutTimerPill({ colors }: { colors: any }) {
-  const { formatted, phase, expanded, toggleExpand } = useWorkoutTimerCtx();
+  const { formatted, phase, expanded, toggle, toggleExpand } = useWorkoutTimerCtx();
+
+  const onPress = phase === 'running' ? toggleExpand : toggle;
+  const a11yLabel =
+    phase === 'running'
+      ? 'Таймер тренировки: развернуть'
+      : phase === 'paused'
+        ? 'Пауза — возобновить тренировку'
+        : 'Начать тренировку';
 
   const accent =
     phase === 'running'
@@ -271,8 +286,10 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({ colors }: { col
 
   return (
     <TouchableOpacity
-      onPress={toggleExpand}
+      onPress={onPress}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       style={{
         flexDirection: 'row',
@@ -282,27 +299,51 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({ colors }: { col
         paddingVertical: 5,
         borderRadius: BORDER_RADIUS.full,
         backgroundColor:
-          phase === 'running' ? withAlpha(colors.success, 0.102) : colors.surfaceSecondary,
+          phase === 'running'
+            ? withAlpha(colors.success, 0.102)
+            : phase === 'paused'
+              ? withAlpha(colors.warning, 0.102)
+              : colors.success,
         borderWidth: 1,
-        borderColor: phase === 'running' ? withAlpha(colors.success, 0.251) : colors.border,
+        borderColor:
+          phase === 'running'
+            ? withAlpha(colors.success, 0.251)
+            : phase === 'paused'
+              ? withAlpha(colors.warning, 0.376)
+              : 'transparent',
       }}
     >
-      <PulseDot phase={phase} color={accent} />
-      <Text
-        style={[
-          typography.captionSmall,
-          {
-            color: phase === 'idle' ? colors.textSecondary : colors.textPrimary,
-            fontWeight: '700',
-            fontVariant: ['tabular-nums'],
-          },
-        ]}
-      >
-        {formatted}
-      </Text>
-      <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-        <ChevronDown size={13} color={colors.textTertiary} strokeWidth={2.2} />
-      </View>
+      {phase === 'idle' ? (
+        <>
+          <Play size={12} color={colors.textInverse} fill={colors.textInverse} strokeWidth={2.4} />
+          <Text style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}>
+            Начать
+          </Text>
+        </>
+      ) : (
+        <>
+          <PulseDot phase={phase} color={accent} />
+          <Text
+            style={[
+              typography.captionSmall,
+              {
+                color: colors.textPrimary,
+                fontWeight: '700',
+                fontVariant: ['tabular-nums'],
+              },
+            ]}
+          >
+            {formatted}
+          </Text>
+          {phase === 'paused' ? (
+            <Play size={11} color={colors.warning} strokeWidth={2.4} style={{ marginLeft: 1 }} />
+          ) : (
+            <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
+              <ChevronDown size={13} color={colors.textTertiary} strokeWidth={2.2} />
+            </View>
+          )}
+        </>
+      )}
     </TouchableOpacity>
   );
 });

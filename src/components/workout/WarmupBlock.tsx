@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -32,6 +32,8 @@ interface WarmupBlockProps {
   onSkip: () => void;
   /** Открыть L2 лист разминки (рендерится в корне экрана, WARMUP-1). */
   onOpenDetails: (index: number) => void;
+  /** WARMUP-2: долгий тап на ⟳ — забыть запомненные замены (caller сам перезапускает генерацию). */
+  onResetPreferences?: () => void;
 }
 
 export function WarmupBlock({
@@ -49,6 +51,7 @@ export function WarmupBlock({
   onMarkCompleted,
   onSkip,
   onOpenDetails,
+  onResetPreferences,
 }: WarmupBlockProps) {
   const { colors } = useTheme();
   const pulse = useSharedValue(0.35);
@@ -201,8 +204,24 @@ export function WarmupBlock({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onGenerateWarmup();
           }}
+          onLongPress={
+            onResetPreferences
+              ? () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  Alert.alert(
+                    'Запомненные замены',
+                    'Забыть выбранные варианты замен? Следующие разминки снова будут подбираться с нуля.',
+                    [
+                      { text: 'Отмена', style: 'cancel' },
+                      { text: 'Забыть', style: 'destructive', onPress: onResetPreferences },
+                    ]
+                  );
+                }
+              : undefined
+          }
           style={{ padding: SPACING.sm }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Обновить разминку; долгое нажатие — сброс запомненных замен"
         >
           <RefreshCw size={18} color={colors.primary} />
         </TouchableOpacity>

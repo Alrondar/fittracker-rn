@@ -108,7 +108,7 @@ Main components:
 `AlternativeExerciseCard.tsx` — облегчённая карточка выбора замены (PR5): Польза/Риски/Противопоказания видимы, Техника в аккордеоне; ENG-5: бейджи relation_type (Прогрессия/Упрощение/Вариант)
 `RpeOverlay.tsx` — onboarding-overlay для RPE над таблицей (UX-16 D4)
 `PlateMathRow.tsx` — компактная строка с иконкой и разборкой веса штанги (FEAT-1.5, Variant B: Balanced)
-`WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, pill старт/финиш (UX-16 D1), UnitToggle, TimerPill/Panel
+`WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle; WT-2: единый pill-таймер (idle=«Начать»/tap старт, running=время+панель, paused=тап продолжить) + кнопка «Завершить» (confirm-лист), отдельной кнопки «Начать» больше нет
 `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
 Main hooks/services:
 `useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
@@ -319,7 +319,7 @@ Important components:
 | authService|root auth flow + auth screens|
 | exercisesService|exercise library/detail|
 | goalsService  /  metricsService|goals/metrics|
-| warmupService|useWarmup|
+| warmupService|useWarmup; WARMUP-2: warmup_preferences (set/clear + подстановка в generateWarmup шаг 7)|
 | readinessService|ReadinessSheet (owns StatusCard, AUDIT-6) + quick-set pips StatusCard|
 | painService|PainSheet/ExerciseCard + StatusCard (AUDIT-6: getPainEventsToday) + usePainTrend (Фича 4: getPainEventsInRange)|
 | forecastService|useWorkoutForecast (Фича 7): единственная supabase-граница прогноза следующей тренировки|
@@ -375,6 +375,14 @@ legacy columns `exercises.equipment`, `exercises.injuries`, `exercises.alternati
 -`20260820115108_drop_unused_session_tables (ARCH-10)` : удаление экспериментальных таблиц  `workout_sessions`  и  `session_sets`  (0 строк данных, 0 упоминаний в коде).  `workout_logs`  зафиксирован как единственный source of truth для подходов;
 - `20260827180609_workout_logs_is_warmup.sql` (ENG-13): добавляет в workout_logs колонки `is_warmup` (boolean NOT NULL DEFAULT false — исторические данные считаются рабочими, бэкфилл не нужен) и `is_estimated_reps`; обновляет RPC `upsert_workout_logs` для приёма обоих полей; индекс по (workout_exercise_id, is_warmup). Аналитика, читающая workout_logs (volume/e1RM/PR), должна фильтровать `is_warmup=false` (ENG-13 remainder). После применения миграции регенерировать `database.types.ts` (CLAUDE.md §11).
 - other current schema migrations under  `supabase/migrations/` .
+- `20260925103000_warmup_preferences.sql` (WARMUP-2): таблица запомненных замен разминки (user_id, origin_exercise_id→preferred_exercise_id, unique (user_id, origin)), RLS owner-only; применена к проду 25.09, откат = DROP TABLE. `database.types.ts` дополнен вручную (нет CLI-линковки) — сверить при регенерации.
+
+## 10.1 UI-грабли (не регрессировать)
+
+- workout FlatList и горизонтальный ScrollView ExerciseSlider: `removeClippedSubviews` СОЗНАТЕЛЬНО убран (SG-2) — детач нативных вью роняет responder/blur у TextInput сетов («некликабельные ячейки»). Коммит SetInput — debounce 350 мс + blur + unmount.
+- Пустая рамка подсказки в SetsGrid: обёртка рендерится только при `hintVisible` (общий предикат `plateMathVisible` для строки блинов).
+- WT-2: запись `started_at` идемпотентна (`startedSavedRef`), подтверждение финиша — единственное (confirm-лист), в `saveWorkout` Alert-подтверждения нет.
+- Мёртвые href (DASH-PR, 25.09): при переносе/удалении экрана править ВСЕ `router.push/replace` на старые пути. Проверка: `grep -rhoE "router\\.(push|replace)\\(\\s*['\`\"]/[^'\`]+" app src | sort -u` и сверить с деревом `app/`. Уже починены: `/profile/progress` (удалён UX-11), `/(tabs)/history` (удалён), `/(tabs)/profile/injuries` (группа не в URL).
 Before changing a DB operation, inspect the current migration and generated `database.types.ts`.
 
 # 11. Blast-radius rules

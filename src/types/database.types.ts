@@ -993,6 +993,36 @@ export type Database = {
           },
         ]
       }
+      // WARMUP-2 (миграция 20260925103000). Внимание: запись добавлена вручную
+      // по формату генератора (CLI-линковки проекта нет) — при первой же
+      // полной регенерации типов сверить с генератором.
+      warmup_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          origin_exercise_id: string
+          preferred_exercise_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          origin_exercise_id: string
+          preferred_exercise_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          origin_exercise_id?: string
+          preferred_exercise_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workout_exercises: {
         Row: {
           exercise_id: string
