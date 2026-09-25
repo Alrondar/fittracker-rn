@@ -37,6 +37,9 @@ export interface SessionWorkoutRow {
 export interface RecentLog {
   weight_kg: number | null;
   reps: number | null;
+  /** VF-2: unilateral-повторы для effectiveReps(previous) */
+  reps_left?: number | null;
+  reps_right?: number | null;
   rpe: number | null;
   set_number: number | null;
   workout_exercises: { exercise_id: string } | { exercise_id: string }[] | null;

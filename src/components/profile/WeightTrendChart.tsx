@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Svg, Path, Circle } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
+import { useUnitPreferences, kgToLb } from '../../hooks/useUnitPreferences';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { buildWeightTrend, WeightPoint } from '../../utils/trend';
@@ -23,6 +24,11 @@ interface WeightTrendChartProps {
 
 export function WeightTrendChart({ points, height = H }: WeightTrendChartProps) {
   const { colors } = useTheme();
+  // VF-8: подписи графика — в выбранных единицах (хранение — кг).
+  // Без roundToHalf: реальные замеры (82.3) не должны меняться при выводе.
+  const { unit } = useUnitPreferences();
+  const unitLabel = unit === 'kg' ? 'кг' : 'lb';
+  const w = (kg: number) => (unit === 'kg' ? kg : kgToLb(kg));
   const trend = useMemo(() => buildWeightTrend(points), [points]);
 
   const geometry = useMemo(() => {
@@ -32,8 +38,7 @@ export function WeightTrendChart({ points, height = H }: WeightTrendChartProps) 
     const t0 = +new Date(pts[0].date);
     const t1 = +new Date(pts[pts.length - 1].date);
     const tSpan = Math.max(t1 - t0, 1);
-    const x = (i: number) =>
-      PAD_X + ((+new Date(pts[i].date) - t0) / tSpan) * (W - PAD_X * 2);
+    const x = (i: number) => PAD_X + ((+new Date(pts[i].date) - t0) / tSpan) * (W - PAD_X * 2);
     const y = (v: number) => PAD_Y + (1 - (v - min) / span) * (height - PAD_Y * 2);
     const rawPath = pts
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.weightKg).toFixed(1)}`)
@@ -61,29 +66,51 @@ export function WeightTrendChart({ points, height = H }: WeightTrendChartProps) 
   const slopeLabel =
     trend.direction === 'stable'
       ? 'стабильно'
-      : `${trend.slopePerWeek > 0 ? '+' : '−'}${Math.abs(trend.slopePerWeek).toFixed(1)} кг/нед`;
+      : `${trend.slopePerWeek > 0 ? '+' : '−'}${Math.abs(w(trend.slopePerWeek)).toFixed(1)} ${unitLabel}/нед`;
 
   return (
     <View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: SPACING.xs }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: SPACING.xs,
+        }}
+      >
         <Text style={[typography.h4, { color: colors.textPrimary }]}>
-          {trend.last.toFixed(1)} кг
+          {w(trend.last).toFixed(1)} {unitLabel}
         </Text>
         <Text style={[typography.caption, { color: colors.textSecondary, fontWeight: '700' }]}>
-          {slopeLabel} · Δ {trend.deltaTotal > 0 ? '+' : ''}{trend.deltaTotal.toFixed(1)} кг
+          {slopeLabel} · Δ {trend.deltaTotal > 0 ? '+' : ''}
+          {w(trend.deltaTotal).toFixed(1)} {unitLabel}
         </Text>
       </View>
       <Svg width="100%" height={height} viewBox={`0 0 ${W} ${height}`}>
-        <Path d={rawPath} fill="none" stroke={colors.border} strokeWidth={1} strokeDasharray="2 3" />
-        <Path d={smoothPath} fill="none" stroke={colors.primary} strokeWidth={2} strokeLinecap="round" />
+        <Path
+          d={rawPath}
+          fill="none"
+          stroke={colors.border}
+          strokeWidth={1}
+          strokeDasharray="2 3"
+        />
+        <Path
+          d={smoothPath}
+          fill="none"
+          stroke={colors.primary}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
         <Circle cx={x(lastI)} cy={y(pts[lastI].weightKg)} r={4} fill={colors.primary} />
       </Svg>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xs }}>
+      <View
+        style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACING.xs }}
+      >
         <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-          min {trend.min.toFixed(1)}
+          min {w(trend.min).toFixed(1)}
         </Text>
         <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-          max {trend.max.toFixed(1)}
+          max {w(trend.max).toFixed(1)} {unitLabel}
         </Text>
       </View>
     </View>

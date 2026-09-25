@@ -80,7 +80,7 @@ interface ExerciseSliderProps {
   // COACH-3: идентификатор тренировки для записи feedback (пробрасывается в ExerciseCard).
   workoutId: string;
   // ENG-13: добавить новый сет (для warmup toggle auto-add)
-  addSet: (exerciseIndex: number) => void;
+  addSet: (exerciseIndex: number, count?: number) => void;
 }
 
 export const ExerciseSlider = memo(function ExerciseSlider({

@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type { WeeklyVolume } from '../../services/progressService';
@@ -35,20 +36,22 @@ interface VolumeTrendChartProps {
 
 export function VolumeTrendChart({ weeklyVolume }: VolumeTrendChartProps) {
   const { colors } = useTheme();
+  // VF-8: объём в выбранных единицах (хранение — кг)
+  const { unitLabel, kgToUnit } = useWeightDisplay();
 
   const maxVolume = useMemo(
     () => Math.max(1, ...weeklyVolume.map((w) => w.volume)),
-    [weeklyVolume],
+    [weeklyVolume]
   );
 
   const totalVolume = useMemo(
     () => weeklyVolume.reduce((acc, w) => acc + w.volume, 0),
-    [weeklyVolume],
+    [weeklyVolume]
   );
 
   const totalWorkouts = useMemo(
     () => weeklyVolume.reduce((acc, w) => acc + w.workoutsCount, 0),
-    [weeklyVolume],
+    [weeklyVolume]
   );
 
   if (weeklyVolume.length === 0) {
@@ -65,10 +68,7 @@ export function VolumeTrendChart({ weeklyVolume }: VolumeTrendChartProps) {
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
           <TrendingUp size={18} color={colors.primary} strokeWidth={2} />
           <Text
-            style={[
-              typography.h5,
-              { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 },
-            ]}
+            style={[typography.h5, { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 }]}
           >
             Объём тренировок
           </Text>
@@ -102,16 +102,13 @@ export function VolumeTrendChart({ weeklyVolume }: VolumeTrendChartProps) {
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <TrendingUp size={18} color={colors.primary} strokeWidth={2} />
           <Text
-            style={[
-              typography.h5,
-              { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 },
-            ]}
+            style={[typography.h5, { color: colors.textPrimary, marginLeft: SPACING.sm, flex: 1 }]}
           >
             Объём тренировок
           </Text>
         </View>
         <Text style={[typography.caption, { color: colors.textSecondary }]}>
-          {totalWorkouts} тренировок · {formatVolume(totalVolume)} кг
+          {totalWorkouts} тренировок · {formatVolume(kgToUnit(totalVolume))} {unitLabel}
         </Text>
       </View>
 
@@ -144,7 +141,7 @@ export function VolumeTrendChart({ weeklyVolume }: VolumeTrendChartProps) {
                   ]}
                   numberOfLines={1}
                 >
-                  {formatVolume(week.volume)}
+                  {formatVolume(kgToUnit(week.volume))}
                 </Text>
               )}
               <View

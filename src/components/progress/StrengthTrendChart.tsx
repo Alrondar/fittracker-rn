@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { useStore } from '../../store/useStore';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { CHART_LINE_COLORS } from '../../constants/semanticColors';
@@ -205,6 +206,8 @@ function MiniLineChart({
   weekStarts: string[];
 }) {
   const { colors } = useTheme();
+  // VF-8: подписи e1RM в выбранных единицах (хранение — кг)
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   // Хук вызывается ДО любых early return (rules-of-hooks): длина серии может
   // меняться между рендерами после refetch.
   const [actualWidth, setActualWidth] = useState<number>(width);
@@ -233,7 +236,7 @@ function MiniLineChart({
           <Text style={[typography.caption, { color: colors.textSecondary }]}>Первый замер</Text>
         </View>
         <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
-          {points[0].toFixed(1)} кг
+          {kgToUnit(points[0]).toFixed(1)} {unitLabel}
         </Text>
       </View>
     );
@@ -328,7 +331,7 @@ function MiniLineChart({
             ]}
           >
             {points[points.length - 1] >= points[0] ? '↑' : '↓'}{' '}
-            {Math.abs(points[points.length - 1] - points[0]).toFixed(1)} кг
+            {kgToUnit(Math.abs(points[points.length - 1] - points[0])).toFixed(1)} {unitLabel}
           </Text>
         </View>
       )}

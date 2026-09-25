@@ -183,6 +183,8 @@ async function getWeeklyVolume(userId: string, weeks: number): Promise<WeeklyVol
  */
 async function getPersonalRecordsWithDates(userId: string): Promise<PersonalRecordWithDate[]> {
   // FD-6: PR считаются по всей истории → пагинация (лимит 1000), порядок по `id`.
+  // VF-6: канонический FD-7 фильтр «реальной тренировки» — без него незавершённые
+  // и пропущенные сессии с залогами логами давали ложные рекорды.
   const { data: workouts, error } = await fetchAllPages<any>((from, to) =>
     supabase
       .from('workouts')
@@ -190,6 +192,8 @@ async function getPersonalRecordsWithDates(userId: string): Promise<PersonalReco
         'id, created_at, started_at, finished_at, workout_exercises (exercise_id, exercises (name), workout_logs (weight_kg, reps, reps_left, reps_right, completed_at, is_warmup))'
       )
       .eq('user_id', userId)
+      .not('finished_at', 'is', null)
+      .is('skipped_at', null)
       .order('id')
       .range(from, to)
   );

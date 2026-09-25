@@ -351,7 +351,10 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
     exerciseIds.length > 0
       ? supabase
           .from('workout_logs')
-          .select('weight_kg, reps, rpe, set_number, workout_exercises(exercise_id)')
+          // VF-2: reps_left/reps_right — без них previous для unilateral = null → NO_HISTORY
+          .select(
+            'weight_kg, reps, reps_left, reps_right, rpe, set_number, workout_exercises(exercise_id)'
+          )
           .in('workout_exercises.exercise_id', exerciseIds)
           .neq('workout_exercises.workout_id', workoutId)
           .eq('is_warmup', false) // ENG-13: previous data только из рабочих сетов
@@ -562,6 +565,23 @@ export async function updateWorkoutExerciseId(
   const { error } = await supabase
     .from('workout_exercises')
     .update({ exercise_id: newExerciseId })
+    .eq('id', workoutExerciseId);
+
+  if (error) throw error;
+}
+
+/**
+ * VF-4: синхронизирует target_sets после auto-add/remove сетов.
+ * Без этого mapper при перезаходе обрезает сеты до старого target_sets,
+ * и разминочные сеты (ENG-13) исчезают из UI, оставаясь в workout_logs.
+ */
+export async function updateWorkoutExerciseTargetSets(
+  workoutExerciseId: string,
+  targetSets: number
+): Promise<void> {
+  const { error } = await supabase
+    .from('workout_exercises')
+    .update({ target_sets: targetSets })
     .eq('id', workoutExerciseId);
 
   if (error) throw error;

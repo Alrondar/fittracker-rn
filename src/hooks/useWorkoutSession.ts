@@ -24,6 +24,7 @@ import {
   updateWorkout,
   upsertWorkoutLogs,
   updateWorkoutExerciseId,
+  updateWorkoutExerciseTargetSets,
 } from '../services/workoutService';
 import {
   buildExercisesData,
@@ -70,6 +71,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     exercisesRef.current = exercises;
   }, [exercises]);
 
+  // VF-4: target_sets должен попадать в БД — mapper строит сеты по target_sets
+  // и при перезаходе обрезает лишние логи (auto-add разминочных сетов, ENG-13).
+  const persistTargetSets = useCallback((workoutExerciseId: string, count: number) => {
+    updateWorkoutExerciseTargetSets(workoutExerciseId, count).catch((error) => {
+      console.error('[persistTargetSets] error:', error);
+    });
+  }, []);
+
   useEffect(() => {
     isWorkoutActiveRef.current = isWorkoutActive;
   }, [isWorkoutActive]);
@@ -81,12 +90,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   // P0-B: ПАРАЛЛЕЛЬНЫЙ flush
   // ============================================================================
-  const flushPendingLogs = useCallback(async (): Promise<void> => {
+  // VF-3: возвращает число групп упражнений, которые НЕ удалось записать.
+  // Упавшие сеты возвращаются в pendingLogsRef — периодический flush и
+  // повторное «Завершить» попробуют отправить их ещё раз.
+  const flushPendingLogs = useCallback(async (): Promise<number> => {
     const entries = Array.from(pendingLogsRef.current.entries());
-    if (entries.length === 0) return;
+    if (entries.length === 0) return 0;
     pendingLogsRef.current.clear();
     const now = new Date();
 
+    let failures = 0;
     const promises = entries.map(async ([workoutExerciseId, exerciseLogs]) => {
       // Сначала маппим с сохранением оригинального индекса (set_number), затем фильтруем пустые
       const formattedLogs = exerciseLogs
@@ -117,10 +130,18 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         await upsertWorkoutLogs(workoutExerciseId, formattedLogs);
       } catch (error) {
         console.error('[flushPendingLogs] error:', error);
+        failures++;
+        // VF-3: вернуть в pending — повторный flush (или «Завершить») отправит снова.
+        // Если за время запроса пользователь уже вбил новые значения (updateSet
+        // положил свежий массив под тем же ключом) — не затираем, свежее победит.
+        if (!pendingLogsRef.current.has(workoutExerciseId)) {
+          pendingLogsRef.current.set(workoutExerciseId, exerciseLogs);
+        }
       }
     });
 
     await Promise.all(promises);
+    return failures;
   }, []);
 
   // ============================================================================
@@ -305,7 +326,16 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         const exercise = prev[exerciseIndex];
         const set = exercise.sets[setIndex];
 
-        if (set.rpe === patch.rpe && set.rir === patch.rir && set.difficulty === patch.difficulty) {
+        // VF-1: сравниваем ВСЕ поля патча, а не только rpe/rir/difficulty.
+        // Раньше патч {isWarmup} на пустом сете (rpe/rir/difficulty === undefined
+        // с обеих сторон) считался «без изменений» и отбрасывался.
+        const changed =
+          (patch.rpe !== undefined && set.rpe !== patch.rpe) ||
+          (patch.rir !== undefined && set.rir !== patch.rir) ||
+          (patch.difficulty !== undefined && set.difficulty !== patch.difficulty) ||
+          (patch.isWarmup !== undefined && (set.isWarmup ?? false) !== patch.isWarmup) ||
+          (patch.estimatedReps !== undefined && set.estimatedReps !== patch.estimatedReps);
+        if (!changed) {
           return prev;
         }
 
@@ -377,30 +407,52 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         updated[exerciseIndex] = exercise;
         return updated;
       });
+      // VF-4: persist — иначе при перезаходе mapper обрежет сеты до старого target_sets.
+      // Снаружи updaters (апдейтер должен оставаться чистым — CLAUDE.md §9)
+      const weId = exercisesRef.current[exerciseIndex]?.workout_exercise_id;
+      if (weId) persistTargetSets(weId, newSetsCount);
     },
-    []
+    [persistTargetSets]
   );
 
-  // ENG-13: добавить новый сет (для warmup toggle auto-add)
-  const addSet = useCallback((exerciseIndex: number) => {
-    setExercises((prev) => {
-      const updated = [...prev];
-      const exercise = { ...updated[exerciseIndex] };
-      const lastSetWithHistory = [...exercise.sets].reverse().find((s) => s.previousWeight != null);
-      const newSet: SetData = {
-        weight: '',
-        reps: '',
-        reps_left: '',
-        reps_right: '',
-        previousWeight: lastSetWithHistory?.previousWeight ?? null,
-        previousReps: lastSetWithHistory?.previousReps ?? null,
-        previousRpe: lastSetWithHistory?.previousRpe ?? null,
-      };
-      exercise.sets = [...exercise.sets, newSet];
-      updated[exerciseIndex] = exercise;
-      return updated;
-    });
-  }, []);
+  // ENG-13: добавить N сетов (для warmup toggle auto-add). Раньше экран вызывал
+  // addSet синхронно N раз — при переносе persist наружу это давало бы N записей
+  // одного и того же (+1) значения, поэтому добавление стало пакетным.
+  const addSet = useCallback(
+    (exerciseIndex: number, count = 1) => {
+      if (count <= 0) return;
+      const exercise = exercisesRef.current[exerciseIndex];
+      setExercises((prev) => {
+        const updated = [...prev];
+        const ex = { ...updated[exerciseIndex] };
+        const lastSetWithHistory = [...ex.sets].reverse().find((s) => s.previousWeight != null);
+        const sets = [...ex.sets];
+        for (let i = 0; i < count; i++) {
+          sets.push({
+            weight: '',
+            reps: '',
+            reps_left: '',
+            reps_right: '',
+            previousWeight: lastSetWithHistory?.previousWeight ?? null,
+            previousReps: lastSetWithHistory?.previousReps ?? null,
+            previousRpe: lastSetWithHistory?.previousRpe ?? null,
+          });
+        }
+        ex.sets = sets;
+        // VF-4: auto-add должен двигать и target_sets — иначе mapper при
+        // перезаходе выбросит новые сеты (index >= targetSets)
+        ex.target_sets = ex.sets.length;
+        updated[exerciseIndex] = ex;
+        return updated;
+      });
+      // Снаружи updaters (апдейтер остаётся чистым — CLAUDE.md §9): одно
+      // событие → ref синхронен, target_sets + count даёт итог за один запрос
+      if (exercise) {
+        persistTargetSets(exercise.workout_exercise_id, exercise.target_sets + count);
+      }
+    },
+    [persistTargetSets]
+  );
 
   // ============================================================================
   // REPLACE / RESET
@@ -668,7 +720,19 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         isFinishingRef.current = true;
 
         try {
-          await flushPendingLogs();
+          // VF-3: если подходы не легли в БД — не пишем finished_at.
+          // раньше тренировка помечалась завершённой с проглоченными ошибками flush.
+          const flushFailures = await flushPendingLogs();
+          if (flushFailures > 0) {
+            // setSaving снимает внешний finally
+            setIsFinishing(false);
+            isFinishingRef.current = false;
+            Alert.alert(
+              'Подходы не сохранены',
+              `Не удалось записать данные (${flushFailures} упр.). Проверьте интернет и завершите тренировку повторно — введённые значения не потеряны.`
+            );
+            return;
+          }
 
           try {
             await updateWorkout(workoutId, {

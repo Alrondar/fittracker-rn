@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
@@ -26,6 +27,8 @@ export function ProgressStats({
   bestStreak,
 }: ProgressStatsProps) {
   const { colors } = useTheme();
+  // VF-8: объём в выбранных единицах (хранение — кг)
+  const { unitLabel, kgToUnit } = useWeightDisplay();
 
   return (
     <AppCard variant="compact" style={{ marginBottom: SPACING.md }}>
@@ -37,9 +40,11 @@ export function ProgressStats({
         <View style={{ width: 1, backgroundColor: colors.border, marginVertical: SPACING.xs }} />
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={[typography.h3, { color: colors.textPrimary }]}>
-            {formatVolume(totalVolume)}
+            {formatVolume(kgToUnit(totalVolume))}
           </Text>
-          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>кг объём</Text>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+            {unitLabel} объём
+          </Text>
         </View>
         <View style={{ width: 1, backgroundColor: colors.border, marginVertical: SPACING.xs }} />
         <View style={{ flex: 1, alignItems: 'center' }}>

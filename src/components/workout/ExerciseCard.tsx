@@ -44,7 +44,7 @@ interface ExerciseCardProps {
   ) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
-  addSet: (exerciseIndex: number) => void;
+  addSet: (exerciseIndex: number, count?: number) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number) => void;

@@ -2,6 +2,7 @@
 // Чистые функции маппинга для useWorkoutSession
 import { ExerciseData, ExercisePainState, SetData } from '../../types/workout';
 import { PainEvent } from '../../services/painService';
+import { effectiveReps } from '../../utils/reps';
 import { SessionWERow, SessionExerciseRow, RecentLog } from './useWorkoutSession.types';
 
 interface ReferenceDataMap {
@@ -131,9 +132,11 @@ export function buildPrevLogsByExerciseId(
     // запрос отсортирован по created_at DESC → первый лог для (exercise, set_number)
     // = данные из последней завершённой тренировки
     if (!bySet.has(log.set_number)) {
+      // VF-2: effectiveReps (reps ?? reps_left+reps_right) — previous для unilateral
+      const eff = effectiveReps(log);
       bySet.set(log.set_number, {
         weight_kg: log.weight_kg,
-        reps: log.reps,
+        reps: eff > 0 ? eff : null,
         rpe: log.rpe,
       });
     }

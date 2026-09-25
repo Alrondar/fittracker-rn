@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, scale, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
@@ -24,6 +25,9 @@ interface Props {
 
 export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Props) {
   const { colors } = useTheme();
+  // VF-8: объёмы за месяц — в выбранных единицах (хранение — кг; «т» оставлена
+  // только для kg, для lb — k-нотация)
+  const { unit, unitLabel, kgToUnit } = useWeightDisplay();
 
   const workoutDates = useMemo(() => {
     const set = new Set<string>();
@@ -60,15 +64,20 @@ export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Pro
         </View>
         <View style={{ alignItems: 'center' }}>
           <Text style={[typography.h4, { color: colors.textPrimary }]}>
-            {(monthlyStats.totalVolume / 1000).toFixed(1)}т
+            {(kgToUnit(monthlyStats.totalVolume) / 1000).toFixed(1)}
+            {unit === 'kg' ? 'т' : 'k'}
           </Text>
-          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>объём</Text>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+            объём, {unitLabel}
+          </Text>
         </View>
         <View style={{ alignItems: 'center' }}>
           <Text style={[typography.h4, { color: colors.textPrimary }]}>
-            {Math.round(monthlyStats.bestWorkout)}
+            {Math.round(kgToUnit(monthlyStats.bestWorkout))}
           </Text>
-          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>лучшая, кг</Text>
+          <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+            лучшая, {unitLabel}
+          </Text>
         </View>
       </View>
 

@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Activity, ChevronRight, Clock, Dumbbell, Flame, Target } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type { HistoryWorkout } from '../../services/historyService';
@@ -73,6 +74,8 @@ function getGradientColors(id: string, avgRpe: number | null, colors: any): [str
 
 export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
   const { colors } = useTheme();
+  // VF-8: объём в выбранных единицах (хранение — кг)
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const recent = workouts.slice(0, 5);
 
   if (recent.length === 0) return null;
@@ -191,7 +194,7 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                       <Activity size={11} color={colors.textTertiary} />
                       <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                        {formatVolume(workout.volume)} кг
+                        {formatVolume(kgToUnit(workout.volume))} {unitLabel}
                       </Text>
                     </View>
                     <Dot />

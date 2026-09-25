@@ -24,6 +24,7 @@ import React, { memo, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Activity } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { useMuscleStats } from '../../hooks/useMuscleStats';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -122,7 +123,10 @@ function rowsToMuscleLoad(
     if (row.sets === 0) continue;
     for (const m of row.primaryMuscles) {
       const slugs = getSlugsForMuscle(m);
-      for (const slug of [...slugs.front, ...slugs.back]) {
+      // VF-7: дедуп front∩back (как в muscleLoad.ts) — мышцы, которые крепятся
+      // и спереди, и сзади (напр. trapezius), считались дважды
+      const uniqueSlugs = Array.from(new Set([...slugs.front, ...slugs.back]));
+      for (const slug of uniqueSlugs) {
         const e = ensure(slug, m);
         e.sets += row.sets;
         e.volumeKg += row.volumeKg * PRIMARY_COEFF;
@@ -132,7 +136,8 @@ function rowsToMuscleLoad(
     if (mode === 'total') {
       for (const m of row.secondaryMuscles) {
         const slugs = getSlugsForMuscle(m);
-        for (const slug of [...slugs.front, ...slugs.back]) {
+        const uniqueSlugs = Array.from(new Set([...slugs.front, ...slugs.back]));
+        for (const slug of uniqueSlugs) {
           const e = ensure(slug, m);
           e.sets += row.sets * SECONDARY_COEFF;
           e.volumeKg += row.volumeKg * SECONDARY_COEFF;
@@ -291,6 +296,8 @@ export type MuscleStatsSectionProps = {
 
 export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gender = 'male' }) => {
   const { colors } = useTheme();
+  // VF-8: e1RM в топ-списке «Сила» показывается в выбранных единицах (хранение — кг)
+  const { unitLabel, kgToUnit } = useWeightDisplay();
   const [tab, setTab] = useState<TabKey>('load');
   const [period, setPeriod] = useState<PeriodKey>('30');
   const [loadMode, setLoadMode] = useState<MuscleLoadMode>('total');
@@ -709,7 +716,7 @@ export const MuscleStatsSection = memo<MuscleStatsSectionProps>(({ userId, gende
                           <Text
                             style={[typography.body, { color: colors.primary, fontWeight: '700' }]}
                           >
-                            {roundE1rm(ex.e1rm)} кг
+                            {kgToUnit(roundE1rm(ex.e1rm))} {unitLabel}
                           </Text>
                           <Text
                             style={[

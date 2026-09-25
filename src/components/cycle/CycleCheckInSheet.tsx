@@ -8,6 +8,7 @@ import { typography } from '../../styles/typography';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { AppButton } from '../ui/AppButton';
 import { SheetShell } from '../ui/SheetShell';
+import { todayKey } from '../../utils/dateKey';
 import type { CycleEvent, CycleEventType } from '../../types/cycle';
 
 interface CycleCheckInSheetProps {
@@ -25,7 +26,9 @@ export function CycleCheckInSheet({
   events,
   onSave,
   onDelete,
-  defaultDate = new Date().toISOString().split('T')[0],
+  // VF-10: локальная дата (FD-5). Дефолт через toISOString() давал «вчера»
+  // для UTC+ часовых поясов в интервале 00:00–03:00.
+  defaultDate = todayKey(),
 }: CycleCheckInSheetProps) {
   const { colors } = useTheme();
   const [selectedType, setSelectedType] = useState<CycleEventType | null>(null);

@@ -133,6 +133,8 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
       // обновились сразу после сохранения check-in.
       if (userId) {
         queryClient.invalidateQueries({ queryKey: ['todayReadiness', userId] });
+        // VF-9: sleep/stress читаются движком через ['todayRecovery'] — инвалидировать вместе
+        queryClient.invalidateQueries({ queryKey: ['todayRecovery', userId] });
       }
       if (readiness <= 2) {
         Alert.alert(

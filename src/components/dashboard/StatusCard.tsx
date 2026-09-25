@@ -95,6 +95,9 @@ export function StatusCard() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todayReadiness', userId] });
+      // VF-9: движок на экране тренировки (useTodayRecovery) должен видеть свежий чек-ин,
+      // а не часы данных в кэше (staleTime 1h)
+      queryClient.invalidateQueries({ queryKey: ['todayRecovery', userId] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: () => {

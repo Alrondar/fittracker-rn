@@ -375,7 +375,7 @@ interface SetsGridProps {
   ) => void;
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
-  addSet: (exerciseIndex: number) => void;
+  addSet: (exerciseIndex: number, count?: number) => void;
   // FEAT-1.1 v2: прогрессия пер-сет через updateSet; applyProgression оставлен
   // в сигнатуре опционально для совместимости с ExerciseCard (не вызывается).
   applyProgression?: (exerciseIndex: number, newWeight: number) => void;
@@ -767,9 +767,8 @@ export const SetsGrid = memo(function SetsGrid({
         const toAdd = targetTotalSets - sets.length;
 
         if (toAdd > 0) {
-          for (let i = 0; i < toAdd; i++) {
-            addSet(exerciseIndex);
-          }
+          // VF-4: пакетное добавление — один state-update и один persist
+          addSet(exerciseIndex, toAdd);
         }
       }
     },
