@@ -2,7 +2,7 @@
 // DS-4: анимированный bottom sheet — canonical паттерн приложения (PRODUCT.md §3.6).
 // Enter/exit slide-up 240ms + fade бэкдропа, высота по контенту (max ~85%),
 // grabber + swipe-down dismiss (жест с tap-альтернативами: backdrop/X — §3.1).
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -20,8 +20,6 @@ import Animated, {
   withSpring,
   withDelay,
   runOnJS,
-  interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -44,6 +42,13 @@ const EXIT_DURATION = 200;
 const MAX_HEIGHT_RATIO = 0.85;
 const DRAG_CLOSE_DISTANCE = 80;
 const DRAG_CLOSE_VELOCITY = 600;
+// Защита от протекающего тапа: лист, открытый нажатием, получает релиз пальца
+// уже в свой бэкдроп/жест (Fabric + RNGH) → закрытие в ту же долю секунды.
+// Реализация — safety-by-default: closableSV=true только после guard-окна.
+// НИКАКОЙ арифметики Date в worklet (clock UI-потока и порядок доставок не
+// гарантированы): протёкший жест, пришедший до истечения окна, обязан
+// игнорироваться и не сдвигать панель. Аппаратный «Назад» не блокируется.
+const CLOSE_GUARD_MS = 600;
 
 export function SheetShell({
   visible = true,
@@ -60,14 +65,30 @@ export function SheetShell({
   const [rendered, setRendered] = useState(visible);
   const enter = useSharedValue(0);
   const dragY = useSharedValue(0);
+  // Закрытие разрешено только вне guard-окна. false по умолчанию: любой жест,
+  // пришедший до/во время открытия (в т.ч. протекающий релиз тапа), игнорируется.
+  const closableSV = useSharedValue(false);
+  const closableTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const finishClose = () => onClose();
 
+  const requestClose = useCallback(() => {
+    if (!closableSV.value) return;
+    onClose();
+    // closableSV — стабильный ref Reanimated, .value намеренно не депенденси
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose]);
+
   const dragGesture = Gesture.Pan()
     .onUpdate((e) => {
+      if (!closableSV.value) return;
       dragY.value = Math.max(0, e.translationY);
     })
     .onEnd((e) => {
+      if (!closableSV.value) {
+        dragY.value = withSpring(0, { damping: 28, stiffness: 320 });
+        return;
+      }
       if (e.translationY > DRAG_CLOSE_DISTANCE || e.velocityY > DRAG_CLOSE_VELOCITY) {
         dragY.value = withTiming(windowHeight, { duration: EXIT_DURATION }, (finished) => {
           if (finished) runOnJS(finishClose)();
@@ -78,11 +99,20 @@ export function SheetShell({
     });
 
   useEffect(() => {
+    if (closableTimerRef.current) {
+      clearTimeout(closableTimerRef.current);
+      closableTimerRef.current = null;
+    }
     if (visible) {
+      closableSV.value = false;
+      closableTimerRef.current = setTimeout(() => {
+        closableSV.value = true;
+      }, CLOSE_GUARD_MS);
       setRendered(true);
       dragY.value = withTiming(0, { duration: 0 });
       enter.value = withDelay(16, withTiming(1, { duration: ENTER_DURATION }));
     } else {
+      closableSV.value = false;
       // Exit-анимация: держим в дереве до конца fade, затем размонтируем.
       enter.value = withTiming(0, { duration: EXIT_DURATION }, (finished) => {
         if (finished) runOnJS(setRendered)(false);
@@ -91,17 +121,24 @@ export function SheetShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
+  useEffect(
+    () => () => {
+      if (closableTimerRef.current) clearTimeout(closableTimerRef.current);
+    },
+    []
+  );
+
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: enter.value,
   }));
 
-  const panelStyle = useAnimatedStyle(() => {
-    const entering = interpolate(enter.value, [0, 1], [1, 0], Extrapolation.CLAMP);
-    return {
-      opacity: entering,
-      transform: [{ translateY: dragY.value + (1 - entering) * windowHeight }],
-    };
-  });
+  const panelStyle = useAnimatedStyle(() => ({
+    // enter: 0 = закрыт, 1 = открыт. Панель: opacity = enter,
+    // translateY: H (снизу) → 0. (Инверсия interpolate/enter в a42abc8
+    // делала панель невидимой при enter=1 — корень «затемнения без листа».)
+    opacity: enter.value,
+    transform: [{ translateY: dragY.value + (1 - enter.value) * windowHeight }],
+  }));
 
   if (!rendered) return null;
 
@@ -123,7 +160,7 @@ export function SheetShell({
           <TouchableOpacity
             style={{ flex: 1 }}
             activeOpacity={1}
-            onPress={onClose}
+            onPress={requestClose}
             accessibilityRole="button"
             accessibilityLabel="Закрыть"
           />
@@ -183,7 +220,7 @@ export function SheetShell({
                     {title}
                   </Text>
                   <TouchableOpacity
-                    onPress={onClose}
+                    onPress={requestClose}
                     hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                     accessibilityRole="button"
                     accessibilityLabel="Закрыть"

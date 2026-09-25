@@ -57,7 +57,8 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
 
   return (
     <Modal transparent visible={!!selectedDay} animationType="slide" onRequestClose={onClose}>
-      <SheetShell title={selectedDay ? formatDayLabel(selectedDay) : ''} onClose={onClose}>
+      {/* isModal обязателен внутри нативного Modal (грабли Fabric, INVENTORY §12) */}
+      <SheetShell isModal title={selectedDay ? formatDayLabel(selectedDay) : ''} onClose={onClose}>
         <Text
           style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}
         >

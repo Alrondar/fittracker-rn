@@ -96,7 +96,7 @@ Main components:
 `TechniqueMediaSlider`
 `WarmupBlock`
 `WarmupExerciseCard.tsx` — компактный L1: номер-чекбокс + миниатюра техники + таймер; тап по карточке → WarmupExerciseSheet (WARMUP-1)
-`WarmupExerciseSheet.tsx` — L2 разминки (Modal + SheetShell isModal, рендер в корне workout/[id].tsx, паттерн PainSheet): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1)
+`WarmupExerciseSheet.tsx` — L2 разминки (plain SheetShell с `visible`, state и рендер в корне workout/[id].tsx — не внутри ScrollView): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1)
 `PainSheet`
 `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
 `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») с PR6 pain affordance
@@ -266,7 +266,7 @@ Important components:
 `FadeIn`
 `Skeleton`
 `Toast`
-`SheetShell` is the canonical sheet surface. New sheets should use it unless a clear reason exists not to.
+`SheetShell` is the canonical sheet surface. New sheets should use it unless a clear reason exists not to. **История (25.09.2026):** в a42abc8 анимация панели была инвертирована (opacity/translateY от `1-enter`) — все листы «затемняли экран без панели»; исправлено (формула от `enter`). Заодно добавлен защитный guard `closableSV` (закрытие backdrop/X/свайпом запрещено первые 600 мс после открытия). Новые листы: plain SheetShell с переключаемым `visible` в корне экрана, не внутри ScrollView; внутри нативного Modal обязателен `isModal`.
 
 # 7. Hooks dependency map
 

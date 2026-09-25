@@ -3,7 +3,7 @@
 // аналоги изучаемы внутри листа (просмотр без замены) с бейджами relation_type.
 // Замена — явный CTA, а не тап по карточке (в отличие от старого слайдера альтернатив).
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
@@ -228,204 +228,190 @@ export function WarmupExerciseSheet({
   const isViewingAlt = !!viewingAlt;
 
   return (
-    // Паттерн PainSheet/NutritionAddModal: нативный Modal + SheetShell isModal.
-    // Без Modal absolute-оверлей SheetShell позиционируется внутри ScrollView
-    // разминки (панель уезжает за границы клипа), а бэкдроп, примонтированный
-    // посреди жест тапа, перехватывает релиз и сразу закрывает лист.
-    <Modal
-      transparent
-      visible={visible}
-      animationType="slide"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      <SheetShell isModal title={displayed.name} onClose={onClose}>
-        {/* Навигация просмотра: изучаем аналог без замены */}
-        {isViewingAlt && (
-          <TouchableOpacity
-            onPress={backToMain}
-            accessibilityRole="button"
-            accessibilityLabel={`Вернуться к ${main.name}`}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 2,
-              alignSelf: 'flex-start',
-              marginBottom: SPACING.sm,
-              paddingVertical: SPACING.xs,
-            }}
-          >
-            <ChevronLeft size={16} color={colors.primary} />
-            <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
-              {main.name}
-            </Text>
-          </TouchableOpacity>
-        )}
+    // Рендер в корне экрана (state — в workout/[id].tsx), вне ScrollView: absolute-оверлей
+    // внутри скролл-контента обрезается клипом. visible управляет SheetShell напрямую —
+    // так guard SheetShell (защита от релиза тапа, открывшего лист) обновляется при
+    // каждом открытии; у Modal-паттерна (PainSheet) SheetShell смонтирован постоянно.
+    <SheetShell visible={visible} title={displayed.name} onClose={onClose}>
+      {/* Навигация просмотра: изучаем аналог без замены */}
+      {isViewingAlt && (
+        <TouchableOpacity
+          onPress={backToMain}
+          accessibilityRole="button"
+          accessibilityLabel={`Вернуться к ${main.name}`}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 2,
+            alignSelf: 'flex-start',
+            marginBottom: SPACING.sm,
+            paddingVertical: SPACING.xs,
+          }}
+        >
+          <ChevronLeft size={16} color={colors.primary} />
+          <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+            {main.name}
+          </Text>
+        </TouchableOpacity>
+      )}
 
-        {/* Демонстрация — сразу наверху, без аккордеона */}
-        {hasTechnique ? (
-          <View>
-            {displayed.media_url && (
-              <TechniqueMediaSlider mediaUrl={displayed.media_url} autoPlay />
-            )}
-            {displayed.technique && (
-              <View style={{ marginTop: SPACING.md }}>
-                <SectionSubheading
-                  icon={<BookOpen size={12} color={colors.textPrimary} />}
-                  label="Описание техники"
-                  color={colors.textPrimary}
-                />
-                <Text
-                  style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}
-                >
-                  {displayed.technique}
-                </Text>
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={{ padding: SPACING.md, alignItems: 'center' }}>
-            <Text style={[typography.bodySmall, { color: colors.textTertiary }]}>
-              Нет данных по технике
-            </Text>
-          </View>
-        )}
-
-        {displayed.benefits && (
-          <ExerciseInfoAccordion
-            icon={<Sparkles size={13} color={colors.success} />}
-            title="Польза"
-            titleColor={colors.success}
-          >
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-              {displayed.benefits}
-            </Text>
-          </ExerciseInfoAccordion>
-        )}
-
-        {displayed.risks && (
-          <ExerciseInfoAccordion
-            icon={<AlertTriangle size={13} color={colors.warning} />}
-            title="Риски"
-            titleColor={colors.warning}
-          >
-            <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-              {displayed.risks}
-            </Text>
-          </ExerciseInfoAccordion>
-        )}
-
-        {displayed.injuries.length > 0 && (
-          <ExerciseInfoAccordion
-            icon={<ShieldAlert size={13} color={colors.error} />}
-            title="Противопоказания"
-            titleColor={colors.error}
-          >
-            {displayed.injuries.map((item, i) => (
-              <View
-                key={i}
-                style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}
-              >
-                <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>
-                  •
-                </Text>
-                <Text
-                  style={[
-                    typography.bodySmall,
-                    { color: colors.textSecondary, lineHeight: 18, flex: 1 },
-                  ]}
-                >
-                  {item}
-                </Text>
-              </View>
-            ))}
-          </ExerciseInfoAccordion>
-        )}
-
-        {/* Действия над выбранным аналогом */}
-        {isViewingAlt && (
-          <AppButton
-            title={`Заменить на «${displayed.name}»`}
-            variant="primary"
-            size="medium"
-            icon={<RotateCcw size={16} color={colors.textInverse} />}
-            onPress={handleReplace}
-            style={{ marginTop: SPACING.md }}
-          />
-        )}
-
-        {/* Похожие варианты — изучаемы до замены */}
-        {!isViewingAlt && (loadingAlts || alts.length > 0) && (
-          <View style={{ marginTop: SPACING.md }}>
-            <Text
-              style={[
-                typography.captionSmall,
-                {
-                  color: colors.textTertiary,
-                  fontWeight: '700',
-                  marginBottom: SPACING.sm,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
-                },
-              ]}
-            >
-              Похожие варианты
-            </Text>
-            {loadingAlts ? (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: SPACING.sm,
-                  paddingVertical: SPACING.md,
-                }}
-              >
-                <ActivityIndicator size="small" color={colors.warning} />
-                <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                  Подбираем варианты...
-                </Text>
-              </View>
-            ) : (
-              <View style={{ gap: SPACING.sm }}>
-                {alts.map((alt) => (
-                  <AlternativeRow key={alt.id} alt={alt} onPress={openAlt} />
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Футер основного упражнения */}
-        {!isViewingAlt && (
-          <View style={{ marginTop: SPACING.lg, gap: SPACING.sm }}>
-            {!completed && (
-              <AppButton
-                title="Отметить выполненным"
-                variant="secondary"
-                size="medium"
-                icon={<Check size={16} color={colors.primary} />}
-                onPress={() => onMarkCompleted(main.id)}
+      {/* Демонстрация — сразу наверху, без аккордеона */}
+      {hasTechnique ? (
+        <View>
+          {displayed.media_url && <TechniqueMediaSlider mediaUrl={displayed.media_url} autoPlay />}
+          {displayed.technique && (
+            <View style={{ marginTop: SPACING.md }}>
+              <SectionSubheading
+                icon={<BookOpen size={12} color={colors.textPrimary} />}
+                label="Описание техники"
+                color={colors.textPrimary}
               />
-            )}
-            <TouchableOpacity
-              onPress={() => router.push(`/exercise/${displayed.id}`)}
-              accessibilityRole="link"
+              <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
+                {displayed.technique}
+              </Text>
+            </View>
+          )}
+        </View>
+      ) : (
+        <View style={{ padding: SPACING.md, alignItems: 'center' }}>
+          <Text style={[typography.bodySmall, { color: colors.textTertiary }]}>
+            Нет данных по технике
+          </Text>
+        </View>
+      )}
+
+      {displayed.benefits && (
+        <ExerciseInfoAccordion
+          icon={<Sparkles size={13} color={colors.success} />}
+          title="Польза"
+          titleColor={colors.success}
+        >
+          <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
+            {displayed.benefits}
+          </Text>
+        </ExerciseInfoAccordion>
+      )}
+
+      {displayed.risks && (
+        <ExerciseInfoAccordion
+          icon={<AlertTriangle size={13} color={colors.warning} />}
+          title="Риски"
+          titleColor={colors.warning}
+        >
+          <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
+            {displayed.risks}
+          </Text>
+        </ExerciseInfoAccordion>
+      )}
+
+      {displayed.injuries.length > 0 && (
+        <ExerciseInfoAccordion
+          icon={<ShieldAlert size={13} color={colors.error} />}
+          title="Противопоказания"
+          titleColor={colors.error}
+        >
+          {displayed.injuries.map((item, i) => (
+            <View
+              key={i}
+              style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}
+            >
+              <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
+              <Text
+                style={[
+                  typography.bodySmall,
+                  { color: colors.textSecondary, lineHeight: 18, flex: 1 },
+                ]}
+              >
+                {item}
+              </Text>
+            </View>
+          ))}
+        </ExerciseInfoAccordion>
+      )}
+
+      {/* Действия над выбранным аналогом */}
+      {isViewingAlt && (
+        <AppButton
+          title={`Заменить на «${displayed.name}»`}
+          variant="primary"
+          size="medium"
+          icon={<RotateCcw size={16} color={colors.textInverse} />}
+          onPress={handleReplace}
+          style={{ marginTop: SPACING.md }}
+        />
+      )}
+
+      {/* Похожие варианты — изучаемы до замены */}
+      {!isViewingAlt && (loadingAlts || alts.length > 0) && (
+        <View style={{ marginTop: SPACING.md }}>
+          <Text
+            style={[
+              typography.captionSmall,
+              {
+                color: colors.textTertiary,
+                fontWeight: '700',
+                marginBottom: SPACING.sm,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              },
+            ]}
+          >
+            Похожие варианты
+          </Text>
+          {loadingAlts ? (
+            <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                paddingVertical: SPACING.sm,
+                gap: SPACING.sm,
+                paddingVertical: SPACING.md,
               }}
             >
-              <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
-                Полная карточка упражнения
+              <ActivityIndicator size="small" color={colors.warning} />
+              <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                Подбираем варианты...
               </Text>
-              <ChevronRight size={14} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </SheetShell>
-    </Modal>
+            </View>
+          ) : (
+            <View style={{ gap: SPACING.sm }}>
+              {alts.map((alt) => (
+                <AlternativeRow key={alt.id} alt={alt} onPress={openAlt} />
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Футер основного упражнения */}
+      {!isViewingAlt && (
+        <View style={{ marginTop: SPACING.lg, gap: SPACING.sm }}>
+          {!completed && (
+            <AppButton
+              title="Отметить выполненным"
+              variant="secondary"
+              size="medium"
+              icon={<Check size={16} color={colors.primary} />}
+              onPress={() => onMarkCompleted(main.id)}
+            />
+          )}
+          <TouchableOpacity
+            onPress={() => router.push(`/exercise/${displayed.id}`)}
+            accessibilityRole="link"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              paddingVertical: SPACING.sm,
+            }}
+          >
+            <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+              Полная карточка упражнения
+            </Text>
+            <ChevronRight size={14} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+      )}
+    </SheetShell>
   );
 }

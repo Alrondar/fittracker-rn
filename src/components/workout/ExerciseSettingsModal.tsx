@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal, Pressable, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { X, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -91,7 +91,7 @@ export function ExerciseSettingsModal({
                 commit();
               },
             },
-          ],
+          ]
         );
         return;
       }
@@ -102,16 +102,24 @@ export function ExerciseSettingsModal({
 
   const visible = target !== null;
 
+  // Guard от протекающего тапа (как CLOSE_GUARD_MS в SheetShell, 24.09): релиз
+  // нажатия, открывшего модалку, доставался примонтированному бэкдропу → модалка
+  // закрывалась мгновенно. Здесь свой бэкдроп (не SheetShell), поэтому тот же
+  // тайминг-guard локально.
+  const openedAtRef = useRef(Date.now()); // safety-by-default: до эффекта открытия guard активен
+  useEffect(() => {
+    if (visible) openedAtRef.current = Date.now();
+  }, [visible]);
+  const handleBackdropPress = useCallback(() => {
+    if (Date.now() - openedAtRef.current < 600) return;
+    onClose();
+  }, [onClose]);
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
         style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
-        onPress={onClose}
+        onPress={handleBackdropPress}
       >
         <Pressable
           style={[cardStyles.settingsSheetContainer, { backgroundColor: colors.surface }]}
@@ -137,8 +145,7 @@ export function ExerciseSettingsModal({
                 style={[
                   cardStyles.settingsSheetCounterButton,
                   {
-                    backgroundColor:
-                      localSets <= 1 ? colors.surfaceSecondary : colors.primaryLight,
+                    backgroundColor: localSets <= 1 ? colors.surfaceSecondary : colors.primaryLight,
                     opacity: localSets <= 1 ? 0.5 : 1,
                   },
                 ]}
