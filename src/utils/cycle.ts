@@ -14,6 +14,38 @@ function normalizeDate(date: Date | string): Date {
 }
 
 /**
+ * FD11-5: оценка длительности менструации, если пользователь залогировал только
+ * начало. Без этой оценки фаза «менструация» длилась вечно: овуляция и
+ * лютеиновая не наступали никогда, календарь был красный весь месяц.
+ * 5 дней — стандартная справочная оценка (помечается isEstimated).
+ */
+const DEFAULT_MENSES_DURATION_DAYS = 5;
+
+/**
+ * Конец текущей менструации: реальное событие menstruation_end или оценка
+ * startDate + 4 дня. estimated=true — если конец не залогирован.
+ */
+function resolveMenstruationEnd(
+  sortedEvents: CycleEvent[],
+  startDate: Date
+): { end: Date; estimated: boolean } {
+  const found = sortedEvents
+    .filter(
+      (e) =>
+        e.event_type === 'menstruation_end' &&
+        normalizeDate(e.event_date).getTime() >= startDate.getTime()
+    )
+    .pop();
+  if (found) return { end: normalizeDate(found.event_date), estimated: false };
+  return {
+    end: normalizeDate(
+      new Date(startDate.getTime() + (DEFAULT_MENSES_DURATION_DAYS - 1) * 86400000)
+    ),
+    estimated: true,
+  };
+}
+
+/**
  * Рассчитывает текущую фазу цикла на основе событий.
  * @param events События цикла пользователя
  * @param lutealLength Длина лютеиновой фазы (по умолчанию 14)
@@ -46,27 +78,24 @@ export function calculateCyclePhases(
   if (refTime < startDate.getTime()) return null;
 
   // Находим конец текущих месячных (если есть)
-  const menstruationEnd = sortedEvents
-    .filter(
-      (e) =>
-        e.event_type === 'menstruation_end' &&
-        normalizeDate(e.event_date).getTime() >= startDate.getTime()
-    )
-    .pop();
-
-  const menstruationEndDate = menstruationEnd ? normalizeDate(menstruationEnd.event_date) : null;
+  // FD11-5: без события menstruation_end конец оценивается в start+4 дня —
+  // раньше фаза «менструация» в этом случае не заканчивалась никогда.
+  const { end: menstruationEndDate, estimated: mensesEndEstimated } = resolveMenstruationEnd(
+    sortedEvents,
+    startDate
+  );
 
   // Проверяем, идут ли сейчас месячные.
   // Граница фаз включает последний день фазы: день menstruation_end ещё относится
   // к менструальной фазе (аналогично ovulation_end — к овуляции, см. ниже),
   // поэтому сравнение через +1 сутки.
-  if (!menstruationEndDate || refTime <= menstruationEndDate.getTime() + 86400000) {
+  if (refTime <= menstruationEndDate.getTime() + 86400000) {
     return {
       phase: 'menstrual',
       dayNumber: Math.floor((refTime - startDate.getTime()) / 86400000) + 1,
       startDate,
-      endDate: menstruationEndDate || startDate,
-      isEstimated: false,
+      endDate: menstruationEndDate,
+      isEstimated: mensesEndEstimated,
     };
   }
 
@@ -149,11 +178,9 @@ export function calculateCyclePhases(
   return {
     phase: 'follicular',
     dayNumber: Math.floor((refTime - startDate.getTime()) / 86400000) + 1,
-    startDate: menstruationEndDate
-      ? normalizeDate(new Date(menstruationEndDate.getTime() + 86400000))
-      : startDate,
+    startDate: normalizeDate(new Date(menstruationEndDate.getTime() + 86400000)),
     endDate: ovulationStart,
-    isEstimated: isEstimatedOvulation,
+    isEstimated: isEstimatedOvulation || mensesEndEstimated,
   };
 }
 
@@ -220,16 +247,10 @@ export function getPhaseForDate(
 
   const startDate = normalizeDate(lastMenstruationStart.event_date);
 
-  const menstruationEnd = sortedEvents
-    .filter(
-      (e) =>
-        e.event_type === 'menstruation_end' &&
-        normalizeDate(e.event_date).getTime() >= startDate.getTime()
-    )
-    .pop();
-  const menstruationEndDate = menstruationEnd ? normalizeDate(menstruationEnd.event_date) : null;
+  // FD11-5: тот же оценочный конец месячных, что и в calculateCyclePhases
+  const { end: menstruationEndDate } = resolveMenstruationEnd(sortedEvents, startDate);
 
-  if (!menstruationEndDate || targetTime <= menstruationEndDate.getTime() + 86400000) {
+  if (targetTime <= menstruationEndDate.getTime() + 86400000) {
     return 'menstrual';
   }
 

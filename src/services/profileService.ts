@@ -279,10 +279,14 @@ export const profileService = {
     let endISO: string;
 
     if (days === 1) {
-      const today = todayKey();
-
-      startISO = `${today}T00:00:00+00:00`;
-      endISO = `${today}T23:59:59+00:00`;
+      // FD12-5: границы «сегодня» — локальная полночь/полночь+сутки (FD-5).
+      // Раньше `${today}T00:00:00+00:00` резало день по UTC: вечерние тренировки
+      // выпадали из сегодняшних сожжённых калорий.
+      const now = new Date();
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      startISO = dayStart.toISOString();
+      endISO = dayEnd.toISOString();
     } else {
       const now = new Date();
       const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);

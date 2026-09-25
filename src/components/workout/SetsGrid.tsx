@@ -779,7 +779,10 @@ export const SetsGrid = memo(function SetsGrid({
   // ребёнок видим (прошлые данные / карточка рекомендации / prompt причин /
   // чипы / строка блинов). Раньше при свёрнутой 💡 карточке и отсутствии
   // истории оставалась пустая тонированная рамка под «Подходы».
-  const plateWeight = progressionSet?.weight ? parseFloat(progressionSet.weight) : null;
+  // FD12-1: progressionSet.weight хранится в кг, а PlateMathRow/barWeight/номиналы
+  // работают в единицах пользователя — без toDisplay lb-пользователь получал
+  // сборку «гриф 45 lb + …» от килограммового числа (машта из других деталей)
+  const plateWeight = progressionSet?.weight ? parseFloat(toDisplay(progressionSet.weight)) : null;
   const hintVisible =
     prevWeight !== null ||
     (recommendation !== null &&

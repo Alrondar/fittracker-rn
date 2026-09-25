@@ -53,7 +53,9 @@ export function calculatePlates(
  * Пример: "Гриф 20 кг + 2×10 кг + 2×5 кг"
  */
 export function formatPlates(barWeight: number, plates: PlateResult[], unit: 'kg' | 'lb'): string {
-  const platesStr = plates.map((p) => `2×${p.weight} ${unit}`).join(' + ');
+  // FD12-2: count — блинов на одну сторону, на штанге их два набора.
+  // Раньше печаталось «2×<вес>» всегда, и при 3×25 на сторону сборка была ложной.
+  const platesStr = plates.map((p) => `${p.count * 2}×${p.weight} ${unit}`).join(' + ');
 
   return `Гриф ${barWeight} ${unit} + ${platesStr}`;
 }

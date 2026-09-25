@@ -319,6 +319,43 @@ const DEFAULT_STEP_KG = 2.5;
  * - Оценка усталости = текущие завершённые рабочие сеты (не previousReps!).
  */
 export function calculateProgression(input: ProgressionInput): ProgressionResult {
+  const result = decideProgression(input);
+
+  // FD11-9: контексты восстановления/цикла (сон, стресс, лютеиновая, овуляция)
+  // раньше стояли ПЕРЕД всем деревом и могли заменить законное decrease (отказ
+  // RPE 10, перетрен) на «держим вес». Теперь они блокируют только ПОВЫШЕНИЕ:
+  // increase → hold, decrease/no_data проходят как есть.
+  if (result.action !== 'increase') return result;
+
+  const { factors } = result.reason;
+  const baseWeight = factors.lastWeight;
+  const targetRange = factors.targetRange;
+  const hold = (code: string, ruText: string): ProgressionResult => ({
+    action: 'hold',
+    suggestedWeight: baseWeight,
+    suggestedReps: targetRange ? targetRange.max : null,
+    reason: { code, ruText, factors },
+  });
+
+  if (input.sleepHours != null && input.sleepHours < 6) {
+    return hold(
+      'LOW_SLEEP',
+      `Сон ${input.sleepHours}ч — ниже нормы. Не повышаем вес, закрепляем текущий.`
+    );
+  }
+  if (input.stressLevel != null && input.stressLevel >= 4) {
+    return hold('HIGH_STRESS', `Высокий стресс (${input.stressLevel}/5). Не повышаем вес.`);
+  }
+  if (input.cyclePhase === 'luteal') {
+    return hold('LUTEAL_PHASE', 'Лютеиновая фаза цикла — без повышения веса.');
+  }
+  if (input.cyclePhase === 'ovulation') {
+    return hold('OVULATION_RISK', 'Овуляция — высокий риск травм, без повышения веса.');
+  }
+  return result;
+}
+
+function decideProgression(input: ProgressionInput): ProgressionResult {
   const { sets, repsRange, stepKg = DEFAULT_STEP_KG, targetSetIndex } = input;
 
   // 1. Рабочие сеты с историей (исключая warmup)
@@ -500,59 +537,8 @@ export function calculateProgression(input: ProgressionInput): ProgressionResult
     };
   }
 
-  // 0.5. P0 Вариант B: Recovery context (Сон/Стресс)
-  // Применяется ДО базовых правил прогрессии, чтобы предотвратить повышение веса при плохом восстановлении
-  if (input.sleepHours != null && input.sleepHours < 6) {
-    return {
-      action: 'hold',
-      suggestedWeight: baseWeight,
-      suggestedReps: targetRange ? targetRange.max : null,
-      reason: {
-        code: 'LOW_SLEEP',
-        ruText: `Сон ${input.sleepHours}ч — ниже нормы. Закрепляем вес для безопасности.`,
-        factors,
-      },
-    };
-  }
-  if (input.stressLevel != null && input.stressLevel >= 4) {
-    return {
-      action: 'hold',
-      suggestedWeight: baseWeight,
-      suggestedReps: targetRange ? targetRange.max : null,
-      reason: {
-        code: 'HIGH_STRESS',
-        ruText: `Высокий стресс (${input.stressLevel}/5). Закрепляем вес.`,
-        factors,
-      },
-    };
-  }
-
-  // 0.6. P1: Cycle context (Менструальный цикл)
-  // Применяется ДО базовых правил прогрессии
-  if (input.cyclePhase === 'luteal') {
-    return {
-      action: 'hold',
-      suggestedWeight: baseWeight,
-      suggestedReps: targetRange ? targetRange.max : null,
-      reason: {
-        code: 'LUTEAL_PHASE',
-        ruText: 'Лютеиновая фаза цикла — закрепляем вес.',
-        factors,
-      },
-    };
-  }
-  if (input.cyclePhase === 'ovulation') {
-    return {
-      action: 'hold',
-      suggestedWeight: baseWeight,
-      suggestedReps: targetRange ? targetRange.max : null,
-      reason: {
-        code: 'OVULATION_RISK',
-        ruText: 'Овуляция — высокий риск травм, закрепляем вес.',
-        factors,
-      },
-    };
-  }
+  // 0.5/0.6: recovery (сон/стресс) и cycle (лютеиновая/овуляция) — обработаны
+  // обёрткой calculateProgression (FD11-9): только downgrade increase→hold.
 
   // 1. Полный отказ
   if (evalRpe === 10) {

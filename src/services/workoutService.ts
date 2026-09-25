@@ -571,17 +571,17 @@ export async function updateWorkoutExerciseId(
 }
 
 /**
- * VF-4: синхронизирует target_sets после auto-add/remove сетов.
- * Без этого mapper при перезаходе обрезает сеты до старого target_sets,
- * и разминочные сеты (ENG-13) исчезают из UI, оставаясь в workout_logs.
+ * VF-4/FD12-4: синхронизирует настройки экземпляра упражнения после их правки
+ * в ExerciseSettingsSheet и auto-add сетов. Без этого mapper при перезаходе
+ * строит сеты по старому target_sets, а отдых откатывается к плану.
  */
-export async function updateWorkoutExerciseTargetSets(
+export async function updateWorkoutExerciseSettings(
   workoutExerciseId: string,
-  targetSets: number
+  patch: { target_sets?: number; rest_seconds?: number }
 ): Promise<void> {
   const { error } = await supabase
     .from('workout_exercises')
-    .update({ target_sets: targetSets })
+    .update(patch)
     .eq('id', workoutExerciseId);
 
   if (error) throw error;

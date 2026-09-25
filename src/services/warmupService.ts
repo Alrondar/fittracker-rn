@@ -567,6 +567,11 @@ async function applyWarmupPreferences(
       const next = list.map((e) => {
         const preferred = prefs.get(e.id);
         const alt = preferred ? validById.get(preferred) : undefined;
+        // FD11-7: не подставлять аналог, если он уже стоит в списке на другом
+        // месте — иначе в разминке появлялся дубликат упражнения
+        if (alt && list.some((other) => other.id === alt.id && other.id !== e.id)) {
+          return e;
+        }
         return alt ? { ...alt, relevance_score: e.relevance_score } : e;
       });
       const changed = next.some((e, i) => e.id !== list[i].id);

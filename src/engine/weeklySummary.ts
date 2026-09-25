@@ -556,8 +556,10 @@ export function calculateTrainingLoadContext(
       reasons.push(`Повышенная нагрузка относительно месяца (ACWR ${acwr.toFixed(2)})`);
       elevatedSignals++;
     } else if (acwr < 0.8) {
+      // FD11-2: снижение — наблюдение, а не «повышенная нагрузка». Раньше
+      // elevatedSignals++ делал level elevated в разгрузочные недели и давал
+      // ложный сигнал highLoad в calculateDeloadContext.
       reasons.push(`Снижение нагрузки относительно месяца (ACWR ${acwr.toFixed(2)})`);
-      elevatedSignals++;
     }
   } else {
     // Fallback на сравнение с предыдущей неделей, если chronicVolume недоступен
@@ -568,8 +570,8 @@ export function calculateTrainingLoadContext(
       reasons.push(`Объём вырос на ${volumeChangePct}%`);
       elevatedSignals++;
     } else if (volumeRatio <= 0.8 && previous.totalVolume > 0) {
+      // FD11-2: зеркально — снижение не повышает level
       reasons.push(`Объём снизился на ${Math.abs(volumeChangePct)}%`);
-      elevatedSignals++;
     }
   }
 

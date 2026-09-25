@@ -140,7 +140,7 @@ function toNumber(v: number | string | null | undefined): number {
  */
 async function calculateChronicVolume(
   userId: string,
-  endDateISO: string // exclusive upper bound (nextStartISO текущей недели)
+  endDateISO: string // exclusive upper bound — начало текущей (acute) недели
 ): Promise<number> {
   const fourWeeksAgo = new Date(endDateISO);
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
@@ -430,8 +430,12 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
       min: rMin,
       max: rMax,
     },
+    // FD11-3: типы тренировок (workout_type) ещё нет в данных (миграция ENG-10 не
+    // сделана). Раньше strength = totalVolume — ratio === 1 и инсайт TYPE_IMBALANCE
+    // («80%+ объёма — силовых») ложно срабатывал на любой объёме. До появления
+    // реальных типов держим нули: engine-гейты (<0.8) сами глушат инсайт и пороги.
     volumeByType: {
-      strength: Math.round(totalVolume),
+      strength: 0,
       hypertrophy: 0,
       cardio: 0,
       mixed: 0,
@@ -537,7 +541,10 @@ export async function getWeeklySummary(
     aggregateWeek(userId, currentRange),
     aggregateWeek(userId, previousRange),
     supabase.from('profiles').select('goal').eq('id', userId).single(),
-    calculateChronicVolume(userId, currentRange.nextStartISO),
+    // FD11-1: chronic = 4 недели ДО начала acute-недели. Раньше верхней границей
+    // был nextStartISO — хроника включала саму текущую неделю, и новичок первую
+    // меcяц видел ACWR 4.00 → ложное «высокий риск травмы».
+    calculateChronicVolume(userId, currentRange.startISO),
     aggregateMuscleData(userId, now),
   ]);
 

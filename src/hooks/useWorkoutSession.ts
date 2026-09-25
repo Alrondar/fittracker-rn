@@ -24,7 +24,7 @@ import {
   updateWorkout,
   upsertWorkoutLogs,
   updateWorkoutExerciseId,
-  updateWorkoutExerciseTargetSets,
+  updateWorkoutExerciseSettings,
 } from '../services/workoutService';
 import {
   buildExercisesData,
@@ -71,13 +71,17 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     exercisesRef.current = exercises;
   }, [exercises]);
 
-  // VF-4: target_sets должен попадать в БД — mapper строит сеты по target_sets
-  // и при перезаходе обрезает лишние логи (auto-add разминочных сетов, ENG-13).
-  const persistTargetSets = useCallback((workoutExerciseId: string, count: number) => {
-    updateWorkoutExerciseTargetSets(workoutExerciseId, count).catch((error) => {
-      console.error('[persistTargetSets] error:', error);
-    });
-  }, []);
+  // VF-4/FD12-4: target_sets и rest_seconds должны попадать в БД — mapper строит
+  // сеты по target_sets и при перезаходе обрезает лишние логи (auto-add, ENG-13),
+  // а отдых иначе откатывается к плану.
+  const persistExerciseSettings = useCallback(
+    (workoutExerciseId: string, patch: { target_sets?: number; rest_seconds?: number }) => {
+      updateWorkoutExerciseSettings(workoutExerciseId, patch).catch((error) => {
+        console.error('[persistExerciseSettings] error:', error);
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     isWorkoutActiveRef.current = isWorkoutActive;
@@ -407,12 +411,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         updated[exerciseIndex] = exercise;
         return updated;
       });
-      // VF-4: persist — иначе при перезаходе mapper обрежет сеты до старого target_sets.
-      // Снаружи updaters (апдейтер должен оставаться чистым — CLAUDE.md §9)
+      // VF-4/FD12-4: persist — иначе при перезаходе mapper обрежет сеты до старого
+      // target_sets, а отдых откатится к плану. Наружу updaters (апдейтер остаётся
+      // чистым — CLAUDE.md §9).
       const weId = exercisesRef.current[exerciseIndex]?.workout_exercise_id;
-      if (weId) persistTargetSets(weId, newSetsCount);
+      if (weId)
+        persistExerciseSettings(weId, { target_sets: newSetsCount, rest_seconds: newRestSeconds });
     },
-    [persistTargetSets]
+    [persistExerciseSettings]
   );
 
   // ENG-13: добавить N сетов (для warmup toggle auto-add). Раньше экран вызывал
@@ -448,10 +454,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       // Снаружи updaters (апдейтер остаётся чистым — CLAUDE.md §9): одно
       // событие → ref синхронен, target_sets + count даёт итог за один запрос
       if (exercise) {
-        persistTargetSets(exercise.workout_exercise_id, exercise.target_sets + count);
+        persistExerciseSettings(exercise.workout_exercise_id, {
+          target_sets: exercise.target_sets + count,
+        });
       }
     },
-    [persistTargetSets]
+    [persistExerciseSettings]
   );
 
   // ============================================================================
