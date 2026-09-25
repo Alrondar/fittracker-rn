@@ -111,6 +111,12 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 }: ExerciseSliderProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
+  // Ритм между упражнениями: высота слайдера = высота ОСНОВНОЙ карточки.
+  // Без этого горизонтальный ScrollView растягивается самой высокой страницей
+  // (карточкой-альтернативой) — после таких блоков пустой зазор больше, чем
+  // после остальных («разное расстояние между карточками»). Альтернативы,
+  // если они выше, скроллятся вертикально внутри своей страницы.
+  const [mainHeight, setMainHeight] = useState(0);
 
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
   const [excludedCount, setExcludedCount] = useState(0); // ENG-5: скрытые травмами
@@ -209,17 +215,37 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         </View>
       )}
 
+      {/* ENG-5: подпись о скрытых вариантах. Над слайдером, а не под ним:
+          нижний край блока = низ карточки, поэтому вертикальный ритм между
+          упражнениями одинаковый (SPACING.md) на всех карточках. */}
+      {showAlts && excludedCount > 0 && (
+        <Text
+          style={{
+            color: colors.textTertiary,
+            fontSize: 11,
+            marginBottom: SPACING.xs,
+            paddingHorizontal: PAD,
+          }}
+        >
+          {formatExcluded(excludedCount)} из-за травм и противопоказаний
+        </Text>
+      )}
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
         decelerationRate="fast"
+        style={mainHeight > 0 ? { height: mainHeight } : undefined}
         // removeClippedSubviews убран (см. workout/[id].tsx): карточки содержат
         // TextInput, детач вью ронял responder/blur ячеек SetsGrid. Не возвращать.
         onScrollBeginDrag={handleScrollBeginDrag}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
       >
-        <View style={{ width: cardWidth }}>
+        <View
+          style={{ width: cardWidth }}
+          onLayout={(e) => setMainHeight(e.nativeEvent.layout.height)}
+        >
           <ExerciseCard
             exercise={exercise}
             isMain
@@ -250,6 +276,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           <View
             style={{
               width: cardWidth,
+              height: mainHeight > 0 ? mainHeight : undefined,
               justifyContent: 'center',
               alignItems: 'center',
               gap: SPACING.sm,
@@ -266,6 +293,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           <View
             style={{
               width: cardWidth,
+              height: mainHeight > 0 ? mainHeight : undefined,
               justifyContent: 'center',
               alignItems: 'center',
               gap: SPACING.sm,
@@ -292,14 +320,22 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 
         {showAlts &&
           alternatives.map((alt) => (
-            <View key={alt.id} style={{ width: cardWidth }}>
-              <AlternativeExerciseCard
-                exercise={alt}
-                exerciseIndex={exerciseIndex}
-                onRequestReplace={onRequestReplace}
-                colors={colors}
-                cardStyles={cardStyles}
-              />
+            <View
+              key={alt.id}
+              style={{ width: cardWidth, height: mainHeight > 0 ? mainHeight : undefined }}
+            >
+              {/* Если карточка замены выше основной — вертикальный скролл
+                  внутри страницы, а не растягивание блока (ритм между
+                  упражнениями остаётся одинаковым). */}
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <AlternativeExerciseCard
+                  exercise={alt}
+                  exerciseIndex={exerciseIndex}
+                  onRequestReplace={onRequestReplace}
+                  colors={colors}
+                  cardStyles={cardStyles}
+                />
+              </ScrollView>
             </View>
           ))}
 
@@ -307,6 +343,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           <View
             style={{
               width: cardWidth,
+              height: mainHeight > 0 ? mainHeight : undefined,
               justifyContent: 'center',
               alignItems: 'center',
               gap: SPACING.sm,
@@ -328,20 +365,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
       </ScrollView>
-
-      {/* ENG-5: подпись о скрытых вариантах (когда есть показанные) */}
-      {showAlts && excludedCount > 0 && (
-        <Text
-          style={{
-            color: colors.textTertiary,
-            fontSize: 11,
-            marginTop: SPACING.xs,
-            paddingHorizontal: PAD,
-          }}
-        >
-          {formatExcluded(excludedCount)} из-за травм и противопоказаний
-        </Text>
-      )}
     </View>
   );
 });
