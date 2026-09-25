@@ -10,7 +10,11 @@
 // Отличие от разминки: нет бонусов активации/силового фокуса — это сигналы
 // замены, а не warm-up. factors — задел для B5/COACH-1 «Почему эти варианты?».
 
-import { UserInjury, targetsInjuredMuscle } from '../constants/injuries';
+import {
+  UserInjury,
+  targetsInjuredMuscle,
+  contraindicationMatchesInjury,
+} from '../constants/injuries';
 
 export type ExerciseDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -31,7 +35,6 @@ export interface AlternativeSourceContext extends AlternativeSourceInput {
   movementPattern: string | null;
   difficulty: ExerciseDifficulty | null;
 }
-
 
 /** Данные кандидата для ранжирования (готовит loader). */
 export interface AlternativeCandidate {
@@ -92,22 +95,20 @@ export function rankAlternatives(
   candidates: AlternativeCandidate[],
   source: AlternativeSourceContext,
   activeInjuries: UserInjury[],
-  contraindications: Record<string, { body_part: string; injury_type: string }[]>,
+  contraindications: Record<string, { body_part: string; injury_type: string }[]>
 ): RankAlternativesResult {
   const ordered: RankedAlternative[] = [];
   let excludedCount = 0;
 
   for (const cand of candidates) {
-    // === Фаза 1: hard exclusion (зеркалит warmupService, ARCH-8) ===
+    // === Фаза 1: hard exclusion (общий предикат matchesContraindication, FD12-6) ===
     let excluded = false;
 
     // Уровень 1: прямое противопоказание, совпадающее с активной травмой
     const contras = contraindications[cand.id];
     if (contras && contras.length > 0 && activeInjuries.length > 0) {
       excluded = contras.some((c) =>
-        activeInjuries.some(
-          (inj) => c.body_part === inj.body_part || c.injury_type === inj.injury_type,
-        ),
+        activeInjuries.some((inj) => contraindicationMatchesInjury(c, inj))
       );
     }
 
@@ -174,9 +175,7 @@ export function rankAlternatives(
 
     // Нагрузка на травмированную зону (medium/low) — штраф, не исключение
     for (const injury of activeInjuries) {
-      if (
-        targetsInjuredMuscle(cand.primary_muscles, cand.secondary_muscles, injury.body_part)
-      ) {
+      if (targetsInjuredMuscle(cand.primary_muscles, cand.secondary_muscles, injury.body_part)) {
         if (injury.severity === 'medium') {
           add('INJURY_MEDIUM', -5);
         } else if (injury.severity === 'low') {

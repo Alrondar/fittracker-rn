@@ -6,8 +6,16 @@ import type { ThemeColors } from '../constants/theme';
 /**
  * Нормализует дату до начала дня (00:00:00 локального времени)
  * для корректного расчёта разницы в днях без влияния часовых поясов и времени суток.
+ *
+ * FD11-6 (FD-5): календарная строка 'YYYY-MM-DD' парсится ПО локальным
+ * компонентам, а не через `new Date(str)` — последний тракдует её как UTC и в
+ * отрицательных часовых поясах сдвигает событие на день назад.
  */
 function normalizeDate(date: Date | string): Date {
+  if (typeof date === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
+  }
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;

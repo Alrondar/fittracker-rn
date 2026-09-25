@@ -1,5 +1,10 @@
 import { supabase } from '../lib/supabase';
-import { UserInjury, targetsInjuredMuscle, BODY_PART_LABELS } from '../constants/injuries';
+import {
+  UserInjury,
+  targetsInjuredMuscle,
+  BODY_PART_LABELS,
+  contraindicationMatchesInjury,
+} from '../constants/injuries';
 import { getExerciseContraindications } from './injuriesService';
 import { getExerciseReferenceData } from './exerciseReferenceService';
 
@@ -199,10 +204,8 @@ export const warmupService = {
         let penalty = 0;
         const exContras = contraindications[ex.id] || [];
         for (const injury of activeInjuries) {
-          // Уровень 1: прямое противопоказание → исключаем (lookup по таблице)
-          const hasContra = exContras.some(
-            (c) => c.body_part === injury.body_part || c.injury_type === injury.injury_type
-          );
+          // Уровень 1: прямое противопоказание → исключаем (канон FD12-6)
+          const hasContra = exContras.some((c) => contraindicationMatchesInjury(c, injury));
           if (hasContra) {
             excluded = true;
             exclusionCounts[injury.body_part] = (exclusionCounts[injury.body_part] || 0) + 1;
@@ -499,9 +502,7 @@ function isPrefAllowedForInjuries(
   activeInjuries: UserInjury[]
 ): boolean {
   for (const injury of activeInjuries) {
-    if (
-      contras.some((c) => c.body_part === injury.body_part || c.injury_type === injury.injury_type)
-    ) {
+    if (contras.some((c) => contraindicationMatchesInjury(c, injury))) {
       return false;
     }
     if (

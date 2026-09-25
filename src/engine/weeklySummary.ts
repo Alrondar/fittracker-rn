@@ -677,10 +677,14 @@ export function calculateDeloadContext(
   }
 
   // 4. RPE растёт без новых рекордов (субъективная нагрузка ↑, но результаты не улучшаются).
+  // FD11-10: PR засчитывается только при pre-week baseline (см. weeklySummaryService),
+  // поэтому у новичков без предыстории current.prs пуст ВСЕГДА и сигнал был
+  // систематически ложноположительным. Трем хроническую базу (4 недели до текущей).
   if (
     trainingLoad.signals.intensityTrend != null &&
     trainingLoad.signals.intensityTrend >= 0.5 &&
-    current.prs.length === 0
+    current.prs.length === 0 &&
+    (current.chronicVolume ?? 0) > 0
   ) {
     signals.rpeRisingNoImprovement = true;
     reasons.push(
