@@ -50,6 +50,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ENG-5: активные травмы для ранжирования альтернатив (один запрос на сессию)
   const activeInjuriesRef = useRef<UserInjury[] | null>(null);
   const [replacements, setReplacements] = useState<Record<string, string>>({});
+  // FD12-3: снимок оригинала до первой замены (в рамках экрана). Хранится в
+  // памяти по решению 25.09 (без прод-миграции): переживает перезаход НЕ может —
+  // после reload бейдж «Заменено» и кнопка «Вернуть» скрываются, но хотя бы
+  // «Вернуть оригинал» в рамках сессии делает ровно то, что обещает.
+  const originalsRef = useRef<Map<string, ExerciseData>>(new Map());
   const exercisesRef = useRef<ExerciseData[]>([]);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLogsRef = useRef<Map<string, SetData[]>>(new Map());
@@ -481,6 +486,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+      // FD12-3: запоминаем оригинал до первой замены (цепочка A→B→C откатывает к A)
+      if (!originalsRef.current.has(exercise.workout_exercise_id)) {
+        originalsRef.current.set(exercise.workout_exercise_id, exercise);
+      }
+
       // ENG-16: Обновляем exercise_id в БД, чтобы логи сохранились под новым упражнением.
       // И обновляем pain_events, чтобы контекст безопасности не потерялся.
       try {
@@ -529,34 +539,83 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     [loadAlternatives, userId, workoutId]
   );
 
+  // FD12-3: честный возврат. Раньше loadWorkout() перечитывал тренировку из БД,
+  // где уже лежала замена, — «Вернуть оригинал» возвращал… заменённое. Теперь
+  // откатываем запись обратно: exercise_id в workout_exercises, pain_events
+  // (зеркально ENG-16) и карточка в стейте. Снимок оригинала живёт в памяти
+  // экрана (решение 25.09 — без прод-миграции), поэтому после перезахода
+  // бейджа/кнопки нет (replacements — тоже память).
   const resetToOriginal = useCallback(
     (exerciseIndex: number) => {
       const exercise = exercisesRef.current[exerciseIndex];
       if (!exercise) return;
 
       const workoutExerciseId = exercise.workout_exercise_id;
+      const original = originalsRef.current.get(workoutExerciseId);
+      if (!original) {
+        // Оригинала не знаем (например, замена была до перезахода экрана) —
+        // врать нечем: перечитываем как есть.
+        loadWorkout();
+        return;
+      }
 
       Alert.alert(
         'Вернуть оригинальное упражнение?',
-        'Данные подходов будут перезагружены из тренировки',
+        `«${original.name}» вернётся в тренировку, введённые подходы сохранятся`,
         [
           { text: 'Отмена', style: 'cancel' },
           {
             text: 'Вернуть',
-            onPress: () => {
+            onPress: async () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              loadWorkout();
+              try {
+                if (userId) {
+                  await painService.updatePainEventExerciseId(
+                    userId,
+                    workoutId,
+                    exercise.id, // текущий (замена)
+                    original.id // оригинал
+                  );
+                }
+                await updateWorkoutExerciseId(workoutExerciseId, original.id);
+              } catch (error) {
+                console.error('[useWorkoutSession] resetToOriginal DB update:', error);
+                Alert.alert('Ошибка', mapError(error));
+                return; // БД не тронута — бейдж и кнопка остаются
+              }
+
+              setExercises((prev) => {
+                const updated = [...prev];
+                const current = updated[exerciseIndex];
+                updated[exerciseIndex] = {
+                  ...current,
+                  id: original.id,
+                  name: original.name,
+                  primary_muscles: original.primary_muscles,
+                  secondary_muscles: original.secondary_muscles,
+                  technique: original.technique,
+                  equipment: original.equipment,
+                  settings: original.settings,
+                  benefits: original.benefits,
+                  risks: original.risks,
+                  injuries: original.injuries,
+                  alternatives: original.alternatives,
+                  media_url: original.media_url,
+                };
+                return updated;
+              });
               setReplacements((prev) => {
                 const updated = { ...prev };
                 delete updated[workoutExerciseId];
                 return updated;
               });
+              originalsRef.current.delete(workoutExerciseId);
             },
           },
         ]
       );
     },
-    [loadWorkout]
+    [loadWorkout, userId, workoutId]
   );
 
   // ============================================================================

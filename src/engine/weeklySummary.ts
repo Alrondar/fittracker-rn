@@ -699,7 +699,8 @@ export function calculateDeloadContext(
   // Фича 5: если разгрузка рекомендована, предлагаем оба варианта (объём и техника)
   const availableTypes: ('volume' | 'technique')[] = recommended ? ['volume', 'technique'] : [];
 
-  // P1.2: Расчёт конкретного плана deload (только compound-упражнения, −30% объёма, snap-to-grid)
+  // P1.2 / FD11-4: конкретный план разгрузки (только compound, вес −30%, snap-to-grid 2.5).
+  // Канон отображения — WeeklyReviewSection (L2 «Объём»); UI-тексты обязаны совпадать.
   let plan: DeloadPlanItem[] | undefined;
   if (recommended && current.lastCompletedSets.length > 0) {
     plan = [];

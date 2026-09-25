@@ -575,8 +575,11 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                   Что обычно включает разгрузочная неделя:
                 </Text>
                 <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                  {/* FD11-4: канон — вес рабочих подходов −30% (тот же, что в
+                      расчёте плана ниже). Раньше текст обещал «−40–60%», движок
+                      снижал на −10%, а план считал −30% — три числа одновременно. */}
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                    • Объём: −40–60% от обычной недели
+                    • Рабочие веса: −30% от обычных (план ниже, если есть данные)
                   </Text>
                   <Text style={[typography.caption, { color: colors.textSecondary }]}>
                     • Интенсивность: лёгкая (RPE ≤ 6–7)
@@ -588,6 +591,35 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                     • После этого — постепенный возврат к обычным нагрузкам
                   </Text>
                 </View>
+
+                {/* FD11-4: конкретный план из engine (compound, вес −30%, snap 2.5) —
+                    раньше расчёт существовал, но не рендерился нигде */}
+                {!!data.deload.plan && data.deload.plan.length > 0 && (
+                  <>
+                    <Text
+                      style={[
+                        typography.label,
+                        { color: colors.textPrimary, marginBottom: SPACING.sm },
+                      ]}
+                    >
+                      План на базовые упражнения:
+                    </Text>
+                    <View style={{ gap: SPACING.xs, marginBottom: SPACING.md }}>
+                      {data.deload.plan.map((item) => (
+                        <Text
+                          key={item.exerciseId}
+                          style={[typography.caption, { color: colors.textSecondary }]}
+                        >
+                          • {item.exerciseName}: {kgToUnit(item.currentWeight)} {unitLabel} ×{' '}
+                          {item.currentReps} →{' '}
+                          <Text style={{ color: colors.warning, fontWeight: '700' }}>
+                            {kgToUnit(item.newWeight)} {unitLabel} × {item.newReps}
+                          </Text>
+                        </Text>
+                      ))}
+                    </View>
+                  </>
+                )}
 
                 <View
                   style={{
