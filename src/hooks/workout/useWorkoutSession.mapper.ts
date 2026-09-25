@@ -1,6 +1,6 @@
 // src/hooks/workout/useWorkoutSession.mapper.ts
 // Чистые функции маппинга для useWorkoutSession
-import { ExerciseData, ExercisePainState, SetData } from '../../types/workout';
+import { ExerciseData, ExercisePainState, ProgressionPolicy, SetData } from '../../types/workout';
 import { PainEvent } from '../../services/painService';
 import { effectiveReps } from '../../utils/reps';
 import { SessionWERow, SessionExerciseRow, RecentLog } from './useWorkoutSession.types';
@@ -100,6 +100,8 @@ export function buildExercisesData(
         sets,
         reps_range: we.target_reps_range || undefined,
         target_rpe: we.target_rpe,
+        // FD-4: политика доехала до движка (была всегда undefined → linear)
+        progression_policy: (we.progression_policy as ProgressionPolicy | null) ?? 'linear',
         // PR6: pain state из pain_events для этого упражнения (если есть)
         painState: painStateByExerciseId.get(exercise.id) ?? null,
       };

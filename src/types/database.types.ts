@@ -1030,6 +1030,8 @@ export type Database = {
           intensity: string | null
           order_index: number
           position: number | null
+          // hand-added (миграция 20260925161000, FD-4) — CLI-генерации нет, см. MEMORY reference-supabase-mcp
+          progression_policy: string | null
           reps: string | null
           rest_seconds: number | null
           sets: number | null
@@ -1045,6 +1047,7 @@ export type Database = {
           intensity?: string | null
           order_index: number
           position?: number | null
+          progression_policy?: string | null
           reps?: string | null
           rest_seconds?: number | null
           sets?: number | null
@@ -1060,6 +1063,7 @@ export type Database = {
           intensity?: string | null
           order_index?: number
           position?: number | null
+          progression_policy?: string | null
           reps?: string | null
           rest_seconds?: number | null
           sets?: number | null

@@ -145,7 +145,7 @@ export async function startProgramWorkout(userId: string, programId: string): Pr
   const { data: programExercises, error: programExercisesError } = await supabase
     .from('program_exercises')
     .select(
-      'exercise_id, exercise_name, sets, reps_range, rest_seconds, intensity, position, target_rpe'
+      'exercise_id, exercise_name, sets, reps_range, rest_seconds, intensity, position, target_rpe, progression_policy'
     )
     .eq('program_day_id', day.id)
     .order('position', { ascending: true });
@@ -190,6 +190,9 @@ export async function startProgramWorkout(userId: string, programId: string): Pr
       rest_seconds: exercise.rest_seconds ?? 90,
       intensity: exercise.intensity ?? 'medium',
       target_rpe: exercise.target_rpe,
+      // FD-4: копируем политику прогрессии из шаблона — иначе движок на тренировке
+      // всегда живёт по 'linear' (миграция 20260925161000)
+      progression_policy: exercise.progression_policy ?? 'linear',
     };
   });
 
@@ -215,7 +218,7 @@ export async function repeatWorkout(userId: string, sourceWorkoutId: string): Pr
     .from('workouts')
     .select(
       `id, name, description, program_id, phase_number, week_number, day_index,
-       workout_exercises ( exercise_id, order_index, position, target_sets, sets, target_reps, target_reps_range, rest_seconds, intensity, target_rpe )`
+       workout_exercises ( exercise_id, order_index, position, target_sets, sets, target_reps, target_reps_range, rest_seconds, intensity, target_rpe, progression_policy )`
     )
     .eq('id', sourceWorkoutId)
     .single();
@@ -255,6 +258,7 @@ export async function repeatWorkout(userId: string, sourceWorkoutId: string): Pr
         rest_seconds: exercise.rest_seconds ?? 90,
         intensity: exercise.intensity ?? 'medium',
         target_rpe: exercise.target_rpe,
+        progression_policy: exercise.progression_policy ?? 'linear', // FD-4
       };
     }
   );
@@ -310,7 +314,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
   const { data: workout, error } = await supabase
     .from('workouts')
     .select(
-      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, target_sets, rest_seconds, intensity, target_reps_range, target_rpe )`
+      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
     )
     .eq('id', workoutId)
     .single();

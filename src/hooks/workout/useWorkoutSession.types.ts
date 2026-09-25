@@ -22,6 +22,8 @@ export interface SessionWERow {
   target_reps_range: string | null;
   /** Фича 2: Целевой RPE для упражнения (1-10). */
   target_rpe: number | null;
+  /** FD-4: политика прогрессии из снапшота (миграция 20260925161000). */
+  progression_policy?: string | null;
 }
 
 export interface SessionWorkoutRow {

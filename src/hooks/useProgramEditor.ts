@@ -220,6 +220,9 @@ export function useProgramEditor(
                 rest_seconds: exercise.rest_seconds,
                 intensity: exercise.intensity,
                 target_rpe: exercise.target_rpe,
+                // FD-4: политика прогрессии должна доезжать до RPC — раньше
+                // терялась здесь, и даже сохранённый picker не влиял на шаблон
+                progression_policy: exercise.progression_policy ?? 'linear',
                 position: exIndex + 1,
               })),
             })),
