@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   ActivityIndicator,
-  InteractionManager,
 } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -125,9 +124,12 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 
   const hasAlts = exercise.alternatives.length > 0 || isReplaced;
 
-  // PERF P1-B: stagger-загрузка альтернатив.
-  // Каждая карточка откладывает загрузку на 500мс + exerciseIndex * 100мс,
-  // чтобы не блокировать TTI при одновременном открытии 6-8 карточек.
+  // PERF (фризы скролла): страницы альтернатив монтируются ТОЛЬКО по первому
+  // горизонтальному свайпу этого слайдера (handleScrollBeginDrag), а не по
+  // InteractionManager после загрузки. Раньше для каждого упражнения в окне
+  // монтировался полный набор AlternativeExerciseCard — это попадало в середину
+  // вертикального скролла и блокировало JS-поток на сотни мс. Сеть/ранжирование
+  // (setAlternatives) остаются дешёвыми, пока страниц нет в дереве.
   useEffect(() => {
     if (!hasAlts) return;
     let alive = true;
@@ -172,14 +174,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     exercise.painState,
     readinessContext,
   ]);
-
-  useEffect(() => {
-    if (loadingAlts || !hasAlts || altsMounted) return;
-    const handle = InteractionManager.runAfterInteractions(() => {
-      setAltsMounted(true);
-    });
-    return () => handle.cancel();
-  }, [loadingAlts, hasAlts, altsMounted]);
 
   const handleScrollBeginDrag = useCallback(() => {
     if (!altsMounted && hasAlts) setAltsMounted(true);
