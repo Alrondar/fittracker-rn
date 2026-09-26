@@ -110,11 +110,12 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 }: ExerciseSliderProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
-  // Ритм между упражнениями: высота слайдера = высота ОСНОВНОЙ карточки.
-  // Без этого горизонтальный ScrollView растягивается самой высокой страницей
-  // (карточкой-альтернативой) — после таких блоков пустой зазор больше, чем
-  // после остальных («разное расстояние между карточками»). Альтернативы,
-  // если они выше, скроллятся вертикально внутри своей страницы.
+  // Ритм между упражнениями (SP-1, переработано в FX-2): высота ОСНОВНОЙ
+  // карточки — ориентир для страниц альтернатив (их maxHeight). Раньше ей
+  // жёстко фиксировался height самого слайдера, но замер шёл с ребёнка,
+  // растянутого по viewport, — высота замерла и обрезала рост контента
+  // (Info/баннеры/добавленные подходы) вместе с их тапами. Теперь это
+  // живой onLayout основной карточки: она никогда не клиппуется.
   const [mainHeight, setMainHeight] = useState(0);
 
   const [alternatives, setAlternatives] = useState<AlternativeExercise[]>([]);
@@ -230,11 +231,19 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
         decelerationRate="fast"
-        style={mainHeight > 0 ? { height: mainHeight } : undefined}
         // removeClippedSubviews убран (см. workout/[id].tsx): карточки содержат
         // TextInput, детач вью ронял responder/blur ячеек SetsGrid. Не возвращать.
+        // FX-2 (26.09): высота слайдера БОЛЬШЕ не фиксируется через style.height.
+        // SP-1 замерял mainHeight с обёртки основной карточки, но в горизонтальном
+        // ScrollView дети по умолчанию растягиваются (stretch) по высоте viewport'а:
+        // после первой замерки обёртка = mainHeight, onLayout больше не менялся,
+        // и любой рост контента (Info, баннер «прошлый раз», addSet) уходил за clip
+        // — Info открывался «вникуда», а обрезанные ячейки теряли тапы (overflow
+        // hidden на Android обрезает и hit-testing). Теперь alignItems flex-start:
+        // карточка мерируется по реальному контенту, mainHeight растёт вместе с ней,
+        // а альтернативы ограничены maxHeight (внутренний вертикальный скролл).
         onScrollBeginDrag={handleScrollBeginDrag}
-        contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP }}
+        contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP, alignItems: 'flex-start' }}
       >
         <View
           style={{ width: cardWidth }}
@@ -314,14 +323,15 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 
         {showAlts &&
           alternatives.map((alt) => (
-            <View
-              key={alt.id}
-              style={{ width: cardWidth, height: mainHeight > 0 ? mainHeight : undefined }}
-            >
-              {/* Если карточка замены выше основной — вертикальный скролл
-                  внутри страницы, а не растягивание блока (ритм между
-                  упражнениями остаётся одинаковым). */}
-              <ScrollView showsVerticalScrollIndicator={false}>
+            <View key={alt.id} style={{ width: cardWidth }}>
+              {/* FX-2: если карточка замены выше основной — вертикальный скролл
+                  внутри страницы (maxHeight = высота основной карточки, которая
+                  растёт вместе с её контентом). Ритм между упражнениями
+                  одинаковый, но основная карточка не клиппуется. */}
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                style={mainHeight > 0 ? { maxHeight: mainHeight } : undefined}
+              >
                 <AlternativeExerciseCard
                   exercise={alt}
                   exerciseIndex={exerciseIndex}

@@ -41,6 +41,7 @@ import {
   ExerciseSettingsTarget,
 } from '../../src/components/workout/ExerciseSettingsModal';
 import { PainSheet } from '../../src/components/workout/PainSheet';
+import { FinishWorkoutSheet } from '../../src/components/workout/FinishWorkoutSheet';
 import { WorkoutScreenHeader } from '../../src/components/workout/WorkoutScreenHeader';
 import { WorkoutInjuryBanner } from '../../src/components/workout/WorkoutInjuryBanner';
 import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
@@ -195,6 +196,14 @@ export default function WorkoutSessionScreen() {
   const [painIndex, setPainIndex] = useState<number | null>(null);
   const openPain = useCallback((exerciseIndex: number) => setPainIndex(exerciseIndex), []);
   const closePain = useCallback(() => setPainIndex(null), []);
+
+  // FX-1 (26.09): confirm-лист финиша живёт в КОРНЕ экрана (паттерн PainSheet),
+  // а не внутри header: SheetShell вне Modal позиционируется absolute от
+  // носителя, и после UX-1h (HeroIn-обёртка header) лист «приземлялся» к верху
+  // экрана. Header — только тригчер через onRequestFinish.
+  const [showFinishSheet, setShowFinishSheet] = useState(false);
+  const openFinishSheet = useCallback(() => setShowFinishSheet(true), []);
+  const closeFinishSheet = useCallback(() => setShowFinishSheet(false), []);
 
   // PR6: обёртки для PainSheet — привязывают save/clear к текущему painIndex
   const savePainForCurrent = useCallback(
@@ -453,9 +462,7 @@ export default function WorkoutSessionScreen() {
             colors={colors}
             isWorkoutActive={isWorkoutActive}
             saving={saving}
-            onFinish={saveWorkout}
-            completedSetsCount={completedSetsCount}
-            totalSetsCount={totalSetsCount}
+            onRequestFinish={openFinishSheet}
           />
         </WorkoutTimerProvider>
       </HeroIn>
@@ -550,6 +557,17 @@ export default function WorkoutSessionScreen() {
           />
         </Animated.View>
       )}
+
+      {/* FX-1: UX-16 D1 confirm sheet финиша — в корне экрана (см. комментарий
+          showFinishSheet), поверх FlatList и sticky-оверлеев не живёт в header. */}
+      <FinishWorkoutSheet
+        visible={showFinishSheet}
+        onClose={closeFinishSheet}
+        onFinish={saveWorkout}
+        completedSetsCount={completedSetsCount}
+        totalSetsCount={totalSetsCount}
+        colors={colors}
+      />
 
       {/* FEAT-1.9 + PR6: шторка боли с prefill и upsert/delete */}
       <PainSheet

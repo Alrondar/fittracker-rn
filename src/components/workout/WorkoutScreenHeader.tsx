@@ -4,18 +4,21 @@
 // UX-16: confirm sheet финиша (D1). UX-TIMER: кнопка «Начать» убрана — старт/
 // пауза/возобновление объединены в pill-таймере (WorkoutTimer.tsx).
 // Должен рендериться внутри WorkoutTimerProvider (Pill/Panel используют контекст).
-import React, { memo, useState, useCallback } from 'react';
+// FX-1 (26.09): confirm-лист УБРАН отсюда в корень экрана (FinishWorkoutSheet).
+// SheetShell вне Modal позиционируется absolute от носителя; внутри header
+// (обёрнутого HeroIn в UX-1h) лист прижимался к верху экрана и перекрывался
+// FlatList. Header теперь только триггер: onRequestFinish.
+import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Square, AlertCircle } from 'lucide-react-native';
+import { ChevronLeft, Square } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { commonStyles } from '../../styles/common';
 import { typography } from '../../styles/typography';
 import { UnitToggle } from './UnitToggle';
 import { WorkoutTimerPill, WorkoutTimerPanel } from './WorkoutTimer';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
-import { SheetShell } from '../ui/SheetShell';
 
 interface WorkoutScreenHeaderProps {
   workoutName: string;
@@ -27,10 +30,8 @@ interface WorkoutScreenHeaderProps {
   /** UX-TIMER: «Завершить» показываем только для активной/сохраняемой сессии. */
   isWorkoutActive: boolean;
   saving: boolean;
-  onFinish: () => void;
-  /** Для confirm sheet: сколько сетов залогировано */
-  completedSetsCount?: number;
-  totalSetsCount?: number;
+  /** FX-1: тап по «Завершить» — экран открывает confirm-лист в своём корне. */
+  onRequestFinish: () => void;
 }
 
 export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
@@ -42,29 +43,9 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
   colors,
   isWorkoutActive,
   saving,
-  onFinish,
-  completedSetsCount = 0,
-  totalSetsCount = 0,
+  onRequestFinish,
 }: WorkoutScreenHeaderProps) {
   const router = useRouter();
-  const [showConfirmSheet, setShowConfirmSheet] = useState(false);
-
-  const handleFinishPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowConfirmSheet(true);
-  }, []);
-
-  const handleConfirmFinish = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowConfirmSheet(false);
-    onFinish();
-  }, [onFinish]);
-
-  const handleCloseConfirm = useCallback(() => {
-    setShowConfirmSheet(false);
-  }, []);
-
-  const hasUnloggedSets = totalSetsCount > 0 && completedSetsCount < totalSetsCount;
 
   return (
     <>
@@ -108,7 +89,10 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
               видно только для активной или сохраняемой сессии */}
           {(isWorkoutActive || saving) && (
             <TouchableOpacity
-              onPress={handleFinishPress}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onRequestFinish();
+              }}
               disabled={saving}
               activeOpacity={0.8}
               accessibilityRole="button"
@@ -155,100 +139,6 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
         </View>
       </View>
       <WorkoutTimerPanel colors={colors} />
-
-      {/* UX-16 D1: confirm sheet для завершения тренировки */}
-      <SheetShell
-        visible={showConfirmSheet}
-        title="Завершить тренировку?"
-        onClose={handleCloseConfirm}
-      >
-        {/* Сводка сессии */}
-        <View style={{ marginBottom: SPACING.lg }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingVertical: SPACING.sm,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.border,
-            }}
-          >
-            <Text style={[typography.body, { color: colors.textSecondary }]}>Подходы</Text>
-            <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '700' }]}>
-              {completedSetsCount} из {totalSetsCount}
-            </Text>
-          </View>
-        </View>
-
-        {/* Предупреждение о незалогированных сетах */}
-        {hasUnloggedSets && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              gap: SPACING.sm,
-              padding: SPACING.md,
-              backgroundColor: withAlpha(colors.warning, 0.082),
-              borderRadius: BORDER_RADIUS.md,
-              borderWidth: 1,
-              borderColor: withAlpha(colors.warning, 0.251),
-              marginBottom: SPACING.lg,
-            }}
-          >
-            <AlertCircle size={20} color={colors.warning} strokeWidth={2} />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  typography.captionSmall,
-                  { color: colors.warning, fontWeight: '700', marginBottom: 2 },
-                ]}
-              >
-                Незалогированные подходы
-              </Text>
-              <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                {totalSetsCount - completedSetsCount} подходов не сохранено. Они не попадут в
-                историю.
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Кнопки */}
-        <View style={{ gap: SPACING.sm }}>
-          <TouchableOpacity
-            onPress={handleConfirmFinish}
-            activeOpacity={0.8}
-            style={{
-              backgroundColor: hasUnloggedSets ? colors.warning : colors.success,
-              paddingVertical: SPACING.md,
-              borderRadius: BORDER_RADIUS.md,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={[typography.button, { color: colors.textInverse, fontWeight: '700' }]}>
-              {hasUnloggedSets ? 'Завершить без сохранения' : 'Завершить тренировку'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleCloseConfirm}
-            activeOpacity={0.7}
-            style={{
-              backgroundColor: colors.surfaceSecondary,
-              paddingVertical: SPACING.md,
-              borderRadius: BORDER_RADIUS.md,
-              alignItems: 'center',
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <Text style={[typography.button, { color: colors.textPrimary, fontWeight: '600' }]}>
-              Продолжить тренировку
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SheetShell>
     </>
   );
 });
