@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING } from '../../constants/theme';
+import { FONT_FAMILIES } from '../../constants/fonts';
 import { typography } from '../../styles/typography';
 import { createWorkoutStyles } from '../../styles/components/workout';
 
@@ -275,6 +276,8 @@ export const RestTimer = memo(function RestTimer({
                 <Text
                   style={{
                     fontSize: isFinished ? 48 : 56,
+                    // UX-3: крупнейшие числа приложения — дисплейный шрифт пары.
+                    fontFamily: FONT_FAMILIES.displayBold,
                     fontWeight: '700',
                     color: timeColor,
                   }}

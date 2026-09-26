@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View, Platform, LogBox } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -12,6 +13,7 @@ import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { SPACING } from '../src/constants/theme';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
+import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
 
 if (Platform.OS !== 'web' && __DEV__) {
   // Заглушаем ошибку keep-awake в dev-режиме
@@ -51,6 +53,9 @@ function RootLayoutContent() {
   const { colors } = useTheme();
 
   const [isLoading, setIsLoading] = useState(true);
+  // UX-3: пара Space Grotesk + Inter — шрифты должны быть готовы до релиза
+  // гейта, иначе первый кадр экранов рисуется системным шрифтом («чпок» метрик).
+  const [fontsLoaded] = useFonts(APP_LOADABLE_FONTS);
 
   useEffect(() => {
     let mounted = true;
@@ -129,7 +134,7 @@ function RootLayoutContent() {
     }
   }, [isLoading, isAuthenticated, segments, router]);
 
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
