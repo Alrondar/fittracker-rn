@@ -1,19 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Dumbbell, BookOpen, Activity, User } from 'lucide-react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
-const PILL_DURATION = 250;
+// UX-1 (audit-9): pill ездит на spring (лёгкий overshoot вместо linear-затухания),
+// иконка получает scale-pop при фокусе.
+const PILL_SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
+const POP_SPRING = { damping: 12, stiffness: 500, mass: 0.8 };
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -22,11 +26,14 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   const [tabWidth, setTabWidth] = useState(0);
 
   const translateX = useSharedValue(0);
+  const laidOutRef = useRef(false);
   useEffect(() => {
-    translateX.value = withTiming(state.index * tabWidth, {
-      duration: PILL_DURATION,
-      easing: Easing.out(Easing.cubic),
-    });
+    if (tabWidth <= 0) return;
+    // Первый layout — мгновенная установка, чтобы pill не «прилетал» из 0.
+    translateX.value = laidOutRef.current
+      ? withSpring(state.index * tabWidth, PILL_SPRING)
+      : withTiming(state.index * tabWidth, { duration: 0 });
+    laidOutRef.current = true;
   }, [state.index, tabWidth, translateX]);
 
   const pillStyle = useAnimatedStyle(() => ({
@@ -100,9 +107,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               style={styles.tab}
               activeOpacity={0.8}
             >
-              <View style={styles.iconContainer}>
-                {getTabIcon(route.name, iconColor, strokeWidth)}
-              </View>
+              <TabIcon
+                name={route.name}
+                color={iconColor}
+                strokeWidth={strokeWidth}
+                focused={isFocused}
+              />
 
               <Text
                 style={[
@@ -121,6 +131,41 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         })}
       </View>
     </View>
+  );
+}
+
+// UX-1 (audit-9): pop-анимация иконки при фокусе таба (первый монтаж не анимируем).
+function TabIcon({
+  name,
+  color,
+  strokeWidth,
+  focused,
+}: {
+  name: string;
+  color: string;
+  strokeWidth: number;
+  focused: boolean;
+}) {
+  const pop = useSharedValue(1);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (focused) {
+      pop.value = withSequence(withSpring(1.16, POP_SPRING), withSpring(1, POP_SPRING));
+    }
+  }, [focused, pop]);
+
+  const popStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pop.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.iconContainer, popStyle]}>
+      {getTabIcon(name, color, strokeWidth)}
+    </Animated.View>
   );
 }
 

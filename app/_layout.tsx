@@ -108,20 +108,40 @@ function RootLayoutContent() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textPrimary }]}>
-          Загрузка...
-        </Text>
+        <Text style={[styles.loadingText, { color: colors.textPrimary }]}>Загрузка...</Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="exercise/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="workout/[id]" />
+      {/* UX-1 (audit-5): управляемые переходы. Дефолт — slide_from_right для
+          всех drill-in-экранов (program/*, profile/*, workout, progress);
+          корневые сегменты — fade, чтобы replace (auth)↔(tabs) не выглядел
+          как боковой сдвиг. */}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          // Perf: JS unfocus-экрана замораживается — фон не рендерит вразнос
+          // во время перехода и в фоне. workout/[id] исключён ниже: его JS —
+          // это таймер отдыха, ему нельзя замирать под модалкой.
+          freezeOnBlur: true,
+        }}
+      >
+        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen
+          name="exercise/[id]"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            gestureEnabled: true, // iOS: свайп-вниз закрывает (жест под реальную задачу)
+          }}
+        />
+        {/* freezeOnBlur:false — resting-таймер на JS-интервалах: заморозка
+            экрана под модалкой «Упражнение» останавливала бы обратный отсчёт. */}
+        <Stack.Screen name="workout/[id]" options={{ freezeOnBlur: false }} />
         <Stack.Screen name="progress/[id]" />
       </Stack>
 

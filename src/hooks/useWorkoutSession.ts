@@ -39,6 +39,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
+  // UX-2 (audit-12): screen-level ошибка загрузки — раньше провал loadWorkout
+  // тонул в Alert, а экран оставался с пустым списком «Нет упражнений».
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [initialTime, setInitialTime] = useState(0);
@@ -158,6 +161,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   const loadWorkout = useCallback(async () => {
     perfMark('load:start');
+    setLoadError(null);
     try {
       perfMark('load:q1-start');
       const data = await fetchWorkoutSession(workoutId);
@@ -210,6 +214,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     } catch (error: any) {
       console.error('[useWorkoutSession] loadWorkout:', error);
       Alert.alert('Ошибка', mapError(error));
+      setLoadError(mapError(error));
     } finally {
       setLoading(false);
     }
@@ -912,6 +917,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     replacements,
     currentTimeRef,
     loadWorkout,
+    loadError,
     handleTimerTick,
     handleTimerStart,
     handleTimerStop,

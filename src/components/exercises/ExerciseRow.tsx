@@ -1,11 +1,12 @@
 // app/(tabs)/exercises.tsx split (DA-P2-8): мемоизированная строка списка упражнений.
 import { memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { Flame, Zap } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppBadge } from '../ui/AppBadge';
+import { PressableScale } from '../ui/PressableScale';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { getMuscleColor } from '../../constants/muscleColors';
 import type { ExerciseListItem } from '../../services/exercisesService';
@@ -20,7 +21,8 @@ export const ExerciseRow = memo(function ExerciseRow({ item, onPress }: Exercise
   const borderColor =
     item.primary_muscles.length > 0 ? getMuscleColor(item.primary_muscles[0]) : colors.border;
   return (
-    <TouchableOpacity
+    <PressableScale
+      // UX-1 (audit-6): строка каталога — spring-scale вместо activeOpacity.
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -33,8 +35,9 @@ export const ExerciseRow = memo(function ExerciseRow({ item, onPress }: Exercise
         borderColor: borderColor,
         borderLeftWidth: 4,
       }}
+      scaleTo={0.98}
+      haptic="none"
       onPress={() => onPress(item.id)}
-      activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={item.name}
     >
@@ -92,6 +95,6 @@ export const ExerciseRow = memo(function ExerciseRow({ item, onPress }: Exercise
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 });

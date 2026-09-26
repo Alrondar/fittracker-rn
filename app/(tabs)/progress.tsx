@@ -31,7 +31,8 @@ import { ProgressStats } from '../../src/components/progress/ProgressStats';
 import { WeeklyReviewSection } from '../../src/components/progress/WeeklyReviewSection';
 import { ProgressInsights } from '../../src/components/progress/ProgressInsights';
 import { RecentWorkouts } from '../../src/components/progress/RecentWorkouts';
-import { ListSkeleton } from '../../src/components/Skeleton';
+import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
+import { ProgressHeroSkeleton, StatsGridSkeleton } from '../../src/components/ui/skeletons';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
 import { VolumeTrendChart } from '../../src/components/progress/VolumeTrendChart';
 import { WeightTrendRow } from '../../src/components/progress/WeightTrendRow';
@@ -159,6 +160,8 @@ export default function ProgressScreen() {
   // ------------------------------------------------------------------
 
   const isLoading = isHistoryPending || isProgressPending;
+  // UX-2 (L-1/L-3): макетный skeleton зоны обзора + anti-flash.
+  const showLoadingSkeleton = useMinPending(isLoading);
   const isEmpty = flatWorkouts.length === 0 && (progressData?.totalWorkouts ?? 0) === 0;
 
   if (!userId) {
@@ -218,14 +221,21 @@ export default function ProgressScreen() {
     );
   }
 
-  if (isLoading) {
+  if (showLoadingSkeleton) {
     return (
       <SafeAreaView
         style={[commonStyles.container, { backgroundColor: colors.background }]}
         edges={['top']}
       >
         <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
-          <ListSkeleton count={4} />
+          {/* UX-2 (L-1): skeleton повторяет зону 1 (hero + сетка статкарт), а не
+              generic-список — «нули вместо данных» на этом экране невозможны. */}
+          <ShimmerWrap>
+            <View style={{ gap: SPACING.md }}>
+              <ProgressHeroSkeleton />
+              <StatsGridSkeleton />
+            </View>
+          </ShimmerWrap>
         </View>
       </SafeAreaView>
     );

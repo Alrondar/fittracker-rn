@@ -4,6 +4,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ClipboardList, Check, Clock, SkipForward } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { PressableScale } from '../ui/PressableScale';
 import type { ForecastDifficulty } from '../../utils/workoutForecast';
 import {
   getWorkoutStatus,
@@ -68,11 +69,12 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
   };
 
   return (
-    <TouchableOpacity
+    <PressableScale
+      // UX-1 (audit-6): spring-scale строки списка тренировок.
       onPress={() => onOpen(item.id)}
       onLongPress={handleLongPress}
       delayLongPress={500}
-      activeOpacity={0.85}
+      scaleTo={0.985}
       disabled={status === 'skipped'}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${status === 'completed' ? 'выполнена' : isNext ? 'следующая' : status === 'in_progress' ? 'в процессе' : status === 'skipped' ? 'пропущена' : 'предстоит'}`}
@@ -207,6 +209,6 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
           )}
         </View>
       </AppCard>
-    </TouchableOpacity>
+    </PressableScale>
   );
 });

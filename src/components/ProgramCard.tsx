@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { PressableScale } from './ui/PressableScale';
 import { Program } from '../services/programsService';
 import {
   Sprout,
@@ -97,11 +98,12 @@ export const ProgramCard = memo(function ProgramCard({
   );
 
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={500}
-      activeOpacity={0.85}
+      // UX-1 (audit-6): spring-scale карточки программы вместо activeOpacity.
+      scaleTo={0.985}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${item.level}, ${isActive ? 'Текущая программа' : ''}`}
       style={{
@@ -281,6 +283,6 @@ export const ProgramCard = memo(function ProgramCard({
           </View>
         </View>
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 });

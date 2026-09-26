@@ -7,7 +7,7 @@
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 export type MuscleLoadMode = 'total' | 'direct';
@@ -46,7 +46,7 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
       >
         <Text
           style={[
-            typography.captionSmall,
+            typography.label,
             {
               fontWeight: '600',
               color: mode === 'total' ? colors.surface : colors.textSecondary,
@@ -73,7 +73,7 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
       >
         <Text
           style={[
-            typography.captionSmall,
+            typography.label,
             {
               fontWeight: '600',
               color: mode === 'direct' ? colors.surface : colors.textSecondary,
@@ -100,9 +100,11 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    // UX-2 (audit-14): масштаб выровнен с PillToggle в одном ряду (высота 48
+    // против его 48; tap target >= 44pt — требование UX_AUDIT_PLAN 11.2).
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.sm,
-    minHeight: 28,
+    minHeight: 44,
   },
 });

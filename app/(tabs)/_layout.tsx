@@ -10,43 +10,28 @@ export default function TabsLayout() {
   const { colors, isDark } = useTheme();
 
   return (
-    <SafeAreaView 
+    <SafeAreaView
       style={[commonStyles.container, { backgroundColor: colors.background }]}
       edges={['top']}
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      
+
       <View style={commonStyles.container}>
         <Tabs
           tabBar={(props) => <CustomTabBar {...props} />}
           screenOptions={{
             headerShown: false,
+            // Perf (UX-1 фризы): неактивные табы не живут в JS — меньше работы
+            // во время перехода и на фоне.
+            freezeOnBlur: true,
           }}
         >
-          <Tabs.Screen
-            name="index"
-            options={{ title: 'Главная' }}
-          />
-          <Tabs.Screen
-            name="programs"
-            options={{ title: 'Программы' }}
-          />
-          <Tabs.Screen
-            name="workouts"
-            options={{ title: 'Тренировки' }}
-          />
-          <Tabs.Screen
-            name="exercises"
-            options={{ title: 'Справочник' }}
-          />
-          <Tabs.Screen
-            name="progress"
-            options={{ title: 'Прогресс' }}
-          />
-          <Tabs.Screen
-            name="profile"
-            options={{ title: 'Профиль' }}
-          />
+          <Tabs.Screen name="index" options={{ title: 'Главная' }} />
+          <Tabs.Screen name="programs" options={{ title: 'Программы' }} />
+          <Tabs.Screen name="workouts" options={{ title: 'Тренировки' }} />
+          <Tabs.Screen name="exercises" options={{ title: 'Справочник' }} />
+          <Tabs.Screen name="progress" options={{ title: 'Прогресс' }} />
+          <Tabs.Screen name="profile" options={{ title: 'Профиль' }} />
         </Tabs>
       </View>
     </SafeAreaView>

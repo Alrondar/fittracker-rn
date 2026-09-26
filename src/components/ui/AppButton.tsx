@@ -1,8 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
+import { Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, fontScale } from '../../constants/theme';
 import { typography } from '../../styles/typography';
+import { PressableScale } from './PressableScale';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 type ButtonSize = 'small' | 'medium' | 'large';
@@ -35,7 +36,12 @@ export function AppButton({
       case 'primary':
         return { backgroundColor: colors.primary, textColor: colors.textInverse };
       case 'secondary':
-        return { backgroundColor: 'transparent', borderColor: colors.primary, textColor: colors.primary, borderWidth: 1 };
+        return {
+          backgroundColor: 'transparent',
+          borderColor: colors.primary,
+          textColor: colors.primary,
+          borderWidth: 1,
+        };
       case 'danger':
         return { backgroundColor: colors.error, textColor: colors.textInverse };
       case 'ghost':
@@ -47,9 +53,24 @@ export function AppButton({
 
   const getSizeStyles = () => {
     switch (size) {
-      case 'small': return { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md, fontSize: fontScale(14) };
-      case 'large': return { paddingVertical: SPACING.lg, paddingHorizontal: SPACING.xl, fontSize: fontScale(18) };
-      default: return { paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, fontSize: fontScale(16) }; // medium
+      case 'small':
+        return {
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.md,
+          fontSize: fontScale(14),
+        };
+      case 'large':
+        return {
+          paddingVertical: SPACING.lg,
+          paddingHorizontal: SPACING.xl,
+          fontSize: fontScale(18),
+        };
+      default:
+        return {
+          paddingVertical: SPACING.md,
+          paddingHorizontal: SPACING.lg,
+          fontSize: fontScale(16),
+        }; // medium
     }
   };
 
@@ -58,15 +79,18 @@ export function AppButton({
   const isDisabled = disabled || loading;
 
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.8}
+      // UX-1: spring-масштаб вместо activeOpacity; лёгкая хаптика на месте —
+      // кнопка это дискретное действие (light — общий язык press).
+      scaleTo={0.97}
       accessibilityRole="button"
       accessibilityLabel={title}
+      accessibilityState={{ disabled: isDisabled }}
       style={[
         styles.button,
-        { 
+        {
           backgroundColor: isDisabled ? colors.border : variantStyles.backgroundColor,
           borderColor: variantStyles.borderColor,
           paddingVertical: sizeStyles.paddingVertical,
@@ -83,7 +107,7 @@ export function AppButton({
           <Text
             style={[
               typography.button,
-              { 
+              {
                 color: isDisabled ? colors.textTertiary : variantStyles.textColor,
                 fontSize: sizeStyles.fontSize,
                 marginLeft: icon ? SPACING.sm : 0,
@@ -94,8 +118,7 @@ export function AppButton({
           </Text>
         </>
       )}
-    </TouchableOpacity>
-
+    </PressableScale>
   );
 }
 

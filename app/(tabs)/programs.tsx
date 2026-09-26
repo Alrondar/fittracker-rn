@@ -15,7 +15,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
-import { ListSkeleton } from '../../src/components/Skeleton';
+import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
+import { ProgramListSkeleton } from '../../src/components/ui/skeletons';
+import { StateBlock } from '../../src/components/ui/StateBlock';
 import { useToast } from '../../src/hooks/useToast';
 import { usePrograms } from '../../src/hooks/usePrograms';
 import { ProgramCard } from '../../src/components/ProgramCard';
@@ -24,6 +26,7 @@ import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
 import { ImportProgramSheet } from '../../src/components/program/sheets/ImportProgramSheet';
 import { SheetShell } from '../../src/components/ui/SheetShell';
 import { PillToggle } from '../../src/components/ui/PillToggle';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { importProgramByCode } from '../../src/services/programSharingService';
 import { getUserProgramsStatus, activateProgram } from '../../src/services/programsService';
 import { FadeIn } from '../../src/components/FadeIn';
@@ -39,7 +42,6 @@ import {
   Sprout,
   Dumbbell,
   Flame,
-  AlertTriangle,
 } from 'lucide-react-native';
 import { commonStyles } from '../../src/styles/common';
 import { createCardStyles } from '../../src/styles/components/card';
@@ -270,20 +272,18 @@ export default function ProgramsScreen() {
     ]
   );
 
+  // UX-2 (L-3): anti-flash для списка программ.
+  const showSkeleton = useMinPending(loading);
+
   const renderError = () => (
-    <View style={cardStyles.emptyState}>
-      <AlertTriangle size={64} color={colors.warning} strokeWidth={1.5} />
-      <Text style={cardStyles.emptyStateTitle}>Не удалось загрузить программы</Text>
-      <Text style={cardStyles.emptyStateText}>Проверьте соединение и попробуйте снова</Text>
-      <TouchableOpacity
-        style={[buttonStyles.primary, { paddingHorizontal: SPACING.xl, marginTop: SPACING.md }]}
-        onPress={retry}
-        accessibilityRole="button"
-        accessibilityLabel="Повторить загрузку программ"
-      >
-        <Text style={buttonStyles.textPrimary}>Повторить</Text>
-      </TouchableOpacity>
-    </View>
+    // UX-2 (audit-4): канонный StateBlock вместо самосборного error-блока.
+    <StateBlock
+      tone="error"
+      title="Не удалось загрузить программы"
+      description="Проверьте соединение и попробуйте снова"
+      actionLabel="Повторить"
+      onAction={retry}
+    />
   );
 
   const renderEmpty = () => (
@@ -458,7 +458,16 @@ export default function ProgramsScreen() {
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          loading ? <ListSkeleton count={4} /> : error ? renderError() : renderEmpty()
+          // UX-2 (L-1): макетный skeleton карточек программ под shimmer.
+          showSkeleton ? (
+            <ShimmerWrap>
+              <ProgramListSkeleton count={4} />
+            </ShimmerWrap>
+          ) : error ? (
+            renderError()
+          ) : (
+            renderEmpty()
+          )
         }
         contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: 100 }}
         refreshControl={
@@ -474,9 +483,9 @@ export default function ProgramsScreen() {
 
       {/* FAB */}
       {activeTab === 'my' && !loading && (
-        <TouchableOpacity style={cardStyles.fab} onPress={openCreateModal} activeOpacity={0.8}>
+        <PressableScale style={cardStyles.fab} onPress={openCreateModal}>
           <Plus size={24} color={colors.textInverse} strokeWidth={2.5} />
-        </TouchableOpacity>
+        </PressableScale>
       )}
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />

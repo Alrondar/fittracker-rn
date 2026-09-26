@@ -35,6 +35,15 @@ export interface SheetShellProps {
   children: React.ReactNode;
   /** Если true, использует flex-вёрстку вместо absolute (обязательно при использовании внутри <Modal>) */
   isModal?: boolean;
+  /**
+   * UX-1 (audit-8): анимировать ли собственный slide-up листа.
+   * По умолчанию false внутри нативного Modal (isModal) — иначе Modal.slide и
+   * наш enter играют одновременно и «резинят» (двойная анимация).
+   * Exit-анимация сохраняется всегда: она одного направления с native slide
+   * и без артефактов; ранний unmount контента внутри закрывающегося Modal,
+   * наоборот, показал бы пустую «скользящую» шторку.
+   */
+  animateEnter?: boolean;
 }
 
 const ENTER_DURATION = 240;
@@ -57,10 +66,13 @@ export function SheetShell({
   keyboardVerticalOffset = 0,
   children,
   isModal = false,
+  animateEnter,
 }: SheetShellProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
+  // Внутри нативного Modal собственный enter по умолчанию выключен (audit-8).
+  const enterAnimated = animateEnter ?? !isModal;
 
   const [rendered, setRendered] = useState(visible);
   const enter = useSharedValue(0);
@@ -110,7 +122,12 @@ export function SheetShell({
       }, CLOSE_GUARD_MS);
       setRendered(true);
       dragY.value = withTiming(0, { duration: 0 });
-      enter.value = withDelay(16, withTiming(1, { duration: ENTER_DURATION }));
+      if (enterAnimated) {
+        enter.value = withDelay(16, withTiming(1, { duration: ENTER_DURATION }));
+      } else {
+        // Нативный Modal сам делает slide — панель сразу в боевой позиции.
+        enter.value = withTiming(1, { duration: 0 });
+      }
     } else {
       closableSV.value = false;
       // Exit-анимация: держим в дереве до конца fade, затем размонтируем.

@@ -13,10 +13,11 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { X, Minus, Plus, CheckCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
+import { useTheme } from '../../hooks/useTheme';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createWorkoutStyles } from '../../styles/components/workout';
@@ -55,22 +56,37 @@ export const RestTimer = memo(function RestTimer({
   workoutStyles,
 }: RestTimerProps) {
   const { settings } = useTimerSettings();
+  const { gradients } = useTheme();
   const [expanded, setExpanded] = useState(true); // по умолчанию развёрнут
   const progress = total > 0 ? timeLeft / total : 0;
   const scale = useSharedValue(1);
 
-  // Пульсация в последние 3 секунды
+  // Пульсация в последние 3 секунды + UX-1 (I-3): тикающий хаптик на каждый тик.
   useEffect(() => {
     if (timeLeft <= 3 && timeLeft > 0 && !isFinished) {
       scale.value = withRepeat(
         withSequence(withTiming(1.1, { duration: 500 }), withTiming(1, { duration: 500 })),
         -1
       );
-    } else {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else if (!isFinished) {
       cancelAnimation(scale);
       scale.value = 1;
     }
   }, [timeLeft, isFinished, scale]);
+
+  // UX-1 (I-3): вспышка кольца в момент окончания + одиночный success-хаптик.
+  // vibrateUntilDismissed при этом не конфликтует: её цикл — Warning каждые 3с,
+  // здесь — один Success в нулевой секунде.
+  useEffect(() => {
+    if (!isFinished) return;
+    cancelAnimation(scale);
+    scale.value = withSequence(
+      withTiming(1.06, { duration: 130 }),
+      withTiming(1, { duration: 170 })
+    );
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [isFinished, scale]);
 
   // Вибрация "до сброса" (каждые 3 сек когда finished + настройка включена)
   useEffect(() => {
@@ -215,6 +231,14 @@ export const RestTimer = memo(function RestTimer({
           <View style={{ marginVertical: 16, alignItems: 'center' }}>
             <Animated.View style={{ transform: [{ scale }] }}>
               <Svg width={SIZE} height={SIZE}>
+                {/* UX-1 (I-3): градиентная обводка из активной темы — «дорогой»
+                    вид кольца; finished остаётся сплошным success-цветом. */}
+                <Defs>
+                  <LinearGradient id="restRingGrad" x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={gradients.primary[0]} />
+                    <Stop offset="1" stopColor={gradients.primary[1]} />
+                  </LinearGradient>
+                </Defs>
                 <Circle
                   cx={SIZE / 2}
                   cy={SIZE / 2}
@@ -227,7 +251,7 @@ export const RestTimer = memo(function RestTimer({
                   cx={SIZE / 2}
                   cy={SIZE / 2}
                   r={RADIUS}
-                  stroke={isFinished ? colors.success : timeColor}
+                  stroke={isFinished ? colors.success : 'url(#restRingGrad)'}
                   strokeWidth={STROKE_WIDTH}
                   fill="none"
                   strokeLinecap="round"

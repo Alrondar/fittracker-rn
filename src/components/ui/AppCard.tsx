@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, StyleProp } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { PressableScale } from './PressableScale';
 
 interface AppCardProps {
   children: React.ReactNode;
@@ -55,14 +56,15 @@ export function AppCard({ children, variant = 'default', style, onPress }: AppCa
 
   if (onPress) {
     return (
-      <TouchableOpacity
+      <PressableScale
         accessibilityRole="button"
         onPress={onPress}
-        activeOpacity={0.7}
+        // Карточки крупнее кнопок — масштаб мягче.
+        scaleTo={0.985}
         style={cardStyle}
       >
         {renderChildren()}
-      </TouchableOpacity>
+      </PressableScale>
     );
   }
 

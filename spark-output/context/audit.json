@@ -1,0 +1,224 @@
+{
+  "skill": "audit",
+  "generated_at": "2026-09-25T00:00:00+03:00",
+  "project_name": "FitTracker RN",
+  "target": {
+    "type": "code",
+    "reference": "C:/projects/fittracker-rn",
+    "pages_audited": [
+      "app/(tabs)/index.tsx",
+      "app/(tabs)/programs.tsx",
+      "app/(tabs)/workouts.tsx",
+      "app/(tabs)/exercises.tsx",
+      "app/(tabs)/progress.tsx",
+      "app/workout/[id].tsx",
+      "app/_layout.tsx",
+      "src/components/ui/*",
+      "src/styles/*"
+    ]
+  },
+  "audit_framework": [
+    "Nielsen-10",
+    "responsive",
+    "performance"
+  ],
+  "findings": [
+    {
+      "id": "audit-1",
+      "heuristic": "aesthetic",
+      "severity": "major",
+      "description": "Нет собственной типографики: приложение использует только системный шрифт — причина «шаблонного» вида. expo-font установлен и подключён в app.json, но loadAsync/fontFamily в коде отсутствуют; в typography.ts (h1–h6, body, caption…) нет ни одного fontFamily.",
+      "evidence": "src/styles/typography.ts L3-85 (без fontFamily); app.json L39; grep loadAsync пуст",
+      "suggestion": "Загрузить шрифтовую пару (display + text, напр. Space Grotesk/Manrope + Inter) через expo-font при старте, добавить fontFamily в typography.ts как токен.",
+      "effort": "medium"
+    },
+    {
+      "id": "audit-2",
+      "heuristic": "consistency",
+      "severity": "minor",
+      "description": "Нет теневой подсистемы токенов: elevation-стили дублируются инлайном с хардко shadowColor:'#000' минимум в 6 местах; у одинаковых карточек разные тени.",
+      "evidence": "src/styles/common.ts L83,L129,L153,L171; src/components/ui/AppCard.tsx L75; src/components/Toast.tsx L85",
+      "suggestion": "Ввести SHADOWS = { sm, md, lg } в theme.ts (с учётом isDark), заменить инлайновые копии.",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-3",
+      "heuristic": "aesthetic",
+      "severity": "minor",
+      "description": "Скелетоны пульсируют только прозрачностью (0.3→0.7), без shimmer-градиента — загрузка выглядит дёшево на фоне остального UI.",
+      "evidence": "src/components/Skeleton.tsx L29-44",
+      "suggestion": "Linear shimmer через expo-linear-gradient + Animated.View с translateX, либо мягкий градиентный overlay.",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-4",
+      "heuristic": "aesthetic",
+      "severity": "minor",
+      "description": "Error/пустые состояния — голый текст + кнопка, без иконки-якоря и визуальной иерархии (в отличие от продуманного empty-стейта активной программы).",
+      "evidence": "app/(tabs)/index.tsx L126-147 (error без retry-иконки/описания причины)",
+      "suggestion": "Единый компонент EmptyState/ErrorState (иконка + заголовок + описание + CTA), переиспользовать на всех экранах.",
+      "effort": "medium"
+    },
+    {
+      "id": "audit-5",
+      "heuristic": "consistency",
+      "severity": "major",
+      "description": "Переходы между экранами не настроены: корневой Stack без единой опции animation → дефолтный плоский системный push, нет spring-ощущения, модальный exercise/[id] отличается по ритму от листов SheetShell.",
+      "evidence": "app/_layout.tsx L120-126 (stackAnimation нигде не задан, grep 'animation:' по app пустой)",
+      "suggestion": "stackAnimation: 'slide_from_right' / 'fade' / 'simple_push' по типам экранов + gestureEnabled для модалок; для drill-in карточек — shared element (react-native-heroicons не нужен, можно Expo router + RNSScreen config).",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-6",
+      "heuristic": "flexibility",
+      "severity": "major",
+      "description": "Pressed-состояния — только activeOpacity 0.7–0.8; нет spring-масштаба. Тапы по карточкам/кнопкам/FAB ощущаются «деревянно» — прямой источник жалобы «нет анимаций и отзывчивости».",
+      "evidence": "src/components/ui/AppButton.tsx L64 (activeOpacity 0.8); AppCard.tsx L61 (0.7); app/(tabs)/programs.tsx L477 (FAB 0.8)",
+      "suggestion": "Примитив PressableScale (useAnimatedStyle + withSpring scale 0.97 + haptic) в src/components/ui, заменить на горячих точках: карточки программ, tabs-списки, FAB, кнопки workout.",
+      "effort": "medium"
+    },
+    {
+      "id": "audit-7",
+      "heuristic": "flexibility",
+      "severity": "minor",
+      "description": "Списки появляются мгновенно, без entering/exiting-анимаций: добавление подхода в тренировке, удаление элемента, переключение фильтров — контент «телепортируется».",
+      "evidence": "grep LayoutAnimation / entering= / exiting= по app и src/components пуст (кроме FadeIn для первичного входа)",
+      "suggestion": "LayoutAnimation.configureNext на CRUD-действия в workout/program editor; либо entering={FadeIn.duration(200)} на FlatList items (осторожно с FlashList).",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-8",
+      "heuristic": "consistency",
+      "severity": "minor",
+      "description": "Листы внутри RN Modal анимируются дважды: Modal animationType='slide' + собственная slide-up анимация SheetShell 240ms → замедленный, «резиновый» вход и рассогласованный exit.",
+      "evidence": "NutritionAddModal.tsx L127; DaySummaryCard.tsx L59; ProgramEditorModals L82-162; InjuryFormSheet.tsx L60 (Modal slide + SheetShell isModal)",
+      "suggestion": "Для isModal-режима отключать собственную enter-анимацию SheetShell (оставить только drag/backdrop), либо уйти от Modal в пользу абсолютного overlay.",
+      "effort": "medium"
+    },
+    {
+      "id": "audit-9",
+      "heuristic": "flexibility",
+      "severity": "minor",
+      "description": "Пилля таб-бара ездит с withTiming 250ms; в 2026 паттерн «живого» таб-бара — spring с лёгким overshoot + микромасштаб иконки.",
+      "evidence": "src/components/CustomTabBar.tsx L16,L26-30",
+      "suggestion": "withSpring({damping ~20, stiffness ~200}) на translateX + scale-and-settle на активной иконке.",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-10",
+      "heuristic": "consistency",
+      "severity": "major",
+      "description": "Три параллельные реализации кнопки: нетипизированная фабрика createButtonStyles (colors:any, хардко borderRadius:20/fontSize:14), компонент AppButton и ~616 сырых TouchableOpacity (495 в src + 121 в app). Визуальный язык кнопок расходится от экрана к экрану.",
+      "evidence": "src/styles/components/button.ts L5,L40,L75; src/components/ui/AppButton.tsx; grep TouchableOpacity: 495 вхождений/78 файлов (src/components), 121/15 (app)",
+      "suggestion": "Канон = AppButton + PressableScale; createButtonStyles — типизировать и пометить @deprecated; миграцию сырых TouchableOpacity вести пакетами по экранам (не big-bang).",
+      "effort": "major-rework"
+    },
+    {
+      "id": "audit-11",
+      "heuristic": "visibility",
+      "severity": "major",
+      "description": "Progress-экран до прихода данных показывает нули (?? 0 фолбэки), а не скелетоны: пользователь видит недостоверные «0 тренировок, streak 0» вместо состояния загрузки.",
+      "evidence": "app/(tabs)/progress.tsx L323-337 (ProgressHero/ProgressStats с ?? 0 при isPending)",
+      "suggestion": "При isPending рендерить Skeleton-версию hero и статкарт; не показывать фолбэк-нули.",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-12",
+      "heuristic": "visibility",
+      "severity": "major",
+      "description": "Экран активной тренировки (главный сценарий продукта) не имеет screen-level loading/error состояния — только warmup-флаг и ListEmptyComponent; при медленной загрузке сессии пользователь видит пустой список без объяснения.",
+      "evidence": "app/workout/[id].tsx L153 (isWarmupLoading), L371/L482 — нет ActivityIndicator/ErrorState на уровне экрана",
+      "suggestion": "Экран-level skeleton (структура подходов) + error-блок с retry, пока сессия не восстановлена.",
+      "effort": "medium"
+    },
+    {
+      "id": "audit-13",
+      "heuristic": "visibility",
+      "severity": "minor",
+      "description": "На Dashboard нет pull-to-refresh, хотя все остальные tabs (programs/workouts/exercises/progress) имеют RefreshControl — несогласованность жеста.",
+      "evidence": "app/(tabs)/index.tsx L153 (ScrollView без refreshControl)",
+      "suggestion": "Добавить RefreshControl c refetch дашбордных запросов.",
+      "effort": "quick-win"
+    },
+    {
+      "id": "audit-14",
+      "heuristic": "consistency",
+      "severity": "major",
+      "description": "Рассинхрон размеров в одном ряду секции «Мышцы»: сегмент-контрол «Все/Прямые» (MuscleLoadModeToggle: captionSmall 11px, minHeight 28, paddingV 4) визуально в ~1.5 раза меньше соседнего фильтра периодов (PillToggle: paddingV 12, tap target >=44pt заложен в компонент). Маленькие кнопки также нарушают критерий UX_AUDIT_PLAN «触摸目标 ≥ 44px».",
+      "evidence": "src/components/ui/MuscleLoadModeToggle.tsx L100-107 vs src/components/ui/PillToggle.tsx L115; замечание пользователя 25.09.2026",
+      "suggestion": "Заменить MuscleLoadModeToggle на PillToggle с тем же API (mode/onChange) или привести паддинги/шрифт к масштабу PillToggle; целевой tap target >=44.",
+      "effort": "quick-win"
+    }
+  ],
+  "opportunities": [
+    {
+      "title": "Слой живости: переходы, pressed-состояния, микродвижения",
+      "addresses_findings": [
+        "audit-5",
+        "audit-6",
+        "audit-7",
+        "audit-8",
+        "audit-9"
+      ],
+      "priority": "high",
+      "rationale": "Прямой ответ на жалобу «нет красивых анимаций и отзывчивости». 2 major + 3 minor, всё на уже установленном Reanimated 4; spring-навигация и PressableScale дают максимальный воспринимаемый эффект на строку кода."
+    },
+    {
+      "title": "Честные состояния загрузки: skeleton вместо нулей и пустот",
+      "addresses_findings": [
+        "audit-11",
+        "audit-12",
+        "audit-13",
+        "audit-3"
+      ],
+      "priority": "high",
+      "rationale": "Progress враньём о нулях и пустой workout-экран — это не только красота, но и достоверность данных в главном пользовательском пути (тренировка)."
+    },
+    {
+      "title": "Визуальная идентичность: шрифт, тени, состояния-в-стиле",
+      "addresses_findings": [
+        "audit-1",
+        "audit-2",
+        "audit-4"
+      ],
+      "priority": "medium",
+      "rationale": "Системный шрифт — главный источник «топорного» вида. Кастомная шрифтовая пара + теневые токены + единый EmptyState меняют облик всего приложения без редизайна экранов."
+    },
+    {
+      "title": "Консолидация кнопок и press-примитивов",
+      "addresses_findings": [
+        "audit-10",
+        "audit-14"
+      ],
+      "priority": "medium",
+      "rationale": "616 сырых TouchableOpacity — техдолг, из-за которого слой «живости» (Опыт 1) нельзя раскатать автоматически; мигрировать пакетами по экранам вместе с Оппортьюнити 1."
+    }
+  ],
+  "summary": {
+    "total_findings": 14,
+    "by_severity": {
+      "blocker": 0,
+      "major": 7,
+      "minor": 7
+    },
+    "by_heuristic": {
+      "visibility": 3,
+      "real-world-match": 0,
+      "user-control": 0,
+      "consistency": 5,
+      "error-prevention": 0,
+      "recognition": 0,
+      "flexibility": 3,
+      "aesthetic": 3,
+      "error-recovery": 0,
+      "help-docs": 0,
+      "responsive": 0,
+      "performance": 0
+    },
+    "top_opportunities": [
+      "Слой живости: переходы, pressed-состояния, микродвижения",
+      "Честные состояния загрузки: skeleton вместо нулей и пустот",
+      "Визуальная идентичность: шрифт, тени, состояния-в-стиле"
+    ]
+  }
+}

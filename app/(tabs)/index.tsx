@@ -4,7 +4,7 @@
 // COACH-4 (contextual insight), AUDIT-1 (питание), AUDIT-6 (блок «Состояние сегодня»),
 // NUTRI-2 (CRUD записей питания). DA-P2-8: календарь и «Коротко о неделе» — в src/components/dashboard/.
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Hand, ListChecks } from 'lucide-react-native';
@@ -14,7 +14,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useDashboard } from '../../src/hooks/useDashboard';
 import { useHistory } from '../../src/hooks/useHistory';
 import { typography } from '../../src/styles/typography';
-import { SPACING, scale, withAlpha } from '../../src/constants/theme';
+import { SPACING, BORDER_RADIUS, scale, withAlpha } from '../../src/constants/theme';
 import { createDashboardStyles } from '../../src/styles/components/dashboard';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { AppButton } from '../../src/components/ui/AppButton';
@@ -26,7 +26,10 @@ import { StatusCard } from '../../src/components/dashboard/StatusCard';
 import { TrainingCalendarCard } from '../../src/components/dashboard/TrainingCalendarCard';
 import { WeeklyInsightsSection } from '../../src/components/dashboard/WeeklyInsightsSection';
 import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
-import { ListSkeleton } from '../../src/components/Skeleton';
+import { ShimmerWrap, Skeleton, useMinPending } from '../../src/components/Skeleton';
+import { DashboardSkeleton } from '../../src/components/ui/skeletons';
+import { StateBlock } from '../../src/components/ui/StateBlock';
+import { FadeIn } from '../../src/components/FadeIn';
 import { NutritionAddModal } from '../../src/components/dashboard/NutritionAddModal';
 import { NutritionLogListModal } from '../../src/components/dashboard/NutritionLogListModal';
 import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
@@ -47,7 +50,7 @@ export default function DashboardScreen() {
   const { data, isPending, isError, refetch } = useDashboard(userId);
 
   // Календарь на Dashboard: те же данные, что и в «Мой прогресс».
-  const { data: historyData } = useHistory(userId);
+  const { data: historyData, refetch: refetchHistory } = useHistory(userId);
 
   const flatWorkouts = useMemo(
     () =>
@@ -72,13 +75,29 @@ export default function DashboardScreen() {
   const [editingNutritionLog, setEditingNutritionLog] = useState<NutritionLog | null>(null);
 
   // COACH-4: Contextual tips
-  const { data: weeklyData } = useWeeklySummary(userId, 0);
+  const { data: weeklyData, refetch: refetchWeekly } = useWeeklySummary(userId, 0);
 
   // ENG-3 / COACH-4: readiness для readinessWarning.
   const { data: readiness } = useTodayReadiness(userId);
 
   // AUDIT-1: L1-summary питания
-  const { data: nutritionData, isPending: isNutritionPending } = useDailyNutrition(userId);
+  const {
+    data: nutritionData,
+    isPending: isNutritionPending,
+    refetch: refetchNutrition,
+  } = useDailyNutrition(userId);
+
+  // UX-2 (audit-13): pull-to-refresh — жест должен быть на всех tabs.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    Promise.allSettled([refetch(), refetchHistory(), refetchWeekly(), refetchNutrition()]).finally(
+      () => setRefreshing(false)
+    );
+  }, [refetch, refetchHistory, refetchWeekly, refetchNutrition]);
+
+  // UX-2 (L-3): anti-flash — скелетон живёт минимум 250мс.
+  const showSkeleton = useMinPending(isPending);
 
   const topInsight = useMemo(() => {
     if (!weeklyData?.insights) {
@@ -104,20 +123,26 @@ export default function DashboardScreen() {
   if (!userId) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={[typography.body, { color: colors.textSecondary }]}>
-            Пользователь не авторизован
-          </Text>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <StateBlock
+            title="Пользователь не авторизован"
+            description="Войдите, чтобы увидеть свой дневник тренировок."
+            actionLabel="Войти"
+            onAction={() => router.replace('/(auth)/login')}
+          />
         </View>
       </SafeAreaView>
     );
   }
 
-  if (isPending) {
+  if (showSkeleton) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
         <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
-          <ListSkeleton count={3} />
+          {/* UX-2 (L-1/L-2): макетный skeleton дашборда под shimmer-бликом. */}
+          <ShimmerWrap>
+            <DashboardSkeleton />
+          </ShimmerWrap>
         </View>
       </SafeAreaView>
     );
@@ -126,21 +151,15 @@ export default function DashboardScreen() {
   if (isError || !data) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: SPACING.xl,
-          }}
-        >
-          <Text
-            style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.lg }]}
-          >
-            Не удалось загрузить данные
-          </Text>
-
-          <AppButton title="Повторить" variant="primary" onPress={() => refetch()} />
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* UX-2 (audit-4): единый StateBlock вместо голого «текст + кнопка». */}
+          <StateBlock
+            tone="error"
+            title="Не удалось загрузить данные"
+            description="Проверьте соединение — обычно помогает повтор."
+            actionLabel="Повторить"
+            onAction={() => refetch()}
+          />
         </View>
       </SafeAreaView>
     );
@@ -150,7 +169,18 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
+          />
+        }
+      >
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Text
@@ -177,20 +207,22 @@ export default function DashboardScreen() {
           <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>
         </View>
 
+        {/* UX-2 (L-3): stagger-вход секций — контент монтируется один раз после
+            skeleton, поэтому анимация проигрывается ровно раз на загрузку. */}
         {/* FEAT-1.3: недельный стрик */}
         {data.totalWorkouts > 0 && (
-          <View style={styles.section}>
+          <FadeIn fade={false} style={styles.section} delay={0}>
             <StreakCard streak={data.streak} colors={colors} />
-          </View>
+          </FadeIn>
         )}
 
         {/* COACH-4 */}
-        <View style={styles.section}>
+        <FadeIn fade={false} style={styles.section} delay={60}>
           <ContextInsightCard insight={topInsight} readinessWarning={readinessWarning} />
-        </View>
+        </FadeIn>
 
         {/* Активная программа */}
-        <View style={styles.section}>
+        <FadeIn fade={false} style={styles.section} delay={120}>
           {data.activeProgram ? (
             <ProgramProgressCard
               programName={data.activeProgram.programName}
@@ -244,19 +276,23 @@ export default function DashboardScreen() {
               </View>
             </AppCard>
           )}
-        </View>
+        </FadeIn>
 
         {/* AUDIT-6 */}
-        <View style={styles.section}>
+        <FadeIn fade={false} style={styles.section} delay={180}>
           <StatusCard />
-        </View>
+        </FadeIn>
 
         {/* AUDIT-1: ПИТАНИЕ */}
-        <View style={styles.section}>
+        <FadeIn fade={false} style={styles.section} delay={240}>
           {isNutritionPending ? (
             <AppCard variant="default">
-              <View style={{ height: 120, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="small" color={colors.primary} />
+              {/* UX-2 (L-1): точечный skeleton вместо спиннера в карточке. */}
+              <View style={{ height: 120, justifyContent: 'center', gap: SPACING.md }}>
+                <Skeleton width="55%" height={16} borderRadius={5} />
+                <Skeleton width="100%" height={10} borderRadius={5} />
+                <Skeleton width="80%" height={10} borderRadius={5} />
+                <Skeleton width={110} height={34} borderRadius={BORDER_RADIUS.md} />
               </View>
             </AppCard>
           ) : nutritionData ? (
@@ -267,20 +303,20 @@ export default function DashboardScreen() {
               onOpenLogList={() => setNutritionLogListVisible(true)}
             />
           ) : null}
-        </View>
+        </FadeIn>
 
         {/* AUDIT-1: КОРОТКО О НЕДЕЛЕ */}
         {weeklyData?.insights && weeklyData.insights.length > 0 && (
-          <View style={styles.section}>
+          <FadeIn fade={false} style={styles.section} delay={300}>
             <WeeklyInsightsSection
               insights={weeklyData.insights}
               onOpenProgress={() => router.push('/(tabs)/progress')}
             />
-          </View>
+          </FadeIn>
         )}
 
         {/* Календарь тренировок */}
-        <View style={styles.section}>
+        <FadeIn fade={false} style={styles.section} delay={360}>
           <SectionHeader title="Календарь тренировок" />
           <TrainingCalendarCard
             workouts={flatWorkouts}
@@ -289,7 +325,7 @@ export default function DashboardScreen() {
             }
             onDayPress={handleDayPress}
           />
-        </View>
+        </FadeIn>
       </ScrollView>
 
       {/* Тап по дню календаря → тренировки дня */}

@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import * as Haptics from 'expo-haptics';
-import { Search, X, ArrowUpDown, AlertTriangle } from 'lucide-react-native';
+import { Search, X, ArrowUpDown } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useExercises } from '../../src/hooks/useExercises';
 import { SPACING } from '../../src/constants/theme';
@@ -17,6 +17,7 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppBadge } from '../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { StateBlock } from '../../src/components/ui/StateBlock';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
@@ -108,20 +109,14 @@ export default function ExercisesScreen() {
   );
 
   const renderError = () => (
-    <View style={commonStyles.emptyContainer}>
-      <AlertTriangle size={64} color={colors.warning} strokeWidth={1.5} />
-      <Text style={[commonStyles.emptyTitle, { color: colors.textPrimary }]}>
-        Не удалось загрузить упражнения
-      </Text>
-      <Text style={[commonStyles.emptyText, { color: colors.textSecondary }]}>
-        Проверьте соединение и попробуйте снова
-      </Text>
-      <TouchableOpacity style={{ marginTop: SPACING.md }} onPress={() => refetch()}>
-        <AppBadge variant="primary" size="medium">
-          Повторить
-        </AppBadge>
-      </TouchableOpacity>
-    </View>
+    // UX-2 (audit-4): канонный StateBlock.
+    <StateBlock
+      tone="error"
+      title="Не удалось загрузить упражнения"
+      description="Проверьте соединение и попробуйте снова"
+      actionLabel="Повторить"
+      onAction={() => refetch()}
+    />
   );
 
   const renderFooter = () => {

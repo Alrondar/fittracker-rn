@@ -43,7 +43,9 @@ import {
 import { PainSheet } from '../../src/components/workout/PainSheet';
 import { WorkoutScreenHeader } from '../../src/components/workout/WorkoutScreenHeader';
 import { WorkoutInjuryBanner } from '../../src/components/workout/WorkoutInjuryBanner';
-import { ListSkeleton } from '../../src/components/Skeleton';
+import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
+import { WorkoutSkeleton } from '../../src/components/ui/skeletons';
+import { StateBlock } from '../../src/components/ui/StateBlock';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
@@ -76,6 +78,8 @@ export default function WorkoutSessionScreen() {
     workoutName,
     exercises,
     loading,
+    loadError,
+    loadWorkout,
     saving,
     isWorkoutActive,
     initialTime,
@@ -381,14 +385,41 @@ export default function WorkoutSessionScreen() {
     [colors]
   );
 
-  if (loading) {
+  // UX-2 (L-3): anti-flash для screen-level skeleton.
+  const showLoadingSkeleton = useMinPending(loading);
+
+  // UX-2 (audit-12): провал загрузки сессии — честный error-экран с retry,
+  // а не «пустой список + Alert».
+  if (loadError && exercises.length === 0) {
+    return (
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <StateBlock
+            tone="error"
+            title="Не удалось открыть тренировку"
+            description={loadError}
+            actionLabel="Повторить"
+            onAction={() => loadWorkout()}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (showLoadingSkeleton) {
     return (
       <SafeAreaView
         style={[commonStyles.container, { backgroundColor: colors.background }]}
         edges={['top']}
       >
         <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
-          <ListSkeleton count={3} />
+          {/* UX-2 (L-1): skeleton структуры тренировки (header + карточки с чипами сетов). */}
+          <ShimmerWrap>
+            <WorkoutSkeleton />
+          </ShimmerWrap>
         </View>
       </SafeAreaView>
     );
