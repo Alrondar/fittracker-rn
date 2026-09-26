@@ -11,6 +11,7 @@ import { useStore } from '../src/store/useStore';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { SPACING } from '../src/constants/theme';
+import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
 
 if (Platform.OS !== 'web' && __DEV__) {
   // Заглушаем ошибку keep-awake в dev-режиме
@@ -55,9 +56,20 @@ function RootLayoutContent() {
     let mounted = true;
 
     getSession()
-      .then((session) => {
+      .then(async (session) => {
+        const uid = session?.user?.id ?? null;
         if (mounted) {
-          setAuth(session?.user?.id ?? null);
+          setAuth(uid);
+        }
+        // UX-2b: персист подключаем ДО релиза splash-гейта: restore успеет
+        // заполнить кэш до монтирования первых экранов — экраны получают
+        // данные мгновенно, skeleton не мигает.
+        if (uid && mounted) {
+          try {
+            await attachQueryPersistence(queryClient, uid);
+          } catch (e) {
+            console.warn('[queryPersistence] cold-start attach failed:', e);
+          }
         }
       })
       .catch((error) => {
@@ -77,12 +89,25 @@ function RootLayoutContent() {
         return;
       }
 
-      // При выходе чистим серверный кэш React Query.
+      // При выходе чистим серверный кэш React Query И per-user persist-blob
+      // (UX-2b инвариант: на shared device старый кэш не доживает до следующего
+      // логина).
       if (event === 'SIGNED_OUT') {
         queryClient.clear();
+        void detachQueryPersistence({ erase: true });
       }
 
-      setAuth(session?.user?.id ?? null);
+      const uid = session?.user?.id ?? null;
+      setAuth(uid);
+
+      // UX-2b: login на уже смонтированном дереве — подключаем персист и
+      // инвалидируем всё: мгновенные hydrated-данные из кэша этого же
+      // пользователя + свежий refetch поверх (stale-while-revalidate).
+      if (event === 'SIGNED_IN' && uid) {
+        void attachQueryPersistence(queryClient, uid)
+          .catch((e) => console.warn('[queryPersistence] login attach failed:', e))
+          .finally(() => queryClient.invalidateQueries());
+      }
     });
 
     return () => {

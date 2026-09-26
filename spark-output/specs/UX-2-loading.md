@@ -47,7 +47,10 @@
 | Workout | screen-skeleton | StateBlock+retry | ListEmpty (без измен.) | без измен. |
 | Programs/Exercises | ListSkeleton→shimmer (свои) | StateBlock | без измен. | без измен. |
 
-## UX-2b — Persisted queries (L-4, отдельный шаг после приземления UX-2)
+## UX-2b — Persisted queries (L-4, отдельный шаг после приземления UX-2) — ✅ реализовано 26.09
+
+- Реализация: `src/lib/queryPersistence.ts` (attach/detach c erase, per-user ключ `FTQ::<uid>`, строго restore→subscribe), wiring в `app/_layout.tsx` (холодный старт: restore до релиза splash; SIGNED_IN: attach + invalidateQueries; SIGNED_OUT: queryClient.clear + erase).
+- Инварианты спеки выполнены все 4; осознанный остаток: AsyncStorage не шифрован — при ужесточении требований сужается до allow-list ключей в shouldDehydrateQuery.
 
 - `queryAsyncStoragePersister` (@tanstack/query-async-storage-persister, +1 зависимость), AsyncStorage уже в стеке.
 - **Приватность (обязательные инварианты)**: персистим только read-запросы с ключом, включающим `userId`; `clearOnLogin`: очистка стораджа при sign-in/sign-out (общий девайс не должен показать чужой дашборд); ничего с форм ввода/profile-PII не кешируем сверх текущих query keys.
