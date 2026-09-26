@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { View, Text } from 'react-native';
 import { Flame, Trophy } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
+import { useCountUp } from '../ui/AnimatedNumber';
 import { typography } from '../../styles/typography';
 import { StreakStats } from '../../utils/streak';
 
@@ -23,6 +24,10 @@ interface StreakCardProps {
 
 export const StreakCard = memo(function StreakCard({ streak, colors }: StreakCardProps) {
   const active = streak.activeThisWeek;
+  // UX-3 (I-1): count-up для «N недель подряд» и рекорда (падеж — по целевому
+  // числу, чтобы склон не гулял во время анимации).
+  const currentDisplay = useCountUp(streak.current);
+  const bestDisplay = useCountUp(streak.best);
   return (
     <View
       style={{
@@ -50,7 +55,7 @@ export const StreakCard = memo(function StreakCard({ streak, colors }: StreakCar
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[typography.h4, { color: colors.textPrimary }]}>
-          {streak.current} {weeksRu(streak.current)} подряд
+          {Math.round(currentDisplay)} {weeksRu(streak.current)} подряд
         </Text>
         <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 2 }]}>
           {active
@@ -64,7 +69,7 @@ export const StreakCard = memo(function StreakCard({ streak, colors }: StreakCar
           <Text
             style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700' }]}
           >
-            {streak.best}
+            {Math.round(bestDisplay)}
           </Text>
         </View>
         <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>рекорд</Text>

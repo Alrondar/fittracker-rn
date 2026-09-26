@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 import { PressableScale } from './PressableScale';
 
 interface AppCardProps {
@@ -22,14 +22,12 @@ export function AppCard({ children, variant = 'default', style, onPress }: AppCa
     highlighted: {
       padding: SPACING.xl,
       marginBottom: SPACING.md,
-      elevation: 4,
-      shadowOpacity: 0.15,
+      ...SHADOWS.md,
     },
     default: {
       padding: SPACING.lg,
       marginBottom: SPACING.md,
-      elevation: 2,
-      shadowOpacity: 0.08,
+      ...SHADOWS.sm,
     },
   });
 
@@ -74,8 +72,5 @@ export function AppCard({ children, variant = 'default', style, onPress }: AppCa
 const styles = StyleSheet.create({
   card: {
     borderRadius: BORDER_RADIUS.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
   },
 });

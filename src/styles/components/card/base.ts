@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../../../constants/theme';
 import { typography } from '../../typography';
 
 export const createBaseCardStyles = (colors: any) =>
@@ -10,11 +10,7 @@ export const createBaseCardStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.lg,
       padding: SPACING.lg,
       marginBottom: SPACING.md,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
+      ...SHADOWS.sm,
     } as ViewStyle,
     compact: {
       backgroundColor: colors.surface,
@@ -27,7 +23,7 @@ export const createBaseCardStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.xl,
       padding: SPACING.xl,
       marginBottom: SPACING.md,
-      elevation: 4,
+      ...SHADOWS.md,
     } as ViewStyle,
     header: {
       flexDirection: 'row',
@@ -59,7 +55,7 @@ export const createBaseCardStyles = (colors: any) =>
       flex: 1,
       padding: SPACING.lg,
       borderRadius: BORDER_RADIUS.lg,
-      elevation: 2,
+      ...SHADOWS.sm,
     } as ViewStyle,
     statValue: {
       ...typography.h3,
@@ -74,7 +70,7 @@ export const createBaseCardStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.lg,
       padding: SPACING.lg,
       marginBottom: SPACING.md,
-      elevation: 2,
+      ...SHADOWS.sm,
     } as ViewStyle,
     exerciseHeader: {
       flexDirection: 'row',

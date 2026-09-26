@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha, SHADOWS } from '../../../constants/theme';
 import { typography } from '../../typography';
 
 export const createProgramCardStyles = (colors: any) =>
@@ -8,11 +8,7 @@ export const createProgramCardStyles = (colors: any) =>
     activeProgramCard: {
       borderRadius: BORDER_RADIUS.xl,
       padding: SPACING.lg,
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
+      ...SHADOWS.md,
     } as ViewStyle,
     activeProgramHeader: {
       flexDirection: 'row',
@@ -68,11 +64,7 @@ export const createProgramCardStyles = (colors: any) =>
     // Последняя тренировка
     lastWorkoutCard: {
       borderRadius: BORDER_RADIUS.xl,
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
+      ...SHADOWS.md,
     } as ViewStyle,
     lastWorkoutContent: {
       padding: SPACING.xl,
@@ -208,11 +200,7 @@ export const createProgramCardStyles = (colors: any) =>
       borderRadius: BORDER_RADIUS.lg,
       marginBottom: SPACING.md,
       padding: SPACING.lg,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
+      ...SHADOWS.sm,
     } as ViewStyle,
     cardTitle: {
       fontSize: 17,
@@ -246,11 +234,7 @@ export const createProgramCardStyles = (colors: any) =>
       borderWidth: 1,
       borderRadius: BORDER_RADIUS.md,
       overflow: 'hidden',
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
+      ...SHADOWS.sm,
     } as ViewStyle,
     collapsibleHeader: {
       flexDirection: 'row',

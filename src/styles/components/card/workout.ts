@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
+import { SPACING, BORDER_RADIUS, SHADOWS } from '../../../constants/theme';
 
 // PERF-5: «замороженная» ширина карточки УДАЛЕНА из фабрики.
 // Раньше здесь было:
@@ -150,11 +150,7 @@ export const createWorkoutCardStyles = (colors: any) =>
       borderTopRightRadius: 20,
       padding: SPACING.lg,
       maxHeight: '70%',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 10,
+      ...SHADOWS.lg,
     } as ViewStyle,
     settingsSheetHeader: {
       flexDirection: 'row',

@@ -6,6 +6,7 @@ import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
+import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 interface ProgressStatsProps {
   totalWorkouts: number;
@@ -34,21 +35,31 @@ export function ProgressStats({
     <AppCard variant="compact" style={{ marginBottom: SPACING.md }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={[typography.h3, { color: colors.textPrimary }]}>{totalWorkouts}</Text>
+          {/* UX-3 (I-1): count-up — цифры дорастают при первом показе и догоняют
+              при рефетче/refetch-обновлении значений. */}
+          <AnimatedNumber
+            value={totalWorkouts}
+            style={[typography.h3, { color: colors.textPrimary }]}
+          />
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>тренировок</Text>
         </View>
         <View style={{ width: 1, backgroundColor: colors.border, marginVertical: SPACING.xs }} />
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={[typography.h3, { color: colors.textPrimary }]}>
-            {formatVolume(kgToUnit(totalVolume))}
-          </Text>
+          <AnimatedNumber
+            value={kgToUnit(totalVolume)}
+            format={formatVolume}
+            style={[typography.h3, { color: colors.textPrimary }]}
+          />
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
             {unitLabel} объём
           </Text>
         </View>
         <View style={{ width: 1, backgroundColor: colors.border, marginVertical: SPACING.xs }} />
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={[typography.h3, { color: colors.textPrimary }]}>{currentStreak}</Text>
+          <AnimatedNumber
+            value={currentStreak}
+            style={[typography.h3, { color: colors.textPrimary }]}
+          />
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>недель</Text>
           {bestStreak > currentStreak && (
             <Text style={[typography.overline, { color: colors.textTertiary, marginTop: 2 }]}>

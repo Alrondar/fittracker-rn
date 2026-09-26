@@ -10,6 +10,7 @@ import Animated, {
 import { Check, X, Info } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TOAST_COLORS } from '../constants/semanticColors';
+import { SHADOWS } from '../constants/theme';
 
 interface ToastProps {
   message: string;
@@ -81,11 +82,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 14,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    ...SHADOWS.lg,
     zIndex: 9999,
   },
   iconWrapper: {
