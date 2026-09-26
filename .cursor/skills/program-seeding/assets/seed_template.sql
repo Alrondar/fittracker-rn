@@ -29,6 +29,14 @@ with ph as (
   returning id, name
 )
 insert into program_exercises (program_day_id, exercise_id, exercise_name, sets, reps_range, rest_seconds, intensity, position)
+-- с 25.09 (RPE-1) сюда можно добавлять target_rpe (1..10) и progression_policy:
+-- их переносят и copy_program_for_user, и create_workouts_for_program.
+-- progression_policy: 'linear' | 'double_progression' | 'greyskull' | 'time_based'
+--   (типы src/types/workout.ts:4), но движок реализует только linear и
+--   double_progression (progression.ts:465) — остальные две колонку примут и
+--   проигнорируют, в seeded-программах их не ставить.
+-- Для «запас 1–2 повторения» target_rpe — единственный выразимый канал,
+-- intensity ('low','medium','high') его не заменяет.
 select d.id, x.id, e.name, e.sets, e.reps, e.rest, e.intensity,
        row_number() over (partition by d.id order by e.ord)
   from dy d

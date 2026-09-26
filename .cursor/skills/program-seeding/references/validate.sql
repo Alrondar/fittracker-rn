@@ -107,3 +107,21 @@ select phn,
   from f group by phn order by phn;
 -- ориентиры каталога: ratio 1.0–1.3 (StrongLifts 2.0 — канон минимализма),
 -- post_chain ≥ 0.5 × squat, в unattributed не должно быть подходов (см. запрос 6).
+
+-- 8. Уникальность имён в каталоге (перед применением!).
+--    seed-шаблон резолвит exercise_id через `join exercises x on x.name = e.name`;
+--    если имя встречается в каталоге дважды, JOIN РАЗМНОЖИТ строки и в программу
+--    лягут дубли подходов с двумя разными exercise_id — без ошибки и без warnings.
+select e.name, count(*) as rows_in_catalog, string_agg(e.status, ',') as statuses
+  from exercises e
+ where e.name in (:names_from_seed_file)
+ group by e.name having count(*) > 1;
+-- ожидание: 0 строк. Ненайденные имена (seed-resolver молча drop'ит) ловятся
+-- запросом 1; здесь проверяется только кратность.
+
+-- 9. Как получать :names_from_seed_file (подтверждено 25.09): имена ОБЯЗАТЕЛЬНО
+--    извлекать из байтов готового .sql (node/grep по VALUES-кортежам), а не
+--    перепечатывать. Ручной перенос строк seed'а в проверочный SQL уже приводил
+--    к ложке («выпады с гантелей» вместо «с гантелями») — она «ловится» только
+--    потому, что unresolved становится > 0; при переносе метаданных (например
+--    movement_pattern) ошибка ничем не выдаст себя.
