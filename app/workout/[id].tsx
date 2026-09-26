@@ -3,16 +3,7 @@
 // 05.08.2026 (PERF): FlatList — removeClippedSubviews + батчинг рендера.
 // PR8: split на WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo.
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  InteractionManager,
-  Alert,
-} from 'react-native';
-import Animated from 'react-native-reanimated';
+import { View, Text, FlatList, ScrollView, InteractionManager, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -30,7 +21,7 @@ import { getWorkoutProgramInfo } from '../../src/services/programsService';
 import { SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
 import { SetData, ExercisePainState } from '../../src/types/workout';
-import { RestTimer } from '../../src/components/workout/RestTimer';
+import { RestTimerProvider, RestChip } from '../../src/components/workout/RestTimerContext';
 import { WorkoutTimerProvider } from '../../src/components/workout/WorkoutTimer';
 import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
 import { WarmupBlock } from '../../src/components/workout/WarmupBlock';
@@ -49,7 +40,6 @@ import { WorkoutSkeleton } from '../../src/components/ui/skeletons';
 import { StateBlock } from '../../src/components/ui/StateBlock';
 import { HeroIn } from '../../src/components/ui/HeroMorph';
 import { createCardStyles } from '../../src/styles/components/card';
-import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
 import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
 import { useTodayRecovery } from '../../src/hooks/useTodayRecovery';
@@ -66,7 +56,6 @@ export default function WorkoutSessionScreen() {
   // const insets = useSafeAreaInsets();
   const { unit, setUnit } = useUnitPreferences();
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
-  const workoutStyles = useMemo(() => createWorkoutStyles(colors), [colors]);
   const { mode: displayMode } = useWorkoutDisplayMode();
 
   // ===== TTI: фиксируем момент первого рендера экрана (однократно) =====
@@ -88,6 +77,7 @@ export default function WorkoutSessionScreen() {
     restTimer,
     restTimeLeft,
     isRestFinished,
+    restOwnerIndex,
     adjustRestTimer,
     replacements,
     handleTimerTick,
@@ -219,6 +209,21 @@ export default function WorkoutSessionScreen() {
     await clearPainState(painIndex);
   }, [painIndex, clearPainState]);
 
+  // MORF-PAIN: быстрый ввод из инлайн-морфа — per-exercise, без painIndex
+  // (тот же оптимистичный savePainState/clearPainState, что и у шторки).
+  const savePainQuick = useCallback(
+    (exIndex: number, ps: ExercisePainState) => {
+      savePainState(exIndex, ps).catch((e) => console.error('Не удалось сохранить боль:', e));
+    },
+    [savePainState]
+  );
+  const clearPainQuick = useCallback(
+    (exIndex: number) => {
+      clearPainState(exIndex).catch((e) => console.error('Не удалось снять боль:', e));
+    },
+    [clearPainState]
+  );
+
   const exercisesRef = useRef(exercises);
   useEffect(() => {
     exercisesRef.current = exercises;
@@ -347,6 +352,8 @@ export default function WorkoutSessionScreen() {
         getIntensityInfo={getIntensityInfo}
         onOpenSettings={openExerciseSettings}
         onOpenPain={openPain}
+        onSavePainQuick={savePainQuick}
+        onClearPainQuick={clearPainQuick}
         colors={colors}
         cardStyles={cardStyles}
         unit={unit}
@@ -372,6 +379,8 @@ export default function WorkoutSessionScreen() {
       getIntensityInfo,
       openExerciseSettings,
       openPain,
+      savePainQuick,
+      clearPainQuick,
       colors,
       cardStyles,
       unit,
@@ -438,169 +447,162 @@ export default function WorkoutSessionScreen() {
   const hasWarmup = warmupExercises.length > 0 || isWarmupLoading;
 
   return (
-    <SafeAreaView
-      style={[commonStyles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
+    // MORF-REST: отдых через контекст — тик 250мс ре-рендерит только
+    // RestChip и ActionsRow карточки-владельца, карточки остаются memo.
+    <RestTimerProvider
+      total={restTimer}
+      timeLeft={restTimeLeft}
+      isFinished={isRestFinished}
+      ownerIndex={restOwnerIndex}
+      stop={stopRestTimer}
+      adjust={adjustRestTimer}
     >
-      {/* PR8: header вынесен в WorkoutScreenHeader (внутри TimerProvider — Pill/Panel используют контекст) */}
-      {/* UX-1h (I-4): header «приземляется» из hero-карточки Dashboard — только
+      <SafeAreaView
+        style={[commonStyles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        {/* PR8: header вынесен в WorkoutScreenHeader (внутри TimerProvider — Pill/Panel используют контекст) */}
+        {/* UX-1h (I-4): header «приземляется» из hero-карточки Dashboard — только
           при маршруте с ?hero=1 (обычные входы на тренировку не анимируются). */}
-      <HeroIn active={hero === '1'}>
-        <WorkoutTimerProvider
-          initialSeconds={initialTime}
-          isActive={isWorkoutActive}
-          onTick={handleTimerTick}
-          onStart={handleTimerStart}
-          onStop={handleTimerStop}
-        >
-          <WorkoutScreenHeader
-            workoutName={workoutName}
-            programName={workoutProgramInfo?.programName}
-            phaseName={workoutProgramInfo?.phaseName}
-            unit={unit}
-            onUnitChange={setUnit}
-            colors={colors}
-            saving={saving}
-            onRequestFinish={openFinishSheet}
-          />
-        </WorkoutTimerProvider>
-      </HeroIn>
+        <HeroIn active={hero === '1'}>
+          <WorkoutTimerProvider
+            initialSeconds={initialTime}
+            isActive={isWorkoutActive}
+            onTick={handleTimerTick}
+            onStart={handleTimerStart}
+            onStop={handleTimerStop}
+          >
+            <WorkoutScreenHeader
+              workoutName={workoutName}
+              programName={workoutProgramInfo?.programName}
+              phaseName={workoutProgramInfo?.phaseName}
+              unit={unit}
+              onUnitChange={setUnit}
+              colors={colors}
+              saving={saving}
+              onRequestFinish={openFinishSheet}
+            />
+          </WorkoutTimerProvider>
+        </HeroIn>
 
-      {hasWarmup && (
-        <WorkoutTabs
+        {hasWarmup && (
+          <WorkoutTabs
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            warmupCount={warmupExercises.length}
+            warmupCompleted={isWarmupCompleted}
+          />
+        )}
+
+        {/* PR8: injury banner вынесен в WorkoutInjuryBanner (инкапсулирует showBanner state) */}
+        <WorkoutInjuryBanner
+          hasWarnings={hasWarnings}
+          avoidCount={avoidCount}
+          cautionCount={cautionCount}
+          activeInjuries={activeInjuries}
           activeTab={activeTab}
-          onChange={setActiveTab}
-          warmupCount={warmupExercises.length}
-          warmupCompleted={isWarmupCompleted}
+          colors={colors}
         />
-      )}
 
-      {/* PR8: injury banner вынесен в WorkoutInjuryBanner (инкапсулирует showBanner state) */}
-      <WorkoutInjuryBanner
-        hasWarnings={hasWarnings}
-        avoidCount={avoidCount}
-        cautionCount={cautionCount}
-        activeInjuries={activeInjuries}
-        activeTab={activeTab}
-        colors={colors}
-      />
+        {hasWarmup && activeTab === 'warmup' && (
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 120 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <WarmupBlock
+              warmupExercises={warmupExercises}
+              isLoading={isWarmupLoading}
+              excludedByInjury={excludedByInjury}
+              activeTimerId={activeTimerId}
+              timeLeft={timeLeft}
+              isAllCompleted={isWarmupCompleted}
+              totalDuration={warmupTotalDuration}
+              isCompleted={isWarmupExerciseCompleted}
+              onGenerateWarmup={generateWarmup}
+              onStartTimer={startExerciseTimer}
+              onStopTimer={stopWarmupTimer}
+              onMarkCompleted={markWarmupCompleted}
+              onSkip={() => setActiveTab('workout')}
+              onOpenDetails={openWarmupDetails}
+              onResetPreferences={handleResetWarmupPreferences}
+            />
+          </ScrollView>
+        )}
 
-      {hasWarmup && activeTab === 'warmup' && (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 120 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <WarmupBlock
-            warmupExercises={warmupExercises}
-            isLoading={isWarmupLoading}
-            excludedByInjury={excludedByInjury}
-            activeTimerId={activeTimerId}
-            timeLeft={timeLeft}
-            isAllCompleted={isWarmupCompleted}
-            totalDuration={warmupTotalDuration}
-            isCompleted={isWarmupExerciseCompleted}
-            onGenerateWarmup={generateWarmup}
-            onStartTimer={startExerciseTimer}
-            onStopTimer={stopWarmupTimer}
-            onMarkCompleted={markWarmupCompleted}
-            onSkip={() => setActiveTab('workout')}
-            onOpenDetails={openWarmupDetails}
-            onResetPreferences={handleResetWarmupPreferences}
-          />
-        </ScrollView>
-      )}
-
-      {(!hasWarmup || activeTab === 'workout') && (
-        <>
-          {/* PERF: батчинг + windowSize. removeClippedSubviews УБРАН: он
+        {(!hasWarmup || activeTab === 'workout') && (
+          <>
+            {/* PERF: батчинг + windowSize. removeClippedSubviews УБРАН: он
               отцепляет нативные вью у карточек с TextInput — после детача
               ячейки SetsGrid теряли responder (некликабельны) и blur
               не доставлялся (залипший focus). Не возвращать. */}
-          <FlatList
-            data={exercises}
-            keyExtractor={(item) => item.workout_exercise_id}
-            renderItem={renderItem}
-            extraData={unit}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={{ paddingBottom: 120 }}
-            showsVerticalScrollIndicator={false}
-            windowSize={5}
-            initialNumToRender={3}
-            maxToRenderPerBatch={2}
-            updateCellsBatchingPeriod={50}
-          />
-        </>
-      )}
+            <FlatList
+              data={exercises}
+              keyExtractor={(item) => item.workout_exercise_id}
+              renderItem={renderItem}
+              extraData={unit}
+              ListEmptyComponent={renderEmpty}
+              contentContainerStyle={{ paddingBottom: 120 }}
+              showsVerticalScrollIndicator={false}
+              windowSize={5}
+              initialNumToRender={3}
+              maxToRenderPerBatch={2}
+              updateCellsBatchingPeriod={50}
+            />
+          </>
+        )}
 
-      {/* Sticky-оверлей таймера отдыха (v2 05.08.2026) */}
-      {restTimer !== null && (
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFillObject,
-            {
-              top: undefined,
-              bottom: 0,
-              zIndex: 1000,
-              pointerEvents: 'auto',
-            },
-          ]}
-        >
-          <RestTimer
-            timeLeft={restTimeLeft}
-            total={restTimer}
-            isFinished={isRestFinished}
-            onStop={stopRestTimer}
-            onAdjust={adjustRestTimer}
-            colors={colors}
-            workoutStyles={workoutStyles}
-          />
-        </Animated.View>
-      )}
+        {/* MORF-REST: шторка RestTimer убрана. Управление отдыхом — inline-строка
+          в ActionsRow карточки-владельца; когда она уехала за экран —
+          неинтерактивный чип-индикатор в углу (внутри RestTimerProvider). */}
+        <RestChip colors={colors} />
 
-      {/* FX-1: UX-16 D1 confirm sheet финиша — в корне экрана (см. комментарий
+        {/* FX-1: UX-16 D1 confirm sheet финиша — в корне экрана (см. комментарий
           showFinishSheet), поверх FlatList и sticky-оверлеев не живёт в header. */}
-      <FinishWorkoutSheet
-        visible={showFinishSheet}
-        onClose={closeFinishSheet}
-        onFinish={saveWorkout}
-        completedSetsCount={completedSetsCount}
-        totalSetsCount={totalSetsCount}
-        colors={colors}
-      />
+        <FinishWorkoutSheet
+          visible={showFinishSheet}
+          onClose={closeFinishSheet}
+          onFinish={saveWorkout}
+          completedSetsCount={completedSetsCount}
+          totalSetsCount={totalSetsCount}
+          colors={colors}
+        />
 
-      {/* FEAT-1.9 + PR6: шторка боли с prefill и upsert/delete */}
-      <PainSheet
-        exercise={painIndex !== null ? (exercises[painIndex] ?? null) : null}
-        workoutId={id as string}
-        userId={userId}
-        onClose={closePain}
-        onSavePain={savePainForCurrent}
-        onClearPain={clearPainForCurrent}
-      />
+        {/* FEAT-1.9 + PR6: шторка боли с prefill и upsert/delete */}
+        <PainSheet
+          exercise={painIndex !== null ? (exercises[painIndex] ?? null) : null}
+          workoutId={id as string}
+          userId={userId}
+          onClose={closePain}
+          onSavePain={savePainForCurrent}
+          onClearPain={clearPainForCurrent}
+        />
 
-      {/* WARMUP-1: L2 лист техники/аналогов разминки — в корне экрана (паттерн PainSheet) */}
-      <WarmupExerciseSheet
-        exercise={warmupDetailIndex !== null ? (warmupExercises[warmupDetailIndex] ?? null) : null}
-        index={warmupDetailIndex ?? 0}
-        completed={
-          warmupDetailIndex !== null &&
-          isWarmupExerciseCompleted(warmupExercises[warmupDetailIndex]?.id ?? '')
-        }
-        onClose={closeWarmupDetails}
-        onMarkCompleted={markWarmupCompleted}
-        loadAlternatives={loadWarmupAlternatives}
-        onReplace={replaceWarmupExercise}
-      />
+        {/* WARMUP-1: L2 лист техники/аналогов разминки — в корне экрана (паттерн PainSheet) */}
+        <WarmupExerciseSheet
+          exercise={
+            warmupDetailIndex !== null ? (warmupExercises[warmupDetailIndex] ?? null) : null
+          }
+          index={warmupDetailIndex ?? 0}
+          completed={
+            warmupDetailIndex !== null &&
+            isWarmupExerciseCompleted(warmupExercises[warmupDetailIndex]?.id ?? '')
+          }
+          onClose={closeWarmupDetails}
+          onMarkCompleted={markWarmupCompleted}
+          loadAlternatives={loadWarmupAlternatives}
+          onReplace={replaceWarmupExercise}
+        />
 
-      <ExerciseSettingsModal
-        target={settingsTarget}
-        onClose={closeExerciseSettings}
-        onSave={saveExerciseSettings}
-        colors={colors}
-        cardStyles={cardStyles}
-      />
+        <ExerciseSettingsModal
+          target={settingsTarget}
+          onClose={closeExerciseSettings}
+          onSave={saveExerciseSettings}
+          colors={colors}
+          cardStyles={cardStyles}
+        />
 
-      {/* UX-16 D1: WorkoutScreenFooter удалён — старт/финиш теперь в шапке */}
-    </SafeAreaView>
+        {/* UX-16 D1: WorkoutScreenFooter удалён — старт/финиш теперь в шапке */}
+      </SafeAreaView>
+    </RestTimerProvider>
   );
 }

@@ -10,6 +10,10 @@ export function useWorkoutSessionRest() {
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [isRestFinished, setIsRestFinished] = useState(false);
+  // MORF-REST: карточка-инициатор отдыха — inline-строка таймера рендерится
+  // только в ней; глобальный чип-индикатор виден, когда карточка уехала
+  // за экран (вместо прежней шторки на весь bottom).
+  const [restOwnerIndex, setRestOwnerIndex] = useState<number | null>(null);
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const restEndsAtRef = useRef<number>(0);
   const lastBeepRef = useRef<number>(0);
@@ -25,12 +29,7 @@ export function useWorkoutSessionRest() {
 
       setRestTimeLeft((prev) => (prev === secLeft ? prev : secLeft));
 
-      if (
-        timerSettings.preBeep &&
-        secLeft <= 3 &&
-        secLeft > 0 &&
-        lastBeepRef.current !== secLeft
-      ) {
+      if (timerSettings.preBeep && secLeft <= 3 && secLeft > 0 && lastBeepRef.current !== secLeft) {
         lastBeepRef.current = secLeft;
         playBeep();
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -54,17 +53,18 @@ export function useWorkoutSessionRest() {
   }, [timerSettings]);
 
   const startRestTimer = useCallback(
-    (restSeconds: number) => {
+    (restSeconds: number, ownerIndex: number | null = null) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setIsRestFinished(false);
       lastBeepRef.current = 0;
       restEndsAtRef.current = Date.now() + restSeconds * 1000;
       setRestTimer(restSeconds);
       setRestTimeLeft(restSeconds);
+      setRestOwnerIndex(ownerIndex);
       initSounds();
       runRestInterval();
     },
-    [runRestInterval],
+    [runRestInterval]
   );
 
   const adjustRestTimer = useCallback(
@@ -85,7 +85,7 @@ export function useWorkoutSessionRest() {
         }
       }
     },
-    [runRestInterval],
+    [runRestInterval]
   );
 
   const stopRestTimer = useCallback(() => {
@@ -96,6 +96,7 @@ export function useWorkoutSessionRest() {
     setRestTimer(null);
     setRestTimeLeft(0);
     setIsRestFinished(false);
+    setRestOwnerIndex(null);
   }, []);
 
   // Cleanup при unmount
@@ -109,6 +110,7 @@ export function useWorkoutSessionRest() {
     restTimer,
     restTimeLeft,
     isRestFinished,
+    restOwnerIndex,
     startRestTimer,
     adjustRestTimer,
     stopRestTimer,

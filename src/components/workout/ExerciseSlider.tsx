@@ -59,7 +59,7 @@ interface ExerciseSliderProps {
   // UX-5 Feature 1: запрос замены (caller выбирает temp vs program)
   onRequestReplace: (exIndex: number, altId: string) => void;
   resetToOriginal: (exIndex: number) => void;
-  startRestTimer: (seconds: number) => void;
+  startRestTimer: (seconds: number, ownerIndex?: number | null) => void;
   getIntensityInfo: (intensity: string) => {
     label: string;
     color: string;
@@ -69,6 +69,12 @@ interface ExerciseSliderProps {
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
   /** FEAT-1.9: открыть шторку боли (только основная карточка) */
   onOpenPain?: (exerciseIndex: number) => void;
+  // MORF-PAIN: быстрый ввод боли из инлайн-морфа (проброс в ExerciseCard).
+  onSavePainQuick?: (
+    exerciseIndex: number,
+    ps: import('../../types/workout').ExercisePainState
+  ) => void;
+  onClearPainQuick?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
@@ -99,6 +105,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   getIntensityInfo,
   onOpenSettings,
   onOpenPain,
+  onSavePainQuick,
+  onClearPainQuick,
   colors,
   cardStyles,
   unit,
@@ -264,6 +272,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             getIntensityInfo={getIntensityInfo}
             onOpenSettings={onOpenSettings}
             onOpenPain={onOpenPain}
+            onSavePainQuick={onSavePainQuick}
+            onClearPainQuick={onClearPainQuick}
             colors={colors}
             cardStyles={cardStyles}
             unit={unit}

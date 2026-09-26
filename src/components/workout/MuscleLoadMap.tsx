@@ -14,8 +14,15 @@
 //   - без внешних зависимостей от react-native-body-highlighter (локальный BodyMap);
 //   - состояние empty: серые контуры + сообщение.
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTheme } from '../../hooks/useTheme';
 import { BodyMap } from './BodyMap';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -125,6 +132,29 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
       });
     }, [slugToLoad, maxLoadScore, colors.primary, colors.textTertiary]);
 
+    // MORF-MAP (I-7): кросс-фейд при смене режима/данных — старый слой карты
+    // лежит сверху нового и гаснет за 260мс (SVG-двойник живёт только время
+    // анимации). Первый монтаж не анимируется (prevRef инициализирован).
+    const [prevData, setPrevData] = useState<typeof bodyData | null>(null);
+    const prevRef = useRef(bodyData);
+    const fade = useSharedValue(0);
+    useEffect(() => {
+      if (prevRef.current === bodyData) return;
+      setPrevData(prevRef.current);
+      prevRef.current = bodyData;
+      fade.value = 1;
+      fade.value = withTiming(
+        0,
+        { duration: 260, easing: Easing.out(Easing.cubic) },
+        (finished) => {
+          'worklet';
+          if (finished) runOnJS(setPrevData)(null);
+        }
+      );
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bodyData]);
+    const ghostStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+
     const hasData = muscleLoad.length > 0;
     const maxVolume = hasData ? Math.max(...muscleLoad.map((m) => m.volumeKg)) : 0;
 
@@ -149,7 +179,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
         )}
 
         {/* Карты: спереди / сзади */}
-        <View style={styles.mapsRow}>
+        <View style={[styles.mapsRow, { position: 'relative' }]}>
           <View style={styles.mapColumn}>
             {showSideLabels && (
               <Text
@@ -196,6 +226,60 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
               selectedStrokeColor={colors.textPrimary}
             />
           </View>
+
+          {/* MORF-MAP: призрак предыдущей раскраски — абсолютный слой ВНУТРИ
+              mapsRow (иначе absoluteFill смещается на заголовок), гаснет
+              260мс; не перехватывает тапы. Структура повторяет живой слой
+              1-в-1 (подписи «Спереди/Сзади» той же высоты, те же scale) —
+              только так силуэт не «прыгает»: расходятся слои на пару пикселей
+              и базовый контур двоится. selected-обводка на призраке не
+              рисуется (это не интерактивный слой). */}
+          {prevData && (
+            <Animated.View style={[StyleSheet.absoluteFill, ghostStyle]} pointerEvents="none">
+              <View style={styles.mapsRow}>
+                <View style={styles.mapColumn}>
+                  {showSideLabels && (
+                    <Text
+                      style={[
+                        typography.captionSmall,
+                        { color: colors.textTertiary, marginBottom: 4, fontWeight: '600' },
+                      ]}
+                    >
+                      Спереди
+                    </Text>
+                  )}
+                  <BodyMap
+                    side="front"
+                    data={prevData}
+                    scale={scale}
+                    gender={gender}
+                    border="none"
+                    defaultFill={colors.textTertiary}
+                  />
+                </View>
+                <View style={styles.mapColumn}>
+                  {showSideLabels && (
+                    <Text
+                      style={[
+                        typography.captionSmall,
+                        { color: colors.textTertiary, marginBottom: 4, fontWeight: '600' },
+                      ]}
+                    >
+                      Сзади
+                    </Text>
+                  )}
+                  <BodyMap
+                    side="back"
+                    data={prevData}
+                    scale={scale}
+                    gender={gender}
+                    border="none"
+                    defaultFill={colors.textTertiary}
+                  />
+                </View>
+              </View>
+            </Animated.View>
+          )}
         </View>
 
         {/* Легенда */}

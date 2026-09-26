@@ -1,19 +1,22 @@
 // src/components/history/DaySummaryCard.tsx
-// UX-9 L2: детали выбранного дня — bottom sheet через канонический SheetShell.
-// Несколько тренировок в один день показываются списком (repeat/ad-hoc).
+// UX-9 L2: детали выбранного дня. Несколько тренировок в один день
+// показываются списком (repeat/ad-hoc).
+// MORF-CAL (26.09): вместо bottom sheet (Modal+SheetShell) — инлайн-разворот
+// ВНУТРИ карточки календаря под тапнутой ячейкой (Reveal, origin по колонке
+// дня). Рендерится TrainingCalendarCard; повторный тап по дню или ✕ сворачивают.
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { SheetShell } from '../ui/SheetShell';
-import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
+import { Reveal } from '../ui/Reveal';
+import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import type { HistoryWorkout } from '../../services/historyService';
 
 interface DaySummaryCardProps {
-  /** Выбранный день (YYYY-MM-DD) или null — sheet закрыт */
+  /** Выбранный день (YYYY-MM-DD) или null — блок скрыт */
   selectedDay: string | null;
   /** Все завершённые тренировки (фильтр по дню — локально) */
   workouts: HistoryWorkout[];
@@ -55,15 +58,58 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
     [onClose, router]
   );
 
+  if (!selectedDay) return null;
+
+  // Origin разворота — колонка тапнутого дня (Пн–Вс → три трети ширины).
+  const [y, m, d] = selectedDay.split('-').map(Number);
+  const dowMon = (new Date(y, m - 1, d).getDay() + 6) % 7;
+  const origin = dowMon <= 2 ? 'top-left' : dowMon <= 4 ? 'top-center' : 'top-right';
+
   return (
-    <Modal transparent visible={!!selectedDay} animationType="slide" onRequestClose={onClose}>
-      {/* isModal обязателен внутри нативного Modal (грабли Fabric, INVENTORY §12) */}
-      <SheetShell isModal title={selectedDay ? formatDayLabel(selectedDay) : ''} onClose={onClose}>
-        <Text
-          style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}
+    <Reveal origin={origin}>
+      <View
+        style={{
+          marginTop: SPACING.md,
+          paddingTop: SPACING.md,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: SPACING.sm,
+          }}
         >
-          Тренировок: {dayWorkouts.length}
-        </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+              {formatDayLabel(selectedDay)}
+            </Text>
+            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+              Тренировок: {dayWorkouts.length}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={onClose}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Свернуть детали дня"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: BORDER_RADIUS.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <X size={16} color={colors.textSecondary} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
         {dayWorkouts.map((w) => (
           <TouchableOpacity
             key={w.id}
@@ -94,7 +140,7 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
             <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
           </TouchableOpacity>
         ))}
-      </SheetShell>
-    </Modal>
+      </View>
+    </Reveal>
   );
 }

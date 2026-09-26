@@ -25,7 +25,6 @@ import { ContextInsightCard } from '../../src/components/dashboard/ContextInsigh
 import { StatusCard } from '../../src/components/dashboard/StatusCard';
 import { TrainingCalendarCard } from '../../src/components/dashboard/TrainingCalendarCard';
 import { WeeklyInsightsSection } from '../../src/components/dashboard/WeeklyInsightsSection';
-import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
 import { ShimmerWrap, Skeleton, useMinPending } from '../../src/components/Skeleton';
 import { DashboardSkeleton } from '../../src/components/ui/skeletons';
 import { StateBlock } from '../../src/components/ui/StateBlock';
@@ -65,7 +64,8 @@ export default function DashboardScreen() {
   const heroLeavingRef = useRef(false);
 
   const handleDayPress = useCallback((dateKey: string) => {
-    setSelectedDay(dateKey);
+    // MORF-CAL: повторный тап по выбранному дню сворачивает инлайн-детали.
+    setSelectedDay((prev) => (prev === dateKey ? null : dateKey));
   }, []);
 
   const closeDaySheet = useCallback(() => setSelectedDay(null), []);
@@ -336,17 +336,11 @@ export default function DashboardScreen() {
               historyData?.monthlyStats ?? { totalWorkouts: 0, totalVolume: 0, bestWorkout: 0 }
             }
             onDayPress={handleDayPress}
+            selectedDay={selectedDay}
+            onCloseDay={closeDaySheet}
           />
         </FadeIn>
       </ScrollView>
-
-      {/* Тап по дню календаря → тренировки дня */}
-      <DaySummaryCard
-        selectedDay={selectedDay}
-        workouts={flatWorkouts}
-        onClose={closeDaySheet}
-        colors={colors}
-      />
 
       {/* AUDIT-1 / NUTRI-2: модалка добавления/редактирования питания. Рендер вне ScrollView. */}
       <NutritionAddModal

@@ -15,6 +15,8 @@ import { ExerciseCardTags } from './sections/ExerciseCardTags';
 import { ExerciseWarningBanner } from './sections/ExerciseWarningBanner';
 import { ExerciseCardActions } from './sections/ExerciseCardActions';
 import { ExerciseCardInfo } from './sections/ExerciseCardInfo';
+import { RestDial } from './RestDial';
+import { useRestState } from './RestTimerContext';
 import { withAlpha } from '../../constants/theme';
 import {
   ExerciseData,
@@ -22,10 +24,12 @@ import {
   SetData,
   SetFeedbackPatch,
   WorkoutCardDisplayMode,
+  ExercisePainState,
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import type { ProgressionContext, ReadinessContext } from '../../engine/progression';
 import { isUnilateralExercise } from '../../utils/exerciseHelpers';
+import { BODY_PARTS, targetsInjuredMuscle, type BodyPart } from '../../constants/injuries';
 
 type RepsRangeHolder = { reps_range?: string };
 
@@ -47,7 +51,7 @@ interface ExerciseCardProps {
   addSet: (exerciseIndex: number, count?: number) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  startRestTimer: (seconds: number) => void;
+  startRestTimer: (seconds: number, ownerIndex?: number | null) => void;
   getIntensityInfo: (intensity: string) => {
     label: string;
     color: string;
@@ -56,6 +60,10 @@ interface ExerciseCardProps {
   };
   onOpenSettings: (exerciseIndex: number, setsCount: number, restSeconds: number) => void;
   onOpenPain?: (exerciseIndex: number) => void;
+  // MORF-PAIN: быстрая запись/удаление боли из инлайн-морфа (экран владеет
+  // savePainState/clearPainState — оптимистичный upsert + откат).
+  onSavePainQuick?: (exerciseIndex: number, ps: ExercisePainState) => void;
+  onClearPainQuick?: (exerciseIndex: number) => void;
   onOpenAlternatives?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
@@ -85,6 +93,8 @@ export const ExerciseCard = memo(function ExerciseCard({
   getIntensityInfo,
   onOpenSettings,
   onOpenPain,
+  onSavePainQuick,
+  onClearPainQuick,
   onOpenAlternatives,
   colors,
   cardStyles,
@@ -112,10 +122,43 @@ export const ExerciseCard = memo(function ExerciseCard({
   // UX-16 D3/D6: state для Info block и ActionsRow
   const [infoOpen, setInfoOpen] = useState(false);
   const handleToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
-  const handleStartRest = useCallback(
-    () => startRestTimer(restSeconds),
-    [startRestTimer, restSeconds]
-  );
+
+  // MORF-REST v2: тап по «Таймер» открывает крутилку (setup) — она заменяет
+  // всю карточку. Запуск — кнопкой «Начать» в центре дила; автоотдых из
+  // SetsGrid приходит уже running (owner = эта карточка). Контент карточки
+  // НЕ размонтируется (height 0 + overflow hidden): SetsGrid-эффект
+  // авто-старта при размонтировании зациклил бы отдых (restStartedRef
+  // сбрасывался бы на remount).
+  const rest = useRestState();
+  const restRunningHere = !!rest && rest.total != null && rest.ownerIndex === exerciseIndex;
+  const [restSetup, setRestSetup] = useState(false);
+  const handleStartRest = useCallback(() => setRestSetup(true), []);
+  const restCover = isMain && hasSets && (restRunningHere || restSetup);
+  // Anti-jump: запоминаем естественную высоту карточки ДО морфа и держим
+  // дил в этой высоте (minHeight) — границы карточки не скачут.
+  const [cardNaturalH, setCardNaturalH] = useState(0);
+
+  // MORF-PAIN: чип «Боль» на основной карточке с сетами открывает инлайн-морф
+  // блока подходов (двойной тап = быстрый painState), а не шторку. PainSheet
+  // остаётся для детального ввода («Подробнее…» внутри морфа) и для карточек
+  // без сетов.
+  const [painMorphOpen, setPainMorphOpen] = useState(false);
+  const closePainMorph = useCallback(() => setPainMorphOpen(false), []);
+  const handleOpenPain = useCallback(() => {
+    if (hasSets) setPainMorphOpen(true);
+    else onOpenPain?.(exerciseIndex);
+  }, [hasSets, onOpenPain, exerciseIndex]);
+  // prefill части тела по мышцам упражнения — та же логика, что в PainSheet
+  const defaultBodyPart = useMemo(() => {
+    if (!hasSets) return null;
+    const ex = exercise as ExerciseData;
+    if (ex.painState?.bodyPart) return ex.painState.bodyPart;
+    return (
+      (Object.keys(BODY_PARTS) as BodyPart[]).find((bp) =>
+        targetsInjuredMuscle(ex.primary_muscles, ex.secondary_muscles, bp)
+      ) ?? null
+    );
+  }, [hasSets, exercise]);
 
   // Определяем, есть ли контент для Info блока (с учётом display mode)
   // UX-16 §4.6: в training mode knowledge скрыт, только technique
@@ -170,92 +213,129 @@ export const ExerciseCard = memo(function ExerciseCard({
       style={[
         cardStyles.container,
         cardStyles.workoutExerciseCard,
-        { borderWidth: 1, borderColor },
+        { borderWidth: 1, borderColor: restCover ? colors.primary : borderColor },
       ]}
+      onLayout={(e) => {
+        if (!restCover) setCardNaturalH(e.nativeEvent.layout.height);
+      }}
     >
-      {/* 1. Header: название + Settings + repsRange + intensity */}
-      <ExerciseCardHeader
-        exerciseName={exercise.name}
-        isMain={isMain}
-        exerciseIndex={exerciseIndex}
-        setsCount={sets.length}
-        restSeconds={restSeconds}
-        repsRange={repsRange}
-        intensityInfo={intensityInfo}
-        hasAlternatives={alternatives.length > 0}
-        alternativesCount={alternatives.length}
-        hasPainRecord={hasPainRecord}
-        onOpenSettings={onOpenSettings}
-        onOpenPain={onOpenPain}
-        onOpenAlternatives={onOpenAlternatives}
-        colors={colors}
-        cardStyles={cardStyles}
-      />
+      {/* MORF-REST v2: под дил-обложкой контент живёт в height:0 (не
+          размонтируется — сохранение restStartedRef/TextInput-резолвера). */}
+      <View style={restCover ? { height: 0, overflow: 'hidden' } : undefined}>
+        {/* 1. Header: название + Settings + repsRange + intensity */}
+        <ExerciseCardHeader
+          exerciseName={exercise.name}
+          isMain={isMain}
+          exerciseIndex={exerciseIndex}
+          setsCount={sets.length}
+          restSeconds={restSeconds}
+          repsRange={repsRange}
+          intensityInfo={intensityInfo}
+          hasAlternatives={alternatives.length > 0}
+          alternativesCount={alternatives.length}
+          hasPainRecord={hasPainRecord}
+          onOpenSettings={onOpenSettings}
+          onOpenPain={handleOpenPain}
+          onOpenAlternatives={onOpenAlternatives}
+          colors={colors}
+          cardStyles={cardStyles}
+        />
 
-      {/* 2. TagsRow: equipment + muscles с exclusive toggle (UX-16 D2) */}
-      <ExerciseCardTags
-        equipment={equipment}
-        primaryMuscles={exercise.primary_muscles}
-        secondaryMuscles={exercise.secondary_muscles}
-        colors={colors}
-      />
+        {/* 2. TagsRow: equipment + muscles с exclusive toggle (UX-16 D2) */}
+        <ExerciseCardTags
+          equipment={equipment}
+          primaryMuscles={exercise.primary_muscles}
+          secondaryMuscles={exercise.secondary_muscles}
+          colors={colors}
+        />
 
-      {/* 3. Warning banner (только основная карточка) */}
-      {warning && isMain && <ExerciseWarningBanner warning={warning} colors={colors} />}
+        {/* 3. Warning banner (только основная карточка) */}
+        {warning && isMain && <ExerciseWarningBanner warning={warning} colors={colors} />}
 
-      {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК.
+        {/* 5. SetsGrid (только основная карточка с сетами) — ГЛАВНЫЙ РАБОЧИЙ БЛОК.
           ENG-1: проброс repsRange для детерминированной прогрессии.
           Фича 2: проброс targetRpe для RPE-based autoregulation.
           ENG-4: проброс safetyContext (pain/injury) для safety precedence в engine.
           COACH-3: проброс workoutId + exercise.id для записи feedback.
           FEAT-1.5: проброс equipment для Plate Math UI. */}
-      {hasSets && sets.length > 0 && (
-        <SetsGrid
-          exerciseIndex={exerciseIndex}
-          sets={sets}
-          targetSets={targetSets}
+        {hasSets && sets.length > 0 && (
+          <SetsGrid
+            exerciseIndex={exerciseIndex}
+            sets={sets}
+            targetSets={targetSets}
+            restSeconds={restSeconds}
+            repsRange={repsRange}
+            targetRpe={targetRpe}
+            safetyContext={safetyContext}
+            readinessContext={readinessContext}
+            progressionContext={progressionContext}
+            unit={unit}
+            equipment={equipment}
+            isUnilateral={isUnilateral}
+            policy={(exercise as ExerciseData).progression_policy}
+            updateSet={updateSet}
+            updateSetFeedback={updateSetFeedback}
+            addSet={addSet}
+            applyProgression={applyProgression}
+            isSetCompleted={isSetCompleted}
+            startRestTimer={startRestTimer}
+            colors={colors}
+            cardStyles={cardStyles}
+            workoutId={workoutId}
+            exerciseId={exercise.id}
+            painMorphOpen={painMorphOpen}
+            onPainMorphClose={closePainMorph}
+            painState={(exercise as ExerciseData).painState ?? null}
+            defaultBodyPart={defaultBodyPart}
+            onSavePainQuick={(ps) => onSavePainQuick?.(exerciseIndex, ps)}
+            onClearPainQuick={() => onClearPainQuick?.(exerciseIndex)}
+            onOpenPainDetail={() => onOpenPain?.(exerciseIndex)}
+          />
+        )}
+
+        {/* UX-16 D6: ActionsRow — rest pill + Info button */}
+        <ExerciseCardActions
           restSeconds={restSeconds}
-          repsRange={repsRange}
-          targetRpe={targetRpe}
-          safetyContext={safetyContext}
-          readinessContext={readinessContext}
-          progressionContext={progressionContext}
-          unit={unit}
-          equipment={equipment}
-          isUnilateral={isUnilateral}
-          policy={(exercise as ExerciseData).progression_policy}
-          updateSet={updateSet}
-          updateSetFeedback={updateSetFeedback}
-          addSet={addSet}
-          applyProgression={applyProgression}
-          isSetCompleted={isSetCompleted}
-          startRestTimer={startRestTimer}
+          onStartRest={handleStartRest}
+          onOpenInfo={handleToggleInfo}
+          infoVisible={infoOpen}
+          hasInfoContent={hasInfoContent}
           colors={colors}
-          cardStyles={cardStyles}
-          workoutId={workoutId}
-          exerciseId={exercise.id}
         />
-      )}
 
-      {/* UX-16 D6: ActionsRow — rest pill + Info button */}
-      <ExerciseCardActions
-        restSeconds={restSeconds}
-        onStartRest={handleStartRest}
-        onOpenInfo={handleToggleInfo}
-        infoVisible={infoOpen}
-        hasInfoContent={hasInfoContent}
-        colors={colors}
-      />
+        {/* UX-16 D3: Info tabs (техника + важно знать) */}
+        {infoOpen && hasInfoContent && (
+          <ExerciseCardInfo
+            technique={exercise.technique}
+            mediaUrl={mediaUrl}
+            settingsText={settingsText}
+            benefits={exercise.benefits}
+            risks={exercise.risks}
+            injuries={exercise.injuries}
+            colors={colors}
+          />
+        )}
+      </View>
 
-      {/* UX-16 D3: Info tabs (техника + важно знать) */}
-      {infoOpen && hasInfoContent && (
-        <ExerciseCardInfo
-          technique={exercise.technique}
-          mediaUrl={mediaUrl}
-          settingsText={settingsText}
-          benefits={exercise.benefits}
-          risks={exercise.risks}
-          injuries={exercise.injuries}
+      {/* MORF-REST v2: крутилка, заменяющая карточку (setup / running / finished) */}
+      {restCover && (
+        <RestDial
+          mode={restSetup ? 'setup' : rest && rest.isFinished ? 'finished' : 'running'}
+          initialSeconds={restSeconds}
+          total={rest?.total ?? restSeconds}
+          timeLeft={rest?.timeLeft ?? 0}
+          exerciseName={exercise.name}
+          cardStyles={cardStyles}
+          minHeight={cardNaturalH}
+          onStart={(sec) => {
+            startRestTimer(sec, exerciseIndex);
+            setRestSetup(false);
+          }}
+          onAdjust={(d) => rest?.adjust(d)}
+          onCancel={() => {
+            if (restSetup) setRestSetup(false);
+            else rest?.stop();
+          }}
           colors={colors}
         />
       )}

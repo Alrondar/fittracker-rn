@@ -32,6 +32,7 @@ import {
   SetFeedbackPatch,
   UserRejectionReason,
   ProgressionPolicy,
+  ExercisePainState,
 } from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings } from '../../hooks/useRpeSettings';
@@ -46,6 +47,8 @@ import {
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip } from './SetFeedbackControl';
 import { RpeEditor } from './RpeEditor';
+import { PainMorphEditor } from './PainMorphEditor';
+import { Reveal } from '../ui/Reveal';
 import { PlateMathRow, plateMathVisible } from './PlateMathRow';
 import {
   calculateProgression,
@@ -393,12 +396,23 @@ interface SetsGridProps {
   // в сигнатуре опционально для совместимости с ExerciseCard (не вызывается).
   applyProgression?: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  startRestTimer: (seconds: number) => void;
+  startRestTimer: (seconds: number, ownerIndex?: number | null) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   // COACH-3: идентификаторы для записи feedback (пробрасываются из ExerciseCard).
   workoutId: string;
   exerciseId: string;
+  // MORF-PAIN: управляемое открытие инлайн-редактора боли (чип «Боль» живёт
+  // в header карточки, морф — здесь; флаг поднимается/сбрасывается ExerciseCard).
+  painMorphOpen?: boolean;
+  onPainMorphClose?: () => void;
+  painState?: ExercisePainState | null;
+  /** Часть тела для быстрой записи (prefill по мышцам упражнения). */
+  defaultBodyPart?: string | null;
+  onSavePainQuick?: (ps: ExercisePainState) => void;
+  onClearPainQuick?: () => void;
+  /** «Подробнее…» — открыть PainSheet (тип/заметка/stop), морф закрывается. */
+  onOpenPainDetail?: () => void;
 }
 
 export const SetsGrid = memo(function SetsGrid({
@@ -424,6 +438,13 @@ export const SetsGrid = memo(function SetsGrid({
   cardStyles,
   workoutId,
   exerciseId,
+  painMorphOpen,
+  onPainMorphClose,
+  painState = null,
+  defaultBodyPart = null,
+  onSavePainQuick,
+  onClearPainQuick,
+  onOpenPainDetail,
 }: SetsGridProps) {
   // FEAT-1.5: Plate Math UI
   const { getBarWeight } = useBarbellSettings();
@@ -545,6 +566,48 @@ export const SetsGrid = memo(function SetsGrid({
     return { opacity: morph.value, transform: [{ translateX: tx }, { scale: s }] };
   });
 
+  // MORF-PAIN: тот же morph-слот, второй редактор. kind решает, что
+  // разворачивается под шапкой «RPE · подход N» / «Боль · упражнение».
+  const [editorKind, setEditorKind] = useState<'rpe' | 'pain'>('rpe');
+  const painOpenPrev = useRef(false);
+  useEffect(() => {
+    if (painMorphOpen && !painOpenPrev.current) {
+      editingIdxSV.value = -1; // боль — не колонка, origin по центру
+      totalSetsSV.value = 0;
+      setEditorKind('pain');
+      setEditorReady(false);
+      setEditorMounted(true);
+    }
+    painOpenPrev.current = !!painMorphOpen;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [painMorphOpen]);
+
+  // Закрытие морфа боли обязано сбросить флаг у владельца (ExerciseCard),
+  // иначе повторный тап по чипу не «откроет» его снова (prop не менялся).
+  const closePainMorph = useCallback(() => {
+    closeRpeEditor();
+    onPainMorphClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeRpeEditor, onPainMorphClose]);
+
+  const handlePainConfirm = useCallback(
+    (ps: ExercisePainState) => {
+      onSavePainQuick?.(ps);
+      closePainMorph();
+    },
+    [onSavePainQuick, closePainMorph]
+  );
+
+  const handlePainClear = useCallback(() => {
+    onClearPainQuick?.();
+    closePainMorph();
+  }, [onClearPainQuick, closePainMorph]);
+
+  const handlePainDetail = useCallback(() => {
+    closePainMorph();
+    onOpenPainDetail?.();
+  }, [closePainMorph, onOpenPainDetail]);
+
   // ✅ Мемоизация вычислений
   const completedSets = useMemo(
     () => sets.filter((s) => isSetCompleted(s)).length,
@@ -573,7 +636,9 @@ export const SetsGrid = memo(function SetsGrid({
     ) {
       restStartedRef.current = completedSets;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      startRestTimer(restSeconds);
+      // MORF-REST: автоотдых принадлежит ЭТОЙ карточке — inline-строка
+      // таймера развернётся в её ActionsRow.
+      startRestTimer(restSeconds, exerciseIndex);
     }
   }, [
     completedSets,
@@ -582,6 +647,7 @@ export const SetsGrid = memo(function SetsGrid({
     allSetsDone,
     restSeconds,
     startRestTimer,
+    exerciseIndex,
   ]);
 
   // ✅ Стабильные функции конвертации
@@ -760,9 +826,11 @@ export const SetsGrid = memo(function SetsGrid({
     if (recommendation.suggestedReps != null) {
       updateSet(exerciseIndex, progressionSetIndex, 'reps', String(recommendation.suggestedReps));
     }
-    // Close chips to reduce noise after acceptance; card stays visible until
-    // the next set's recommendation is computed.
+    // Close chips to reduce noise after acceptance; MORF-REC: карточка
+    // схлопывается обратно в 💡 — следующая рекомендация пересчитается для
+    // нового незавершённого сета, пользователь раскроет её лампочкой.
     setChipsOpen(false);
+    setRecommendationCollapsed(true);
 
     // COACH-3: fire-and-forget запись accepted feedback.
     // appliedWeight = вес, который только что записали в сет.
@@ -843,6 +911,7 @@ export const SetsGrid = memo(function SetsGrid({
       if (!set || !isSetCompleted(set)) return;
       editingIdxSV.value = setIndex;
       totalSetsSV.value = sets.length;
+      setEditorKind('rpe');
       setEditorSetIndex(setIndex);
       setEditorReady(false);
       setEditorMounted(true);
@@ -992,14 +1061,14 @@ export const SetsGrid = memo(function SetsGrid({
               },
               editorFadeStyle,
             ]}
-            pointerEvents={editingActive ? 'auto' : 'none'}
+            pointerEvents={editingActive || painMorphOpen ? 'auto' : 'none'}
           >
             <Gauge size={16} color={colors.primary} strokeWidth={2} />
             <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>
-              RPE · подход {editorSetIndex + 1}
+              {editorKind === 'pain' ? 'Боль · упражнение' : `RPE · подход ${editorSetIndex + 1}`}
             </Text>
             <TouchableOpacity
-              onPress={closeRpeEditor}
+              onPress={editorKind === 'pain' ? closePainMorph : closeRpeEditor}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Отменить ввод RPE"
@@ -1090,22 +1159,25 @@ export const SetsGrid = memo(function SetsGrid({
                 recommendation.action !== 'no_data' &&
                 !recommendationCollapsed &&
                 !dismissed && (
-                  <RecommendationCard
-                    recommendation={recommendation}
-                    explanationItems={explanationItems}
-                    accentColor={recommendationColor}
-                    colors={colors}
-                    toDisplay={toDisplay}
-                    unit={unit}
-                    expanded={expanded}
-                    onToggleExpand={toggleExpanded}
-                    onAccept={handleAccept}
-                    onChange={handleChipsToggle}
-                    onDismiss={handleDismiss}
-                    acceptDisabled={progressionSetIndex === null}
-                    chipsOpen={chipsOpen}
-                    policy={policy}
-                  />
+                  // MORF-REC: разворот из-под 💡 (правый верх шапки «Подходы»).
+                  <Reveal origin="top-right">
+                    <RecommendationCard
+                      recommendation={recommendation}
+                      explanationItems={explanationItems}
+                      accentColor={recommendationColor}
+                      colors={colors}
+                      toDisplay={toDisplay}
+                      unit={unit}
+                      expanded={expanded}
+                      onToggleExpand={toggleExpanded}
+                      onAccept={handleAccept}
+                      onChange={handleChipsToggle}
+                      onDismiss={handleDismiss}
+                      acceptDisabled={progressionSetIndex === null}
+                      chipsOpen={chipsOpen}
+                      policy={policy}
+                    />
+                  </Reveal>
                 )}
               {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
                 PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
@@ -1253,11 +1325,7 @@ export const SetsGrid = memo(function SetsGrid({
           {/* UX-16 D6: кнопка отдыха перенесена в ActionsRow (ExerciseCard) */}
         </Animated.View>
 
-        {/* UX-RPE-1: инлайн-редактор — absolute без bottom (естественная
-            высота для onLayout), разворот с origin из тапнутой колонки.
-            Держимся за editorSet (не activeSet): на закрытии feedbackSetIndex
-            уже null, а редактор ещё доигрывает fade-out. */}
-        {editorMounted && sets[editorSetIndex] && (
+        {editorMounted && (editorKind === 'pain' || sets[editorSetIndex]) && (
           <Animated.View
             style={[
               {
@@ -1270,23 +1338,35 @@ export const SetsGrid = memo(function SetsGrid({
               },
               editorWrapStyle,
             ]}
-            pointerEvents={editingActive ? 'auto' : 'none'}
+            pointerEvents={editingActive || painMorphOpen ? 'auto' : 'none'}
             onLayout={handleEditorLayout}
           >
-            <RpeEditor
-              key={`rpe-${editorSetIndex}`}
-              rpe={sets[editorSetIndex].rpe ?? null}
-              weight={toDisplay(sets[editorSetIndex].weight)}
-              unit={unit}
-              reps={
-                isUnilateral
-                  ? `${sets[editorSetIndex].reps_left ?? '?'}/${sets[editorSetIndex].reps_right ?? '?'}`
-                  : sets[editorSetIndex].reps
-              }
-              onConfirm={handleRpeConfirm}
-              onReset={handleRpeReset}
-              colors={colors}
-            />
+            {editorKind === 'pain' ? (
+              <PainMorphEditor
+                key="pain-morph"
+                painState={painState}
+                defaultBodyPart={defaultBodyPart}
+                onConfirm={handlePainConfirm}
+                onClear={handlePainClear}
+                onOpenDetail={handlePainDetail}
+                colors={colors}
+              />
+            ) : (
+              <RpeEditor
+                key={`rpe-${editorSetIndex}`}
+                rpe={sets[editorSetIndex].rpe ?? null}
+                weight={toDisplay(sets[editorSetIndex].weight)}
+                unit={unit}
+                reps={
+                  isUnilateral
+                    ? `${sets[editorSetIndex].reps_left ?? '?'}/${sets[editorSetIndex].reps_right ?? '?'}`
+                    : sets[editorSetIndex].reps
+                }
+                onConfirm={handleRpeConfirm}
+                onReset={handleRpeReset}
+                colors={colors}
+              />
+            )}
           </Animated.View>
         )}
       </Animated.View>

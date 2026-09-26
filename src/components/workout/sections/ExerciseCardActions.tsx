@@ -1,6 +1,8 @@
 // src/components/workout/sections/ExerciseCardActions.tsx
 // UX-16 D6: ActionsRow — compact pill отдыха + Info button.
-// Pill показывает пресет "⏱ Таймер 90с" или countdown во время отдыха.
+// MORF-REST v2 (26.09): pill «Таймер» больше не запускает отдых напрямую —
+// он открывает крутилку (RestDial), которая заменяет карточку (setup-флагом
+// владеет ExerciseCard). Inline-строка отдыха из v1 удалена.
 // Info button трансформируется в inline-блок с табами.
 import React, { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
@@ -11,6 +13,7 @@ import { typography } from '../../../styles/typography';
 
 interface ExerciseCardActionsProps {
   restSeconds: number;
+  /** Открыть крутилку отдыха (setup). */
   onStartRest: () => void;
   onOpenInfo: () => void;
   infoVisible: boolean;
@@ -49,15 +52,12 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
         marginBottom: SPACING.md,
       }}
     >
-      {/* UX-16 F4: pill переименован в «Таймер» (без пресета в лейбле —
-          будущая переработка таймера не затрагивается). Running-state
-          countdown показывается в sticky RestTimer (единый source of truth). */}
       {restSeconds > 0 && (
         <TouchableOpacity
           onPress={handleStartRest}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={`Запустить таймер отдыха (${restSeconds} секунд)`}
+          accessibilityLabel={`Открыть таймер отдыха (пресет ${restSeconds} секунд)`}
           style={{
             flexDirection: 'row',
             alignItems: 'center',

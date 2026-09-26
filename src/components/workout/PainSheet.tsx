@@ -34,7 +34,9 @@ const PAIN_TYPES: { key: PainType; label: string }[] = [
   { key: 'muscle', label: 'мышечная' },
 ];
 
-const LEVELS = [
+// MORF-PAIN: экспорт — тот же набор используется в PainMorphEditor (один
+// владелец шкалы 0–3).
+export const PAIN_LEVELS = [
   { value: 0, label: 'нет' },
   { value: 1, label: 'лёгкая' },
   { value: 2, label: 'средняя' },
@@ -260,7 +262,7 @@ export function PainSheet({
               Уровень боли
             </Text>
             <View style={{ flexDirection: 'row', gap: SPACING.xs, marginBottom: SPACING.md }}>
-              {LEVELS.map((l) => {
+              {PAIN_LEVELS.map((l) => {
                 const active = painLevel === l.value;
                 const color = levelColor(l.value);
                 return (

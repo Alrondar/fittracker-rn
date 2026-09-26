@@ -7,6 +7,7 @@ import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, scale, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
+import { DaySummaryCard } from '../history/DaySummaryCard';
 import type { HistoryWorkout, MonthlyStats } from '../../services/historyService';
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -21,9 +22,18 @@ interface Props {
   workouts: HistoryWorkout[];
   monthlyStats: MonthlyStats;
   onDayPress: (dateKey: string) => void;
+  /** MORF-CAL: выбранный день — детали разворачиваются инлайн под сеткой. */
+  selectedDay?: string | null;
+  onCloseDay?: () => void;
 }
 
-export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Props) {
+export function TrainingCalendarCard({
+  workouts,
+  monthlyStats,
+  onDayPress,
+  selectedDay = null,
+  onCloseDay,
+}: Props) {
   const { colors } = useTheme();
   // VF-8: объёмы за месяц — в выбранных единицах (хранение — кг; «т» оставлена
   // только для kg, для lb — k-нотация)
@@ -100,6 +110,7 @@ export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Pro
           const key = dayKey(date);
           const hasWorkout = workoutDates.has(key);
           const isToday = key === dayKey(new Date());
+          const isSelected = key === selectedDay;
           return (
             <TouchableOpacity
               key={key}
@@ -108,7 +119,7 @@ export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Pro
                 day: 'numeric',
                 month: 'long',
               })}${hasWorkout ? ', тренировка выполнена' : ''}`}
-              accessibilityState={{ disabled: !hasWorkout, selected: isToday }}
+              accessibilityState={{ disabled: !hasWorkout, selected: isSelected }}
               disabled={!hasWorkout}
               onPress={() => onDayPress(key)}
               style={{
@@ -124,15 +135,25 @@ export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Pro
                   borderRadius: scale(15),
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: hasWorkout ? withAlpha(colors.primary, 0.13) : 'transparent',
-                  borderWidth: isToday ? 1 : 0,
+                  backgroundColor: isSelected
+                    ? colors.primary
+                    : hasWorkout
+                      ? withAlpha(colors.primary, 0.13)
+                      : 'transparent',
+                  borderWidth: isToday && !isSelected ? 1 : 0,
                   borderColor: isToday ? colors.primary : 'transparent',
                 }}
               >
                 <Text
                   style={[
                     typography.caption,
-                    { color: hasWorkout ? colors.primary : colors.textSecondary },
+                    {
+                      color: isSelected
+                        ? colors.textInverse
+                        : hasWorkout
+                          ? colors.primary
+                          : colors.textSecondary,
+                    },
                   ]}
                 >
                   {date.getDate()}
@@ -151,6 +172,14 @@ export function TrainingCalendarCard({ workouts, monthlyStats, onDayPress }: Pro
           );
         })}
       </View>
+
+      {/* MORF-CAL: детали дня — инлайн-разворот под сеткой (был Modal-sheet) */}
+      <DaySummaryCard
+        selectedDay={selectedDay}
+        workouts={workouts}
+        onClose={onCloseDay ?? (() => {})}
+        colors={colors}
+      />
     </AppCard>
   );
 }
