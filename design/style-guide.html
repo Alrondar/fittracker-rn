@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FitTracker — актуальный дизайн (style-guide из кода)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* fills from JS: theme colors */
+    --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --font-text: 'Inter', 'Segoe UI', sans-serif;
+    --page-bg: #0b0d12;
+    --page-fg: #e8ecf3;
+    --page-muted: #96a0b5;
+    --page-line: rgba(255,255,255,.09);
+    --page-card: #12151d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font-family: var(--font-text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  header.top {
+    padding: 40px 32px 24px;
+    border-bottom: 1px solid var(--page-line);
+    background:
+      radial-gradient(1200px 400px at 15% -10%, rgba(139,92,246,.25), transparent 60%),
+      linear-gradient(180deg, #10131b, #0b0d12);
+  }
+  header.top h1 {
+    font-family: var(--font-display);
+    font-size: 30px;
+    letter-spacing: -.4px;
+    margin: 0 0 8px;
+  }
+  header.top p { margin: 0; color: var(--page-muted); max-width: 78ch; }
+  .src { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #b9a7ff; }
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 10px 32px;
+    background: rgba(11,13,18,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--page-line);
+  }
+  nav.toc a {
+    color: var(--page-muted); text-decoration: none;
+    font-size: 12.5px; padding: 5px 10px; border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  nav.toc a:hover { color: #fff; border-color: var(--page-line); background: #171b24; }
+  main { padding: 8px 32px 96px; max-width: 1280px; margin: 0 auto; }
+  section { padding: 40px 0 8px; border-bottom: 1px solid var(--page-line); }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    font-family: var(--font-display); font-size: 22px; margin: 0 0 6px; letter-spacing: -.2px;
+  }
+  h2 .num { color: #6b7488; font-size: 14px; margin-right: 8px; font-variant-numeric: tabular-nums; }
+  h3 { font-family: var(--font-display); font-size: 15px; margin: 28px 0 10px; }
+  .lead { color: var(--page-muted); margin: 0 0 20px; max-width: 92ch; }
+  /* theme picker */
+  .picker { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+  .picker button {
+    font: inherit; font-size: 12.5px; color: var(--page-muted);
+    background: #141821; border: 1px solid var(--page-line);
+    padding: 7px 12px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .picker button .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+  .picker button[aria-pressed="true"] { color: #fff; border-color: #8b5cf6; background: #1b2030; }
+  .picker .group { font-size: 11px; color: #6b7488; text-transform: uppercase; letter-spacing: .06em; width: 100%; margin: 10px 0 2px; }
+  /* swatches */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); gap: 12px; }
+  .sw {
+    border: 1px solid var(--page-line); border-radius: 12px; overflow: hidden;
+    background: var(--page-card); cursor: copy;
+  }
+  .sw .chip { height: 62px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .sw .meta { padding: 10px 12px 12px; }
+  .sw .role { font-size: 12.5px; font-weight: 600; }
+  .sw .tok { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #8e98ad; }
+  .sw .hex { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: #cfd6e4; }
+  .sw .cc { font-size: 10.5px; color: #6b7488; }
+  .sw.copied .hex::after { content: ' · скопировано'; color: #34d399; }
+  /* tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--page-line); vertical-align: top; }
+  th { color: #8e98ad; font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; }
+  td.mono, th.mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* phone frame for component demos */
+  .phones { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .phone {
+    width: 375px; border-radius: 28px; padding: 20px 16px 24px;
+    background: var(--background); color: var(--textPrimary);
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 30px 60px rgba(0,0,0,.45);
+    font-family: var(--font-text);
+  }
+  .phone .caption { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--textTertiary); margin: 0 0 14px; font-family: var(--font-text); font-weight: 600; }
+  .demo-label { font-size: 11px; color: #8e98ad; margin: 18px 0 8px; font-family: var(--font-text); }
+  /* component approximations (RN -> web) */
+  .c-card { border-radius: 12px; border: 1px solid var(--border); background: var(--surface); padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,.08); }
+  .c-card.compact { padding: 12px; margin-bottom: 8px; box-shadow: none; }
+  .c-card.hl { padding: 24px; border-width: 1.5px; border-color: var(--primary); box-shadow: 0 4px 8px rgba(0,0,0,.15); }
+  .c-card h4 { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 26px; margin: 0 0 4px; }
+  .c-card p { font-size: 14px; line-height: 20px; color: var(--textSecondary); margin: 0; }
+  .c-big { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 34px; }
+  .c-btn { display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; border: 0; cursor: pointer; font-family: var(--font-text); transition: transform .12s cubic-bezier(.2,.8,.2,1); }
+  .c-btn:active { transform: scale(.97); }
+  .c-btn.primary { background: var(--primary); color: var(--textInverse); }
+  .c-btn.secondary { background: transparent; color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+  .c-btn.danger { background: var(--error); color: var(--textInverse); }
+  .c-btn.ghost { background: transparent; color: var(--primary); }
+  .c-btn.m { padding: 12px 16px; font-size: 16px; line-height: 22px; }
+  .c-btn.s { padding: 8px 12px; font-size: 14px; line-height: 20px; font-weight: 600; }
+  .c-btn.l { padding: 16px 24px; font-size: 18px; }
+  .c-btn.off { background: var(--border); color: var(--textTertiary); box-shadow: none; cursor: not-allowed; }
+  .c-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .c-badge { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid; font-weight: 600; }
+  .c-badge.m { padding: 4px 8px; font-size: 12px; line-height: 16px; }
+  .c-badge.s { padding: 2px 8px; font-size: 11px; }
+  .c-badge.l { padding: 4px 12px; font-size: 14px; }
+  .c-input { margin-bottom: 12px; }
+  .c-input .lb { font-size: 14px; line-height: 20px; font-weight: 600; margin-bottom: 8px; }
+  .c-input .box { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 12px; font-size: 14px; color: var(--textPrimary); }
+  .c-input.err .box { border-color: var(--error); }
+  .c-input .ph { color: var(--textTertiary); }
+  .c-input .er { font-size: 11px; line-height: 14px; color: var(--error); margin-top: 4px; }
+  .c-pill { display: flex; background: var(--surfaceSecondary); border-radius: 8px; padding: 2px; }
+  .c-pill > div { flex: 1; text-align: center; padding: 12px 8px; border-radius: 6px; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--textSecondary); min-height: 44px; }
+  .c-pill > div.on { background: var(--primary); color: var(--textInverse); font-weight: 600; box-shadow: 0 2px 4px color-mix(in srgb, var(--primary) 20%, transparent); }
+  .c-sheet { border-radius: 16px 16px 0 0; background: var(--surface); padding: 8px 16px 16px; margin: 0 -16px; box-shadow: 0 -8px 24px rgba(0,0,0,.35); }
+  .c-sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--textTertiary) 40%, transparent); margin: 0 auto 4px; }
+  .c-sheet .hd { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 12px; }
+  .c-sheet .hd span { font-family: var(--font-display); font-weight: 600; font-size: 16px; line-height: 22px; }
+  .c-sheet .x { width: 20px; height: 20px; display: grid; place-items: center; color: var(--textSecondary); font-size: 18px; }
+  .c-empty { text-align: center; padding: 32px 24px; }
+  .c-empty .circle { width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; margin: 0 auto 12px; }
+  .c-empty .t { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+  .c-empty .d { font-size: 14px; color: var(--textSecondary); margin-bottom: 16px; }
+  .c-tabs { display: flex; padding: 4px; margin: 0 -16px; }
+  .c-tabs .t { flex: 1; text-align: center; font-size: 10px; font-weight: 500; padding: 8px 4px; color: var(--textSecondary); }
+  .c-tabs .t .i { display: block; height: 24px; margin-bottom: 2px; opacity: .9; }
+  .c-tabs .t.on { background: var(--primary); color: var(--textInverse); border-radius: 999px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,.25); }
+  .c-skel { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--surfaceSecondary) 25%, var(--borderLight) 50%, var(--surfaceSecondary) 75%); background-size: 400px 100%; animation: sk 1.2s infinite linear; margin-bottom: 8px; }
+  @keyframes sk { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+  .c-toast { display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 12px 16px; font-size: 14px; color: #fff; margin-bottom: 8px; }
+  /* spacing / radius / shadow demos */
+  .bars { display: grid; gap: 10px; }
+  .bar { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--page-muted); }
+  .bar i { display: block; background: linear-gradient(90deg,#8b5cf6,#60a5fa); border-radius: 3px; height: 14px; }
+  .rad { display: flex; gap: 14px; flex-wrap: wrap; }
+  .rad div { width: 84px; height: 84px; background: #1b2030; border: 1px solid var(--page-line); display: grid; place-items: end center; padding-bottom: 8px; font-size: 11px; color: var(--page-muted); }
+  .shd { display: flex; gap: 20px; flex-wrap: wrap; }
+  .shd div { width: 150px; height: 92px; border-radius: 12px; background: var(--surface); color: var(--textSecondary); display: grid; place-items: center; font-size: 12px; }
+  .grad { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; }
+  .grad div { height: 76px; border-radius: 12px; display: flex; align-items: flex-end; justify-content: space-between; padding: 10px 12px; color: #fff; font-size: 12px; font-family: ui-monospace, Menlo, monospace; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .note { border-left: 2px solid #8b5cf6; padding: 12px 16px; background: #141821; border-radius: 0 10px 10px 0; color: var(--page-muted); font-size: 13px; margin: 16px 0; }
+  .note b, .note strong { color: #e8ecf3; }
+  .type-row { display: flex; align-items: baseline; gap: 18px; padding: 12px 0; border-bottom: 1px dashed var(--page-line); }
+  .type-row .spec { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: #8e98ad; white-space: nowrap; }
+  footer { padding: 28px 32px 60px; color: #6b7488; font-size: 12px; }
+  #copy-hint { position: fixed; right: 20px; bottom: 20px; background: #1b2030; border: 1px solid var(--page-line); color: #e8ecf3; padding: 10px 14px; border-radius: 10px; font-size: 12.5px; opacity: 0; transition: opacity .18s; pointer-events: none; }
+  #copy-hint.on { opacity: 1; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>FitTracker · актуальный дизайн</h1>
+  <p>Переносимый style-guide, собранный <b>из кода как есть</b> (без правок и домысливания):
+     <span class="src">src/constants/theme.ts</span> ·
+     <span class="src">src/styles/typography.ts</span> ·
+     <span class="src">src/constants/fonts.ts</span> ·
+     <span class="src">src/constants/semanticColors.ts</span> ·
+     <span class="src">src/components/ui/*</span>.
+     Всё, что ниже, — значения из этих файлов; переключатель тем меняет и токены, и живые демо компонентов.
+     Рядом — <span class="src">design/tokens.json</span> (тот же набор в формате design-tokens для импорта в Figma) и
+     <span class="src">design/verify-style-guide.js</span> (сверяет страницу и JSON с кодом).</p>
+</header>
+
+<nav class="toc">
+  <a href="#themes">Темы</a>
+  <a href="#colors">Цвета</a>
+  <a href="#gradients">Градиенты</a>
+  <a href="#type">Типографика</a>
+  <a href="#space">Отступы · радиусы · тени</a>
+  <a href="#semantic">Семантика</a>
+  <a href="#components">Компоненты</a>
+  <a href="#motion">Движение</a>
+  <a href="#adaptive">Адаптивность</a>
+  <a href="#figma">В Фигму: как переносить</a>
+</nav>
+
+<main>
+
+<section id="themes">
+  <h2><span class="num">00</span>Тема, которая сейчас показана</h2>
+  <p class="lead">5 акцентов × 2 режима = 10 тем, маппинг <span class="src">themes: Record&lt;string, Theme&gt;</span>.
+     Выбор режима — <span class="src">'light' | 'dark' | 'system'</span> (system берёт <span class="src">useColorScheme()</span>),
+     акцент и режим хранятся в AsyncStorage (<span class="src">@fittracker_theme_mode</span>, <span class="src">@fittracker_theme_accent</span>).</p>
+  <div class="picker" id="picker"></div>
+  <div class="note">Дефолт в <span class="src">ThemeProvider</span>: режим <b>system</b>, акцент <b>purple</b>. Алиасы обратной совместимости: <span class="src">lightTheme = purpleLightTheme</span>, <span class="src">darkTheme = purpleDarkTheme</span>.</div>
+</section>
+
+<section id="colors">
+  <h2><span class="num">01</span>Цвета — <span class="src">ThemeColors</span> (23 токена)</h2>
+  <p class="lead">Клик по плашке копирует значение. В столбце «контраст» — отношение к <span class="src">surface</span> текущей темы (для токенов текста), чтобы сразу видеть AA-статус.</p>
+  <div class="grid" id="colors-grid"></div>
+  <h3>Границы применения токенов</h3>
+  <table>
+    <tr><th>Токен</th><th>Где используется</th></tr>
+    <tr><td class="mono">background</td><td>Экран + <span class="src">SystemUI.setBackgroundColorAsync()</span> в корне</td></tr>
+    <tr><td class="mono">surface / surfaceSecondary</td><td>AppCard, инпут, фон PillToggle, лист SheetShell</td></tr>
+    <tr><td class="mono">textInverse</td><td>Текст/иконка на primary и error (кнопки, активный таб, активная пилюля)</td></tr>
+    <tr><td class="mono">textTertiary</td><td>placeholder, grabber листа (×0.4 alpha), подпись description; в коде зафиксирован WCAG 2.1 AA 4.6:1</td></tr>
+    <tr><td class="mono">overlay</td><td>Бэкдроп bottom sheet (0.5 light / 0.7–0.8 dark)</td></tr>
+    <tr><td class="mono">shadow</td><td>Только как hint-цвет; канон теней — <span class="src">SHADOWS</span> (см. §04)</td></tr>
+  </table>
+</section>
+
+<section id="gradients">
+  <h2><span class="num">02</span>Градиенты — <span class="src">ThemeGradients</span></h2>
+  <p class="lead">Каждая тема даёт свою пару. Рендерятся через expo-linear-gradient, угол — «top → bottom» как показано.</p>
+  <div class="grad" id="grad-grid"></div>
+  <div class="note">Статические <span class="src">GRADIENTS</span> в конце theme.ts — фиолетовая светлая пара, оставлены для обратной совместимости. Текст поверх <b>hero</b> фиксированно белый: <span class="src">ON_STATIC_GRADIENT_COLOR = '#FFFFFF'</span>, а не <span class="src">textInverse</span>.</div>
+</section>
+
+<section id="type">
+  <h2><span class="num">03</span>Типографика — <span class="src">typography</span> (UX-3 / audit-1)</h2>
+  <p class="lead">Пара: <b style="font-family:var(--font-display)">Space Grotesk</b> — дисплей (h1–h4, крупные числа),
+     <b style="font-family:var(--font-text)">Inter</b> — текст, лейблы, кнопки. В RN вес выбирается <b>именем файла</b>
+     (<span class="src">Inter_600SemiBold</span>), <span class="src">fontWeight</span> — только fallback.</p>
+  <div id="type-demo"></div>
+  <h3>Экспортируемые имена семейств (<span class="src">FONT_FAMILIES</span>)</h3>
+  <table>
+    <tr><th>Ключ</th><th>Имя в RN</th><th>Назначение</th><th>Превью</th></tr>
+    <tr><td class="mono">displayBold</td><td class="mono">SpaceGrotesk_700Bold</td><td>h1–h4, крупные числа</td><td style="font-family:var(--font-display);font-weight:700">325 кг · Прогресс</td></tr>
+    <tr><td class="mono">displaySemiBold</td><td class="mono">SpaceGrotesk_600SemiBold</td><td>h5</td><td style="font-family:var(--font-display);font-weight:600">Активная программа</td></tr>
+    <tr><td class="mono">displayMedium</td><td class="mono">SpaceGrotesk_500Medium</td><td>резерв</td><td style="font-family:var(--font-display);font-weight:500">Неделя</td></tr>
+    <tr><td class="mono">textRegular</td><td class="mono">Inter_400Regular</td><td>body, caption</td><td style="font-family:var(--font-text)">Жим лёжа, 5×5</td></tr>
+    <tr><td class="mono">textMedium</td><td class="mono">Inter_500Medium</td><td>label</td><td style="font-family:var(--font-text);font-weight:500">Подход</td></tr>
+    <tr><td class="mono">textSemiBold</td><td class="mono">Inter_600SemiBold</td><td>h6, labelBold, buttonSmall/Tiny</td><td style="font-family:var(--font-text);font-weight:600">Вес, кг</td></tr>
+    <tr><td class="mono">textBold</td><td class="mono">Inter_700Bold</td><td>button</td><td style="font-family:var(--font-text);font-weight:700">Начать тренировку</td></tr>
+  </table>
+  <div class="note">Загрузка шрифтов — <span class="src">@expo-google-fonts</span> в <span class="src">app/_layout.tsx</span> до релиза splash-гейта
+     (<span class="src">APP_LOADABLE_FONTS</span>). В Фигме: те же два семействе, веса 500/600/700 (Grotesk) и 400/500/600/700 (Inter).</div>
+</section>
+
+<section id="space">
+  <h2><span class="num">04</span>Отступы, радиусы, тени</h2>
+  <h3><span class="src">SPACING</span> — 4 / 8 / 12 / 16 / 24 / 32</h3>
+  <div class="bars" id="space-bars"></div>
+  <h3><span class="src">BORDER_RADIUS</span> — sm 6 · md 8 · lg 12 · xl 16 · full 9999</h3>
+  <div class="rad" id="rad-demo"></div>
+  <h3><span class="src">SHADOWS</span> — канон elevation (UX-3 audit-2): единственный владелец теней, инлайновые копии запрещены</h3>
+  <div class="shd" id="shd-demo"></div>
+  <table>
+    <tr><th>Уровень</th><th class="mono">shadowOffset</th><th class="mono">opacity</th><th class="mono">radius</th><th class="mono">elevation (Android)</th><th>Кто использует</th></tr>
+    <tr><td class="mono">sm</td><td class="mono">0 / 2</td><td class="num">0.08</td><td class="num">4</td><td class="num">2</td><td>AppCard default</td></tr>
+    <tr><td class="mono">md</td><td class="mono">0 / 4</td><td class="num">0.15</td><td class="num">8</td><td class="num">4</td><td>AppCard highlighted</td></tr>
+    <tr><td class="mono">lg</td><td class="mono">0 / 8</td><td class="num">0.22</td><td class="num">12</td><td class="num">8</td><td>резерв (крупные оверлеи)</td></tr>
+  </table>
+  <div class="note">В Фигме тень = box-shadow c цветов <span class="src">#000</span> и opacity из таблицы; <span class="src">elevation</span> — только Android-аналог, в макете не переносится.</div>
+</section>
+
+<section id="semantic">
+  <h2><span class="num">05</span>Семантические и категориальные цвета — <span class="src">semanticColors.ts</span></h2>
+  <p class="lead">Вне тем: mid-tone, читаемы в светлом и тёмном режимах одинаково. В Фигму — отдельная коллекция «Semantic», не привязанная к акценту.</p>
+  <div id="semantic-blocks"></div>
+</section>
+
+<section id="components">
+  <h2><span class="num">06</span>Компоненты — <span class="src">src/components/ui</span></h2>
+  <p class="lead">Приближение RN-стилей в CSS 1-в-1 по значениям из компонентов (ширина макета = базовые 375 px). Меняется вместе с переключателем тем сверху.</p>
+  <div class="phones">
+    <div class="phone" id="p1">
+      <p class="caption">AppButton · AppCard · AppBadge</p>
+      <div id="cmp-button"></div>
+      <div id="cmp-card"></div>
+      <div id="cmp-badge"></div>
+    </div>
+    <div class="phone" id="p2">
+      <p class="caption">AppInput · PillToggle · Toast · Skeleton</p>
+      <div id="cmp-input"></div>
+      <div id="cmp-pill"></div>
+      <div id="cmp-toast"></div>
+      <div id="cmp-skel"></div>
+    </div>
+    <div class="phone" id="p3">
+      <p class="caption">StateBlock · SheetShell · TabBar</p>
+      <div id="cmp-empty"></div>
+      <div id="cmp-sheet"></div>
+      <div id="cmp-tabs"></div>
+    </div>
+  </div>
+  <h3>Правила, зашитые в компоненты</h3>
+  <table>
+    <tr><th>Компонент</th><th>Канон из кода</th></tr>
+    <tr><td class="mono">PressableScale</td><td>Единственный press-примитив: spring-масштаб вместо activeOpacity; кнопки 0.97, карточки 0.985; хаптика light по умолчанию; <b>анимации opacity нет</b> (offscreen-буфер на Android → микрофризы)</td></tr>
+    <tr><td class="mono">AppButton</td><td>4 варианта (primary/secondary/danger/ghost) × 3 размера; disabled/loading → фон <span class="src">border</span>, текст <span class="src">textTertiary</span>, radius lg, typography.button</td></tr>
+    <tr><td class="mono">AppCard</td><td>radius lg; default padding lg + SHADOWS.sm; compact padding md без тени; highlighted padding xl + SHADOWS.md + рамка primary 1.5</td></tr>
+    <tr><td class="mono">AppBadge</td><td>full radius, рамка 1; info — единственная заливка через <span class="src">withAlpha(info, .125)</span>; размеры 11/12/14 px</td></tr>
+    <tr><td class="mono">AppInput</td><td>label labelBold; рамка border → error при ошибке; placeholder textTertiary; подпись ошибки captionSmall</td></tr>
+    <tr><td class="mono">PillToggle</td><td>подложка surfaceSecondary / md, активная пилюля primary / sm + собственная тень; minHeight 44 (tap target); хаптика light при смене</td></tr>
+    <tr><td class="mono">SheetShell</td><td>Канон bottom sheet (PRODUCT.md §3.6): max 85% высоты, grabber 36×4, enter 240 ms / exit 200 ms, dismiss — свайп 80 px или velocity 600, guard-окно 600 ms против протекающего тапа</td></tr>
+    <tr><td class="mono">StateBlock</td><td>Единое empty/error: иконка 26 в круге 56 с заливкой tone ×0.08, h5 + body + CTA primary</td></tr>
+    <tr><td class="mono">CustomTabBar</td><td>6 табов, radius full, pill под активным; иконка scale(22), pop 1.16 при фокусе; label fontScale(10)</td></tr>
+  </table>
+</section>
+
+<section id="motion">
+  <h2><span class="num">07</span>Движение — константы из компонентов</h2>
+  <table>
+    <tr><th>Где</th><th class="mono">Параметр</th><th>Значение</th></tr>
+    <tr><td>SheetShell enter</td><td class="mono">withTiming, delay 16</td><td class="num">240 ms</td></tr>
+    <tr><td>SheetShell exit / swipe</td><td class="mono">withTiming</td><td class="num">200 ms</td></tr>
+    <tr><td>Свайп-возврат листа</td><td class="mono">withSpring</td><td class="num">damping 28 · stiffness 320</td></tr>
+    <tr><td>Press (кнопка/карточка)</td><td class="mono">withSpring → scale</td><td class="num">damping 20 · stiffness 400 · mass 0.6 · 0.97 / 0.985, ~120 ms</td></tr>
+    <tr><td>Фокус таба</td><td class="mono">withSequence(withSpring 1.16)</td><td class="num">pop и затем возврат к 1</td></tr>
+    <tr><td>Toast / FadeIn</td><td class="mono">FadeIn</td><td class="num">размытие входа контента состояний</td></tr>
+    <tr><td>Хаптика</td><td class="mono">ImpactFeedbackStyle</td><td>light — press и смена пилюли; medium — тяжёлые дискретные действия</td></tr>
+  </table>
+  <div class="note">В прототипе Фигмы: Smart Animate 240 ms ease-out для открытия листов, 200 ms ease-in для закрытия; pressed-состояние — Scale 0.97, не смена прозрачности.</div>
+</section>
+
+<section id="adaptive">
+  <h2><span class="num">08</span>Адаптивность — <span class="src">scale()</span> и <span class="src">fontScale()</span></h2>
+  <p class="lead">База вёрстки 375 px; portrait зафиксирован в app.json, поэтому ширина читается один раз при загрузке модуля.</p>
+  <table>
+    <tr><th class="mono">320 px</th><th class="mono">375 px (база)</th><th class="mono">414 px</th></tr>
+    <tr><td>×0.853</td><td>×1.000</td><td>×1.104</td></tr>
+  </table>
+  <ul style="color:var(--page-muted)">
+    <li><span class="src">scale(size) = round(width / 375 × size)</span> — размеры, иконки, отступы, радиусы</li>
+    <li><span class="src">fontScale(size) = round(width / 375 × size × 0.95 + size × 0.05)</span> — шрифты: сжимаются мягче, чтобы на широких экранах текст не рос несоразмерно</li>
+    <li><span class="src">withAlpha(hex, a)</span> — типобезопасная прозрачность вместо конкатенации строк</li>
+  </ul>
+  <div class="note">Макеты в Фигме держим на 375 px (база формул). Для 320 и 414 — отдельные фреймы только там, где меняется перенос строк.</div>
+</section>
+
+<section id="figma">
+  <h2><span class="num">09</span>Как это перенести в Фигму</h2>
+  <p class="lead">Ниже — что во что ложится в Фигме. Рядом лежит <span class="src">design/tokens.json</span> — он генерируется скриптом
+     <span class="src">node design/build-tokens.js</span> прямо из <span class="src">theme.ts</span> / <span class="src">typography.ts</span> /
+     <span class="src">semanticColors.ts</span>, поэтому значения в нём не переписываются руками.
+     Ставишь в Фигму плагин <b>Tokens Studio</b> → Import JSON → получаем коллекцию переменных с 10 режимами.</p>
+  <h3>Что в tokens.json</h3>
+  <table>
+    <tr><th class="mono">Секция</th><th>Содержимое</th></tr>
+    <tr><td class="mono">theme.color.*</td><td>23 токена, у каждого <span class="src">$value</span> — объект из 10 режимов (<span class="mono">purple-light … pink-dark</span>) = Figma Variables c modes</td></tr>
+    <tr><td class="mono">theme.gradient.*</td><td>6 градиентов × 10 режимов, пары стопов</td></tr>
+    <tr><td class="mono">theme.typography.*</td><td>16 стилей: fontFamily / fontSize / lineHeight / fontWeight (числом) / letterSpacing / textCase</td></tr>
+    <tr><td class="mono">theme.space · radius · shadow</td><td>SPACING, BORDER_RADIUS, SHADOWS (в описании тени — opacity и android-elevation)</td></tr>
+    <tr><td class="mono">theme.layout · motion</td><td>база 375, 85% листа, tap target 44, длительности и spring-параметры</td></tr>
+    <tr><td class="mono">flatThemes</td><td>то же плоским списком: по 23 цвета на каждую из 10 тем — для импортёров без поддержки режимов</td></tr>
+    <tr><td class="mono">categorical</td><td>11 групп вне тем: уровни, макросы, тяжесть, зоны тела, фарма, тренды, toast, графики, анатомич. карта, мышцы</td></tr>
+    <tr><td class="mono">statics</td><td>GRADIENTS (fallback) и <span class="src">ON_STATIC_GRADIENT_COLOR</span></td></tr>
+  </table>
+  <div class="note">JSON можно не импортировать: в Фигме <b>Variables → Edit styles</b> не принимает design-tokens нативно, поэтому путь — плагин
+     (Tokens Studio for Figma, или любой DTCG-импортёр). Альтернатива без плагинов — перенести значения из этой страницы вручную по таблице ниже:
+     имена и значения уже разложены, остаётся их продублировать в Variables/Styles.</div>
+  <h3>Соответствие</h3>
+  <table>
+    <tr><th>Что</th><th>В Фигме</th><th>Комментарий</th></tr>
+    <tr><td>23 токена × 10 тем</td><td><b>Variables</b>, коллекция «Theme»: режим акцента (5) × режим света (2)</td><td>Режимы Figma-переменных совпадают с ключами <span class="mono">purple-light … pink-dark</span> в JSON, поэтому импорт ложится без ручного маппинга</td></tr>
+    <tr><td>Градиенты</td><td>Figma Styles «Gradient/*» (2-stop linear, 180°)</td><td>6 пар на тему</td></tr>
+    <tr><td>Типографика</td><td>Text Styles h1…h6, body, caption, label, button, overline</td><td>Size/Line-height из §03; семейства Space Grotesk + Inter (подключаются в Фигме как Google Fonts)</td></tr>
+    <tr><td>SPACING / RADIUS / SHADOWS</td><td>Number styles + Effect styles</td><td>Скоупы 4/8/12/16/24/32; sm 6 · md 8 · lg 12 · xl 16 · full 9999</td></tr>
+    <tr><td>Семантические цвета</td><td>Отдельная коллекция «Semantic»</td><td>Вне тем, не переключаются</td></tr>
+    <tr><td>Компоненты</td><td>Component с variants: button (4×3 + disabled/loading), card (3), badge (6×3), input (2), pill (N), sheet, empty-state</td><td>Autolayout: padding из SPACING, radius lg/xl, gap md</td></tr>
+    <tr><td>Экраны</td><td>Не в этом артефакте</td><td>Могу добрать скриншотами с эмулятора (AVD Pixel_8) и разложить как reference-борд</td></tr>
+  </table>
+  <div class="note">Токены, которые стоит переносить <b>как есть, без «улучшения»</b>: <span class="src">textTertiary === textSecondary</span> во всех светлых темах (зафиксировано под WCAG AA), <span class="src">primaryLight</span> в тёмных темах — это <b>тёмная</b> заливка, а не светлая (имя историческое), и <span class="src">overlay</span> в Кибере (тёмная) — 0.8, а не 0.7. Если в Фигме это «починят», макеты разойдутся с приложением.</div>
+  <h3>Как это не расехалось с кодом</h3>
+  <table>
+    <tr><th class="mono">Команда</th><th>Что делает</th></tr>
+    <tr><td class="mono">node design/build-tokens.js</td><td>пересобирает tokens.json из theme.ts / typography.ts / fonts.ts / semanticColors.ts</td></tr>
+    <tr><td class="mono">node design/verify-style-guide.js</td><td>сверяет и эту страницу, и tokens.json с кодом; exit != 0 при расхождении. Текущий прогон: 974 значения, 0 расхождений</td></tr>
+  </table>
+  <div class="note">Порядок: изменил тему в коде → <span class="src">build-tokens.js</span> → <span class="src">verify-style-guide.js</span> → импорт JSON в Figma.
+     Проверка подглядывает в <span class="src">src/constants/*</span> и <span class="src">src/styles/typography.ts</span>, так что «документ разошёлся с кодом» здесь ловится до того, как станет багом.</div>
+</section>
+
+</main>
+
+<div id="copy-hint">Скопировано</div>
+
+<script>
+const COLOR_ROLES = {
+  primary: 'Акцент / основное действие',
+  primaryLight: 'Заливка бейджа primary (в dark — тёмная)',
+  primaryDark: 'Акцент нажатый / акцент-2',
+  success: 'Успех,completion, PR',
+  successLight: 'Заливка success-бейджа',
+  successBorder: 'Рамка success (alpha .4)',
+  error: 'Ошибка, destructive',
+  errorLight: 'Заливка error-бейджа',
+  warning: 'Предупреждение',
+  warningLight: 'Заливка warning-бейджа',
+  warningBorder: 'Рамка warning (alpha .4)',
+  info: 'Информация',
+  background: 'Фон экрана + системный фон',
+  surface: 'Поверхность карточек, листов, инпутов',
+  surfaceSecondary: 'Подложка пилюль, вторичная поверхность',
+  textPrimary: 'Основной текст',
+  textSecondary: 'Вторичный текст',
+  textTertiary: 'Placeholder / подписи (AA 4.6:1)',
+  textInverse: 'Текст на primary/error',
+  border: 'Рамки, disabled-фон',
+  borderLight: 'Разделители, hover-подложки',
+  shadow: 'Хинт цвета тени',
+  overlay: 'Бэкдроп листа',
+};
+
+const THEMES = {
+  'purple-light': { label: 'Фиолетовая · светлая', name: 'Светлая', colors: {"primary":"#7c3aed","primaryLight":"#ede9fe","primaryDark":"#6b21a8","success":"#10b981","successLight":"#d1fae5","successBorder":"rgba(16, 185, 129, 0.4)","error":"#ef4444","errorLight":"#fee2e2","warning":"#f59e0b","warningLight":"#fef3c7","warningBorder":"rgba(245, 158, 11, 0.4)","info":"#3b82f6","background":"#faf5ff","surface":"#ffffff","surfaceSecondary":"#f9fafb","textPrimary":"#1f2937","textSecondary":"#6b7280","textTertiary":"#6b7280","textInverse":"#ffffff","border":"#e5e7eb","borderLight":"#f3f4f6","shadow":"rgba(0, 0, 0, 0.1)","overlay":"rgba(0, 0, 0, 0.5)"}, gradients: {"primary":["#7c3aed","#5b21b6"],"success":["#10b981","#059669"],"warning":["#f59e0b","#d97706"],"danger":["#ef4444","#dc2626"],"hero":["#8b5cf6","#3b82f6"],"dark":["#1e293b","#0f172a"]} },
+  'purple-dark': { label: 'Фиолетовая · тёмная', name: 'Тёмная', colors: {"primary":"#8b5cf6","primaryLight":"#4c1d95","primaryDark":"#a78bfa","success":"#34d399","successLight":"#064e3b","successBorder":"rgba(52, 211, 153, 0.4)","error":"#f87171","errorLight":"#7f1d1d","warning":"#fbbf24","warningLight":"#78350f","warningBorder":"rgba(251, 191, 36, 0.4)","info":"#60a5fa","background":"#0f172a","surface":"#1e293b","surfaceSecondary":"#334155","textPrimary":"#f8fafc","textSecondary":"#94a3b8","textTertiary":"#94a3b8","textInverse":"#0f172a","border":"#334155","borderLight":"#475569","shadow":"rgba(0, 0, 0, 0.5)","overlay":"rgba(0, 0, 0, 0.7)"}, gradients: {"primary":["#8b5cf6","#6d28d9"],"success":["#34d399","#10b981"],"warning":["#fbbf24","#f59e0b"],"danger":["#f87171","#ef4444"],"hero":["#a78bfa","#60a5fa"],"dark":["#1e293b","#0f172a"]} },
+  'orange-light': { label: 'Энергия · светлая', name: 'Энергия', colors: {"primary":"#FF6B35","primaryLight":"#FFF0EB","primaryDark":"#E85D2A","success":"#2ECC71","successLight":"#E8F8F0","successBorder":"rgba(46, 204, 113, 0.4)","error":"#EB4D4B","errorLight":"#FDEDEC","warning":"#F9CA24","warningLight":"#FEF9E7","warningBorder":"rgba(249, 202, 36, 0.4)","info":"#004E89","background":"#FFFFFF","surface":"#FFF8F5","surfaceSecondary":"#F5F5F5","textPrimary":"#2D3436","textSecondary":"#636E72","textTertiary":"#6b7280","textInverse":"#FFFFFF","border":"#E8E0DC","borderLight":"#F5F0ED","shadow":"rgba(232, 93, 42, 0.12)","overlay":"rgba(0, 0, 0, 0.5)"}, gradients: {"primary":["#FF6B35","#E85D2A"],"success":["#2ECC71","#27AE60"],"warning":["#F9CA24","#F39C12"],"danger":["#EB4D4B","#C0392B"],"hero":["#FF8C5A","#FF6B35"],"dark":["#3D1F14","#1A1412"]} },
+  'orange-dark': { label: 'Энергия · тёмная', name: 'Энергия (тёмная)', colors: {"primary":"#FF8C5A","primaryLight":"#3D1F14","primaryDark":"#FF6B35","success":"#2ECC71","successLight":"#0D2B1A","successBorder":"rgba(46, 204, 113, 0.4)","error":"#FF6B6B","errorLight":"#2D1010","warning":"#F9CA24","warningLight":"#2D2608","warningBorder":"rgba(249, 202, 36, 0.4)","info":"#5BA4D9","background":"#1A1412","surface":"#2A211E","surfaceSecondary":"#3D302C","textPrimary":"#F5F0ED","textSecondary":"#B8ADA8","textTertiary":"#94a3b8","textInverse":"#1A1412","border":"#3D302C","borderLight":"#4A3D38","shadow":"rgba(255, 107, 53, 0.2)","overlay":"rgba(0, 0, 0, 0.7)"}, gradients: {"primary":["#FF8C5A","#FF6B35"],"success":["#2ECC71","#27AE60"],"warning":["#F9CA24","#F39C12"],"danger":["#FF6B6B","#EB4D4B"],"hero":["#FFA07A","#FF8C5A"],"dark":["#2A211E","#1A1412"]} },
+  'blue-light': { label: 'Профи · светлая', name: 'Профи', colors: {"primary":"#0984E3","primaryLight":"#E3F2FD","primaryDark":"#075985","success":"#00CE7C","successLight":"#E6F9F1","successBorder":"rgba(0, 206, 124, 0.4)","error":"#FF4757","errorLight":"#FFE5E8","warning":"#FFA502","warningLight":"#FFF4E6","warningBorder":"rgba(255, 165, 2, 0.4)","info":"#0984E3","background":"#F8F9FA","surface":"#FFFFFF","surfaceSecondary":"#E8F4F8","textPrimary":"#2F3542","textSecondary":"#747D8C","textTertiary":"#6b7280","textInverse":"#FFFFFF","border":"#DFE4EA","borderLight":"#F1F2F6","shadow":"rgba(9, 132, 227, 0.1)","overlay":"rgba(0, 0, 0, 0.5)"}, gradients: {"primary":["#0984E3","#075985"],"success":["#00CE7C","#00B894"],"warning":["#FFA502","#E67E22"],"danger":["#FF4757","#C0392B"],"hero":["#74B9FF","#0984E3"],"dark":["#0A2540","#0A1628"]} },
+  'blue-dark': { label: 'Профи · тёмная', name: 'Профи (тёмная)', colors: {"primary":"#74B9FF","primaryLight":"#0A2540","primaryDark":"#0984E3","success":"#55EFC4","successLight":"#0A2B22","successBorder":"rgba(85, 239, 196, 0.4)","error":"#FF7675","errorLight":"#2D0F0F","warning":"#FDCB6E","warningLight":"#2D2608","warningBorder":"rgba(253, 203, 110, 0.4)","info":"#74B9FF","background":"#0A1628","surface":"#132238","surfaceSecondary":"#1E3350","textPrimary":"#F1F5F9","textSecondary":"#94A3B8","textTertiary":"#94a3b8","textInverse":"#0A1628","border":"#1E3350","borderLight":"#2A4263","shadow":"rgba(116, 185, 255, 0.15)","overlay":"rgba(0, 0, 0, 0.7)"}, gradients: {"primary":["#74B9FF","#0984E3"],"success":["#55EFC4","#00B894"],"warning":["#FDCB6E","#E67E22"],"danger":["#FF7675","#FF4757"],"hero":["#A0D2FF","#74B9FF"],"dark":["#132238","#0A1628"]} },
+  'neon-light': { label: 'Кибер · светлая', name: 'Кибер', colors: {"primary":"#00CC6A","primaryLight":"#E6FFF2","primaryDark":"#009E52","success":"#00CC6A","successLight":"#E6FFF2","successBorder":"rgba(0, 204, 106, 0.4)","error":"#FF3366","errorLight":"#FFE5EC","warning":"#FFAA00","warningLight":"#FFF4E0","warningBorder":"rgba(255, 170, 0, 0.4)","info":"#00D9FF","background":"#F5FFF9","surface":"#FFFFFF","surfaceSecondary":"#F0FFF6","textPrimary":"#0F2419","textSecondary":"#3D6B52","textTertiary":"#6b7280","textInverse":"#FFFFFF","border":"#C8F0D9","borderLight":"#E6FFF2","shadow":"rgba(0, 204, 106, 0.15)","overlay":"rgba(0, 0, 0, 0.5)"}, gradients: {"primary":["#00CC6A","#009E52"],"success":["#00CC6A","#009E52"],"warning":["#FFAA00","#E69500"],"danger":["#FF3366","#CC2952"],"hero":["#00FF88","#00CC6A"],"dark":["#0F2419","#0A1A12"]} },
+  'neon-dark': { label: 'Кибер · тёмная', name: 'Кибер (тёмная)', colors: {"primary":"#00FF88","primaryLight":"#003D22","primaryDark":"#00CC6A","success":"#00FF88","successLight":"#003D22","successBorder":"rgba(0, 255, 136, 0.4)","error":"#FF3366","errorLight":"#3D0018","warning":"#FFAA00","warningLight":"#3D2900","warningBorder":"rgba(255, 170, 0, 0.4)","info":"#00D9FF","background":"#0A0A0A","surface":"#141414","surfaceSecondary":"#1F1F1F","textPrimary":"#FFFFFF","textSecondary":"#B0B0B0","textTertiary":"#94a3b8","textInverse":"#0A0A0A","border":"#2A2A2A","borderLight":"#333333","shadow":"rgba(0, 255, 136, 0.2)","overlay":"rgba(0, 0, 0, 0.8)"}, gradients: {"primary":["#00FF88","#00CC6A"],"success":["#00FF88","#00CC6A"],"warning":["#FFAA00","#E69500"],"danger":["#FF3366","#CC2952"],"hero":["#00FF88","#00D9FF"],"dark":["#141414","#0A0A0A"]} },
+  'pink-light': { label: 'Закат · светлая', name: 'Закат', colors: {"primary":"#E91E63","primaryLight":"#FCE4EC","primaryDark":"#C2185B","success":"#4CAF50","successLight":"#E8F5E9","successBorder":"rgba(76, 175, 80, 0.4)","error":"#F44336","errorLight":"#FFEBEE","warning":"#FF9800","warningLight":"#FFF3E0","warningBorder":"rgba(255, 152, 0, 0.4)","info":"#2196F3","background":"#FFF5F8","surface":"#FFFFFF","surfaceSecondary":"#FCE4EC","textPrimary":"#2C1820","textSecondary":"#6B4A55","textTertiary":"#6b7280","textInverse":"#FFFFFF","border":"#F5D5DE","borderLight":"#FAE8EE","shadow":"rgba(233, 30, 99, 0.12)","overlay":"rgba(0, 0, 0, 0.5)"}, gradients: {"primary":["#E91E63","#C2185B"],"success":["#4CAF50","#388E3C"],"warning":["#FF9800","#F57C00"],"danger":["#F44336","#D32F2F"],"hero":["#FF5C8D","#E91E63"],"dark":["#2C1820","#1A0F14"]} },
+  'pink-dark': { label: 'Закат · тёмная', name: 'Закат (тёмная)', colors: {"primary":"#FF5C8D","primaryLight":"#3D0F1F","primaryDark":"#E91E63","success":"#66BB6A","successLight":"#0F2B12","successBorder":"rgba(102, 187, 106, 0.4)","error":"#EF5350","errorLight":"#2D0F0F","warning":"#FFB74D","warningLight":"#2D1F0A","warningBorder":"rgba(255, 183, 77, 0.4)","info":"#64B5F6","background":"#1A0F14","surface":"#2A1A22","surfaceSecondary":"#3D2630","textPrimary":"#FCE4EC","textSecondary":"#B88A99","textTertiary":"#94a3b8","textInverse":"#1A0F14","border":"#3D2630","borderLight":"#4A3038","shadow":"rgba(255, 92, 141, 0.2)","overlay":"rgba(0, 0, 0, 0.7)"}, gradients: {"primary":["#FF5C8D","#E91E63"],"success":["#66BB6A","#4CAF50"],"warning":["#FFB74D","#FF9800"],"danger":["#EF5350","#F44336"],"hero":["#FF80AB","#FF5C8D"],"dark":["#2A1A22","#1A0F14"]} },
+};
+
+const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
+const RADIUS = { sm: 6, md: 8, lg: 12, xl: 16, full: 9999 };
+const SHADOWS = {
+  sm: { offset: [0, 2], opacity: 0.08, radius: 4, elevation: 2 },
+  md: { offset: [0, 4], opacity: 0.15, radius: 8, elevation: 4 },
+  lg: { offset: [0, 8], opacity: 0.22, radius: 12, elevation: 8 },
+};
+const TYPE = [
+  ['h1', 28, 34, 'Space Grotesk', 700, 'Экранный заголовок'],
+  ['h2', 24, 30, 'Space Grotesk', 700, 'Крупный блок'],
+  ['h3', 20, 26, 'Space Grotesk', 700, 'Заголовок карточки-героя'],
+  ['h4', 18, 24, 'Space Grotesk', 700, 'Подзаголовок'],
+  ['h5', 16, 22, 'Space Grotesk', 600, 'Заголовок листа, StateBlock'],
+  ['h6', 14, 20, 'Inter', 600, 'Мелкий заголовок секции'],
+  ['body', 14, 20, 'Inter', 400, 'Основной текст'],
+  ['bodySmall', 13, 18, 'Inter', 400, 'Вторичный текст'],
+  ['caption', 12, 16, 'Inter', 400, 'Подписи'],
+  ['captionSmall', 11, 14, 'Inter', 400, 'Ошибки инпутов, таймстемпы'],
+  ['label', 14, 20, 'Inter', 500, 'Лейблы, пилюли'],
+  ['labelBold', 14, 20, 'Inter', 600, 'Лейбл инпута'],
+  ['button', 16, 22, 'Inter', 700, 'Кнопка medium/large'],
+  ['buttonSmall', 14, 20, 'Inter', 600, 'Кнопка small'],
+  ['buttonTiny', 12, 16, 'Inter', 600, 'Бейджи'],
+  ['overline', 12, null, 'Inter', 600, 'Надзаголовок секции, letterSpacing 0.5, UPPERCASE'],
+];
+const SEMANTIC = {
+  'Уровни сложности (LEVEL_COLORS)': { beginner: '#4CAF50', intermediate: '#FF9800', advanced: '#F44336' },
+  'Макронутриенты (MACRO_COLORS)': { calories: '#F44336', proteins: '#4CAF50', fats: '#FFC107', carbs: '#2196F3', water: '#00BCD4', burned: '#FF5722' },
+  'Тяжесть травм (SEVERITY_COLORS)': { low: '#4CAF50', medium: '#FFC107', high: '#F44336' },
+  'Зоны тела (BODY_PART_COLORS)': { shoulder: '#2196F3', elbow: '#2196F3', wrist: '#2196F3', back: '#9C27B0', neck: '#9C27B0', hip: '#4CAF50', knee: '#4CAF50', ankle: '#4CAF50' },
+  'Группы зон (BODY_ZONE_COLORS)': { arms: '#2196F3', torso: '#9C27B0', legs: '#4CAF50' },
+  'Фармакология (PHARMA_COLORS)': { steroids: '#EF4444', gh: '#3B82F6', combo: '#8B5CF6' },
+  'Тренд (TREND_COLORS)': { up: '#4CAF50', down: '#F44336' },
+  'Toast (TOAST_COLORS)': { success: '#10b981', error: '#ef4444', info: '#7c3aed' },
+  'Линии графиков (CHART_LINE_COLORS)': { series1: '#6C5CE7', series2: '#00B894', series3: '#FDCB6E' },
+  'Анатомич. карта (BODY_MAP_FALLBACK_COLORS)': { defaultFill: '#3f3f3f', intensity1: '#0984e3', intensity2: '#74b9ff', selectedStroke: '#000000' },
+  'Группы мышц (getMuscleColor)': { грудь: '#EF4444', спина: '#8B5CF6', плечи: '#F59E0B', руки: '#3B82F6', ноги: '#10B981', пресс: '#EC4899' },
+};
+
+/* ---------- helpers ---------- */
+function toRgb(c) {
+  c = c.trim();
+  if (c.startsWith('rgba')) return c.match(/[\d.]+/g).slice(0, 3).map(Number);
+  if (c.startsWith('#')) {
+    const h = c.slice(1);
+    return [0, 2, 4].map(i => parseInt(h.length === 3 ? h[i] + h[i] : h.slice(i, i + 2), 16));
+  }
+  return [0, 0, 0];
+}
+function lum(c) {
+  return toRgb(c).map(v => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); })
+    .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+}
+function contrast(fg, bg) {
+  const l1 = lum(fg), l2 = lum(bg);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+function alpha(c) { const m = c.match(/[\d.]+/g); return c.includes('rgba') && m ? Number(m[3]) : 1; }
+function copy(text, el) {
+  navigator.clipboard?.writeText(text);
+  const hint = document.getElementById('copy-hint');
+  hint.textContent = text;
+  hint.classList.add('on');
+  setTimeout(() => hint.classList.remove('on'), 1200);
+  if (el) { el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 1200); }
+}
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+/* ---------- render: picker ---------- */
+const picker = document.getElementById('picker');
+Object.entries(THEMES).forEach(([key, t]) => {
+  const b = document.createElement('button');
+  b.dataset.key = key;
+  b.innerHTML = `<span class="dot" style="background:${t.colors.primary}"></span>${t.label}`;
+  b.onclick = () => apply(key);
+  picker.appendChild(b);
+});
+
+/* ---------- render: static blocks ---------- */
+(function spaceBars() {
+  const el = document.getElementById('space-bars');
+  el.innerHTML = Object.entries(SPACING).map(([k, v]) =>
+    `<div class="bar"><i style="width:${v * 4}px"></i><span class="mono" style="color:#cfd6e4;width:64px">${k}</span><span>${v} px${v >= 16 ? ' · lg+ — блоки' : ' · sm — уплотнение'}</span></div>`).join('');
+})();
+(function radius() {
+  document.getElementById('rad-demo').innerHTML = Object.entries(RADIUS).map(([k, v]) =>
+    `<div style="border-radius:${v > 100 ? 999 : v}px">${k}<br><span style="opacity:.6">${v > 100 ? 'full' : v}</span></div>`).join('');
+})();
+(function shadows() {
+  document.getElementById('shd-demo').innerHTML = Object.entries(SHADOWS).map(([k, s]) =>
+    `<div style="box-shadow:${s.offset[0]}px ${s.offset[1]}px ${s.radius}px rgba(0,0,0,${s.opacity})">SHADOWS.${k}</div>`).join('');
+})();
+(function typeDemo() {
+  document.getElementById('type-demo').innerHTML = TYPE.map(([k, size, lh, fam, w, use]) =>
+    `<div class="type-row">
+       <span style="font-family:'${fam}',sans-serif;font-size:${size}px;line-height:${lh || 1.2}px;font-weight:${w};color:#e8ecf3">${k === 'overline' ? 'Название недели' : 'Жим лёжа 5×5'}</span>
+       <span class="spec">${size}/${lh || '—'} · ${fam} ${w}${k === 'overline' ? ' · ls .5 · upper' : ''}</span>
+     </div>
+     <div style="font-size:11.5px;color:#6b7488;margin:-8px 0 12px">${esc(use)} — <span class="mono">typography.${k}</span></div>`).join('');
+})();
+(function semanticBlocks() {
+  document.getElementById('semantic-blocks').innerHTML = Object.entries(SEMANTIC).map(([title, map]) => `
+    <h3>${esc(title)}</h3>
+    <div class="grid">${Object.entries(map).map(([k, v]) => `
+      <div class="sw" onclick="copy('${v}', this)">
+        <div class="chip" style="background:${v}"></div>
+        <div class="meta"><div class="role">${esc(k)}</div><div class="hex">${v}</div></div>
+      </div>`).join('')}
+    </div>`).join('');
+})();
+
+/* ---------- render: theme-dependent ---------- */
+function apply(key) {
+  const t = THEMES[key];
+  document.querySelectorAll('#picker button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+
+  // CSS vars for the phone demos
+  document.documentElement.style.setProperty('--overlay', t.colors.overlay);
+  document.querySelectorAll('.phone').forEach(p => Object.entries(t.colors).forEach(([k, v]) => p.style.setProperty('--' + k, v)));
+
+  // colors grid
+  document.getElementById('colors-grid').innerHTML = Object.entries(t.colors).map(([k, v]) => {
+    const onSurface = ['textPrimary', 'textSecondary', 'textTertiary'].includes(k);
+    const cr = onSurface ? contrast(v, t.colors.surface) : null;
+    return `<div class="sw" onclick="copy('${v}', this)">
+      <div class="chip" style="background:${t.colors.surface};display:grid;place-items:center">
+        <div style="width:70%;height:26px;border-radius:5px;background:${v};box-shadow:inset 0 0 0 1px rgba(128,128,128,.25)"></div>
+      </div>
+      <div class="meta">
+        <div class="role">${esc(COLOR_ROLES[k] || k)}</div>
+        <div class="tok">${k}</div>
+        <div class="hex">${v}${alpha(v) < 1 ? ' · α' + alpha(v) : ''}</div>
+        ${cr ? `<div class="cc">на surface ${cr.toFixed(2)}:1 — ${cr >= 4.5 ? 'AA' : 'ниже AA'}</div>` : ''}
+      </div></div>`;
+  }).join('');
+
+  // gradients
+  document.getElementById('grad-grid').innerHTML = Object.entries(t.gradients).map(([k, [a, b]]) =>
+    `<div style="background:linear-gradient(180deg,${a},${b})" onclick="copy('${a}, ${b}', this)"><span>gradients.${k}</span><span>${a} → ${b}</span></div>`).join('');
+
+  renderComponents(t);
+}
+
+function renderComponents(t) {
+  const c = t.colors;
+  const badgeStyle = (bg, fg, bd) => `background:${bg};color:${fg};border-color:${bd}`;
+  const infoFill = (hex, a) => { const [r, g, b2] = toRgb(hex); return `rgba(${r}, ${g}, ${b2}, ${a})`; };
+
+  document.getElementById('cmp-button').innerHTML = `
+    <div class="demo-label">AppButton — variants (medium)</div>
+    <div class="c-row" style="flex-direction:column;align-items:stretch">
+      <button class="c-btn primary m">Начать тренировку</button>
+      <button class="c-btn secondary m">Изменить программу</button>
+      <button class="c-btn danger m">Удалить подход</button>
+      <button class="c-btn ghost m">Отмена</button>
+    </div>
+    <div class="demo-label">sizes — small / medium / large · loading · disabled</div>
+    <div class="c-row">
+      <button class="c-btn primary s">Сохранить</button>
+      <button class="c-btn primary m">Сохранить</button>
+      <button class="c-btn primary l">Финиш</button>
+      <button class="c-btn primary m">⟳ &nbsp;Загрузка…</button>
+      <button class="c-btn off m" disabled>Недоступно</button>
+    </div>`;
+
+  document.getElementById('cmp-card').innerHTML = `
+    <div class="demo-label">AppCard — default / compact / highlighted</div>
+    <div class="c-card"><h4>Пн · Грудь</h4><p>8 упражнений · 420 тн</p></div>
+    <div class="c-card compact"><p style="color:${c.textPrimary}">Подход 5 · 100 кг × 3 · RPE 8</p></div>
+    <div class="c-card hl"><div class="c-big" style="font-family:var(--font-display);font-weight:700;color:${c.textPrimary}">+12,5 кг</div><p>личный рекорд за неделю</p></div>`;
+
+  document.getElementById('cmp-badge').innerHTML = `
+    <div class="demo-label">AppBadge — 6 вариантов × 3 размера</div>
+    <div class="c-row">
+      <span class="c-badge m" style="${badgeStyle(c.surfaceSecondary, c.textSecondary, c.border)}">default</span>
+      <span class="c-badge m" style="${badgeStyle(c.primaryLight, c.primary, c.primary)}">primary</span>
+      <span class="c-badge m" style="${badgeStyle(c.successLight, c.success, c.success)}">success</span>
+      <span class="c-badge m" style="${badgeStyle(c.warningLight, c.warning, c.warning)}">warning</span>
+      <span class="c-badge m" style="${badgeStyle(c.errorLight, c.error, c.error)}">error</span>
+      <span class="c-badge m" style="${badgeStyle(infoFill(c.info, .125), c.info, c.info)}">info</span>
+    </div>
+    <div class="c-row" style="margin-top:8px">
+      <span class="c-badge s" style="${badgeStyle(c.primaryLight, c.primary, c.primary)}">small 11</span>
+      <span class="c-badge m" style="${badgeStyle(c.primaryLight, c.primary, c.primary)}">medium 12</span>
+      <span class="c-badge l" style="${badgeStyle(c.primaryLight, c.primary, c.primary)}">large 14</span>
+    </div>`;
+
+  document.getElementById('cmp-input').innerHTML = `
+    <div class="demo-label">AppInput — idle / focus-с placeholder / error</div>
+    <div class="c-input"><div class="lb" style="color:${c.textPrimary}">Вес, кг</div>
+      <div class="box"><input style="all:unset;flex:1;color:${c.textPrimary};font:inherit" value="102.5"></div></div>
+    <div class="c-input"><div class="lb" style="color:${c.textPrimary}">Повторы</div>
+      <div class="box"><span class="ph">Сколько сделали</span></div></div>
+    <div class="c-input err"><div class="lb" style="color:${c.textPrimary}">Подход</div>
+      <div class="box" style="color:${c.textPrimary}">—</div>
+      <div class="er">Укажи вес перед тем как отмечать подход</div></div>`;
+
+  document.getElementById('cmp-pill').innerHTML = `
+    <div class="demo-label">PillToggle (MuscleLoadModeToggle)</div>
+    <div class="c-pill"><div class="on">Объём</div><div>Интенсивность</div><div>RPE</div></div>
+    <div style="font-size:12px;line-height:16px;color:${c.textTertiary};margin-top:8px">Считает нагрузку по выбранной метрике — можно переключать в любой момент.</div>`;
+
+  document.getElementById('cmp-toast').innerHTML = `
+    <div class="demo-label">Toast (TOAST_COLORS)</div>
+    <div class="c-toast" style="background:${SEMANTIC['Toast (TOAST_COLORS)'].success}">✓ Сохранено</div>
+    <div class="c-toast" style="background:${SEMANTIC['Toast (TOAST_COLORS)'].error}">✕ Нет соединения</div>`;
+
+  document.getElementById('cmp-skel').innerHTML = `
+    <div class="demo-label">Skeleton / skeletons.tsx — состояние загрузки</div>
+    <div class="c-card" style="box-shadow:none">
+      <div class="c-skel" style="width:45%"></div>
+      <div class="c-skel" style="width:80%"></div>
+      <div class="c-skel" style="width:65%;margin-bottom:0"></div>
+    </div>`;
+
+  document.getElementById('cmp-empty').innerHTML = `
+    <div class="demo-label">StateBlock — empty</div>
+    <div class="c-empty">
+      <div class="circle" style="background:${infoFill(c.primary, .08)}"><span style="color:${c.primary};font-size:26px">◇</span></div>
+      <div class="t" style="color:${c.textPrimary}">Нет активной программы</div>
+      <div class="d">Выбери готовую или собери свою — начнём с этой недели.</div>
+      <button class="c-btn primary m" style="margin:0 auto">Выбрать программу</button>
+    </div>`;
+
+  document.getElementById('cmp-sheet').innerHTML = `
+    <div class="demo-label">SheetShell — canonical bottom sheet</div>
+    <div class="c-sheet">
+      <div class="grab"></div>
+      <div class="hd"><span style="color:${c.textPrimary}">Добавить упражнение</span><div class="x">✕</div></div>
+      <div class="c-card compact" style="margin-bottom:8px"><p style="color:${c.textPrimary}">Жим лёжа · грудь</p></div>
+      <div class="c-card compact" style="margin-bottom:0"><p style="color:${c.textPrimary}">Тяга в наклоне · спина</p></div>
+    </div>`;
+
+  document.getElementById('cmp-tabs').innerHTML = `
+    <div class="demo-label">CustomTabBar — 6 табов, pill под активным</div>
+    <div class="c-tabs">
+      <div class="t on"><span class="i">⌂</span>Главная</div>
+      <div class="t"><span class="i">☆</span>Программы</div>
+      <div class="t"><span class="i">◈</span>Тренировки</div>
+      <div class="t"><span class="i">▤</span>Упражнения</div>
+      <div class="t"><span class="i">∿</span>Прогресс</div>
+      <div class="t"><span class="i">○</span>Профиль</div>
+    </div>`;
+}
+
+apply('purple-dark');
+</script>
+</body>
+</html>
