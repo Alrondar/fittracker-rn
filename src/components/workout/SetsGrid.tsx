@@ -1,15 +1,28 @@
 // src/components/workout/SetsGrid.tsx
 // Сетка подходов + чипы RPE + прогрессия (FEAT-1.1) + автостарт отдыха (FEAT-1.2).
 // 05.08.2026: инлайн-дубли чипа/ползунка удалены — используются SetFeedbackChip
-// из SetFeedbackControl.tsx и RpeOverlay.tsx (FEAT-7 v2 / UX-16, тапабельная шкала).
+// из SetFeedbackControl.tsx и редактор шкалы (FEAT-7 v2 / UX-16, тапабельная
+// шкала; с 26.09 — RpeEditor).
 // 06.08.2026 (FEAT-1.1 v2): хинт показывает прошлые данные АКТИВНОГО сета (первого
 // незавершённого) и переключается по мере заполнения; прогрессия — чипами
 // +2.5/+5/+10/+15/+20 в активный сет; custom-ввод удалён.
 // 06.08.2026: чипы в текущих единицах (кг → кг-шаги, lb → реальные lb-номиналы);
 // возвращена ручная кнопка «Отдых N с» как фолбэк автостарта (FEAT-1.2).
+// UX-RPE-1 (26.09): RpeOverlay (тёмная карточка поверх таблицы, авто-коммит
+// 700 мс) заменён инлайн-морфингом: шапка + строки таблицы схлопываются по
+// высоте, на их место разворачивается RpeEditor (двойной тап: выбор →
+// подтверждение). Высота анимируется Reanimated; таблица не перемонтируется.
 import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, X, Lightbulb } from 'lucide-react-native';
+import { TrendingUp, X, Lightbulb, Gauge } from 'lucide-react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -32,7 +45,7 @@ import {
   weightPlaceholder,
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip } from './SetFeedbackControl';
-import { RpeOverlay } from './RpeOverlay';
+import { RpeEditor } from './RpeEditor';
 import { PlateMathRow, plateMathVisible } from './PlateMathRow';
 import {
   calculateProgression,
@@ -442,6 +455,96 @@ export const SetsGrid = memo(function SetsGrid({
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
   const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
 
+  // ============================================================================
+  // UX-RPE-1: морфинг «таблица ⇄ RPE-редактор»
+  // morph: 0 = таблица, 1 = редактор. Таблица НЕ перемонтируется (TextInput-
+  // строки остаются в дереве, только pointerEvents none + opacity) — уроки
+  // SG-2/FX-2: не трогаем нативный responder. Высота контейнера анимируется
+  // между измеренными tableH/editorH; редактор лежит absolute (top/left/right,
+  // БЕЗ bottom) — его onLayout даёт естественную высоту.
+  // ============================================================================
+  const morph = useSharedValue(0);
+  const tableHSV = useSharedValue(0);
+  const editorHSV = useSharedValue(0);
+  const widthHSV = useSharedValue(0);
+  const editingIdxSV = useSharedValue(-1);
+  const totalSetsSV = useSharedValue(0);
+  const [editorMounted, setEditorMounted] = useState(false);
+  const [editorReady, setEditorReady] = useState(false);
+  // Индекс сета РЕДАКТОРА: feedbackSetIndex гаснет сразу при закрытии, а
+  // editorSetIndex живёт до конца анимации — иначе key поменялся бы на
+  // null-маунт, редактор ре-смонтировался и его onLayout повторно открыл
+  // морфинг (закрытие отменялось на полпути).
+  const [editorSetIndex, setEditorSetIndex] = useState(0);
+  const editingActive = feedbackSetIndex !== null;
+
+  useEffect(() => {
+    if (editorMounted && editorReady) {
+      morph.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorMounted, editorReady]);
+
+  const closeRpeEditor = useCallback(() => {
+    setFeedbackSetIndex(null);
+    morph.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.cubic) }, (finished) => {
+      'worklet';
+      if (finished) runOnJS(setEditorMounted)(false);
+    });
+    // morph/setEditorMounted — стабильные ref (Reanimated/useState), .value
+    // намеренно не депенденси (паттерн SheetShell).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleTableLayout = useCallback(
+    (e: { nativeEvent: { layout: { width: number; height: number } } }) => {
+      tableHSV.value = e.nativeEvent.layout.height;
+      widthHSV.value = e.nativeEvent.layout.width;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const handleEditorLayout = useCallback(
+    (e: { nativeEvent: { layout: { height: number } } }) => {
+      editorHSV.value = e.nativeEvent.layout.height;
+      setEditorReady(true);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const morphStyle = useAnimatedStyle(() => ({
+    // tableHSV — высота табличного блока БЕЗ паддингов setsContent (padding
+    // md сверху/снизу добавляем); editorHSV — высота самого редактора (его
+    // wrapper несёт собственный padding md, absolute-координаты в RN не
+    // учитывают padding родителя).
+    height: interpolate(
+      morph.value,
+      [0, 1],
+      [tableHSV.value + SPACING.md * 2, editorHSV.value || tableHSV.value + SPACING.md * 2]
+    ),
+  }));
+
+  const tableFadeStyle = useAnimatedStyle(() => ({
+    opacity: 1 - morph.value,
+  }));
+
+  const editorFadeStyle = useAnimatedStyle(() => ({
+    opacity: morph.value,
+  }));
+
+  // F3-наследие: разворот шкалы с origin из тапнутой колонки.
+  const editorWrapStyle = useAnimatedStyle(() => {
+    const s = 0.94 + morph.value * 0.06;
+    let tx = 0;
+    if (editingIdxSV.value >= 0 && totalSetsSV.value > 0 && widthHSV.value > 0) {
+      const originX = ((editingIdxSV.value + 0.5) / totalSetsSV.value - 0.5) * widthHSV.value;
+      tx = originX * (1 - s);
+    }
+    return { opacity: morph.value, transform: [{ translateX: tx }, { scale: s }] };
+  });
+
   // ✅ Мемоизация вычислений
   const completedSets = useMemo(
     () => sets.filter((s) => isSetCompleted(s)).length,
@@ -484,13 +587,6 @@ export const SetsGrid = memo(function SetsGrid({
   // ✅ Стабильные функции конвертации
   const toDisplay = useCallback((kgStr: string) => weightToDisplay(kgStr, unit), [unit]);
   const fromDisplay = useCallback((disp: string) => weightFromDisplay(disp, unit), [unit]);
-
-  // ✅ Мемоизация активного сета (для редактора RPE)
-  const activeSet = useMemo(
-    () =>
-      feedbackSetIndex !== null && feedbackSetIndex < sets.length ? sets[feedbackSetIndex] : null,
-    [feedbackSetIndex, sets]
-  );
 
   // FEAT-1.1 v2: активный сет = первый незавершённый; хинт показывает ЕГО прошлые
   // данные и переключается по мере заполнения сетов.
@@ -739,9 +835,42 @@ export const SetsGrid = memo(function SetsGrid({
     setFeedbackState({ status: 'resolved' });
   }, [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback]);
 
-  const handleOpenFeedback = useCallback((setIndex: number) => {
-    setFeedbackSetIndex(setIndex);
-  }, []);
+  // UX-RPE-1: тап по чипу открывает инлайн-редактор (гейт как раньше — только
+  // завершённый сет; незавершённым RPE не заводим).
+  const handleOpenFeedback = useCallback(
+    (setIndex: number) => {
+      const set = sets[setIndex];
+      if (!set || !isSetCompleted(set)) return;
+      editingIdxSV.value = setIndex;
+      totalSetsSV.value = sets.length;
+      setEditorSetIndex(setIndex);
+      setEditorReady(false);
+      setEditorMounted(true);
+      setFeedbackSetIndex(setIndex);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sets, isSetCompleted]
+  );
+
+  // Подтверждение вторым тапом: запись патча + морфинг таблицы обратно.
+  const handleRpeConfirm = useCallback(
+    (patch: SetFeedbackPatch) => {
+      if (feedbackSetIndex === null) return;
+      updateSetFeedback(exerciseIndex, feedbackSetIndex, patch);
+      closeRpeEditor();
+    },
+    [feedbackSetIndex, exerciseIndex, updateSetFeedback, closeRpeEditor]
+  );
+
+  const handleRpeReset = useCallback(() => {
+    if (feedbackSetIndex === null) return;
+    updateSetFeedback(exerciseIndex, feedbackSetIndex, {
+      rpe: null,
+      rir: null,
+      difficulty: null,
+    });
+    closeRpeEditor();
+  }, [feedbackSetIndex, exerciseIndex, updateSetFeedback, closeRpeEditor]);
 
   // ENG-13: toggle warmup flag for a set
   // Auto-add new working sets to maintain the original number of working sets.
@@ -800,289 +929,367 @@ export const SetsGrid = memo(function SetsGrid({
         { backgroundColor: colors.surfaceSecondary, borderWidth: 0 },
       ]}
     >
-      <View style={[cardStyles.setsHeader, { backgroundColor: 'transparent' }]}>
-        <TrendingUp size={16} color={colors.primary} strokeWidth={2} />
-        <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>Подходы</Text>
-        <Text
-          style={[
-            typography.captionSmall,
-            {
-              color: allSetsDone ? colors.success : colors.textTertiary,
-              fontWeight: '700',
-              marginLeft: 'auto',
-            },
-          ]}
+      {/* UX-RPE-1: шапка морфится «Подходы N/M» ⇄ «RPE · подход N» + ✕.
+          Обе стопки лежат в дереве (редактор — absolute, высота шапки =
+          табличная), кроссфейд по morph. */}
+      <View style={{ position: 'relative' }}>
+        <Animated.View
+          style={[cardStyles.setsHeader, { backgroundColor: 'transparent' }, tableFadeStyle]}
+          pointerEvents={editingActive ? 'none' : 'auto'}
         >
-          {allSetsDone ? '✓ ' : ''}
-          {completedSets}/{sets.length}
-        </Text>
-        {/* UX-16 D5: 💡 button для раскрытия RecommendationCard */}
-        {recommendation && recommendation.action !== 'no_data' && (
-          <TouchableOpacity
-            onPress={toggleRecommendation}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={
-              recommendationCollapsed ? 'Показать рекомендацию' : 'Скрыть рекомендацию'
-            }
-            style={{
-              marginLeft: SPACING.sm,
-              padding: SPACING.xs,
-              borderRadius: BORDER_RADIUS.sm,
-              backgroundColor: recommendationCollapsed
-                ? withAlpha(colors.primary, 0.082)
-                : withAlpha(colors.primary, 0.188),
-              borderWidth: 1,
-              borderColor: recommendationCollapsed
-                ? withAlpha(colors.primary, 0.251)
-                : withAlpha(colors.primary, 0.376),
-            }}
+          <TrendingUp size={16} color={colors.primary} strokeWidth={2} />
+          <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>Подходы</Text>
+          <Text
+            style={[
+              typography.captionSmall,
+              {
+                color: allSetsDone ? colors.success : colors.textTertiary,
+                fontWeight: '700',
+                marginLeft: 'auto',
+              },
+            ]}
           >
-            <Lightbulb size={16} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
+            {allSetsDone ? '✓ ' : ''}
+            {completedSets}/{sets.length}
+          </Text>
+          {/* UX-16 D5: 💡 button для раскрытия RecommendationCard */}
+          {recommendation && recommendation.action !== 'no_data' && (
+            <TouchableOpacity
+              onPress={toggleRecommendation}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={
+                recommendationCollapsed ? 'Показать рекомендацию' : 'Скрыть рекомендацию'
+              }
+              style={{
+                marginLeft: SPACING.sm,
+                padding: SPACING.xs,
+                borderRadius: BORDER_RADIUS.sm,
+                backgroundColor: recommendationCollapsed
+                  ? withAlpha(colors.primary, 0.082)
+                  : withAlpha(colors.primary, 0.188),
+                borderWidth: 1,
+                borderColor: recommendationCollapsed
+                  ? withAlpha(colors.primary, 0.251)
+                  : withAlpha(colors.primary, 0.376),
+              }}
+            >
+              <Lightbulb size={16} color={colors.primary} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+
+        {editorMounted && (
+          <Animated.View
+            style={[
+              cardStyles.setsHeader,
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: colors.surface,
+              },
+              editorFadeStyle,
+            ]}
+            pointerEvents={editingActive ? 'auto' : 'none'}
+          >
+            <Gauge size={16} color={colors.primary} strokeWidth={2} />
+            <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>
+              RPE · подход {editorSetIndex + 1}
+            </Text>
+            <TouchableOpacity
+              onPress={closeRpeEditor}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Отменить ввод RPE"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{
+                marginLeft: 'auto',
+                width: 32,
+                height: 32,
+                borderRadius: BORDER_RADIUS.full,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surfaceSecondary,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              <X size={16} color={colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </View>
 
-      <View style={[cardStyles.setsContent, { backgroundColor: colors.surface }]}>
-        {/* FEAT-1.1 v2: хинт активного сета + рекомендации + калькулятор блинов.
-            Структура разделена: предыдущие данные — опциональны,
-            RecommendationCard и PlateMathRow — всегда видимы при наличии данных. */}
-        {progressionSetIndex !== null && hintVisible && (
-          <View
-            style={{
-              marginBottom: SPACING.sm,
-              padding: SPACING.sm,
-              backgroundColor: withAlpha(colors.primary, 0.031),
-              borderRadius: BORDER_RADIUS.sm,
-              borderWidth: 1,
-              borderColor: withAlpha(colors.primary, 0.125),
-            }}
-          >
-            {/* Previous session data — only when available */}
-            {prevWeight !== null && (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: SPACING.sm,
-                  marginBottom: SPACING.sm,
-                }}
-              >
-                <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
-                <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-                  Подход {progressionSetIndex + 1} · прошлый раз:{' '}
-                  <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-                    {toDisplay(String(prevWeight))} {unit}
-                  </Text>
-                  {prevReps != null && (
-                    <>
-                      {' × '}
-                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-                        {prevReps}
-                      </Text>
-                    </>
-                  )}
-                  {prevRpe != null && (
-                    <>
-                      {' · RPE '}
-                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-                        {prevRpe}
-                      </Text>
-                    </>
-                  )}
-                </Text>
-              </View>
-            )}
-            {/* COACH-1: Recommendation Card — показывается только при 💡 тапе (UX-16 D5) */}
-            {recommendation &&
-              recommendation.action !== 'no_data' &&
-              !recommendationCollapsed &&
-              !dismissed && (
-                <RecommendationCard
-                  recommendation={recommendation}
-                  explanationItems={explanationItems}
-                  accentColor={recommendationColor}
-                  colors={colors}
-                  toDisplay={toDisplay}
-                  unit={unit}
-                  expanded={expanded}
-                  onToggleExpand={toggleExpanded}
-                  onAccept={handleAccept}
-                  onChange={handleChipsToggle}
-                  onDismiss={handleDismiss}
-                  acceptDisabled={progressionSetIndex === null}
-                  chipsOpen={chipsOpen}
-                  policy={policy}
-                />
-              )}
-            {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
-                PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
-                «×» справа = пропустить причину (записать rejected без userReasonCode). */}
-            {dismissed && feedbackState.status === 'reasonPrompt' && (
-              <View
-                style={{
-                  marginTop: SPACING.sm,
-                  paddingTop: SPACING.sm,
-                  borderTopWidth: 1,
-                  borderTopColor: withAlpha(colors.primary, 0.125),
-                }}
-              >
+      <Animated.View
+        style={[
+          cardStyles.setsContent,
+          { backgroundColor: colors.surface },
+          editorMounted ? morphStyle : undefined,
+          editorMounted ? { overflow: 'hidden' } : undefined,
+        ]}
+      >
+        <Animated.View
+          style={tableFadeStyle}
+          pointerEvents={editingActive ? 'none' : 'auto'}
+          onLayout={handleTableLayout}
+        >
+          {/* FEAT-1.1 v2: хинт активного сета + рекомендации + калькулятор блинов.
+              Структура разделена: предыдущие данные — опциональны,
+              RecommendationCard и PlateMathRow — всегда видимы при наличии данных. */}
+          {progressionSetIndex !== null && hintVisible && (
+            <View
+              style={{
+                marginBottom: SPACING.sm,
+                padding: SPACING.sm,
+                backgroundColor: withAlpha(colors.primary, 0.031),
+                borderRadius: BORDER_RADIUS.sm,
+                borderWidth: 1,
+                borderColor: withAlpha(colors.primary, 0.125),
+              }}
+            >
+              {/* Previous session data — only when available */}
+              {prevWeight !== null && (
                 <View
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     flexWrap: 'wrap',
-                    gap: SPACING.xs,
+                    gap: SPACING.sm,
+                    marginBottom: SPACING.sm,
                   }}
                 >
-                  <Text
-                    style={[
-                      typography.captionSmall,
-                      { color: colors.textSecondary, fontWeight: '500' },
-                    ]}
-                  >
-                    Почему? (не обязательно)
+                  <TrendingUp size={14} color={colors.primary} strokeWidth={2} />
+                  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                    Подход {progressionSetIndex + 1} · прошлый раз:{' '}
+                    <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                      {toDisplay(String(prevWeight))} {unit}
+                    </Text>
+                    {prevReps != null && (
+                      <>
+                        {' × '}
+                        <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                          {prevReps}
+                        </Text>
+                      </>
+                    )}
+                    {prevRpe != null && (
+                      <>
+                        {' · RPE '}
+                        <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                          {prevRpe}
+                        </Text>
+                      </>
+                    )}
                   </Text>
-                  {REJECTION_REASONS.map((reason) => (
-                    <TouchableOpacity
-                      key={reason.code}
-                      onPress={() => handleReasonSelect(reason.code)}
-                      activeOpacity={0.7}
-                      style={{
-                        paddingHorizontal: SPACING.sm,
-                        paddingVertical: 4,
-                        borderRadius: BORDER_RADIUS.sm,
-                        backgroundColor: colors.surfaceSecondary,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          typography.captionSmall,
-                          { color: colors.textPrimary, fontWeight: '600' },
-                        ]}
-                      >
-                        {reason.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity
-                    onPress={handleSkipReason}
-                    activeOpacity={0.7}
+                </View>
+              )}
+              {/* COACH-1: Recommendation Card — показывается только при 💡 тапе (UX-16 D5) */}
+              {recommendation &&
+                recommendation.action !== 'no_data' &&
+                !recommendationCollapsed &&
+                !dismissed && (
+                  <RecommendationCard
+                    recommendation={recommendation}
+                    explanationItems={explanationItems}
+                    accentColor={recommendationColor}
+                    colors={colors}
+                    toDisplay={toDisplay}
+                    unit={unit}
+                    expanded={expanded}
+                    onToggleExpand={toggleExpanded}
+                    onAccept={handleAccept}
+                    onChange={handleChipsToggle}
+                    onDismiss={handleDismiss}
+                    acceptDisabled={progressionSetIndex === null}
+                    chipsOpen={chipsOpen}
+                    policy={policy}
+                  />
+                )}
+              {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
+                PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
+                «×» справа = пропустить причину (записать rejected без userReasonCode). */}
+              {dismissed && feedbackState.status === 'reasonPrompt' && (
+                <View
+                  style={{
+                    marginTop: SPACING.sm,
+                    paddingTop: SPACING.sm,
+                    borderTopWidth: 1,
+                    borderTopColor: withAlpha(colors.primary, 0.125),
+                  }}
+                >
+                  <View
                     style={{
-                      paddingHorizontal: 6,
-                      paddingVertical: 4,
-                      borderRadius: BORDER_RADIUS.sm,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: SPACING.xs,
                     }}
                   >
-                    <X size={14} color={colors.textTertiary} strokeWidth={2} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-            {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить".
-                Only shown when there's previous weight to add steps to. */}
-            {chipsOpen && prevWeight !== null && (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: SPACING.xs,
-                  marginTop: SPACING.sm,
-                }}
-              >
-                {PROGRESSION_STEPS.map((step) => {
-                  const isHighlighted = step === highlightedChip;
-                  return (
+                    <Text
+                      style={[
+                        typography.captionSmall,
+                        { color: colors.textSecondary, fontWeight: '500' },
+                      ]}
+                    >
+                      Почему? (не обязательно)
+                    </Text>
+                    {REJECTION_REASONS.map((reason) => (
+                      <TouchableOpacity
+                        key={reason.code}
+                        onPress={() => handleReasonSelect(reason.code)}
+                        activeOpacity={0.7}
+                        style={{
+                          paddingHorizontal: SPACING.sm,
+                          paddingVertical: 4,
+                          borderRadius: BORDER_RADIUS.sm,
+                          backgroundColor: colors.surfaceSecondary,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            typography.captionSmall,
+                            { color: colors.textPrimary, fontWeight: '600' },
+                          ]}
+                        >
+                          {reason.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                     <TouchableOpacity
-                      key={step}
-                      onPress={() => handleProgressionStep(step)}
+                      onPress={handleSkipReason}
                       activeOpacity={0.7}
                       style={{
-                        paddingHorizontal: SPACING.sm,
+                        paddingHorizontal: 6,
                         paddingVertical: 4,
                         borderRadius: BORDER_RADIUS.sm,
-                        backgroundColor: isHighlighted ? colors.success : colors.primary,
-                        borderWidth: isHighlighted ? 1 : 0,
-                        borderColor: isHighlighted ? colors.success : 'transparent',
                       }}
                     >
-                      <Text
-                        style={[
-                          typography.captionSmall,
-                          { color: colors.textInverse, fontWeight: '700' },
-                        ]}
-                      >
-                        +{step} {unit}
-                      </Text>
+                      <X size={14} color={colors.textTertiary} strokeWidth={2} />
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-            {/* FEAT-1.5: Plate Math Row — показывается при любом весе в текущем сете,
+                  </View>
+                </View>
+              )}
+              {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить".
+                Only shown when there's previous weight to add steps to. */}
+              {chipsOpen && prevWeight !== null && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: SPACING.xs,
+                    marginTop: SPACING.sm,
+                  }}
+                >
+                  {PROGRESSION_STEPS.map((step) => {
+                    const isHighlighted = step === highlightedChip;
+                    return (
+                      <TouchableOpacity
+                        key={step}
+                        onPress={() => handleProgressionStep(step)}
+                        activeOpacity={0.7}
+                        style={{
+                          paddingHorizontal: SPACING.sm,
+                          paddingVertical: 4,
+                          borderRadius: BORDER_RADIUS.sm,
+                          backgroundColor: isHighlighted ? colors.success : colors.primary,
+                          borderWidth: isHighlighted ? 1 : 0,
+                          borderColor: isHighlighted ? colors.success : 'transparent',
+                        }}
+                      >
+                        <Text
+                          style={[
+                            typography.captionSmall,
+                            { color: colors.textInverse, fontWeight: '700' },
+                          ]}
+                        >
+                          +{step} {unit}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+              {/* FEAT-1.5: Plate Math Row — показывается при любом весе в текущем сете,
                 не зависит от наличия предыдущих данных. */}
-            <PlateMathRow
-              weight={plateWeight}
-              equipment={equipment}
-              barWeight={barWeight}
+              <PlateMathRow
+                weight={plateWeight}
+                equipment={equipment}
+                barWeight={barWeight}
+                unit={unit}
+                colors={colors}
+              />
+            </View>
+          )}
+
+          {/* Ряды подходов через вынесенный memo SetRow */}
+          {setRowsConfig.map((rowSize, rowIndex) => {
+            const startIndex = setRowsConfig.slice(0, rowIndex).reduce((s, n) => s + n, 0);
+            const rowSets = sets.slice(startIndex, startIndex + rowSize);
+            return (
+              <SetRow
+                key={rowIndex}
+                rowSets={rowSets}
+                startIndex={startIndex}
+                rowIndex={rowIndex}
+                exerciseIndex={exerciseIndex}
+                updateSet={updateSet}
+                unit={unit}
+                toDisplay={toDisplay}
+                fromDisplay={fromDisplay}
+                colors={colors}
+                cardStyles={cardStyles}
+                onOpenFeedback={handleOpenFeedback}
+                onToggleWarmup={handleToggleWarmup}
+                shouldShowRpeChip={shouldShowRpeChip}
+                isUnilateral={isUnilateral}
+              />
+            );
+          })}
+
+          {/* UX-16 D6: кнопка отдыха перенесена в ActionsRow (ExerciseCard) */}
+        </Animated.View>
+
+        {/* UX-RPE-1: инлайн-редактор — absolute без bottom (естественная
+            высота для onLayout), разворот с origin из тапнутой колонки.
+            Держимся за editorSet (не activeSet): на закрытии feedbackSetIndex
+            уже null, а редактор ещё доигрывает fade-out. */}
+        {editorMounted && sets[editorSetIndex] && (
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                padding: SPACING.md,
+                backgroundColor: colors.surface,
+              },
+              editorWrapStyle,
+            ]}
+            pointerEvents={editingActive ? 'auto' : 'none'}
+            onLayout={handleEditorLayout}
+          >
+            <RpeEditor
+              key={`rpe-${editorSetIndex}`}
+              rpe={sets[editorSetIndex].rpe ?? null}
+              weight={toDisplay(sets[editorSetIndex].weight)}
               unit={unit}
+              reps={
+                isUnilateral
+                  ? `${sets[editorSetIndex].reps_left ?? '?'}/${sets[editorSetIndex].reps_right ?? '?'}`
+                  : sets[editorSetIndex].reps
+              }
+              onConfirm={handleRpeConfirm}
+              onReset={handleRpeReset}
               colors={colors}
             />
-          </View>
+          </Animated.View>
         )}
-
-        {/* Ряды подходов через вынесенный memo SetRow */}
-        {setRowsConfig.map((rowSize, rowIndex) => {
-          const startIndex = setRowsConfig.slice(0, rowIndex).reduce((s, n) => s + n, 0);
-          const rowSets = sets.slice(startIndex, startIndex + rowSize);
-          return (
-            <SetRow
-              key={rowIndex}
-              rowSets={rowSets}
-              startIndex={startIndex}
-              rowIndex={rowIndex}
-              exerciseIndex={exerciseIndex}
-              updateSet={updateSet}
-              unit={unit}
-              toDisplay={toDisplay}
-              fromDisplay={fromDisplay}
-              colors={colors}
-              cardStyles={cardStyles}
-              onOpenFeedback={handleOpenFeedback}
-              onToggleWarmup={handleToggleWarmup}
-              shouldShowRpeChip={shouldShowRpeChip}
-              isUnilateral={isUnilateral}
-            />
-          );
-        })}
-
-        {/* UX-16 D6: кнопка отдыха перенесена в ActionsRow (ExerciseCard) */}
-      </View>
-
-      {/* UX-16 D4/F3: RPE overlay над таблицей (absolute position, covers entire SetsGrid).
-          F3: передаём setIndex/totalSets для анимации из тапнутой колонки. */}
-      {feedbackSetIndex !== null && activeSet !== null && isSetCompleted(activeSet) && (
-        <RpeOverlay
-          key={`rpe-${feedbackSetIndex}`}
-          setNumber={feedbackSetIndex + 1}
-          setIndex={feedbackSetIndex}
-          totalSets={sets.length}
-          rpe={activeSet.rpe ?? null}
-          weight={toDisplay(activeSet.weight)}
-          unit={unit}
-          reps={
-            isUnilateral
-              ? `${activeSet.reps_left ?? '?'}/${activeSet.reps_right ?? '?'}`
-              : activeSet.reps
-          }
-          onChange={(patch) => updateSetFeedback(exerciseIndex, feedbackSetIndex, patch)}
-          onClose={() => setFeedbackSetIndex(null)}
-          colors={colors}
-        />
-      )}
+      </Animated.View>
     </View>
   );
 });

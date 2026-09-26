@@ -1,7 +1,8 @@
 // src/components/workout/SetFeedbackControl.tsx
 // FEAT-7 v2 (05.08.2026): RPE feedback — чип в ряду подходов.
-// Редактор шкалы lives в RpeOverlay.tsx (UX-16 D4); старый inline-редактор
-// SetFeedbackEditor удалён как dead code (дизайн-аудит 23.09.2026, DA-P2).
+// Редактор шкалы lives в RpeEditor.tsx (UX-RPE-1, 26.09: инлайн-морфинг
+// вместо RpeOverlay); старый inline-редактор SetFeedbackEditor удалён как
+// dead code (дизайн-аудит 23.09.2026, DA-P2).
 import React, { memo } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { BORDER_RADIUS, withAlpha } from '../../constants/theme';

@@ -460,7 +460,6 @@ export default function WorkoutSessionScreen() {
             unit={unit}
             onUnitChange={setUnit}
             colors={colors}
-            isWorkoutActive={isWorkoutActive}
             saving={saving}
             onRequestFinish={openFinishSheet}
           />

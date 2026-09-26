@@ -8,7 +8,14 @@ import React, {
   useMemo,
   memo,
 } from 'react';
-import { View, Text, TouchableOpacity, AppState, type AppStateStatus } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  AppState,
+  ActivityIndicator,
+  type AppStateStatus,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,7 +24,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import { Play, Pause, Clock, ChevronDown } from 'lucide-react-native';
+import { Play, Pause, Clock, Square } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -259,98 +266,145 @@ const PulseDot = memo(function PulseDot({ phase, color }: { phase: TimerPhase; c
   );
 });
 
-/**
- * Единый контролл сессии в шапке (UX-TIMER): кнопка «Начать» в шапке убрана,
- * старт/пауза/возобновление живут здесь.
- * idle    — тап сразу стартует тренировку;
- * running — тап раскрывает панель (там пауза и детали);
- * paused  — тап возобновляет.
- */
-export const WorkoutTimerPill = memo(function WorkoutTimerPill({ colors }: { colors: any }) {
-  const { formatted, phase, expanded, toggle, toggleExpand } = useWorkoutTimerCtx();
+// ===== ЕДИНАЯ КНОПКА СЕССИИ (бывш. пилюля) =====
 
-  const onPress = phase === 'running' ? toggleExpand : toggle;
-  const a11yLabel =
-    phase === 'running'
-      ? 'Таймер тренировки: развернуть'
+/**
+ * UX-T3 (26.09, выбор пользователя — вариант C): вместо пары «пилюля-таймер +
+ * отдельная кнопка «Завершить»» — ОДИН контролл в правом слоте шапки, который
+ * морфит состояние:
+ *   idle    — «▶ Начать» (зелёная), тап стартует сессию;
+ *   running — «⏹ 42:13» (красная): иконка стопа = тап открывает confirm-лист
+ *             (защита от случайного финиша — как раньше), долгий тап — панель;
+ *   paused  — «▶ 42:13» (янтарная), тап возобновляет таймер;
+ *   saving  — disabled-спиннер «Сохранение...».
+ * Время видно ПОСТОЯННО (уточнение пользователя 26.09: «часы хочу видеть
+ * всегда»): running/paused показывают счётчик в кнопке вместо текстовой
+ * метки; смысл действия передаёт иконка (⏹/▶), a11y-метка и confirm-лист.
+ * Инвариант: в шапке тренировки ровно один action-контролл сессии — слот
+ * никогда не «разрастается» второй кнопкой.
+ */
+export const WorkoutTimerPill = memo(function WorkoutTimerPill({
+  colors,
+  onRequestFinish,
+  saving,
+}: {
+  colors: any;
+  /** FX-1-паттерн: экран держит confirm-лист в своём корне — сюда только триггер. */
+  onRequestFinish: () => void;
+  saving: boolean;
+}) {
+  const { formatted, phase, toggle, toggleExpand } = useWorkoutTimerCtx();
+
+  const onPress = saving
+    ? undefined
+    : phase === 'running'
+      ? () => {
+          // хаптика как у прежней кнопки «Завершить» (toggle/toggleExpand
+          // дают свою внутри провайдера)
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onRequestFinish();
+        }
+      : toggle;
+  const onLongPress =
+    !saving && (phase === 'running' || phase === 'paused') ? toggleExpand : undefined;
+
+  // running/paused — живой счётчик вместо слова: часы видимы всегда.
+  const showTime = !saving && (phase === 'running' || phase === 'paused');
+  const label = saving ? 'Сохранение...' : phase === 'idle' ? 'Начать' : formatted;
+
+  const a11yLabel = saving
+    ? 'Сохранение тренировки'
+    : phase === 'running'
+      ? 'Завершить тренировку'
       : phase === 'paused'
         ? 'Пауза — возобновить тренировку'
         : 'Начать тренировку';
 
-  const accent =
-    phase === 'running'
-      ? colors.success
+  const backgroundColor = saving
+    ? colors.surfaceSecondary
+    : phase === 'running'
+      ? colors.error
+      : phase === 'paused'
+        ? withAlpha(colors.warning, 0.102)
+        : colors.success;
+
+  const textColor = saving
+    ? colors.textSecondary
+    : phase === 'running'
+      ? colors.textInverse
       : phase === 'paused'
         ? colors.warning
-        : colors.textTertiary;
+        : colors.textInverse;
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.7}
+      onLongPress={onLongPress}
+      disabled={saving}
+      activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
+      accessibilityHint={
+        phase === 'running' || phase === 'paused'
+          ? 'Удерживайте, чтобы открыть таймер и паузу'
+          : undefined
+      }
       hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: 5,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: 7,
         borderRadius: BORDER_RADIUS.full,
-        backgroundColor:
-          phase === 'running'
-            ? withAlpha(colors.success, 0.102)
-            : phase === 'paused'
-              ? withAlpha(colors.warning, 0.102)
-              : colors.success,
+        minHeight: 36,
+        backgroundColor,
         borderWidth: 1,
-        borderColor:
-          phase === 'running'
-            ? withAlpha(colors.success, 0.251)
-            : phase === 'paused'
-              ? withAlpha(colors.warning, 0.376)
-              : 'transparent',
+        borderColor: saving
+          ? colors.border
+          : phase === 'paused'
+            ? withAlpha(colors.warning, 0.376)
+            : 'transparent',
       }}
     >
-      {phase === 'idle' ? (
-        <>
-          <Play size={12} color={colors.textInverse} fill={colors.textInverse} strokeWidth={2.4} />
-          <Text style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}>
-            Начать
-          </Text>
-        </>
+      {saving ? (
+        <ActivityIndicator size="small" color={colors.primary} />
+      ) : phase === 'running' ? (
+        <Square size={12} color={textColor} fill={textColor} strokeWidth={2.4} />
       ) : (
-        <>
-          <PulseDot phase={phase} color={accent} />
-          <Text
-            style={[
-              typography.captionSmall,
-              {
-                color: colors.textPrimary,
-                fontWeight: '700',
-                fontVariant: ['tabular-nums'],
-              },
-            ]}
-          >
-            {formatted}
-          </Text>
-          {phase === 'paused' ? (
-            <Play size={11} color={colors.warning} strokeWidth={2.4} style={{ marginLeft: 1 }} />
-          ) : (
-            <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-              <ChevronDown size={13} color={colors.textTertiary} strokeWidth={2.2} />
-            </View>
-          )}
-        </>
+        <Play size={12} color={textColor} fill={textColor} strokeWidth={2.4} />
       )}
+      <Text
+        style={[
+          typography.captionSmall,
+          {
+            color: textColor,
+            fontWeight: '700',
+            // табличные цифры — счётчик не «прыгает» по ширине каждый тик
+            ...(showTime && { fontVariant: ['tabular-nums'] }),
+          },
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 });
 
 // ===== Раскрытое состояние: аккордеон-панель под шапкой =====
 
-export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({ colors }: { colors: any }) {
+/**
+ * UX-T3: панель раскрывается долгим тапом по единой кнопке (running/paused).
+ * Здесь большой таймер, пауза/возобновление и дублирующий «Завершить
+ * тренировку» — чтобы финиш был доступен и из панели (там же, где пауза).
+ */
+export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
+  colors,
+  onRequestFinish,
+}: {
+  colors: any;
+  onRequestFinish: () => void;
+}) {
   const { formatted, running, phase, expanded, toggle } = useWorkoutTimerCtx();
 
   const progress = useSharedValue(0);
@@ -362,7 +416,8 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({ colors }: { c
   }, [expanded, progress]);
 
   const panelStyle = useAnimatedStyle(() => ({
-    maxHeight: progress.value * 132,
+    // 176 = строка таймера (~100) + кнопка «Завершить тренировку» (~76)
+    maxHeight: progress.value * 176,
     opacity: 0.15 + progress.value * 0.85,
     transform: [{ translateY: (1 - progress.value) * -8 }],
   }));
@@ -455,6 +510,33 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({ colors }: { c
           )}
         </TouchableOpacity>
       </View>
+
+      {/* UX-T3: дублирующий финиш — в панели рядом с паузой (основной вход —
+          тап по красной кнопке в шапке). Ведёт на тот же confirm-лист. */}
+      <TouchableOpacity
+        onPress={onRequestFinish}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Завершить тренировку"
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: SPACING.sm,
+          marginHorizontal: SPACING.lg,
+          marginBottom: SPACING.md,
+          paddingVertical: 10,
+          borderRadius: BORDER_RADIUS.md,
+          borderWidth: 1,
+          borderColor: withAlpha(colors.error, 0.376),
+          backgroundColor: withAlpha(colors.error, 0.102),
+        }}
+      >
+        <Square size={13} color={colors.error} fill={colors.error} strokeWidth={2.4} />
+        <Text style={[typography.captionSmall, { color: colors.error, fontWeight: '700' }]}>
+          Завершить тренировку
+        </Text>
+      </TouchableOpacity>
     </Animated.View>
   );
 });
