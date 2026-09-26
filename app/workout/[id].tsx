@@ -46,6 +46,7 @@ import { WorkoutInjuryBanner } from '../../src/components/workout/WorkoutInjuryB
 import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
 import { WorkoutSkeleton } from '../../src/components/ui/skeletons';
 import { StateBlock } from '../../src/components/ui/StateBlock';
+import { HeroIn } from '../../src/components/ui/HeroMorph';
 import { createCardStyles } from '../../src/styles/components/card';
 import { createWorkoutStyles } from '../../src/styles/components/workout';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
@@ -57,7 +58,7 @@ import type { ProgressionContext } from '../../src/engine/progression';
 
 export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
-  const { id } = useLocalSearchParams();
+  const { id, hero } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors } = useTheme();
   // UX-16 D1: WorkoutScreenFooter удалён — insets.bottom больше не нужен
@@ -433,27 +434,31 @@ export default function WorkoutSessionScreen() {
       edges={['top']}
     >
       {/* PR8: header вынесен в WorkoutScreenHeader (внутри TimerProvider — Pill/Panel используют контекст) */}
-      <WorkoutTimerProvider
-        initialSeconds={initialTime}
-        isActive={isWorkoutActive}
-        onTick={handleTimerTick}
-        onStart={handleTimerStart}
-        onStop={handleTimerStop}
-      >
-        <WorkoutScreenHeader
-          workoutName={workoutName}
-          programName={workoutProgramInfo?.programName}
-          phaseName={workoutProgramInfo?.phaseName}
-          unit={unit}
-          onUnitChange={setUnit}
-          colors={colors}
-          isWorkoutActive={isWorkoutActive}
-          saving={saving}
-          onFinish={saveWorkout}
-          completedSetsCount={completedSetsCount}
-          totalSetsCount={totalSetsCount}
-        />
-      </WorkoutTimerProvider>
+      {/* UX-1h (I-4): header «приземляется» из hero-карточки Dashboard — только
+          при маршруте с ?hero=1 (обычные входы на тренировку не анимируются). */}
+      <HeroIn active={hero === '1'}>
+        <WorkoutTimerProvider
+          initialSeconds={initialTime}
+          isActive={isWorkoutActive}
+          onTick={handleTimerTick}
+          onStart={handleTimerStart}
+          onStop={handleTimerStop}
+        >
+          <WorkoutScreenHeader
+            workoutName={workoutName}
+            programName={workoutProgramInfo?.programName}
+            phaseName={workoutProgramInfo?.phaseName}
+            unit={unit}
+            onUnitChange={setUnit}
+            colors={colors}
+            isWorkoutActive={isWorkoutActive}
+            saving={saving}
+            onFinish={saveWorkout}
+            completedSetsCount={completedSetsCount}
+            totalSetsCount={totalSetsCount}
+          />
+        </WorkoutTimerProvider>
+      </HeroIn>
 
       {hasWarmup && (
         <WorkoutTabs

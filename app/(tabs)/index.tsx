@@ -3,7 +3,7 @@
 // FEAT-1.3 (стрик), FEAT-1.8 (readiness check-in — внутри StatusCard, не гейт старта),
 // COACH-4 (contextual insight), AUDIT-1 (питание), AUDIT-6 (блок «Состояние сегодня»),
 // NUTRI-2 (CRUD записей питания). DA-P2-8: календарь и «Коротко о неделе» — в src/components/dashboard/.
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -29,6 +29,7 @@ import { DaySummaryCard } from '../../src/components/history/DaySummaryCard';
 import { ShimmerWrap, Skeleton, useMinPending } from '../../src/components/Skeleton';
 import { DashboardSkeleton } from '../../src/components/ui/skeletons';
 import { StateBlock } from '../../src/components/ui/StateBlock';
+import { HeroOut } from '../../src/components/ui/HeroMorph';
 import { FadeIn } from '../../src/components/FadeIn';
 import { NutritionAddModal } from '../../src/components/dashboard/NutritionAddModal';
 import { NutritionLogListModal } from '../../src/components/dashboard/NutritionLogListModal';
@@ -59,6 +60,9 @@ export default function DashboardScreen() {
   );
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // UX-1h: флаг ухода hero-карточки + ref-защита от даблтапа за 140мс.
+  const [heroLeaving, setHeroLeaving] = useState(false);
+  const heroLeavingRef = useRef(false);
 
   const handleDayPress = useCallback((dateKey: string) => {
     setSelectedDay(dateKey);
@@ -114,10 +118,16 @@ export default function DashboardScreen() {
   const readinessWarning = readiness != null && readiness < 3;
 
   // Старт ближайшей тренировки программы — без readiness-гейта.
+  // UX-1h (I-4): hero-морфинг — карточка «улетает» вверх по scale, навигация
+  // стартует с маленьким упреждением, на принимающем экране header «приземляется».
   const handleStartWorkout = useCallback(() => {
-    if (data?.activeProgram) {
-      router.push(`/workout/create?programId=${data.activeProgram.programId}`);
-    }
+    const programId = data?.activeProgram?.programId;
+    if (!programId || heroLeavingRef.current) return;
+    heroLeavingRef.current = true;
+    setHeroLeaving(true);
+    setTimeout(() => {
+      router.push(`/workout/create?programId=${programId}&hero=1`);
+    }, 140);
   }, [data?.activeProgram, router]);
 
   if (!userId) {
@@ -224,18 +234,20 @@ export default function DashboardScreen() {
         {/* Активная программа */}
         <FadeIn fade={false} style={styles.section} delay={120}>
           {data.activeProgram ? (
-            <ProgramProgressCard
-              programName={data.activeProgram.programName}
-              dayName={data.activeProgram.dayName}
-              currentPhase={data.activeProgram.currentPhase}
-              phaseName={data.activeProgram.phaseName}
-              phaseType={data.activeProgram.phaseType}
-              totalPhases={data.activeProgram.totalPhases}
-              currentWeek={data.activeProgram.currentWeek}
-              currentDay={data.activeProgram.currentDay}
-              totalDays={data.activeProgram.totalDays}
-              onStartPress={handleStartWorkout}
-            />
+            <HeroOut start={heroLeaving}>
+              <ProgramProgressCard
+                programName={data.activeProgram.programName}
+                dayName={data.activeProgram.dayName}
+                currentPhase={data.activeProgram.currentPhase}
+                phaseName={data.activeProgram.phaseName}
+                phaseType={data.activeProgram.phaseType}
+                totalPhases={data.activeProgram.totalPhases}
+                currentWeek={data.activeProgram.currentWeek}
+                currentDay={data.activeProgram.currentDay}
+                totalDays={data.activeProgram.totalDays}
+                onStartPress={handleStartWorkout}
+              />
+            </HeroOut>
           ) : (
             <AppCard variant="default">
               <View style={{ alignItems: 'center', paddingVertical: SPACING.lg }}>

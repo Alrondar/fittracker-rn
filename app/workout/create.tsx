@@ -15,6 +15,8 @@ export default function CreateWorkoutScreen() {
   const params = useLocalSearchParams<{
     programId?: string;
     repeatId?: string;
+    /** UX-1h: маркер hero-морфинга с Dashboard — прокидывается на workout/[id]. */
+    hero?: string;
   }>();
 
   const router = useRouter();
@@ -46,7 +48,10 @@ export default function CreateWorkoutScreen() {
         }
 
         if (!cancelled && workoutId) {
-          router.replace(`/workout/${workoutId}`);
+          router.replace({
+            pathname: '/workout/[id]',
+            params: { id: workoutId, ...(params.hero ? { hero: '1' } : {}) },
+          });
         }
       } catch (e: any) {
         if (!cancelled) {

@@ -139,6 +139,9 @@ function RootLayoutContent() {
             gestureEnabled: true, // iOS: свайп-вниз закрывает (жест под реальную задачу)
           }}
         />
+        {/* UX-1h: create — транзитный экран (создаёт сессию и сразу replace на
+            workout/[id]) — fade, чтобы слайд не съедал hero-цепочку. */}
+        <Stack.Screen name="workout/create" options={{ animation: 'fade' }} />
         {/* freezeOnBlur:false — resting-таймер на JS-интервалах: заморозка
             экрана под модалкой «Упражнение» останавливала бы обратный отсчёт. */}
         <Stack.Screen name="workout/[id]" options={{ freezeOnBlur: false }} />
