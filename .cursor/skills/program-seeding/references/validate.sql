@@ -67,6 +67,12 @@ select (select count(*) from program_phases where program_id = :prog_id) as orig
          where d.program_id = :prog_id) as orig_ex;
 -- после copy_program_for_user(:prog_id, uid) те же три count'а для нового
 -- :copy_id обязаны совпасть; затем удалить копию через UI/сервис, не raw DELETE.
+-- Рабочий рецепт 26.09 (одним скриптом, всё откатывается): uid заранее в GUC
+-- `select set_config('app.uid',(select created_by::text from programs where created_by is not null limit 1),true)`
+-- (temp-таблица под `set local role authenticated` даёт 42501 permission denied),
+-- затем `set_config('request.jwt.claims', json_build_object('sub',current_setting('app.uid')::uuid,'role','authenticated')::text,true)`,
+-- `set local role authenticated`, `select public.copy_program_for_user(:prog_id, current_setting('app.uid')::uuid)`,
+-- сравнить counts по `source_program_id = :prog_id` (плюс copy_with_rpe и bad_phase=0), `rollback;`
 
 -- 6. Целостность ссылок (обязательно для ПРАВОК существующих программ, 25.09):
 --    id проставлен, имя = канон каталога, движение = задуманное
