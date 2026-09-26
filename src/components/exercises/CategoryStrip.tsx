@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Dumbbell, ChevronDown } from 'lucide-react-native';
+import { FONT_FAMILIES } from '../../constants/fonts';
 
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -65,7 +66,14 @@ export function CategoryStrip({
             paddingVertical: 1,
           }}
         >
-          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textInverse }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: '700',
+              fontFamily: FONT_FAMILIES.textSemiBold,
+              color: colors.textInverse,
+            }}
+          >
             {equipmentSelectedCount}
           </Text>
         </View>
@@ -115,7 +123,14 @@ export function CategoryStrip({
               {category.label}
             </Text>
             {count !== undefined && (
-              <Text style={{ fontSize: 11, color: colors.textTertiary, fontWeight: '500' }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: colors.textTertiary,
+                  fontWeight: '500',
+                  fontFamily: FONT_FAMILIES.textMedium,
+                }}
+              >
                 {count}
               </Text>
             )}

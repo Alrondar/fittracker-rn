@@ -5,6 +5,7 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Dumbbell } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { FONT_FAMILIES } from '../../constants/fonts';
 import { calculatePlates, formatPlates } from '../../utils/plates';
 import { BARBELL_EQUIPMENT_NAMES } from '../../constants/barbellDefaults';
 
@@ -70,6 +71,7 @@ export const PlateMathRow = React.memo(function PlateMathRow({
       <Text
         style={{
           fontSize: 12,
+          fontFamily: FONT_FAMILIES.textMedium,
           color: colors.textSecondary,
           fontWeight: '500',
         }}

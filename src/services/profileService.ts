@@ -413,6 +413,40 @@ export const profileService = {
       .slice(0, 5);
   },
 
+  /**
+   * UX-3a (I-5): карта all-time max веса (кг) по указанным упражнениям —
+   * для живого PR-момента на экране тренировки. getPersonalRecords для этого
+   * не годится: он сканирует ВСЮ историю и режет top-5; здесь — targeted
+   * запрос по exercise_ids сессии (5–12 id) с тем же правилом PR: рабочие
+   * сеты, warmup исключён (CLAUDE.md §2: правила PR одни на весь клиент).
+   */
+  async getPersonalBests(userId: string, exerciseIds: string[]): Promise<Record<string, number>> {
+    if (exerciseIds.length === 0) return {};
+    const { data, error } = await fetchAllPages<any>((from, to) =>
+      supabase
+        .from('workout_exercises')
+        .select('exercise_id, workouts!inner(user_id), workout_logs ( weight_kg, is_warmup )')
+        .eq('workouts.user_id', userId)
+        .in('exercise_id', exerciseIds)
+        .order('id')
+        .range(from, to)
+    );
+
+    if (error) throw error;
+
+    const bests: Record<string, number> = {};
+    for (const we of data ?? []) {
+      const exerciseId: string | null = we.exercise_id;
+      if (!exerciseId) continue;
+      for (const log of we.workout_logs ?? []) {
+        if (log.is_warmup) continue;
+        const weight = parseFloat(log.weight_kg) || 0;
+        if (weight > (bests[exerciseId] ?? 0)) bests[exerciseId] = weight;
+      }
+    }
+    return bests;
+  },
+
   async saveNutritionLog(
     userId: string,
     data: {

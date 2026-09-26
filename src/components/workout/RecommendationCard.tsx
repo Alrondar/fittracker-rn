@@ -10,6 +10,8 @@
 // All colors come from the `colors` prop (semantic tokens) — CLAUDE.md §7.
 import { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+// UX-3f контроль: крупнейшие числа приложения — дисплейный шрифт пары (Space Grotesk)
+import { FONT_FAMILIES } from '../../constants/fonts';
 import { Target, TrendingDown, Minus, ChevronDown, EyeOff } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -182,6 +184,7 @@ export const RecommendationCard = memo(function RecommendationCard({
       <Text
         style={{
           fontSize: 28,
+          fontFamily: FONT_FAMILIES.displaySemiBold,
           fontWeight: '800',
           color: accentColor,
           letterSpacing: -0.5,

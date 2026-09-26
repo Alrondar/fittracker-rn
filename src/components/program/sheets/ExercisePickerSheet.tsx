@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { X, Search, Check, ArrowUpDown, Zap, Flame, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { FONT_FAMILIES } from '../../../constants/fonts';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { useExercises } from '../../../hooks/useExercises';
@@ -226,7 +227,14 @@ export function ExercisePickerSheet({
                     paddingVertical: 2,
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textInverse }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '600',
+                      fontFamily: FONT_FAMILIES.textSemiBold,
+                      color: colors.textInverse,
+                    }}
+                  >
                     {selectedInGroup}
                   </Text>
                 </View>

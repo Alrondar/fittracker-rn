@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, Platform, LogBox } from 'react-native';
+import { StyleSheet, View, Platform, LogBox } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -11,7 +11,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStore } from '../src/store/useStore';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
-import { SPACING } from '../src/constants/theme';
+import { BrandLoader } from '../src/components/ui/BrandLoader';
+import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
 import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
 
@@ -137,8 +138,9 @@ function RootLayoutContent() {
   if (isLoading || !fontsLoaded) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textPrimary }]}>Загрузка...</Text>
+        {/* UX-3b (L-5): брендовый лоадер (SVG-знак, не текст шрифтом —
+            шрифты в этой точке ещё грузятся) */}
+        <BrandLoader label="Загрузка..." />
       </View>
     );
   }
@@ -179,6 +181,8 @@ function RootLayoutContent() {
       </Stack>
 
       <ThemedStatusBar />
+      {/* UX-3c (L-8): кросс-фейд палитры при смене акцента/режима */}
+      <ThemeCrossFade />
     </View>
   );
 }
@@ -203,8 +207,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: SPACING.md,
   },
 });

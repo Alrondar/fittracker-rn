@@ -4,7 +4,14 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, ThemeAccent, ThemeKey, themes } from '../../constants/theme';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  withAlpha,
+  ThemeAccent,
+  ThemeKey,
+  themes,
+} from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { typography } from '../../styles/typography';
 import { SheetShell } from '../ui/SheetShell';
@@ -88,6 +95,92 @@ export function ThemeAccentSheet({ visible, onClose }: { visible: boolean; onClo
 
   return (
     <SheetShell visible={visible} title="Выберите цветовую схему" onClose={onClose}>
+      {/* UX-3c (I-8): live-preview. setThemeAccent перекрашивает контекст
+          синхронно — этот блок и всё приложение за шторкой меняются сразу;
+          global-переход анимирует ThemeCrossFade. */}
+      <View
+        style={{
+          padding: SPACING.md,
+          borderRadius: BORDER_RADIUS.lg,
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.border,
+          marginBottom: SPACING.md,
+        }}
+      >
+        <Text
+          style={[
+            typography.captionSmall,
+            { color: colors.textTertiary, marginBottom: SPACING.sm, fontWeight: '600' },
+          ]}
+        >
+          ПРЕДПРОСМОТР
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+          <View
+            style={{
+              paddingHorizontal: SPACING.md,
+              paddingVertical: 8,
+              borderRadius: BORDER_RADIUS.full,
+              backgroundColor: colors.primary,
+            }}
+          >
+            <Text
+              style={[typography.captionSmall, { color: colors.textInverse, fontWeight: '700' }]}
+            >
+              Начать
+            </Text>
+          </View>
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              paddingVertical: 8,
+              borderRadius: BORDER_RADIUS.md,
+              backgroundColor: colors.successLight,
+            }}
+          >
+            <Text
+              style={[typography.captionSmall, { color: colors.textPrimary, fontWeight: '700' }]}
+            >
+              92.5 × 8
+            </Text>
+          </View>
+          <View
+            style={{
+              paddingHorizontal: SPACING.md,
+              paddingVertical: 8,
+              borderRadius: BORDER_RADIUS.full,
+              backgroundColor: withAlpha(colors.warning, 0.125),
+              borderWidth: 1,
+              borderColor: colors.warning,
+            }}
+          >
+            <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
+              Боль
+            </Text>
+          </View>
+        </View>
+        {/* прогресс-бар «Подходы 3/4» — акцентная заливка */}
+        <View
+          style={{
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: colors.borderLight,
+            marginTop: SPACING.md,
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            style={{
+              width: '75%',
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: colors.primary,
+            }}
+          />
+        </View>
+      </View>
       <FlatList
         data={availableAccents}
         renderItem={renderOption}

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { X, Link2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
+import { FONT_FAMILIES } from '../../../constants/fonts';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 
@@ -38,13 +39,13 @@ export function ImportProgramSheet({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={{ flex: 1 }}
     >
-<View
-  style={{
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  }}
->
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.overlay,
+          justifyContent: 'flex-end',
+        }}
+      >
         <View
           style={{
             backgroundColor: colors.background,
@@ -66,9 +67,7 @@ export function ImportProgramSheet({
               borderBottomColor: colors.border,
             }}
           >
-            <Text style={[typography.h3, { color: colors.textPrimary }]}>
-              Импорт по коду
-            </Text>
+            <Text style={[typography.h3, { color: colors.textPrimary }]}>Импорт по коду</Text>
             <TouchableOpacity onPress={onClose}>
               <X size={24} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -81,10 +80,7 @@ export function ImportProgramSheet({
             contentContainerStyle={{ padding: SPACING.xl }}
           >
             <Text
-              style={[
-                typography.body,
-                { color: colors.textSecondary, marginBottom: SPACING.md },
-              ]}
+              style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.md }]}
             >
               Введите код, который вам отправили (например, FIT-ABC123).
             </Text>
@@ -96,6 +92,7 @@ export function ImportProgramSheet({
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.md,
                 fontSize: 18,
+                fontFamily: FONT_FAMILIES.displaySemiBold,
                 fontWeight: '700',
                 letterSpacing: 1,
                 borderWidth: 1,
@@ -135,9 +132,7 @@ export function ImportProgramSheet({
                 justifyContent: 'center',
                 gap: SPACING.sm,
                 backgroundColor:
-                  importing || code.trim().length < 4
-                    ? colors.textTertiary
-                    : colors.primary,
+                  importing || code.trim().length < 4 ? colors.textTertiary : colors.primary,
                 paddingVertical: SPACING.md,
                 borderRadius: BORDER_RADIUS.lg,
                 opacity: importing || code.trim().length < 4 ? 0.6 : 1,

@@ -5,6 +5,7 @@ import React, { useState, memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ShieldAlert, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { FONT_FAMILIES } from '../../constants/fonts';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { BODY_PART_LABELS, INJURY_TYPE_LABELS } from '../../constants/injuries';
@@ -69,6 +70,7 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
           style={{
             color: colors.textInverse,
             fontWeight: '700',
+            fontFamily: FONT_FAMILIES.textBold,
             marginLeft: SPACING.xs,
             fontSize: 13,
           }}

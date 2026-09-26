@@ -61,6 +61,9 @@ export interface ExerciseData {
   target_rpe?: number | null;
   // PR6: pain state из pain_events (null = не отмечено в этой тренировке)
   painState?: ExercisePainState | null;
+  /** UX-3a (I-5): all-time max вес (кг) по упражнению — для живого PR-момента.
+   *  null/undefined = данные ещё не догружены (PR не триггерится). */
+  personalBest?: number | null;
   /** P1.1: Политика прогрессии (linear, double_progression, greyskull, time_based) */
   progression_policy?: ProgressionPolicy;
 }

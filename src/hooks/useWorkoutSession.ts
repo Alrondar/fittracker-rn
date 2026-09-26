@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ExerciseData, SetData, SetFeedbackPatch, ExercisePainState } from '../types/workout';
 import { advanceProgramProgress, replaceExerciseInProgram } from '../services/programsService';
-import { getActiveInjuries } from '../services/profileService';
+import { getActiveInjuries, profileService } from '../services/profileService';
 import { painService, PainType } from '../services/painService';
 import { mapError } from '../utils/errorMapper';
 import { perfMark, perfSince } from '../utils/perf';
@@ -211,6 +211,23 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const finalExercisesData = injectPreviousData(exercisesData, prevLogsByExerciseId);
       setExercises(finalExercisesData);
 
+      // UX-3a (I-5): all-time bests по упражнениям сессии — async, не блокирует
+      // открытие тренировки; PR-момент «оживает», когда карта приедет. Ошибку
+      // глушим тихо: это украшение, а не данные сессии.
+      if (userId) {
+        const ids = finalExercisesData.map((e) => e.id);
+        profileService
+          .getPersonalBests(userId, ids)
+          .then((bests: Record<string, number>) => {
+            setExercises((prev) =>
+              prev.some((e) => bests[e.id] != null && e.personalBest == null)
+                ? prev.map((e) => (bests[e.id] != null ? { ...e, personalBest: bests[e.id] } : e))
+                : prev
+            );
+          })
+          .catch((e: unknown) => console.warn('[useWorkoutSession] personalBests load failed:', e));
+      }
+
       perfSince('load:start', 'loadWorkout: итого (запросы + маппинг)');
     } catch (error: any) {
       console.error('[useWorkoutSession] loadWorkout:', error);
@@ -219,7 +236,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [workoutId]);
+  }, [workoutId, userId]);
 
   useEffect(() => {
     loadWorkout();

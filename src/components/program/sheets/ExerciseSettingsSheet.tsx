@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Plus, Minus, TrendingUp, TrendingDown, Target } from 'lucide-react-native';
 import { ProgramExercise } from '../../../services/programsService';
+import { FONT_FAMILIES } from '../../../constants/fonts';
 import { ProgressionPolicy } from '../../../types/workout';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -113,6 +114,7 @@ export function ExerciseSettingsSheet({
             borderRadius: BORDER_RADIUS.md,
             padding: SPACING.md,
             fontSize: 16,
+            fontFamily: FONT_FAMILIES.textMedium,
             color: colors.textPrimary,
             backgroundColor: colors.surface,
           }}

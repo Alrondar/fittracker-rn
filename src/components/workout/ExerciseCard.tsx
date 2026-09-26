@@ -283,6 +283,7 @@ export const ExerciseCard = memo(function ExerciseCard({
             cardStyles={cardStyles}
             workoutId={workoutId}
             exerciseId={exercise.id}
+            personalBest={(exercise as ExerciseData).personalBest ?? null}
             painMorphOpen={painMorphOpen}
             onPainMorphClose={closePainMorph}
             painState={(exercise as ExerciseData).painState ?? null}

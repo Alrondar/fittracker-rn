@@ -13,6 +13,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { FONT_FAMILIES } from '../../constants/fonts';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -111,7 +112,16 @@ export function StrengthLevelBadge({
                   {kgToUnit(bodyWeightKg).toFixed(0)} {unitLabel}
                 </Text>
               </View>
-              <Text style={[typography.labelBold, { color: colors.textPrimary, fontSize: 18 }]}>
+              <Text
+                style={[
+                  typography.labelBold,
+                  {
+                    color: colors.textPrimary,
+                    fontSize: 18,
+                    fontFamily: FONT_FAMILIES.displaySemiBold,
+                  },
+                ]}
+              >
                 {result.ratio.toFixed(2)}×
               </Text>
             </View>

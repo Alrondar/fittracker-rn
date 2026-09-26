@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { SPACING } from '../../src/constants/theme';
 import { AppButton } from '../../src/components/ui/AppButton';
+import { BrandLoader } from '../../src/components/ui/BrandLoader';
 
 export default function CreateWorkoutScreen() {
   const params = useLocalSearchParams<{
@@ -75,10 +76,8 @@ export default function CreateWorkoutScreen() {
     return (
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <View style={commonStyles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.md }]}>
-            Создаём тренировку...
-          </Text>
+          {/* UX-3b (L-5): брендовый лоадер вместо системного спиннера */}
+          <BrandLoader label="Создаём тренировку..." size={128} />
         </View>
       </SafeAreaView>
     );

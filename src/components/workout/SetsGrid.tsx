@@ -14,17 +14,19 @@
 // подтверждение). Высота анимируется Reanimated; таблица не перемонтируется.
 import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
-import { TrendingUp, X, Lightbulb, Gauge } from 'lucide-react-native';
+import { TrendingUp, X, Lightbulb, Gauge, Trophy } from 'lucide-react-native';
 import Animated, {
   Easing,
   interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
+import { FONT_FAMILIES } from '../../constants/fonts';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import {
@@ -93,6 +95,34 @@ const getSetRowsConfig = (total: number): number[] => {
   if (total === 12) return [4, 4, 4];
   return [3];
 };
+
+// ============================================================================
+// PR-MOMENT (UX-3a / I-5): scale-pop числа — transform-only, без частиц
+// ============================================================================
+const PrPop = memo(function PrPop({ label, colors }: { label: string; colors: any }) {
+  const s = useSharedValue(0.6);
+  useEffect(() => {
+    s.value = withSequence(
+      withTiming(1.12, { duration: 160, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { duration: 140 })
+    );
+  }, [s]);
+  const st = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  return (
+    <Animated.View style={st}>
+      <Text
+        style={{
+          fontFamily: FONT_FAMILIES.displaySemiBold,
+          fontSize: 18,
+          color: colors.primary,
+          fontVariant: ['tabular-nums'],
+        }}
+      >
+        {label}
+      </Text>
+    </Animated.View>
+  );
+});
 
 // ============================================================================
 // SET INPUT (вес/повторы)
@@ -402,6 +432,8 @@ interface SetsGridProps {
   // COACH-3: идентификаторы для записи feedback (пробрасываются из ExerciseCard).
   workoutId: string;
   exerciseId: string;
+  /** UX-3a (I-5): all-time max (кг) — PR-момент при превышении; null = ещё не загружено. */
+  personalBest?: number | null;
   // MORF-PAIN: управляемое открытие инлайн-редактора боли (чип «Боль» живёт
   // в header карточки, морф — здесь; флаг поднимается/сбрасывается ExerciseCard).
   painMorphOpen?: boolean;
@@ -438,6 +470,7 @@ export const SetsGrid = memo(function SetsGrid({
   cardStyles,
   workoutId,
   exerciseId,
+  personalBest = null,
   painMorphOpen,
   onPainMorphClose,
   painState = null,
@@ -614,6 +647,54 @@ export const SetsGrid = memo(function SetsGrid({
     [sets, isSetCompleted]
   );
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
+
+  // ============================================================================
+  // UX-3a (I-5): PR-момент — glow-баннер + scale-pop + success-хаптика при
+  // превышении all-time max рабочим подходом. bestRef стартует с null: пока
+  // карта personalBest не догружена (async после загрузки сессии), PR не
+  // триггерится. Правило то же, что на сервере: только рабочие сеты, вес > 0.
+  // ============================================================================
+  const bestRef = useRef<number | null>(null);
+  const seenCompletedRef = useRef(-1);
+  const prTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [prMoment, setPrMoment] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (personalBest == null) return;
+    bestRef.current = Math.max(bestRef.current ?? 0, personalBest);
+  }, [personalBest]);
+
+  useEffect(() => {
+    if (completedSets === seenCompletedRef.current) return;
+    const prev = seenCompletedRef.current;
+    seenCompletedRef.current = completedSets;
+    // первый рендер (гидратация восстановленной сессии) — не «PR»
+    if (prev === -1 || bestRef.current == null || completedSets <= prev) return;
+    let best = bestRef.current;
+    let record: number | null = null;
+    for (const s of sets) {
+      if (s.isWarmup || !isSetCompleted(s)) continue;
+      const w = parseFloat(s.weight || '');
+      if (!Number.isNaN(w) && w > best) {
+        best = w;
+        record = w;
+      }
+    }
+    bestRef.current = best;
+    if (record != null) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPrMoment(record);
+      if (prTimerRef.current) clearTimeout(prTimerRef.current);
+      prTimerRef.current = setTimeout(() => setPrMoment(null), 2200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedSets]);
+  useEffect(
+    () => () => {
+      if (prTimerRef.current) clearTimeout(prTimerRef.current);
+    },
+    []
+  );
 
   // FEAT-1.2: автостарт таймера отдыха
   const { settings: timerSettings } = useTimerSettings();
@@ -1091,10 +1172,38 @@ export const SetsGrid = memo(function SetsGrid({
         )}
       </View>
 
+      {/* UX-3a: PR-баннер — Reveal-разворот + scale-pop числа; контейнер
+          сетов на это время подсвечивается primary (glow без частиц). */}
+      {prMoment != null && (
+        <Reveal origin="top-center">
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: SPACING.sm,
+              paddingVertical: SPACING.sm,
+              backgroundColor: withAlpha(colors.primary, 0.102),
+              borderBottomWidth: 1,
+              borderBottomColor: withAlpha(colors.primary, 0.251),
+            }}
+            accessibilityLiveRegion="polite"
+          >
+            <Trophy size={18} color={colors.primary} strokeWidth={2.2} />
+            <PrPop
+              label={`PR · ${toDisplay(String(prMoment))} ${unit === 'kg' ? 'кг' : 'lb'}`}
+              colors={colors}
+            />
+          </View>
+        </Reveal>
+      )}
+
       <Animated.View
         style={[
           cardStyles.setsContent,
-          { backgroundColor: colors.surface },
+          {
+            backgroundColor: prMoment != null ? withAlpha(colors.primary, 0.031) : colors.surface,
+          },
           editorMounted ? morphStyle : undefined,
           editorMounted ? { overflow: 'hidden' } : undefined,
         ]}
