@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Search, Check, X } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
@@ -86,9 +87,9 @@ export function EquipmentSheet({
           }}
         >
           <Text style={[typography.h5, { color: colors.textPrimary }]}>Оборудование</Text>
-          <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
+          <PressableScale onPress={onClose} style={{ padding: 4 }}>
             <X size={20} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         {/* Поиск по оборудованию */}
@@ -112,12 +113,12 @@ export function EquipmentSheet({
             onChangeText={setQuery}
           />
           {query.length > 0 && (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setQuery('')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <X size={16} color={colors.textTertiary} strokeWidth={2} />
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
 
@@ -128,9 +129,8 @@ export function EquipmentSheet({
           renderItem={({ item: option }) => {
             const isSelected = selected.includes(option.value);
             return (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => onToggle(option.value)}
-                activeOpacity={0.6}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -180,7 +180,7 @@ export function EquipmentSheet({
                 >
                   {isSelected && <Check size={13} color={colors.textInverse} strokeWidth={3} />}
                 </View>
-              </TouchableOpacity>
+              </PressableScale>
             );
           }}
           ListEmptyComponent={
@@ -207,7 +207,7 @@ export function EquipmentSheet({
           }}
         >
           {selected.length > 0 && (
-            <TouchableOpacity
+            <PressableScale
               onPress={onReset}
               style={{
                 paddingVertical: SPACING.md,
@@ -221,9 +221,9 @@ export function EquipmentSheet({
               <Text style={[typography.labelBold, { color: colors.textSecondary }]}>
                 Сбросить ({selected.length})
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
-          <TouchableOpacity
+          <PressableScale
             onPress={onClose}
             style={{
               flex: 1,
@@ -236,7 +236,7 @@ export function EquipmentSheet({
             <Text style={[typography.button, { color: colors.textInverse }]}>
               Готово{selected.length > 0 ? ` · ${selected.length}` : ''}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
     </>

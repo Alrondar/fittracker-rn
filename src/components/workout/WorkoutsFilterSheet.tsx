@@ -1,7 +1,8 @@
 // src/components/workout/WorkoutsFilterSheet.tsx
 // DA-P2-8: sheet фильтра списка тренировок (вынесен из app/(tabs)/workouts.tsx).
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
@@ -37,7 +38,7 @@ export function WorkoutsFilterSheet({
         {MODES.map(({ mode, label }) => {
           const isActive = filterMode === mode;
           return (
-            <TouchableOpacity
+            <PressableScale
               key={mode}
               onPress={() => {
                 onSelect(mode);
@@ -55,6 +56,7 @@ export function WorkoutsFilterSheet({
                 borderRadius: BORDER_RADIUS.md,
                 backgroundColor: isActive ? withAlpha(colors.primary, 0.1) : 'transparent',
               }}
+              haptic="none"
             >
               <Text
                 style={[
@@ -68,7 +70,7 @@ export function WorkoutsFilterSheet({
                 {label}
               </Text>
               {isActive && <Check size={20} color={colors.primary} strokeWidth={2.5} />}
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>

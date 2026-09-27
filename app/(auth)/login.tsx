@@ -1,13 +1,7 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -110,13 +104,13 @@ export default function LoginScreen() {
             />
 
             {isLogin && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => router.push('/(auth)/reset-password')}
                 disabled={loading}
                 style={{ alignItems: 'flex-end', marginTop: SPACING.xs }}
               >
                 <Text style={[typography.label, { color: colors.primary }]}>Забыли пароль?</Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
 
             <AppButton
@@ -136,7 +130,7 @@ export default function LoginScreen() {
               style={{ marginTop: SPACING.md }}
             />
 
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setIsLogin(!isLogin)}
               disabled={loading}
               style={{ padding: SPACING.sm, alignItems: 'center', marginTop: SPACING.sm }}
@@ -144,7 +138,7 @@ export default function LoginScreen() {
               <Text style={[typography.label, { color: colors.primary }]}>
                 {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </AppCard>
         </View>
       </ScrollView>

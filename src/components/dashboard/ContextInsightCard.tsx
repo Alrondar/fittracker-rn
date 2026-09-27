@@ -2,7 +2,8 @@
 // COACH-4: Компактная карточка контекстного инсайта на Dashboard.
 // Показывает только самый "горячий" сигнал (positive или warning), чтобы не перегружать экран.
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
@@ -39,8 +40,7 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
     : (insight?.subtitle ?? '');
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <PressableScale
       // FIX-ROUTES: '/profile/progress' удалён вместе с миграцией Progress hub
       // в bottom-tab (UX-11) — вёл на Unmatched Route.
       onPress={() => router.push('/(tabs)/progress')}
@@ -76,7 +76,7 @@ export function ContextInsightCard({ insight, readinessWarning }: ContextInsight
           <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
         </View>
       </AppCard>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

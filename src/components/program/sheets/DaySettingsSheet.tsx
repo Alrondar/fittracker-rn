@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { ProgramDay } from '../../../services/programsService';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -44,12 +45,12 @@ export function DaySettingsSheet({
         />
       </View>
 
-      <TouchableOpacity
+      <PressableScale
         onPress={() => onSave({ name: dayName })}
         style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
       >
         <Text style={buttonStyles.textPrimary}>Сохранить</Text>
-      </TouchableOpacity>
+      </PressableScale>
     </>
   );
 }

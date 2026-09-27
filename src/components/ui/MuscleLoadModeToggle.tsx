@@ -5,7 +5,8 @@
 // Использует семантические токены темы, без хардкода цветов.
 
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -30,7 +31,7 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
         },
       ]}
     >
-      <TouchableOpacity
+      <PressableScale
         style={[
           styles.button,
           mode === 'total' && {
@@ -39,7 +40,6 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
           },
         ]}
         onPress={() => onChange('total')}
-        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityState={{ selected: mode === 'total' }}
         accessibilityLabel="Показать общий объём нагрузки (включая вторичные мышцы)"
@@ -55,9 +55,9 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
         >
           Все
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
 
-      <TouchableOpacity
+      <PressableScale
         style={[
           styles.button,
           mode === 'direct' && {
@@ -66,7 +66,6 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
           },
         ]}
         onPress={() => onChange('direct')}
-        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityState={{ selected: mode === 'direct' }}
         accessibilityLabel="Показать только прямую нагрузку (основные мышцы)"
@@ -82,7 +81,7 @@ export const MuscleLoadModeToggle = memo<MuscleLoadModeToggleProps>(({ mode, onC
         >
           Прямые
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 });

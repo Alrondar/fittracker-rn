@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, Text, View } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useTheme } from '../../hooks/useTheme';
 import { BORDER_RADIUS, SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -86,9 +87,9 @@ export function InjuryFormSheet({
             <Text style={[typography.h3, { color: colors.textPrimary }]}>
               {editingInjury ? 'Редактировать травму' : 'Добавить травму'}
             </Text>
-            <TouchableOpacity onPress={onClose}>
+            <PressableScale onPress={onClose}>
               <X size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
@@ -110,7 +111,7 @@ export function InjuryFormSheet({
               }}
             >
               {BODY_PARTS.map((bp) => (
-                <TouchableOpacity
+                <PressableScale
                   key={bp.value}
                   onPress={() => setBodyPart(bp.value)}
                   style={{
@@ -140,7 +141,7 @@ export function InjuryFormSheet({
                   >
                     {bp.label}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               ))}
             </View>
 
@@ -162,7 +163,7 @@ export function InjuryFormSheet({
               }}
             >
               {INJURY_TYPES.map((it) => (
-                <TouchableOpacity
+                <PressableScale
                   key={it.value}
                   onPress={() => setInjuryType(it.value)}
                   style={{
@@ -182,7 +183,7 @@ export function InjuryFormSheet({
                   >
                     {it.label}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               ))}
             </View>
 
@@ -199,7 +200,7 @@ export function InjuryFormSheet({
               {SEVERITY_LEVELS.map((level) => {
                 const levelColor = getSeverityColor(level, colors.textSecondary);
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={level}
                     onPress={() => setSeverity(level)}
                     style={{
@@ -221,7 +222,7 @@ export function InjuryFormSheet({
                     >
                       {getSeverityLabel(level)}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </View>

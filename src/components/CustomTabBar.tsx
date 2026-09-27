@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from './ui/PressableScale';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Dumbbell, BookOpen, Activity, User } from 'lucide-react-native';
@@ -97,7 +98,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const strokeWidth = isFocused ? 2 : 1.5;
 
           return (
-            <TouchableOpacity
+            <PressableScale
               key={route.key}
               accessibilityRole="tab"
               accessibilityState={{ selected: isFocused }}
@@ -105,7 +106,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               onPress={onPress}
               onLongPress={onLongPress}
               style={styles.tab}
-              activeOpacity={0.8}
+              haptic="none"
             >
               <TabIcon
                 name={route.name}
@@ -126,7 +127,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               >
                 {typeof label === 'string' ? label : route.name}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>

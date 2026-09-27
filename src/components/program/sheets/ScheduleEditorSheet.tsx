@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -73,7 +74,7 @@ export function ScheduleEditorSheet({
         {WEEKDAYS.map((day) => {
           const isSelected = selectedDays.includes(day.value);
           return (
-            <TouchableOpacity
+            <PressableScale
               key={day.value}
               onPress={() => toggleDay(day.value)}
               style={{
@@ -88,6 +89,7 @@ export function ScheduleEditorSheet({
                   : colors.surfaceSecondary,
                 alignItems: 'center',
               }}
+              haptic="none"
             >
               <Text
                 style={[
@@ -111,13 +113,13 @@ export function ScheduleEditorSheet({
               >
                 {day.label}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
 
       <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg }}>
-        <TouchableOpacity
+        <PressableScale
           onPress={selectAll}
           style={{
             flex: 1,
@@ -126,10 +128,11 @@ export function ScheduleEditorSheet({
             backgroundColor: colors.surfaceSecondary,
             alignItems: 'center',
           }}
+          haptic="none"
         >
           <Text style={[typography.labelBold, { color: colors.primary }]}>Выбрать все</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </PressableScale>
+        <PressableScale
           onPress={clearAll}
           style={{
             flex: 1,
@@ -138,9 +141,10 @@ export function ScheduleEditorSheet({
             backgroundColor: colors.surfaceSecondary,
             alignItems: 'center',
           }}
+          haptic="none"
         >
           <Text style={[typography.labelBold, { color: colors.error }]}>Очистить</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {selectedDays.length > 0 && (
@@ -170,7 +174,7 @@ export function ScheduleEditorSheet({
         </View>
       )}
 
-      <TouchableOpacity
+      <PressableScale
         onPress={() => onSave(selectedDays)}
         disabled={selectedDays.length === 0}
         style={[
@@ -184,7 +188,7 @@ export function ScheduleEditorSheet({
         <Text style={buttonStyles.textPrimary}>
           {selectedDays.length === 0 ? 'Выберите хотя бы один день' : 'Сохранить расписание'}
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     </>
   );
 }

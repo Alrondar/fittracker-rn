@@ -1,7 +1,8 @@
 // src/components/cycle/CycleCheckInSheet.tsx
 // L2: Единый Bottom Sheet для ввода событий цикла (менструация/овуляция)
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Droplet, Egg } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
@@ -76,7 +77,7 @@ export function CycleCheckInSheet({
       <View style={{ padding: SPACING.md }}>
         {/* Выбор типа события */}
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.lg }}>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => {
               setSelectedType('menstruation_start');
               setIsStart(true);
@@ -108,9 +109,9 @@ export function CycleCheckInSheet({
             >
               Менструация
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
 
-          <TouchableOpacity
+          <PressableScale
             onPress={() => {
               setSelectedType('ovulation_start');
               setIsStart(true);
@@ -142,7 +143,7 @@ export function CycleCheckInSheet({
             >
               Овуляция
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         {selectedType && (
@@ -157,7 +158,7 @@ export function CycleCheckInSheet({
                 marginBottom: SPACING.lg,
               }}
             >
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => setIsStart(true)}
                 style={{
                   flex: 1,
@@ -175,8 +176,8 @@ export function CycleCheckInSheet({
                 >
                   Начало
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </PressableScale>
+              <PressableScale
                 onPress={() => setIsStart(false)}
                 style={{
                   flex: 1,
@@ -194,7 +195,7 @@ export function CycleCheckInSheet({
                 >
                   Конец
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
 
             {/* Дата */}

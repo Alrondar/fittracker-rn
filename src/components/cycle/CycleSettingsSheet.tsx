@@ -1,7 +1,8 @@
 // src/components/cycle/CycleSettingsSheet.tsx
 // L2: Настройки цикла (длина лютеиновой фазы)
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -16,7 +17,12 @@ interface CycleSettingsSheetProps {
   onSave: (lutealLength: number) => Promise<void>;
 }
 
-export function CycleSettingsSheet({ visible, onClose, settings, onSave }: CycleSettingsSheetProps) {
+export function CycleSettingsSheet({
+  visible,
+  onClose,
+  settings,
+  onSave,
+}: CycleSettingsSheetProps) {
   const { colors } = useTheme();
   const [lutealLength, setLutealLength] = useState(settings.luteal_length_days.toString());
   const [isSaving, setIsSaving] = useState(false);
@@ -40,7 +46,8 @@ export function CycleSettingsSheet({ visible, onClose, settings, onSave }: Cycle
     <SheetShell visible={visible} title="Настройки цикла" onClose={onClose}>
       <View style={{ padding: SPACING.md }}>
         <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>
-          Длина лютеиновой фазы используется для автоматического расчёта овуляции, если вы не указали её вручную.
+          Длина лютеиновой фазы используется для автоматического расчёта овуляции, если вы не
+          указали её вручную.
         </Text>
 
         <View style={{ marginBottom: SPACING.lg }}>
@@ -51,7 +58,7 @@ export function CycleSettingsSheet({ visible, onClose, settings, onSave }: Cycle
             {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((days) => {
               const isSelected = lutealLength === days.toString();
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={days}
                   onPress={() => setLutealLength(days.toString())}
                   style={{
@@ -71,7 +78,7 @@ export function CycleSettingsSheet({ visible, onClose, settings, onSave }: Cycle
                   >
                     {days}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
@@ -84,8 +91,13 @@ export function CycleSettingsSheet({ visible, onClose, settings, onSave }: Cycle
           onPress={handleSave}
           loading={isSaving}
         />
-        
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: SPACING.md, textAlign: 'center' }]}>
+
+        <Text
+          style={[
+            typography.caption,
+            { color: colors.textTertiary, marginTop: SPACING.md, textAlign: 'center' },
+          ]}
+        >
           ⚠️ Это не медицинская рекомендация. Учитывайте своё самочувствие.
         </Text>
       </View>

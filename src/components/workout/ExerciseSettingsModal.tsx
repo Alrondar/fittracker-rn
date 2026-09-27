@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Pressable, View, Text, TouchableOpacity } from 'react-native';
+import { Modal, Pressable, View, Text } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import { X, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { createCardStyles } from '../../styles/components/card';
@@ -130,9 +131,9 @@ export function ExerciseSettingsModal({
             <Text style={[cardStyles.settingsSheetTitle, { color: colors.textPrimary }]}>
               Настройки упражнения
             </Text>
-            <TouchableOpacity onPress={onClose}>
+            <PressableScale onPress={onClose}>
               <X size={20} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           <View style={cardStyles.settingsSheetField}>
@@ -140,7 +141,7 @@ export function ExerciseSettingsModal({
               Количество подходов
             </Text>
             <View style={cardStyles.settingsSheetCounter}>
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => changeSets(-1)}
                 disabled={localSets <= 1}
                 style={[
@@ -150,17 +151,18 @@ export function ExerciseSettingsModal({
                     opacity: localSets <= 1 ? 0.5 : 1,
                   },
                 ]}
+                haptic="none"
               >
                 <Minus
                   size={20}
                   color={localSets <= 1 ? colors.textTertiary : colors.primary}
                   strokeWidth={2}
                 />
-              </TouchableOpacity>
+              </PressableScale>
               <Text style={[cardStyles.settingsSheetCounterText, { color: colors.textPrimary }]}>
                 {localSets}
               </Text>
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => changeSets(1)}
                 disabled={localSets >= 10}
                 style={[
@@ -171,13 +173,14 @@ export function ExerciseSettingsModal({
                     opacity: localSets >= 10 ? 0.5 : 1,
                   },
                 ]}
+                haptic="none"
               >
                 <Plus
                   size={20}
                   color={localSets >= 10 ? colors.textTertiary : colors.primary}
                   strokeWidth={2}
                 />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </View>
 
@@ -186,7 +189,7 @@ export function ExerciseSettingsModal({
               Отдых между подходами
             </Text>
             <View style={cardStyles.settingsSheetCounter}>
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => changeRest(-15)}
                 disabled={localRest <= 30}
                 style={[
@@ -197,13 +200,14 @@ export function ExerciseSettingsModal({
                     opacity: localRest <= 30 ? 0.5 : 1,
                   },
                 ]}
+                haptic="none"
               >
                 <Minus
                   size={20}
                   color={localRest <= 30 ? colors.textTertiary : colors.primary}
                   strokeWidth={2}
                 />
-              </TouchableOpacity>
+              </PressableScale>
               <Text
                 style={[
                   cardStyles.settingsSheetCounterText,
@@ -212,7 +216,7 @@ export function ExerciseSettingsModal({
               >
                 {localRest}с
               </Text>
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => changeRest(15)}
                 disabled={localRest >= 300}
                 style={[
@@ -223,22 +227,24 @@ export function ExerciseSettingsModal({
                     opacity: localRest >= 300 ? 0.5 : 1,
                   },
                 ]}
+                haptic="none"
               >
                 <Plus
                   size={20}
                   color={localRest >= 300 ? colors.textTertiary : colors.primary}
                   strokeWidth={2}
                 />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </View>
 
-          <TouchableOpacity
+          <PressableScale
             onPress={handleSave}
             style={[cardStyles.settingsSheetSaveButton, { backgroundColor: colors.primary }]}
+            haptic="none"
           >
             <Text style={cardStyles.settingsSheetSaveButtonText}>Сохранить</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </Pressable>
       </Pressable>
     </Modal>

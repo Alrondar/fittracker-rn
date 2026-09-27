@@ -1,7 +1,8 @@
 // app/(tabs)/exercises.tsx split (DA-P2-8): фильтр по группам мышц —
 // горизонтальная лента групп + раскрытые чипы мышц активной группы.
 import { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { Check } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
@@ -42,7 +43,7 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
           const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
           const groupColor = getGroupColor(groupName, colors);
           return (
-            <TouchableOpacity
+            <PressableScale
               key={groupName}
               style={{
                 flexDirection: 'row',
@@ -55,10 +56,10 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
                 borderColor: isActive ? groupColor : colors.border,
               }}
               onPress={() => toggleGroup(groupName)}
-              activeOpacity={0.6}
               accessibilityRole="button"
               accessibilityLabel={`Группа мышц: ${groupName}`}
               accessibilityState={{ selected: isActive }}
+              haptic="none"
             >
               <Text
                 style={[
@@ -88,7 +89,7 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
                   </Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           );
         }}
         contentContainerStyle={{
@@ -105,7 +106,7 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
               const isSelected = selectedMuscles.includes(muscle);
               const muscleColor = getMuscleColor(muscle);
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={muscle}
                   style={{
                     flexDirection: 'row',
@@ -118,7 +119,6 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
                     borderColor: isSelected ? muscleColor : colors.border,
                   }}
                   onPress={() => onToggleMuscle(muscle)}
-                  activeOpacity={0.6}
                   accessibilityRole="button"
                   accessibilityLabel={`Мышца: ${muscle}`}
                   accessibilityState={{ selected: isSelected }}
@@ -142,7 +142,7 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
                   >
                     {muscle}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>

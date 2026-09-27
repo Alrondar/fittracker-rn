@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
+import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Sprout, Dumbbell, Flame, Play } from 'lucide-react-native';
@@ -202,7 +203,7 @@ export default function ProgramDetailScreen() {
           { backgroundColor: colors.surface, borderTopColor: colors.border },
         ]}
       >
-        <TouchableOpacity
+        <PressableScale
           style={[
             buttonStyles.primary,
             buttonStyles.large,
@@ -210,7 +211,6 @@ export default function ProgramDetailScreen() {
           ]}
           onPress={handleStartProgram}
           disabled={starting}
-          activeOpacity={0.8}
         >
           {starting ? (
             <ActivityIndicator color={colors.textInverse} size="small" />
@@ -225,7 +225,7 @@ export default function ProgramDetailScreen() {
               <Text style={buttonStyles.textPrimary}>Начать программу</Text>
             </View>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <ProgramFabs

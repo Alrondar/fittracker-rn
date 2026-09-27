@@ -3,8 +3,9 @@
 // stop-тумблер, осторожность в профиль травм, заметка.
 // PR6 (Scope 2): prefill из существующей записи боли + «Боль прошла» для удаления.
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
@@ -48,7 +49,7 @@ function ToggleRow({
   colors: any;
 }) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => onChange(!value)}
       style={{
         flexDirection: 'row',
@@ -87,7 +88,7 @@ function ToggleRow({
           }}
         />
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -259,7 +260,7 @@ export function PainSheet({
                 const active = painLevel === l.value;
                 const color = levelColor(l.value);
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={l.value}
                     onPress={() => setPainLevel(l.value)}
                     style={{
@@ -283,7 +284,7 @@ export function PainSheet({
                     >
                       {l.label}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </View>
@@ -309,7 +310,7 @@ export function PainSheet({
                   {PAIN_TYPES.map((t) => {
                     const active = painType === t.key;
                     return (
-                      <TouchableOpacity
+                      <PressableScale
                         key={t.key}
                         onPress={() => setPainType(active ? null : t.key)}
                         style={{
@@ -331,7 +332,7 @@ export function PainSheet({
                         >
                           {t.label}
                         </Text>
-                      </TouchableOpacity>
+                      </PressableScale>
                     );
                   })}
                 </View>
@@ -357,7 +358,7 @@ export function PainSheet({
               {(Object.keys(BODY_PARTS) as BodyPart[]).map((bp) => {
                 const active = bodyPart === bp;
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={bp}
                     onPress={() => setBodyPart(active ? null : bp)}
                     style={{
@@ -379,7 +380,7 @@ export function PainSheet({
                     >
                       {BODY_PART_LABELS[bp] ?? bp}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </View>
@@ -421,7 +422,7 @@ export function PainSheet({
 
             {/* PR6: «Боль прошла» — видна только при наличии записи боли */}
             {exercise.painState && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleClear}
                 disabled={saving}
                 style={{
@@ -433,16 +434,17 @@ export function PainSheet({
                   backgroundColor: 'transparent',
                   alignItems: 'center',
                 }}
+                haptic="none"
               >
                 {saving ? (
                   <ActivityIndicator color={colors.success} size="small" />
                 ) : (
                   <Text style={[typography.button, { color: colors.success }]}>Боль прошла</Text>
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             )}
 
-            <TouchableOpacity
+            <PressableScale
               onPress={handleSave}
               disabled={saving}
               style={{
@@ -452,6 +454,7 @@ export function PainSheet({
                 backgroundColor: painLevel >= 3 ? colors.error : colors.warning,
                 alignItems: 'center',
               }}
+              haptic="none"
             >
               {saving ? (
                 <ActivityIndicator color={colors.textInverse} size="small" />
@@ -460,7 +463,7 @@ export function PainSheet({
                   {exercise.painState ? 'Обновить' : 'Отметить'}
                 </Text>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           </>
         )}
       </SheetShell>

@@ -9,7 +9,8 @@
 // Высота — естественная (контент в flow): родитель позиционирует absolute без
 // bottom и измеряет onLayout для height-морфинга.
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { RotateCcw } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -90,10 +91,9 @@ export const RpeEditor = memo(function RpeEditor({
               const isSel = v === selected;
               const zc = zoneColor(v);
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={v}
                   onPress={() => handleTap(v)}
-                  activeOpacity={0.7}
                   accessibilityRole="button"
                   accessibilityLabel={
                     isSel ? `RPE ${v} — нажмите ещё раз, чтобы подтвердить` : `RPE ${v}`
@@ -110,6 +110,7 @@ export const RpeEditor = memo(function RpeEditor({
                     borderColor: isSel ? zc : colors.border,
                     minHeight: 44,
                   }}
+                  haptic="none"
                 >
                   <Text
                     style={[
@@ -122,7 +123,7 @@ export const RpeEditor = memo(function RpeEditor({
                   >
                     {v}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
@@ -166,12 +167,11 @@ export const RpeEditor = memo(function RpeEditor({
       {/* Сброс уже введённого значения (отмена без записи — ✕ в шапке) */}
       {rpe != null && (
         <View style={{ marginTop: SPACING.sm, flexDirection: 'row', justifyContent: 'center' }}>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onReset();
             }}
-            activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Сбросить RPE"
             style={{
@@ -185,6 +185,7 @@ export const RpeEditor = memo(function RpeEditor({
               borderColor: colors.border,
               minHeight: 40,
             }}
+            haptic="none"
           >
             <RotateCcw size={14} color={colors.textSecondary} strokeWidth={2} />
             <Text
@@ -192,7 +193,7 @@ export const RpeEditor = memo(function RpeEditor({
             >
               Сбросить RPE {rpe}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
     </View>

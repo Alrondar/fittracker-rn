@@ -3,7 +3,8 @@
 // Тап НЕ ре-рендерит ExerciseCard/соседей; children — стабильная ссылка,
 // контент не реконсилируется. Ленивый монтаж: свёрнутая секция ничего не монтирует.
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -57,7 +58,7 @@ interface ExerciseInfoAccordionProps {
   titleColor: string;
   children: React.ReactNode;
   maxHeight?: number;
-  defaultExpanded?: boolean;  // ← добавить
+  defaultExpanded?: boolean; // ← добавить
 }
 
 export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
@@ -79,9 +80,8 @@ export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
 
   return (
     <View style={{ marginTop: SPACING.sm }}>
-      <TouchableOpacity
+      <PressableScale
         onPress={onToggle}
-        activeOpacity={0.7}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -110,12 +110,12 @@ export const ExerciseInfoAccordion = memo(function ExerciseInfoAccordion({
         <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
           <ChevronDown size={14} color={colors.textTertiary} />
         </View>
-      </TouchableOpacity>
-{everOpened ? (
-  <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
-    {children}
-  </ExpandableBody>
-) : null}
+      </PressableScale>
+      {everOpened ? (
+        <ExpandableBody expanded={expanded} maxHeight={maxHeight}>
+          {children}
+        </ExpandableBody>
+      ) : null}
     </View>
   );
 });

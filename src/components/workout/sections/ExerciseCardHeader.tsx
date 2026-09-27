@@ -3,7 +3,8 @@
 // Строка 1: Название + Settings справа
 // Строка 2: Metadata слева + Bubbles Боль/Альтернативы справа
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { Settings, HeartPulse, ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -80,13 +81,13 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
           {exerciseName}
         </Text>
         {isMain && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => onOpenSettings(exerciseIndex, setsCount, restSeconds)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={{ marginTop: 2 }}
           >
             <Settings size={18} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
 
@@ -140,7 +141,7 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
           <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
             {/* Боль — кнопка-bubble. PR6: при наличии записи — warning tint + «⚠ Боль отмечена» */}
             {onOpenPain && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => onOpenPain(exerciseIndex)}
                 style={
                   hasPainRecord
@@ -151,7 +152,6 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
                       }
                     : bubbleStyle
                 }
-                activeOpacity={0.7}
               >
                 <HeartPulse size={14} color={colors.warning} strokeWidth={2} />
                 <Text
@@ -165,14 +165,13 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
                 >
                   {hasPainRecord ? '⚠ Боль отмечена' : 'Боль'}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
             {/* Альтернативы — индикатор-bubble */}
             {hasAlternatives && alternativesCount > 0 && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => onOpenAlternatives?.(exerciseIndex)}
                 style={bubbleStyle}
-                activeOpacity={0.7}
               >
                 <ChevronRight size={14} color={colors.textSecondary} strokeWidth={2} />
                 <Text
@@ -183,7 +182,7 @@ export const ExerciseCardHeader = memo(function ExerciseCardHeader({
                 >
                   {formatAlternativesCount(alternativesCount)}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
           </View>
         )}

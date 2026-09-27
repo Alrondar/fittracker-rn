@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, DimensionValue } from 'react-native';
+import { View, Text, ScrollView, DimensionValue } from 'react-native';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
@@ -203,9 +204,9 @@ export default function ExerciseDetailScreen() {
           { backgroundColor: colors.surface, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+        <PressableScale onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={[typography.h4, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]}>
           Упражнение
         </Text>
@@ -497,13 +498,12 @@ export default function ExerciseDetailScreen() {
                       ? getMuscleColor(altPrimaryMuscles[0])
                       : colors.border;
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       key={alt.id}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                         router.push(`/exercise/${alt.id}`);
                       }}
-                      activeOpacity={0.7}
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -515,6 +515,7 @@ export default function ExerciseDetailScreen() {
                         padding: SPACING.md,
                         marginBottom: SPACING.sm,
                       }}
+                      haptic="none"
                     >
                       <View
                         style={{
@@ -547,7 +548,7 @@ export default function ExerciseDetailScreen() {
                         />
                       </View>
                       <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 })}
               </View>

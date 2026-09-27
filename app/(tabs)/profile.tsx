@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -206,7 +207,7 @@ export default function ProfileScreen() {
               </Text>
             )}
           </AppCard>
-          <TouchableOpacity
+          <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Настройки"
             onPress={() => {
@@ -225,9 +226,10 @@ export default function ProfileScreen() {
               alignItems: 'center',
               elevation: 4,
             }}
+            haptic="none"
           >
             <Settings size={22} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         {/* Статистика */}
@@ -239,14 +241,14 @@ export default function ProfileScreen() {
             paddingHorizontal: SPACING.lg,
           }}
         >
-          <TouchableOpacity
+          <PressableScale
             accessibilityRole="button"
             style={{ flex: 1, marginHorizontal: 4 }}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/(tabs)/workouts');
             }}
-            activeOpacity={0.7}
+            haptic="none"
           >
             <AppCard variant="compact" style={{ alignItems: 'center' }}>
               <Dumbbell size={20} color={colors.textSecondary} strokeWidth={1.5} />
@@ -255,15 +257,15 @@ export default function ProfileScreen() {
               </Text>
               <Text style={[typography.caption, { color: colors.textSecondary }]}>Тренировки</Text>
             </AppCard>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             accessibilityRole="button"
             style={{ flex: 1, marginHorizontal: 4 }}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/(tabs)/programs');
             }}
-            activeOpacity={0.7}
+            haptic="none"
           >
             <AppCard variant="compact" style={{ alignItems: 'center' }}>
               <Calendar size={20} color={colors.textSecondary} strokeWidth={1.5} />
@@ -272,15 +274,15 @@ export default function ProfileScreen() {
               </Text>
               <Text style={[typography.caption, { color: colors.textSecondary }]}>Программы</Text>
             </AppCard>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             accessibilityRole="button"
             style={{ flex: 1, marginHorizontal: 4 }}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/(tabs)/progress');
             }}
-            activeOpacity={0.7}
+            haptic="none"
           >
             <AppCard variant="compact" style={{ alignItems: 'center' }}>
               <Trophy size={20} color={colors.textSecondary} strokeWidth={1.5} />
@@ -289,7 +291,7 @@ export default function ProfileScreen() {
               </Text>
               <Text style={[typography.caption, { color: colors.textSecondary }]}>Объем (т)</Text>
             </AppCard>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         {/* Личные рекорды */}
@@ -305,7 +307,7 @@ export default function ProfileScreen() {
               {personalRecords.map((record, index) => {
                 const recordId = (record as any).exercise_id || (record as any).id;
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     accessibilityRole="button"
                     key={index}
                     disabled={!recordId}
@@ -315,7 +317,6 @@ export default function ProfileScreen() {
                         router.push(`/exercise/${recordId}`);
                       }
                     }}
-                    activeOpacity={recordId ? 0.7 : 1}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -323,6 +324,7 @@ export default function ProfileScreen() {
                       borderBottomWidth: index < personalRecords.length - 1 ? 1 : 0,
                       borderBottomColor: colors.border,
                     }}
+                    haptic="none"
                   >
                     <View
                       style={{
@@ -370,7 +372,7 @@ export default function ProfileScreen() {
                         style={{ marginLeft: SPACING.xs }}
                       />
                     )}
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </AppCard>
@@ -405,7 +407,7 @@ export default function ProfileScreen() {
                       marginTop: SPACING.md,
                     }}
                   >
-                    <TouchableOpacity
+                    <PressableScale
                       accessibilityRole="button"
                       onPress={() => setIsEditMode(!isEditMode)}
                       style={{
@@ -437,7 +439,7 @@ export default function ProfileScreen() {
                       >
                         {isEditMode ? 'Завершить правку' : 'Режим правки'}
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                   </View>
                 </>
               )}
@@ -449,7 +451,7 @@ export default function ProfileScreen() {
         <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.xl }}>
           <SectionHeader title="Быстрые действия" style={{ paddingHorizontal: 0, paddingTop: 0 }} />
           {/* UX-11: Progress hub — единый экран «Как я меняюсь?» (сила, объём, PR, тренды) */}
-          <TouchableOpacity
+          <PressableScale
             accessibilityRole="button"
             style={{
               backgroundColor: colors.surface,
@@ -466,6 +468,7 @@ export default function ProfileScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               router.push('/profile/metrics');
             }}
+            haptic="none"
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Ruler
@@ -482,8 +485,8 @@ export default function ProfileScreen() {
               </View>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             accessibilityRole="button"
             style={{
               backgroundColor: colors.surface,
@@ -500,6 +503,7 @@ export default function ProfileScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               router.push('/profile/goals');
             }}
+            haptic="none"
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Target
@@ -511,8 +515,8 @@ export default function ProfileScreen() {
               <Text style={[typography.h5, { color: colors.textPrimary }]}>Мои цели</Text>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             accessibilityRole="button"
             style={{
               backgroundColor: colors.surface,
@@ -528,6 +532,7 @@ export default function ProfileScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               router.push('/profile/injuries');
             }}
+            haptic="none"
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Activity
@@ -541,7 +546,7 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <ChevronRight size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         {/* Кнопка выхода */}

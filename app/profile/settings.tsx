@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -27,14 +28,14 @@ export default function SettingsScreen() {
           { backgroundColor: colors.surface, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity
+        <PressableScale
           onPress={() => router.back()}
           style={commonStyles.backButton}
           accessibilityRole="button"
           accessibilityLabel="Назад"
         >
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={[typography.h4, { color: colors.textPrimary }]}>Настройки</Text>
         <View style={{ width: 40 }} />
       </View>

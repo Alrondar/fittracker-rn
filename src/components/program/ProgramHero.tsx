@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, Calendar, Pencil } from 'lucide-react-native';
 import { SPACING, GRADIENTS } from '../../constants/theme';
@@ -97,13 +98,9 @@ export function ProgramHero({
               Расписание:
             </Text>
             {editMode && (
-              <TouchableOpacity
-                onPress={onOpenScheduleEditor}
-                style={cardStyles.scheduleEditButton}
-                activeOpacity={0.7}
-              >
+              <PressableScale onPress={onOpenScheduleEditor} style={cardStyles.scheduleEditButton}>
                 <Pencil size={16} color={ON_STATIC_GRADIENT_COLOR} strokeWidth={2} />
-              </TouchableOpacity>
+              </PressableScale>
             )}
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>

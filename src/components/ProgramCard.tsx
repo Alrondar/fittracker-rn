@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { PressableScale } from './ui/PressableScale';
 import { Program } from '../services/programsService';
 import {
@@ -237,7 +237,7 @@ export const ProgramCard = memo(function ProgramCard({
         {/* Футер: редактирование + активация + «Подробнее» */}
         <View style={cardStyles.programCardFooter}>
           {isMyProgram && (
-            <TouchableOpacity
+            <PressableScale
               onPress={handleEdit}
               accessibilityRole="button"
               accessibilityLabel={`Редактировать программу ${item.name}`}
@@ -245,17 +245,16 @@ export const ProgramCard = memo(function ProgramCard({
               style={cardStyles.programCardEditButton}
             >
               <Edit2 size={16} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
+            </PressableScale>
           )}
 
           {/* ✅ Кнопка «Активировать» — только для своих и только если не активна.
                  У активной вместо неё — бейдж «Текущая» (защита от случайного клика). */}
           {isMyProgram && !isActive && (
-            <TouchableOpacity
+            <PressableScale
               onPress={handleActivate}
               accessibilityRole="button"
               accessibilityLabel={`Активировать программу ${item.name}`}
-              activeOpacity={0.7}
               hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
               style={{
                 flexDirection: 'row',
@@ -274,7 +273,7 @@ export const ProgramCard = memo(function ProgramCard({
               <Text style={[typography.buttonTiny, { color: colors.primary, fontWeight: '700' }]}>
                 Активировать
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
 
           <View style={cardStyles.programCardFooterPill}>

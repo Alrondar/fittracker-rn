@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
+import { View, Text, ActivityIndicator, BackHandler } from 'react-native';
 import { feedback } from '../../../src/lib/feedback';
+import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
@@ -159,9 +160,9 @@ export default function ProgramEditScreen() {
           borderBottomColor: colors.border,
         }}
       >
-        <TouchableOpacity onPress={handleCancel} style={{ padding: SPACING.xs }}>
+        <PressableScale onPress={handleCancel} style={{ padding: SPACING.xs }}>
           <ChevronLeft size={24} color={colors.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <View style={{ flex: 1, marginLeft: SPACING.sm }}>
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
             Программа › Редактирование
@@ -170,7 +171,7 @@ export default function ProgramEditScreen() {
             {program.name}
           </Text>
         </View>
-        <TouchableOpacity
+        <PressableScale
           onPress={handleSave}
           disabled={saving}
           style={{
@@ -208,7 +209,7 @@ export default function ProgramEditScreen() {
               <Text style={[typography.labelBold, { color: colors.textInverse }]}>Сохранить</Text>
             </>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <NestableScrollContainer
@@ -286,9 +287,8 @@ export default function ProgramEditScreen() {
         />
 
         {/* Кнопка добавить фазу */}
-        <TouchableOpacity
+        <PressableScale
           onPress={addPhase}
-          activeOpacity={0.7}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -304,7 +304,7 @@ export default function ProgramEditScreen() {
           }}
         >
           <Text style={[typography.labelBold, { color: colors.primary }]}>+ Добавить фазу</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </NestableScrollContainer>
 
       {/* Футер с кнопкой Отмена */}
@@ -314,7 +314,7 @@ export default function ProgramEditScreen() {
           { backgroundColor: colors.surface, borderTopColor: colors.border },
         ]}
       >
-        <TouchableOpacity
+        <PressableScale
           style={[buttonStyles.secondary, { flex: 1 }]}
           onPress={handleCancel}
           disabled={saving}
@@ -323,7 +323,7 @@ export default function ProgramEditScreen() {
             <X size={20} color={colors.textPrimary} strokeWidth={2} />
             <Text style={buttonStyles.textSecondary}>Отмена</Text>
           </View>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />

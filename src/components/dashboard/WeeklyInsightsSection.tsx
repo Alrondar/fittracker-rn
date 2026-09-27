@@ -1,6 +1,7 @@
 // app/(tabs)/index.tsx split (DA-P2-8): секция «Коротко о неделе» (COACH-4).
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, scale } from '../../constants/theme';
@@ -57,26 +58,26 @@ export function WeeklyInsightsSection({ insights, onOpenProgress }: Props) {
             </View>
           );
           return tappable ? (
-            <TouchableOpacity
+            <PressableScale
               key={insight.code || idx}
               accessibilityRole="button"
               accessibilityLabel="Посмотреть личные рекорды"
               onPress={onOpenProgress}
             >
               {row}
-            </TouchableOpacity>
+            </PressableScale>
           ) : (
             <View key={insight.code || idx}>{row}</View>
           );
         })}
-        <TouchableOpacity
+        <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Посмотреть прогресс"
           style={{ marginTop: SPACING.md, alignItems: 'flex-end' }}
           onPress={onOpenProgress}
         >
           <Text style={[typography.caption, { color: colors.primary }]}>Посмотреть прогресс</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </AppCard>
     </View>
   );

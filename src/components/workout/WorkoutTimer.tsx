@@ -8,14 +8,8 @@ import React, {
   useMemo,
   memo,
 } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  AppState,
-  ActivityIndicator,
-  type AppStateStatus,
-} from 'react-native';
+import { View, Text, AppState, ActivityIndicator, type AppStateStatus } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -337,11 +331,10 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
         : colors.textInverse;
 
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       onLongPress={onLongPress}
       disabled={saving}
-      activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
       accessibilityHint={
@@ -366,6 +359,7 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
             ? withAlpha(colors.warning, 0.376)
             : 'transparent',
       }}
+      haptic="none"
     >
       {saving ? (
         <ActivityIndicator size="small" color={colors.primary} />
@@ -387,7 +381,7 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 });
 
@@ -483,9 +477,8 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
           </View>
         </View>
 
-        <TouchableOpacity
+        <PressableScale
           onPress={toggle}
-          activeOpacity={0.75}
           style={{
             width: 52,
             height: 52,
@@ -496,6 +489,7 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
             borderWidth: running ? 1 : 0,
             borderColor: colors.border,
           }}
+          haptic="none"
         >
           {running ? (
             <Pause size={22} color={colors.textPrimary} strokeWidth={2.4} />
@@ -508,14 +502,13 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
               style={{ marginLeft: 2 }}
             />
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {/* UX-T3: дублирующий финиш — в панели рядом с паузой (основной вход —
           тап по красной кнопке в шапке). Ведёт на тот же confirm-лист. */}
-      <TouchableOpacity
+      <PressableScale
         onPress={onRequestFinish}
-        activeOpacity={0.8}
         accessibilityRole="button"
         accessibilityLabel="Завершить тренировку"
         style={{
@@ -531,12 +524,13 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
           borderColor: withAlpha(colors.error, 0.376),
           backgroundColor: withAlpha(colors.error, 0.102),
         }}
+        haptic="none"
       >
         <Square size={13} color={colors.error} fill={colors.error} strokeWidth={2.4} />
         <Text style={[typography.captionSmall, { color: colors.error, fontWeight: '700' }]}>
           Завершить тренировку
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     </Animated.View>
   );
 });

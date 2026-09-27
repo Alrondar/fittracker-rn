@@ -4,14 +4,8 @@
 //  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
 // ENG-5: ранжирование альтернатив + подпись excludedCount
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
@@ -188,6 +182,35 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     if (!altsMounted && hasAlts) setAltsMounted(true);
   }, [altsMounted, hasAlts]);
 
+  const peekCard = (
+    <View
+      style={{
+        width: cardWidth,
+        height: mainHeight > 0 ? mainHeight : undefined,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: SPACING.sm,
+        backgroundColor: colors.surfaceSecondary,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: BORDER_RADIUS.lg,
+        paddingHorizontal: SPACING.lg,
+      }}
+    >
+      <ChevronRight size={22} color={colors.textTertiary} strokeWidth={2} />
+      <Text
+        style={{
+          color: colors.textSecondary,
+          fontSize: 12,
+          fontWeight: '600',
+          textAlign: 'center',
+        }}
+      >
+        Свайпни для замен
+      </Text>
+    </View>
+  );
+
   const showPlaceholder = loadingAlts;
   const showPeek = !loadingAlts && hasAlts && !altsMounted;
   const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
@@ -212,9 +235,9 @@ export const ExerciseSlider = memo(function ExerciseSlider({
       {isReplaced && (
         <View style={[cardStyles.replacedBadgeContainer, { backgroundColor: colors.primaryLight }]}>
           <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>Заменено</Text>
-          <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
+          <PressableScale onPress={() => resetToOriginal(exerciseIndex)}>
             <Text style={[cardStyles.replacedResetText, { color: colors.primary }]}>Вернуть</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
 
@@ -302,34 +325,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
 
-        {showPeek && (
-          <View
-            style={{
-              width: cardWidth,
-              height: mainHeight > 0 ? mainHeight : undefined,
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: SPACING.sm,
-              backgroundColor: colors.surfaceSecondary,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: BORDER_RADIUS.lg,
-              paddingHorizontal: SPACING.lg,
-            }}
-          >
-            <ChevronRight size={22} color={colors.textTertiary} strokeWidth={2} />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                fontWeight: '600',
-                textAlign: 'center',
-              }}
-            >
-              Свайпни для замен
-            </Text>
-          </View>
-        )}
+        {showPeek && peekCard}
 
         {showAlts &&
           alternatives.map((alt) => (

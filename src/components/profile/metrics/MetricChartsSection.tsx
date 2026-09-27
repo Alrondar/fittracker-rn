@@ -2,7 +2,8 @@
 // FEAT-2.2: выбор графиков хранится в AsyncStorage; long-press по чипу — карточка деталей тренда.
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../hooks/useTheme';
@@ -94,7 +95,7 @@ export function MetricChartsSection({ metrics }: Props) {
         {sparkFields.map((f) => {
           const active = selectedMetrics.includes(f.key);
           return (
-            <TouchableOpacity
+            <PressableScale
               key={f.key}
               onPress={() => toggleMetric(f.key)}
               onLongPress={() => {
@@ -123,7 +124,7 @@ export function MetricChartsSection({ metrics }: Props) {
               >
                 {f.label}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
@@ -182,12 +183,12 @@ export function MetricChartsSection({ metrics }: Props) {
                     </Text>
                   </View>
                 </View>
-                <TouchableOpacity
+                <PressableScale
                   style={{ marginTop: SPACING.sm, alignItems: 'center' }}
                   onPress={() => setLongPressedMetric(null)}
                 >
                   <Text style={[typography.captionSmall, { color: colors.primary }]}>Закрыть</Text>
-                </TouchableOpacity>
+                </PressableScale>
               </AppCard>
             </FadeIn>
           );

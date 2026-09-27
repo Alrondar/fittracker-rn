@@ -6,7 +6,8 @@
 // Глубокий ввод (тип/часть тела/stop/заметка/осторожность) остаётся в
 // PainSheet — ссылка «Подробнее…» открывает шторку с prefill'ом.
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { ChevronRight, RotateCcw } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -74,10 +75,9 @@ export const PainMorphEditor = memo(function PainMorphEditor({
           const isSel = l.value === selected;
           const lc = levelColor(l.value);
           return (
-            <TouchableOpacity
+            <PressableScale
               key={l.value}
               onPress={() => handleTap(l.value)}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={
                 isSel ? `Боль: ${l.label} — нажмите ещё раз, чтобы подтвердить` : `Боль: ${l.label}`
@@ -94,6 +94,7 @@ export const PainMorphEditor = memo(function PainMorphEditor({
                 borderColor: isSel ? lc : colors.border,
                 minHeight: 48,
               }}
+              haptic="none"
             >
               <Text
                 style={[
@@ -106,7 +107,7 @@ export const PainMorphEditor = memo(function PainMorphEditor({
               >
                 {l.value} · {l.label}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
@@ -142,12 +143,11 @@ export const PainMorphEditor = memo(function PainMorphEditor({
       {/* Сброс записи (боль прошла) — только если она есть */}
       {painState != null && (
         <View style={{ marginTop: SPACING.sm, flexDirection: 'row', justifyContent: 'center' }}>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onClear();
             }}
-            activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Боль прошла — убрать отметку"
             style={{
@@ -161,6 +161,7 @@ export const PainMorphEditor = memo(function PainMorphEditor({
               borderColor: colors.border,
               minHeight: 40,
             }}
+            haptic="none"
           >
             <RotateCcw size={14} color={colors.textSecondary} strokeWidth={2} />
             <Text
@@ -169,7 +170,7 @@ export const PainMorphEditor = memo(function PainMorphEditor({
               Боль прошла
             </Text>
             <ChevronRight size={14} color={colors.textTertiary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
     </View>

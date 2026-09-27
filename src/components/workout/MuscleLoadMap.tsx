@@ -15,7 +15,8 @@
 //   - состояние empty: серые контуры + сообщение.
 
 import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   Easing,
   runOnJS,
@@ -313,7 +314,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                   );
                   const isSelected = selectedSlug === entry.slug;
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       key={entry.slug}
                       style={[
                         styles.legendRow,
@@ -323,8 +324,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                         },
                       ]}
                       onPress={() => onEntryTap?.(entry.slug)}
-                      activeOpacity={0.7}
-                      accessible
+                      haptic="none"
                       accessibilityRole="button"
                       accessibilityState={{ selected: isSelected }}
                       accessibilityLabel={`${labelForSlug(
@@ -408,7 +408,7 @@ export const MuscleLoadMap = memo<MuscleLoadMapProps>(
                           {formatVolumeKg(entry.volumeKg, unit)}
                         </Text>
                       </View>
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 })}
               </>

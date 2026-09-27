@@ -272,6 +272,12 @@
 
 Гейты: tsc ✅ eslint ✅ (остался pre-existing warning params.hero в create.tsx из UX-1h — не трогал), expo export ✅. Device — не проверено. Чек-лист: 1) завершить рабочий подход с весом выше исторического максимума → баннер PR + хаптика, повтор на том же весе не триггерит, разминки не триггерят; 2) холодный старт → бренд-знак вместо спиннера, на create — тоже; 3) Настройки → Цветовая схема: тап по акценту — превью и приложение перетекают (не прыгают); 4) иконка приложения — после `npx expo run:android`/EAS-билда.
 
+### UX-4: PressableScale-миграция нажатий 27.09.2026 (codemod)
+
+Единый pressed-язык: канонический `ui/PressableScale` (spring-scale 0.97, без opacity — урок UX-M6 про offscreen-raster) вместо плоского activeOpacity. Механика — codemod `scripts/ux4-codemod.js` (jscodeshift, --no-save): переименование элементов, снятие activeOpacity, haptic="none" там, где обработчик уже дёргает Haptics (68 мест), правки импортов. **255 элементов мигрировано** (~110 файлов). Сознательно оставлены TouchableOpacity: полнотекстовые бэкдропы (activeOpacity={1}: EquipmentSheet, ExercisePickerSheet ×2 + internals SheetShell) — масштаб им не нужен, это зоны «тап мимо = закрыть»; элементы со spread-атрибутами/нестандартными пропсами (единицы). API PressableScale расширен под реальных потребителей: accessibilityHint, полный union accessibilityRole, onPress(event), accessibilityState с undefined.
+
+Гейты: tsc ✅ eslint ✅ (0 errors по всем 106 изменённым файлам) expo export ✅. **Device — проверен 27.09 (прогон пользователя): табы, карточки, workout-экран, sheet-строки, тогглы — пружинят, скролл не сдвигает, двойной хаптики нет.** Чек-лист прогона: CustomTabBar (pop на месте), ProgramCard/DayCard/PhaseCard/WorkoutListItemCard, чипы/табы/кнопки карточек в workout, крутилка RestDial (ячейки SetsGrid не задеты), ExercisePicker/InjuryForm/Pain, StatusCard/TrainingCalendar/WeeklyInsights, PillToggle/UnitToggle/MuscleLoadModeToggle. Параллельная работа web-спайка к тому моменту уже была в main (720ad9f, c7a2b97), так что дифф чистый.
+
 ## 5. Training Engine
 
 

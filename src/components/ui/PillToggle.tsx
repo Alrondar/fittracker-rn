@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from './PressableScale';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -46,10 +47,9 @@ export function PillToggle<T extends string>({
         {options.map(({ key, label, icon: Icon }) => {
           const isSelected = value === key;
           return (
-            <TouchableOpacity
+            <PressableScale
               key={key}
               onPress={() => handlePress(key)}
-              activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               accessibilityLabel={label}
@@ -70,6 +70,7 @@ export function PillToggle<T extends string>({
                     : {}),
                 },
               ]}
+              haptic="none"
             >
               {Icon && (
                 <Icon
@@ -91,7 +92,7 @@ export function PillToggle<T extends string>({
               >
                 {label}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>

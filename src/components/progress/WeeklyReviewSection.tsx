@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import {
   ChevronRight,
@@ -98,7 +99,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
           <Text style={[typography.body, { color: colors.error, textAlign: 'center' }]}>
             Не удалось загрузить обзор недели
           </Text>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => refetch()}
             accessibilityRole="button"
             accessibilityLabel="Повторить попытку загрузки"
@@ -114,7 +115,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
             >
               Повторить
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </AppCard>
     );
@@ -178,20 +179,20 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
                 Рассмотри разгрузочную неделю
               </Text>
             </View>
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setDeloadDismissed(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityLabel="Скрыть предложение"
               accessibilityRole="button"
             >
               <X size={18} color={colors.textTertiary} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
           <Text style={[typography.body, { color: colors.textSecondary, marginTop: SPACING.sm }]}>
             Наблюдается {deloadSignalCount} из 4 устойчивых сигналов перегрузки.
           </Text>
           <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md }}>
-            <TouchableOpacity
+            <PressableScale
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setIsExpanded(true);
@@ -210,13 +211,14 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               accessibilityRole="button"
               accessibilityLabel="Разгрузочная неделя: снижение объёма"
               accessibilityHint="Раскрывает детали плана разгрузки"
+              haptic="none"
             >
               <Moon size={16} color={colors.warning} />
               <Text style={[typography.label, { color: colors.warning, fontWeight: '600' }]}>
                 Объём
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </PressableScale>
+            <PressableScale
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setIsExpanded(true);
@@ -235,22 +237,23 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               accessibilityRole="button"
               accessibilityLabel="Техническая неделя: снижение веса с акцентом на технику"
               accessibilityHint="Раскрывает детали плана технической недели"
+              haptic="none"
             >
               <Target size={16} color={colors.primary} />
               <Text style={[typography.label, { color: colors.primary, fontWeight: '600' }]}>
                 Техника
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         </AppCard>
       )}
 
       <AppCard variant="default" style={{ marginBottom: SPACING.lg }}>
-        <TouchableOpacity
-          activeOpacity={0.8}
+        <PressableScale
           onPress={toggleExpand}
           accessibilityRole="button"
           accessibilityLabel={isExpanded ? 'Свернуть детали недели' : 'Развернуть детали недели'}
+          haptic="none"
         >
           <View
             style={{
@@ -379,7 +382,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               </Text>
             </View>
           )}
-        </TouchableOpacity>
+        </PressableScale>
 
         {/* L2: Inline Accordion Content */}
         {isExpanded && (
@@ -986,7 +989,7 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
             </DetailBlock>
 
             {/* Кнопка свернуть */}
-            <TouchableOpacity
+            <PressableScale
               onPress={toggleExpand}
               style={{
                 marginTop: SPACING.md,
@@ -997,11 +1000,12 @@ export function WeeklyReviewSection({ userId }: WeeklyReviewSectionProps) {
               }}
               accessibilityRole="button"
               accessibilityLabel="Свернуть детали недели"
+              haptic="none"
             >
               <Text style={[typography.label, { color: colors.primary, fontWeight: '600' }]}>
                 Свернуть
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         )}
       </AppCard>

@@ -2,7 +2,8 @@
 // PR8: injury warnings для workout screen — compact chip + expanded banner.
 // Инкапсулирует showBanner state (ранее showInjuryBanner в [id].tsx).
 import React, { useState, memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { ShieldAlert, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { FONT_FAMILIES } from '../../constants/fonts';
@@ -43,7 +44,7 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
   if (!showBanner) {
     if (activeTab !== 'workout') return null;
     return (
-      <TouchableOpacity
+      <PressableScale
         onPress={() => {
           setShowBanner(true);
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -64,6 +65,7 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
           shadowOpacity: 0.2,
           shadowRadius: 4,
         }}
+        haptic="none"
       >
         <ShieldAlert size={18} color={colors.textInverse} strokeWidth={2} />
         <Text
@@ -79,7 +81,7 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
           {avoidCount > 0 && cautionCount > 0 ? ' ' : ''}
           {cautionCount > 0 ? `${cautionCount}⚠️` : ''}
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     );
   }
 
@@ -114,9 +116,9 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
             Внимание: активные травмы
           </Text>
         </View>
-        <TouchableOpacity onPress={() => setShowBanner(false)}>
+        <PressableScale onPress={() => setShowBanner(false)}>
           <X size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </PressableScale>
       </View>
       {activeInjuries.map((injury, index) => {
         const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;

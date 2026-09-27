@@ -1,8 +1,9 @@
 // src/components/dashboard/ReadinessSheet.tsx
 // FEAT-1.8: чек-ин состояния перед тренировкой (раз в день).
 import React, { useState, useCallback } from 'react';
-import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import { Droplet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
@@ -36,7 +37,7 @@ function ScaleRow({
         {SCALE.map((v) => {
           const active = value === v;
           return (
-            <TouchableOpacity
+            <PressableScale
               key={v}
               onPress={() => onChange(v)}
               style={{
@@ -62,7 +63,7 @@ function ScaleRow({
               >
                 {v}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
@@ -222,7 +223,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
               borderTopColor: colors.border,
             }}
           >
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setCycleCheckInOpen(true)}
               style={{
                 flexDirection: 'row',
@@ -237,7 +238,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
             >
               <Droplet size={20} color={colors.primary} style={{ marginRight: SPACING.xs }} />
               <Text style={[typography.labelBold, { color: colors.primary }]}>Отметить цикл</Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         )}
 
@@ -256,7 +257,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
           </Text>
         </View>
 
-        <TouchableOpacity
+        <PressableScale
           onPress={handleSave}
           disabled={saving}
           style={{
@@ -265,19 +266,20 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
             backgroundColor: readinessColor,
             alignItems: 'center',
           }}
+          haptic="none"
         >
           {saving ? (
             <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
             <Text style={[typography.button, { color: colors.textInverse }]}>Сохранить</Text>
           )}
-        </TouchableOpacity>
-        <TouchableOpacity
+        </PressableScale>
+        <PressableScale
           onPress={() => onDone(true)}
           style={{ marginTop: SPACING.sm, paddingVertical: SPACING.md, alignItems: 'center' }}
         >
           <Text style={[typography.caption, { color: colors.textSecondary }]}>Пропустить</Text>
-        </TouchableOpacity>
+        </PressableScale>
 
         <CycleCheckInSheet
           visible={cycleCheckInOpen}

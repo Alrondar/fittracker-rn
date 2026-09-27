@@ -1,6 +1,7 @@
 import { useCallback, useState, useMemo } from 'react';
-import { View, Text, SectionList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, SectionList, RefreshControl } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -198,7 +199,7 @@ export default function WorkoutsScreen() {
                 : 'Активируйте программу, чтобы увидеть список тренировок.'}
         </Text>
         {!activeProgram && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => router.push('/(tabs)/programs')}
             accessibilityRole="button"
             accessibilityLabel="Перейти к каталогу программ"
@@ -218,10 +219,10 @@ export default function WorkoutsScreen() {
               Перейти к программам
             </Text>
             <ArrowRight size={18} color={colors.textInverse} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
         {(isUpcomingEmpty || isThisWeekEmpty) && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setFilterMode('all')}
             accessibilityRole="button"
             accessibilityLabel="Показать все тренировки"
@@ -236,7 +237,7 @@ export default function WorkoutsScreen() {
             <Text style={[typography.labelBold, { color: colors.primary }]}>
               Показать все тренировки
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </FadeIn>
     );
@@ -259,7 +260,7 @@ export default function WorkoutsScreen() {
           </Text>
         </View>
         {activeProgram && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setFilterSheetOpen(true)}
             accessibilityRole="button"
             accessibilityLabel="Открыть фильтр тренировок"
@@ -281,7 +282,7 @@ export default function WorkoutsScreen() {
                   ? 'Эта неделя'
                   : 'Все'}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
       {loading ? (

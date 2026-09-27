@@ -1,7 +1,7 @@
 // src/components/workout/WorkoutListItemCard.tsx
 // DA-P2-8: карточка тренировки в списке (вынесена из app/(tabs)/workouts.tsx).
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { ClipboardList, Check, Clock, SkipForward } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { PressableScale } from '../ui/PressableScale';
@@ -112,7 +112,7 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
             </AppBadge>
           )}
           {isNext && forecast && forecast.difficulty !== 'unknown' && (
-            <TouchableOpacity
+            <PressableScale
               onPress={(e) => {
                 e.stopPropagation();
                 onForecastPress();
@@ -145,7 +145,7 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
                     ? 'Лёгкая'
                     : 'Обычная'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
           {status === 'completed' && (
             <AppBadge

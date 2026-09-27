@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -105,7 +106,7 @@ const InjuryCard = memo(function InjuryCard({
           С {new Date(injury.created_at).toLocaleDateString('ru-RU')}
         </Text>
         <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-          <TouchableOpacity
+          <PressableScale
             onPress={onEdit}
             style={{
               width: 32,
@@ -117,8 +118,8 @@ const InjuryCard = memo(function InjuryCard({
             }}
           >
             <Edit3 size={16} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             onPress={onRecover}
             style={{
               width: 32,
@@ -130,8 +131,8 @@ const InjuryCard = memo(function InjuryCard({
             }}
           >
             <CheckCircle size={16} color={colors.success} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             onPress={onDelete}
             style={{
               width: 32,
@@ -143,7 +144,7 @@ const InjuryCard = memo(function InjuryCard({
             }}
           >
             <Trash2 size={16} color={colors.error} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
     </AppCard>
@@ -292,9 +293,9 @@ export default function InjuriesScreen() {
           { backgroundColor: colors.surface, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+        <PressableScale onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={[typography.h4, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
         <View style={{ width: 40 }} />
       </View>
@@ -335,11 +336,11 @@ export default function InjuriesScreen() {
           >
             <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Зоны тела</Text>
             {zoneFilter && (
-              <TouchableOpacity onPress={() => setZoneFilter(null)}>
+              <PressableScale onPress={() => setZoneFilter(null)}>
                 <Text style={[typography.caption, { color: colors.primary, fontWeight: '600' }]}>
                   Сбросить
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
@@ -347,13 +348,12 @@ export default function InjuriesScreen() {
               const isActive = zoneFilter === zone;
               const zoneColor = BODY_ZONE_COLORS[zone];
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={zone}
                   onPress={() => {
                     setZoneFilter((prev) => (prev === zone ? null : zone));
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
-                  activeOpacity={0.7}
                   style={{
                     alignItems: 'center',
                     paddingHorizontal: SPACING.md,
@@ -363,6 +363,7 @@ export default function InjuriesScreen() {
                     borderWidth: 1,
                     borderColor: isActive ? zoneColor : 'transparent',
                   }}
+                  haptic="none"
                 >
                   <Circle
                     size={16}
@@ -382,7 +383,7 @@ export default function InjuriesScreen() {
                   >
                     {ZONE_LABELS[zone]}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
@@ -451,7 +452,7 @@ export default function InjuriesScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity
+      <PressableScale
         onPress={openCreate}
         style={{
           position: 'absolute',
@@ -469,9 +470,10 @@ export default function InjuriesScreen() {
           shadowOpacity: 0.25,
           shadowRadius: 4,
         }}
+        haptic="none"
       >
         <Plus size={28} color={colors.textInverse} strokeWidth={2.5} />
-      </TouchableOpacity>
+      </PressableScale>
 
       <InjuryFormSheet
         visible={showForm}

@@ -7,7 +7,8 @@
 // Инвариант: листы, рендеренные через SheetShell без isModal, живут в корне
 // экрана (паттерн PainSheet / WarmupExerciseSheet), а не внутри header.
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { AlertCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -95,24 +96,23 @@ export function FinishWorkoutSheet({
 
       {/* Кнопки */}
       <View style={{ gap: SPACING.sm }}>
-        <TouchableOpacity
+        <PressableScale
           onPress={handleConfirmFinish}
-          activeOpacity={0.8}
           style={{
             backgroundColor: hasUnloggedSets ? colors.warning : colors.success,
             paddingVertical: SPACING.md,
             borderRadius: BORDER_RADIUS.md,
             alignItems: 'center',
           }}
+          haptic="none"
         >
           <Text style={[typography.button, { color: colors.textInverse, fontWeight: '700' }]}>
             {hasUnloggedSets ? 'Завершить без сохранения' : 'Завершить тренировку'}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
 
-        <TouchableOpacity
+        <PressableScale
           onPress={onClose}
-          activeOpacity={0.7}
           style={{
             backgroundColor: colors.surfaceSecondary,
             paddingVertical: SPACING.md,
@@ -125,7 +125,7 @@ export function FinishWorkoutSheet({
           <Text style={[typography.button, { color: colors.textPrimary, fontWeight: '600' }]}>
             Продолжить тренировку
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </SheetShell>
   );

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { X, Search, Check, ArrowUpDown, Zap, Flame, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { FONT_FAMILIES } from '../../../constants/fonts';
@@ -44,9 +45,8 @@ const PickerRow = memo(function PickerRow({ item, onPress, colors }: PickerRowPr
   const borderColor =
     item.primary_muscles.length > 0 ? getMuscleColor(item.primary_muscles[0]) : colors.border;
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => onPress(item)}
-      activeOpacity={0.7}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -113,7 +113,7 @@ const PickerRow = memo(function PickerRow({ item, onPress, colors }: PickerRowPr
           )}
         </View>
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 });
 
@@ -194,9 +194,8 @@ export function ExercisePickerSheet({
           const selectedInGroup = muscles.filter((m) => selectedMuscles.includes(m)).length;
           const groupColor = getGroupColor(groupName, colors);
           return (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => toggleGroup(groupName)}
-              activeOpacity={0.6}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -207,6 +206,7 @@ export function ExercisePickerSheet({
                 borderWidth: 1,
                 borderColor: isActive ? groupColor : colors.border,
               }}
+              haptic="none"
             >
               <Text
                 style={{
@@ -239,7 +239,7 @@ export function ExercisePickerSheet({
                   </Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           );
         }}
       />
@@ -250,10 +250,9 @@ export function ExercisePickerSheet({
               const isSelected = selectedMuscles.includes(muscle);
               const muscleColor = getMuscleColor(muscle);
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={muscle}
                   onPress={() => toggleMuscle(muscle)}
-                  activeOpacity={0.6}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -282,7 +281,7 @@ export function ExercisePickerSheet({
                   >
                     {muscle}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
@@ -309,9 +308,8 @@ export function ExercisePickerSheet({
           gap: SPACING.sm,
         }}
       >
-        <TouchableOpacity
+        <PressableScale
           onPress={toggleActivation}
-          activeOpacity={0.7}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -340,16 +338,16 @@ export function ExercisePickerSheet({
           >
             Активация
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
         {activeFiltersCount > 0 && (
-          <TouchableOpacity
+          <PressableScale
             onPress={resetFilters}
             style={{ paddingHorizontal: SPACING.sm, paddingVertical: SPACING.sm }}
           >
             <Text style={[typography.caption, { color: colors.primary, fontWeight: '700' }]}>
               Сбросить ({activeFiltersCount})
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
     </View>
@@ -403,11 +401,11 @@ export function ExercisePickerSheet({
           : 'Начните вводить название упражнения'}
       </Text>
       {(searchInput || activeFiltersCount > 0) && (
-        <TouchableOpacity onPress={resetFilters} style={{ marginTop: SPACING.md }}>
+        <PressableScale onPress={resetFilters} style={{ marginTop: SPACING.md }}>
           <AppBadge variant="primary" size="medium">
             Сбросить
           </AppBadge>
-        </TouchableOpacity>
+        </PressableScale>
       )}
     </View>
   );
@@ -448,7 +446,7 @@ export function ExercisePickerSheet({
                 Добавить упражнение
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => setShowSortSheet(true)}
                   style={{
                     width: 36,
@@ -465,10 +463,10 @@ export function ExercisePickerSheet({
                     color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary}
                     strokeWidth={2}
                   />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onClose}>
+                </PressableScale>
+                <PressableScale onPress={onClose}>
                   <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                </TouchableOpacity>
+                </PressableScale>
               </View>
             </View>
             <View
@@ -498,12 +496,12 @@ export function ExercisePickerSheet({
                 returnKeyType="search"
               />
               {searchInput.length > 0 && (
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => setSearchInput('')}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <X size={18} color={colors.textTertiary} strokeWidth={2} />
-                </TouchableOpacity>
+                </PressableScale>
               )}
             </View>
             {searchTooShort && (
@@ -527,11 +525,11 @@ export function ExercisePickerSheet({
               <Text style={[typography.body, { color: colors.textSecondary, textAlign: 'center' }]}>
                 Не удалось загрузить упражнения
               </Text>
-              <TouchableOpacity onPress={() => refetch()} style={{ marginTop: SPACING.md }}>
+              <PressableScale onPress={() => refetch()} style={{ marginTop: SPACING.md }}>
                 <AppBadge variant="primary" size="medium">
                   Повторить
                 </AppBadge>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           ) : (
             <FlatList
@@ -621,7 +619,7 @@ export function ExercisePickerSheet({
                 { key: 'popularity', label: 'По популярности' },
               ] as { key: ExerciseSortBy; label: string }[]
             ).map((option) => (
-              <TouchableOpacity
+              <PressableScale
                 key={option.key}
                 style={{
                   flexDirection: 'row',
@@ -636,6 +634,7 @@ export function ExercisePickerSheet({
                   setShowSortSheet(false);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
+                haptic="none"
               >
                 <Text
                   style={[
@@ -651,7 +650,7 @@ export function ExercisePickerSheet({
                 {sortBy === option.key && (
                   <Check size={20} color={colors.primary} strokeWidth={2} />
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             ))}
           </View>
         </>

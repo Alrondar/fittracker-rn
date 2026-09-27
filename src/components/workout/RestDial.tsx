@@ -12,7 +12,8 @@
 // идущий таймер через adjustRestTimer). ✕ слева сверху: setup — закрыть,
 // running/finished — остановить отдых.
 import React, { useRef, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, PanResponder, StyleSheet } from 'react-native';
+import { View, Text, PanResponder, StyleSheet } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Play } from 'lucide-react-native';
@@ -158,14 +159,13 @@ export function RestDial({
     const a = 0.1 + idx * 0.07;
     const strong = idx >= 2;
     return (
-      <TouchableOpacity
+      <PressableScale
         key={label}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           if (setup) setSeconds((s) => clamp(snap(s + delta)));
           else onAdjust(delta);
         }}
-        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={`${label} секунд`}
         style={{
@@ -175,6 +175,7 @@ export function RestDial({
           borderWidth: 1,
           borderColor: withAlpha(colors.primary, 0.25),
         }}
+        haptic="none"
       >
         <LinearGradient
           colors={[withAlpha(grad[0], a), withAlpha(grad[1], a + 0.08)]}
@@ -191,7 +192,7 @@ export function RestDial({
             {label}
           </Text>
         </LinearGradient>
-      </TouchableOpacity>
+      </PressableScale>
     );
   };
 
@@ -220,9 +221,8 @@ export function RestDial({
         >
           {exerciseName}
         </Text>
-        <TouchableOpacity
+        <PressableScale
           onPress={onCancel}
-          activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={setup ? 'Отменить таймер' : 'Остановить отдых'}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -238,7 +238,7 @@ export function RestDial({
           }}
         >
           <X size={16} color={colors.textSecondary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {/* Крутилка + колонки шагов — по центру оставшейся высоты */}
@@ -319,12 +319,11 @@ export function RestDial({
             >
               {setup ? (
                 armed ? (
-                  <TouchableOpacity
+                  <PressableScale
                     onPress={() => {
                       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                       onStart(seconds);
                     }}
-                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel={`Начать отдых ${seconds} секунд`}
                     style={{
@@ -340,6 +339,7 @@ export function RestDial({
                         elevation: 6,
                       } as object),
                     }}
+                    haptic="none"
                   >
                     <LinearGradient
                       colors={grad}
@@ -378,7 +378,7 @@ export function RestDial({
                         {formatRestTime(seconds)}
                       </Text>
                     </LinearGradient>
-                  </TouchableOpacity>
+                  </PressableScale>
                 ) : (
                   <Text
                     style={{
@@ -392,9 +392,8 @@ export function RestDial({
                   </Text>
                 )
               ) : finished ? (
-                <TouchableOpacity
+                <PressableScale
                   onPress={onCancel}
-                  activeOpacity={0.85}
                   accessibilityRole="button"
                   accessibilityLabel="Продолжить тренировку"
                   style={{
@@ -414,7 +413,7 @@ export function RestDial({
                   >
                     Продолжить
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               ) : (
                 <View style={{ alignItems: 'center' }}>
                   <Text
@@ -427,7 +426,7 @@ export function RestDial({
                   >
                     {formatRestTime(timeLeft)}
                   </Text>
-                  <TouchableOpacity
+                  <PressableScale
                     onPress={onCancel}
                     accessibilityRole="button"
                     accessibilityLabel="Пропустить остаток отдыха"
@@ -436,7 +435,7 @@ export function RestDial({
                     <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
                       пропустить
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 </View>
               )}
             </View>

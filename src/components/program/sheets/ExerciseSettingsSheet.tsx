@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { Plus, Minus, TrendingUp, TrendingDown, Target } from 'lucide-react-native';
 import { ProgramExercise } from '../../../services/programsService';
 import { FONT_FAMILIES } from '../../../constants/fonts';
@@ -61,7 +62,7 @@ export function ExerciseSettingsSheet({
             gap: SPACING.lg,
           }}
         >
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setSets(Math.max(1, sets - 1))}
             accessibilityRole="button"
             accessibilityLabel="Уменьшить количество подходов"
@@ -75,7 +76,7 @@ export function ExerciseSettingsSheet({
             }}
           >
             <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text
             style={[
               typography.h3,
@@ -84,7 +85,7 @@ export function ExerciseSettingsSheet({
           >
             {sets}
           </Text>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setSets(Math.min(10, sets + 1))}
             accessibilityRole="button"
             accessibilityLabel="Увеличить количество подходов"
@@ -98,7 +99,7 @@ export function ExerciseSettingsSheet({
             }}
           >
             <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
 
@@ -138,7 +139,7 @@ export function ExerciseSettingsSheet({
             gap: SPACING.lg,
           }}
         >
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setTargetRpe((prev) => (prev != null && prev > 1 ? prev - 1 : null))}
             accessibilityRole="button"
             accessibilityLabel="Снизить целевой RPE или сбросить"
@@ -152,7 +153,7 @@ export function ExerciseSettingsSheet({
             }}
           >
             <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text
             style={[
               typography.h3,
@@ -165,7 +166,7 @@ export function ExerciseSettingsSheet({
           >
             {targetRpe != null ? targetRpe : '—'}
           </Text>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setTargetRpe((prev) => (prev != null && prev < 10 ? prev + 1 : 1))}
             accessibilityRole="button"
             accessibilityLabel="Увеличить целевой RPE"
@@ -179,7 +180,7 @@ export function ExerciseSettingsSheet({
             }}
           >
             <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
         <Text
           style={[
@@ -206,7 +207,7 @@ export function ExerciseSettingsSheet({
             gap: SPACING.lg,
           }}
         >
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setRestSeconds(Math.max(30, restSeconds - 15))}
             accessibilityRole="button"
             accessibilityLabel="Уменьшить время отдыха на 15 секунд"
@@ -220,7 +221,7 @@ export function ExerciseSettingsSheet({
             }}
           >
             <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text
             style={[
               typography.h3,
@@ -229,7 +230,7 @@ export function ExerciseSettingsSheet({
           >
             {restSeconds}с
           </Text>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setRestSeconds(Math.min(300, restSeconds + 15))}
             accessibilityRole="button"
             accessibilityLabel="Увеличить время отдыха на 15 секунд"
@@ -243,7 +244,7 @@ export function ExerciseSettingsSheet({
             }}
           >
             <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
 
@@ -254,7 +255,7 @@ export function ExerciseSettingsSheet({
         </Text>
         <View style={{ gap: SPACING.sm }}>
           {policies.map((item) => (
-            <TouchableOpacity
+            <PressableScale
               key={item.value}
               onPress={() => setProgressionPolicy(item.value)}
               accessibilityRole="button"
@@ -297,7 +298,7 @@ export function ExerciseSettingsSheet({
               >
                 {item.description}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </View>
       </View>
@@ -309,7 +310,7 @@ export function ExerciseSettingsSheet({
         </Text>
         <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
           {intensities.map((item) => (
-            <TouchableOpacity
+            <PressableScale
               key={item.value}
               onPress={() => setIntensity(item.value)}
               accessibilityRole="button"
@@ -342,13 +343,13 @@ export function ExerciseSettingsSheet({
               >
                 {item.label}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </View>
       </View>
 
       {/* Сохранить */}
-      <TouchableOpacity
+      <PressableScale
         onPress={() =>
           onSave({
             sets,
@@ -364,7 +365,7 @@ export function ExerciseSettingsSheet({
         style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
       >
         <Text style={buttonStyles.textPrimary}>Сохранить</Text>
-      </TouchableOpacity>
+      </PressableScale>
     </>
   );
 }

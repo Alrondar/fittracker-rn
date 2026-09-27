@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import {
   ChevronDown,
   ChevronRight,
@@ -130,13 +131,13 @@ export function PhaseCard({
           paddingVertical: SPACING.md,
         }}
       >
-        <TouchableOpacity
+        <PressableScale
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setExpanded(!expanded);
           }}
           style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-          activeOpacity={0.7}
+          haptic="none"
         >
           <View
             style={{
@@ -174,14 +175,14 @@ export function PhaseCard({
           ) : (
             <ChevronRight size={20} color={colors.textSecondary} strokeWidth={1.5} />
           )}
-        </TouchableOpacity>
+        </PressableScale>
 
         {editMode && (
           <View
             style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: SPACING.sm }}
           >
             {onDrag && (
-              <TouchableOpacity
+              <PressableScale
                 onLongPress={onDrag}
                 delayLongPress={150}
                 disabled={isActive}
@@ -191,22 +192,22 @@ export function PhaseCard({
                 accessibilityRole="button"
               >
                 <GripVertical size={18} color={colors.textSecondary} strokeWidth={2} />
-              </TouchableOpacity>
+              </PressableScale>
             )}
-            <TouchableOpacity
+            <PressableScale
               onPress={onEditPhase}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={{ padding: 4 }}
             >
               <Settings size={16} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
-            <TouchableOpacity
+            </PressableScale>
+            <PressableScale
               onPress={onRemovePhase}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={{ padding: 4 }}
             >
               <Trash2 size={16} color={colors.error} strokeWidth={2} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         )}
       </View>
@@ -225,7 +226,7 @@ export function PhaseCard({
                   const wOverridden = w === 1 || days.some((d) => (d.week_number ?? 1) === w);
                   const isSelected = selectedWeek === w;
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       key={w}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -239,6 +240,7 @@ export function PhaseCard({
                         borderColor: isSelected ? phaseColor : colors.border,
                         backgroundColor: isSelected ? withAlpha(phaseColor, 0.094) : colors.surface,
                       }}
+                      haptic="none"
                     >
                       <Text
                         style={[
@@ -252,7 +254,7 @@ export function PhaseCard({
                         Нед {w}
                         {wOverridden && w !== 1 ? ' •' : ''}
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 })}
               </View>
@@ -276,7 +278,7 @@ export function PhaseCard({
                 Неделя {selectedWeek} использует шаблон недели 1
               </Text>
               {editMode && onCopyTemplateToWeek && (
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => onCopyTemplateToWeek(selectedWeek)}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 >
@@ -286,14 +288,14 @@ export function PhaseCard({
                   >
                     Переопределить
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               )}
             </View>
           )}
 
           {/* Сброс к шаблону */}
           {isOverridden && selectedWeek > 1 && editMode && onResetWeekToTemplate && (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => onResetWeekToTemplate(selectedWeek)}
               style={{
                 flexDirection: 'row',
@@ -307,7 +309,7 @@ export function PhaseCard({
               <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
                 Сбросить к шаблону
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
 
           {/* Дни */}
@@ -326,9 +328,8 @@ export function PhaseCard({
 
           {/* Добавить день (только для переопределённой недели) */}
           {canEditDays && (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => (onAddDayToWeek ? onAddDayToWeek(selectedWeek) : onAddDay())}
-              activeOpacity={0.7}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -344,7 +345,7 @@ export function PhaseCard({
             >
               <Plus size={16} color={colors.primary} strokeWidth={2} />
               <Text style={[typography.labelBold, { color: colors.primary }]}>Добавить день</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
       )}

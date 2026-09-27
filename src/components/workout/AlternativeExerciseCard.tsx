@@ -4,7 +4,8 @@
 // пользователь видит ограничения до принятия решения о замене).
 // Техника выполнения — аккордеон с lazy mount (CLAUDE.md §8).
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import {
   RotateCcw,
   Sparkles,
@@ -226,7 +227,7 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
       )}
 
       {/* === CTA: Заменить на это === */}
-      <TouchableOpacity
+      <PressableScale
         style={[
           cardStyles.replaceButton,
           {
@@ -242,7 +243,7 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
         <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>
           Заменить на это
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
 
       {/* === Аккордеон «Техника выполнения» (lazy mount через ExerciseCardTechnique) === */}
       {hasTechniqueBlock && (

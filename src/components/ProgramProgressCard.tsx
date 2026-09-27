@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from './ui/PressableScale';
 import { useTheme } from '../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../constants/theme';
 import { typography } from '../styles/typography';
@@ -82,10 +83,9 @@ export function ProgramProgressCard({
         </View>
 
         {onStartPress && (
-          <TouchableOpacity
+          <PressableScale
             onPress={onStartPress}
             style={[styles.startButton, { backgroundColor: colors.primary }]}
-            activeOpacity={0.8}
           >
             <Play size={16} color={colors.textInverse} strokeWidth={2} fill={colors.textInverse} />
             <Text
@@ -93,7 +93,7 @@ export function ProgramProgressCard({
             >
               Начать
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
 

@@ -1,7 +1,8 @@
 // src/components/settings/SettingsRows.tsx
 // DA-P2-8: общие строки экрана настроек (экран >500 строк → split).
 import React, { useMemo } from 'react';
-import { View, Text, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, Switch } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import type { LucideIcon } from 'lucide-react-native';
 import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -82,7 +83,7 @@ export function LinkRow({
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
 
   return (
-    <TouchableOpacity
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={() => {
@@ -110,7 +111,7 @@ export function LinkRow({
         </View>
       </View>
       <ChevronRight size={20} color={colors.textTertiary} />
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

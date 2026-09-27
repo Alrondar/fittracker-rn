@@ -7,7 +7,8 @@
 // UX-T3 (26.09): отдельная кнопка «Завершить» удалена — её роль играет
 // морфинг-кнопка (Начать → Завершить/Продолжить) в WorkoutTimerPill.
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -50,15 +51,16 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
           { backgroundColor: colors.surface, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity
+        <PressableScale
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={commonStyles.backButton}
+          haptic="none"
         >
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <View style={{ flex: 1 }}>
           {programName ? (
             <>
