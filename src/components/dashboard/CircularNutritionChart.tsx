@@ -48,9 +48,13 @@ export function CircularNutritionChart({
   const proteinLen = macrosSum > 0 ? circumference * (targets.proteins / macrosSum) : 0;
   const fatLen = macrosSum > 0 ? circumference * (targets.fats / macrosSum) : 0;
   const carbLen = macrosSum > 0 ? circumference * (targets.carbs / macrosSum) : 0;
-  const proteinOffset = proteinLen * (1 - Math.min(1, daily.proteins / (targets.proteins || 1)));
-  const fatOffset = fatLen * (1 - Math.min(1, daily.fats / (targets.fats || 1)));
-  const carbOffset = carbLen * (1 - Math.min(1, daily.carbs / (targets.carbs || 1)));
+  // UX-5 (фикс регрессии): прогресс = ДЛИНА дуги, а не dashoffset. Старая схема
+  // (dasharray [L, C-L] + offset L*(1-prog)) при prog=0 сдвигала цветной сегмент
+  // в конец окружности — на нулевом дне кольца «исчезали» и рисовались внахлёст.
+  const macroFrac = (cur: number, target: number) => (target > 0 ? Math.min(1, cur / target) : 0);
+  const proteinProg = macroFrac(daily.proteins, targets.proteins);
+  const fatProg = macroFrac(daily.fats, targets.fats);
+  const carbProg = macroFrac(daily.carbs, targets.carbs);
 
   const remainingCalories = Math.max(0, targets.calories - daily.calories);
 
@@ -58,76 +62,30 @@ export function CircularNutritionChart({
     <View style={{ alignItems: 'center', justifyContent: 'center', height: SIZE }}>
       <Svg width={SIZE} height={SIZE}>
         <G rotation="-90" origin={`${CENTER}, ${CENTER}`}>
-          {/* Макросы — внешнее сегментированное */}
+          {/* Макросы — внешнее сегментированное: приглушённый цветной трек
+              (сегменты видны всегда, в т.ч. на нулевом дне) + яркая дуга прогресса. */}
           {macrosSum > 0 && (
             <>
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={R_MACROS}
-                stroke={colors.border}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-                strokeDasharray={`${proteinLen} ${circumference - proteinLen}`}
+              <MacroSegment
+                len={proteinLen}
+                progress={proteinProg}
+                color={MACRO_COLORS.proteins}
+                startDeg={0}
+                circumference={circumference}
               />
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={R_MACROS}
-                stroke={MACRO_COLORS.proteins}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-                strokeDasharray={`${proteinLen} ${circumference - proteinLen}`}
-                strokeDashoffset={proteinOffset}
-                strokeLinecap="round"
+              <MacroSegment
+                len={fatLen}
+                progress={fatProg}
+                color={MACRO_COLORS.fats}
+                startDeg={(proteinLen / circumference) * 360}
+                circumference={circumference}
               />
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={R_MACROS}
-                stroke={colors.border}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-                strokeDasharray={`${fatLen} ${circumference - fatLen}`}
-                rotation={(proteinLen / circumference) * 360}
-                origin={`${CENTER}, ${CENTER}`}
-              />
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={R_MACROS}
-                stroke={MACRO_COLORS.fats}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-                strokeDasharray={`${fatLen} ${circumference - fatLen}`}
-                strokeDashoffset={fatOffset}
-                rotation={(proteinLen / circumference) * 360}
-                origin={`${CENTER}, ${CENTER}`}
-                strokeLinecap="round"
-              />
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={R_MACROS}
-                stroke={colors.border}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-                strokeDasharray={`${carbLen} ${circumference - carbLen}`}
-                rotation={((proteinLen + fatLen) / circumference) * 360}
-                origin={`${CENTER}, ${CENTER}`}
-              />
-              <Circle
-                cx={CENTER}
-                cy={CENTER}
-                r={R_MACROS}
-                stroke={MACRO_COLORS.carbs}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-                strokeDasharray={`${carbLen} ${circumference - carbLen}`}
-                strokeDashoffset={carbOffset}
-                rotation={((proteinLen + fatLen) / circumference) * 360}
-                origin={`${CENTER}, ${CENTER}`}
-                strokeLinecap="round"
+              <MacroSegment
+                len={carbLen}
+                progress={carbProg}
+                color={MACRO_COLORS.carbs}
+                startDeg={((proteinLen + fatLen) / circumference) * 360}
+                circumference={circumference}
               />
             </>
           )}
@@ -210,5 +168,55 @@ export function CircularNutritionChart({
         )}
       </View>
     </View>
+  );
+}
+
+// UX-5: один сегмент внешнего кольца = приглушённый трек всей длины + дуга
+// прогресса (длина = len*progress, offset 0). При progress=0 дуга не рендерится
+// (round-cap на нулевой длине рисует точку).
+function MacroSegment({
+  len,
+  progress,
+  color,
+  startDeg,
+  circumference,
+}: {
+  len: number;
+  progress: number;
+  color: string;
+  startDeg: number;
+  circumference: number;
+}) {
+  if (len <= 0) return null;
+  const dash = `${len} ${circumference - len}`;
+  const progLen = len * progress;
+  return (
+    <>
+      <Circle
+        cx={CENTER}
+        cy={CENTER}
+        r={R_MACROS}
+        stroke={withAlpha(color, 0.28)}
+        strokeWidth={STROKE_WIDTH}
+        fill="none"
+        strokeDasharray={dash}
+        rotation={startDeg}
+        origin={`${CENTER}, ${CENTER}`}
+      />
+      {progress > 0 && (
+        <Circle
+          cx={CENTER}
+          cy={CENTER}
+          r={R_MACROS}
+          stroke={color}
+          strokeWidth={STROKE_WIDTH}
+          fill="none"
+          strokeDasharray={`${progLen} ${circumference - progLen}`}
+          rotation={startDeg}
+          origin={`${CENTER}, ${CENTER}`}
+          strokeLinecap="round"
+        />
+      )}
+    </>
   );
 }

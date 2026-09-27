@@ -11,7 +11,9 @@ import { AppButton } from '../../src/components/ui/AppButton';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { signIn, signUp, mapAuthError } from '../../src/services/authService';
-import { Mail, Lock, UserPlus, LogIn, Dumbbell } from 'lucide-react-native';
+import { Mail, Lock, UserPlus, LogIn } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import BenchPressIcon from '../../src/assets/equipment-icons/bench-press.svg';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -20,7 +22,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { setAuth } = useStore();
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -61,8 +63,30 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={{ flex: 1, justifyContent: 'center', padding: SPACING.xxl }}>
+          {/* UX-5: бренд-бейдж = он же, что и иконка приложения (белый знак
+              bench-press на градиентном круге темы), а не lucide Dumbbell. */}
           <View style={{ alignItems: 'center', marginBottom: SPACING.sm }}>
-            <Dumbbell size={72} color={colors.primary} strokeWidth={1.5} />
+            <LinearGradient
+              colors={gradients.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <BenchPressIcon
+                width={52}
+                height={52}
+                fill="#ffffff"
+                stroke="#ffffff"
+                strokeWidth={0}
+                viewBox="0 0 100 100"
+              />
+            </LinearGradient>
           </View>
           <Text
             style={[
