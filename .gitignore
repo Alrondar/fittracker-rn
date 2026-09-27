@@ -52,3 +52,5 @@ data/*
 # Разрешаем папку exercises и её содержимое
 !data/exercises/
 !data/exercises/**/*
+# локальный деплой-артефакт веб-версии (Qoder Sites), не источник
+web-deploy/
