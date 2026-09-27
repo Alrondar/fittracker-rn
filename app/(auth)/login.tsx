@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -21,8 +22,8 @@ export default function LoginScreen() {
   const { colors } = useTheme();
 
   const handleAuth = async () => {
-    if (!email || !password) { Alert.alert('Ошибка', 'Заполните все поля'); return; }
-    if (password.length < 6) { Alert.alert('Ошибка', 'Пароль должен быть минимум 6 символов'); return; }
+    if (!email || !password) { feedback.alert('Ошибка', 'Заполните все поля'); return; }
+    if (password.length < 6) { feedback.alert('Ошибка', 'Пароль должен быть минимум 6 символов'); return; }
     setLoading(true);
     try {
       if (isLogin) {
@@ -32,7 +33,7 @@ export default function LoginScreen() {
         const { user, needsEmailConfirmation } = await signUp(email, password);
         if (needsEmailConfirmation) {
           setLoading(false); // сессии нет → гейт не вмешивается, остаёмся на login
-          Alert.alert('Подтверждение', 'Проверьте почту для подтверждения аккаунта');
+          feedback.alert('Подтверждение', 'Проверьте почту для подтверждения аккаунта');
           return;
         }
         if (user) setAuth(user.id);
@@ -42,7 +43,7 @@ export default function LoginScreen() {
       // router.replace НЕ вызываем — единственный редиректор после входа = корневой гейт
     } catch (error: any) {
       setLoading(false);
-      Alert.alert('Ошибка', mapAuthError(error?.message));
+      feedback.alert('Ошибка', mapAuthError(error?.message));
     }
   };
 

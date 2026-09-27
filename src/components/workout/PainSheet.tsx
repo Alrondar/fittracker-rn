@@ -9,9 +9,9 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
@@ -195,11 +195,11 @@ export function PainSheet({
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (stopExercise) {
-        Alert.alert('Отмечено', 'Свайпни по карточке влево, чтобы выбрать упражнение-замену');
+        feedback.alert('Отмечено', 'Свайпни по карточке влево, чтобы выбрать упражнение-замену');
       }
       onClose();
     } catch (e: any) {
-      Alert.alert('Ошибка', e?.message || 'Не удалось сохранить');
+      feedback.alert('Ошибка', e?.message || 'Не удалось сохранить');
     } finally {
       setSaving(false);
     }
@@ -230,7 +230,7 @@ export function PainSheet({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch (e: any) {
-      Alert.alert('Ошибка', e?.message || 'Не удалось удалить запись');
+      feedback.alert('Ошибка', e?.message || 'Не удалось удалить запись');
     } finally {
       setSaving(false);
     }

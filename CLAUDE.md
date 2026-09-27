@@ -46,6 +46,7 @@
 - Profile создаётся DB trigger `handle_new_user`; `ensureProfile` идемпотентен.
 - Config — `src/lib/config.ts`, значения приходят из Expo config.
 - User-facing errors — `mapError/extractMessage` или `mapAuthError`.
+- User-facing алерты и подтверждения — только через `src/lib/feedback.ts` (`feedback.alert`); `Alert.alert` в коде UI не используется (грабля — INVENTORY.md §10.1).
 - Файл не должен разрастаться выше 500 строк; при >450 сначала рассмотреть split.
 - `database.types.ts` должен соответствовать текущей схеме.
 - Новая логика не должна ломать persistence, safety или program-sync semantics.

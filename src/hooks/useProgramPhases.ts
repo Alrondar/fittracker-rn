@@ -1,5 +1,6 @@
-import { Alert } from 'react-native';
+
 import * as Haptics from 'expo-haptics';
+import { feedback } from '../lib/feedback';
 import { Program, ProgramPhase, ProgramDay } from '../services/programsService';
 
 const genRandomUUID = () =>
@@ -68,7 +69,7 @@ export function useProgramPhases({
     if (!editedProgram || !editedProgram.phases) return;
     const phase = editedProgram.phases[phaseIndex];
     if (!phase) return;
-    Alert.alert('Удалить фазу?', `"${phase.name}" и все её дни будут удалены`, [
+    feedback.alert('Удалить фазу?', `"${phase.name}" и все её дни будут удалены`, [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Удалить',
@@ -140,7 +141,7 @@ export function useProgramPhases({
     if (!editedProgram || !editedProgram.days) return;
     const day = editedProgram.days[dayIndex];
     if (!day) return;
-    Alert.alert('Удалить день?', `"${day.name}" будет удалён`, [
+    feedback.alert('Удалить день?', `"${day.name}" будет удалён`, [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Удалить',
@@ -195,7 +196,7 @@ export function useProgramPhases({
       (d) => d.phase_id === phase.id && (d.week_number ?? 1) === week,
     );
     if (weekDays.length === 0) return;
-    Alert.alert(
+    feedback.alert(
       'Сбросить неделю к шаблону?',
       `Изменения недели ${week} будут удалены, снова будет использоваться шаблон недели 1`,
       [

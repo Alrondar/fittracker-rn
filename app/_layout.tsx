@@ -13,6 +13,9 @@ import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { BrandLoader } from '../src/components/ui/BrandLoader';
 import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
+// WEB-1: хост диалогов feedback (на нативных платформах рендерит null — там
+// feedback делегирует в системный Alert.alert).
+import { FeedbackDialog } from '../src/components/ui/FeedbackDialog';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
 import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
 
@@ -193,6 +196,10 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <RootLayoutContent />
+          {/* WEB-1: хост диалогов feedback.* рядом с контентом, а не внутри него:
+
+              диалог может быть запрошен и в период splash-гейта. */}
+          <FeedbackDialog />
         </ThemeProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

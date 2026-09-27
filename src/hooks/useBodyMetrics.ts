@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { feedback } from '../lib/feedback';
 import { metricsService } from '../services/metricsService';
 import { BodyMetric, MetricFormData } from '../types/metrics';
-import { Alert } from 'react-native';
+
 
 export function useBodyMetrics(userId: string | null) {
   const queryClient = useQueryClient();
@@ -57,7 +58,7 @@ export function useBodyMetrics(userId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['body_metrics', userId] });
     },
     onError: (error: any) => {
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить замер');
+      feedback.alert('Ошибка', error.message || 'Не удалось сохранить замер');
     },
   });
 
@@ -68,7 +69,7 @@ export function useBodyMetrics(userId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['body_metrics', userId] });
     },
     onError: (error: any) => {
-      Alert.alert('Ошибка', error.message || 'Не удалось удалить замер');
+      feedback.alert('Ошибка', error.message || 'Не удалось удалить замер');
     },
   });
 

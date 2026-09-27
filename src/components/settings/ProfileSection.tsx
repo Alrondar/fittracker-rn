@@ -1,7 +1,8 @@
 // src/components/settings/ProfileSection.tsx
 // DA-P2-8: секция «Профиль» экрана настроек (вынесена из app/profile/settings.tsx).
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import { User, Mail, Lock, Save } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
@@ -47,16 +48,16 @@ export function ProfileSection() {
     try {
       await profileService.updateFullName(userId, fullName);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Успех', 'Данные сохранены');
+      feedback.alert('Успех', 'Данные сохранены');
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
+      feedback.alert('Ошибка', e.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleChangePassword = () => {
-    Alert.alert('Смена пароля', 'Для смены пароля вам будет отправлено письмо на почту', [
+    feedback.alert('Смена пароля', 'Для смены пароля вам будет отправлено письмо на почту', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Отправить',
@@ -65,9 +66,9 @@ export function ProfileSection() {
             // SEC-5: через authService + redirectTo, чтобы письмо вело обратно в
             // приложение (PASSWORD_RECOVERY → update-password), а не на Supabase URL.
             await sendPasswordReset(email, 'fittracker://reset-password');
-            Alert.alert('Успех', 'Письмо для смены пароля отправлено');
+            feedback.alert('Успех', 'Письмо для смены пароля отправлено');
           } catch (e: any) {
-            Alert.alert('Ошибка', e.message);
+            feedback.alert('Ошибка', e.message);
           }
         },
       },

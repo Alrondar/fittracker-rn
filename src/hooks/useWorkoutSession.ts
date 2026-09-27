@@ -5,7 +5,8 @@
 // - useWorkoutSession.rest.ts — rest timer logic
 // - useWorkoutSession.loader.ts — функции загрузки данных
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { feedback } from '../lib/feedback';
+
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ExerciseData, SetData, SetFeedbackPatch, ExercisePainState } from '../types/workout';
@@ -231,7 +232,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       perfSince('load:start', 'loadWorkout: итого (запросы + маппинг)');
     } catch (error: any) {
       console.error('[useWorkoutSession] loadWorkout:', error);
-      Alert.alert('Ошибка', mapError(error));
+      feedback.alert('Ошибка', mapError(error));
       setLoadError(mapError(error));
     } finally {
       setLoading(false);
@@ -582,7 +583,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         return;
       }
 
-      Alert.alert(
+      feedback.alert(
         'Вернуть оригинальное упражнение?',
         `«${original.name}» вернётся в тренировку, введённые подходы сохранятся`,
         [
@@ -603,7 +604,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                 await updateWorkoutExerciseId(workoutExerciseId, original.id);
               } catch (error) {
                 console.error('[useWorkoutSession] resetToOriginal DB update:', error);
-                Alert.alert('Ошибка', mapError(error));
+                feedback.alert('Ошибка', mapError(error));
                 return; // БД не тронута — бейдж и кнопка остаются
               }
 
@@ -696,7 +697,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           alternative.id,
           alternative.name
         );
-        Alert.alert(
+        feedback.alert(
           'Заменено в программе',
           `${previousExercise.name} → ${alternative.name}\n\nИзменение применено к будущим тренировкам программы.`
         );
@@ -708,7 +709,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           updated[exerciseIndex] = previousExercise;
           return updated;
         });
-        Alert.alert(
+        feedback.alert(
           'Не удалось изменить программу',
           'Программа не была изменена. Возможно, это готовая программа — только личные программы доступны для редактирования.'
         );
@@ -752,7 +753,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           updated[exerciseIndex] = { ...updated[exerciseIndex], painState: previousPainState };
           return updated;
         });
-        Alert.alert('Ошибка', mapError(error));
+        feedback.alert('Ошибка', mapError(error));
       }
     },
     [userId, workoutId]
@@ -781,7 +782,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           updated[exerciseIndex] = { ...updated[exerciseIndex], painState: previousPainState };
           return updated;
         });
-        Alert.alert('Ошибка', mapError(error));
+        feedback.alert('Ошибка', mapError(error));
       }
     },
     [userId, workoutId]
@@ -792,7 +793,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
-      Alert.alert('Тренировка не начата', 'Нажмите «Начать» на таймере в шапке, затем завершайте');
+      feedback.alert('Тренировка не начата', 'Нажмите «Начать» на таймере в шапке, затем завершайте');
       return;
     }
 
@@ -817,7 +818,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             // setSaving снимает внешний finally
             setIsFinishing(false);
             isFinishingRef.current = false;
-            Alert.alert(
+            feedback.alert(
               'Подходы не сохранены',
               `Не удалось записать данные (${flushFailures} упр.). Проверьте интернет и завершите тренировку повторно — введённые значения не потеряны.`
             );
@@ -845,13 +846,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               const progress = await advanceProgramProgress(userId, programId);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               if (progress.isCompleted) {
-                Alert.alert(
+                feedback.alert(
                   'Программа завершена!',
                   'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
                 );
                 router.replace('/(tabs)/programs');
               } else {
-                Alert.alert(
+                feedback.alert(
                   'Тренировка завершена!',
                   `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
                 );
@@ -866,7 +867,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                   const progress = await advanceProgramProgress(userId!, programId!);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   if (progress.isCompleted) {
-                    Alert.alert(
+                    feedback.alert(
                       'Программа завершена!',
                       'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
                     );
@@ -875,7 +876,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                     router.replace('/(tabs)/workouts');
                   }
                 } catch (e: any) {
-                  Alert.alert(
+                  feedback.alert(
                     'Не удалось продвинуть прогресс',
                     e?.message ||
                       'Прогресс можно продвинуть автоматически при следующей тренировке.'
@@ -883,7 +884,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                 }
               };
 
-              Alert.alert(
+              feedback.alert(
                 'Тренировка сохранена',
                 `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
                   `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
@@ -899,7 +900,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             }
           } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert(
+            feedback.alert(
               'Успех',
               `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
             );
@@ -909,7 +910,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           }
         } catch (error: any) {
           console.error('[useWorkoutSession] saveWorkout:', error);
-          Alert.alert('Ошибка', mapError(error));
+          feedback.alert('Ошибка', mapError(error));
         } finally {
           setSaving(false);
         }

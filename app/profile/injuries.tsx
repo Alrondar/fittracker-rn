@@ -1,5 +1,6 @@
 import { memo, useCallback, useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -234,12 +235,12 @@ export default function InjuriesScreen() {
       setShowForm(false);
       setEditingInjury(null);
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
+      feedback.alert('Ошибка', e.message);
     }
   };
 
   const handleRecover = (id: string) => {
-    Alert.alert('Отметить как восстановленную?', 'Травма будет перемещена в архив', [
+    feedback.alert('Отметить как восстановленную?', 'Травма будет перемещена в архив', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Восстановлена',
@@ -248,7 +249,7 @@ export default function InjuriesScreen() {
             await markRecovered(id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } catch (e: any) {
-            Alert.alert('Ошибка', e.message);
+            feedback.alert('Ошибка', e.message);
           }
         },
       },
@@ -256,7 +257,7 @@ export default function InjuriesScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Удалить травму?', 'Это действие нельзя отменить', [
+    feedback.alert('Удалить травму?', 'Это действие нельзя отменить', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Удалить',
@@ -266,7 +267,7 @@ export default function InjuriesScreen() {
             await deleteInjury(id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } catch (e: any) {
-            Alert.alert('Ошибка', e.message);
+            feedback.alert('Ошибка', e.message);
           }
         },
       },

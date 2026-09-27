@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import { Droplet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';
@@ -137,14 +137,14 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
         queryClient.invalidateQueries({ queryKey: ['todayRecovery', userId] });
       }
       if (readiness <= 2) {
-        Alert.alert(
+        feedback.alert(
           'Готовность низкая',
           'Сегодня лучше снизить рабочие веса ~на 10% или выбрать лёгкие варианты упражнений'
         );
       }
       onDone(true);
     } catch (e: any) {
-      Alert.alert('Ошибка', e?.message || 'Не удалось сохранить');
+      feedback.alert('Ошибка', e?.message || 'Не удалось сохранить');
     } finally {
       setSaving(false);
     }

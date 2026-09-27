@@ -3,7 +3,8 @@
 // 05.08.2026 (PERF): FlatList — removeClippedSubviews + батчинг рендера.
 // PR8: split на WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo.
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, Text, FlatList, ScrollView, InteractionManager, Alert } from 'react-native';
+import { View, Text, FlatList, ScrollView, InteractionManager } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -314,7 +315,7 @@ export default function WorkoutSessionScreen() {
         replaceExercise(exerciseIndex, alternativeId);
         return;
       }
-      Alert.alert(
+      feedback.alert(
         'Заменить упражнение?',
         'Только сегодня — замена в этой тренировке.\nВ программе — замена также в будущих тренировках программы.',
         [

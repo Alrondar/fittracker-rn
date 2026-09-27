@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -187,7 +187,7 @@ export default function ProgramsScreen() {
 
       // Edge-case: программа полностью пройдена — предлагаем начать заново.
       if (statusMap[programId]?.completed_at) {
-        Alert.alert(
+        feedback.alert(
           'Программа завершена',
           `«${programName}» полностью пройдена.\n\nНачать заново? Прогресс и история тренировок этой программы будут сброшены (прогресс других программ сохранится).`,
           [
@@ -202,7 +202,7 @@ export default function ProgramsScreen() {
         return;
       }
 
-      Alert.alert(
+      feedback.alert(
         'Активировать программу?',
         `Вы переключаетесь на "${programName}". Прогресс других программ сохранится.`,
         [

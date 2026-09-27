@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { feedback } from '../lib/feedback';
+
 import { useRouter } from 'expo-router';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -239,7 +240,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     if (activeTabState !== 'my') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    Alert.alert('Действия с программой', `"${program.name}"`, [
+    feedback.alert('Действия с программой', `"${program.name}"`, [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Редактировать',
@@ -264,7 +265,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (activeTabState === 'ready' && !program.id.startsWith('user_')) {
-      Alert.alert(
+      feedback.alert(
         'Редактировать программу?',
         `Программа "${program.name}" будет скопирована в "Мои программы" для редактирования`,
         [

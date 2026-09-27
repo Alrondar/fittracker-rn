@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -208,7 +209,7 @@ export function WarmupBlock({
             onResetPreferences
               ? () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  Alert.alert(
+                  feedback.alert(
                     'Запомненные замены',
                     'Забыть выбранные варианты замен? Следующие разминки снова будут подбираться с нуля.',
                     [

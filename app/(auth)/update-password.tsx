@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, Text, Alert } from 'react-native';
+import { ScrollView, Text } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING } from '../../src/constants/theme';
@@ -18,15 +19,15 @@ export default function UpdatePasswordScreen() {
   const { colors } = useTheme();
 
   const handleSave = async () => {
-    if (password.length < 6) { Alert.alert('Ошибка', 'Минимум 6 символов'); return; }
-    if (password !== confirm) { Alert.alert('Ошибка', 'Пароли не совпадают'); return; }
+    if (password.length < 6) { feedback.alert('Ошибка', 'Минимум 6 символов'); return; }
+    if (password !== confirm) { feedback.alert('Ошибка', 'Пароли не совпадают'); return; }
     setLoading(true);
     try {
       await updatePassword(password);
-      Alert.alert('Готово', 'Пароль обновлён');
+      feedback.alert('Готово', 'Пароль обновлён');
       router.replace('/(tabs)'); // ← ОБЯЗАТЕЛЬНО: гейт исключает этот маршрут, сам не уведёт
     } catch (e: any) {
-      Alert.alert('Ошибка', mapAuthError(e?.message));
+      feedback.alert('Ошибка', mapAuthError(e?.message));
     } finally {
       setLoading(false);
     }

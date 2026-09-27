@@ -1,5 +1,6 @@
 import { useCallback, useState, useMemo } from 'react';
-import { View, Text, SectionList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, SectionList, RefreshControl, TouchableOpacity } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -128,7 +129,7 @@ export default function WorkoutsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSkipTarget(null);
     } catch (error: any) {
-      Alert.alert('Не удалось пропустить', error?.message || 'Попробуйте ещё раз', [
+      feedback.alert('Не удалось пропустить', error?.message || 'Попробуйте ещё раз', [
         { text: 'Отмена', style: 'cancel' },
         { text: 'Повторить', onPress: () => handleSkip() },
       ]);

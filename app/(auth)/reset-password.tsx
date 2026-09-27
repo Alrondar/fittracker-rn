@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, Text, Alert, TouchableOpacity } from 'react-native';
+import { ScrollView, Text, TouchableOpacity } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING } from '../../src/constants/theme';
@@ -18,13 +19,13 @@ export default function ResetPasswordScreen() {
   const { colors } = useTheme();
 
   const handleSend = async () => {
-    if (!email.trim()) { Alert.alert('Ошибка', 'Введите email'); return; }
+    if (!email.trim()) { feedback.alert('Ошибка', 'Введите email'); return; }
     setLoading(true);
     try {
       await sendPasswordReset(email, 'fittracker://reset-password');
       setSent(true);
     } catch (e: any) {
-      Alert.alert('Ошибка', mapAuthError(e?.message));
+      feedback.alert('Ошибка', mapAuthError(e?.message));
     } finally {
       setLoading(false);
     }

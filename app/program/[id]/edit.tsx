@@ -4,9 +4,9 @@ import {
   Text,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   BackHandler,
 } from 'react-native';
+import { feedback } from '../../../src/lib/feedback';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
@@ -103,7 +103,7 @@ export default function ProgramEditScreen() {
 
   const handleCancel = () => {
     if (isDirty) {
-      Alert.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
+      feedback.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
         { text: 'Отмена', style: 'cancel' },
         {
           text: 'Выйти',
@@ -125,7 +125,7 @@ export default function ProgramEditScreen() {
     useCallback(() => {
       const onBackPress = () => {
         if (isDirty) {
-          Alert.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
+          feedback.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
             { text: 'Отмена', style: 'cancel' },
             { text: 'Выйти', style: 'destructive', onPress: () => router.back() },
           ]);

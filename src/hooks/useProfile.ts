@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { feedback } from '../lib/feedback';
+
 import {
   profileService,
   ProfileData,
@@ -85,7 +86,7 @@ export function useProfile(userId: string | null) {
       const updated = await profileService.getDailyNutrition(userId);
       setTodayNutrition(updated);
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
+      feedback.alert('Ошибка', e.message);
     }
   };
 

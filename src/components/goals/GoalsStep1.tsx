@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import * as Haptics from 'expo-haptics';
 import { Percent, Ruler, Weight } from 'lucide-react-native';
 import { SPACING } from '../../constants/theme';
@@ -53,11 +54,11 @@ export function GoalsStep1({
 
   const handleNext = () => {
     if (!gender || !height || !weight) {
-      Alert.alert('Заполни данные', 'Укажи пол, рост и вес');
+      feedback.alert('Заполни данные', 'Укажи пол, рост и вес');
       return;
     }
     if (bodyFatInvalid) {
-      Alert.alert(
+      feedback.alert(
         'Некорректный процент жира',
         'Введи значение от 1 до 60 или выключи переключатель'
       );

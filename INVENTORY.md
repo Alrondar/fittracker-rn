@@ -11,7 +11,8 @@ FitTracker — Code & Screen Inventory
 | ---|---|
 | Экраны/роуты|app/ , табы —  app/(tabs)/  (Expo Router, file-based)|
 | Компоненты фич|src/components/<feature>/ :  workout/ ,  program/ ,  dashboard/ ,  exercises/ ,  profile/|
-| Shared UI|src/components/ui/  ( AppButton ,  AppCard ,  SheetShell ,  Skeleton ,  PillToggle , …)|
+| Shared UI|src/components/ui/  ( AppButton ,  AppCard ,  SheetShell ,  FeedbackDialog ,  Skeleton ,  PillToggle , …)|
+| Alert/confirm пользователю|`src/lib/feedback.ts`  ( `feedback.alert` ) — не `Alert.alert` , см. 10.1|
 | Хуки|src/hooks/ , feature-подпапки ( hooks/workout/ ,  hooks/program/ , …)|
 | Supabase boundary|src/services/  (единственное место для  supabase.from/auth/rpc )|
 | Тема/токены/константы|src/constants/  ( theme.ts ,  semanticColors.ts ,  phaseTypes.ts ,  injuries.ts , …)|
@@ -382,6 +383,12 @@ legacy columns `exercises.equipment`, `exercises.injuries`, `exercises.alternati
 - workout FlatList и горизонтальный ScrollView ExerciseSlider: `removeClippedSubviews` СОЗНАТЕЛЬНО убран (SG-2) — детач нативных вью роняет responder/blur у TextInput сетов («некликабельные ячейки»). Коммит SetInput — debounce 350 мс + blur + unmount.
 - Пустая рамка подсказки в SetsGrid: обёртка рендерится только при `hintVisible` (общий предикат `plateMathVisible` для строки блинов).
 - WT-2: запись `started_at` идемпотентна (`startedSavedRef`), подтверждение финиша — единственное (confirm-лист), в `saveWorkout` Alert-подтверждения нет.
+- WEB-1: `Alert.alert` напрямую не использовать — в `react-native-web` это заглушка
+  (`static alert() {}`), и на вебе подтверждение или ошибка исчезают молча. Весь
+  user-facing alert/confirm идёт через `src/lib/feedback.ts` (подпись 1-в-1 с
+  `Alert.alert`): на нативных платформах это прямой делегат в `Alert`, на вебе рисует
+  `FeedbackDialog` (хост — в `app/_layout.tsx` рядом с `RootLayoutContent`).
+  Проверка: `grep -rn "Alert.alert(" src app | grep -v src/lib/feedback.ts` — пусто.
 - Мёртвые href (DASH-PR, 25.09): при переносе/удалении экрана править ВСЕ `router.push/replace` на старые пути. Проверка: `grep -rhoE "router\\.(push|replace)\\(\\s*['\`\"]/[^'\`]+" app src | sort -u` и сверить с деревом `app/`. Уже починены: `/profile/progress` (удалён UX-11), `/(tabs)/history` (удалён), `/(tabs)/profile/injuries` (группа не в URL).
 Before changing a DB operation, inspect the current migration and generated `database.types.ts`.
 

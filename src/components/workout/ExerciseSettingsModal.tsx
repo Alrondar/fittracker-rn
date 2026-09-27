@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Pressable, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Modal, Pressable, View, Text, TouchableOpacity } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import { X, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { createCardStyles } from '../../styles/components/card';
@@ -79,7 +80,7 @@ export function ExerciseSettingsModal({
     if (localSets < target.currentSets.length) {
       const removed = target.currentSets.slice(localSets);
       if (removed.some((s) => s.weight !== '' || s.reps !== '')) {
-        Alert.alert(
+        feedback.alert(
           'Удалить подходы?',
           `Будут удалены подходы ${localSets + 1}-${target.currentSets.length} с данными.`,
           [

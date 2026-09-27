@@ -64,6 +64,19 @@ Agent skills живут внутри документов (отдельных ф
 - **Performance skill** → `CLAUDE.md §8` (performance gate) + `STATUS.md §12` (метрики).
 - **Code review** → `CLAUDE.md §14` (workflow gates) + `CLAUDE.md §13` (checklist).
 
+## Веб-порт: отдельный worktree
+
+Веб-версия живёт не в этом дереве, а в git worktree:
+
+| Что | Значение |
+|---|---|
+| Каталог | `../fittracker-rn-web` |
+| Ветка | `web-port` (создана от `main`) |
+| Запуск | `cd ../fittracker-rn-web && npx expo start --web` |
+| Проверка | `npx tsc --noEmit`, `npx eslint .`, `npx expo export --platform web` |
+
+Порядок работы: общие правки (нужные и нативной сборке — например, `src/lib/feedback.ts`) делаются в `main` и перетекают в `web-port` через `git merge main`; чисто вебские (кламп ширины макета, веб-колонка, `Platform.OS === 'web'` ветки, `app.json > web`, RNW-зависимости) — только в `web-port`. Причина разделения: в `main` параллельно идут нативные UX-пакеты, и смешивать их с портом нельзя.
+
 ## Навигация
 
 ### Без MCP

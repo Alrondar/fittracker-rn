@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -104,24 +104,24 @@ export default function GoalsScreen() {
         console.warn('Не удалось сохранить замер веса:', metricError);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Сохранено', 'Твои цели успешно обновлены!', [
+      feedback.alert('Сохранено', 'Твои цели успешно обновлены!', [
         { text: 'Отлично', onPress: () => router.back() },
       ]);
     },
     onError: (error: Error) => {
       console.error('[goals] save:', error);
-      Alert.alert('Ошибка', mapError(error));
+      feedback.alert('Ошибка', mapError(error));
     },
   });
   const saving = saveMutation.isPending;
 
   const handleCalculate = () => {
     if (!gender || !height || !weight || !goal || activityLevel === null) {
-      Alert.alert('Заполни данные', 'Пожалуйста, заполни все поля');
+      feedback.alert('Заполни данные', 'Пожалуйста, заполни все поля');
       return;
     }
     if (usePharma && !pharmaType) {
-      Alert.alert('Выбери тип', 'Укажи тип фармакологии или отключи переключатель');
+      feedback.alert('Выбери тип', 'Укажи тип фармакологии или отключи переключатель');
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -146,7 +146,7 @@ export default function GoalsScreen() {
   const handleSave = () => {
     if (!userId) return;
     if (!gender || !goal || activityLevel === null) {
-      Alert.alert('Заполни данные', 'Укажи пол, цель и уровень активности');
+      feedback.alert('Заполни данные', 'Укажи пол, цель и уровень активности');
       return;
     }
     const payload: GoalsSavePayload = {

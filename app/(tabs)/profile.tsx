@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { feedback } from '../../src/lib/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -92,7 +93,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Выход из аккаунта', 'Вы уверены, что хотите выйти?', [
+    feedback.alert('Выход из аккаунта', 'Вы уверены, что хотите выйти?', [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Выйти',

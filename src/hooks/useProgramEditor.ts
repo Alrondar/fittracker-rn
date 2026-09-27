@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Alert } from 'react-native';
+import { feedback } from '../lib/feedback';
+
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import {
@@ -110,7 +111,7 @@ export function useProgramEditor(
         `Программа: "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)\n\n` +
         `Продолжить?`
       : `Будут созданы тренировки на всю программу "${program?.name}"\n(${phases.length} фаз · ${totalWeeks} недель)`;
-    Alert.alert(hasExistingData ? 'Перезапустить программу?' : 'Начать программу?', message, [
+    feedback.alert(hasExistingData ? 'Перезапустить программу?' : 'Начать программу?', message, [
       { text: 'Отмена', style: 'cancel' },
       {
         text: hasExistingData ? 'Перезапустить' : 'Начать',
@@ -128,7 +129,7 @@ export function useProgramEditor(
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.replace('/(tabs)/workouts');
           } catch (error: any) {
-            Alert.alert('Ошибка', error.message);
+            feedback.alert('Ошибка', error.message);
           } finally {
             setStarting(false);
           }
@@ -169,7 +170,7 @@ export function useProgramEditor(
       setEditMode(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      Alert.alert('Ошибка', error.message);
+      feedback.alert('Ошибка', error.message);
     }
   };
 
@@ -263,7 +264,7 @@ export function useProgramEditor(
       setEditMode(false);
     } catch (error: any) {
       console.error('Ошибка saveProgram:', error);
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить программу');
+      feedback.alert('Ошибка', error.message || 'Не удалось сохранить программу');
     } finally {
       setSaving(false);
     }
@@ -319,7 +320,7 @@ export function useProgramEditor(
     if (!day || !day.exercises) return;
     const exercise = day.exercises[exerciseIndex];
     if (!exercise) return;
-    Alert.alert('Удалить упражнение?', `"${exercise.exercise_name}" будет удалено из программы`, [
+    feedback.alert('Удалить упражнение?', `"${exercise.exercise_name}" будет удалено из программы`, [
       { text: 'Отмена', style: 'cancel' },
       {
         text: 'Удалить',

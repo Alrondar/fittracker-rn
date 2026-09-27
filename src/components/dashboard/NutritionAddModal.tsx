@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, Modal } from 'react-native';
+import { View, Modal } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { SPACING } from '../../constants/theme';
@@ -110,13 +111,13 @@ export function NutritionAddModal({ visible, onClose, editingLog }: NutritionAdd
     },
 
     onError: (error: Error) => {
-      Alert.alert('Ошибка', error.message || 'Не удалось сохранить');
+      feedback.alert('Ошибка', error.message || 'Не удалось сохранить');
     },
   });
 
   const handleSave = () => {
     if (!calories && !proteins && !fats && !carbs && !water) {
-      Alert.alert('Введите данные', 'Заполните хотя бы одно поле');
+      feedback.alert('Введите данные', 'Заполните хотя бы одно поле');
       return;
     }
 

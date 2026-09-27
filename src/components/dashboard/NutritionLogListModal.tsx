@@ -2,7 +2,8 @@
 // NUTRI-2: L2-модалка списка записей питания за день.
 
 import React from 'react';
-import { Alert, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { feedback } from '../../lib/feedback';
 import { Trash2 } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
@@ -33,7 +34,7 @@ export function NutritionLogListModal({ visible, onClose, onEdit }: NutritionLog
   const { logs, isLoading, delete: deleteLog, isDeleting } = useNutritionLogs(userId);
 
   const handleDelete = (log: NutritionLog) => {
-    Alert.alert(
+    feedback.alert(
       'Удалить запись?',
       `${MEAL_LABELS[log.meal_type] || log.meal_type}: ${log.calories} ккал`,
       [

@@ -1,6 +1,7 @@
 // app/profile/metrics.tsx split (DA-P2-8): sheet добавления замера (FEAT-2.2: поля по группам).
 import React, { useState } from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text } from 'react-native';
+import { feedback } from '../../../lib/feedback';
 import { useTheme } from '../../../hooks/useTheme';
 import { SPACING } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -44,7 +45,7 @@ export function MetricAddSheet({ visible, onClose, onCreate, isCreating }: Props
 
   const handleSave = () => {
     if (!formData.weight_kg) {
-      Alert.alert('Ошибка', 'Вес является обязательным полем');
+      feedback.alert('Ошибка', 'Вес является обязательным полем');
       return;
     }
     onCreate(formData, {

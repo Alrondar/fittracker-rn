@@ -1,6 +1,7 @@
 // app/profile/metrics.tsx split (DA-P2-8): история замеров (AUDIT-4: пагинация + «Показать ещё»).
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { feedback } from '../../../lib/feedback';
 import { Trash2, Calendar, Weight } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
@@ -21,7 +22,7 @@ export function MetricsHistorySection({ metrics, onDelete }: Props) {
   const [showAllHistory, setShowAllHistory] = useState(false);
 
   const handleDelete = (id: string) => {
-    Alert.alert('Удалить замер?', 'Это действие нельзя отменить', [
+    feedback.alert('Удалить замер?', 'Это действие нельзя отменить', [
       { text: 'Отмена', style: 'cancel' },
       { text: 'Удалить', style: 'destructive', onPress: () => onDelete(id) },
     ]);
