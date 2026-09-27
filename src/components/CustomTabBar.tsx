@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { PressableScale } from './ui/PressableScale';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,14 +11,17 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { SPACING, BORDER_RADIUS, scale, fontScale } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, scale } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
 // UX-1 (audit-9): pill ездит на spring (лёгкий overshoot вместо linear-затухания),
 // иконка получает scale-pop при фокусе.
+// UX-5 (27.09): канон §3.6 — подписи убраны, пилюля = круг вокруг иконки
+// (решение владельца: компактный бар на 6 вкладок; доступность — accessibilityLabel).
 const PILL_SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
 const POP_SPRING = { damping: 12, stiffness: 500, mass: 0.8 };
+const PILL_SIZE = scale(46);
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -56,14 +59,17 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           setTabWidth(inner / state.routes.length);
         }}
       >
-        {/* Скользящий pill-индикатор */}
+        {/* Скользящий pill-индикатор: круг вокруг иконки, центр ячейки */}
         <Animated.View
           pointerEvents="none"
           style={[
             styles.pill,
             {
-              width: Math.max(tabWidth - 4, 0),
-              left: SPACING.xs + 2,
+              width: PILL_SIZE,
+              height: PILL_SIZE,
+              left: SPACING.xs + Math.max((tabWidth - PILL_SIZE) / 2, 0),
+              top: SPACING.xs,
+              bottom: SPACING.xs,
               backgroundColor: colors.primary,
               shadowColor: colors.primary,
             },
@@ -102,7 +108,10 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               key={route.key}
               accessibilityRole="tab"
               accessibilityState={{ selected: isFocused }}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
+              // UX-5: подписей нет → имя вкладки обязано жить в accessibilityLabel.
+              accessibilityLabel={
+                options.tabBarAccessibilityLabel || (typeof label === 'string' ? label : route.name)
+              }
               onPress={onPress}
               onLongPress={onLongPress}
               style={styles.tab}
@@ -114,19 +123,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
                 strokeWidth={strokeWidth}
                 focused={isFocused}
               />
-
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: isFocused ? colors.textInverse : colors.textSecondary,
-                    fontWeight: isFocused ? '600' : '500',
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {typeof label === 'string' ? label : route.name}
-              </Text>
             </PressableScale>
           );
         })}
@@ -205,15 +201,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
+    height: PILL_SIZE + SPACING.xs * 2,
     paddingHorizontal: SPACING.xs,
     position: 'relative',
     borderRadius: BORDER_RADIUS.full,
   },
   pill: {
     position: 'absolute',
-    top: SPACING.xs + 2,
-    bottom: SPACING.xs + 2,
     borderRadius: BORDER_RADIUS.full,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -224,15 +218,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
-    height: 24,
     zIndex: 1, // Иконка поверх pill
-  },
-  label: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: fontScale(10),
-    fontWeight: '500',
-    zIndex: 1, // Текст поверх pill
   },
 });

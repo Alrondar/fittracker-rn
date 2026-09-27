@@ -3,7 +3,7 @@
 // 2 страницы: кольца + макросы / таблица недели.
 // NUTRI-2: tap по заголовку → список записей за сегодня.
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import { useRouter } from 'expo-router';
@@ -87,6 +87,30 @@ export function DashboardNutritionCard({
 
       setPage(idx);
 
+      if (idx === 1) {
+        setWeekVisited(true);
+      }
+    },
+    [pageWidth]
+  );
+
+  // UX-5 (веб-фикс): на RNW pagingEnabled = CSS scroll-snap, и контейнер при
+  // первом layout может «прилипнуть» ко второй странице (scrollLeft = ширина
+  // страницы) — карточка выглядит пустой. Как только измерили ширину — явно
+  // возвращаем пагинатор на нулевую страницу (кольца — основная).
+  useEffect(() => {
+    if (pageWidth > 0) {
+      scrollRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+    }
+  }, [pageWidth]);
+
+  // UX-5 (веб-фикс): onMomentumScrollEnd на вебе от колеса/драга не приходит →
+  // страница и lazy-таблица не обновлялись. Держим состояние по onScroll.
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!pageWidth) return;
+      const idx = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+      setPage((prev) => (prev === idx ? prev : idx));
       if (idx === 1) {
         setWeekVisited(true);
       }
@@ -221,6 +245,8 @@ export function DashboardNutritionCard({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
           onMomentumScrollEnd={handleMomentumEnd}
         >
           {/* Страница 1: кольца + макросы */}
