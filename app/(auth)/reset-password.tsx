@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { Platform, ScrollView, Text } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
@@ -26,7 +26,13 @@ export default function ResetPasswordScreen() {
     }
     setLoading(true);
     try {
-      await sendPasswordReset(email, 'fittracker://reset-password');
+      // WEB-INFRA-1: на вебе письмо должно вести на сам сайт (иначе deep-link
+      // fittracker:// открывает «никуда»). Native — без изменений.
+      const redirectTo =
+        Platform.OS === 'web'
+          ? `${window.location.origin}/reset-password`
+          : 'fittracker://reset-password';
+      await sendPasswordReset(email, redirectTo);
       setSent(true);
     } catch (e: any) {
       feedback.alert('Ошибка', mapAuthError(e?.message));
