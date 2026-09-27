@@ -5,9 +5,9 @@ import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
-import { ScaleDecorator, NestableScrollContainer } from 'react-native-draggable-flatlist';
+import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 // WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
-import { ReorderList } from '../../../src/components/program/ReorderList';
+import { ReorderList, RowDecorator } from '../../../src/components/program/ReorderList';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useProgramEditor } from '../../../src/hooks/useProgramEditor';
@@ -236,7 +236,7 @@ export default function ProgramEditScreen() {
           renderItem={({ item: phase, drag, isActive, getIndex }) => {
             const phaseIndex = getIndex() ?? 0;
             return (
-              <ScaleDecorator>
+              <RowDecorator>
                 <PhaseCard
                   phase={phase}
                   phaseIndex={phaseIndex}
@@ -279,7 +279,7 @@ export default function ProgramEditScreen() {
                   onCopyTemplateToWeek={(week) => copyTemplateToWeek(phaseIndex, week)}
                   onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
                 />
-              </ScaleDecorator>
+              </RowDecorator>
             );
           }}
         />

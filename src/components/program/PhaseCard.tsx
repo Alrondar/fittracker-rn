@@ -13,9 +13,9 @@ import {
   GripVertical,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { ScaleDecorator } from 'react-native-draggable-flatlist';
+
 // WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
-import { ReorderList } from './ReorderList';
+import { ReorderList, RowDecorator } from './ReorderList';
 import { DayCard } from './DayCard';
 import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
 import { getPhaseMeta, getPhaseColor } from '../../constants/phaseTypes';
@@ -321,7 +321,7 @@ export function PhaseCard({
               onDragEnd={({ data }) => onDayDragEnd(data as ProgramDay[])}
               keyExtractor={(item: ProgramDay) => item.id}
               renderItem={({ item: day, drag, isActive }) => (
-                <ScaleDecorator>{renderDayCard(day, drag, isActive)}</ScaleDecorator>
+                <RowDecorator>{renderDayCard(day, drag, isActive)}</RowDecorator>
               )}
             />
           ) : (

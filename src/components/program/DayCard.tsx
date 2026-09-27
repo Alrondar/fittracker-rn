@@ -10,9 +10,9 @@ import {
   Plus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { ScaleDecorator } from 'react-native-draggable-flatlist';
+
 // WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
-import { ReorderList } from './ReorderList';
+import { ReorderList, RowDecorator } from './ReorderList';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
 import { createCardStyles } from '../../styles/components/card';
 import { createBadgeStyles } from '../../styles/components/badge';
@@ -247,14 +247,14 @@ export function DayCard({
               renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
                 const exIndex = exercises.indexOf(exercise as ProgramExercise);
                 return (
-                  <ScaleDecorator>
+                  <RowDecorator>
                     {renderExerciseItem({
                       exercise: exercise as ProgramExercise,
                       exIndex,
                       drag,
                       isDragging: isExerciseActive,
                     })}
-                  </ScaleDecorator>
+                  </RowDecorator>
                 );
               }}
             />

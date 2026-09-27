@@ -10,11 +10,22 @@
 // На нативе — сквозной проброс в NestableDraggableFlatList, поведение не меняется.
 import React from 'react';
 import { Platform, View } from 'react-native';
-import { NestableDraggableFlatList } from 'react-native-draggable-flatlist';
+import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { BORDER_RADIUS, SPACING } from '../../constants/theme';
 import { PressableScale } from '../ui/PressableScale';
+
+/**
+ * Обёртка строки списка. НАЙДЕНО В ПРОГОНЕ 27.09: `ScaleDecorator` вне
+ * `NestableDraggableFlatList` кидает «useIsActive must be called from within
+ * CellProvider!» и роняет весь экран редактора; на вебе списка-провайдера
+ * нет вовсе. Потребители оборачивают строки только через RowDecorator.
+ */
+export function RowDecorator({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === 'web') return <>{children}</>;
+  return <ScaleDecorator>{children}</ScaleDecorator>;
+}
 
 export interface ReorderListProps<T> {
   data: T[];
