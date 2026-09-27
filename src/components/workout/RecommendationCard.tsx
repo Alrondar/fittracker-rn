@@ -9,7 +9,8 @@
 // Does NOT touch engine, does NOT make server calls — pure presentation.
 // All colors come from the `colors` prop (semantic tokens) — CLAUDE.md §7.
 import { memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 // UX-3f контроль: крупнейшие числа приложения — дисплейный шрифт пары (Space Grotesk)
 import { FONT_FAMILIES } from '../../constants/fonts';
 import { Target, TrendingDown, Minus, ChevronDown, EyeOff } from 'lucide-react-native';
@@ -129,9 +130,8 @@ export const RecommendationCard = memo(function RecommendationCard({
       }}
     >
       {/* === TERTIARY: header row (reason + chevron affordance → expand/collapse) === */}
-      <TouchableOpacity
+      <PressableScale
         onPress={onToggleExpand}
-        activeOpacity={0.7}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -159,7 +159,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             transform: [{ rotate: expanded ? '180deg' : '0deg' }],
           }}
         />
-      </TouchableOpacity>
+      </PressableScale>
 
       {/* P1.1: Бейдж политики */}
       {policy && policy !== 'linear' && (
@@ -197,10 +197,9 @@ export const RecommendationCard = memo(function RecommendationCard({
       {/* === SECONDARY: Принять / Изменить === */}
       <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
         {/* Принять — primary action */}
-        <TouchableOpacity
+        <PressableScale
           onPress={onAccept}
           disabled={acceptDisabled}
-          activeOpacity={0.8}
           style={{
             flex: 1,
             backgroundColor: acceptDisabled ? colors.border : accentColor,
@@ -222,12 +221,11 @@ export const RecommendationCard = memo(function RecommendationCard({
           >
             Принять
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
 
         {/* Изменить — secondary action, активен когда chipsOpen */}
-        <TouchableOpacity
+        <PressableScale
           onPress={onChange}
-          activeOpacity={0.7}
           style={{
             flex: 1,
             backgroundColor: chipsOpen ? withAlpha(accentColor, 0.125) : 'transparent',
@@ -250,7 +248,7 @@ export const RecommendationCard = memo(function RecommendationCard({
           >
             Изменить
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {/* === TERTIARY: expanded block (ENG-2 facts + Скрыть) === */}
@@ -313,9 +311,8 @@ export const RecommendationCard = memo(function RecommendationCard({
           })}
 
           {/* Скрыть — session-local dismiss (PRODUCT.md §3: user control) */}
-          <TouchableOpacity
+          <PressableScale
             onPress={onDismiss}
-            activeOpacity={0.7}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -331,7 +328,7 @@ export const RecommendationCard = memo(function RecommendationCard({
             >
               Скрыть
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
     </View>

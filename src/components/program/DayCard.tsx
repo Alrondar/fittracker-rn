@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import {
   ChevronRight,
   ChevronDown,
@@ -136,7 +137,7 @@ export function DayCard({
     return (
       <View style={[cardStyles.dayCardExerciseItem, { opacity: isDragging ? 0.5 : 1 }]}>
         {editMode && onExerciseDragEnd && (
-          <TouchableOpacity
+          <PressableScale
             onLongPress={drag}
             delayLongPress={150}
             disabled={isDragging}
@@ -145,12 +146,11 @@ export function DayCard({
             accessibilityRole="button"
           >
             <GripVertical size={16} color={colors.textTertiary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
-        <TouchableOpacity
+        <PressableScale
           style={cardStyles.dayCardExerciseItemBody}
           onPress={() => editMode && onExerciseSettings(exIndex)}
-          activeOpacity={editMode ? 0.7 : 1}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Text style={[cardStyles.dayCardExerciseItemName, { flex: 1 }]} numberOfLines={2}>
@@ -163,14 +163,14 @@ export function DayCard({
             </View>
           </View>
           <ExerciseMuscles muscles={muscles} colors={colors} />
-        </TouchableOpacity>
+        </PressableScale>
         {editMode && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => onRemoveExercise(exIndex)}
             style={cardStyles.dayCardExerciseDeleteButton}
           >
             <Trash2 size={16} color={colors.error} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
     );
@@ -184,7 +184,7 @@ export function DayCard({
             не должен перехватываться outer touchable (конфликт nested Touchable).
             disabled={isActive} — как в официальном примере библиотеки. */}
         {editMode && (
-          <TouchableOpacity
+          <PressableScale
             onLongPress={onDrag}
             delayLongPress={150}
             disabled={isActive}
@@ -193,15 +193,15 @@ export function DayCard({
             accessibilityRole="button"
           >
             <GripVertical size={20} color={colors.textTertiary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
-        <TouchableOpacity
+        <PressableScale
           style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setExpanded(!expanded);
           }}
-          activeOpacity={0.7}
+          haptic="none"
         >
           <View style={cardStyles.dayCardNumberCircle}>
             <Text style={cardStyles.dayCardNumberText}>{day.day_number}</Text>
@@ -210,29 +210,27 @@ export function DayCard({
             <Text style={cardStyles.dayCardName}>{day.name}</Text>
             <Text style={cardStyles.dayCardExerciseCount}>{exercises.length} упражнений</Text>
           </View>
-        </TouchableOpacity>
+        </PressableScale>
         {editMode && (
-          <TouchableOpacity
-            onPress={() => onEditSettings()}
-            style={cardStyles.dayCardSettingsButton}
-          >
+          <PressableScale onPress={() => onEditSettings()} style={cardStyles.dayCardSettingsButton}>
             <Settings size={16} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
         {!editMode && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setExpanded(!expanded);
             }}
             style={cardStyles.dayCardChevronButton}
+            haptic="none"
           >
             {expanded ? (
               <ChevronDown size={20} color={colors.textSecondary} strokeWidth={1.5} />
             ) : (
               <ChevronRight size={20} color={colors.textSecondary} strokeWidth={1.5} />
             )}
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
 
@@ -264,10 +262,10 @@ export function DayCard({
             ))
           )}
           {editMode && (
-            <TouchableOpacity onPress={onAddExercise} style={cardStyles.dayCardAddButton}>
+            <PressableScale onPress={onAddExercise} style={cardStyles.dayCardAddButton}>
               <Plus size={16} color={colors.primary} strokeWidth={2} />
               <Text style={cardStyles.dayCardAddButtonText}>Добавить упражнение</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
       )}

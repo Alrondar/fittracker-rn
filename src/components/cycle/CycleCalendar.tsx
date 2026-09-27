@@ -1,7 +1,8 @@
 // src/components/cycle/CycleCalendar.tsx
 // L2: Календарь цикла с визуальным отображением фаз
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
@@ -86,31 +87,28 @@ export function CycleCalendar({
           marginBottom: SPACING.md,
         }}
       >
-        <TouchableOpacity
-          onPress={prevMonth}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
+        <PressableScale onPress={prevMonth} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <ChevronLeft size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={[typography.h5, { color: colors.textPrimary }]}>
           {currentMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })}
         </Text>
         <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
           {onSettingsPress && (
-            <TouchableOpacity
+            <PressableScale
               onPress={onSettingsPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Settings size={22} color={colors.textSecondary} />
-            </TouchableOpacity>
+            </PressableScale>
           )}
-          <TouchableOpacity
+          <PressableScale
             onPress={nextMonth}
             disabled={!canGoNext}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <ChevronRight size={24} color={canGoNext ? colors.textPrimary : colors.textTertiary} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
 
@@ -140,7 +138,7 @@ export function CycleCalendar({
           const isTappable = isEditMode && !!onDayPress;
 
           return (
-            <TouchableOpacity
+            <PressableScale
               key={date.toISOString()}
               disabled={!isTappable}
               onPress={() => isTappable && onDayPress?.(date)}
@@ -191,7 +189,7 @@ export function CycleCalendar({
                   />
                 )}
               </View>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>

@@ -1,5 +1,6 @@
 // app/(tabs)/exercises.tsx split (DA-P2-8): чип-фильтр «Только активация».
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Zap } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -15,9 +16,8 @@ export function ActivationFilterChip({ active, onToggle }: Props) {
 
   return (
     <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm }}>
-      <TouchableOpacity
+      <PressableScale
         onPress={onToggle}
-        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel="Фильтр: только активационные упражнения"
         accessibilityState={{ selected: active }}
@@ -46,7 +46,7 @@ export function ActivationFilterChip({ active, onToggle }: Props) {
         >
           Только активация
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 }

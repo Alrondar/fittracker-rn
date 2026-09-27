@@ -1,7 +1,8 @@
 // src/components/workout/SkipWorkoutSheet.tsx
 // DA-P2-8: sheet подтверждения пропуска тренировки (UX-5 F2, вынесен из workouts.tsx).
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { SkipForward } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
@@ -39,7 +40,7 @@ export function SkipWorkoutSheet({ target, skipping, onConfirm, onCancel }: Skip
             Программа перейдёт к следующему дню. Подходы не будут записаны. Это действие нельзя
             отменить.
           </Text>
-          <TouchableOpacity
+          <PressableScale
             onPress={onConfirm}
             disabled={skipping}
             accessibilityRole="button"
@@ -65,8 +66,8 @@ export function SkipWorkoutSheet({ target, skipping, onConfirm, onCancel }: Skip
                 </Text>
               </>
             )}
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             onPress={onCancel}
             disabled={skipping}
             accessibilityRole="button"
@@ -79,7 +80,7 @@ export function SkipWorkoutSheet({ target, skipping, onConfirm, onCancel }: Skip
             }}
           >
             <Text style={[typography.button, { color: colors.textSecondary }]}>Отмена</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
     </SheetShell>

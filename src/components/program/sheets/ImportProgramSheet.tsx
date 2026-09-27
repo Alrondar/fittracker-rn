@@ -2,13 +2,13 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   TextInput,
   ActivityIndicator,
   ScrollView,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { X, Link2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { FONT_FAMILIES } from '../../../constants/fonts';
@@ -68,9 +68,9 @@ export function ImportProgramSheet({
             }}
           >
             <Text style={[typography.h3, { color: colors.textPrimary }]}>Импорт по коду</Text>
-            <TouchableOpacity onPress={onClose}>
+            <PressableScale onPress={onClose}>
               <X size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {/* ✅ Скроллируемый контент */}
@@ -122,10 +122,9 @@ export function ImportProgramSheet({
                 {error}
               </Text>
             ) : null}
-            <TouchableOpacity
+            <PressableScale
               onPress={onImport}
               disabled={importing || code.trim().length < 4}
-              activeOpacity={0.8}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -146,7 +145,7 @@ export function ImportProgramSheet({
               <Text style={[typography.labelBold, { color: colors.textInverse }]}>
                 {importing ? 'Импорт...' : 'Добавить программу'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </ScrollView>
         </View>
       </View>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING } from '../../src/constants/theme';
@@ -42,7 +43,7 @@ export default function ResetPasswordScreen() {
         backgroundColor: colors.background,
       }}
     >
-      <TouchableOpacity
+      <PressableScale
         onPress={() => router.back()}
         disabled={loading}
         style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg }}
@@ -51,7 +52,7 @@ export default function ResetPasswordScreen() {
         <Text style={[typography.label, { color: colors.primary, marginLeft: SPACING.xs }]}>
           Назад
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
       <Text style={[typography.h1, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
         Восстановление
       </Text>

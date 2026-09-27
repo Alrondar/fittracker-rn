@@ -1,7 +1,8 @@
 // app/(tabs)/index.tsx split (DA-P2-8): карточка «Календарь тренировок» —
 // статистика за месяц + компактный календарь на последние 2 недели.
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useTheme } from '../../hooks/useTheme';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { SPACING, scale, withAlpha } from '../../constants/theme';
@@ -112,7 +113,7 @@ export function TrainingCalendarCard({
           const isToday = key === dayKey(new Date());
           const isSelected = key === selectedDay;
           return (
-            <TouchableOpacity
+            <PressableScale
               key={key}
               accessibilityRole="button"
               accessibilityLabel={`${date.toLocaleDateString('ru-RU', {
@@ -168,7 +169,7 @@ export function TrainingCalendarCard({
                   backgroundColor: hasWorkout ? colors.success : 'transparent',
                 }}
               />
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>

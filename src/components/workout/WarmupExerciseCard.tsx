@@ -4,7 +4,8 @@
 // здесь карточка остаётся тонкой строкой, вся лента видна без прокрутки.
 // Тап по карточке → открыть лист; тап по номеру → быстро отметить выполненным.
 import React, { useEffect, memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -99,8 +100,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 70).duration(300)}>
-      <TouchableOpacity
-        activeOpacity={0.8}
+      <PressableScale
         accessibilityRole="button"
         accessibilityLabel={`Открыть технику: ${exercise.name}`}
         onPress={() => onOpen(index)}
@@ -120,7 +120,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {/* Номер/галочка: тап = быстро отметить выполненным */}
-          <TouchableOpacity
+          <PressableScale
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: completed }}
@@ -145,7 +145,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
             ) : (
               <Text style={[typography.labelBold, { color: colors.warning }]}>{index + 1}</Text>
             )}
-          </TouchableOpacity>
+          </PressableScale>
 
           {/* Миниатюра техники — картинка видна сразу, без аккордеонов */}
           {thumbnail ? (
@@ -192,7 +192,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
               >
                 {formatTime(timeLeft)}
               </Text>
-              <TouchableOpacity
+              <PressableScale
                 onPress={onStopTimer}
                 accessibilityRole="button"
                 accessibilityLabel="Остановить таймер"
@@ -206,12 +206,11 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
                 }}
               >
                 <Pause size={16} color={colors.textPrimary} />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           ) : (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => onStartTimer(exercise.id)}
-              activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel={`Запустить таймер: ${exercise.name}`}
               style={{
@@ -233,7 +232,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
                   style={{ marginLeft: 2 }}
                 />
               )}
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
 
@@ -272,7 +271,7 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
           </Text>
           <ChevronRight size={12} color={colors.textTertiary} />
         </View>
-      </TouchableOpacity>
+      </PressableScale>
     </Animated.View>
   );
 });

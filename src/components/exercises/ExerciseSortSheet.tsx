@@ -1,5 +1,6 @@
 // app/(tabs)/exercises.tsx split (DA-P2-8): лист сортировки (SheetShell).
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { Check } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
@@ -28,7 +29,7 @@ export function ExerciseSortSheet({ visible, sortBy, onSelect, onClose }: Props)
     <SheetShell visible={visible} title="Сортировка" onClose={onClose}>
       <View>
         {SORT_OPTIONS.map((option, idx, arr) => (
-          <TouchableOpacity
+          <PressableScale
             key={option.key}
             style={{
               flexDirection: 'row',
@@ -46,6 +47,7 @@ export function ExerciseSortSheet({ visible, sortBy, onSelect, onClose }: Props)
             accessibilityRole="button"
             accessibilityLabel={`Сортировка: ${option.label}`}
             accessibilityState={{ selected: sortBy === option.key }}
+            haptic="none"
           >
             <Text
               style={[
@@ -59,7 +61,7 @@ export function ExerciseSortSheet({ visible, sortBy, onSelect, onClose }: Props)
               {option.label}
             </Text>
             {sortBy === option.key && <Check size={20} color={colors.primary} strokeWidth={2} />}
-          </TouchableOpacity>
+          </PressableScale>
         ))}
       </View>
     </SheetShell>

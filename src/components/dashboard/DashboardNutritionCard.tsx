@@ -4,14 +4,8 @@
 // NUTRI-2: tap по заголовку → список записей за сегодня.
 
 import React, { useCallback, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-} from 'react-native';
+import { View, Text, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 
@@ -137,7 +131,7 @@ export function DashboardNutritionCard({
             </Text>
           </View>
 
-          <TouchableOpacity onPress={() => router.push('/profile/goals')}>
+          <PressableScale onPress={() => router.push('/profile/goals')}>
             <Text
               style={[
                 typography.body,
@@ -148,7 +142,7 @@ export function DashboardNutritionCard({
             >
               Задать
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </AppCard>
     );
@@ -166,9 +160,8 @@ export function DashboardNutritionCard({
       >
         {/* NUTRI-2:
             Заголовок — вход в список записей. */}
-        <TouchableOpacity
+        <PressableScale
           onPress={onOpenLogList}
-          activeOpacity={0.7}
           disabled={!onOpenLogList}
           hitSlop={{
             top: 8,
@@ -187,13 +180,13 @@ export function DashboardNutritionCard({
           >
             Питание сегодня
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
 
         {/* FEAT-3: L1 чип недельного баланса калорий.
             Скрывается автоматически при недостатке данных. */}
         <WeeklyBalanceChip />
 
-        <TouchableOpacity
+        <PressableScale
           onPress={onOpenModal}
           style={{
             flexDirection: 'row',
@@ -219,7 +212,7 @@ export function DashboardNutritionCard({
           >
             Добавить
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <View onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}>
@@ -318,7 +311,7 @@ export function DashboardNutritionCard({
           marginTop: SPACING.md,
         }}
       >
-        <TouchableOpacity
+        <PressableScale
           onPress={() => goToPage(0)}
           hitSlop={{
             top: 12,
@@ -335,9 +328,9 @@ export function DashboardNutritionCard({
               backgroundColor: page === 0 ? colors.textPrimary : colors.textTertiary,
             }}
           />
-        </TouchableOpacity>
+        </PressableScale>
 
-        <TouchableOpacity
+        <PressableScale
           onPress={() => goToPage(1)}
           hitSlop={{
             top: 12,
@@ -354,7 +347,7 @@ export function DashboardNutritionCard({
               backgroundColor: page === 1 ? colors.textPrimary : colors.textTertiary,
             }}
           />
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </AppCard>
   );

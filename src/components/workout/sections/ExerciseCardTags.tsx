@@ -13,7 +13,8 @@
 //
 // Анимации через Reanimated (fade+slide 200ms).
 import React, { memo, useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -146,16 +147,15 @@ const Bubble = memo(function Bubble({
 
   if (onPress) {
     return (
-      <TouchableOpacity
+      <PressableScale
         onPress={onPress}
-        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ expanded: isExpanded }}
         style={style}
       >
         {inner}
-      </TouchableOpacity>
+      </PressableScale>
     );
   }
   return <View style={style}>{inner}</View>;

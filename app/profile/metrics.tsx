@@ -4,7 +4,8 @@
 // DA-P2-8: split — секции вынесены в src/components/profile/metrics/.
 // FEAT-2.3: бедро — левое/правое, как остальные конечности.
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus } from 'lucide-react-native';
@@ -62,14 +63,14 @@ export default function MetricsScreen() {
             { backgroundColor: colors.surface, borderBottomColor: colors.border },
           ]}
         >
-          <TouchableOpacity
+          <PressableScale
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Назад"
             style={commonStyles.backButton}
           >
             <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text style={[typography.h4, { color: colors.textPrimary }]}>Замеры тела</Text>
           <View style={{ width: 40 }} />
         </View>

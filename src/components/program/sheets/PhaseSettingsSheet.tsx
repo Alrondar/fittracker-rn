@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { Plus, Minus } from 'lucide-react-native';
 import { ProgramPhase } from '../../../services/programsService';
 import { PHASE_TYPES, getPhaseColor, PhaseType } from '../../../constants/phaseTypes';
@@ -70,7 +71,7 @@ export function PhaseSettingsSheet({
             const phaseColor = getPhaseColor(meta.value, colors);
             const Icon = meta.icon;
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={meta.value}
                 onPress={() => setPhaseType(meta.value)}
                 style={{
@@ -98,7 +99,7 @@ export function PhaseSettingsSheet({
                 >
                   {meta.label}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
         </View>
@@ -122,7 +123,7 @@ export function PhaseSettingsSheet({
             gap: SPACING.lg,
           }}
         >
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setWeeksCount(Math.max(1, weeksCount - 1))}
             style={{
               width: 44,
@@ -134,7 +135,7 @@ export function PhaseSettingsSheet({
             }}
           >
             <Minus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text
             style={[
               typography.h3,
@@ -143,7 +144,7 @@ export function PhaseSettingsSheet({
           >
             {weeksCount}
           </Text>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => setWeeksCount(Math.min(12, weeksCount + 1))}
             style={{
               width: 44,
@@ -155,7 +156,7 @@ export function PhaseSettingsSheet({
             }}
           >
             <Plus size={20} color={colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
 
@@ -185,7 +186,7 @@ export function PhaseSettingsSheet({
       </View>
 
       {/* Сохранить */}
-      <TouchableOpacity
+      <PressableScale
         onPress={() =>
           onSave({
             name: name.trim() || 'Фаза',
@@ -197,7 +198,7 @@ export function PhaseSettingsSheet({
         style={[buttonStyles.primary, { backgroundColor: colors.primary }]}
       >
         <Text style={buttonStyles.textPrimary}>Сохранить</Text>
-      </TouchableOpacity>
+      </PressableScale>
     </>
   );
 }

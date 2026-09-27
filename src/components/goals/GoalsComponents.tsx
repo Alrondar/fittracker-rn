@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppCard } from '../ui/AppCard';
@@ -79,7 +80,7 @@ export function GenderCard({
   colors: ThemeColors;
 }) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       style={{
         flex: 1,
@@ -100,7 +101,7 @@ export function GenderCard({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -123,7 +124,7 @@ export function SelectableRow({
   colors: ThemeColors;
 }) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       style={{
         flexDirection: 'row',
@@ -150,7 +151,7 @@ export function SelectableRow({
         <Text style={[typography.caption, { color: colors.textSecondary }]}>{desc}</Text>
       </View>
       {selected && <CheckMark backgroundColor={accentColor} textColor={colors.textInverse} />}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

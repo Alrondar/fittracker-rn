@@ -13,7 +13,8 @@
 // высоте, на их место разворачивается RpeEditor (двойной тап: выбор →
 // подтверждение). Высота анимируется Reanimated; таблица не перемонтируется.
 import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { TrendingUp, X, Lightbulb, Gauge, Trophy } from 'lucide-react-native';
 import Animated, {
   Easing,
@@ -353,9 +354,8 @@ const SetRow = memo(function SetRow({
               />
             )}
             {/* ENG-13: Warmup chip — toggle per-set warmup flag */}
-            <TouchableOpacity
+            <PressableScale
               onPress={() => onToggleWarmup(startIndex + si)}
-              activeOpacity={0.7}
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -379,7 +379,7 @@ const SetRow = memo(function SetRow({
               >
                 Разминка
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         ))}
       </View>
@@ -1104,9 +1104,8 @@ export const SetsGrid = memo(function SetsGrid({
           </Text>
           {/* UX-16 D5: 💡 button для раскрытия RecommendationCard */}
           {recommendation && recommendation.action !== 'no_data' && (
-            <TouchableOpacity
+            <PressableScale
               onPress={toggleRecommendation}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={
                 recommendationCollapsed ? 'Показать рекомендацию' : 'Скрыть рекомендацию'
@@ -1123,9 +1122,10 @@ export const SetsGrid = memo(function SetsGrid({
                   ? withAlpha(colors.primary, 0.251)
                   : withAlpha(colors.primary, 0.376),
               }}
+              haptic="none"
             >
               <Lightbulb size={16} color={colors.primary} strokeWidth={2} />
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </Animated.View>
 
@@ -1148,9 +1148,8 @@ export const SetsGrid = memo(function SetsGrid({
             <Text style={[cardStyles.setsHeaderText, { color: colors.textPrimary }]}>
               {editorKind === 'pain' ? 'Боль · упражнение' : `RPE · подход ${editorSetIndex + 1}`}
             </Text>
-            <TouchableOpacity
+            <PressableScale
               onPress={editorKind === 'pain' ? closePainMorph : closeRpeEditor}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Отменить ввод RPE"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -1167,7 +1166,7 @@ export const SetsGrid = memo(function SetsGrid({
               }}
             >
               <X size={16} color={colors.textSecondary} strokeWidth={2} />
-            </TouchableOpacity>
+            </PressableScale>
           </Animated.View>
         )}
       </View>
@@ -1317,10 +1316,9 @@ export const SetsGrid = memo(function SetsGrid({
                       Почему? (не обязательно)
                     </Text>
                     {REJECTION_REASONS.map((reason) => (
-                      <TouchableOpacity
+                      <PressableScale
                         key={reason.code}
                         onPress={() => handleReasonSelect(reason.code)}
-                        activeOpacity={0.7}
                         style={{
                           paddingHorizontal: SPACING.sm,
                           paddingVertical: 4,
@@ -1329,6 +1327,7 @@ export const SetsGrid = memo(function SetsGrid({
                           borderWidth: 1,
                           borderColor: colors.border,
                         }}
+                        haptic="none"
                       >
                         <Text
                           style={[
@@ -1338,19 +1337,19 @@ export const SetsGrid = memo(function SetsGrid({
                         >
                           {reason.label}
                         </Text>
-                      </TouchableOpacity>
+                      </PressableScale>
                     ))}
-                    <TouchableOpacity
+                    <PressableScale
                       onPress={handleSkipReason}
-                      activeOpacity={0.7}
                       style={{
                         paddingHorizontal: 6,
                         paddingVertical: 4,
                         borderRadius: BORDER_RADIUS.sm,
                       }}
+                      haptic="none"
                     >
                       <X size={14} color={colors.textTertiary} strokeWidth={2} />
-                    </TouchableOpacity>
+                    </PressableScale>
                   </View>
                 </View>
               )}
@@ -1368,10 +1367,9 @@ export const SetsGrid = memo(function SetsGrid({
                   {PROGRESSION_STEPS.map((step) => {
                     const isHighlighted = step === highlightedChip;
                     return (
-                      <TouchableOpacity
+                      <PressableScale
                         key={step}
                         onPress={() => handleProgressionStep(step)}
-                        activeOpacity={0.7}
                         style={{
                           paddingHorizontal: SPACING.sm,
                           paddingVertical: 4,
@@ -1380,6 +1378,7 @@ export const SetsGrid = memo(function SetsGrid({
                           borderWidth: isHighlighted ? 1 : 0,
                           borderColor: isHighlighted ? colors.success : 'transparent',
                         }}
+                        haptic="none"
                       >
                         <Text
                           style={[
@@ -1389,7 +1388,7 @@ export const SetsGrid = memo(function SetsGrid({
                         >
                           +{step} {unit}
                         </Text>
-                      </TouchableOpacity>
+                      </PressableScale>
                     );
                   })}
                 </View>

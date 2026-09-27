@@ -1,13 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -215,9 +209,9 @@ export default function GoalsScreen() {
           { backgroundColor: colors.surface, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+        <PressableScale onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={[typography.h4, { color: colors.textPrimary }]}>Мои цели</Text>
         <View style={{ width: 40 }} />
       </View>

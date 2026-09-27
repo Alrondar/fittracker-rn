@@ -1,6 +1,7 @@
 // app/(tabs)/exercises.tsx split (DA-P2-8): строка поиска — живой спиннер,
 // подсветка рамки при коротком запросе, подсказка.
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Search, X } from 'lucide-react-native';
 import type { RefObject } from 'react';
 import { useTheme } from '../../hooks/useTheme';
@@ -46,14 +47,14 @@ export function ExerciseSearchBar({ inputRef, value, onChangeText, isSearching, 
           returnKeyType="search"
         />
         {value.length > 0 && (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => onChangeText('')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel="Очистить поиск"
           >
             <X size={18} color={colors.textTertiary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         )}
       </View>
       {tooShort && (

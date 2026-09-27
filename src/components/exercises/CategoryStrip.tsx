@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Dumbbell, ChevronDown } from 'lucide-react-native';
 import { FONT_FAMILIES } from '../../constants/fonts';
 
@@ -26,9 +27,8 @@ export function CategoryStrip({
 
   // Триггер оборудования — первый элемент ленты
   const equipmentTrigger = (
-    <TouchableOpacity
+    <PressableScale
       onPress={onOpenEquipmentSheet}
-      activeOpacity={0.6}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -79,7 +79,7 @@ export function CategoryStrip({
         </View>
       )}
       <ChevronDown size={13} color={colors.textTertiary} strokeWidth={2} />
-    </TouchableOpacity>
+    </PressableScale>
   );
 
   return (
@@ -93,9 +93,8 @@ export function CategoryStrip({
         const count = categoryCounts[category.value];
         const Icon = category.icon;
         return (
-          <TouchableOpacity
+          <PressableScale
             onPress={() => onToggleCategory(category.value)}
-            activeOpacity={0.6}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -134,7 +133,7 @@ export function CategoryStrip({
                 {count}
               </Text>
             )}
-          </TouchableOpacity>
+          </PressableScale>
         );
       }}
       contentContainerStyle={{

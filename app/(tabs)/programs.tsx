@@ -1,13 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  RefreshControl,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, FlatList, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -298,7 +290,7 @@ export default function ProgramsScreen() {
           : 'Попробуйте изменить фильтры или поиск'}
       </Text>
       {activeTab === 'my' && (
-        <TouchableOpacity
+        <PressableScale
           style={[buttonStyles.primary, { paddingHorizontal: SPACING.xl }]}
           onPress={openCreateModal}
         >
@@ -306,10 +298,10 @@ export default function ProgramsScreen() {
             <Plus size={20} color={colors.textInverse} strokeWidth={2} />
             <Text style={buttonStyles.textPrimary}>Создать программу</Text>
           </View>
-        </TouchableOpacity>
+        </PressableScale>
       )}
       {activeTab === 'ready' && (
-        <TouchableOpacity
+        <PressableScale
           style={[buttonStyles.primary, { paddingHorizontal: SPACING.xl }]}
           onPress={() => {
             setImportError(null);
@@ -320,7 +312,7 @@ export default function ProgramsScreen() {
             <Link2 size={20} color={colors.textInverse} strokeWidth={2} />
             <Text style={buttonStyles.textPrimary}>Импортировать по коду</Text>
           </View>
-        </TouchableOpacity>
+        </PressableScale>
       )}
     </View>
   );
@@ -351,14 +343,14 @@ export default function ProgramsScreen() {
       {/* Панель поиска, импорта и сортировки */}
       <View style={cardStyles.filterBar}>
         <View style={cardStyles.searchRow}>
-          <TouchableOpacity
+          <PressableScale
             style={cardStyles.searchButton}
             onPress={() => setShowSearch(!showSearch)}
             accessibilityRole="button"
             accessibilityLabel={showSearch ? 'Закрыть поиск' : 'Открыть поиск'}
           >
             <Search size={20} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
           {showSearch && (
             <View style={cardStyles.searchContainer}>
               <TextInput
@@ -370,13 +362,13 @@ export default function ProgramsScreen() {
                 autoFocus
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <PressableScale onPress={() => setSearchQuery('')}>
                   <X size={18} color={colors.textTertiary} strokeWidth={2} />
-                </TouchableOpacity>
+                </PressableScale>
               )}
             </View>
           )}
-          <TouchableOpacity
+          <PressableScale
             style={cardStyles.sortButton}
             onPress={() => {
               setImportError(null);
@@ -386,15 +378,15 @@ export default function ProgramsScreen() {
             accessibilityLabel="Импортировать программу по коду"
           >
             <Link2 size={20} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             style={cardStyles.sortButton}
             onPress={() => setShowSortMenu(!showSortMenu)}
             accessibilityRole="button"
             accessibilityLabel="Сортировка"
           >
             <ArrowUpDown size={20} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
         {/* Чипы фильтров по уровню */}
         <View style={cardStyles.filterChips}>
@@ -402,7 +394,7 @@ export default function ProgramsScreen() {
             const isActive = selectedLevels.includes(option.value);
             const Icon = option.icon;
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={option.value}
                 style={[cardStyles.filterChip, isActive && cardStyles.filterChipActive]}
                 onPress={() => toggleLevel(option.value)}
@@ -420,17 +412,17 @@ export default function ProgramsScreen() {
                     {option.label}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
           {selectedLevels.length > 0 && (
-            <TouchableOpacity
+            <PressableScale
               style={cardStyles.filterChip}
               onPress={() => selectedLevels.forEach((l) => toggleLevel(l))}
               hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
             >
               <Text style={cardStyles.filterChipText}>Сбросить</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
       </View>
@@ -494,7 +486,7 @@ export default function ProgramsScreen() {
       {showSortMenu && (
         <SheetShell title="Сортировка" onClose={() => setShowSortMenu(false)}>
           {SORT_OPTIONS.map((option) => (
-            <TouchableOpacity
+            <PressableScale
               key={option.value}
               style={{
                 paddingVertical: SPACING.md,
@@ -510,6 +502,7 @@ export default function ProgramsScreen() {
               }}
               accessibilityRole="button"
               accessibilityLabel={`Сортировать: ${option.label}`}
+              haptic="none"
             >
               <Text
                 style={[
@@ -522,7 +515,7 @@ export default function ProgramsScreen() {
               >
                 {option.label}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </SheetShell>
       )}

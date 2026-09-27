@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -200,7 +201,7 @@ export function WarmupBlock({
             </View>
           )}
         </View>
-        <TouchableOpacity
+        <PressableScale
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onGenerateWarmup();
@@ -223,9 +224,10 @@ export function WarmupBlock({
           style={{ padding: SPACING.sm }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel="Обновить разминку; долгое нажатие — сброс запомненных замен"
+          haptic="none"
         >
           <RefreshCw size={18} color={colors.primary} />
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {/* Список упражнений */}

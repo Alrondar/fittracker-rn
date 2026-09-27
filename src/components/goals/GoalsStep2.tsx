@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { Activity, Calculator, Pill, AlertTriangle } from 'lucide-react-native';
 import { SPACING, withAlpha } from '../../constants/theme';
@@ -108,7 +109,7 @@ export function GoalsStep2({
               </Text>
             </View>
           </View>
-          <TouchableOpacity
+          <PressableScale
             onPress={onTogglePharma}
             style={{
               width: 50,
@@ -128,7 +129,7 @@ export function GoalsStep2({
                 transform: [{ translateX: usePharma ? 12 : -12 }],
               }}
             />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </AppCard>
 

@@ -4,7 +4,8 @@
 // вместо RpeOverlay); старый inline-редактор SetFeedbackEditor удалён как
 // dead code (дизайн-аудит 23.09.2026, DA-P2).
 import React, { memo } from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
@@ -21,7 +22,7 @@ export const SetFeedbackChip = memo(function SetFeedbackChip({
 }: SetFeedbackChipProps) {
   const filled = rpe != null;
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       style={{
         alignItems: 'center',
@@ -43,6 +44,6 @@ export const SetFeedbackChip = memo(function SetFeedbackChip({
       >
         {filled ? `RPE ${rpe}` : 'RPE?'}
       </Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 });

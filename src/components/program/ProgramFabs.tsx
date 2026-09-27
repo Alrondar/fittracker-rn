@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { Share2, Pencil } from 'lucide-react-native';
 import { SPACING } from '../../constants/theme';
 
@@ -10,11 +11,16 @@ interface ProgramFabsProps {
   colors: any;
 }
 
-export function ProgramFabs({ canEdit = false, onOpenShare, onToggleEditMode, colors }: ProgramFabsProps) {
+export function ProgramFabs({
+  canEdit = false,
+  onOpenShare,
+  onToggleEditMode,
+  colors,
+}: ProgramFabsProps) {
   return (
     <>
       {/* FAB «Поделиться» — доступен всегда */}
-      <TouchableOpacity
+      <PressableScale
         onPress={onOpenShare}
         style={{
           position: 'absolute',
@@ -34,11 +40,11 @@ export function ProgramFabs({ canEdit = false, onOpenShare, onToggleEditMode, co
         }}
       >
         <Share2 size={20} color={colors.primary} strokeWidth={2} />
-      </TouchableOpacity>
+      </PressableScale>
 
       {/* FAB редактирования — только для владельца программы */}
       {canEdit && (
-        <TouchableOpacity
+        <PressableScale
           onPress={onToggleEditMode}
           style={{
             position: 'absolute',
@@ -58,7 +64,7 @@ export function ProgramFabs({ canEdit = false, onOpenShare, onToggleEditMode, co
           }}
         >
           <Pencil size={20} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
       )}
     </>
   );

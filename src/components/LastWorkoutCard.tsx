@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from './ui/PressableScale';
 import { Clock, Dumbbell, TrendingUp } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';
@@ -42,13 +43,15 @@ export function LastWorkoutCard({
   };
 
   return (
-    <View style={{
-      backgroundColor: colors.surface,
-      borderRadius: BORDER_RADIUS.md,
-      padding: SPACING.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-    }}>
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderRadius: BORDER_RADIUS.md,
+        padding: SPACING.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
         <Dumbbell size={20} color={colors.primary} strokeWidth={2} />
         <Text style={[typography.h5, { color: colors.textPrimary, marginLeft: SPACING.sm }]}>
@@ -84,7 +87,7 @@ export function LastWorkoutCard({
         </View>
       </View>
 
-      <TouchableOpacity
+      <PressableScale
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onRepeatPress();
@@ -95,11 +98,10 @@ export function LastWorkoutCard({
           borderRadius: BORDER_RADIUS.sm,
           alignItems: 'center',
         }}
+        haptic="none"
       >
-        <Text style={[typography.labelBold, { color: colors.textInverse }]}>
-          Повторить
-        </Text>
-      </TouchableOpacity>
+        <Text style={[typography.labelBold, { color: colors.textInverse }]}>Повторить</Text>
+      </PressableScale>
     </View>
   );
 }

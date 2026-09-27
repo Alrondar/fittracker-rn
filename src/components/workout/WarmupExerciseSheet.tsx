@@ -3,7 +3,8 @@
 // аналоги изучаемы внутри листа (просмотр без замены) с бейджами relation_type.
 // Замена — явный CTA, а не тап по карточке (в отличие от старого слайдера альтернатив).
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
@@ -76,8 +77,7 @@ function AlternativeRow({ alt, onPress }: AlternativeRowProps) {
   const { colors } = useTheme();
   const thumb = parseMediaUrls(alt.media_url)[0];
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`Изучить вариант: ${alt.name}`}
       onPress={() => onPress(alt)}
@@ -145,7 +145,7 @@ function AlternativeRow({ alt, onPress }: AlternativeRowProps) {
         </View>
       </View>
       <ChevronRight size={16} color={colors.textTertiary} />
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -236,7 +236,7 @@ export function WarmupExerciseSheet({
     <SheetShell visible={visible} title={displayed.name} onClose={onClose}>
       {/* Навигация просмотра: изучаем аналог без замены */}
       {isViewingAlt && (
-        <TouchableOpacity
+        <PressableScale
           onPress={backToMain}
           accessibilityRole="button"
           accessibilityLabel={`Вернуться к ${main.name}`}
@@ -248,12 +248,13 @@ export function WarmupExerciseSheet({
             marginBottom: SPACING.sm,
             paddingVertical: SPACING.xs,
           }}
+          haptic="none"
         >
           <ChevronLeft size={16} color={colors.primary} />
           <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
             {main.name}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       )}
 
       {/* Демонстрация — сразу наверху, без аккордеона */}
@@ -401,7 +402,7 @@ export function WarmupExerciseSheet({
               onPress={() => onMarkCompleted(main.id)}
             />
           )}
-          <TouchableOpacity
+          <PressableScale
             onPress={() => router.push(`/exercise/${displayed.id}`)}
             accessibilityRole="link"
             style={{
@@ -416,7 +417,7 @@ export function WarmupExerciseSheet({
               Полная карточка упражнения
             </Text>
             <ChevronRight size={14} color={colors.primary} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
     </SheetShell>

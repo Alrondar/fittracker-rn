@@ -9,7 +9,8 @@
 // - длинная история не рендерится: последние тренировки ограничены slice(0, 5).
 
 import React, { useCallback, useMemo } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -402,8 +403,7 @@ export default function ProgressScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ marginBottom: SPACING.md, gap: SPACING.sm }}
                   >
-                    <TouchableOpacity
-                      activeOpacity={0.75}
+                    <PressableScale
                       onPress={() => setSelectedExercise(null)}
                       style={{
                         paddingHorizontal: SPACING.md,
@@ -432,13 +432,12 @@ export default function ProgressScreen() {
                       >
                         Все
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                     {strengthTop.map((item) => {
                       const isSelected = selectedExercise === item.name;
                       return (
-                        <TouchableOpacity
+                        <PressableScale
                           key={item.name}
-                          activeOpacity={0.75}
                           onPress={() => setSelectedExercise(item.name)}
                           style={{
                             paddingHorizontal: SPACING.md,
@@ -466,7 +465,7 @@ export default function ProgressScreen() {
                           >
                             {item.name}
                           </Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                       );
                     })}
                   </ScrollView>

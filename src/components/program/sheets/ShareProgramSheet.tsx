@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { X, Share2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
@@ -42,9 +43,9 @@ export function ShareProgramSheet({
           }}
         >
           <Text style={[typography.h3, { color: colors.textPrimary }]}>Поделиться программой</Text>
-          <TouchableOpacity onPress={onClose}>
+          <PressableScale onPress={onClose}>
             <X size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
         <View style={{ padding: SPACING.xl }}>
           {loading ? (
@@ -82,9 +83,8 @@ export function ShareProgramSheet({
                   {formatShareCode(code)}
                 </Text>
               </View>
-              <TouchableOpacity
+              <PressableScale
                 onPress={onShare}
-                activeOpacity={0.8}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -99,7 +99,7 @@ export function ShareProgramSheet({
                 <Text style={[typography.labelBold, { color: colors.textInverse }]}>
                   Поделиться через...
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             </>
           ) : (
             <Text

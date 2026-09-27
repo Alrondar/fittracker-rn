@@ -2,7 +2,8 @@
 // Workout Report: детальный отчёт по завершённой тренировке (PRODUCT.md §11).
 // Показывает: сводку, задействованные мышцы (анатомическая карта), список упражнений.
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Clock, Dumbbell, Flame, X } from 'lucide-react-native';
@@ -147,9 +148,9 @@ export default function WorkoutReportScreen() {
         edges={['top']}
       >
         <View style={commonStyles.navHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+          <PressableScale onPress={() => router.back()} style={commonStyles.backButton}>
             <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
         <View
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}
@@ -189,9 +190,9 @@ export default function WorkoutReportScreen() {
           { backgroundColor: colors.surface, borderBottomColor: colors.border },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()} style={commonStyles.backButton}>
+        <PressableScale onPress={() => router.back()} style={commonStyles.backButton}>
           <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text
           style={[typography.h4, { color: colors.textPrimary, flex: 1, textAlign: 'center' }]}
           numberOfLines={1}
@@ -306,12 +307,12 @@ export default function WorkoutReportScreen() {
                 >
                   Фильтр по группе мышц
                 </Text>
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => setSelectedMuscle(null)}
                   style={{ padding: SPACING.xs }}
                 >
                   <X size={16} color={colors.textSecondary} />
-                </TouchableOpacity>
+                </PressableScale>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs }}>
                 {getMuscleNamesForSlug(selectedMuscle).map((name) => (

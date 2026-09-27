@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator } from 'react-native';
+import { PressableScale } from './ui/PressableScale';
 import { Program } from '../services/programsService';
 import { Sprout, Dumbbell, Flame } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../constants/theme';
@@ -97,7 +98,7 @@ export function ProgramFormSheet({
               const isSelected = formLevel === option.value;
               const levelColor = LEVEL_COLORS[option.value];
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={option.value}
                   onPress={() => onFormLevelChange(option.value)}
                   style={{
@@ -110,7 +111,6 @@ export function ProgramFormSheet({
                     backgroundColor: isSelected ? withAlpha(levelColor, 0.082) : colors.surface,
                     alignItems: 'center',
                   }}
-                  activeOpacity={0.7}
                 >
                   <option.icon
                     size={20}
@@ -128,12 +128,12 @@ export function ProgramFormSheet({
                   >
                     {option.label}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
         </View>
-        <TouchableOpacity
+        <PressableScale
           style={[
             buttonStyles.primary,
             {
@@ -151,7 +151,7 @@ export function ProgramFormSheet({
               {editingProgram ? 'Сохранить изменения' : 'Создать программу'}
             </Text>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </SheetShell>
   );

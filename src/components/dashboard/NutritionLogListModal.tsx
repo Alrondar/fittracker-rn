@@ -2,8 +2,9 @@
 // NUTRI-2: L2-модалка списка записей питания за день.
 
 import React from 'react';
-import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, Text, View } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import { Trash2 } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
@@ -104,10 +105,9 @@ export function NutritionLogListModal({ visible, onClose, onEdit }: NutritionLog
               }}
             >
               {logs.map((log) => (
-                <TouchableOpacity
+                <PressableScale
                   key={log.id}
                   onPress={() => onEdit(log)}
-                  activeOpacity={0.7}
                   style={{
                     backgroundColor: colors.surfaceSecondary,
                     borderRadius: BORDER_RADIUS.md,
@@ -159,7 +159,7 @@ export function NutritionLogListModal({ visible, onClose, onEdit }: NutritionLog
                     </Text>
                   </View>
 
-                  <TouchableOpacity
+                  <PressableScale
                     onPress={() => handleDelete(log)}
                     disabled={isDeleting}
                     accessibilityRole="button"
@@ -175,8 +175,8 @@ export function NutritionLogListModal({ visible, onClose, onEdit }: NutritionLog
                     }}
                   >
                     <Trash2 size={18} color={colors.error} strokeWidth={2} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
+                  </PressableScale>
+                </PressableScale>
               ))}
             </View>
           )}

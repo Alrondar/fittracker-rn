@@ -5,7 +5,8 @@
 // (оба уже кэшируются React Query).
 
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react-native';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
@@ -61,9 +62,8 @@ export function WeeklyBalanceChip() {
 
   return (
     <>
-      <TouchableOpacity
+      <PressableScale
         onPress={() => setSheetVisible(true)}
-        activeOpacity={0.7}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -81,7 +81,7 @@ export function WeeklyBalanceChip() {
         <Text style={[typography.captionSmall, { color: chipColor, fontWeight: '700' }]}>
           Неделя: {label}
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
 
       <SheetShell
         visible={sheetVisible}

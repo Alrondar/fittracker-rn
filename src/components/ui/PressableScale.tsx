@@ -9,7 +9,7 @@
 // работают ровно как с TouchableOpacity. Вложенные pressable-детти получают
 // responder первыми — родитель не анимируется при тапе по ребёнку.
 import React, { memo, useCallback } from 'react';
-import { Pressable, StyleProp, ViewProps, ViewStyle } from 'react-native';
+import { GestureResponderEvent, Pressable, StyleProp, ViewProps, ViewStyle } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -25,8 +25,9 @@ const PRESS_SPRING = { damping: 20, stiffness: 400, mass: 0.6 };
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface PressableScaleProps {
-  onPress?: () => void;
-  onLongPress?: () => void;
+  // Сигнатура как у Pressable: обработчики без аргументов остаются валидны
+  onPress?: (event: GestureResponderEvent) => void;
+  onLongPress?: (event: GestureResponderEvent) => void;
   delayLongPress?: number;
   disabled?: boolean;
   /** Целевой масштаб при нажатии (default 0.97). */
@@ -35,9 +36,10 @@ export interface PressableScaleProps {
   haptic?: 'light' | 'medium' | 'none';
   /** Стиль нажимной поверхности (всё, что раньше шло в TouchableOpacity style). */
   style?: StyleProp<ViewStyle>;
-  accessibilityRole?: 'button' | 'link' | 'image' | 'tab' | 'none';
+  accessibilityRole?: ViewProps['accessibilityRole'];
   accessibilityLabel?: string;
-  accessibilityState?: Record<string, boolean>;
+  accessibilityHint?: string;
+  accessibilityState?: Record<string, boolean | undefined>;
   hitSlop?: ViewProps['hitSlop'];
   children: React.ReactNode;
 }
@@ -52,6 +54,7 @@ export const PressableScale = memo(function PressableScale({
   style,
   accessibilityRole = 'button',
   accessibilityLabel,
+  accessibilityHint,
   accessibilityState,
   hitSlop,
   children,
@@ -81,6 +84,7 @@ export const PressableScale = memo(function PressableScale({
     <AnimatedPressable
       accessibilityRole={accessibilityRole === 'none' ? undefined : accessibilityRole}
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       accessibilityState={accessibilityState}
       onPress={onPress}
       onLongPress={onLongPress}

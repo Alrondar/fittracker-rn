@@ -1,7 +1,8 @@
 // app/profile/metrics.tsx split (DA-P2-8): история замеров (AUDIT-4: пагинация + «Показать ещё»).
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { feedback } from '../../../lib/feedback';
+import { PressableScale } from '../../ui/PressableScale';
 import { Trash2, Calendar, Weight } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
@@ -67,14 +68,14 @@ export function MetricsHistorySection({ metrics, onDelete }: Props) {
                     })}
                   </Text>
                 </View>
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => handleDelete(item.id)}
                   accessibilityRole="button"
                   accessibilityLabel="Удалить замер"
                   style={{ padding: 4 }}
                 >
                   <Trash2 size={18} color={colors.error} />
-                </TouchableOpacity>
+                </PressableScale>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
                 {METRIC_FIELDS.map((field) => {
@@ -122,9 +123,8 @@ export function MetricsHistorySection({ metrics, onDelete }: Props) {
             </AppCard>
           ))}
           {!showAllHistory && metrics.length > HISTORY_PAGE && (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setShowAllHistory(true)}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={`Показать ещё (${metrics.length - HISTORY_PAGE})`}
               style={{
@@ -140,7 +140,7 @@ export function MetricsHistorySection({ metrics, onDelete }: Props) {
               <Text style={[typography.labelBold, { color: colors.primary }]}>
                 Показать ещё ({metrics.length - HISTORY_PAGE})
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </>
       )}

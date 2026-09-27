@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { FONT_FAMILIES } from '../../constants/fonts';
@@ -57,7 +58,7 @@ function Dot({ active, onPress }: { active: boolean; onPress: () => void }) {
   }, [active]);
   const style = useAnimatedStyle(() => ({ width: widthSV.value }));
   return (
-    <TouchableOpacity onPress={onPress} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+    <PressableScale onPress={onPress} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
       <Animated.View
         style={[
           {
@@ -68,7 +69,7 @@ function Dot({ active, onPress }: { active: boolean; onPress: () => void }) {
           style,
         ]}
       />
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

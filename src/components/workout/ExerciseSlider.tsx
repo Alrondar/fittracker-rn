@@ -4,14 +4,8 @@
 //  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
 // ENG-5: ранжирование альтернатив + подпись excludedCount
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { useLayoutWidth } from '../../hooks/useLayoutWidth';
@@ -257,9 +251,9 @@ export const ExerciseSlider = memo(function ExerciseSlider({
       {isReplaced && (
         <View style={[cardStyles.replacedBadgeContainer, { backgroundColor: colors.primaryLight }]}>
           <Text style={[cardStyles.replacedBadgeText, { color: colors.primary }]}>Заменено</Text>
-          <TouchableOpacity onPress={() => resetToOriginal(exerciseIndex)}>
+          <PressableScale onPress={() => resetToOriginal(exerciseIndex)}>
             <Text style={[cardStyles.replacedResetText, { color: colors.primary }]}>Вернуть</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
 
@@ -354,17 +348,17 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 
         {showPeek &&
           (Platform.OS === 'web' ? (
-            // WEB-2: тап вместо недоступного на десктопе горизонтального свайпа.
-            <TouchableOpacity
+            // WEB-2: тап вместо недоступного на десктопе горизонтального свайпа
+            // (onScrollBeginDrag от мыши/колеса не приходит).
+            <PressableScale
               key="peek"
               onPress={openAlternatives}
-              activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Показать варианты замены"
               style={{ width: cardWidth }}
             >
               {peekCard}
-            </TouchableOpacity>
+            </PressableScale>
           ) : (
             peekCard
           ))}

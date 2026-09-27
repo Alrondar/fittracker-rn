@@ -5,7 +5,8 @@
 // ВНУТРИ карточки календаря под тапнутой ячейкой (Reveal, origin по колонке
 // дня). Рендерится TrainingCalendarCard; повторный тап по дню или ✕ сворачивают.
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { ChevronRight, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -90,9 +91,8 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
               Тренировок: {dayWorkouts.length}
             </Text>
           </View>
-          <TouchableOpacity
+          <PressableScale
             onPress={onClose}
-            activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Свернуть детали дня"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -108,13 +108,12 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
             }}
           >
             <X size={16} color={colors.textSecondary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
         {dayWorkouts.map((w) => (
-          <TouchableOpacity
+          <PressableScale
             key={w.id}
             onPress={() => openWorkout(w.id)}
-            activeOpacity={0.85}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -125,6 +124,7 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
               padding: SPACING.md,
               marginBottom: SPACING.sm,
             }}
+            haptic="none"
           >
             <View style={{ flex: 1 }}>
               <Text
@@ -138,7 +138,7 @@ export function DaySummaryCard({ selectedDay, workouts, onClose, colors }: DaySu
               </Text>
             </View>
             <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
-          </TouchableOpacity>
+          </PressableScale>
         ))}
       </View>
     </Reveal>

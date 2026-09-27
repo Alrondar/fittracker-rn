@@ -1,6 +1,7 @@
 // src/components/progress/RecentWorkouts.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Activity, ChevronRight, Clock, Dumbbell, Flame, Target } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
@@ -119,9 +120,8 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
             : colors.primary;
 
         return (
-          <TouchableOpacity
+          <PressableScale
             key={workout.id}
-            activeOpacity={0.8}
             onPress={() => onPress(workout.id)}
             style={{
               borderRadius: BORDER_RADIUS.lg,
@@ -236,7 +236,7 @@ export function RecentWorkouts({ workouts, onPress }: RecentWorkoutsProps) {
                 />
               </View>
             </LinearGradient>
-          </TouchableOpacity>
+          </PressableScale>
         );
       })}
     </View>

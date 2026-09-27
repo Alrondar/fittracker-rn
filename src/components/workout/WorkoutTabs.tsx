@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import { View, Text, LayoutChangeEvent } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -90,9 +91,8 @@ export function WorkoutTabs({
           indicatorStyle,
         ]}
       />
-      <TouchableOpacity
+      <PressableScale
         onPress={() => handlePress('warmup')}
-        activeOpacity={0.85}
         style={{
           flex: 1,
           flexDirection: 'row',
@@ -102,6 +102,7 @@ export function WorkoutTabs({
           paddingVertical: SPACING.sm,
           zIndex: 1,
         }}
+        haptic="none"
       >
         <Flame size={15} color={activeTab === 'warmup' ? colors.textInverse : colors.warning} />
         <Text style={tabLabel(activeTab === 'warmup')}>Разминка</Text>
@@ -135,11 +136,10 @@ export function WorkoutTabs({
             </Text>
           </View>
         )}
-      </TouchableOpacity>
+      </PressableScale>
 
-      <TouchableOpacity
+      <PressableScale
         onPress={() => handlePress('workout')}
-        activeOpacity={0.85}
         style={{
           flex: 1,
           flexDirection: 'row',
@@ -149,13 +149,14 @@ export function WorkoutTabs({
           paddingVertical: SPACING.sm,
           zIndex: 1,
         }}
+        haptic="none"
       >
         <Dumbbell
           size={15}
           color={activeTab === 'workout' ? colors.textInverse : colors.textSecondary}
         />
         <Text style={tabLabel(activeTab === 'workout')}>Тренировка</Text>
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 }

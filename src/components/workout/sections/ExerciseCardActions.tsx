@@ -5,7 +5,8 @@
 // владеет ExerciseCard). Inline-строка отдыха из v1 удалена.
 // Info button трансформируется в inline-блок с табами.
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../../ui/PressableScale';
 import { Clock, Info } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
@@ -53,9 +54,8 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
       }}
     >
       {restSeconds > 0 && (
-        <TouchableOpacity
+        <PressableScale
           onPress={handleStartRest}
-          activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={`Открыть таймер отдыха (пресет ${restSeconds} секунд)`}
           style={{
@@ -71,19 +71,19 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
             flex: 1,
             minHeight: 44,
           }}
+          haptic="none"
         >
           <Clock size={16} color={colors.primary} strokeWidth={2} />
           <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
             Таймер
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       )}
 
       {/* Info button */}
       {hasInfoContent && (
-        <TouchableOpacity
+        <PressableScale
           onPress={handleOpenInfo}
-          activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={infoVisible ? 'Скрыть информацию' : 'Показать информацию'}
           style={{
@@ -97,6 +97,7 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
             borderWidth: 1,
             borderColor: infoVisible ? colors.primary : colors.border,
           }}
+          haptic="none"
         >
           <Info
             size={16}
@@ -114,7 +115,7 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
           >
             {infoVisible ? 'Скрыть' : 'Info'}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       )}
     </View>
   );

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextStyle, StyleProp } from 'react-native';
+import { View, Text, TextStyle, StyleProp } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -83,20 +84,20 @@ export function UnitToggle({ unit, onChange }: UnitToggleProps) {
           thumbStyle,
         ]}
       />
-      <TouchableOpacity
+      <PressableScale
         onPress={() => handleSelect('kg')}
-        activeOpacity={0.8}
         style={{ width: SEGMENT_WIDTH, height: '100%', justifyContent: 'center', zIndex: 1 }}
+        haptic="none"
       >
         <Text style={labelStyle(unit === 'kg')}>кг</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
+      </PressableScale>
+      <PressableScale
         onPress={() => handleSelect('lb')}
-        activeOpacity={0.8}
         style={{ width: SEGMENT_WIDTH, height: '100%', justifyContent: 'center', zIndex: 1 }}
+        haptic="none"
       >
         <Text style={labelStyle(unit === 'lb')}>lb</Text>
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 }

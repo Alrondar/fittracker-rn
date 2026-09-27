@@ -11,7 +11,8 @@
 // - цвета читаемы в светлой и тёмной темах (STRENGTH_LEVEL_COLORS);
 // - SheetShell — единый паттерн раскрытия (INVENTORY.md §6).
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useTheme } from '../../hooks/useTheme';
 import { FONT_FAMILIES } from '../../constants/fonts';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
@@ -49,8 +50,7 @@ export function StrengthLevelBadge({
 
   return (
     <>
-      <TouchableOpacity
-        activeOpacity={0.75}
+      <PressableScale
         onPress={() => setSheetOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={`Уровень силы: ${result.levelLabel}. ${result.ratio.toFixed(1)}× веса`}
@@ -71,7 +71,7 @@ export function StrengthLevelBadge({
         >
           · {result.ratio.toFixed(1)}× веса
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
 
       <SheetShell
         visible={sheetOpen}

@@ -4,7 +4,8 @@
 // DA-P2-8: split — ExerciseRow, MuscleGroupFilters, ExerciseSearchBar,
 // ExerciseSortSheet, ActivationFilterChip в src/components/exercises/.
 import { useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, RefreshControl, ActivityIndicator } from 'react-native';
+import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
@@ -99,11 +100,11 @@ export default function ExercisesScreen() {
           : 'Измените параметры поиска, чтобы найти нужное упражнение'}
       </Text>
       {(activeFiltersCount > 0 || searchInput) && (
-        <TouchableOpacity style={{ marginTop: SPACING.md }} onPress={resetFilters}>
+        <PressableScale style={{ marginTop: SPACING.md }} onPress={resetFilters}>
           <AppBadge variant="primary" size="medium">
             Сбросить фильтры
           </AppBadge>
-        </TouchableOpacity>
+        </PressableScale>
       )}
     </FadeIn>
   );
@@ -172,7 +173,7 @@ export default function ExercisesScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setShowSortSheet(true)}
               style={{
                 width: 44,
@@ -182,7 +183,6 @@ export default function ExercisesScreen() {
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Сортировка"
             >
@@ -191,8 +191,8 @@ export default function ExercisesScreen() {
                 color={sortBy !== 'name-asc' ? colors.primary : colors.textSecondary}
                 strokeWidth={2}
               />
-            </TouchableOpacity>
-            <TouchableOpacity
+            </PressableScale>
+            <PressableScale
               onPress={handleToggleSearch}
               style={{
                 width: 44,
@@ -202,7 +202,6 @@ export default function ExercisesScreen() {
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
-              activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={showSearch ? 'Закрыть поиск' : 'Открыть поиск'}
             >
@@ -211,7 +210,7 @@ export default function ExercisesScreen() {
               ) : (
                 <Search size={20} color={colors.textSecondary} strokeWidth={2} />
               )}
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         </View>
         {showSearch && (
@@ -242,9 +241,9 @@ export default function ExercisesScreen() {
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
             Выбрано: {activeFiltersCount}
           </Text>
-          <TouchableOpacity onPress={resetFilters}>
+          <PressableScale onPress={resetFilters}>
             <Text style={[typography.labelBold, { color: colors.primary }]}>Сбросить</Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       )}
 

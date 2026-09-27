@@ -1,8 +1,9 @@
 // src/components/settings/ProfileSection.tsx
 // DA-P2-8: секция «Профиль» экрана настроек (вынесена из app/profile/settings.tsx).
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import { User, Mail, Lock, Save } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
@@ -119,11 +120,12 @@ export function ProfileSection() {
 
       <LinkRow icon={Lock} title="Сменить пароль" onPress={handleChangePassword} />
 
-      <TouchableOpacity
+      <PressableScale
         style={[buttonStyles.primary]}
         onPress={handleSaveProfile}
         disabled={saving}
         accessibilityRole="button"
+        haptic="none"
       >
         {saving ? (
           <Text style={buttonStyles.textPrimary}>Сохранение...</Text>
@@ -133,7 +135,7 @@ export function ProfileSection() {
             <Text style={buttonStyles.textPrimary}>Сохранить изменения</Text>
           </>
         )}
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 }

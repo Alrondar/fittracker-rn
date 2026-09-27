@@ -7,7 +7,8 @@
 //   - строка-следствие: приоритет PRODUCT.md §8 (safety > recommendation).
 //   - L1 чип цикла (фаза + день) для female пользователей.
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Svg, { Circle, G } from 'react-native-svg';
@@ -156,7 +157,7 @@ export function StatusCard() {
         }}
       >
         <Text style={[typography.h5, { color: colors.textPrimary }]}>Состояние сегодня</Text>
-        <TouchableOpacity
+        <PressableScale
           onPress={() => setSheetOpen(true)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
@@ -172,7 +173,7 @@ export function StatusCard() {
           <Text style={[typography.buttonTiny, { color: colors.primary }]}>
             {readiness == null ? 'Отметить' : 'Обновить'}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {/* Ring + pips */}
@@ -226,7 +227,7 @@ export function StatusCard() {
             {SCALE.map((v) => {
               const active = readiness != null && v <= readiness;
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={v}
                   disabled={quickSetMutation.isPending || !userId}
                   onPress={() => handlePipTap(v)}
@@ -234,6 +235,7 @@ export function StatusCard() {
                   accessibilityRole="button"
                   accessibilityLabel={`Оценить готовность на ${v} из 5`}
                   style={{ flex: 1, alignItems: 'center', paddingVertical: 4 }}
+                  haptic="none"
                 >
                   <View
                     style={{
@@ -257,7 +259,7 @@ export function StatusCard() {
                   >
                     {v}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
@@ -338,7 +340,7 @@ export function StatusCard() {
       {/* Фича 7: L1 chip прогноза следующей тренировки. Показываем только
           при определённой сложности и достаточных данных, чтобы не выдумывать. */}
       {forecast && forecast.difficulty !== 'unknown' && (
-        <TouchableOpacity
+        <PressableScale
           onPress={() => setForecastSheetOpen(true)}
           hitSlop={{ top: 6, bottom: 6 }}
           accessibilityRole="button"
@@ -390,14 +392,14 @@ export function StatusCard() {
                 ? 'лёгкая'
                 : 'обычная'}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       )}
 
       {/* L1 чип цикла (только для female) */}
       {gender === 'female' && (
         <View style={{ marginTop: SPACING.md }}>
           {currentPhase ? (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setCycleCheckInOpen(true)}
               hitSlop={{ top: 6, bottom: 6 }}
               accessibilityRole="button"
@@ -423,9 +425,9 @@ export function StatusCard() {
               <Text style={[typography.label, { color: colors.textPrimary }]}>
                 День {currentPhase.dayNumber} · {getCyclePhaseLabel(currentPhase.phase)}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           ) : (
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setCycleCheckInOpen(true)}
               hitSlop={{ top: 6, bottom: 6 }}
               accessibilityRole="button"
@@ -446,7 +448,7 @@ export function StatusCard() {
               <Text style={[typography.label, { color: colors.textPrimary }]}>
                 Отметить начало цикла
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
       )}
@@ -463,7 +465,7 @@ export function StatusCard() {
               const sevColor =
                 (SEVERITY_COLORS as Record<string, string>)[inj.severity] ?? colors.warning;
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={inj.id}
                   onPress={() => router.push('/profile/injuries')}
                   hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
@@ -492,11 +494,11 @@ export function StatusCard() {
                   <Text style={[typography.captionSmall, { color: sevColor, fontWeight: '700' }]}>
                     {(BODY_PART_LABELS as Record<string, string>)[inj.body_part] || inj.body_part}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
             {activeInjuries.length > 2 && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => router.push('/profile/injuries')}
                 hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                 accessibilityRole="button"
@@ -516,10 +518,10 @@ export function StatusCard() {
                 >
                   +{activeInjuries.length - 2}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
             {hasChronic && topChronic && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => setPainTrendSheetOpen(true)}
                 hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                 accessibilityRole="button"
@@ -542,7 +544,7 @@ export function StatusCard() {
                     topChronic.bodyPart}{' '}
                   · {topChronic.weeks} нед.
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
             {hasPain && !hasChronic && (
               <View

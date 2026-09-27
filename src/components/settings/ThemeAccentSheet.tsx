@@ -1,7 +1,8 @@
 // src/components/settings/ThemeAccentSheet.tsx
 // DA-P2-8: sheet выбора цветовой схемы (вынесен из app/profile/settings.tsx).
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
 import {
@@ -26,7 +27,7 @@ export function ThemeAccentSheet({ visible, onClose }: { visible: boolean; onClo
     const isSelected = themeAccent === item.key;
     const currentTheme = themes[item.keys[0]];
     return (
-      <TouchableOpacity
+      <PressableScale
         accessibilityRole="button"
         accessibilityState={{ selected: isSelected }}
         accessibilityLabel={`Цветовая схема: ${item.label}`}
@@ -45,6 +46,7 @@ export function ThemeAccentSheet({ visible, onClose }: { visible: boolean; onClo
           setThemeAccent(item.key);
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }}
+        haptic="none"
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -89,7 +91,7 @@ export function ThemeAccentSheet({ visible, onClose }: { visible: boolean; onClo
             <Text style={{ color: colors.textInverse, fontSize: 14, fontWeight: 'bold' }}>✓</Text>
           </View>
         )}
-      </TouchableOpacity>
+      </PressableScale>
     );
   };
 

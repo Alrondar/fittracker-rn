@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { Percent, Ruler, Weight } from 'lucide-react-native';
 import { SPACING } from '../../constants/theme';
@@ -144,7 +145,7 @@ export function GoalsStep1({
               </Text>
             </View>
           </View>
-          <TouchableOpacity
+          <PressableScale
             onPress={onToggleBodyFat}
             style={{
               width: 50,
@@ -164,7 +165,7 @@ export function GoalsStep1({
                 transform: [{ translateX: useBodyFat ? 12 : -12 }],
               }}
             />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </AppCard>
 
