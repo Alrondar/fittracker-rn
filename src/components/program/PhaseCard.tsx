@@ -13,7 +13,9 @@ import {
   GripVertical,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { ScaleDecorator, NestableDraggableFlatList } from 'react-native-draggable-flatlist';
+import { ScaleDecorator } from 'react-native-draggable-flatlist';
+// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
+import { ReorderList } from './ReorderList';
 import { DayCard } from './DayCard';
 import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
 import { getPhaseMeta, getPhaseColor } from '../../constants/phaseTypes';
@@ -312,9 +314,9 @@ export function PhaseCard({
             </PressableScale>
           )}
 
-          {/* Дни */}
+          {/* Дни (web: перестановка ▲▼, WEB-3b) */}
           {canEditDays ? (
-            <NestableDraggableFlatList
+            <ReorderList
               data={displayDays}
               onDragEnd={({ data }) => onDayDragEnd(data as ProgramDay[])}
               keyExtractor={(item: ProgramDay) => item.id}

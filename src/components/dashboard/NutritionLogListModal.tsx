@@ -108,6 +108,9 @@ export function NutritionLogListModal({ visible, onClose, onEdit }: NutritionLog
                 <PressableScale
                   key={log.id}
                   onPress={() => onEdit(log)}
+                  // WEB-3a: внутри строки живёт кнопка удаления (PressableScale
+                  // ниже) — на вебе обёртка не должна становиться <button>.
+                  wrapActions
                   style={{
                     backgroundColor: colors.surfaceSecondary,
                     borderRadius: BORDER_RADIUS.md,

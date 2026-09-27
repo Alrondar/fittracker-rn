@@ -104,6 +104,9 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
         accessibilityRole="button"
         accessibilityLabel={`Открыть технику: ${exercise.name}`}
         onPress={() => onOpen(index)}
+        // WEB-3a: в теле карточки — чекбокс «выполнено» и кнопки таймера,
+        // на вебе обёртка не должна становиться <button>.
+        wrapActions
         style={{
           backgroundColor: isActive ? withAlpha(colors.warning, 0.071) : colors.surface,
           borderRadius: BORDER_RADIUS.lg,

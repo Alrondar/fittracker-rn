@@ -5,11 +5,9 @@ import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
-import {
-  ScaleDecorator,
-  NestableScrollContainer,
-  NestableDraggableFlatList,
-} from 'react-native-draggable-flatlist';
+import { ScaleDecorator, NestableScrollContainer } from 'react-native-draggable-flatlist';
+// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
+import { ReorderList } from '../../../src/components/program/ReorderList';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useProgramEditor } from '../../../src/hooks/useProgramEditor';
@@ -230,8 +228,8 @@ export default function ProgramEditScreen() {
           badgeStyles={badgeStyles}
         />
 
-        {/* Фазы с drag & drop */}
-        <NestableDraggableFlatList
+        {/* Фазы с drag & drop (web: ▲▼, WEB-3b) */}
+        <ReorderList
           data={phases}
           onDragEnd={({ data }) => onPhaseDragEnd(data)}
           keyExtractor={(item: ProgramPhase) => item.id}
