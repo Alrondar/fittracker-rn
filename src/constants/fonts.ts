@@ -6,17 +6,16 @@
 // bold из custom-font, поэтому нужный вес выбирается ИМЯНОМ файла, а не
 // fontWeight (fontWeight оставлен только как fallback для системного рендера
 // и старых мест, где стиль задан инлайном).
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
-import {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+// WEB-5: импорты идут по весам (.../inter/400Regular), а не из index-барабана
+// пакета: index тянет в бандл ВСЕ веса+италики (23 TTF / 6.4 МБ в dist), хотя
+// загружаются 7. Native-APK экономит то же самое.
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
+import { SpaceGrotesk_500Medium } from '@expo-google-fonts/space-grotesk/500Medium';
+import { SpaceGrotesk_600SemiBold } from '@expo-google-fonts/space-grotesk/600SemiBold';
+import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk/700Bold';
 
 export const FONT_FAMILIES = {
   // Дисплейные заголовки (h1–h5, крупные числа)
