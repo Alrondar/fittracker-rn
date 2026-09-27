@@ -9,7 +9,15 @@
 // работают ровно как с TouchableOpacity. Вложенные pressable-детти получают
 // responder первыми — родитель не анимируется при тапе по ребёнку.
 import React, { memo, useCallback } from 'react';
-import { GestureResponderEvent, Pressable, StyleProp, ViewProps, ViewStyle } from 'react-native';
+import {
+  AccessibilityRole,
+  GestureResponderEvent,
+  Platform,
+  Pressable,
+  StyleProp,
+  ViewProps,
+  ViewStyle,
+} from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -21,6 +29,10 @@ import * as Haptics from 'expo-haptics';
 
 // Упругий, без явного overshoot: 0.97 за ~120ms туда и обратно.
 const PRESS_SPRING = { damping: 20, stiffness: 400, mass: 0.6 };
+
+// WEB-3: роль-обёртка (`group` вместо `button`) нужна только на вебе — там
+// accessibilityRole роняется в нативный <button> и ломает валидную вложенность.
+const IS_WEB = Platform.OS === 'web';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -41,6 +53,17 @@ export interface PressableScaleProps {
   accessibilityHint?: string;
   accessibilityState?: Record<string, boolean | undefined>;
   hitSlop?: ViewProps['hitSlop'];
+  /**
+   * WEB-3: поверхность, внутри которой есть другие действия (кнопки, ссылки).
+   *
+   * На вебе `accessibilityRole="button"` роняется в нативный `<button>`, а `<button>`
+   * внутри `<button>` — невалидный HTML: React кричит «cannot be a descendant of
+   * <button>», а вспомогательные технологии перестают видеть вложенные действия.
+   * Для таких обёрток ставим роль `group` — RNW оставляет `<div role="group">`.
+   * На нативных платформах роль не меняется (вложенность accessibilityRole там
+   * безопасна), то есть поведение устройства не затрагивается.
+   */
+  wrapActions?: boolean;
   children: React.ReactNode;
 }
 
@@ -57,6 +80,7 @@ export const PressableScale = memo(function PressableScale({
   accessibilityHint,
   accessibilityState,
   hitSlop,
+  wrapActions = false,
   children,
 }: PressableScaleProps) {
   const pressSV = useSharedValue(0); // 0 = idle, 1 = pressed
@@ -80,9 +104,16 @@ export const PressableScale = memo(function PressableScale({
     // Отклик обеспечивает один spring-масштаб.
   }));
 
+  // WEB-3: обёртка с вложенными действиями не должна становиться <button> на вебе.
+  // 'group' — ARIA-роль: в union RN `AccessibilityRole` её нет, но RNW пробрасывает
+  // неизвестные роли в `role` атрибут div'а (propsToAriaRole), поэтому каст точечный
+  // и только для веб-ветки.
+  const role = (wrapActions && IS_WEB ? 'group' : accessibilityRole) as
+    AccessibilityRole | undefined;
+
   return (
     <AnimatedPressable
-      accessibilityRole={accessibilityRole === 'none' ? undefined : accessibilityRole}
+      accessibilityRole={role === 'none' ? undefined : role}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       accessibilityState={accessibilityState}

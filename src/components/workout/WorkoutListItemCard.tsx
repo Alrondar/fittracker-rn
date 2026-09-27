@@ -77,6 +77,9 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
       scaleTo={0.985}
       disabled={status === 'skipped'}
       accessibilityRole="button"
+      // WEB-3: внутри строки есть своё действие (см. вложенный PressableScale ниже),
+      // поэтому на вебе обёртка не должна становиться <button>.
+      wrapActions
       accessibilityLabel={`${item.name}, ${status === 'completed' ? 'выполнена' : isNext ? 'следующая' : status === 'in_progress' ? 'в процессе' : status === 'skipped' ? 'пропущена' : 'предстоит'}`}
       style={{ marginHorizontal: SPACING.lg }}
     >
