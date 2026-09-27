@@ -3,17 +3,18 @@
 //  - P1-A: removeClippedSubviews={true} на горизонтальном ScrollView
 //  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
 // ENG-5: ранжирование альтернатив + подпись excludedCount
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  useWindowDimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { useLayoutWidth } from '../../hooks/useLayoutWidth';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
 import { WorkoutCardDisplayMode } from '../../types/workout';
@@ -116,7 +117,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   workoutId,
   addSet,
 }: ExerciseSliderProps) {
-  const { width: screenWidth } = useWindowDimensions();
+  // WEB-2: ширина макета, а не окна браузера (на нативе значения совпадают).
+  const screenWidth = useLayoutWidth();
   const cardWidth = screenWidth - 32;
   // Ритм между упражнениями (SP-1, переработано в FX-2): высота ОСНОВНОЙ
   // карточки — ориентир для страниц альтернатив (их maxHeight). Раньше ей
@@ -188,6 +190,49 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     if (!altsMounted && hasAlts) setAltsMounted(true);
   }, [altsMounted, hasAlts]);
 
+  const scrollRef = useRef<ScrollView>(null);
+
+  // WEB-2: тап по peek-странице — tap-альтернатива жесту (PRODUCT.md §3.2). На
+  // десктопе горизонтальный скролл мышью недоступен, а на вебе ещё и
+  // `onScrollBeginDrag` не выстреливает, поэтому страницы замен не открывались
+  // вообще. Нативный путь остаётся свайпом: обработчик навешивается только на
+  // web-ветке рендера.
+  const openAlternatives = useCallback(() => {
+    setAltsMounted(true);
+    requestAnimationFrame(() =>
+      scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: true })
+    );
+  }, [cardWidth]);
+
+  const peekCard = (
+    <View
+      style={{
+        width: cardWidth,
+        height: mainHeight > 0 ? mainHeight : undefined,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: SPACING.sm,
+        backgroundColor: colors.surfaceSecondary,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: BORDER_RADIUS.lg,
+        paddingHorizontal: SPACING.lg,
+      }}
+    >
+      <ChevronRight size={22} color={colors.textTertiary} strokeWidth={2} />
+      <Text
+        style={{
+          color: colors.textSecondary,
+          fontSize: 12,
+          fontWeight: '600',
+          textAlign: 'center',
+        }}
+      >
+        Свайпни для замен
+      </Text>
+    </View>
+  );
+
   const showPlaceholder = loadingAlts;
   const showPeek = !loadingAlts && hasAlts && !altsMounted;
   const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
@@ -235,6 +280,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
       )}
 
       <ScrollView
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
@@ -251,6 +297,10 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         // карточка мерируется по реальному контенту, mainHeight растёт вместе с ней,
         // а альтернативы ограничены maxHeight (внутренний вертикальный скролл).
         onScrollBeginDrag={handleScrollBeginDrag}
+        // WEB-2: на вебе `onScrollBeginDrag` от мыши/колеса не приходит —
+        // страховка через onScroll (обработчик идемпотентен), натив не затронут.
+        onScroll={Platform.OS === 'web' ? handleScrollBeginDrag : undefined}
+        scrollEventThrottle={Platform.OS === 'web' ? 64 : undefined}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP, alignItems: 'flex-start' }}
       >
         <View
@@ -302,34 +352,22 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
 
-        {showPeek && (
-          <View
-            style={{
-              width: cardWidth,
-              height: mainHeight > 0 ? mainHeight : undefined,
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: SPACING.sm,
-              backgroundColor: colors.surfaceSecondary,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: BORDER_RADIUS.lg,
-              paddingHorizontal: SPACING.lg,
-            }}
-          >
-            <ChevronRight size={22} color={colors.textTertiary} strokeWidth={2} />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                fontWeight: '600',
-                textAlign: 'center',
-              }}
+        {showPeek &&
+          (Platform.OS === 'web' ? (
+            // WEB-2: тап вместо недоступного на десктопе горизонтального свайпа.
+            <TouchableOpacity
+              key="peek"
+              onPress={openAlternatives}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Показать варианты замены"
+              style={{ width: cardWidth }}
             >
-              Свайпни для замен
-            </Text>
-          </View>
-        )}
+              {peekCard}
+            </TouchableOpacity>
+          ) : (
+            peekCard
+          ))}
 
         {showAlts &&
           alternatives.map((alt) => (

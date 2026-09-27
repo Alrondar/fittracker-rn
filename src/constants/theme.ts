@@ -8,7 +8,7 @@
 // чтобы на узких (320–360) и широких (414+) экранах пропорции не «ехали».
 // Ширина читается один раз при загрузке модуля: в app.json зафиксирован portrait,
 // поэтому поворота и рассинхрона между рендерами нет.
-import { Dimensions, PixelRatio } from 'react-native';
+import { Dimensions, PixelRatio, Platform } from 'react-native';
 
 export interface ThemeColors {
   primary: string;
@@ -570,7 +570,46 @@ export const GRADIENTS = {
 };
 
 const BASE_WIDTH = 375;
-const SCREEN_WIDTH = Dimensions.get('window').width;
+
+/**
+ * WEB-2: ширина, от которой считается весь адаптивный масштаб.
+ *
+ * На вебе `Dimensions.get('window').width` — это ширина окна браузера, а не
+ * макета: в 1280-пиксельном окне коэффициент стал бы 3.4, и вся типографика
+ * (текст таб-бара, hero-числа, кнопки) выросла бы втрое относительно контейнеров,
+ * которые считаются уже по реальной вёрстке. Поэтому на вебе ширина режется до
+ * телефонной колонки — ровно той же константой, которой ограничивается корневой
+ * контейнер (`WEB_LAYOUT_MAX_WIDTH`, см. app/_layout.tsx).
+ *
+ * Нативные платформы не затронуты: там `Platform.OS !== 'web'`, и формула
+ * остаётся прежней (`window.width / 375`).
+ */
+export const WEB_LAYOUT_MAX_WIDTH = 480;
+/**
+ * Нижняя граница веб-колонки. 320 css-px — самый узкий реальный телефон, поэтому
+ * на устройствах кламп не срабатывает никогда; он нужен, чтобы не схлопнуть
+ * масштаб в 0 на странице без layout-размера (скрытая/фоновая поверхность
+ * браузера отдаёт `innerWidth === 0`).
+ */
+const WEB_LAYOUT_MIN_WIDTH = 320;
+
+/** Ширина веб-колонки по ширине окна: [360; 480]. */
+export function webLayoutWidth(windowWidth: number): number {
+  return Math.min(Math.max(windowWidth, WEB_LAYOUT_MIN_WIDTH), WEB_LAYOUT_MAX_WIDTH);
+}
+
+const RAW_SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH = Platform.OS === 'web' ? webLayoutWidth(RAW_SCREEN_WIDTH) : RAW_SCREEN_WIDTH;
+
+/**
+ * Ширина, по которой считается адаптивная вёрстка. На вебе — это ширина
+ * телефонной колонки, а не окна браузера (см. `WEB_LAYOUT_MAX_WIDTH`).
+ * Реактивный аналог для компонентов — `useLayoutWidth()`.
+ */
+export function getLayoutWidth(): number {
+  const w = Dimensions.get('window').width;
+  return Platform.OS === 'web' ? webLayoutWidth(w) : w;
+}
 
 /** Масштаб для размеров, отступов-иконок, радиусов. */
 export const scale = (size: number): number =>

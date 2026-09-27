@@ -383,12 +383,9 @@ legacy columns `exercises.equipment`, `exercises.injuries`, `exercises.alternati
 - workout FlatList и горизонтальный ScrollView ExerciseSlider: `removeClippedSubviews` СОЗНАТЕЛЬНО убран (SG-2) — детач нативных вью роняет responder/blur у TextInput сетов («некликабельные ячейки»). Коммит SetInput — debounce 350 мс + blur + unmount.
 - Пустая рамка подсказки в SetsGrid: обёртка рендерится только при `hintVisible` (общий предикат `plateMathVisible` для строки блинов).
 - WT-2: запись `started_at` идемпотентна (`startedSavedRef`), подтверждение финиша — единственное (confirm-лист), в `saveWorkout` Alert-подтверждения нет.
-- WEB-1: `Alert.alert` напрямую не использовать — в `react-native-web` это заглушка
-  (`static alert() {}`), и на вебе подтверждение или ошибка исчезают молча. Весь
-  user-facing alert/confirm идёт через `src/lib/feedback.ts` (подпись 1-в-1 с
-  `Alert.alert`): на нативных платформах это прямой делегат в `Alert`, на вебе рисует
-  `FeedbackDialog` (хост — в `app/_layout.tsx` рядом с `RootLayoutContent`).
-  Проверка: `grep -rn "Alert.alert(" src app | grep -v src/lib/feedback.ts` — пусто.
+- WEB-1: `Alert.alert` напрямую не использовать — в `react-native-web` это заглушка (`static alert() {}`), на вебе подтверждение или ошибка исчезают молча. Весь user-facing alert/confirm идёт через `src/lib/feedback.ts` (подпись 1-в-1 с `Alert.alert`); на нативных платформах `feedback` делегирует в системный `Alert`, на вебе рисует `FeedbackDialog` (хост смонтирован в `app/_layout.tsx` рядом с `RootLayoutContent`). Проверка: `grep -rn "Alert\.alert(" src app --include=*.tsx --include=*.ts | grep -v src/lib/feedback.ts` — должен быть пустым.
+- WEB-2: ширину макета на вебе нельзя брать из окна браузера. `Dimensions.get('window').width` / `useWindowDimensions().width` в браузере = ширина окна (1280+), а `scale`/`fontScale` и `cardWidth` слайдера рассчитаны на телефон от 375 → во всём вебе текст и страницы вырастают в 3+ раза. Канон: `webLayoutWidth()` / `useLayoutWidth()` из `src/constants/theme.ts` + `src/hooks/useLayoutWidth.ts` (кламп [320; 480]), корневая колонка — `styles.webShell` в `app/_layout.tsx`. Натив эти функции не касается (`Platform.OS !== 'web'` → сырая ширина).
+- WEB-2: на вебе `onScrollBeginDrag` у `ScrollView` от мыши/колеса не приходит (responder-путь касания), поэтому ленивый монтаж контента по жесту на вебе обязан иметь второй триггер — иначе панель остаётся пустой (случай `ExerciseSlider`: страницы замен не монтировались вообще).
 - Мёртвые href (DASH-PR, 25.09): при переносе/удалении экрана править ВСЕ `router.push/replace` на старые пути. Проверка: `grep -rhoE "router\\.(push|replace)\\(\\s*['\`\"]/[^'\`]+" app src | sort -u` и сверить с деревом `app/`. Уже починены: `/profile/progress` (удалён UX-11), `/(tabs)/history` (удалён), `/(tabs)/profile/injuries` (группа не в URL).
 Before changing a DB operation, inspect the current migration and generated `database.types.ts`.
 

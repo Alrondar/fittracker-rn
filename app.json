@@ -24,6 +24,17 @@
       "softwareKeyboardLayoutMode": "resize",
       "permissions": []
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "FitTracker",
+      "shortName": "FitTracker",
+      "themeColor": "#1A1A2E",
+      "backgroundColor": "#1A1A2E",
+      "favicon": "./assets/favicon.png",
+      "display": "standalone",
+      "orientation": "portrait"
+    },
     "extra": {
       "supabaseUrl": "https://trgiihqqcovidwcqwdkl.supabase.co",
       "supabaseAnonKey": "sb_publishable_urA0lde-UzaEHI6Et5wB2w_k5L308CK",

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Trophy, Dumbbell, BookOpen, Activity, User } from 'lucide-react-native';
@@ -18,6 +18,13 @@ import * as Haptics from 'expo-haptics';
 // иконка получает scale-pop при фокусе.
 const PILL_SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
 const POP_SPRING = { damping: 12, stiffness: 500, mass: 0.8 };
+
+// WEB-2: веб-правки каскада. Нативные значения не меняются — всё, что ниже,
+// включается только на `Platform.OS === 'web'`.
+const IS_WEB = Platform.OS === 'web';
+// На вебе `useSafeAreaInsets()` отдаёт нули (insets — нативная концепция), а
+// iOS Safari прячет часть бара под адресной строкой → берём CSS env().
+const WEB_BOTTOM_INSET = 'calc(env(safe-area-inset-bottom, 0px) + 8px)';
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -45,7 +52,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
     <View
       style={[
         styles.container,
-        { backgroundColor: 'transparent', paddingBottom: insets.bottom + SPACING.sm },
+        { backgroundColor: 'transparent' },
+        IS_WEB
+          ? // RNW: insets.bottom на вебе = 0 → берём CSS env() (каст: значение
+            // уходит в стиль как есть, типы React Native его не описывают)
+            { paddingBottom: WEB_BOTTOM_INSET as unknown as number }
+          : { paddingBottom: insets.bottom + SPACING.sm },
       ]}
     >
       <View
@@ -117,6 +129,10 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               <Text
                 style={[
                   styles.label,
+                  // WEB-2: на вебе `flex: 1` в колонке авто-высоты даёт
+                  // flex-basis 0% → подпись схлопывалась в 0px и вылезала за
+                  // скруглённый бар. Нативные стили не трогаем.
+                  IS_WEB ? styles.labelWeb : null,
                   {
                     color: isFocused ? colors.textInverse : colors.textSecondary,
                     fontWeight: isFocused ? '600' : '500',
@@ -233,5 +249,12 @@ const styles = StyleSheet.create({
     fontSize: fontScale(10),
     fontWeight: '500',
     zIndex: 1, // Текст поверх pill
+  },
+  // WEB-2: см. комментарий в рендере — только для веба.
+  labelWeb: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
+    marginTop: 2,
   },
 });

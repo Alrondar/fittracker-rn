@@ -46,7 +46,7 @@
 - Profile создаётся DB trigger `handle_new_user`; `ensureProfile` идемпотентен.
 - Config — `src/lib/config.ts`, значения приходят из Expo config.
 - User-facing errors — `mapError/extractMessage` или `mapAuthError`.
-- User-facing алерты и подтверждения — только через `src/lib/feedback.ts` (`feedback.alert`); `Alert.alert` в коде UI не используется (грабля — INVENTORY.md §10.1).
+- User-facing алерты и подтверждения — только через `src/lib/feedback.ts` (`feedback.alert`), `Alert.alert` в коде UI не используется (грабля — INVENTORY.md §10.1).
 - Файл не должен разрастаться выше 500 строк; при >450 сначала рассмотреть split.
 - `database.types.ts` должен соответствовать текущей схеме.
 - Новая логика не должна ломать persistence, safety или program-sync semantics.
@@ -169,6 +169,7 @@ navTransitionDuration: 300,    // ms, ease-out
 - List cards — React.memo; callbacks — useCallback.
 - Не тянуть тяжёлые данные в списки.
 - useWindowDimensions() вместо Dimensions.get('window'), кроме осознанного theme exception.
+- Ширина макета ≠ ширина окна браузера: адаптивные размеры на вебе считаются из `webLayoutWidth()`/`useLayoutWidth()` (кламп в телефонную колонку), а не из сырой ширины окна. Нативные значения при этом не меняются.
 - Reanimated .value — в worklet/animated style; JS commit — через runOnJS.
 - Gesture Handler — simultaneousWithExternalGesture(Gesture.Native()) при необходимости.
 - Не монтировать media/slider content в collapsed accordion.

@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useStore } from '../src/store/useStore';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
+import { WEB_LAYOUT_MAX_WIDTH } from '../src/constants/theme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { BrandLoader } from '../src/components/ui/BrandLoader';
 import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
@@ -192,13 +193,16 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView
+      style={Platform.OS === 'web' ? [styles.container, styles.webShell] : styles.container}
+    >
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <RootLayoutContent />
-          {/* WEB-1: хост диалогов feedback.* рядом с контентом, а не внутри него:
-
-              диалог может быть запрошен и в период splash-гейта. */}
+          {/* WEB-1: хост диалогов feedback.*. Монтируется рядом с контентом, а не
+              внутри него: диалог может быть запрошен и в период splash-гейта.
+              На нативных платформах компонент рендерит null — там feedback
+              делегирует в системный Alert.alert, поведение не меняется. */}
           <FeedbackDialog />
         </ThemeProvider>
       </QueryClientProvider>
@@ -209,6 +213,15 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // WEB-2: телефонная колонка по центру. Без неё в десктопном окне приложение
+  // растягивается на всю ширину, а масштаб типографики (`scale`/`fontScale`) и
+  // ширина страниц слайдера считаются от 480px — получался «телефонный» текст в
+  // «десктопном» контейнере. Боковые поля остаются фоном из `app.json > web`.
+  webShell: {
+    width: '100%',
+    maxWidth: WEB_LAYOUT_MAX_WIDTH,
+    alignSelf: 'center',
   },
   centered: {
     flex: 1,

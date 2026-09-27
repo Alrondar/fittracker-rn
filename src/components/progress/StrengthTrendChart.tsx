@@ -9,9 +9,10 @@
 // - Рядом с названием упражнения — бейдж уровня (Novice/Beginner/Intermediate/Advanced/Elite)
 // - Тап по бейджу → SheetShell с таблицей нормативов (L2)
 import React, { useState } from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../../hooks/useTheme';
+import { useLayoutWidth } from '../../hooks/useLayoutWidth';
 import { useWeightDisplay } from '../../hooks/useUnitPreferences';
 import { useStore } from '../../store/useStore';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -37,7 +38,9 @@ interface Props {
 export function StrengthTrendChart({ series, selectedExerciseName }: Props) {
   const { colors } = useTheme();
   const { userId } = useStore();
-  const chartWidth = Dimensions.get('window').width - SPACING.lg * 4;
+  // WEB-2: ширина макета (на вебе — колонка, а не окно браузера), плюс уход от
+  // Dimensions.get в сторону реактивного хука (CLAUDE.md §8).
+  const chartWidth = useLayoutWidth() - SPACING.lg * 4;
 
   // Фильтрация: если выбрано конкретное упражнение — показываем только его.
   const filtered = selectedExerciseName
