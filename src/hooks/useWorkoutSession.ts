@@ -793,7 +793,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   const saveWorkout = useCallback(async () => {
     if (!isWorkoutActive && currentTimeRef.current === 0) {
-      feedback.alert('Тренировка не начата', 'Нажмите «Начать» на таймере в шапке, затем завершайте');
+      feedback.alert(
+        'Тренировка не начата',
+        'Нажмите «Начать» на таймере в шапке, затем завершайте'
+      );
       return;
     }
 

@@ -3,14 +3,7 @@
 // stop-тумблер, осторожность в профиль травм, заметка.
 // PR6 (Scope 2): prefill из существующей записи боли + «Боль прошла» для удаления.
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
 import * as Haptics from 'expo-haptics';
 import { SheetShell } from '../ui/SheetShell';

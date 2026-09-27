@@ -1,4 +1,3 @@
-
 import * as Haptics from 'expo-haptics';
 import { feedback } from '../lib/feedback';
 import { Program, ProgramPhase, ProgramDay } from '../services/programsService';
@@ -193,7 +192,7 @@ export function useProgramPhases({
     const phase = editedProgram.phases[phaseIndex];
     if (!phase) return;
     const weekDays = (editedProgram.days || []).filter(
-      (d) => d.phase_id === phase.id && (d.week_number ?? 1) === week,
+      (d) => d.phase_id === phase.id && (d.week_number ?? 1) === week
     );
     if (weekDays.length === 0) return;
     feedback.alert(
@@ -206,19 +205,19 @@ export function useProgramPhases({
           style: 'destructive',
           onPress: () => {
             const newDays = (editedProgram.days || []).filter(
-              (d) => !(d.phase_id === phase.id && (d.week_number ?? 1) === week),
+              (d) => !(d.phase_id === phase.id && (d.week_number ?? 1) === week)
             );
             setEditedProgram({ ...editedProgram, days: newDays });
             const removedDayIds = weekDays.filter((d) => !d.isNew).map((d) => d.id);
             if (removedDayIds.length) setDeletedDayIds((prev) => [...prev, ...removedDayIds]);
             const removedExIds = weekDays.flatMap((d) =>
-              (d.exercises || []).filter((ex) => !ex.isNew).map((ex) => ex.id),
+              (d.exercises || []).filter((ex) => !ex.isNew).map((ex) => ex.id)
             );
             if (removedExIds.length) setDeletedExerciseIds((prev) => [...prev, ...removedExIds]);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           },
         },
-      ],
+      ]
     );
   };
 
@@ -227,7 +226,7 @@ export function useProgramPhases({
     const phase = editedProgram.phases[phaseIndex];
     if (!phase) return;
     const weekDays = (editedProgram.days || []).filter(
-      (d) => d.phase_id === phase.id && (d.week_number ?? 1) === week,
+      (d) => d.phase_id === phase.id && (d.week_number ?? 1) === week
     );
     const newDay: ProgramDay = {
       id: genRandomUUID(),

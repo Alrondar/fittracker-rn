@@ -1,14 +1,7 @@
 // src/components/dashboard/ReadinessSheet.tsx
 // FEAT-1.8: чек-ин состояния перед тренировкой (раз в день).
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
 import { Droplet } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';

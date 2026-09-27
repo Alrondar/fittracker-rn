@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { feedback } from '../../src/lib/feedback';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
@@ -22,8 +29,14 @@ export default function LoginScreen() {
   const { colors } = useTheme();
 
   const handleAuth = async () => {
-    if (!email || !password) { feedback.alert('Ошибка', 'Заполните все поля'); return; }
-    if (password.length < 6) { feedback.alert('Ошибка', 'Пароль должен быть минимум 6 символов'); return; }
+    if (!email || !password) {
+      feedback.alert('Ошибка', 'Заполните все поля');
+      return;
+    }
+    if (password.length < 6) {
+      feedback.alert('Ошибка', 'Пароль должен быть минимум 6 символов');
+      return;
+    }
     setLoading(true);
     try {
       if (isLogin) {
@@ -48,43 +61,86 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={{ flex: 1, justifyContent: 'center', padding: SPACING.xxl }}>
           <View style={{ alignItems: 'center', marginBottom: SPACING.sm }}>
             <Dumbbell size={72} color={colors.primary} strokeWidth={1.5} />
           </View>
-          <Text style={[typography.h1, { textAlign: 'center', color: colors.primary, marginBottom: SPACING.sm }]}>
+          <Text
+            style={[
+              typography.h1,
+              { textAlign: 'center', color: colors.primary, marginBottom: SPACING.sm },
+            ]}
+          >
             FitTracker
           </Text>
-          <Text style={[typography.body, { textAlign: 'center', color: colors.textSecondary, marginBottom: SPACING.xl }]}>
+          <Text
+            style={[
+              typography.body,
+              { textAlign: 'center', color: colors.textSecondary, marginBottom: SPACING.xl },
+            ]}
+          >
             {isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
           </Text>
 
           <AppCard variant="highlighted">
-            <AppInput label="Email" placeholder="your@email.com" value={email} onChangeText={setEmail}
-              autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
-              icon={<Mail size={20} color={colors.primary} />} editable={!loading} />
-            <AppInput label="Пароль" placeholder="Минимум 6 символов" value={password} onChangeText={setPassword}
-              secureTextEntry icon={<Lock size={20} color={colors.primary} />} editable={!loading} />
+            <AppInput
+              label="Email"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              icon={<Mail size={20} color={colors.primary} />}
+              editable={!loading}
+            />
+            <AppInput
+              label="Пароль"
+              placeholder="Минимум 6 символов"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              icon={<Lock size={20} color={colors.primary} />}
+              editable={!loading}
+            />
 
             {isLogin && (
-              <TouchableOpacity onPress={() => router.push('/(auth)/reset-password')} disabled={loading}
-                style={{ alignItems: 'flex-end', marginTop: SPACING.xs }}>
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/reset-password')}
+                disabled={loading}
+                style={{ alignItems: 'flex-end', marginTop: SPACING.xs }}
+              >
                 <Text style={[typography.label, { color: colors.primary }]}>Забыли пароль?</Text>
               </TouchableOpacity>
             )}
 
-            <AppButton title={isLogin ? 'Войти' : 'Зарегистрироваться'} variant="primary" size="large"
-              loading={loading} disabled={loading}
-              icon={isLogin
-                ? <LogIn size={20} color={colors.textInverse} />
-                : <UserPlus size={20} color={colors.textInverse} />}
-              onPress={handleAuth} style={{ marginTop: SPACING.md }} />
+            <AppButton
+              title={isLogin ? 'Войти' : 'Зарегистрироваться'}
+              variant="primary"
+              size="large"
+              loading={loading}
+              disabled={loading}
+              icon={
+                isLogin ? (
+                  <LogIn size={20} color={colors.textInverse} />
+                ) : (
+                  <UserPlus size={20} color={colors.textInverse} />
+                )
+              }
+              onPress={handleAuth}
+              style={{ marginTop: SPACING.md }}
+            />
 
-            <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={loading}
-              style={{ padding: SPACING.sm, alignItems: 'center', marginTop: SPACING.sm }}>
+            <TouchableOpacity
+              onPress={() => setIsLogin(!isLogin)}
+              disabled={loading}
+              style={{ padding: SPACING.sm, alignItems: 'center', marginTop: SPACING.sm }}
+            >
               <Text style={[typography.label, { color: colors.primary }]}>
                 {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
               </Text>

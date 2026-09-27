@@ -49,8 +49,7 @@ export function GoalsStep1({
 }: GoalsStep1Props) {
   const bodyFatValue = bodyFatPercentage != null ? String(bodyFatPercentage) : '';
   const bodyFatInvalid =
-    useBodyFat &&
-    (bodyFatPercentage == null || bodyFatPercentage < 1 || bodyFatPercentage > 60);
+    useBodyFat && (bodyFatPercentage == null || bodyFatPercentage < 1 || bodyFatPercentage > 60);
 
   const handleNext = () => {
     if (!gender || !height || !weight) {
@@ -71,9 +70,7 @@ export function GoalsStep1({
   const handleBodyFatTextChange = (text: string) => {
     const cleaned = text.replace(',', '.').replace(/[^0-9.]/g, '');
     const parsed = cleaned === '' ? null : parseFloat(cleaned);
-    onBodyFatPercentageChange(
-      parsed == null || Number.isNaN(parsed) ? null : parsed
-    );
+    onBodyFatPercentageChange(parsed == null || Number.isNaN(parsed) ? null : parsed);
   };
 
   return (
@@ -129,7 +126,9 @@ export function GoalsStep1({
 
       {/* P1.1: Toggle процента жира — по умолчанию скрыт, раскрывается по тапу */}
       <AppCard variant="compact" style={{ marginTop: SPACING.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Percent
               size={20}

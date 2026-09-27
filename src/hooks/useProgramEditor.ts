@@ -320,24 +320,28 @@ export function useProgramEditor(
     if (!day || !day.exercises) return;
     const exercise = day.exercises[exerciseIndex];
     if (!exercise) return;
-    feedback.alert('Удалить упражнение?', `"${exercise.exercise_name}" будет удалено из программы`, [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Удалить',
-        style: 'destructive',
-        onPress: () => {
-          const newExercises = [...(day.exercises || [])];
-          newExercises.splice(exerciseIndex, 1);
-          const newDays = [...(editedProgram?.days || [])];
-          newDays[dayIndex] = { ...day, exercises: newExercises };
-          setEditedProgram({ ...(editedProgram as Program), days: newDays });
-          if (!exercise.isNew) {
-            setDeletedExerciseIds((prev) => [...prev, exercise.id]);
-          }
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    feedback.alert(
+      'Удалить упражнение?',
+      `"${exercise.exercise_name}" будет удалено из программы`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: () => {
+            const newExercises = [...(day.exercises || [])];
+            newExercises.splice(exerciseIndex, 1);
+            const newDays = [...(editedProgram?.days || [])];
+            newDays[dayIndex] = { ...day, exercises: newExercises };
+            setEditedProgram({ ...(editedProgram as Program), days: newDays });
+            if (!exercise.isNew) {
+              setDeletedExerciseIds((prev) => [...prev, exercise.id]);
+            }
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   // ARCH-6: exercise типизирован как ExerciseListItem (выход пикера),

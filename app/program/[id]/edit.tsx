@@ -1,11 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  BackHandler,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, BackHandler } from 'react-native';
 import { feedback } from '../../../src/lib/feedback';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -135,7 +129,7 @@ export default function ProgramEditScreen() {
       };
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [isDirty, router]),
+    }, [isDirty, router])
   );
 
   if (loading || !program || !editedProgram) {
@@ -172,10 +166,7 @@ export default function ProgramEditScreen() {
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
             Программа › Редактирование
           </Text>
-          <Text
-            style={[typography.labelBold, { color: colors.textPrimary }]}
-            numberOfLines={1}
-          >
+          <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={1}>
             {program.name}
           </Text>
         </View>
@@ -312,9 +303,7 @@ export default function ProgramEditScreen() {
             marginTop: SPACING.md,
           }}
         >
-          <Text style={[typography.labelBold, { color: colors.primary }]}>
-            + Добавить фазу
-          </Text>
+          <Text style={[typography.labelBold, { color: colors.primary }]}>+ Добавить фазу</Text>
         </TouchableOpacity>
       </NestableScrollContainer>
 
@@ -337,12 +326,7 @@ export default function ProgramEditScreen() {
         </TouchableOpacity>
       </View>
 
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onHide={hideToast}
-      />
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 
       {/* ===== Модалки Editor ===== */}
       <ProgramEditorModals

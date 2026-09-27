@@ -19,8 +19,14 @@ export default function UpdatePasswordScreen() {
   const { colors } = useTheme();
 
   const handleSave = async () => {
-    if (password.length < 6) { feedback.alert('Ошибка', 'Минимум 6 символов'); return; }
-    if (password !== confirm) { feedback.alert('Ошибка', 'Пароли не совпадают'); return; }
+    if (password.length < 6) {
+      feedback.alert('Ошибка', 'Минимум 6 символов');
+      return;
+    }
+    if (password !== confirm) {
+      feedback.alert('Ошибка', 'Пароли не совпадают');
+      return;
+    }
     setLoading(true);
     try {
       await updatePassword(password);
@@ -34,18 +40,58 @@ export default function UpdatePasswordScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.xxl, backgroundColor: colors.background }}>
-      <Text style={[typography.h1, { color: colors.textPrimary, marginBottom: SPACING.sm, textAlign: 'center' }]}>Новый пароль</Text>
-      <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl, textAlign: 'center' }]}>
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: SPACING.xxl,
+        backgroundColor: colors.background,
+      }}
+    >
+      <Text
+        style={[
+          typography.h1,
+          { color: colors.textPrimary, marginBottom: SPACING.sm, textAlign: 'center' },
+        ]}
+      >
+        Новый пароль
+      </Text>
+      <Text
+        style={[
+          typography.body,
+          { color: colors.textSecondary, marginBottom: SPACING.xl, textAlign: 'center' },
+        ]}
+      >
         Придумайте новый пароль для входа
       </Text>
       <AppCard variant="highlighted">
-        <AppInput label="Новый пароль" placeholder="Минимум 6 символов" value={password}
-          onChangeText={setPassword} secureTextEntry icon={<Lock size={20} color={colors.primary} />} editable={!loading} />
-        <AppInput label="Повторите пароль" placeholder="Ещё раз" value={confirm}
-          onChangeText={setConfirm} secureTextEntry icon={<Lock size={20} color={colors.primary} />} editable={!loading} />
-        <AppButton title="Сохранить пароль" variant="primary" size="large"
-          loading={loading} disabled={loading} onPress={handleSave} style={{ marginTop: SPACING.md }} />
+        <AppInput
+          label="Новый пароль"
+          placeholder="Минимум 6 символов"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          icon={<Lock size={20} color={colors.primary} />}
+          editable={!loading}
+        />
+        <AppInput
+          label="Повторите пароль"
+          placeholder="Ещё раз"
+          value={confirm}
+          onChangeText={setConfirm}
+          secureTextEntry
+          icon={<Lock size={20} color={colors.primary} />}
+          editable={!loading}
+        />
+        <AppButton
+          title="Сохранить пароль"
+          variant="primary"
+          size="large"
+          loading={loading}
+          disabled={loading}
+          onPress={handleSave}
+          style={{ marginTop: SPACING.md }}
+        />
       </AppCard>
     </ScrollView>
   );

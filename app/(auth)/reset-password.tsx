@@ -19,7 +19,10 @@ export default function ResetPasswordScreen() {
   const { colors } = useTheme();
 
   const handleSend = async () => {
-    if (!email.trim()) { feedback.alert('Ошибка', 'Введите email'); return; }
+    if (!email.trim()) {
+      feedback.alert('Ошибка', 'Введите email');
+      return;
+    }
     setLoading(true);
     try {
       await sendPasswordReset(email, 'fittracker://reset-password');
@@ -32,24 +35,52 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: SPACING.xxl, backgroundColor: colors.background }}>
-      <TouchableOpacity onPress={() => router.back()} disabled={loading}
-        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg }}>
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        padding: SPACING.xxl,
+        backgroundColor: colors.background,
+      }}
+    >
+      <TouchableOpacity
+        onPress={() => router.back()}
+        disabled={loading}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg }}
+      >
         <ArrowLeft size={22} color={colors.primary} />
-        <Text style={[typography.label, { color: colors.primary, marginLeft: SPACING.xs }]}>Назад</Text>
+        <Text style={[typography.label, { color: colors.primary, marginLeft: SPACING.xs }]}>
+          Назад
+        </Text>
       </TouchableOpacity>
-      <Text style={[typography.h1, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>Восстановление</Text>
+      <Text style={[typography.h1, { color: colors.textPrimary, marginBottom: SPACING.sm }]}>
+        Восстановление
+      </Text>
       <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
         {sent
           ? 'Если аккаунт с таким email существует, мы отправили ссылку для смены пароля. Проверьте почту.'
           : 'Введите email аккаунта — пришлём ссылку для сброса пароля.'}
       </Text>
       <AppCard variant="highlighted">
-        <AppInput label="Email" placeholder="your@email.com" value={email} onChangeText={setEmail}
-          autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
-          icon={<Mail size={20} color={colors.primary} />} editable={!loading && !sent} />
-        <AppButton title={sent ? 'Отправить ещё раз' : 'Отправить ссылку'} variant="primary" size="large"
-          loading={loading} disabled={loading} onPress={handleSend} style={{ marginTop: SPACING.md }} />
+        <AppInput
+          label="Email"
+          placeholder="your@email.com"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          icon={<Mail size={20} color={colors.primary} />}
+          editable={!loading && !sent}
+        />
+        <AppButton
+          title={sent ? 'Отправить ещё раз' : 'Отправить ссылку'}
+          variant="primary"
+          size="large"
+          loading={loading}
+          disabled={loading}
+          onPress={handleSend}
+          style={{ marginTop: SPACING.md }}
+        />
       </AppCard>
     </ScrollView>
   );

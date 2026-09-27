@@ -3,7 +3,6 @@ import { feedback } from '../lib/feedback';
 import { metricsService } from '../services/metricsService';
 import { BodyMetric, MetricFormData } from '../types/metrics';
 
-
 export function useBodyMetrics(userId: string | null) {
   const queryClient = useQueryClient();
 
