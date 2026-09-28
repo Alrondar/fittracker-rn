@@ -593,13 +593,31 @@ export const WEB_LAYOUT_MAX_WIDTH = 480;
  */
 const WEB_LAYOUT_MIN_WIDTH = 320;
 
-/** Ширина веб-колонки по ширине окна: [360; 480]. */
+/** Ширина веб-колонки по ширине окна: [320; 480]. */
 export function webLayoutWidth(windowWidth: number): number {
   return Math.min(Math.max(windowWidth, WEB_LAYOUT_MIN_WIDTH), WEB_LAYOUT_MAX_WIDTH);
 }
 
 const RAW_SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_WIDTH = Platform.OS === 'web' ? webLayoutWidth(RAW_SCREEN_WIDTH) : RAW_SCREEN_WIDTH;
+
+/**
+ * WEB-FZ-7: ширина-якорь браузерной сборки.
+ *
+ * `scale()`/`fontScale()` считаются от `SCREEN_WIDTH`, который снимается ОДИН раз
+ * при загрузке модуля (иначе каждый `StyleSheet.create` в проекте пришлось бы
+ * пересоздавать на резайз). Значит и макет должен жить от той же величины:
+ * раньше `webShell` ограничивался живым `WEB_LAYOUT_MAX_WIDTH`, а компоненты —
+ * живым `useWindowDimensions()`, и после resize окна / поворота телефона
+ * контейнеры уезжали, а типографика оставалась — тот же класс разъезда, что
+ * WEB-2 закрыл для момента загрузки.
+ *
+ * Правило: на вебе всё (колонка, масштабы, компоненты-измерители) берёт
+ * `LAYOUT_ANCHOR`; живая ширина окна больше ни на что не влияет.
+ * Нативные платформы не затронуты — там якорь равен `Dimensions` при старте,
+ * как и было.
+ */
+export const LAYOUT_ANCHOR = SCREEN_WIDTH;
 
 /**
  * Ширина, по которой считается адаптивная вёрстка. На вебе — это ширина

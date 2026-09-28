@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Share, Platform } from 'react-native';
 import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -128,11 +128,27 @@ export default function ProgramDetailScreen() {
     }
   };
 
-  const shareViaSystem = () => {
+  const shareViaSystem = async () => {
     if (!shareCode) return;
     const formatted = formatShareCode(shareCode);
+    const message = `Моя программа «${program.name}» в FitTracker. Код для импорта: ${formatted}`;
+
+    if (Platform.OS === 'web') {
+      // WEB-BUG-7: RNW `Share.share` = `navigator.share`, которого нет в Firefox и
+      // на части десктопов (плюс `NotAllowedError` без user activation). Прежний
+      // пустой `.catch(() => {})` означал, что код программы молча не доходил до
+      // пользователя. На вебе канон — буфер обмена + явный Toast.
+      try {
+        await navigator.clipboard.writeText(message);
+        showToast('Код программы скопирован в буфер обмена', 'success');
+      } catch {
+        showToast('Браузер не дал доступ к буферу — скопируй код из окна', 'info');
+      }
+      return;
+    }
+
     Share.share({
-      message: `Моя программа «${program.name}» в FitTracker. Код для импорта: ${formatted}`,
+      message,
       title: 'Поделиться программой',
     }).catch(() => {});
   };

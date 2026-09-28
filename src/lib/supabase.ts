@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { config } from './config';
@@ -12,7 +13,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage, // ← Сохраняет сессию локально
     autoRefreshToken: true, // ← Автоматически обновляет токен
     persistSession: true, // ← Включает сохранение сессии
-    detectSessionInUrl: false, // ← Не нужно для мобильного приложения
+    // WEB-BUG-1: на вебе токен восстановления/подтверждения email приходит ПИСЬМОМ
+    // во фрагменте URL (`#access_token=…&type=recovery` / `?confirmation_token=…`).
+    // С `false` его никто не разбирает → `PASSWORD_RECOVERY` не срабатывает, а
+    // экран смены пароля из ссылки недостижим. На нативных платформах URL-разбора
+    // нет, поэтому поведение не меняется.
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });
 

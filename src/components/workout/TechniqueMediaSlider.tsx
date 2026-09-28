@@ -129,7 +129,12 @@ export function TechniqueMediaSlider({
   return (
     <View style={{ marginTop: SPACING.md }}>
       <View
-        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        onLayout={(e) => {
+          // WEB-FZ-6: guard против ResizeObserver-дребезга (см. Reveal/Skeleton) —
+          // без него каждое событие переставляет все страницы карусели.
+          const next = e.nativeEvent.layout.width;
+          setWidth((prev) => (Math.abs(prev - next) < 1 ? prev : next));
+        }}
         style={{
           height,
           borderRadius: BORDER_RADIUS.md,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, ScrollView, Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,11 @@ import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { AppButton } from '../../src/components/ui/AppButton';
-import { sendPasswordReset, mapAuthError } from '../../src/services/authService';
+import {
+  sendPasswordReset,
+  mapAuthError,
+  passwordResetRedirect,
+} from '../../src/services/authService';
 import { Mail, ArrowLeft } from 'lucide-react-native';
 
 export default function ResetPasswordScreen() {
@@ -26,13 +30,11 @@ export default function ResetPasswordScreen() {
     }
     setLoading(true);
     try {
-      // WEB-INFRA-1: на вебе письмо должно вести на сам сайт (иначе deep-link
-      // fittracker:// открывает «никуда»). Native — без изменений.
-      const redirectTo =
-        Platform.OS === 'web'
-          ? `${window.location.origin}/reset-password`
-          : 'fittracker://reset-password';
-      await sendPasswordReset(email, redirectTo);
+      // WEB-BUG-1/2: redirectTo — единый канон из authService (веб ведёт на
+      // /update-password с разбором recovery-токена из URL, натив — прежний
+      // deep-link). Раньше здесь жила локальная веб-ветка, а в Настройках —
+      // захардкоженный fittracker://, и значения разъехались.
+      await sendPasswordReset(email, passwordResetRedirect());
       setSent(true);
     } catch (e: any) {
       feedback.alert('Ошибка', mapAuthError(e?.message));

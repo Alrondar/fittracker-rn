@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useStore } from '../src/store/useStore';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
-import { WEB_LAYOUT_MAX_WIDTH } from '../src/constants/theme';
+import { LAYOUT_ANCHOR } from '../src/constants/theme';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { BrandLoader } from '../src/components/ui/BrandLoader';
 import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
@@ -162,6 +162,12 @@ function RootLayoutContent() {
           // Perf: JS unfocus-экрана замораживается — фон не рендерит вразнос
           // во время перехода и в фоне. workout/[id] исключён ниже: его JS —
           // это таймер отдыха, ему нельзя замирать под модалкой.
+          //
+          // WEB-CTR-3 (уточнение к WEB-FZ-2): заморозка — нативная фича
+          // (react-freeze). В браузерной сборке `freezeOnBlur` не делает ничего:
+          // в react-native-screens ветка заморозки идёт только под
+          // `isNativePlatformSupported`, а для веба экран просто прячется через
+          // `display: none` и остаётся живым. Структурная починка — WEB-FZ-2.
           freezeOnBlur: true,
         }}
       >
@@ -218,9 +224,14 @@ const styles = StyleSheet.create({
   // растягивается на всю ширину, а масштаб типографики (`scale`/`fontScale`) и
   // ширина страниц слайдера считаются от 480px — получался «телефонный» текст в
   // «десктопном» контейнере. Боковые поля остаются фоном из `app.json > web`.
+  //
+  // WEB-FZ-7: ограничитель — `LAYOUT_ANCHOR` (ширина колонки, снятая при
+  // загрузке), а не живой `WEB_LAYOUT_MAX_WIDTH`: `scale()`/`fontScale()` тоже
+  // печатаются по snapshot'у при загрузке модуля, поэтому живая граница
+  // разъезжалась с типографикой после resize окна и поворота телефона.
   webShell: {
     width: '100%',
-    maxWidth: WEB_LAYOUT_MAX_WIDTH,
+    maxWidth: LAYOUT_ANCHOR,
     alignSelf: 'center',
   },
   centered: {

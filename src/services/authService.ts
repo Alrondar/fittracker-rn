@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -9,6 +10,34 @@ import type { Session, User } from '@supabase/supabase-js';
  */
 
 /**
+ * WEB-BUG-2 / WEB-CTR-1: единый владелец `redirectTo` для писем сброса пароля.
+ * Раньше значение дублировался в двух местах и разъехалось (`reset-password.tsx`
+ * починен под веб, `ProfileSection.tsx` остался с `fittracker://`).
+ *
+ * - Web: абсолютный URL сайта на экран СМЕНЫ пароля (`/update-password`). Supabase
+ *   дописывает к нему `#access_token=…&type=recovery`, а supabase-js с
+ *   `detectSessionInUrl` разбирает его при загрузке → в `_layout` приходит
+ *   `PASSWORD_RECOVERY` и уводит на этот же экран. Бывший `fittracker://` в
+ *   браузере не открывал ничего.
+ * - Native: прежний deep-link, поведение не меняется.
+ *
+ * Требует, чтобы в Supabase dashboard → Authentication → URL Configuration в
+ * Redirect URLs лежал `https://fittracker-fseahe5gh7o.qoder.website/**`
+ * (ручной шаг владельца, см. STATUS WEB-INFRA-1).
+ */
+export function passwordResetRedirect(): string {
+  if (Platform.OS === 'web') {
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : // SSR/статический рендер единого чанка origin недоступен — берём публичный URL.
+          'https://fittracker-fseahe5gh7o.qoder.website';
+    return `${origin}/update-password`;
+  }
+  return 'fittracker://reset-password';
+}
+
+/**
  * Страховочное создание профиля. Идемпотентно: on conflict do nothing.
  * ⚠️ В `profiles` НЕТ колонки `email` (сверено с database.types.ts и схемой БД).
  *    Писать email сюда нельзя — это роняет upsert ошибкой 42703.
@@ -18,9 +47,7 @@ async function ensureProfile(userId: string): Promise<void> {
   if (!userId) return;
 
   try {
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({ id: userId }, { onConflict: 'id' });
+    const { error } = await supabase.from('profiles').upsert({ id: userId }, { onConflict: 'id' });
 
     // 23505 = unique violation (профиль уже есть) — не ошибка
     if (error && !String(error.code).includes('23505')) {
@@ -47,13 +74,27 @@ export async function signIn(email: string, password: string): Promise<User | nu
   return data.user;
 }
 
-export async function signUp(email: string, password: string): Promise<{
+export async function signUp(
+  email: string,
+  password: string
+): Promise<{
   user: User | null;
   needsEmailConfirmation: boolean;
 }> {
+  // WEB-BUG-1 (та же причина): письмо подтверждения email ведёт на Site URL
+  // Supabase, а не в приложение. На вебе возвращаем пользователя на origin —
+  // supabase-js с detectSessionInUrl разберёт `?confirmation_token=…` и сам
+  // подтвердит email. На нативных платформах options не передаём (поведение
+  // прежнее: письмо подтверждает на хосте Supabase, затем вход в приложении).
+  const webOptions =
+    Platform.OS === 'web' && typeof window !== 'undefined'
+      ? { options: { emailRedirectTo: window.location.origin } }
+      : {};
+
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
+    ...webOptions,
   });
 
   if (error) throw error;
@@ -98,7 +139,7 @@ export async function getSession(): Promise<Session | null> {
 
 /** Подписка на изменения сессии — ядро переходов. Используется ТОЛЬКО в _layout. */
 export function onAuthStateChange(
-  cb: (event: string, session: Session | null) => void,
+  cb: (event: string, session: Session | null) => void
 ): () => void {
   const { data } = supabase.auth.onAuthStateChange((event, session) => cb(event, session));
   return () => data.subscription.unsubscribe();
@@ -108,7 +149,9 @@ export function onAuthStateChange(
 export function mapAuthError(message: string): string {
   if (message.includes('Invalid login credentials')) return 'Неверный email или пароль';
   if (message.includes('Email not confirmed')) return 'Подтвердите email перед входом';
-  if (message.includes('User already registered')) return 'Пользователь с таким email уже существует';
-  if (message.includes('rate limit') || message.includes('over rate')) return 'Слишком много попыток, подождите';
+  if (message.includes('User already registered'))
+    return 'Пользователь с таким email уже существует';
+  if (message.includes('rate limit') || message.includes('over rate'))
+    return 'Слишком много попыток, подождите';
   return message || 'Произошла ошибка';
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, type DimensionValue } from 'react-native';
 import { PressableScale } from './ui/PressableScale';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +33,14 @@ const PILL_TOP = SPACING.xs + (TAB_HEIGHT - PILL_HEIGHT) / 2;
 // WEB-2: на вебе `useSafeAreaInsets()` отдаёт нули (insets — нативная концепция),
 // а iOS Safari прячет часть бара под адресной строкой → берём CSS env().
 const IS_WEB = Platform.OS === 'web';
-const WEB_BOTTOM_INSET = 'calc(env(safe-area-inset-bottom, 0px) + 8px)';
+// WEB-CTR-8: RN-типы описывают размер как `DimensionValue` (число | 'auto' |
+// 'N%'), а CSS-функции `calc()/env()` в этом union нет — хотя на RNW они
+// легальны (стиль сериализуется в CSS как есть). Каст поэтому живёт в ОДНОМ
+// месте и целится в настоящий слот стиля, а не притворяется числом.
+// Требует `viewport-fit=cover` в HTML (дописывает scripts/web-deploy.js,
+// WEB-BUG-10) — иначе Safari возвращает env() = 0px.
+const WEB_BOTTOM_INSET =
+  'calc(env(safe-area-inset-bottom, 0px) + 8px)' as unknown as DimensionValue;
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -63,7 +70,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         styles.container,
         { backgroundColor: 'transparent' },
         IS_WEB
-          ? { paddingBottom: WEB_BOTTOM_INSET as unknown as number }
+          ? { paddingBottom: WEB_BOTTOM_INSET }
           : { paddingBottom: insets.bottom + SPACING.sm },
       ]}
     >

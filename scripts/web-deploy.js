@@ -104,6 +104,20 @@ function main() {
   );
   const idxPath = path.join(OUT, 'index.html');
   let idx = fs.readFileSync(idxPath, 'utf8');
+
+  // WEB-BUG-10: без `viewport-fit=cover` iOS Safari отдаёт
+  // `env(safe-area-inset-bottom) = 0px`, и веб-отступ таб-бара
+  // (`WEB_BOTTOM_INSET` в CustomTabBar) становится инертным ровно там, где он и
+  // задуман. Metro генерирует мета без этого значения — дописываем при сборке.
+  idx = idx.replace(
+    /(<meta name="viewport" content=")([^"]*)("\s*\/>)/,
+    (all, open, content, close) =>
+      content.includes('viewport-fit') ? all : `${open}${content}, viewport-fit=cover${close}`
+  );
+  // Мелкая правка валидности: `httpEquiv` — React-имя атрибута, браузеру нужен
+  // `http-equiv`.
+  idx = idx.replace(/<meta httpEquiv=/g, '<meta http-equiv=');
+
   if (!idx.includes('manifest.webmanifest')) {
     idx = idx.replace(
       '</head>',
@@ -116,8 +130,8 @@ function main() {
         '</head>',
       ].join('\n  ')
     );
-    fs.writeFileSync(idxPath, idx);
   }
+  fs.writeFileSync(idxPath, idx);
 
   console.log(`✓ готово: ${OUT} (${files} файлов, ${sizeMb} МБ, бандлов правок: ${patched})`);
   console.log(

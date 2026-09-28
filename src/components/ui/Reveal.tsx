@@ -31,7 +31,12 @@ export function Reveal({
   }, [p]);
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
-    setH(e.nativeEvent.layout.height);
+    const next = e.nativeEvent.layout.height;
+    // WEB-FZ-6: на вебе `onLayout` приходит из ResizeObserver, то есть на любой
+    // субпиксельный дребезг (адрес-бар iOS Safari, скроллбар, зум). Без guard'а
+    // каждый такой отклик перерисовывает всё разворачиваемое поддерево — паттерн
+    // как в `Skeleton`/`StrengthTrendChart`.
+    setH((prev) => (Math.abs(prev - next) < 1 ? prev : next));
   }, []);
 
   const style = useAnimatedStyle(() => ({

@@ -16,6 +16,8 @@ export function useCountUp(target: number, durationMs = 650): number {
   const mountedRef = useRef(false);
   // Текущее отображённое значение для «откуда стартовать» без ре-рендера.
   const displayRef = useRef(0);
+  // WEB-FZ-5: сколько раз за анимацию реально поднимаем state.
+  const emittedRef = useRef(0);
 
   useEffect(() => {
     const from = mountedRef.current ? displayRef.current : 0;
@@ -23,15 +25,23 @@ export function useCountUp(target: number, durationMs = 650): number {
     if (from === target) {
       return undefined;
     }
+    // На вебе каждый кадр rAF = React render + style recalc + layout + paint на
+    // том же main thread, поэтому анимация ограничивается ~24 коммитами независимо
+    // от частоты кадров (натив не затронут: там тот же потолок, а кадры дешевле).
+    const MIN_STEP = Math.max(Math.abs(target - from) / 24, 1e-6);
     const start = Date.now();
     let raf: number;
     let cancelled = false;
+    emittedRef.current = from;
     const tick = () => {
       if (cancelled) return;
       const t = Math.min(1, (Date.now() - start) / durationMs);
       const value = from + (target - from) * easeOutCubic(t);
       displayRef.current = value;
-      setDisplay(value);
+      if (t >= 1 || Math.abs(value - emittedRef.current) >= MIN_STEP) {
+        emittedRef.current = value;
+        setDisplay(value);
+      }
       if (t < 1) {
         raf = requestAnimationFrame(tick);
       } else {

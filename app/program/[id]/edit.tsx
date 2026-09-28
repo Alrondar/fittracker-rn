@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { View, Text, ActivityIndicator, BackHandler } from 'react-native';
+import { View, Text, ActivityIndicator, BackHandler, Platform } from 'react-native';
 import { feedback } from '../../../src/lib/feedback';
 import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -113,18 +113,41 @@ export default function ProgramEditScreen() {
     }
   };
 
-  // Exit guard: предупреждение при нажатии hardware back с несохранёнными изменениями.
+  // Exit guard: предупреждение при выходе с несохранёнными изменениями.
+  //
+  // WEB-BUG-3: `BackHandler` в react-native-web — заглушка (проверено в
+  // `react-native-web/dist/exports/BackHandler/index.js`: `addEventListener`
+  // пишет `console.error('BackHandler is not supported on web…')` и возвращает
+  // `remove: noop`, то есть обработчик не вызывается никогда). Значит на вебе
+  // защита вешается на `beforeunload` — это единственный способ не потерять
+  // правки при reload / закрытии вкладки / уходе по истории за пределы SPA.
+  // Резидуальный зазор (browser «Назад» внутри приложения) — WEB-BUG-3b:
+  // закрывается только через `usePreventRemove` из `@react-navigation/core`,
+  // которого нет в прямых зависимостях.
   useFocusEffect(
     useCallback(() => {
+      if (!isDirty) return undefined;
+
+      if (Platform.OS === 'web') {
+        const onBeforeUnload = (event: BeforeUnloadEvent) => {
+          event.preventDefault();
+          // Строку уведомления задаёт браузер, не мы.
+          event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', onBeforeUnload);
+        return () => window.removeEventListener('beforeunload', onBeforeUnload);
+      }
+
+      const askBeforeExit = () => {
+        feedback.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
+          { text: 'Отмена', style: 'cancel' },
+          { text: 'Выйти', style: 'destructive', onPress: () => router.back() },
+        ]);
+      };
+
       const onBackPress = () => {
-        if (isDirty) {
-          feedback.alert('Несохранённые изменения', 'Есть несохранённые изменения. Выйти?', [
-            { text: 'Отмена', style: 'cancel' },
-            { text: 'Выйти', style: 'destructive', onPress: () => router.back() },
-          ]);
-          return true;
-        }
-        return false;
+        askBeforeExit();
+        return true;
       };
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();

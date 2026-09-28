@@ -71,6 +71,30 @@ export function SheetShell({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
+
+  // WEB-BUG-5: на вебе `KeyboardAvoidingView` — заглушка (в RNW модуль `Keyboard`
+  // не отдаёт событий: `isVisible() → false`, `addListener → {remove: noop}`,
+  // `onKeyboardChange` — пустой метод; проверено в
+  // react-native-web/dist/exports/KeyboardAvoidingView). Значит клавиатура
+  // мобильного браузера лежит ПОВЕРХ шторки и поле ввода («добавить вес»,
+  // «добавить приём пищи») оказывается недостижимым. Единственный доступный
+  // источник высоты клавиатуры в браузере — `visualViewport`; при её сжатии
+  // поднимаем панель на высоту клавиатуры. На Android Chrome клавиатура уменьшает
+  // сам viewport → inset≈0 и поведение не меняется.
+  const [webKeyboardInset, setWebKeyboardInset] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return undefined;
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const onViewportChange = () => {
+      const next = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      // Порог 8px — против дребезга при схлопывании адрес-бара.
+      setWebKeyboardInset((prev) => (Math.abs(prev - next) < 8 ? prev : next));
+    };
+    vv.addEventListener('resize', onViewportChange);
+    return () => vv.removeEventListener('resize', onViewportChange);
+  }, []);
+
   // Внутри нативного Modal собственный enter по умолчанию выключен (audit-8).
   const enterAnimated = animateEnter ?? !isModal;
 
@@ -189,7 +213,9 @@ export function SheetShell({
               position: 'absolute',
               left: 0,
               right: 0,
-              bottom: 0,
+              // WEB-BUG-5: панель поднимаем на высоту клавиатуры браузера (на
+              // нативе это делает KeyboardAvoidingView, здесь он no-op).
+              bottom: webKeyboardInset,
               maxHeight: windowHeight * MAX_HEIGHT_RATIO,
               backgroundColor: colors.surface,
               borderTopLeftRadius: BORDER_RADIUS.xl,

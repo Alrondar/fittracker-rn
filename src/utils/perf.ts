@@ -1,9 +1,14 @@
 // src/utils/perf.ts
 // Лёгкий перф-логгер для замеров TTI и детекции фризов.
-// ENABLED=false перед релизом для нулевого оверхеда.
+// WEB-BUG-11 / WEB-CTR-6: раньше флаги были захардкожены в `true`, а guard вида
+// `if (!__DEV__ && !FREEZE_IN_RELEASE)` при `FREEZE_IN_RELEASE = true` не
+// срабатывает никогда — то есть логгер и `setInterval` 50 мс с `console.log`
+// ехали и в релизной сборке (на вебе это ещё и стоимость кадра при открытых
+// devtools). Теперь источник истины один: `__DEV__`.
 import { useEffect } from 'react';
 
-const ENABLED = true; // ← false перед релизом
+/** Замеры живут только в dev-сборке: в релизе — нулевой оверхед. */
+const ENABLED = __DEV__;
 
 const now = (): number =>
   typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -32,9 +37,8 @@ export function perfSince(from: string, label?: string): void {
  * Если JS занят дольше порога — колбэк setInterval опаздывает, логируем.
  */
 export function useFreezeDetector(thresholdMs = 100): void {
-  const FREEZE_IN_RELEASE = true; // ← false перед релизом
   useEffect(() => {
-    if (!__DEV__ && !FREEZE_IN_RELEASE) return;
+    if (!__DEV__) return;
     let lastTick = Date.now();
     const timer = setInterval(() => {
       const now = Date.now();
@@ -46,5 +50,5 @@ export function useFreezeDetector(thresholdMs = 100): void {
       lastTick = now;
     }, 50);
     return () => clearInterval(timer);
-  }, [thresholdMs, FREEZE_IN_RELEASE]);
+  }, [thresholdMs]);
 }

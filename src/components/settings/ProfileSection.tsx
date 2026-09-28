@@ -14,7 +14,7 @@ import { createCardStyles } from '../../styles/components/card';
 import { createButtonStyles } from '../../styles/components/button';
 import { typography } from '../../styles/typography';
 import { profileService } from '../../services/profileService';
-import { sendPasswordReset } from '../../services/authService';
+import { sendPasswordReset, passwordResetRedirect } from '../../services/authService';
 import { SectionHeader } from '../SectionHeader';
 import { LinkRow } from './SettingsRows';
 
@@ -66,7 +66,9 @@ export function ProfileSection() {
           try {
             // SEC-5: через authService + redirectTo, чтобы письмо вело обратно в
             // приложение (PASSWORD_RECOVERY → update-password), а не на Supabase URL.
-            await sendPasswordReset(email, 'fittracker://reset-password');
+            // WEB-BUG-2: redirectTo больше не захардкожен — общий канон из authService
+            // (на вебе письмо вёл на `fittracker://`, то есть в никуда).
+            await sendPasswordReset(email, passwordResetRedirect());
             feedback.alert('Успех', 'Письмо для смены пароля отправлено');
           } catch (e: any) {
             feedback.alert('Ошибка', e.message);

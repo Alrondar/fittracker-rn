@@ -239,7 +239,15 @@ export function DashboardNutritionCard({
         </PressableScale>
       </View>
 
-      <View onLayout={(e) => setPageWidth(e.nativeEvent.layout.width)}>
+      <View
+        onLayout={(e) => {
+          // WEB-FZ-6: на вебе onLayout приходит из ResizeObserver на любой
+          // субпиксельный дребезг, а setPageWidth кормит ширины дочерних страниц —
+          // guard против ре-рендера всего пагинатора без реальной смены ширины.
+          const next = e.nativeEvent.layout.width;
+          setPageWidth((prev) => (Math.abs(prev - next) < 1 ? prev : next));
+        }}
+      >
         <ScrollView
           ref={scrollRef}
           horizontal
