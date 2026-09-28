@@ -88,6 +88,10 @@ export const PressableScale = memo(function PressableScale({
   const onPressIn = useCallback(() => {
     if (disabled) return;
     pressSV.value = withSpring(1, PRESS_SPRING);
+    // WEB-3d: на вебе expo-haptics дёргает navigator.vibrate; без user-activation
+    // браузер пишет «Blocked call» в консоль (шум на автотестах), а пользы нет —
+    // iOS Safari vibrate не поддерживает вовсе. Гасим только на вебе.
+    if (IS_WEB) return;
     if (haptic === 'light') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     else if (haptic === 'medium') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, [disabled, haptic, pressSV]);

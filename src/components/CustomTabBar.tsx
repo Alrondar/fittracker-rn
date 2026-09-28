@@ -90,7 +90,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           const isFocused = state.index === index;
 
           const onPress = () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            // WEB-3d: хаптика на вебе бесполезна и шумит в консоль (см. PressableScale).
+            if (!IS_WEB) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
