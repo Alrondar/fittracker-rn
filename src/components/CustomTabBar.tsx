@@ -24,6 +24,11 @@ import * as Haptics from 'expo-haptics';
 const PILL_SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
 const POP_SPRING = { damping: 12, stiffness: 500, mass: 0.8 };
 const TAB_HEIGHT = scale(46) + SPACING.xs * 2;
+// Капсула (28.09): заметно шире высоты, как в референсе. Пилюля позиционируется
+// от tabBar (его padding SPACING.xs сверху/снизу), поэтому top = padding +
+// половина свободного места ячейки.
+const PILL_HEIGHT = scale(40);
+const PILL_TOP = SPACING.xs + (TAB_HEIGHT - PILL_HEIGHT) / 2;
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -68,7 +73,9 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             styles.pill,
             {
               width: Math.max(tabWidth - SPACING.xs, 0),
+              height: PILL_HEIGHT,
               left: SPACING.xs + SPACING.xs / 2,
+              top: PILL_TOP,
               backgroundColor: colors.primary,
               shadowColor: colors.primary,
             },
@@ -207,8 +214,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: 'absolute',
-    top: SPACING.xs,
-    bottom: SPACING.xs,
+    // top — инлайном (PILL_TOP), height/width — из стиля пилюли.
     borderRadius: BORDER_RADIUS.full,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
