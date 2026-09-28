@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getWorkoutsData, skipWorkout } from '../services/workoutsService';
+import { invalidateWorkoutAffectedCaches } from '../lib/queryInvalidation';
 
 export function useWorkouts(userId: string | null) {
   const queryClient = useQueryClient();
@@ -13,8 +14,9 @@ export function useWorkouts(userId: string | null) {
   const skip = async (workoutId: string, programId: string) => {
     if (!userId) throw new Error('User not authenticated');
     await skipWorkout(workoutId, userId, programId);
-    // Invalidate после успешного skip — список обновится
-    await queryClient.invalidateQueries({ queryKey: ['workouts', userId] });
+    // BUG-2 (аудит 28.09): пропуск сдвигает прогресс программы и все сводки —
+    // инвалидируем полный список зависимых кэшей, а не только ['workouts'].
+    invalidateWorkoutAffectedCaches(queryClient, userId);
   };
 
   return { ...query, skip };

@@ -4,6 +4,7 @@ import { feedback } from '../../src/lib/feedback';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { mapError } from '../../src/utils/errorMapper';
 import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -236,7 +237,7 @@ export default function InjuriesScreen() {
       setShowForm(false);
       setEditingInjury(null);
     } catch (e: any) {
-      feedback.alert('Ошибка', e.message);
+      feedback.alert('Ошибка', mapError(e)); // CTR-2 (аудит 28.09)
     }
   };
 
@@ -250,7 +251,7 @@ export default function InjuriesScreen() {
             await markRecovered(id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } catch (e: any) {
-            feedback.alert('Ошибка', e.message);
+            feedback.alert('Ошибка', mapError(e)); // CTR-2
           }
         },
       },
@@ -268,7 +269,7 @@ export default function InjuriesScreen() {
             await deleteInjury(id);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } catch (e: any) {
-            feedback.alert('Ошибка', e.message);
+            feedback.alert('Ошибка', mapError(e)); // CTR-2
           }
         },
       },

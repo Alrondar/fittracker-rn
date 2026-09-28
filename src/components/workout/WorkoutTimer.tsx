@@ -395,9 +395,13 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
 export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
   colors,
   onRequestFinish,
+  // BUG-6 (аудит 28.09): панельный финиш должен гаситься во время сохранения —
+  // иначе «Завершить» из панели повторял saveWorkout (двойной advanceProgramProgress).
+  saving = false,
 }: {
   colors: any;
   onRequestFinish: () => void;
+  saving?: boolean;
 }) {
   const { formatted, running, phase, expanded, toggle } = useWorkoutTimerCtx();
 
@@ -509,6 +513,7 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
           тап по красной кнопке в шапке). Ведёт на тот же confirm-лист. */}
       <PressableScale
         onPress={onRequestFinish}
+        disabled={saving}
         accessibilityRole="button"
         accessibilityLabel="Завершить тренировку"
         style={{

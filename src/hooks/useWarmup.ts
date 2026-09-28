@@ -1,8 +1,20 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
 import { warmupService, WarmupExercise, InjuryExclusion } from '../services/warmupService';
 import { UserInjury } from '../constants/injuries';
 import { useTimerSettings } from './useTimerSettings';
+import { createTickStore } from '../lib/tickStore';
 import * as Haptics from 'expo-haptics';
+
+// FZ-6 (аудит 28.09): тик разминки (1 Гц) вынесен из state экрана в микростор —
+// раньше каждую секунду перерендеривался весь workout-экран. Подписчик —
+// WarmupBlock (useWarmupTick).
+const warmupTickStore = createTickStore<number>(0);
+function publishWarmupTick(seconds: number) {
+  warmupTickStore.set(seconds, (a, b) => a === b);
+}
+export function useWarmupTick(): number {
+  return useSyncExternalStore(warmupTickStore.subscribe, warmupTickStore.get, warmupTickStore.get);
+}
 
 export interface WarmupSourceExercise {
   id: string;
@@ -21,7 +33,9 @@ export function useWarmup(
   const [isLoading, setIsLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(0);
+  // FZ-6: тик разминки больше не state экрана — стор (useWarmupTick);
+  // ref-зеркало нужно только для арифметики интервала.
+  const timeLeftRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ✅ Кэш альтернатив разминки — ref, без ререндеров экрана.
@@ -50,18 +64,15 @@ export function useWarmup(
     };
   }, []);
 
-  useEffect(() => {
-    if (activeTimerId && timeLeft === 0) {
-      completeExercise(activeTimerId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft, activeTimerId]);
+  // FZ-6: авто-дополнение по достижению 0 раньше делалось через
+  // useEffect([timeLeft]) — теперь прямо в тике интервала (см. completeByTick).
 
   const generateWarmup = async () => {
     setIsLoading(true);
     if (timerRef.current) clearInterval(timerRef.current);
     setActiveTimerId(null);
-    setTimeLeft(0);
+    timeLeftRef.current = 0;
+    publishWarmupTick(0);
     try {
       const result = await warmupService.generateWarmup(
         exercises,
@@ -79,16 +90,32 @@ export function useWarmup(
     }
   };
 
+  const clearTick = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
+
   const startExerciseTimer = useCallback(
     (exerciseId: string) => {
       const exercise = warmupExercises.find((e) => e.id === exerciseId);
       if (!exercise) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setActiveTimerId(exerciseId);
-      setTimeLeft(exercise.duration_seconds);
-      if (timerRef.current) clearInterval(timerRef.current);
+      timeLeftRef.current = exercise.duration_seconds;
+      publishWarmupTick(exercise.duration_seconds);
+      clearTick();
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => Math.max(0, prev - 1));
+        const next = Math.max(0, timeLeftRef.current - 1);
+        timeLeftRef.current = next;
+        publishWarmupTick(next);
+        if (next === 0) {
+          // FZ-6: раньше достыкание обрабатывал useEffect([timeLeft]) на
+          // экране — теперь завершаем прямо в тике, без state экрана.
+          clearTick();
+          setActiveTimerId(null);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setCompletedIds((prev) => new Set(prev).add(exerciseId));
+        }
       }, 1000);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     },
@@ -96,20 +123,11 @@ export function useWarmup(
   );
 
   const stopTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
+    clearTick();
     setActiveTimerId(null);
-    setTimeLeft(0);
+    timeLeftRef.current = 0;
+    publishWarmupTick(0);
   }, []);
-
-  const completeExercise = (exerciseId: string) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    setActiveTimerId(null);
-    setTimeLeft(0);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setCompletedIds((prev) => new Set(prev).add(exerciseId));
-  };
 
   const markAsCompleted = useCallback((exerciseId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -179,7 +197,6 @@ export function useWarmup(
     isLoading,
     completedIds,
     activeTimerId,
-    timeLeft,
     isAllCompleted,
     totalDuration,
     targetMuscles,

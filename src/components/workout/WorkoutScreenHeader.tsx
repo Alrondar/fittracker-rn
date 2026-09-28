@@ -90,7 +90,7 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
           <WorkoutTimerPill colors={colors} onRequestFinish={onRequestFinish} saving={saving} />
         </View>
       </View>
-      <WorkoutTimerPanel colors={colors} onRequestFinish={onRequestFinish} />
+      <WorkoutTimerPanel colors={colors} onRequestFinish={onRequestFinish} saving={saving} />
     </>
   );
 });

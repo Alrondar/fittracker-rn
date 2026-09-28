@@ -9,6 +9,7 @@ import { typography } from '../../styles/typography';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import type { CycleEvent, CycleSettings, CalculatedCyclePhase } from '../../types/cycle';
 import { getCyclePhaseColor, getCyclePhaseLabel, getPhaseForDate } from '../../utils/cycle';
+import { toDateKey } from '../../utils/dateKey';
 
 interface CycleCalendarProps {
   events: CycleEvent[];
@@ -54,7 +55,10 @@ export function CycleCalendar({
   };
 
   const getDayEvents = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    // BUG-3 (аудит 28.09): локальный ключ (FD-5, dateKey.ts). toISOString для
+    // полночной локальной даты = предыдущий день в UTC+ → точки и выборка
+    // event_date разъезжались на сутки с тем, что пишет check-in.
+    const dateStr = toDateKey(date);
     return events.filter((e) => e.event_date === dateStr);
   };
 

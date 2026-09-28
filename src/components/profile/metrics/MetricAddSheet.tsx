@@ -9,6 +9,7 @@ import { AppButton } from '../../ui/AppButton';
 import { AppInput } from '../../ui/AppInput';
 import { SheetShell } from '../../ui/SheetShell';
 import { METRIC_FIELDS, METRIC_GROUPS, MetricFormData, MetricGroup } from '../../../types/metrics';
+import { todayKey } from '../../../utils/dateKey';
 
 interface Props {
   visible: boolean;
@@ -18,7 +19,9 @@ interface Props {
 }
 
 const emptyForm = (): MetricFormData => ({
-  metric_date: new Date().toISOString().split('T')[0],
+  // BUG-4 (аудит 28.09, FD-5): «сегодня» локальное — toISOString после
+  // полуночи (до 03:00 MSK) давало вчерашний замер.
+  metric_date: todayKey(),
   weight_kg: '',
   shoulder_cm: '',
   chest_cm: '',

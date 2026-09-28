@@ -422,6 +422,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | PERF-8 | 🟠 | 🔲 | Baseline-метрики workout screen и logging (см. секцию 12) |
 | PERF-9 | 🟡 | ✅ | библиотека упражнений: основной список переведён на @shopify/flash-list 2.x (ROADMAP I3) |
 | PERF-10 | 🟡 | 🔲 | Аудит React Query `staleTime` / `gcTime` и N+1 в загрузчиках workout/history |
+| PERF-11 | 🟡 | ✅ | Фризы при переключении табов + «блоки без прелоадера» (28.09). Root cause: тяжёлые табы монтируются синхронно в момент таб-анимации (lazy tabs + unfreeze), возврат в таб = unfreeze-коммит поверх анимации. Сделано: `useDeferredTabContent` (скелетон до конца анимации + 2 кадра, страховка 600 мс) на Главная/Прогресс/Профиль; `useTabPrefetch` (стаггер-группы workouts/history → progress/muscleStats → programs 'my' → exercises+словари после `runAfterInteractions`); `LoadingChip` поверх полноэкранных скелетонов всех 6 табов (решение владельца: скелетон остаётся, загрузка явна). Требует device-проверки |
 | DS-1 | 🟠 | ✅ | Аудит design system завершён: шкала типографики/spacing/состояния проверены. Контраст textTertiary исправлен (WCAG 2.1 AA), добавлен fontScale и accessibilityRole/Label в AppButton и ProgramCard (Этап H4) |
 | DS-2 | 🟠 | ✅ | Bottom Tab Bar: внедрён паттерн Pill Highlight (явный active state: `colors.primary` background + filled icon + bold text), haptics, `accessibilityRole="tab"`. 6 табов скомпактизированы (`inset: 2`, `paddingVertical: SPACING.sm`) для предотвращения переноса текста. Соответствует PRODUCT.md §3.1–3.2. |
 | DS-3 | 🟠 | ✅ | Segmented Controls: создан универсальный компонент `PillToggle` (PRODUCT.md §3.6). Заменены все хардкодные реализации в `workouts.tsx`, `settings.tsx` и `WorkoutDisplayModePicker`. Явный active state: `colors.primary` background, `textInverse`, `fontWeight: 600`, shadow, tap target ≥ 44pt. |
@@ -448,7 +449,61 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | H-MUSCLE-5 | 🟠 | ✅ | **Карта зон в Injuries**: `InjuryBodyMap` над chips-фильтром. Визуально подсвечивает зоны активных травм цветом по severity. Тап по мышце синхронно переключает фильтр зоны (arms/torso/legs), обеспечивая консистентность между картой и chips. |
 | H-MUSCLE-6 | 🟠 | ✅ | **Переключатель режима нагрузки + модель OpenGym**: добавлен `MuscleLoadModeToggle` (Общий объём / Прямая нагрузка). **Критическое исправление формулы**: интенсивность подсветки на карте теперь считается ТОЛЬКО по эффективным подходам (`loadScore = sets`), а не по тоннажу (`weight × reps`). Это устраняет искусственное раздувание нагрузки на мышцы-помощники (трицепс, дельты, трапеция), которые получали огромный объём из-за большого веса в базовых упражнениях, несмотря на роль secondary. В режиме `direct` вторичные мышцы полностью исключаются. UI мгновенно пересчитывается без новых запросов. |
 
-## 15. Update rule
+## 15. Аудит 28.09.2026: фризы / корректность / противоречия
+
+Метод: 3 параллельных read-only агента + верификация каждой P0/P1 находки чтением. ID ниже — канонические.
+
+**Итог починки 28.09 (пакеты 1–6, не коммитились,device-проверка не делась):** закрыто ✅ BUG-1..11 (кроме noted), FZ-1..7/9/10, CTR-1/2/6/7. Отложено: FZ-8 (общий пульс скелетонов — требует замера), FZ-5 (renderItem-фабрика редактора — трогает RNGH drag&drop, высокий риск регрессии), FZ-11 (ленивый mount модалок питания — ломает exit-анимацию), CTR-3 (split >500 строк), CTR-4 (ON_MEDIA токены — нужен вердикт владельца), CTR-5 (RANK_COLORS — осознанное исключение уже прокомментировано).
+
+### Фризы (FZ)
+
+| ID | Пр. | Статус | Находка (проверено чтением) |
+|---|---:|---|---|
+| FZ-1 | 🔴 | 🔲 | Тик отдыха 4 Гц перерендеривает ВЕСЬ workout-экран: `restTimeLeft` — state экрана (`app/workout/[id].tsx:79`), а `RestTimerProvider` отдаёт НЕМЕМO-объект `value={{ total, timeLeft, ... }}` (`src/components/workout/RestTimerContext.tsx:36`) → `useRestState()` в каждой `ExerciseCard` (`src/components/workout/ExerciseCard.tsx:132`) пробивает `React.memo`: все видимые карточки с SetsGrid ре-рендерятся каждые 250 мс весь отдых. Комментарий MORF-REST («карточки остаются memo») противоречит коду. Fix: state тика внутрь провайдера + useMemo value + сплит контекста (статика/тик) |
+| FZ-2 | 🟠 | 🔲 | `SetsGrid`: `rowSets = sets.slice(...)` новый массив каждый рендер + inline `onChangeText={(v)=>updateSet(...)}` + `handleOpenFeedback useCallback(...,[sets,...])` → memo `SetRow`/`SetInput` не работает, таблица перерисовывается на каждый коммит; плюс `useMemo(calculateProgression, [sets])` гоняет engine (`engine/progression.ts`, 1224 стр.) на каждое число. `src/components/workout/SetsGrid.tsx:298,989,1411` |
+| FZ-3 | 🟠 | 🔲 | `app/(tabs)/programs.tsx:321` `renderHeader` — функция-компонент с `<TextInput autoFocus>` (363) → на каждый рендер экрана (кейстол в поиске) полный remount шапки: дребезг + потеря фокуса. Fix: мемоизированный элемент вместо функции |
+| FZ-4 | 🟠 | 🔲 | `src/hooks/useProgramEditor.ts:66` `isDirty = JSON.stringify(program) !== JSON.stringify(editedProgram)` — сериализация двух полных деревьев на каждую правку, попадает на анимацию дропа NestableDraggableFlatList |
+| FZ-5 | 🟠 | 🔲 | `app/program/[id]/edit.tsx:238–286` inline `renderItem` + ~12 стрелочных props на PhaseCard → ре-рендер всех фаз при любом state экрана |
+| FZ-6 | 🟠 | 🔲 | `src/hooks/useWarmup.ts:90` таймер-тикмер 1 Гц state в корне экрана → весь workout-экран перерендеривается раз в секунду всё время разминки |
+| FZ-7 | 🟡 | 🔲 | `app/(tabs)/exercises.tsx:280` FlashList inline renderItem + function-footer (remount) → ре-рендер ячеек на каждую клавишу поиска |
+| FZ-8 | 🟡 | 🔲 | `src/components/Skeleton.tsx:24` у каждого Skeleton свой бесконечный `withRepeat` (DashboardSkeleton ≈12 + ShimmerWrap + LoadingChip; ListSkeleton в 3 экранах = 16–20 параллельных пульсаций) — совпадает с монтажом таба; требует замера |
+| FZ-9 | 🟡 | 🔲 | `app/(tabs)/workouts.tsx:101` `useFocusEffect(refetch)` на каждый фокус + inline `onForecastPress` ломает memo карточек → «поздний» ре-рендер после таб-анимации |
+| FZ-10 | 🟡 | ✅ | `useDeferredTabContent` (из PERF-11, 28.09): двойной commit IGM+таймер, вложенный rAF не отменялся — закрыто в этом же срезе (guard `plannedRef` + cancel обоих кадров) |
+| FZ-11 | 🟡 | 🔲 | Dashboard после гейта: 8 FadeIn-секций + обе модалки питания монотятся всегда одним коммитом (`app/(tabs)/index.tsx:357–375` — `{visible && ...}` для модалок) |
+
+### Корректность (BUG)
+
+| ID | Пр. | Статус | Находка (проверено чтением) |
+|---|---:|---|---|
+| BUG-1 | 🔴 | 🔲 | Финиш тренировки не инвалидирует НИ ОДИН кэш: в `saveWorkout` (`src/hooks/useWorkoutSession.ts:794–922`) нет ни одного `invalidateQueries` (grep подтверждён 28.09). После финиша Главная/Прогресс/прогноз/неделька/стрик врут до 5 мин (staleTime). Комментарий `useMuscleStats.ts:8` («инвалидируется через workout-мутации») — ложь в документации. Fix: инвалидация ['dashboard'],['progress'],['history'],['muscleStats'],['weeklySummary'],['workoutForecast'],['painTrend'],['todayPain'] по userId-префиксам |
+| BUG-2 | 🔴 | 🔲 | `skipWorkout` инвалидирует только `['workouts', userId]` (`src/hooks/useWorkouts.ts:17`) — пропуск сдвигает прогресс программы, но дашборд/прогноз/неделька остаются старыми. Образец полного списка — `usePrograms.ts:160–163` |
+| BUG-3 | 🔴 | 🔲 | Календарь цикла пишет/сравнивает даты через `toISOString()` = UTC-сдвиг −1 день для всех UTC+ : `CycleCalendar.tsx:57`, `app/(tabs)/profile.tsx:74,96`. Тап по 15.09 сохраняет `event_date=14.09`; локальный helper `src/utils/dateKey.ts` (FD-5) есть и прямо запрещает этот приём. Нужен аудит уже записанных event_date у пользователей UTC+ |
+| BUG-4 | 🔴 | 🔲 | Замеры веса после полуночи (до 03:00 MSK) уносятся «на вчера»: `MetricAddSheet.tsx:21`, `app/profile/goals.tsx:92` — `new Date().toISOString().split('T')[0]` вместо `todayKey()` |
+| BUG-5 | 🟠 | 🔲 | «Сохранить» питание в профиле: нет anti-double-submit + чистый `insert` (`profileService.saveNutritionLog:461`) → двойной тап = задвоенные калории. `app/(tabs)/profile.tsx:612` |
+| BUG-6 | 🟠 | 🔲 | `saveWorkout` без re-entry guard в начале (`isFinishingRef` ставится внутри, но не проверяется на входе) + финиш-кнопка в `WorkoutTimerPanel` без пропа `saving` (`WorkoutScreenHeader.tsx:93`) → потенциальный двойной `advanceProgramProgress` (перескок 2 дня). Требует теста |
+| BUG-7 | 🟠 | 🔲 | Гонка debounce-flush (500 мс, `saveTimerRef`) и финиша: `saveWorkout` зовёт `flushPendingLogs()` (`:819`), но не отменяет/не ждёт in-flight flush; при сетевой ошибке in-flight flush'а сеты теряются при уже записанном `finished_at` — против обещания VF-3. Требует теста |
+| BUG-8 | 🟡 | 🔲 | `ActivityCalendar.tsx:32` — «сегодня» через toISOString (UTC-ключ) против локальных ключей `dashboardService` (toDateKeyFromIso) → точки уезжают в 00:00–03:00 |
+| BUG-9 | 🟡 | 🔲 | `useProfile` (5 параллельных запросов) без отмены: при logout→login другого аккаунта старый Promise.all может перетереть новый (`queryClient.clear()` useState-кэш не покрывает). Побочно: `workout/[id].tsx:123` зовёт хук ради gender и гоняет все 5 запросов |
+| BUG-10 | 🟡 | 🔲 | `useProfile.saveNutrition` обновляет только локальный state — дашборд-кэши питания (`dailyNutrition/weeklyNutrition/nutritionLogs`) не инвалидируются |
+| BUG-11 | 🟡 | 🔲 | `key={index}` в списках: `PersonalRecordsCard.tsx:54`, `profile.tsx:318`, `ExerciseProgressCard.tsx:126`, `WorkoutInjuryBanner.tsx:134` |
+
+### Противоречия «правило vs код» (CTR)
+
+| ID | Пр. | Статус | Находка |
+|---|---:|---|---|
+| CTR-1 | 🔴 | 🔲 | `src/hooks/useProgramEditor.ts:124,160,233` — прямые `supabase.rpc()` в хуке против §2/§9 («только src/services/»); причём `copy_program_for_user` и `create_workouts_for_program` УЖЕ имеют обёртки в programsService (`:545,:624`) — две точки вызова расходятся при смене сигнатуры; `save_program_snapshot` без обёртки |
+| CTR-2 | 🟠 | 🔲 | Сырые `error.message` пользователю в мутациях: `useProgramEditor.ts:132,173`, `profile/injuries.tsx:239,253,271`, `workouts.tsx:134` — против §2 (mapError/extractMessage). Auth-паттерн корректен, мутации — нет |
+| CTR-3 | 🟠 | 🔲 | Файлы >500 строк против §2: SetsGrid 1483, progression.ts 1224, WeeklyReviewSection 1052, useWorkoutSession 963, programsService 925, MuscleStatsSection 789, ExercisePickerSheet 660, progress.tsx 649, profile.tsx 643, workout/[id].tsx 609 (+ StatusCard 602, WorkoutTimer 536…). Дрейф документа: INVENTORY §12 «workout/[id] уменьшен до ~400» — фактически 609 |
+| CTR-4 | 🟡 | 🔲 | Hardcoded цвета вне src/constants/ (§7): TechniqueMediaSlider (6 мест), Toast.tsx:66,92, Skeleton.tsx:157, styles/components/dashboard.ts:46, card/dynamic.ts:48, card/filter.ts:196 — оверлеи-скрима; либо токены ON_MEDIA_*, либо явное исключение в §7 |
+| CTR-5 | 🟢 | 🔲 | `RANK_COLORS` hex в profile.tsx:48 (косметика, вынести в semanticColors) |
+| CTR-6 | 🟢 | 🔲 | Комментарий-шапка ExerciseSlider.tsx:3 всё ещё описывает `removeClippedSubviews={true}` как P1-A, хотя проп осознанно убран (SG-2) — свежий комментарий |
+| CTR-7 | 🟠 | 🔲 | Один факт `getProfileData(userId)` закэширован под 4 ключами: `['profile']` (ProgramMuscleMap:46), `['profile-weight']` (StrengthTrendChart:141), `['profile-weight-pr']` (PersonalRecordsCard:83), `['profile-for-standards']` (useStrengthStandards:38) — против «один факт — один владелец» |
+
+### Проверено и чисто (не регрессировать)
+
+Supabase `.from/.auth` вне services — нет; `Alert.alert` мимо feedback.ts — нет; LayoutAnimation — нет; RN Image — нет; Math.random в keyExtractor — нет; Zustand хранит только auth; effective-date §4 (created_at) — не нарушается нигде; SheetShell-in-Modal с `isModal` — все 10 мест; FadeIn-над-Pressable — нет; prefetch-ключи `useTabPrefetch` совпадают с дефолтами экранов; keyExtractor'ы FlatList — по id; оптимистичные замены/боль имеют rollback.
+
+## 16. Update rule
 
 После изменения кода:
 1. закрыть/изменить соответствующий ID;

@@ -1,16 +1,21 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { feedback } from '../lib/feedback';
 
 import { useRouter } from 'expo-router';
-import { supabase } from '../lib/supabase';
 import {
   getProgramWithDays,
   startProgram,
   syncProgramChanges,
+  copyProgramForUser,
+  createWorkoutsForProgram,
+  saveProgramSnapshot,
+  hasActiveUserProgram,
+  countProgramWorkouts,
   Program,
   ProgramDay,
   ProgramExercise,
 } from '../services/programsService';
+import { mapError } from '../utils/errorMapper';
 import { ExerciseListItem } from '../services/exercisesService';
 import { useProgramPhases } from './useProgramPhases';
 import * as Haptics from 'expo-haptics';
@@ -63,12 +68,21 @@ export function useProgramEditor(
 
   // Dirty tracking: сравниваем editedProgram с program (deep-equal через JSON.stringify).
   // Также проверяем deleted IDs — если есть удалённые сущности, считаем dirty.
+  // FZ-4 (аудит 28.09): исходное дерево сериализуется ОДИН раз за загрузку
+  // (снимок в ref) — раньше оба дерева stringify'ились на каждую правку, и
+  // стоимость попадала на анимацию дропа в редакторе. Полный отказ от
+  // сериализации (dirty-флаг в мутаторах) — кандидат PERF-10: setEditedProgram
+  // вызывается из ~12 мест,including useProgramPhases.
+  const dirtyBaselineRef = useRef<{ program: Program; snapshot: string } | null>(null);
   const isDirty = useMemo(() => {
     if (!program || !editedProgram) return false;
     if (deletedExerciseIds.length > 0 || deletedDayIds.length > 0 || deletedPhaseIds.length > 0) {
       return true;
     }
-    return JSON.stringify(program) !== JSON.stringify(editedProgram);
+    if (dirtyBaselineRef.current?.program !== program) {
+      dirtyBaselineRef.current = { program, snapshot: JSON.stringify(program) };
+    }
+    return dirtyBaselineRef.current.snapshot !== JSON.stringify(editedProgram);
   }, [program, editedProgram, deletedExerciseIds, deletedDayIds, deletedPhaseIds]);
 
   useEffect(() => {
@@ -89,20 +103,11 @@ export function useProgramEditor(
   };
 
   const handleStartProgram = async () => {
-    if (!userId) return;
-    const { data: existingProgram } = await supabase
-      .from('user_programs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('program_id', program?.id)
-      .eq('is_active', true)
-      .maybeSingle();
-    const { count: existingWorkoutsCount } = await supabase
-      .from('workouts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('program_id', programId);
-    const hasExistingData = existingProgram || (existingWorkoutsCount && existingWorkoutsCount > 0);
+    if (!userId || !program?.id) return;
+    // CTR-1 (аудит 28.09): supabase-boundary — все запросы через programsService (CLAUDE.md §2).
+    const activeEntry = await hasActiveUserProgram(userId, program.id);
+    const existingWorkoutsCount = await countProgramWorkouts(userId, program.id);
+    const hasExistingData = activeEntry || existingWorkoutsCount > 0;
     const phases = program?.phases || [];
     const totalWeeks = phases.reduce((sum, p) => sum + (p.weeks_count || 1), 0);
     const message = hasExistingData
@@ -121,15 +126,12 @@ export function useProgramEditor(
           setStarting(true);
           try {
             await startProgram(programId);
-            const { error: rpcError } = await supabase.rpc('create_workouts_for_program', {
-              p_program_id: programId,
-              p_user_id: userId,
-            });
-            if (rpcError) throw rpcError;
+            await createWorkoutsForProgram(programId, userId);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.replace('/(tabs)/workouts');
           } catch (error: any) {
-            feedback.alert('Ошибка', error.message);
+            // CTR-2: user-facing текст через mapError, не сырой message.
+            feedback.alert('Ошибка', mapError(error));
           } finally {
             setStarting(false);
           }
@@ -156,21 +158,22 @@ export function useProgramEditor(
   };
 
   const copyProgramToUser = async () => {
+    // CTR-1: сервисная обёртка copyProgramForUser — раньше хук сам дёргал RPC
+    // и парсил результат, расходясь с точкой вызова из catalogs (usePrograms).
+    if (!program?.id || !userId) {
+      feedback.alert('Ошибка', 'Программа не выбрана');
+      return;
+    }
     try {
-      const { data, error } = await supabase.rpc('copy_program_for_user', {
-        p_program_id: program?.id,
-        p_user_id: userId,
-      });
-      if (error) throw error;
-      const newProgramId = Array.isArray(data) ? data[0]?.id || data[0] : data?.id || data;
-      if (!newProgramId) throw new Error('Не удалось получить ID скопированной программы');
-      const newData = await getProgramWithDays(newProgramId);
+      const copied = await copyProgramForUser(program.id, userId);
+      const newData = await getProgramWithDays(copied.id);
+      if (!newData) throw new Error('Не удалось получить скопированную программу');
       setProgram(newData);
       setEditedProgram(newData);
       setEditMode(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      feedback.alert('Ошибка', error.message);
+      feedback.alert('Ошибка', mapError(error)); // CTR-2
     }
   };
 
@@ -230,15 +233,8 @@ export function useProgramEditor(
         })),
       };
       // Один атомарный RPC вместо Promise.all (PERF-4 + PERF-6)
-      const { error } = await supabase.rpc('save_program_snapshot', {
-        p_program_id: snapshot.program_id,
-        p_schedule: snapshot.schedule,
-        p_deleted_phase_ids: snapshot.deleted_phase_ids,
-        p_deleted_day_ids: snapshot.deleted_day_ids,
-        p_deleted_exercise_ids: snapshot.deleted_exercise_ids,
-        p_phases: snapshot.phases,
-      });
-      if (error) throw error;
+      // CTR-1: вызов через сервисную границу programsService.
+      await saveProgramSnapshot(snapshot);
 
       // Принудительный refetch без кэша
       const updatedProgram = await getProgramWithDays(editedProgram.id);
@@ -264,7 +260,7 @@ export function useProgramEditor(
       setEditMode(false);
     } catch (error: any) {
       console.error('Ошибка saveProgram:', error);
-      feedback.alert('Ошибка', error.message || 'Не удалось сохранить программу');
+      feedback.alert('Ошибка', mapError(error) || 'Не удалось сохранить программу'); // CTR-2
     } finally {
       setSaving(false);
     }

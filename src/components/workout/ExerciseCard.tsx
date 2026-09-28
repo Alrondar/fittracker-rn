@@ -321,10 +321,9 @@ export const ExerciseCard = memo(function ExerciseCard({
       {/* MORF-REST v2: крутилка, заменяющая карточку (setup / running / finished) */}
       {restCover && (
         <RestDial
-          mode={restSetup ? 'setup' : rest && rest.isFinished ? 'finished' : 'running'}
+          mode={restSetup ? 'setup' : 'running'}
           initialSeconds={restSeconds}
           total={rest?.total ?? restSeconds}
-          timeLeft={rest?.timeLeft ?? 0}
           exerciseName={exercise.name}
           cardStyles={cardStyles}
           minHeight={cardNaturalH}

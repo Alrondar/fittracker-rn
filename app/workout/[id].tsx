@@ -44,7 +44,7 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
 import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
 import { useTodayRecovery } from '../../src/hooks/useTodayRecovery';
-import { useProfile } from '../../src/hooks/useProfile';
+import { profileService } from '../../src/services/profileService';
 import { useCycle } from '../../src/hooks/useCycle';
 import type { ProgressionContext } from '../../src/engine/progression';
 
@@ -75,11 +75,6 @@ export default function WorkoutSessionScreen() {
     saving,
     isWorkoutActive,
     initialTime,
-    restTimer,
-    restTimeLeft,
-    isRestFinished,
-    restOwnerIndex,
-    adjustRestTimer,
     replacements,
     handleTimerTick,
     handleTimerStart,
@@ -97,7 +92,6 @@ export default function WorkoutSessionScreen() {
     savePainState,
     clearPainState,
     startRestTimer,
-    stopRestTimer,
     addSet,
     saveWorkout,
   } = useWorkoutSession(id as string, userId);
@@ -120,8 +114,15 @@ export default function WorkoutSessionScreen() {
   // Движок охраняет каждое поле через `!= null`, поэтому отсутствие check-in
   // или программы не меняет рекомендацию (PRODUCT.md §7).
   const { data: recoveryDetails } = useTodayRecovery(userId);
-  const { userData } = useProfile(userId);
-  const { currentPhase } = useCycle(userData?.gender);
+  // BUG-9/9b (аудит 28.09): раньше здесь звали весь useProfile (5 запросов)
+  // ради одного gender — теперь общий RQ-кэш ['profile', userId].
+  const { data: profileData } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: () => profileService.getProfileData(userId!),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+  const { currentPhase } = useCycle(profileData?.gender);
   const progressionContext = useMemo<ProgressionContext>(() => {
     const phaseType = workoutProgramInfo?.phaseType;
     return {
@@ -149,7 +150,6 @@ export default function WorkoutSessionScreen() {
     excludedByInjury,
     isLoading: isWarmupLoading,
     activeTimerId,
-    timeLeft,
     isAllCompleted: isWarmupCompleted,
     totalDuration: warmupTotalDuration,
     generateWarmup,
@@ -448,16 +448,10 @@ export default function WorkoutSessionScreen() {
   const hasWarmup = warmupExercises.length > 0 || isWarmupLoading;
 
   return (
-    // MORF-REST: отдых через контекст — тик 250мс ре-рендерит только
-    // RestChip и ActionsRow карточки-владельца, карточки остаются memo.
-    <RestTimerProvider
-      total={restTimer}
-      timeLeft={restTimeLeft}
-      isFinished={isRestFinished}
-      ownerIndex={restOwnerIndex}
-      stop={stopRestTimer}
-      adjust={adjustRestTimer}
-    >
+    // MORF-REST: отдых через контекст. FZ-1 (аудит 28.09): весь таймер живёт
+    // внутри RestTimerProvider — экран не получает ни tick, ни статику;
+    // SetsGrid/чипы управляют через getRestActions() (прокси в useWorkoutSession).
+    <RestTimerProvider>
       <SafeAreaView
         style={[commonStyles.container, { backgroundColor: colors.background }]}
         edges={['top']}
@@ -515,7 +509,6 @@ export default function WorkoutSessionScreen() {
               isLoading={isWarmupLoading}
               excludedByInjury={excludedByInjury}
               activeTimerId={activeTimerId}
-              timeLeft={timeLeft}
               isAllCompleted={isWarmupCompleted}
               totalDuration={warmupTotalDuration}
               isCompleted={isWarmupExerciseCompleted}

@@ -9,6 +9,7 @@ import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
 import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
 import { ProgramListSkeleton } from '../../src/components/ui/skeletons';
+import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { StateBlock } from '../../src/components/ui/StateBlock';
 import { useToast } from '../../src/hooks/useToast';
 import { usePrograms } from '../../src/hooks/usePrograms';
@@ -447,14 +448,21 @@ export default function ProgramsScreen() {
         data={sortedPrograms}
         keyExtractor={(item) => item.id}
         renderItem={renderProgramCard}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
+        // FZ-3 (аудит 28.09): функция-компонент пересоздаётся каждый рендер →
+        // VirtualizedList делал полный remount шапки (с autoFocus-полем поиска)
+        // на каждое нажатие клавиши. Элемент вместо функции = обычный reconcile.
+        ListHeaderComponent={renderHeader()}
+        ListFooterComponent={renderFooter()}
         ListEmptyComponent={
           // UX-2 (L-1): макетный skeleton карточек программ под shimmer.
           showSkeleton ? (
-            <ShimmerWrap>
-              <ProgramListSkeleton count={4} />
-            </ShimmerWrap>
+            <>
+              <ShimmerWrap>
+                <ProgramListSkeleton count={4} />
+              </ShimmerWrap>
+              {/* PERF-11: явный признак идущей загрузки поверх макета. */}
+              <LoadingChip />
+            </>
           ) : error ? (
             renderError()
           ) : (

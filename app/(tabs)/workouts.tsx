@@ -2,7 +2,7 @@ import { useCallback, useState, useMemo } from 'react';
 import { View, Text, SectionList, RefreshControl } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
 import { PressableScale } from '../../src/components/ui/PressableScale';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Dumbbell, ArrowRight, SlidersHorizontal } from 'lucide-react-native';
@@ -13,6 +13,8 @@ import { useWorkoutForecast } from '../../src/hooks/useWorkoutForecast';
 import { WorkoutForecastSheet } from '../../src/components/dashboard/WorkoutForecastSheet';
 import type { WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { LoadingChip } from '../../src/components/ui/LoadingChip';
+import { mapError } from '../../src/utils/errorMapper';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/theme';
@@ -97,16 +99,18 @@ export default function WorkoutsScreen() {
       .filter((section) => section.data.length > 0);
   }, [sections, activeProgram, filterMode, getCurrentWeekBounds]);
 
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
+  // FZ-9 (аудит 28.09): refetch-на-каждый-фокус убран — он насылал волну
+  // ре-рендеров сразу после таб-анимации. Свежесть теперь обеспечивают:
+  // инвалидации финиша/скипа (queryInvalidation, BUG-1/2), мутаций программ
+  // (usePrograms) и pull-to-refresh ниже; staleTime 5 мин до сих пор действует.
 
   const onRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     refetch();
   }, [refetch]);
+
+  // FZ-9: стабильный обработчик — inline-стрелка ломала React.memo карточек.
+  const handleForecastPress = useCallback(() => setForecastSheetOpen(true), []);
 
   const navigateToWorkout = useCallback(
     (id: string) => {
@@ -130,7 +134,8 @@ export default function WorkoutsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSkipTarget(null);
     } catch (error: any) {
-      feedback.alert('Не удалось пропустить', error?.message || 'Попробуйте ещё раз', [
+      // CTR-2 (аудит 28.09): mapError вместо сырого Postgres/RLS message.
+      feedback.alert('Не удалось пропустить', mapError(error), [
         { text: 'Отмена', style: 'cancel' },
         { text: 'Повторить', onPress: () => handleSkip() },
       ]);
@@ -167,10 +172,10 @@ export default function WorkoutsScreen() {
         forecast={forecast}
         onOpen={navigateToWorkout}
         onSkipRequest={handleSkipRequest}
-        onForecastPress={() => setForecastSheetOpen(true)}
+        onForecastPress={handleForecastPress}
       />
     ),
-    [activeProgram, forecast, navigateToWorkout, handleSkipRequest]
+    [activeProgram, forecast, navigateToWorkout, handleSkipRequest, handleForecastPress]
   );
 
   const renderEmpty = () => {
@@ -286,7 +291,11 @@ export default function WorkoutsScreen() {
         )}
       </View>
       {loading ? (
-        <ListSkeleton count={4} />
+        <>
+          <ListSkeleton count={4} />
+          {/* PERF-11: явный признак идущей загрузки поверх макета. */}
+          <LoadingChip />
+        </>
       ) : (
         <>
           {activeProgram && (
@@ -299,7 +308,7 @@ export default function WorkoutsScreen() {
               keyExtractor={(item) => item.id}
               renderItem={renderWorkoutItem}
               renderSectionHeader={renderSectionHeader}
-              ListEmptyComponent={renderEmpty}
+              ListEmptyComponent={renderEmpty()}
               contentContainerStyle={{ paddingBottom: 100 }}
               stickySectionHeadersEnabled={true}
               refreshControl={

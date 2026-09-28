@@ -137,8 +137,10 @@ function StrengthSeriesRow({
   const { colors } = useTheme();
 
   // Получаем вес пользователя для отображения в sheet
+  // CTR-7 (аудит 28.09): единый кэш профиля ['profile', userId] — раньше тот же
+  // getProfileData дублировался под отдельным ключом.
   const { data: profile } = useQuery({
-    queryKey: ['profile-weight', userId],
+    queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5,
