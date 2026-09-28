@@ -17,11 +17,13 @@ import * as Haptics from 'expo-haptics';
 
 // UX-1 (audit-9): pill ездит на spring (лёгкий overshoot вместо linear-затухания),
 // иконка получает scale-pop при фокусе.
-// UX-5 (27.09): канон §3.6 — подписи убраны, пилюля = круг вокруг иконки
+// UX-5 (27.09): канон §3.6 — подписи убраны, пилюля = капсула вокруг иконки
 // (решение владельца: компактный бар на 6 вкладок; доступность — accessibilityLabel).
+// 28.09: владелец подтвердил форму — капсула, шире высоты (как в исходном
+// референсе), а не круг: пилюля занимает ячейку вкладки с полями.
 const PILL_SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
 const POP_SPRING = { damping: 12, stiffness: 500, mass: 0.8 };
-const PILL_SIZE = scale(46);
+const TAB_HEIGHT = scale(46) + SPACING.xs * 2;
 
 // WEB-2: на вебе `useSafeAreaInsets()` отдаёт нули (insets — нативная концепция),
 // а iOS Safari прячет часть бара под адресной строкой → берём CSS env().
@@ -67,17 +69,14 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           setTabWidth(inner / state.routes.length);
         }}
       >
-        {/* Скользящий pill-индикатор: круг вокруг иконки, центр ячейки */}
+        {/* Скользящий pill-индикатор: капсула на всю ячейку (28.09) */}
         <Animated.View
           pointerEvents="none"
           style={[
             styles.pill,
             {
-              width: PILL_SIZE,
-              height: PILL_SIZE,
-              left: SPACING.xs + Math.max((tabWidth - PILL_SIZE) / 2, 0),
-              top: SPACING.xs,
-              bottom: SPACING.xs,
+              width: Math.max(tabWidth - SPACING.xs, 0),
+              left: SPACING.xs + SPACING.xs / 2,
               backgroundColor: colors.primary,
               shadowColor: colors.primary,
             },
@@ -210,13 +209,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: PILL_SIZE + SPACING.xs * 2,
+    height: TAB_HEIGHT,
     paddingHorizontal: SPACING.xs,
     position: 'relative',
     borderRadius: BORDER_RADIUS.full,
   },
   pill: {
     position: 'absolute',
+    top: SPACING.xs,
+    bottom: SPACING.xs,
     borderRadius: BORDER_RADIUS.full,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
