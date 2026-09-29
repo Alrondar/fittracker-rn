@@ -9,7 +9,7 @@ import { typography } from '../../styles/typography';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { AppButton } from '../ui/AppButton';
 import { SheetShell } from '../ui/SheetShell';
-import { todayKey } from '../../utils/dateKey';
+import { todayKey, fromDateKey } from '../../utils/dateKey';
 import type { CycleEvent, CycleEventType } from '../../types/cycle';
 
 interface CycleCheckInSheetProps {
@@ -218,7 +218,9 @@ export function CycleCheckInSheet({
                 }}
               >
                 <Text style={[typography.body, { color: colors.textPrimary }]}>
-                  {new Date(defaultDate).toLocaleDateString('ru-RU', {
+                  {/* CYC-3 (29.09): локальный парсинг ключа вместо new Date(str)
+                      (UTC-полдень → «вчера» в западных таймзонах) */}
+                  {fromDateKey(defaultDate).toLocaleDateString('ru-RU', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',

@@ -12,6 +12,7 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { readinessService } from '../../services/readinessService';
 import { cycleService } from '../../services/cycleService';
+import { useCycle } from '../../hooks/useCycle';
 import { useQueryClient } from '@tanstack/react-query';
 import { CycleCheckInSheet } from '../cycle/CycleCheckInSheet';
 
@@ -81,6 +82,9 @@ interface ReadinessSheetProps {
 export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessSheetProps) {
   const { colors } = useTheme();
   const queryClient = useQueryClient();
+  // CYC-1 (29.09): реальные события цикла — иначе из этой шторки никогда не
+  // видны «Обновить/Удалить отметку» (шторка строит их по events).
+  const { events: cycleEvents } = useCycle(gender);
 
   const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
 
@@ -284,7 +288,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
         <CycleCheckInSheet
           visible={cycleCheckInOpen}
           onClose={() => setCycleCheckInOpen(false)}
-          events={[]}
+          events={cycleEvents}
           onSave={handleSaveCycleEvent}
           onDelete={handleDeleteCycleEvent}
         />
