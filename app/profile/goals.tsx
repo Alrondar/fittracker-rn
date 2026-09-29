@@ -13,6 +13,7 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { SPACING } from '../../src/constants/theme';
 import { metricsService } from '../../src/services/metricsService';
+import { todayKey } from '../../src/utils/dateKey';
 import {
   getGoalsProfile,
   saveGoalsProfile,
@@ -89,7 +90,8 @@ export default function GoalsScreen() {
           const latestMetric = await metricsService.getLatestMetric(userId);
           if (!latestMetric || latestMetric.weight_kg !== variables.current_weight_kg) {
             await metricsService.createMetric(userId, {
-              metric_date: new Date().toISOString().split('T')[0],
+              // BUG-4 (аудит 28.09, FD-5): локальное «сегодня», не UTC-ключ.
+              metric_date: todayKey(),
               weight_kg: variables.current_weight_kg,
             });
           }

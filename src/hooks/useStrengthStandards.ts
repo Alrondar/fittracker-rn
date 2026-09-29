@@ -34,8 +34,9 @@ export function useStrengthStandards({
   userId,
 }: UseStrengthStandardsParams): StrengthStandardResult | null {
   // Загружаем профиль (вес + пол)
+  // CTR-7 (аудит 28.09): единый кэш профиля ['profile', userId] (был 4-й дубль).
   const { data: profile } = useQuery({
-    queryKey: ['profile-for-standards', userId],
+    queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 минут

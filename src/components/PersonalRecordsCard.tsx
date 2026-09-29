@@ -50,8 +50,15 @@ export function PersonalRecordsCard({ records, colors }: PersonalRecordsCardProp
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {records.map((record, index) => (
-          <PersonalRecordCard key={index} record={record} colors={colors} userId={userId} />
+        {records.map((record) => (
+          // BUG-11 (аудит 28.09): стабильный ключ — при обновлении/сортировке
+          // индексные key переиспользовали состояние чужих карточек.
+          <PersonalRecordCard
+            key={`${record.exerciseName}:${record.maxWeight}`}
+            record={record}
+            colors={colors}
+            userId={userId}
+          />
         ))}
       </ScrollView>
     </View>
@@ -79,8 +86,9 @@ function PersonalRecordCard({
   });
 
   // Получаем вес пользователя для отображения в sheet
+  // CTR-7 (аудит 28.09): единый кэш профиля ['profile', userId].
   const { data: profile } = useQuery({
-    queryKey: ['profile-weight-pr', userId],
+    queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5,

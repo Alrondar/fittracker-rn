@@ -2,13 +2,16 @@
 // Orchestrator workout session — использует вынесенные модули:
 // - useWorkoutSession.types.ts — внутренние типы
 // - useWorkoutSession.mapper.ts — чистые функции маппинга
-// - useWorkoutSession.rest.ts — rest timer logic
 // - useWorkoutSession.loader.ts — функции загрузки данных
+// (useWorkoutSession.rest.ts удалён 28.09, FZ-1: таймер отдыха живёт в
+//  RestTimerProvider, src/components/workout/RestTimerContext.tsx)
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { feedback } from '../lib/feedback';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { invalidateWorkoutAffectedCaches } from '../lib/queryInvalidation';
 import { ExerciseData, SetData, SetFeedbackPatch, ExercisePainState } from '../types/workout';
 import { advanceProgramProgress, replaceExerciseInProgram } from '../services/programsService';
 import { getActiveInjuries, profileService } from '../services/profileService';
@@ -17,7 +20,7 @@ import { mapError } from '../utils/errorMapper';
 import { perfMark, perfSince } from '../utils/perf';
 import { UserInjury } from '../constants/injuries';
 import { AlternativeSourceInput } from '../engine/alternatives';
-import { useWorkoutSessionRest } from './workout/useWorkoutSession.rest';
+import { getRestActions } from '../components/workout/RestTimerContext';
 import {
   fetchWorkoutSession,
   fetchAlternatives,
@@ -36,6 +39,7 @@ import {
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [workoutName, setWorkoutName] = useState('');
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -63,18 +67,17 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLogsRef = useRef<Map<string, SetData[]>>(new Map());
 
-  // Rest timer — вынесенный hook
-  const {
-    restTimer,
-    restTimeLeft,
-    isRestFinished,
-    restOwnerIndex,
-    startRestTimer,
-    adjustRestTimer,
-    stopRestTimer,
-    cleanupRestTimer,
-    setRestTimeLeft,
-  } = useWorkoutSessionRest();
+  // Rest timer — FZ-1 (аудит 28.09): весь таймер живёт в RestTimerProvider
+  // (src/components/workout/RestTimerContext.tsx); здесь только стабильный
+  // прокси к его start — тик не проходит через state экрана вообще.
+  // stop/adjust потребляют RestDial/карточки напрямую из контекста провайдера.
+  const startRestTimer = useCallback((restSeconds: number, ownerIndex: number | null = null) => {
+    getRestActions()?.start(restSeconds, ownerIndex);
+  }, []);
+  const cleanupRestTimer = useCallback(() => {
+    // no-op: RestTimerProvider сам чистит интервал на собственном unmount
+    // (это и есть unmount экрана).
+  }, []);
 
   // Синхронизация refs
   useEffect(() => {
@@ -112,7 +115,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     if (entries.length === 0) return 0;
     pendingLogsRef.current.clear();
     const now = new Date();
-
     let failures = 0;
     const promises = entries.map(async ([workoutExerciseId, exerciseLogs]) => {
       // Сначала маппим с сохранением оригинального индекса (set_number), затем фильтруем пустые
@@ -157,6 +159,20 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     await Promise.all(promises);
     return failures;
   }, []);
+
+  // BUG-7 (аудит 28.09): single-flight обёртка flush — «Завершить» подхватывает
+  // уже идущий debounce-flush вместо параллельного второго прогона (тот
+  // видел бы уже очищенную pendingLogsRef → ложные 0 failures при живом
+  // падающем запросе, а его собственный catch вернул бы логи в карту).
+  const flushPromiseRef = useRef<Promise<number> | null>(null);
+  const joinFlush = useCallback((): Promise<number> => {
+    if (flushPromiseRef.current) return flushPromiseRef.current;
+    const p = flushPendingLogs().finally(() => {
+      if (flushPromiseRef.current === p) flushPromiseRef.current = null;
+    });
+    flushPromiseRef.current = p;
+    return p;
+  }, [flushPendingLogs]);
 
   // ============================================================================
   // LOAD WORKOUT — использует loader + mapper
@@ -327,9 +343,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       clearTimeout(saveTimerRef.current);
     }
     saveTimerRef.current = setTimeout(() => {
-      flushPendingLogs();
+      joinFlush();
     }, 500);
-  }, [flushPendingLogs]);
+  }, [joinFlush]);
 
   const updateSet = useCallback(
     (
@@ -792,6 +808,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // SAVE WORKOUT
   // ============================================================================
   const saveWorkout = useCallback(async () => {
+    // BUG-6 (аудит 28.09): re-entry guard — повторный тап «Завершить» (pill +
+    // панель в шапке) во время сети вызывал advanceProgramProgress дважды.
+    if (isFinishingRef.current) return;
     if (!isWorkoutActive && currentTimeRef.current === 0) {
       feedback.alert(
         'Тренировка не начата',
@@ -809,14 +828,23 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     // Alert здесь убран, иначе пользователь подтверждал завершение дважды.
     {
       {
+        // BUG-6 (аудит 28.09): re-entry guard — повторный «Завершить» (пилюля
+        // или панель) во время сети повторял бы advanceProgramProgress.
+        if (isFinishingRef.current) return;
         setSaving(true);
         setIsFinishing(true);
         isFinishingRef.current = true;
+        // BUG-7: отменяем ожидающий debounce-коммит; в flight flush ниже
+        // подхватит pendingLogsRef (свежие значения уже в карте).
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
+        }
 
         try {
           // VF-3: если подходы не легли в БД — не пишем finished_at.
           // раньше тренировка помечалась завершённой с проглоченными ошибками flush.
-          const flushFailures = await flushPendingLogs();
+          const flushFailures = await joinFlush();
           if (flushFailures > 0) {
             // setSaving снимает внешний finally
             setIsFinishing(false);
@@ -843,6 +871,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               if (s.weight !== '' || s.reps !== '') totalLogs++;
             });
           });
+
+          // BUG-1 (аудит 28.09): финиш меняет дашборд/прогресс/историю/мышцы/
+          // недельку/прогноз — раньше не инвалидировалось ничего, экраны врали
+          // до staleTime (5 мин).
+          if (userId) invalidateWorkoutAffectedCaches(queryClient, userId);
 
           if (programId && userId) {
             try {
@@ -913,13 +946,17 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           }
         } catch (error: any) {
           console.error('[useWorkoutSession] saveWorkout:', error);
+          // BUG-6: ошибка = позволяем повторить «Завершить» (иначе guard
+          // блокировал бы ретрай до unmount).
+          setIsFinishing(false);
+          isFinishingRef.current = false;
           feedback.alert('Ошибка', mapError(error));
         } finally {
           setSaving(false);
         }
       }
     }
-  }, [isWorkoutActive, workoutId, programId, userId, router, flushPendingLogs]);
+  }, [isWorkoutActive, workoutId, programId, userId, router, joinFlush, queryClient]);
 
   return {
     workoutName,
@@ -930,12 +967,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     isWorkoutActive,
     setIsWorkoutActive,
     initialTime,
-    restTimer,
-    restTimeLeft,
-    setRestTimeLeft,
-    isRestFinished,
-    restOwnerIndex,
-    adjustRestTimer,
     alternativesCache: alternativesCacheRef.current,
     replacements,
     currentTimeRef,
@@ -957,7 +988,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     savePainState,
     clearPainState,
     startRestTimer,
-    stopRestTimer,
     saveWorkout,
   };
 }

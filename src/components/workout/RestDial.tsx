@@ -23,7 +23,7 @@ import { typography } from '../../styles/typography';
 import { FONT_FAMILIES } from '../../constants/fonts';
 import { useTheme } from '../../hooks/useTheme';
 import type { createCardStyles } from '../../styles/components/card';
-import { formatRestTime } from './RestTimerContext';
+import { formatRestTime, useRestTick } from './RestTimerContext';
 
 const SIZE = 230; // сторона квадрата SVG
 const R = 96; // радиус кольца
@@ -42,9 +42,9 @@ interface RestDialProps {
   mode: 'setup' | 'running' | 'finished';
   /** Пресет отдыха упражнения — стартовое значение в setup. */
   initialSeconds: number;
-  /** Идущий таймер: total/timeLeft (setup — не использует). */
+  /** Идущий таймер: total (setup — не использует). FZ-1 (аудит 28.09):
+   *  timeLeft больше не prop — тик читается из restTickStore внутри. */
   total: number;
-  timeLeft: number;
   exerciseName: string;
   /** Заголовок — тот же стиль, что у основной карточки (прыжка высоты нет). */
   cardStyles: ReturnType<typeof createCardStyles>;
@@ -61,7 +61,6 @@ export function RestDial({
   mode,
   initialSeconds,
   total,
-  timeLeft,
   exerciseName,
   cardStyles,
   minHeight = 0,
@@ -76,7 +75,12 @@ export function RestDial({
   const geo = useRef({ cx: SIZE / 2, cy: SIZE / 2 });
   const drag = useRef({ lastAngle: 0, baseDeg: 0 });
 
+  // FZ-1 (аудит 28.09): тик — подписка на стор, а не prop: RestDial смонтирован
+  // только в карточке-владельце, поэтому 1 Гц ре-рендерит лишь его.
+  const tick = useRestTick();
+  const timeLeft = tick.timeLeft;
   const setup = mode === 'setup';
+  const liveMode = setup ? 'setup' : tick.isFinished ? 'finished' : 'running';
   // Градиент активной темы — тот же, что у кольца RestTimer (I-3) и pill'ов.
   const { gradients } = useTheme();
   const grad = gradients.primary;
@@ -143,8 +147,8 @@ export function RestDial({
       ? Math.max(0, Math.min(1, timeLeft / total))
       : 0;
   const arcLen = setup ? C * progress : C * GAUGE * progress;
-  const running = mode === 'running';
-  const finished = mode === 'finished';
+  const running = liveMode === 'running';
+  const finished = liveMode === 'finished';
   const timeColor = finished
     ? colors.success
     : running && timeLeft <= 10

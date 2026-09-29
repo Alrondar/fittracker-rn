@@ -30,6 +30,34 @@ function normalizeDate(date: Date | string): Date {
 const DEFAULT_MENSES_DURATION_DAYS = 5;
 
 /**
+ * CYC-2 (29.09): «вечная лютеиновая» больше не держит движок в freeze.
+ * Когда следующего menstruation_start нет, ожидаемое начало = последний старт
+ * + длина цикла (среднее по реальным интервалам, fallback 28 дней). После
+ * ожидаемого начала + DELAY_GRACE_DAYS фаза становится 'delayed': UI честно
+ * говорит «возможна задержка» и зовёт отметить начало, движок снимает hold
+ * повышения веса (гейты срабатывают только на luteal/ovulation).
+ */
+export const DELAY_GRACE_DAYS = 7;
+const FALLBACK_CYCLE_LENGTH_DAYS = 28;
+const MIN_PLAUSIBLE_CYCLE_DAYS = 15;
+const MAX_PLAUSIBLE_CYCLE_DAYS = 60;
+
+/** Средняя длина цикла по интервалам между consecutive menstruation_start. */
+function averageCycleLengthDays(sortedEvents: CycleEvent[]): number {
+  const starts = sortedEvents
+    .filter((e) => e.event_type === 'menstruation_start')
+    .map((e) => normalizeDate(e.event_date).getTime());
+
+  const gaps: number[] = [];
+  for (let i = 1; i < starts.length; i++) {
+    const days = Math.round((starts[i] - starts[i - 1]) / 86400000);
+    if (days >= MIN_PLAUSIBLE_CYCLE_DAYS && days <= MAX_PLAUSIBLE_CYCLE_DAYS) gaps.push(days);
+  }
+  if (gaps.length === 0) return FALLBACK_CYCLE_LENGTH_DAYS;
+  return Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+}
+
+/**
  * Конец текущей менструации: реальное событие menstruation_end или оценка
  * startDate + 4 дня. estimated=true — если конец не залогирован.
  */
@@ -115,6 +143,24 @@ export function calculateCyclePhases(
         normalizeDate(e.event_date).getTime() > startDate.getTime()
     )
     .shift();
+
+  // CYC-2 (29.09): следующего начала нет и дата ушла за ожидаемое начало +
+  // grace — это не «вечная лютеиновая», а честная задержка. Движок по
+  // 'delayed' hold веса не применяет.
+  if (!nextMenstruationStart) {
+    const expectedNextStart = normalizeDate(
+      new Date(startDate.getTime() + averageCycleLengthDays(sortedEvents) * 86400000)
+    );
+    if (refTime > expectedNextStart.getTime() + DELAY_GRACE_DAYS * 86400000) {
+      return {
+        phase: 'delayed',
+        dayNumber: Math.floor((refTime - startDate.getTime()) / 86400000) + 1,
+        startDate,
+        endDate: expectedNextStart,
+        isEstimated: true,
+      };
+    }
+  }
 
   // Определяем даты овуляции
   let ovulationStart: Date;
@@ -205,6 +251,9 @@ export function getCyclePhaseColor(phase: CyclePhase): keyof ThemeColors {
       return 'warning';
     case 'luteal':
       return 'primary';
+    case 'delayed':
+      // CYC-2: нейтральный — задержка не фаза, а «нет свежих данных»
+      return 'textSecondary';
     default:
       return 'textSecondary';
   }
@@ -223,6 +272,8 @@ export function getCyclePhaseLabel(phase: CyclePhase): string {
       return 'Овуляция';
     case 'luteal':
       return 'Лютеиновая';
+    case 'delayed':
+      return 'Возможна задержка';
     default:
       return 'Неизвестно';
   }
@@ -269,6 +320,17 @@ export function getPhaseForDate(
         normalizeDate(e.event_date).getTime() > startDate.getTime()
     )
     .shift();
+
+  // CYC-2 (29.09): за пределами ожидаемого начала + grace — 'delayed'
+  // (календарь красит такие дни нейтрально, а не «лютеиновой» вечно)
+  if (!nextMenstruationStart) {
+    const expectedNextStart = normalizeDate(
+      new Date(startDate.getTime() + averageCycleLengthDays(sortedEvents) * 86400000)
+    );
+    if (targetTime > expectedNextStart.getTime() + DELAY_GRACE_DAYS * 86400000) {
+      return 'delayed';
+    }
+  }
 
   let ovulationStart: Date;
   let ovulationEnd: Date;

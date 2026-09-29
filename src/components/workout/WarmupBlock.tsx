@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { useWarmupTick } from '../../hooks/useWarmup';
 import { PressableScale } from '../ui/PressableScale';
 import Animated, {
   useSharedValue,
@@ -22,7 +23,8 @@ interface WarmupBlockProps {
   warmupExercises: WarmupExercise[];
   isLoading: boolean;
   activeTimerId: string | null;
-  timeLeft: number;
+  // FZ-6 (аудит 28.09): timeLeft больше не prop — тик читается из стора
+  // (useWarmupTick), экран от него не перерендеривается.
   isAllCompleted: boolean;
   totalDuration: number;
   excludedByInjury: InjuryExclusion[];
@@ -42,7 +44,6 @@ export function WarmupBlock({
   warmupExercises,
   isLoading,
   activeTimerId,
-  timeLeft,
   isAllCompleted,
   totalDuration,
   excludedByInjury,
@@ -55,6 +56,10 @@ export function WarmupBlock({
   onOpenDetails,
   onResetPreferences,
 }: WarmupBlockProps) {
+  // FZ-6: подписка на тик внутри блока. memo-карточки (передаются стабильные
+  // props, кроме активной) не ловят ре-рендер — дёргается только сам блок
+  // (небольшое дерево) и активная карточка, а не весь workout-экран.
+  const timeLeft = useWarmupTick();
   const { colors } = useTheme();
   const pulse = useSharedValue(0.35);
   const footerProgress = useSharedValue(0);

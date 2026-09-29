@@ -105,6 +105,9 @@ export function AppButton({
         <>
           {icon && <>{icon}</>}
           <Text
+            // UX-6 (29.09): заголовок кнопки всегда в одну строку — в узких
+            // flex-ряды (пилюли приёмов пищи) «Завтрак» переносилось на две.
+            numberOfLines={1}
             style={[
               typography.button,
               {

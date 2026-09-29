@@ -565,6 +565,64 @@ export async function copyProgramForUser(programId: string, userId: string): Pro
 }
 
 // ============================================================================
+// ГРАНИЦА РЕДАКТОРА ПРОГРАММ (CTR-1, аудит 28.09: supabase.rpc был прямо в
+// useProgramEditor — против CLAUDE.md §2; теперь хуки зовут только эти функции)
+// ============================================================================
+
+/** Есть ли у пользователя активная запись на программу (для warn-диалога старта). */
+export async function hasActiveUserProgram(userId: string, programId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('user_programs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('program_id', programId)
+    .eq('is_active', true)
+    .maybeSingle();
+  return !!data;
+}
+
+/** Сколько тренировок уже создано для программы (count; >0 = «перезапуск удалит их»). */
+export async function countProgramWorkouts(userId: string, programId: string): Promise<number> {
+  const { count } = await supabase
+    .from('workouts')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('program_id', programId);
+  return count ?? 0;
+}
+
+/** Upsert снимка редактора одним атомарным RPC (PERF-4/PERF-6 семантика сохранена). */
+export interface ProgramSnapshot {
+  program_id: string;
+  schedule: unknown[];
+  deleted_phase_ids: string[];
+  deleted_day_ids: string[];
+  deleted_exercise_ids: string[];
+  phases: unknown[];
+}
+
+export async function saveProgramSnapshot(snapshot: ProgramSnapshot): Promise<void> {
+  const { error } = await supabase.rpc('save_program_snapshot', {
+    p_program_id: snapshot.program_id,
+    p_schedule: snapshot.schedule,
+    p_deleted_phase_ids: snapshot.deleted_phase_ids,
+    p_deleted_day_ids: snapshot.deleted_day_ids,
+    p_deleted_exercise_ids: snapshot.deleted_exercise_ids,
+    p_phases: snapshot.phases,
+  });
+  if (error) throw error;
+}
+
+/** RPC create_workouts_for_program — «Начать/Перезапустить» из редактора. */
+export async function createWorkoutsForProgram(programId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('create_workouts_for_program', {
+    p_program_id: programId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+}
+
+// ============================================================================
 // АКТИВАЦИЯ ПРОГРАММЫ
 // ============================================================================
 /**

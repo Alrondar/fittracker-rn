@@ -27,6 +27,9 @@ import { TrainingCalendarCard } from '../../src/components/dashboard/TrainingCal
 import { WeeklyInsightsSection } from '../../src/components/dashboard/WeeklyInsightsSection';
 import { ShimmerWrap, Skeleton, useMinPending } from '../../src/components/Skeleton';
 import { DashboardSkeleton } from '../../src/components/ui/skeletons';
+import { LoadingChip } from '../../src/components/ui/LoadingChip';
+import { useDeferredTabContent } from '../../src/hooks/useDeferredTabContent';
+import { useTabPrefetch } from '../../src/hooks/useTabPrefetch';
 import { StateBlock } from '../../src/components/ui/StateBlock';
 import { HeroOut } from '../../src/components/ui/HeroMorph';
 import { FadeIn } from '../../src/components/FadeIn';
@@ -101,7 +104,13 @@ export default function DashboardScreen() {
   }, [refetch, refetchHistory, refetchWeekly, refetchNutrition]);
 
   // UX-2 (L-3): anti-flash — скелетон живёт минимум 250мс.
-  const showSkeleton = useMinPending(isPending);
+  // PERF-11: + гейт отложенного монтажа — тяжёлое дерево дашборда монтируется
+  // после таб-анимации; до него пользователь видит skeleton + чип загрузки.
+  const tabReady = useDeferredTabContent();
+  const showSkeleton = useMinPending(isPending || !tabReady);
+
+  // PERF-11: prefetch данных соседних табов (стартует после первой анимации).
+  useTabPrefetch(userId);
 
   const topInsight = useMemo(() => {
     if (!weeklyData?.insights) {
@@ -153,6 +162,8 @@ export default function DashboardScreen() {
           <ShimmerWrap>
             <DashboardSkeleton />
           </ShimmerWrap>
+          {/* PERF-11: явный признак идущей загрузки поверх макета. */}
+          <LoadingChip />
         </View>
       </SafeAreaView>
     );

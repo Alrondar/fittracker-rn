@@ -49,10 +49,12 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'strength', label: 'Сила' },
 ];
 
+// UX-6 (29.09): короткие числовые лейблы — «Неделя/30 дней» обрезались до
+// «Нед.../30 д...» в PillToggle; смысл понятен из соседних 90/Всё.
 const PERIODS: { key: PeriodKey; label: string }[] = [
-  { key: '7', label: 'Неделя' },
-  { key: '30', label: '30 дней' },
-  { key: '90', label: '90 дней' },
+  { key: '7', label: '7' },
+  { key: '30', label: '30' },
+  { key: '90', label: '90' },
   { key: 'all', label: 'Всё' },
 ];
 

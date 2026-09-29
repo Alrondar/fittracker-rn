@@ -18,6 +18,7 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppBadge } from '../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { StateBlock } from '../../src/components/ui/StateBlock';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
@@ -86,6 +87,15 @@ export default function ExercisesScreen() {
       router.push(`/exercise/${id}`);
     },
     [router]
+  );
+
+  // FZ-7 (аудит 28.09): стабильный renderItem — иначе FlashList перерисовывает
+  // все примонтированные строки на каждый рендер экрана (поиск посимвольно).
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof exercises)[number] }) => (
+      <ExerciseRow item={item} onPress={handleExercisePress} />
+    ),
+    [handleExercisePress]
   );
 
   const renderEmpty = () => (
@@ -265,18 +275,22 @@ export default function ExercisesScreen() {
 
       {/* Список упражнений */}
       {loading ? (
-        <ListSkeleton count={5} />
+        <>
+          <ListSkeleton count={5} />
+          {/* PERF-11: явный признак идущей загрузки поверх макета. */}
+          <LoadingChip />
+        </>
       ) : isError && exercises.length === 0 ? (
         renderError()
       ) : (
         <FlashList
           data={exercises}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ExerciseRow item={item} onPress={handleExercisePress} />}
+          renderItem={renderItem}
           drawDistance={1000}
           contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
+          ListEmptyComponent={renderEmpty()}
+          ListFooterComponent={renderFooter()}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           refreshControl={

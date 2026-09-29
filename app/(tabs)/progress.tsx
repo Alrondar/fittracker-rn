@@ -34,6 +34,8 @@ import { ProgressInsights } from '../../src/components/progress/ProgressInsights
 import { RecentWorkouts } from '../../src/components/progress/RecentWorkouts';
 import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
 import { ProgressHeroSkeleton, StatsGridSkeleton } from '../../src/components/ui/skeletons';
+import { LoadingChip } from '../../src/components/ui/LoadingChip';
+import { useDeferredTabContent } from '../../src/hooks/useDeferredTabContent';
 import { StrengthTrendChart } from '../../src/components/progress/StrengthTrendChart';
 import { VolumeTrendChart } from '../../src/components/progress/VolumeTrendChart';
 import { WeightTrendRow } from '../../src/components/progress/WeightTrendRow';
@@ -162,7 +164,10 @@ export default function ProgressScreen() {
 
   const isLoading = isHistoryPending || isProgressPending;
   // UX-2 (L-1/L-3): макетный skeleton зоны обзора + anti-flash.
-  const showLoadingSkeleton = useMinPending(isLoading);
+  // PERF-11: + гейт отложенного монтажа — тяжёлое дерево (графики, MuscleStats)
+  // монтируется после таб-анимации, до — skeleton + чип загрузки.
+  const tabReady = useDeferredTabContent();
+  const showLoadingSkeleton = useMinPending(isLoading || !tabReady);
   const isEmpty = flatWorkouts.length === 0 && (progressData?.totalWorkouts ?? 0) === 0;
 
   if (!userId) {
@@ -237,6 +242,8 @@ export default function ProgressScreen() {
               <StatsGridSkeleton />
             </View>
           </ShimmerWrap>
+          {/* PERF-11: явный признак идущей загрузки поверх макета. */}
+          <LoadingChip />
         </View>
       </SafeAreaView>
     );

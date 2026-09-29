@@ -14,6 +14,8 @@ import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { signOut } from '../../src/services/authService';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { LoadingChip } from '../../src/components/ui/LoadingChip';
+import { useDeferredTabContent } from '../../src/hooks/useDeferredTabContent';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppInput } from '../../src/components/ui/AppInput';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -26,6 +28,7 @@ import { CycleCalendar } from '../../src/components/cycle/CycleCalendar';
 import { CycleSettingsSheet } from '../../src/components/cycle/CycleSettingsSheet';
 import { CycleCheckInSheet } from '../../src/components/cycle/CycleCheckInSheet';
 import { cycleService } from '../../src/services/cycleService';
+import { todayKey, toDateKey } from '../../src/utils/dateKey';
 import {
   Settings,
   Target,
@@ -51,6 +54,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { userData, stats, personalRecords, loading, error, refresh, saveNutrition } =
     useProfile(userId);
+  // PERF-11: отложенный монтаж тяжёлого дерева профиля до конца таб-анимации.
+  const tabReady = useDeferredTabContent();
   const { fmt } = useWeightDisplay();
 
   const [showNutritionSheet, setShowNutritionSheet] = useState(false);
@@ -67,7 +72,8 @@ export default function ProfileScreen() {
   const [cycleSettingsVisible, setCycleSettingsVisible] = useState(false);
   const [cycleCheckInOpen, setCycleCheckInOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  // BUG-3 (аудит 28.09, FD-5): локальный ключ даты, не toISOString (UTC−1 день).
+  const [selectedDate, setSelectedDate] = useState<string>(todayKey());
 
   const handleSaveCycleSettings = async (lutealLength: number) => {
     if (!userId) return;
@@ -89,7 +95,7 @@ export default function ProfileScreen() {
   };
 
   const handleDayPress = (date: Date) => {
-    setSelectedDate(date.toISOString().split('T')[0]);
+    setSelectedDate(toDateKey(date));
     setCycleCheckInOpen(true);
   };
 
@@ -112,20 +118,29 @@ export default function ProfileScreen() {
     ]);
   };
 
+  // BUG-5 (аудит 28.09): чистый insert в nutrition_logs — без pending-флага
+  // двойной тап «Сохранить» задваивал приём пищи и калории.
+  const [nutritionSaving, setNutritionSaving] = useState(false);
   const handleSaveNutrition = async () => {
-    await saveNutrition({
-      calories: inputCalories,
-      proteins: inputProteins,
-      fats: inputFats,
-      carbs: inputCarbs,
-      water_ml: inputWater,
-    });
-    setShowNutritionSheet(false);
-    setInputCalories('');
-    setInputProteins('');
-    setInputFats('');
-    setInputCarbs('');
-    setInputWater('');
+    if (nutritionSaving) return;
+    setNutritionSaving(true);
+    try {
+      await saveNutrition({
+        calories: inputCalories,
+        proteins: inputProteins,
+        fats: inputFats,
+        carbs: inputCarbs,
+        water_ml: inputWater,
+      });
+      setShowNutritionSheet(false);
+      setInputCalories('');
+      setInputProteins('');
+      setInputFats('');
+      setInputCarbs('');
+      setInputWater('');
+    } finally {
+      setNutritionSaving(false);
+    }
   };
 
   if (error && !userData) {
@@ -160,11 +175,13 @@ export default function ProfileScreen() {
     );
   }
 
-  if (loading || !userData) {
+  if (loading || !userData || !tabReady) {
     return (
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <View style={{ flex: 1, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg }}>
           <ListSkeleton count={4} />
+          {/* PERF-11: явный признак идущей загрузки поверх макета. */}
+          <LoadingChip />
         </View>
       </SafeAreaView>
     );
@@ -309,7 +326,8 @@ export default function ProfileScreen() {
                 return (
                   <PressableScale
                     accessibilityRole="button"
-                    key={index}
+                    // BUG-11 (аудит 28.09): стабильный ключ записи рекорда.
+                    key={recordId ?? `pr-${index}`}
                     disabled={!recordId}
                     onPress={() => {
                       if (recordId) {
@@ -608,6 +626,7 @@ export default function ProfileScreen() {
           variant="primary"
           size="large"
           onPress={handleSaveNutrition}
+          loading={nutritionSaving}
           style={{ marginTop: SPACING.md }}
         />
       </SheetShell>

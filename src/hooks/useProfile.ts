@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { feedback } from '../lib/feedback';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   profileService,
@@ -10,8 +11,10 @@ import {
   PersonalRecord,
 } from '../services/profileService';
 import * as Haptics from 'expo-haptics';
+import { invalidateNutritionCaches } from '../lib/queryInvalidation';
 
 export function useProfile(userId: string | null) {
+  const queryClient = useQueryClient();
   const [userData, setUserData] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<ProfileStats>({
     totalWorkouts: 0,
@@ -35,10 +38,15 @@ export function useProfile(userId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  const loadTokenRef = useRef(0);
   const loadAllData = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     setError(false);
+    // BUG-9 (аудит 28.09): токен отмены — при быстрой смене пользователя
+    // (logout→login на shared device) старый Promise.all не должен перетереть
+    // данные нового. queryClient.clear() useState-кэш не покрывает.
+    const token = ++loadTokenRef.current;
     try {
       const [profile, statsData, targetsData, nutrition, records] = await Promise.all([
         profileService.getProfileData(userId),
@@ -47,6 +55,7 @@ export function useProfile(userId: string | null) {
         profileService.getDailyNutrition(userId),
         profileService.getPersonalRecords(userId),
       ]);
+      if (token !== loadTokenRef.current) return;
 
       setUserData(profile);
       setStats(statsData);
@@ -54,10 +63,11 @@ export function useProfile(userId: string | null) {
       setTodayNutrition(nutrition);
       setPersonalRecords(records);
     } catch (e) {
+      if (token !== loadTokenRef.current) return;
       console.error('Ошибка загрузки профиля:', e);
       setError(true);
     } finally {
-      setLoading(false);
+      if (token === loadTokenRef.current) setLoading(false);
     }
   }, [userId]);
 
@@ -85,6 +95,9 @@ export function useProfile(userId: string | null) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const updated = await profileService.getDailyNutrition(userId);
       setTodayNutrition(updated);
+      // BUG-10 (аудит 28.09): карточки питания на Главной читают RQ-кэши —
+      // без инвалидации они врали после добавления приёма из профиля.
+      invalidateNutritionCaches(queryClient, userId);
     } catch (e: any) {
       feedback.alert('Ошибка', e.message);
     }

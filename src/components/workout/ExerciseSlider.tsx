@@ -1,6 +1,8 @@
 // src/components/workout/ExerciseSlider.tsx
 // 05.08.2026 (PERF):
-//  - P1-A: removeClippedSubviews={true} на горизонтальном ScrollView
+//  - P1-A: removeClippedSubviews НАМЕРЕННО НЕ ставим (SG-2, INVENTORY §10.1):
+//    детач нативных вью роняет responder/blur у TextInput сетов — см. строку
+//    265+ этого файла (CTR-6, аудит 28.09: комментарий был устаревшим)
 //  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
 // ENG-5: ранжирование альтернатив + подпись excludedCount
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';

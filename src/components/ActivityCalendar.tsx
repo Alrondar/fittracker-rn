@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { SPACING, BORDER_RADIUS } from '../constants/theme';
 import { typography } from '../styles/typography';
+import { toDateKey } from '../utils/dateKey';
 
 interface ActivityCalendarProps {
   // Массив дат с тренировками (формат: 'YYYY-MM-DD')
@@ -29,7 +30,9 @@ export function ActivityCalendar({ workoutDates }: ActivityCalendarProps) {
     for (let i = 13; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      // BUG-8 (аудит 28.09, FD-5): ключи workoutDates локальные (dashboardService
+      // toDateKeyFromIso) — UTC-ключ сюда терял сегодняшние точки в 00:00–03:00.
+      const dateStr = toDateKey(date);
       const dayName = date.toLocaleDateString('ru-RU', { weekday: 'short' }).slice(0, 2);
       days.push({
         date: dateStr,

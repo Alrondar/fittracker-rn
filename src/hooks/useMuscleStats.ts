@@ -6,8 +6,8 @@
 // Правила (CLAUDE.md §2, §8):
 //   - server data только через React Query (не в Zustand);
 //   - staleTime 5 min: статистика мышц меняется редко,
-//     но при завершении новой тренировки инвалидируется автоматически
-//     через workout-мутации (queryKey содержит userId).
+//     но при завершении/пропуске тренировки инвалидируется через
+//     invalidateWorkoutAffectedCaches (src/lib/queryInvalidation.ts, BUG-1).
 
 import { useQuery } from '@tanstack/react-query';
 import { getMuscleStats, type MuscleStatsRow } from '../services/muscleStatsService';

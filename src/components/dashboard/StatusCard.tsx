@@ -83,6 +83,11 @@ export function StatusCard() {
   const topChronic = chronicZones[0];
   const color = readinessColor(readiness ?? null, colors);
   const fillPercent = readiness == null ? 0 : (readiness / 5) * 100;
+  // CRASH-FIX (29.09): getCyclePhaseColor возвращает КЛЮЧ темы, а не цвет —
+  // withAlpha('warning', …) давал rgba(NaN, NaN, …) и ронял release-бандл на
+  // рендере чипа цикла (Reanimated invalid color). Резолвим ключ в цвет,
+  // паттерн как в CycleCalendar.tsx:212.
+  const phaseColor = currentPhase ? colors[getCyclePhaseColor(currentPhase.phase)] : colors.primary;
 
   const quickSetMutation = useMutation({
     mutationFn: (value: number) =>
@@ -411,17 +416,13 @@ export function StatusCard() {
                 paddingVertical: SPACING.xs,
                 paddingHorizontal: SPACING.sm,
                 borderRadius: BORDER_RADIUS.sm,
-                backgroundColor: withAlpha(getCyclePhaseColor(currentPhase.phase), 0.125),
+                backgroundColor: withAlpha(phaseColor, 0.125),
                 borderWidth: 1,
-                borderColor: withAlpha(getCyclePhaseColor(currentPhase.phase), 0.251),
+                borderColor: withAlpha(phaseColor, 0.251),
                 alignSelf: 'flex-start',
               }}
             >
-              <Droplet
-                size={16}
-                color={getCyclePhaseColor(currentPhase.phase)}
-                style={{ marginRight: SPACING.xs }}
-              />
+              <Droplet size={16} color={phaseColor} style={{ marginRight: SPACING.xs }} />
               <Text style={[typography.label, { color: colors.textPrimary }]}>
                 День {currentPhase.dayNumber} · {getCyclePhaseLabel(currentPhase.phase)}
               </Text>

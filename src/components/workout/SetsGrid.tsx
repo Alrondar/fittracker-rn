@@ -259,133 +259,162 @@ interface SetRowProps {
   isUnilateral: boolean;
 }
 
-const SetRow = memo(function SetRow({
-  rowSets,
-  startIndex,
-  rowIndex,
-  exerciseIndex,
-  updateSet,
-  unit,
-  toDisplay,
-  fromDisplay,
-  colors,
-  cardStyles,
-  onOpenFeedback,
-  onToggleWarmup,
-  shouldShowRpeChip,
-  isUnilateral,
-}: SetRowProps) {
-  return (
-    <View key={rowIndex} style={cardStyles.setRow}>
-      <View style={cardStyles.setNumbersRow}>
-        {rowSets.map((_, si) => (
-          <View key={si} style={cardStyles.setNumber}>
-            <Text style={[cardStyles.setNumberText, { color: colors.textPrimary }]}>
-              {startIndex + si + 1}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={cardStyles.setInputsRow}>
-        {rowSets.map((set, si) => (
-          <SetInput
-            key={`w-${startIndex + si}-${unit}`}
-            value={toDisplay(set.weight)}
-            placeholder={weightPlaceholder(unit)}
-            keyboardType="decimal-pad"
-            hasValue={!!set.weight}
-            onChangeText={(v) =>
-              updateSet(exerciseIndex, startIndex + si, 'weight', fromDisplay(v))
-            }
-            colors={colors}
-            cardStyles={cardStyles}
-          />
-        ))}
-      </View>
-      <View style={cardStyles.setInputsRow}>
-        {rowSets.map((set, si) =>
-          isUnilateral ? (
-            <View
-              key={`r-${startIndex + si}-${unit}`}
-              style={{ flexDirection: 'row', gap: 4, flex: 1 }}
-            >
-              <SetInput
-                value={set.reps_left ?? ''}
-                placeholder="L"
-                keyboardType="number-pad"
-                hasValue={!!set.reps_left}
-                onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_left', v)}
-                colors={colors}
-                cardStyles={cardStyles}
-              />
-              <SetInput
-                value={set.reps_right ?? ''}
-                placeholder="R"
-                keyboardType="number-pad"
-                hasValue={!!set.reps_right}
-                onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_right', v)}
-                colors={colors}
-                cardStyles={cardStyles}
-              />
+const SetRow = memo(
+  function SetRow({
+    rowSets,
+    startIndex,
+    rowIndex,
+    exerciseIndex,
+    updateSet,
+    unit,
+    toDisplay,
+    fromDisplay,
+    colors,
+    cardStyles,
+    onOpenFeedback,
+    onToggleWarmup,
+    shouldShowRpeChip,
+    isUnilateral,
+  }: SetRowProps) {
+    return (
+      <View key={rowIndex} style={cardStyles.setRow}>
+        <View style={cardStyles.setNumbersRow}>
+          {rowSets.map((_, si) => (
+            <View key={si} style={cardStyles.setNumber}>
+              <Text style={[cardStyles.setNumberText, { color: colors.textPrimary }]}>
+                {startIndex + si + 1}
+              </Text>
             </View>
-          ) : (
+          ))}
+        </View>
+
+        <View style={cardStyles.setInputsRow}>
+          {rowSets.map((set, si) => (
             <SetInput
-              key={`r-${startIndex + si}-${unit}`}
-              value={set.reps}
-              placeholder="повт."
-              keyboardType="number-pad"
-              hasValue={!!set.reps}
-              onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
+              key={`w-${startIndex + si}-${unit}`}
+              value={toDisplay(set.weight)}
+              placeholder={weightPlaceholder(unit)}
+              keyboardType="decimal-pad"
+              hasValue={!!set.weight}
+              onChangeText={(v) =>
+                updateSet(exerciseIndex, startIndex + si, 'weight', fromDisplay(v))
+              }
               colors={colors}
               cardStyles={cardStyles}
             />
-          )
-        )}
-      </View>
-      <View style={cardStyles.setInputsRow}>
-        {rowSets.map((set, si) => (
-          <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0, gap: 4 }}>
-            {shouldShowRpeChip(set, startIndex + si) && (
-              <SetFeedbackChip
-                rpe={set.rpe ?? null}
-                onPress={() => onOpenFeedback(startIndex + si)}
-                colors={colors}
-              />
-            )}
-            {/* ENG-13: Warmup chip — toggle per-set warmup flag */}
-            <PressableScale
-              onPress={() => onToggleWarmup(startIndex + si)}
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: SPACING.xs,
-                paddingVertical: 4,
-                borderRadius: BORDER_RADIUS.sm,
-                backgroundColor: set.isWarmup ? colors.primary : colors.surfaceSecondary,
-                borderWidth: 1,
-                borderColor: set.isWarmup ? colors.primary : colors.border,
-              }}
-            >
-              <Text
-                style={[
-                  typography.captionSmall,
-                  {
-                    color: set.isWarmup ? colors.textInverse : colors.textSecondary,
-                    fontWeight: '600',
-                  },
-                ]}
+          ))}
+        </View>
+        <View style={cardStyles.setInputsRow}>
+          {rowSets.map((set, si) =>
+            isUnilateral ? (
+              <View
+                key={`r-${startIndex + si}-${unit}`}
+                style={{ flexDirection: 'row', gap: 4, flex: 1 }}
               >
-                Разминка
-              </Text>
-            </PressableScale>
-          </View>
-        ))}
+                <SetInput
+                  value={set.reps_left ?? ''}
+                  placeholder="L"
+                  keyboardType="number-pad"
+                  hasValue={!!set.reps_left}
+                  onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_left', v)}
+                  colors={colors}
+                  cardStyles={cardStyles}
+                />
+                <SetInput
+                  value={set.reps_right ?? ''}
+                  placeholder="R"
+                  keyboardType="number-pad"
+                  hasValue={!!set.reps_right}
+                  onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_right', v)}
+                  colors={colors}
+                  cardStyles={cardStyles}
+                />
+              </View>
+            ) : (
+              <SetInput
+                key={`r-${startIndex + si}-${unit}`}
+                value={set.reps}
+                placeholder="повт."
+                keyboardType="number-pad"
+                hasValue={!!set.reps}
+                onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
+                colors={colors}
+                cardStyles={cardStyles}
+              />
+            )
+          )}
+        </View>
+        <View style={cardStyles.setInputsRow}>
+          {rowSets.map((set, si) => (
+            <View key={`fb-${startIndex + si}`} style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              {shouldShowRpeChip(set, startIndex + si) && (
+                <SetFeedbackChip
+                  rpe={set.rpe ?? null}
+                  onPress={() => onOpenFeedback(startIndex + si)}
+                  colors={colors}
+                />
+              )}
+              {/* ENG-13: Warmup chip — toggle per-set warmup flag */}
+              <PressableScale
+                onPress={() => onToggleWarmup(startIndex + si)}
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: SPACING.xs,
+                  paddingVertical: 4,
+                  borderRadius: BORDER_RADIUS.sm,
+                  backgroundColor: set.isWarmup ? colors.primary : colors.surfaceSecondary,
+                  borderWidth: 1,
+                  borderColor: set.isWarmup ? colors.primary : colors.border,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.captionSmall,
+                    {
+                      color: set.isWarmup ? colors.textInverse : colors.textSecondary,
+                      fontWeight: '600',
+                    },
+                  ]}
+                >
+                  Разминка
+                </Text>
+              </PressableScale>
+            </View>
+          ))}
+        </View>
       </View>
-    </View>
-  );
-});
+    );
+  },
+  // FZ-2 (аудит 28.09): компаратор строк. rowSets — срез общего массива (новый
+  // ref каждый рендер), но SetData иммутабельны: изменённый сет даёт новый
+  // объект, остальные сохраняют ссылки → поэлементное сравнение пропускает
+  // ре-рендер строк, где ничего не поменялось. Остальные props сверяются по
+  // === (их идентичность стабилизирована useCallback/ref).
+  function setRowPropsEqual(a: SetRowProps, b: SetRowProps) {
+    if (a.rowSets !== b.rowSets) {
+      if (a.rowSets.length !== b.rowSets.length) return false;
+      for (let i = 0; i < a.rowSets.length; i++) {
+        if (a.rowSets[i] !== b.rowSets[i]) return false;
+      }
+    }
+    return (
+      a.startIndex === b.startIndex &&
+      a.exerciseIndex === b.exerciseIndex &&
+      a.updateSet === b.updateSet &&
+      a.unit === b.unit &&
+      a.toDisplay === b.toDisplay &&
+      a.fromDisplay === b.fromDisplay &&
+      a.colors === b.colors &&
+      a.cardStyles === b.cardStyles &&
+      a.onOpenFeedback === b.onOpenFeedback &&
+      a.onToggleWarmup === b.onToggleWarmup &&
+      a.shouldShowRpeChip === b.shouldShowRpeChip &&
+      a.isUnilateral === b.isUnilateral
+    );
+  }
+);
 
 // ============================================================================
 // SETS GRID (основной компонент)
@@ -479,6 +508,11 @@ export const SetsGrid = memo(function SetsGrid({
   onClearPainQuick,
   onOpenPainDetail,
 }: SetsGridProps) {
+  // FZ-2 (аудит 28.09): ref-зеркало sets для колбэков — set-объекты иммутабельны
+  // (updateSet заменяет только изменённый объект), поэтому строки можно мемоить
+  // поэлементно; сами колбэки не должны пересоздаваться на каждый коммит.
+  const setsRef = useRef(sets);
+  setsRef.current = sets;
   // FEAT-1.5: Plate Math UI
   const { getBarWeight } = useBarbellSettings();
   const barWeight = getBarWeight(equipment, unit);
@@ -500,10 +534,12 @@ export const SetsGrid = memo(function SetsGrid({
       const prompt = rpeSettings.prompt;
       if (prompt === 'off') return false;
       if (prompt === 'always') return true;
-      if (prompt === 'last-set') return setIndex === sets.length - 1;
+      // FZ-2 (аудит 28.09): длина через ref — колбэк не меняет идентичность
+      // при addSet и не ломает memo(SetRow) лишними ре-рендерами строк.
+      if (prompt === 'last-set') return setIndex === setsRef.current.length - 1;
       return true;
     },
-    [rpeSettings.prompt, sets.length, isSetCompleted]
+    [rpeSettings.prompt, isSetCompleted]
   );
 
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
@@ -986,20 +1022,20 @@ export const SetsGrid = memo(function SetsGrid({
 
   // UX-RPE-1: тап по чипу открывает инлайн-редактор (гейт как раньше — только
   // завершённый сет; незавершённым RPE не заводим).
+  // FZ-2: sets читается из ref — идентичность колбэка стабильна, memo(SetRow) работает.
   const handleOpenFeedback = useCallback(
     (setIndex: number) => {
-      const set = sets[setIndex];
+      const set = setsRef.current[setIndex];
       if (!set || !isSetCompleted(set)) return;
       editingIdxSV.value = setIndex;
-      totalSetsSV.value = sets.length;
+      totalSetsSV.value = setsRef.current.length;
       setEditorKind('rpe');
       setEditorSetIndex(setIndex);
       setEditorReady(false);
       setEditorMounted(true);
       setFeedbackSetIndex(setIndex);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sets, isSetCompleted]
+    [isSetCompleted, editingIdxSV, totalSetsSV]
   );
 
   // Подтверждение вторым тапом: запись патча + морфинг таблицы обратно.
@@ -1029,6 +1065,7 @@ export const SetsGrid = memo(function SetsGrid({
   // Mark 2 as warmup -> +2 sets (total 6: 2 warmup + 4 working), etc.
   const handleToggleWarmup = useCallback(
     (setIndex: number) => {
+      const sets = setsRef.current; // FZ-2: ref вместо deps — стабильная идентичность
       const set = sets[setIndex];
       const newIsWarmup = !set.isWarmup;
 
@@ -1051,7 +1088,7 @@ export const SetsGrid = memo(function SetsGrid({
         }
       }
     },
-    [sets, exerciseIndex, updateSetFeedback, addSet, targetSets]
+    [exerciseIndex, updateSetFeedback, addSet, targetSets]
   );
 
   // Фикс «пустой рамки»: обёртка подсказки рендерится только если хотя бы один
@@ -1177,10 +1214,7 @@ export const SetsGrid = memo(function SetsGrid({
         <Reveal origin="top-center">
           <View
             style={{
-              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.sm,
               paddingVertical: SPACING.sm,
               backgroundColor: withAlpha(colors.primary, 0.102),
               borderBottomWidth: 1,
@@ -1188,11 +1222,37 @@ export const SetsGrid = memo(function SetsGrid({
             }}
             accessibilityLiveRegion="polite"
           >
-            <Trophy size={18} color={colors.primary} strokeWidth={2.2} />
-            <PrPop
-              label={`PR · ${toDisplay(String(prMoment))} ${unit === 'kg' ? 'кг' : 'lb'}`}
-              colors={colors}
-            />
+            {/* UX-6 (29.09): явная надпись «Новый рекорд» над строкой PR —
+                «PR · 77 кг» не читалось как рекорд, а на длинных весах
+                обрезалось. */}
+            <Text
+              style={[
+                typography.captionSmall,
+                {
+                  color: colors.primary,
+                  fontWeight: '700',
+                  letterSpacing: 0.6,
+                  textTransform: 'uppercase',
+                  marginBottom: 2,
+                },
+              ]}
+            >
+              Новый рекорд
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.sm,
+              }}
+            >
+              <Trophy size={18} color={colors.primary} strokeWidth={2.2} />
+              <PrPop
+                label={`PR · ${toDisplay(String(prMoment))} ${unit === 'kg' ? 'кг' : 'lb'}`}
+                colors={colors}
+              />
+            </View>
           </View>
         </Reveal>
       )}
