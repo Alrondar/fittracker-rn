@@ -80,8 +80,10 @@ export interface ProgressionInput {
   sleepHours?: number | null;
   /** P0 Вариант B: уровень стресса (1–5) для оценки восстановления. */
   stressLevel?: number | null;
-  /** P1: Фаза менструального цикла для корректировки рекомендаций. */
-  cyclePhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | null;
+  /** P1: Фаза менструального цикла для корректировки рекомендаций.
+   * CYC-2 (29.09): 'delayed' — задержка/нет свежих данных; hold веса
+   * применяется только к luteal/ovulation, delayed проходит без гейта. */
+  cyclePhase?: 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | 'delayed' | null;
   /** Фича 2: Целевой RPE для упражнения (1-10). Если задан, прогрессия учитывает не только повторы, но и субъективную сложность. */
   targetRpe?: number | null;
   /** P1.1: Политика прогрессии. */

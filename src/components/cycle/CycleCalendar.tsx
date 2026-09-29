@@ -202,7 +202,8 @@ export function CycleCalendar({
       <View
         style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginTop: SPACING.md }}
       >
-        {(['menstrual', 'follicular', 'ovulation', 'luteal'] as const).map((phase) => (
+        {/* CYC-2 (29.09): 'delayed' — серые дни «нет свежих данных/задержка» */}
+        {(['menstrual', 'follicular', 'ovulation', 'luteal', 'delayed'] as const).map((phase) => (
           <View key={phase} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <View
               style={{

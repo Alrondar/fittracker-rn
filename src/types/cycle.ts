@@ -1,6 +1,10 @@
-export type CycleEventType = 'menstruation_start' | 'menstruation_end' | 'ovulation_start' | 'ovulation_end';
+export type CycleEventType =
+  'menstruation_start' | 'menstruation_end' | 'ovulation_start' | 'ovulation_end';
 
-export type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+// CYC-2 (29.09): 'delayed' — за пределами ожидаемого начала следующего цикла
+// (средняя длина + grace). Не фаза в физиологическом смысле: «данных нет,
+// вероятна задержка» — движок по ней hold веса НЕ применяет.
+export type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal' | 'delayed';
 
 export interface CycleEvent {
   id: string;
