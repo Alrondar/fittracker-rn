@@ -1214,10 +1214,7 @@ export const SetsGrid = memo(function SetsGrid({
         <Reveal origin="top-center">
           <View
             style={{
-              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: SPACING.sm,
               paddingVertical: SPACING.sm,
               backgroundColor: withAlpha(colors.primary, 0.102),
               borderBottomWidth: 1,
@@ -1225,11 +1222,37 @@ export const SetsGrid = memo(function SetsGrid({
             }}
             accessibilityLiveRegion="polite"
           >
-            <Trophy size={18} color={colors.primary} strokeWidth={2.2} />
-            <PrPop
-              label={`PR · ${toDisplay(String(prMoment))} ${unit === 'kg' ? 'кг' : 'lb'}`}
-              colors={colors}
-            />
+            {/* UX-6 (29.09): явная надпись «Новый рекорд» над строкой PR —
+                «PR · 77 кг» не читалось как рекорд, а на длинных весах
+                обрезалось. */}
+            <Text
+              style={[
+                typography.captionSmall,
+                {
+                  color: colors.primary,
+                  fontWeight: '700',
+                  letterSpacing: 0.6,
+                  textTransform: 'uppercase',
+                  marginBottom: 2,
+                },
+              ]}
+            >
+              Новый рекорд
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: SPACING.sm,
+              }}
+            >
+              <Trophy size={18} color={colors.primary} strokeWidth={2.2} />
+              <PrPop
+                label={`PR · ${toDisplay(String(prMoment))} ${unit === 'kg' ? 'кг' : 'lb'}`}
+                colors={colors}
+              />
+            </View>
           </View>
         </Reveal>
       )}

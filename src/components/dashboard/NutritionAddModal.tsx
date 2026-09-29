@@ -148,10 +148,14 @@ export function NutritionAddModal({ visible, onClose, editingLog }: NutritionAdd
               <AppButton
                 key={type.value}
                 title={type.label}
+                // UX-6 (29.09): small + уменьшенный горизонтальный паддинг —
+                // «Завтрак» влезает в одну строку в 4-ряде (было «Завтр ак»).
+                size="small"
                 variant={mealType === type.value ? 'primary' : 'secondary'}
                 onPress={() => setMealType(type.value)}
                 style={{
                   flex: 1,
+                  paddingHorizontal: SPACING.sm,
                   paddingVertical: SPACING.sm,
                 }}
               />
