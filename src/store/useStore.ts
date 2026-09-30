@@ -13,10 +13,21 @@ interface AppState {
   isAuthenticated: boolean;
   userId: string | null;
   setAuth: (userId: string | null) => void;
+  /**
+   * Онбординг: свежезарегистрированный пользователь после входа ведётся не в
+   * /(tabs), а в анкету /onboarding. Ставится ТОЛЬКО в login.tsx при signUp,
+   * снимается экраном анкеты (сохранил или пропустил). Несёрверные данные —
+   * UI-стейт, живёт здесь (CLAUDE.md §2); в памяти, не персистится:
+   * рестарт приложения до прохождения анкеты = обычный вход в (tabs).
+   */
+  justRegistered: boolean;
+  setJustRegistered: (value: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
   isAuthenticated: false,
   userId: null,
   setAuth: (userId) => set({ isAuthenticated: !!userId, userId }),
+  justRegistered: false,
+  setJustRegistered: (value) => set({ justRegistered: value }),
 }));

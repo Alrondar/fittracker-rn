@@ -43,6 +43,7 @@ Code search — первичный источник фактов; этот фа�
 | Экран|Роль|Основные зависимости|
 | ---|---|---|
 | app/(auth)/|root auth flow: login / reset / update password|authService , root _layout (CLAUDE.md §2)|
+| app/onboarding/index.tsx|анкета после регистрации (необязательная, есть «Пропустить»); гейт ведёт сюда по флагу `justRegistered` (useStore)|GoalsStep1/2/3 (общие с goals), goalsService.markOnboardingDone, macroCalculator, metricsService|
 | app/(tabs)/index.tsx|Dashboard / Today|useDashboard , dashboard services/widgets, readiness|
 | app/(tabs)/programs.tsx|каталог программ|usePrograms , ProgramCard, import|
 | app/(tabs)/workouts.tsx|список/план тренировок|useWorkouts, phases/weeks, SheetShell (фильтр), компактный ListHeader (прогресс). Первая карточка списка = якорь «Следующая» (UX-15).|

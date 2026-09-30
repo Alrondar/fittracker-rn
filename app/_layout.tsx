@@ -51,7 +51,7 @@ function ThemedStatusBar() {
 }
 
 function RootLayoutContent() {
-  const { setAuth, isAuthenticated } = useStore();
+  const { setAuth, isAuthenticated, justRegistered } = useStore();
   const router = useRouter();
   const segments = useSegments() as string[];
   const { colors } = useTheme();
@@ -134,9 +134,12 @@ function RootLayoutContent() {
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup && !isUpdatePassword) {
-      router.replace('/(tabs)');
+      // Онбординг: свежему регистрацияну — анкета вместо табов (флаг снимает
+      // сам экран анкеты на «сохранил»/«пропустил»; рестарт приложения его
+      // сбрасывает — анкета необязательная).
+      router.replace(justRegistered ? '/onboarding' : '/(tabs)');
     }
-  }, [isLoading, isAuthenticated, segments, router]);
+  }, [isLoading, isAuthenticated, justRegistered, segments, router]);
 
   if (isLoading || !fontsLoaded) {
     return (
@@ -166,6 +169,9 @@ function RootLayoutContent() {
       >
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        {/* Онбординг-анкета: транзитный root-экран после регистрации — fade,
+            как и другие корневые сегменты (replace, не drill-in). */}
+        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
         <Stack.Screen
           name="exercise/[id]"
           options={{
