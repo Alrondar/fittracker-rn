@@ -127,6 +127,9 @@ export const createSheetCardStyles = (colors: any) =>
     } as TextStyle,
     dayCardInfo: {
       flex: 1,
+      // WEB-ZOOM-1 прогон 30.09: min-width:auto в RNW не даёт строке
+      // сократиться — длинное название дня растягивает ряд за карточку.
+      minWidth: 0,
     } as ViewStyle,
     dayCardName: {
       ...typography.labelBold,
@@ -162,12 +165,14 @@ export const createSheetCardStyles = (colors: any) =>
     } as ViewStyle,
     dayCardExerciseItemBody: {
       flex: 1,
+      minWidth: 0,
     } as ViewStyle,
     dayCardExerciseItemName: {
       ...typography.labelBold,
       color: colors.textPrimary,
       lineHeight: 20,
       marginBottom: 2,
+      minWidth: 0,
     } as TextStyle,
     dayCardExerciseSchemePill: {
       paddingHorizontal: SPACING.md,
@@ -176,6 +181,8 @@ export const createSheetCardStyles = (colors: any) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
+      // Пилюля схемы — «скала»: при длинном названии жмём текст, не её.
+      flexShrink: 0,
     } as ViewStyle,
     dayCardExerciseSchemePillText: {
       ...typography.labelBold,

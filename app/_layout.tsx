@@ -18,7 +18,12 @@ import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
 // feedback делегирует в системный Alert.alert).
 import { FeedbackDialog } from '../src/components/ui/FeedbackDialog';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
+import { applyWebFixes } from '../src/lib/webFixes';
 import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
+
+// WEB-ZOOM-1: пол 16px для полей ввода на тач-устройствах (иначе iOS Safari
+// зумит страницу при фокусе и не возвращает масштаб). Идемпотентно.
+applyWebFixes();
 
 if (Platform.OS !== 'web' && __DEV__) {
   // Заглушаем ошибку keep-awake в dev-режиме

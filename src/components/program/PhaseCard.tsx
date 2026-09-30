@@ -14,7 +14,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
+// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, long-press drag на вебе.
 import { ReorderList, RowDecorator } from './ReorderList';
 import { DayCard } from './DayCard';
 import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
@@ -138,7 +138,7 @@ export function PhaseCard({
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setExpanded(!expanded);
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+          style={{ flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 }}
           haptic="none"
         >
           <View
@@ -154,7 +154,7 @@ export function PhaseCard({
           >
             <PhaseIcon size={18} color={phaseColor} strokeWidth={2} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[typography.labelBold, { color: colors.textPrimary }]} numberOfLines={1}>
               {phase.name}
             </Text>
@@ -314,7 +314,7 @@ export function PhaseCard({
             </PressableScale>
           )}
 
-          {/* Дни (web: перестановка ▲▼, WEB-3b) */}
+          {/* Дни (web: long-press drag, WEB-3b) */}
           {canEditDays ? (
             <ReorderList
               data={displayDays}

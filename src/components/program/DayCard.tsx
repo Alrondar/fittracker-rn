@@ -11,7 +11,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
+// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, long-press drag на вебе.
 import { ReorderList, RowDecorator } from './ReorderList';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
 import { createCardStyles } from '../../styles/components/card';
@@ -198,7 +198,7 @@ export function DayCard({
           </PressableScale>
         )}
         <PressableScale
-          style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 }}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setExpanded(!expanded);

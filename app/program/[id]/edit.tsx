@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
-// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, ▲▼ на вебе.
+// WEB-3b: ReorderList = NestableDraggableFlatList на нативе, long-press drag на вебе.
 import { ReorderList, RowDecorator } from '../../../src/components/program/ReorderList';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
@@ -184,7 +184,7 @@ export default function ProgramEditScreen() {
         <PressableScale onPress={handleCancel} style={{ padding: SPACING.xs }}>
           <ChevronLeft size={24} color={colors.textPrimary} strokeWidth={2} />
         </PressableScale>
-        <View style={{ flex: 1, marginLeft: SPACING.sm }}>
+        <View style={{ flex: 1, marginLeft: SPACING.sm, minWidth: 0 }}>
           <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
             Программа › Редактирование
           </Text>
@@ -251,7 +251,7 @@ export default function ProgramEditScreen() {
           badgeStyles={badgeStyles}
         />
 
-        {/* Фазы с drag & drop (web: ▲▼, WEB-3b) */}
+        {/* Фазы с drag & drop (web: long-press drag, WEB-3b) */}
         <ReorderList
           data={phases}
           onDragEnd={({ data }) => onPhaseDragEnd(data)}
