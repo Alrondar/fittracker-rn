@@ -48,14 +48,10 @@ export async function getGoalsProfile(userId: string): Promise<GoalsProfileForm 
   if (!data) return null;
 
   const gender: GenderType | null =
-    data.gender === 'male' || data.gender === 'female'
-      ? data.gender
-      : null;
+    data.gender === 'male' || data.gender === 'female' ? data.gender : null;
 
   const goal: GoalType | null =
-    data.goal === 'lose' || data.goal === 'maintain' || data.goal === 'gain'
-      ? data.goal
-      : null;
+    data.goal === 'lose' || data.goal === 'maintain' || data.goal === 'gain' ? data.goal : null;
 
   const pharmacologyType: PharmaType =
     data.pharmacology_type === 'steroids' ||
@@ -82,17 +78,37 @@ export async function getGoalsProfile(userId: string): Promise<GoalsProfileForm 
 }
 
 export async function saveGoalsProfile(userId: string, payload: GoalsSavePayload): Promise<void> {
+  const { error } = await supabase.from('profiles').upsert(
+    {
+      id: userId,
+      ...payload,
+    },
+    {
+      onConflict: 'id',
+    }
+  );
+
+  if (error) throw error;
+}
+
+/**
+ * Онбординг: фиксирует итог анкеты в profiles.onboarding_data (JSON-колонка
+ * есть в схеме). Перезаписывает только ключ `survey` — другие данные
+ * onboarding_data не трогает (merge на стороне чтения не нужен: колонка
+ * сейчас пуста).
+ */
+export async function markOnboardingDone(
+  userId: string,
+  status: 'completed' | 'skipped'
+): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .upsert(
-      {
-        id: userId,
-        ...payload,
+    .update({
+      onboarding_data: {
+        survey: { status, at: new Date().toISOString() },
       },
-      {
-        onConflict: 'id',
-      }
-    );
+    })
+    .eq('id', userId);
 
   if (error) throw error;
 }

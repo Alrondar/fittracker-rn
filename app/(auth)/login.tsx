@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { setAuth } = useStore();
+  const { setAuth, setJustRegistered } = useStore();
   const { colors, gradients } = useTheme();
 
   const handleAuth = async () => {
@@ -39,6 +39,11 @@ export default function LoginScreen() {
         const user = await signIn(email, password);
         if (user) setAuth(user.id); // редирект в /(tabs) сделает корневой гейт по SIGNED_IN
       } else {
+        // Онбординг: флаг ставится ДО setAuth — корневой гейт (app/_layout)
+        // по нему поведёт не в /(tabs), а в анкету /onboarding.
+        // Ставится и при needsEmailConfirmation: подтверждение почты часто
+        // происходит в этой же сессии (вход с того же экрана).
+        setJustRegistered(true);
         const { user, needsEmailConfirmation } = await signUp(email, password);
         if (needsEmailConfirmation) {
           setLoading(false); // сессии нет → гейт не вмешивается, остаёмся на login
