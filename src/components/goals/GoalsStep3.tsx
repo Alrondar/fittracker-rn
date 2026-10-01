@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { Beef, Droplet, Flame, Pill, RefreshCw, Save, Wheat } from 'lucide-react-native';
+import {
+  AlertTriangle,
+  Beef,
+  Droplet,
+  Flame,
+  Pill,
+  RefreshCw,
+  Save,
+  Wheat,
+} from 'lucide-react-native';
 import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
@@ -55,6 +64,12 @@ export function GoalsStep3({
 
   const pharmaLabel = PHARMA_TYPES.find((p) => p.value === pharmaType)?.label;
 
+  // FD12-8: фактическая калорийность макросов. Если floors белков/жиров перекрывают
+  // бюджет, углеводы схлопываются в 0 и сумма превышает цель — честно предупреждаем,
+  // НЕ меняя математику флоров (вердикт владельца 29.09). Порог 8 ккал — шум округления.
+  const deliveredCalories = proteins * 4 + fats * 9 + carbs * 4;
+  const caloriesUnreachable = deliveredCalories > calories + 8;
+
   return (
     <>
       <Text style={[typography.h3, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
@@ -63,6 +78,32 @@ export function GoalsStep3({
       <Text style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.xl }]}>
         Рекомендуемые значения на день
       </Text>
+
+      {/* FD12-8: целевые калории недостижимы при безопасных границах */}
+      {caloriesUnreachable && (
+        <AppCard
+          variant="compact"
+          style={{
+            borderColor: colors.warning,
+            borderWidth: 1,
+            backgroundColor: withAlpha(colors.warning, 0.063),
+            marginBottom: SPACING.lg,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+            <AlertTriangle
+              size={16}
+              color={colors.warning}
+              style={{ marginRight: SPACING.sm, marginTop: 2 }}
+            />
+            <Text style={[typography.caption, { color: colors.textSecondary, flex: 1 }]}>
+              Целевые {calories} ккал недостижимы при безопасных минимумах белков и жиров — нижней
+              границей получается {deliveredCalories} ккал. Жиры и белок оставлены в норме, поэтому
+              план питания чуть калорийнее цели.
+            </Text>
+          </View>
+        </AppCard>
+      )}
 
       {/* Плашка фармакологии */}
       {usePharma && pharmaType && pharmaLabel && (

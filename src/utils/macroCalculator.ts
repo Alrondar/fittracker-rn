@@ -18,6 +18,15 @@ export interface MacroResult {
   proteins: number;
   fats: number;
   carbs: number;
+  /**
+   * FD12-8: фактическая сумма ккал, которую дают macros (proteins*4 + fats*9 + carbs*4).
+   * Равна `calories` в норме, но when безопасные floors белков/жиров перекрывают
+   * бюджет калорий углеводы схлопываются в 0 и `deliveredCalories > calories`.
+   * Числа `calories/proteins/fats/carbs` не меняются — это только сигнал для UI.
+   */
+  deliveredCalories: number;
+  /** FD12-8: floors не позволяют уложиться в `calories` (углеводы схлопнуты в 0). */
+  caloriesUnreachable: boolean;
 }
 
 /**
@@ -110,10 +119,17 @@ export function calculateMacros(input: MacroInput): MacroResult {
   const remainingCalories = Math.max(0, targetCalories - proteinCalories - fatCalories);
   const targetCarbs = Math.round(remainingCalories / 4);
 
+  // FD12-8: если floors белков/жиров съели весь бюджет, remaining схлопнут в 0 и
+  // фактическая калорийность превышает цель — молча это показывать нельзя.
+  const deliveredCalories = proteinCalories + fatCalories + targetCarbs * 4;
+  const caloriesUnreachable = deliveredCalories > Math.round(targetCalories) + 8;
+
   return {
     calories: Math.round(targetCalories),
     proteins: targetProteins,
     fats: targetFats,
     carbs: targetCarbs,
+    deliveredCalories,
+    caloriesUnreachable,
   };
 }

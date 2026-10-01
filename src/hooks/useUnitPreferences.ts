@@ -60,6 +60,23 @@ export const weightFromDisplay = (displayStr: string, unit: WeightUnit): string 
 export const weightPlaceholder = (unit: WeightUnit): string =>
   unit === 'kg' ? 'вес (кг)' : 'вес (lbs)';
 
+/** FD12-7: дюймы — имперская пара килограмму (PreferencesSection: «Фунты, дюймы»). */
+export const CM_PER_INCH = 2.54;
+
+/** см-строка из стейта → строка для показа (кг-режим = без изменений). */
+export const heightToDisplay = (cmStr: string, unit: WeightUnit): string => {
+  if (cmStr.trim() === '') return '';
+  if (unit === 'kg') return cmStr;
+  return String(roundToHalf(toNum(cmStr) / CM_PER_INCH));
+};
+
+/** строка из инпута (в показываемой единице) → см-строка для стейта/БД. */
+export const heightFromDisplay = (dispStr: string, unit: WeightUnit): string => {
+  if (dispStr.trim() === '') return '';
+  if (unit === 'kg') return dispStr;
+  return String(Math.round(toNum(dispStr) * CM_PER_INCH));
+};
+
 /**
  * P1-A (дизайн-аудит 23.09.2026): единый хелпер отображения массы.
  * Хранение — всегда кг; конвертация только на границе показа.

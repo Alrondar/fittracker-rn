@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text } from 'react-native';
 import { feedback } from '../../lib/feedback';
 import { PressableScale } from '../ui/PressableScale';
@@ -11,8 +11,53 @@ import { AppInput } from '../ui/AppInput';
 import { AppCard } from '../ui/AppCard';
 import { GENDERS } from '../../constants/goals';
 import { GenderCard } from './GoalsComponents';
+import {
+  useUnitPreferences,
+  weightToDisplay,
+  weightFromDisplay,
+  heightToDisplay,
+  heightFromDisplay,
+} from '../../hooks/useUnitPreferences';
 import type { GenderType } from '../../services/goalsService';
 import type { ThemeColors } from '../../constants/theme';
+
+/**
+ * FD12-7: контролируемое поле ввода с конвертированной единицей.
+ * `canonical` — значение в канонических см/кг (стейт родителя/БД); локальный
+ * `text` — то, что видит пользователь в своей единице. Вверх пушится канон.
+ * Синхронизация из канона — только при внешней правке (праффил) или смене
+ * единицы, чтобы округление не мешало набору.
+ */
+function useUnitField(
+  canonical: string,
+  unit: 'kg' | 'lb',
+  toDisplay: (v: string, unit: 'kg' | 'lb') => string,
+  fromDisplay: (v: string, unit: 'kg' | 'lb') => string,
+  onCanonicalChange: (v: string) => void
+) {
+  const [text, setText] = useState(() => toDisplay(canonical, unit));
+  const lastPushed = useRef<string | null>(null);
+  const prevUnit = useRef(unit);
+
+  useEffect(() => {
+    const unitChanged = prevUnit.current !== unit;
+    prevUnit.current = unit;
+    const echo = canonical === lastPushed.current;
+    // Внешняя правка канона (праффил) или смена единицы — пересчитать показ.
+    if (!echo || unitChanged) {
+      setText(toDisplay(canonical, unit));
+    }
+  }, [canonical, unit]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onChangeText = (next: string) => {
+    setText(next);
+    const canonicalNext = fromDisplay(next, unit);
+    lastPushed.current = canonicalNext;
+    onCanonicalChange(canonicalNext);
+  };
+
+  return { text, onChangeText };
+}
 
 interface GoalsStep1Props {
   gender: GenderType | null;
@@ -51,6 +96,14 @@ export function GoalsStep1({
   const bodyFatValue = bodyFatPercentage != null ? String(bodyFatPercentage) : '';
   const bodyFatInvalid =
     useBodyFat && (bodyFatPercentage == null || bodyFatPercentage < 1 || bodyFatPercentage > 60);
+
+  // FD12-7: рост/вес вводятся в выбранных пользователем единицах, но в родительский
+  // стейт (и дальше в БД) уходят канонические см/кг. Отображаемый текст живёт локально,
+  // чтобы округление при конвертации не «прыгало» на каждый введённый символ;
+  // пересинхронизация — только при внешней правке канона (праффил) или смене единицы.
+  const { unit } = useUnitPreferences();
+  const heightText = useUnitField(height, unit, heightToDisplay, heightFromDisplay, onHeightChange);
+  const weightText = useUnitField(weight, unit, weightToDisplay, weightFromDisplay, onWeightChange);
 
   const handleNext = () => {
     if (!gender || !height || !weight) {
@@ -109,18 +162,18 @@ export function GoalsStep1({
         onChangeText={onBirthDateChange}
       />
       <AppInput
-        label="Рост (см)"
-        placeholder="175"
-        value={height}
-        onChangeText={onHeightChange}
+        label={unit === 'kg' ? 'Рост (см)' : 'Рост (дюймы)'}
+        placeholder={unit === 'kg' ? '175' : '69'}
+        value={heightText.text}
+        onChangeText={heightText.onChangeText}
         keyboardType="numeric"
         icon={<Ruler size={20} color={colors.primary} />}
       />
       <AppInput
-        label="Текущий вес (кг)"
-        placeholder="70"
-        value={weight}
-        onChangeText={onWeightChange}
+        label={unit === 'kg' ? 'Текущий вес (кг)' : 'Текущий вес (lb)'}
+        placeholder={unit === 'kg' ? '70' : '155'}
+        value={weightText.text}
+        onChangeText={weightText.onChangeText}
         keyboardType="numeric"
         icon={<Weight size={20} color={colors.primary} />}
       />

@@ -7,6 +7,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings, RPE_PROMPT_DESCRIPTIONS } from '../../hooks/useRpeSettings';
 import { useBarbellSettings } from '../../hooks/useBarbellSettings';
+import { useUnitPreferences } from '../../hooks/useUnitPreferences';
 import { BARBELL_EQUIPMENT_NAMES } from '../../constants/barbellDefaults';
 import { SPACING } from '../../constants/theme';
 import { commonStyles } from '../../styles/common';
@@ -23,8 +24,11 @@ export function PreferencesSection() {
   const { settings: rpeSettings, updateSettings: updateRpeSettings } = useRpeSettings();
   const { settings: barbellSettings, updateSetting: updateBarbellSetting } = useBarbellSettings();
 
-  // ⚠️ Как и до split: локальный state без персистентности (не изменять в рамках DA-P2-8)
-  const [useImperial, setUseImperial] = useState(false);
+  // FD12-7: тоггл единиц теперь связан с персистентным useUnitPreferences (AsyncStorage),
+  // а не с локальным useState, который сбрасывался при перезаходе и ни на что не влиял.
+  // «Фунты/дюймы» = lb, «Килограммы/сантиметры» = kg — тот же выбор ест GoalsStep1.
+  const { unit, setUnit } = useUnitPreferences();
+  const useImperial = unit === 'lb';
   const [workoutReminders, setWorkoutReminders] = useState(true);
 
   return (
@@ -35,7 +39,7 @@ export function PreferencesSection() {
         title="Единицы измерения"
         description={useImperial ? 'Фунты, дюймы' : 'Килограммы, сантиметры'}
         value={useImperial}
-        onToggle={setUseImperial}
+        onToggle={(v) => setUnit(v ? 'lb' : 'kg')}
       />
 
       {/* FEAT-1.5: Настройка веса грифа */}
