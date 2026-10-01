@@ -1,4 +1,10 @@
-import { SPACING, BORDER_RADIUS, fontScale, withAlpha } from '../../constants/theme';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  fontScale,
+  withAlpha,
+  ON_ACCENT_TEXT,
+} from '../../constants/theme';
 
 // Локальный alias, чтобы не тянуть import в каждое поле; fontScale уже учитывает ширину.
 const fs = fontScale;
@@ -43,7 +49,7 @@ export const createDashboardStyles = (colors: any) => ({
   },
   programDay: {
     fontSize: fs(16),
-    color: 'rgba(255,255,255,0.9)',
+    color: ON_ACCENT_TEXT,
     marginBottom: SPACING.lg,
   },
   programProgress: {

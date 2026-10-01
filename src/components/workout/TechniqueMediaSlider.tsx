@@ -7,7 +7,13 @@ import { FONT_FAMILIES } from '../../constants/fonts';
 import { Image as ImageIcon } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  ON_MEDIA_SCRIM,
+  ON_MEDIA_TEXT,
+  ON_MEDIA_TEXT_DIM,
+} from '../../constants/theme';
 
 const AUTOPLAY_MS = 3000;
 
@@ -64,7 +70,7 @@ function Dot({ active, onPress }: { active: boolean; onPress: () => void }) {
           {
             height: 6,
             borderRadius: 3,
-            backgroundColor: active ? '#FFFFFF' : 'rgba(255,255,255,0.55)',
+            backgroundColor: active ? ON_MEDIA_TEXT : ON_MEDIA_TEXT_DIM,
           },
           style,
         ]}
@@ -175,14 +181,14 @@ export function TechniqueMediaSlider({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          backgroundColor: 'rgba(0,0,0,0.55)',
+          backgroundColor: ON_MEDIA_SCRIM,
           paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: BORDER_RADIUS.sm,
         }}
       >
-        <ImageIcon size={11} color="#FFFFFF" />
-        <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
+        <ImageIcon size={11} color={ON_MEDIA_TEXT} />
+        <Text style={{ color: ON_MEDIA_TEXT, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
           ТЕХНИКА
         </Text>
       </View>
@@ -210,7 +216,7 @@ export function TechniqueMediaSlider({
               position: 'absolute',
               bottom: SPACING.sm,
               right: SPACING.sm,
-              backgroundColor: 'rgba(0,0,0,0.55)',
+              backgroundColor: ON_MEDIA_SCRIM,
               paddingHorizontal: 6,
               paddingVertical: 2,
               borderRadius: BORDER_RADIUS.sm,
@@ -218,7 +224,7 @@ export function TechniqueMediaSlider({
           >
             <Text
               style={{
-                color: '#FFFFFF',
+                color: ON_MEDIA_TEXT,
                 fontSize: 10,
                 fontWeight: '700',
                 fontFamily: FONT_FAMILIES.textBold,
