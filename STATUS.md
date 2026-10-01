@@ -29,7 +29,7 @@
 | SCALE-2 | Monitoring | 🟢 | 🔲 | Sentry до production build (отложено) |
 | RPC-1…RPC-3 | RPC | — | ✅ | Security/transaction RPC реализованы |
 | DATA-1 | Data migration | — | ✅ | Reference data (equipment/injuries/alternatives) полностью на normalized tables; legacy columns dropped |
-| PERF-8, PERF-10|Performance/Design | 🟠 |🔲|См. секции 12 и 13: baseline метрик, React Query audit. PERF-9 — ✅ (FlashList, §13)|
+| PERF-8, PERF-10 |Performance/Design | 🟠 |🟡|PERF-10 — ✅ 01.10 (queryPolicy, см. §13). PERF-8 — 🟡 инструментация готова, baseline ждёт прогона (см. секции 12 и 13). PERF-9 — ✅ (FlashList, §13)|
 | DS-1 | Design system | 🟠 | ✅ | Аудит токенов/типографики/spacing/states завершён. Контраст textTertiary исправлен (WCAG 2.1 AA). Этап H4: accessibilityRole/Label/Hint во всех новых поверхностях (Фичи 1–7, UX-15): StrengthLevelBadge, WeeklyReviewSection, StatusCard (readiness pips, cycle/injury/forecast/pain chips), ExerciseSettingsSheet (степперы/интенсивность/save), workouts.tsx (sticky/segmented/items/skip sheet). PainTrendSheet/WorkoutForecastSheet — без интерактивных элементов, изменений не требуют. |
 | DS-2 | Design system | 🟠 | ✅ | Bottom Tab Bar: внедрён паттерн Pill Highlight (PRODUCT.md §3.6). Активный таб имеет pill-shaped background (`colors.primary`), контрастный цвет иконки/текста (`textInverse`), увеличенный `strokeWidth` (2) и жирный текст (`600`). Заливка иконок убрана для сохранения calm interface и предотвращения визуальной перегрузки. |
 
@@ -410,18 +410,22 @@ CI-1 → CI-2 → CI-3 / CI-4 → CI-5 → CI-6 → CI-7
 
 Baseline — после первого замера (REL-5 / PERF-9). Любая оптимизация начинается с измерения, а не с предположения.
 
+**Перф-гарнесса (PERF-8, 01.10).** Все 4 метрики инструментированы через `src/utils/perf.ts` (`perfMark`/`perfSince`/`perfPaint`, `useFreezeDetector`) — dev-only (`ENABLED = __DEV__`, в релизе нулевой оверхед). Точки: Dashboard — render-guard на ref, `tti:dash-mount` → perfPaint при `!isPending && tabReady`; экран тренировки — существующий TTI (`tti:mount`→`data-loaded`→`interactive`) + `loadWorkout` breakdown; запись сета — `set:commit` → perfPaint (коммит значения ячейки → кадр, НЕ включает debounce 350 мс и сетевой flush); скролл справочника — `useFreezeDetector` логирует `[FREEZE]` при блоке JS >100 мс.
+
+**Как снять baseline (вариант A, руки владельца):** dev-бандл на реальном устройстве (`npx expo start`, тест-аккаунт), Metro-консоль. Скрипт ×3 повторов: ① холодный старт приложения → дождаться контента Главной; ② открыть тренировку → дождаться таблицы сетов; ③ на наборе ввести вес+повторы в 3 сета (коммит каждого); ④ быстрый скролл справочника на 2 экрана вниз. Собрать `[PERF]`/`[FREEZE]` строки, прислать лог. Методическая оговорка: dev JS в 2–5 раз медленнее release, поэтому baseline — опора для сравнения «до/после» между собой, а не абсолютные пользовательские мс. Числа вносятся в таблицу после первого полного прогона; обновлять после каждой существенной оптимизации (§16.6).
+
 | Метрика | Цель | Текущее |
 |---|---|---|
-| Dashboard cold start → interactive | baseline после первого замера | не измерено |
-| Mount workout screen (`workout/[id].tsx`) | baseline после первого замера | не измерено |
-| Set logging (tap → save) | no dropped frames | не измерено |
-| Scroll списка упражнений (pagination 40/page) | no dropped frames | не измерено |
+| Dashboard cold start → interactive | baseline после первого замера | instrumented (`[PERF] TTI: Dashboard mount → контент`); ждёт прогона |
+| Mount workout screen (`workout/[id].tsx`) | baseline после первого замера | instrumented (`[PERF] TTI: mount → interactive (полный)`, `loadWorkout: итого`); ждёт прогона |
+| Set logging (tap → save) | no dropped frames | instrumented (`[PERF] Сет: коммит → кадр`); ждёт прогона |
+| Scroll списка упражнений (pagination 40/page) | no dropped frames | instrumented (`[FREEZE]` >100 мс на справочнике); ждёт прогона |
 
 ## 13. Open technical debt (design / performance)
 
 | ID | Пр. | Статус | Цель |
 |---|---:|---|---|
-| PERF-8 | 🟠 | 🔲 | Baseline-метрики workout screen и logging (см. секцию 12) |
+| PERF-8 | 🟠 | 🟡 | Baseline-метрики workout screen и logging (см. секцию 12). Инструментация готова 01.10 (все 4 метрики §12 через `perf.ts` `perfMark/perfPaint/useFreezeDetector`, dev-only; Dashboard TTI + workout TTI + set commit→paint + `[FREEZE]` на скролле справочника; заодно main догнал web-починку WEB-BUG-11 — `ENABLED=__DEV__`, `FREEZE_IN_RELEASE` удалён). Остаток: снять числа прогоном скрипта §12 на устройстве (руки владельца) и внести в таблицу — до этого baseline не зафиксирован |
 | PERF-9 | 🟡 | ✅ | библиотека упражнений: основной список переведён на @shopify/flash-list 2.x (ROADMAP I3) |
 | PERF-10 | 🟡 | ✅ | Аудит 01.10. **N+1 не найдено**: `fetchWorkoutSession` — 3 каскада по data-зависимостям, тяжёлая часть в `Promise.all`, все выборки батчевые `.in('id', …)`; `getHistory` — 1 пагинированный запрос + 1 батч имён программ; `getWorkoutsData` — серийность обязательна (2-й запрос использует program_id). Алгоритмические задержки (альтернативы/разминка per-exercise) — ленивые by design (SCR-1/WARMUP-1). **Найдено и исправлено**: (1) реальный дефект — шесть `staleTime: Infinity` без `gcTime`: дефолт RQ v5 gcTime=5 мин уничтожает «вечный» кэш через 5 мин после отписки → следующая монтировка = сетевой запрос (справочник, словари фильтров, правила травм, противопоказания, детали упражнения); (2) `useWeeklyNutrition` staleTime 30 с — единственный «частый» тир, при этом запись питания инвалидирует `['weeklyNutrition']` (queryInvalidation) → избыточная страховка, умножала фоновые рефетчи; (3) дрейф ~30 литералов (2м/5м/10м/1ч/Infinity/30с) в 4 форматах по 26 файлам — нарушение «один факт — один владелец». **Лечение**: `src/lib/queryPolicy.ts` — тир-лист STATIC (Infinity+gcTime сутки)/DAILY (1ч+gcTime сутки)/SLOW (5м, он же глобальный дефолт `_layout`)/FAST (2м, списки с неполной инвалидацией); все места переведены на spread `...Q.*` (кодомод `scripts`-одноразовый, вне репо; 4 места в `app/` доведены вручную). Семантика мест с изменённым effective-значением (todayPain/cycleEvents 10м→5м, weeklyNutrition 30с→5м, workoutProgramInfo 10м→5м): свежее, не старее; свои записи по-прежнему доставляются инвалидацией. Инвариант: ключи пре-фетча (`useTabPrefetch`) используют те же токены, что и экраны-потребители. gcTime 30 мин forecast оставлен явно. Gates: tsc 0, eslint 0 (29 файлов). Device-smoke: открыть Справочник → уйти → вернуться (после >5 мин в фоне повторного запроса словарей быть не должно). Зеркало — мержем в web-port |
 | PERF-11 | 🟡 | ✅ | Фризы при переключении табов + «блоки без прелоадера» (28.09). Root cause: тяжёлые табы монтируются синхронно в момент таб-анимации (lazy tabs + unfreeze), возврат в таб = unfreeze-коммит поверх анимации. Сделано: `useDeferredTabContent` (скелетон до конца анимации + 2 кадра, страховка 600 мс) на Главная/Прогресс/Профиль; `useTabPrefetch` (стаггер-группы workouts/history → progress/muscleStats → programs 'my' → exercises+словари после `runAfterInteractions`); `LoadingChip` поверх полноэкранных скелетонов всех 6 табов (решение владельца: скелетон остаётся, загрузка явна). Требует device-проверки |

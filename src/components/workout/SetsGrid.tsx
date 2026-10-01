@@ -67,6 +67,7 @@ import {
 } from '../../engine/progression';
 import type { ProgressionContext } from '../../engine/progression';
 import { RecommendationCard } from './RecommendationCard';
+import { perfMark, perfPaint } from '../../utils/perf';
 
 // COACH-3: фиксированный набор причин отклонения (ROADMAP C2).
 // Коды — machine-readable (для аналитики), лейблы — user-facing.
@@ -167,7 +168,11 @@ const SetInput = memo(function SetInput({
     }
     if (localRef.current !== lastSentRef.current) {
       lastSentRef.current = localRef.current;
+      // PERF-8 baseline (dev-only): «коммит значения ячейки → кадр» — стоимость
+      // ре-рендера сетов. Замер не включает debounce 350мс и сетевой flush.
+      perfMark('set:commit');
       commitRef.current(localRef.current);
+      perfPaint('set:commit', 'Сет: коммит → кадр');
     }
   }, []);
 
