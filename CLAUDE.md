@@ -137,6 +137,11 @@ style={{ backgroundColor: colors.primary }}
 
 Не добавлять hardcoded colors. Spacing/radius — canonical constants.
 
+Исключение (вердикт CTR-4, 01.10): фиксированные слои поверх медиа, не следующие
+теме, — только токенами `ON_MEDIA_SCRIM` / `ON_MEDIA_TEXT` / `ON_MEDIA_TEXT_DIM` /
+`ON_ACCENT_TEXT` / `SKELETON_SHIMMER` (`src/constants/theme.ts`). Затемнения
+модалок/шторок используют тематический `colors.overlay`, не их.
+
 Визуальные правила и дизайн-скилл — `PRODUCT.md §3.1–3.6`.
 
 ### 7.1 Navigation & Toggle Tokens

@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../hooks/useTheme';
+import { SKELETON_SHIMMER } from '../constants/theme';
 
 interface SkeletonProps {
   width?: number | string;
@@ -154,7 +155,7 @@ export function ShimmerWrap({ children, style }: { children: ReactNode; style?: 
             <LinearGradient
               colors={[
                 'transparent',
-                isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.35)',
+                isDark ? SKELETON_SHIMMER.dark : SKELETON_SHIMMER.light,
                 'transparent',
               ]}
               // Диагональ вместо поворота вью: x1/y1 → x2/y2 под наклоном.
