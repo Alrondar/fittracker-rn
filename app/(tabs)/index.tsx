@@ -39,6 +39,7 @@ import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
 import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
 import { useDailyNutrition } from '../../src/hooks/useDailyNutrition';
 import { DashboardNutritionCard } from '../../src/components/dashboard/DashboardNutritionCard';
+import { perfMark, perfPaint } from '../../src/utils/perf';
 
 import type { HistoryWorkout } from '../../src/services/historyService';
 import type { NutritionLog } from '../../src/services/profileService';
@@ -47,6 +48,16 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+
+  // PERF-8 baseline: фиксируем момент первого рендера таба (однократно, паттерн
+  // как TTI в workout/[id]). Завершение замера — когда данные пришли И тяжёлое
+  // дерево смонтировано (tabReady), на кадре после коммита (perfPaint).
+  const dashMountRef = useRef(false);
+  if (!dashMountRef.current) {
+    dashMountRef.current = true;
+    perfMark('tti:dash-mount');
+  }
+  const dashPaintRef = useRef(false);
 
   const styles = useMemo(() => createDashboardStyles(colors), [colors]);
 
@@ -108,6 +119,14 @@ export default function DashboardScreen() {
   // после таб-анимации; до него пользователь видит skeleton + чип загрузки.
   const tabReady = useDeferredTabContent();
   const showSkeleton = useMinPending(isPending || !tabReady);
+
+  // PERF-8: конец замера Dashboard — данные пришли и тяжёлое дерево смонтировано
+  // (anti-flash-задержка showSkeleton в замер НЕ входит: она искусственная).
+  // Паттерн как tti:mount в workout/[id]: рендер-фазовый guard на ref.
+  if (!dashPaintRef.current && !isPending && tabReady) {
+    dashPaintRef.current = true;
+    perfPaint('tti:dash-mount', 'TTI: Dashboard mount → контент (данные+маунт)');
+  }
 
   // PERF-11: prefetch данных соседних табов (стартует после первой анимации).
   useTabPrefetch(userId);

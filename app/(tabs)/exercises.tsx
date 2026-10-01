@@ -28,11 +28,15 @@ import { MuscleGroupFilters } from '../../src/components/exercises/MuscleGroupFi
 import { ExerciseSearchBar } from '../../src/components/exercises/ExerciseSearchBar';
 import { ExerciseSortSheet } from '../../src/components/exercises/ExerciseSortSheet';
 import { ActivationFilterChip } from '../../src/components/exercises/ActivationFilterChip';
+import { useFreezeDetector } from '../../src/utils/perf';
 import type { TextInput } from 'react-native';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  // PERF-8 baseline (dev-only): логирует блокировки JS-потока >100 мс во время
+  // скролла FlashList — это метрика «Scroll списка упражнений: no dropped frames» §12.
+  useFreezeDetector();
   const searchInputRef = useRef<TextInput>(null);
   const {
     exercises,
