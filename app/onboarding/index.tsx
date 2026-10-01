@@ -28,6 +28,7 @@ import { metricsService } from '../../src/services/metricsService';
 import { todayKey } from '../../src/utils/dateKey';
 import { mapError } from '../../src/utils/errorMapper';
 import { calculateMacros } from '../../src/utils/macroCalculator';
+import { useWebKeyboardInset } from '../../src/hooks/useWebKeyboardInset';
 import {
   saveGoalsProfile,
   markOnboardingDone,
@@ -50,6 +51,8 @@ export default function OnboardingSurveyScreen() {
   const router = useRouter();
   const { userId, setJustRegistered } = useStore();
   const { colors, gradients } = useTheme();
+  // WEB-BUG-5 (остаток): клавиатура браузера не должна уводить поля шагов.
+  const webKbInset = useWebKeyboardInset();
   const queryClient = useQueryClient();
 
   // 0 — welcome, 1–3 — те же шаги, что в «Мои цели»
@@ -226,7 +229,9 @@ export default function OnboardingSurveyScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 + webKbInset }}
+        >
           {step === 0 && (
             <View>
               <View
