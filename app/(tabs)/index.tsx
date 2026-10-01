@@ -39,6 +39,7 @@ import { useWeeklySummary } from '../../src/hooks/useWeeklySummary';
 import { useTodayReadiness } from '../../src/hooks/useTodayReadiness';
 import { useDailyNutrition } from '../../src/hooks/useDailyNutrition';
 import { DashboardNutritionCard } from '../../src/components/dashboard/DashboardNutritionCard';
+import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
 import { perfMark, perfPaint } from '../../src/utils/perf';
 
 import type { HistoryWorkout } from '../../src/services/historyService';
@@ -242,6 +243,8 @@ export default function DashboardScreen() {
             >
               <Hand size={scale(18)} color={colors.primary} strokeWidth={1.8} />
             </View>
+            {/* WEB-BUG-4: в браузере нет pull-to-refresh — принудительное обновление здесь. */}
+            <WebRefreshButton onPress={onRefresh} refreshing={refreshing} />
           </View>
 
           <Text style={styles.headerSubtitle}>Всего тренировок: {data.totalWorkouts}</Text>

@@ -27,6 +27,7 @@ import { WorkoutListItemCard } from '../../src/components/workout/WorkoutListIte
 import { ActiveProgramHeaderCard } from '../../src/components/workout/ActiveProgramHeaderCard';
 import { WorkoutsFilterSheet } from '../../src/components/workout/WorkoutsFilterSheet';
 import { SkipWorkoutSheet } from '../../src/components/workout/SkipWorkoutSheet';
+import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
 
 // DA-P2-8: карточка элемента, шапка программы, sheet-ы и хелперы вынесены
 // в src/components/workout/* и src/utils/workoutsList.ts (было 726 строк).
@@ -259,10 +260,12 @@ export default function WorkoutsScreen() {
           paddingVertical: SPACING.md,
         }}
       >
-        <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
           <Text style={[typography.h3, { color: colors.textPrimary, fontWeight: '700' }]}>
             Тренировки
           </Text>
+          {/* WEB-BUG-4: веб-замена pull-to-refresh. */}
+          <WebRefreshButton onPress={onRefresh} refreshing={refreshing} />
         </View>
         {activeProgram && (
           <PressableScale

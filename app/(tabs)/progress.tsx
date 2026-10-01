@@ -43,6 +43,7 @@ import { MuscleStatsSection } from '../../src/components/progress/MuscleStatsSec
 import { profileService } from '../../src/services/profileService';
 import type { HistoryWorkout } from '../../src/services/historyService';
 import { useState } from 'react';
+import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
 
 export default function ProgressScreen() {
   const router = useRouter();
@@ -317,7 +318,16 @@ export default function ProgressScreen() {
           paddingBottom: SPACING.md,
         }}
       >
-        <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>Прогресс</Text>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <Text style={[commonStyles.headerTitle, { color: colors.textPrimary }]}>Прогресс</Text>
+          {/* WEB-BUG-4: веб-замена pull-to-refresh. */}
+          <WebRefreshButton
+            onPress={onRefresh}
+            refreshing={isHistoryFetching || isProgressFetching}
+          />
+        </View>
         <Text style={[commonStyles.headerSubtitle, { color: colors.textSecondary }]}>
           Как меняются твои тренировки и результаты
         </Text>

@@ -18,6 +18,7 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { useExercises } from '../../../hooks/useExercises';
 import { useWebKeyboardInset } from '../../../hooks/useWebKeyboardInset';
+import { WebRefreshButton } from '../../ui/WebRefreshButton';
 import { ExerciseListItem, ExerciseSortBy } from '../../../services/exercisesService';
 import { MUSCLE_GROUPS } from '../../../constants/muscleGroups';
 import { getMuscleColor, MUSCLE_COLORS } from '../../../constants/muscleColors';
@@ -449,6 +450,8 @@ export function ExercisePickerSheet({
                 Добавить упражнение
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                {/* WEB-BUG-4: в шторке нет жеста PTR (RNW RefreshControl — noop). */}
+                <WebRefreshButton onPress={onRefresh} refreshing={refreshing} />
                 <PressableScale
                   onPress={() => setShowSortSheet(true)}
                   style={{
