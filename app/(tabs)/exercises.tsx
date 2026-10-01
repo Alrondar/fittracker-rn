@@ -30,6 +30,7 @@ import { ExerciseSortSheet } from '../../src/components/exercises/ExerciseSortSh
 import { ActivationFilterChip } from '../../src/components/exercises/ActivationFilterChip';
 import { useFreezeDetector } from '../../src/utils/perf';
 import type { TextInput } from 'react-native';
+import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
@@ -187,6 +188,8 @@ export default function ExercisesScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+            {/* WEB-BUG-4: веб-замена pull-to-refresh. */}
+            <WebRefreshButton onPress={onRefresh} refreshing={refreshing} />
             <PressableScale
               onPress={() => setShowSortSheet(true)}
               style={{

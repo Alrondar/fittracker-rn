@@ -42,6 +42,7 @@ import { createCardStyles } from '../../src/styles/components/card';
 import { createBadgeStyles } from '../../src/styles/components/badge';
 import { createButtonStyles } from '../../src/styles/components/button';
 import { typography } from '../../src/styles/typography';
+import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
 
 const SORT_OPTIONS = [
   { value: 'date' as const, label: 'По дате' },
@@ -389,6 +390,8 @@ export default function ProgramsScreen() {
           >
             <ArrowUpDown size={20} color={colors.textSecondary} strokeWidth={2} />
           </PressableScale>
+          {/* WEB-BUG-4: веб-замена pull-to-refresh. */}
+          <WebRefreshButton onPress={onRefresh} refreshing={refreshing} />
         </View>
         {/* Чипы фильтров по уровню */}
         <View style={cardStyles.filterChips}>
