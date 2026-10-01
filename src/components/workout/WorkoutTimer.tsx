@@ -22,6 +22,7 @@ import { Play, Pause, Clock, Square } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
+import { useWebPageHidden } from '../../hooks/useWebPageHidden';
 
 // ===== Форматирование =====
 const formatTime = (totalSeconds: number): string => {
@@ -132,9 +133,12 @@ export function WorkoutTimerProvider({
     onStopRef.current?.();
   }, []);
 
-  // Тик в форграунде — только пока running.
+  // Тик в форграунде — только пока running. WEB-FZ-2 (в): на вебе скрытая
+  // страница снимает интервал (elapsed-схема recompute ничего не теряет —
+  // при возврате эффект перезапускается и пересчитывает от стартовой метки).
+  const pageHidden = useWebPageHidden();
   useEffect(() => {
-    if (!running) return;
+    if (!running || pageHidden) return;
     recompute();
     intervalRef.current = setInterval(recompute, 1000);
     return () => {
@@ -143,7 +147,7 @@ export function WorkoutTimerProvider({
         intervalRef.current = null;
       }
     };
-  }, [running, recompute]);
+  }, [running, recompute, pageHidden]);
 
   // Возврат в форграунд (разблокировка) — пересчёт по timestamp.
   useEffect(() => {

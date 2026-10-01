@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
 import { warmupService, WarmupExercise, InjuryExclusion } from '../services/warmupService';
 import { UserInjury } from '../constants/injuries';
 import { useTimerSettings } from './useTimerSettings';
+import { useWebPageHidden } from './useWebPageHidden';
 import { createTickStore } from '../lib/tickStore';
 import * as Haptics from 'expo-haptics';
 
@@ -90,10 +92,67 @@ export function useWarmup(
     }
   };
 
-  const clearTick = () => {
+  const clearTick = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
-  };
+  }, []);
+
+  // WEB-BUG-6: таймер разминки считал ТИКИ (setInterval 1 Гц, −1 за срабатывание).
+  // Браузер троттлит интервалы в фоновой вкладке (~1/мин после 5 мин) → 30-сек
+  // удержание «висело» минутами. Теперь — та же схема, что у отдыха и сессии:
+  // дедлайн wall-clock, тик только пересчитывает остаток (паттерн
+  // RestTimerContext.runInterval).
+  const endsAtRef = useRef(0);
+  const activeIdRef = useRef<string | null>(null);
+  // WEB-FZ-2 (в): на вебе интервал дополнительно ставится на паузу, когда
+  // страница скрыта (document.hidden). Остаток при возврате пересчитывается от
+  // дедлайна — потеря нулевая. На нативе useWebPageHidden всегда false.
+  const pageHidden = useWebPageHidden();
+
+  const finishWarmupTimer = useCallback(
+    (exerciseId: string) => {
+      clearTick();
+      activeIdRef.current = null;
+      setActiveTimerId(null);
+      timeLeftRef.current = 0;
+      publishWarmupTick(0);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCompletedIds((prev) => new Set(prev).add(exerciseId));
+    },
+    [clearTick]
+  );
+
+  const runTick = useCallback(() => {
+    clearTick();
+    timerRef.current = setInterval(() => {
+      const secLeft = Math.max(0, Math.ceil((endsAtRef.current - Date.now()) / 1000));
+      if (timeLeftRef.current !== secLeft) {
+        timeLeftRef.current = secLeft;
+        publishWarmupTick(secLeft);
+      }
+      if (secLeft === 0 && activeIdRef.current) {
+        // FZ-6: завершение — прямо в тике, без state-эффекта на экране.
+        finishWarmupTimer(activeIdRef.current);
+      }
+    }, 1000);
+  }, [clearTick, finishWarmupTimer]);
+
+  // Пауза/догоняние тикера при скрытии/возврате страницы (только веб).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !activeTimerId) return;
+    if (pageHidden) {
+      clearTick();
+      return;
+    }
+    const secLeft = Math.max(0, Math.ceil((endsAtRef.current - Date.now()) / 1000));
+    if (secLeft === 0 && activeIdRef.current) {
+      finishWarmupTimer(activeIdRef.current);
+      return;
+    }
+    timeLeftRef.current = secLeft;
+    publishWarmupTick(secLeft);
+    runTick();
+  }, [pageHidden, activeTimerId, clearTick, finishWarmupTimer, runTick]);
 
   const startExerciseTimer = useCallback(
     (exerciseId: string) => {
@@ -101,33 +160,22 @@ export function useWarmup(
       if (!exercise) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setActiveTimerId(exerciseId);
+      activeIdRef.current = exerciseId;
+      endsAtRef.current = Date.now() + exercise.duration_seconds * 1000;
       timeLeftRef.current = exercise.duration_seconds;
       publishWarmupTick(exercise.duration_seconds);
-      clearTick();
-      timerRef.current = setInterval(() => {
-        const next = Math.max(0, timeLeftRef.current - 1);
-        timeLeftRef.current = next;
-        publishWarmupTick(next);
-        if (next === 0) {
-          // FZ-6: раньше достыкание обрабатывал useEffect([timeLeft]) на
-          // экране — теперь завершаем прямо в тике, без state экрана.
-          clearTick();
-          setActiveTimerId(null);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setCompletedIds((prev) => new Set(prev).add(exerciseId));
-        }
-      }, 1000);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      runTick();
     },
-    [warmupExercises]
+    [warmupExercises, runTick]
   );
 
   const stopTimer = useCallback(() => {
     clearTick();
+    activeIdRef.current = null;
     setActiveTimerId(null);
     timeLeftRef.current = 0;
     publishWarmupTick(0);
-  }, []);
+  }, [clearTick]);
 
   const markAsCompleted = useCallback((exerciseId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

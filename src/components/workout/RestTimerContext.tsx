@@ -21,13 +21,14 @@ import React, {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha, SHADOWS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createTickStore } from '../../lib/tickStore';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
+import { useWebPageHidden } from '../../hooks/useWebPageHidden';
 import { initSounds, playBeep, playFinishSound } from '../../lib/timerSounds';
 
 /** Статика отдыха: меняется только на start/stop/adjust, НЕ на тик. */
@@ -170,6 +171,22 @@ export function RestTimerProvider({ children }: { children: React.ReactNode }) {
   }, [publish]);
 
   const actions = useMemo<RestActions>(() => ({ start, adjust, stop }), [start, adjust, stop]);
+
+  // WEB-FZ-2 (в): страница браузера скрыта — тикер отдыха (4 Гц) ставим на паузу;
+  // возврат — перезапуск от endsAt (догоняет остаток; если дедлайн истёк в фоне,
+  // первый тик корректно завершит отдых). На нативе хук всегда false → диффа нет.
+  const pageHidden = useWebPageHidden();
+  useEffect(() => {
+    if (Platform.OS !== 'web' || total === null || isFinishedRef.current) return;
+    if (pageHidden) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    } else {
+      runInterval();
+    }
+  }, [pageHidden, total, runInterval]);
 
   useEffect(() => {
     // Стор модульный (переживает экран) — новый монтаж обязан увидеть чистый
