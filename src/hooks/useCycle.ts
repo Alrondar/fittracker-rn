@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { cycleService } from '../services/cycleService';
 import { calculateCyclePhases } from '../utils/cycle';
 import { useStore } from '../store/useStore';
+import { Q } from '../lib/queryPolicy';
 
 export function useCycle(gender: string | null | undefined) {
   const { userId } = useStore();
@@ -12,14 +13,15 @@ export function useCycle(gender: string | null | undefined) {
     queryKey: ['cycleEvents', userId],
     queryFn: () => cycleService.getCycleEvents(userId!),
     enabled: !!userId && gender === 'female',
-    staleTime: 10 * 60 * 1000, // 10 мин
+    // PERF-10: было 10 мин; чек-ин цикла инвалидирует ['cycleEvents'] (DA-P0).
+    ...Q.SLOW,
   });
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ['cycleSettings', userId],
     queryFn: () => cycleService.getCycleSettings(userId!),
     enabled: !!userId && gender === 'female',
-    staleTime: 60 * 60 * 1000, // 1 час
+    ...Q.DAILY,
   });
 
   const currentPhase = useMemo(() => {

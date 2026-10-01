@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { Q } from '../lib/queryPolicy';
+
 import {
   getDashboardData,
   type DashboardData,
@@ -22,7 +24,7 @@ export function useDashboard(userId: string | null) {
     queryKey: ['dashboard', userId],
     queryFn: () => getDashboardData(userId as string),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
     retry: 1,
   });
 }

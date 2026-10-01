@@ -4,6 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getWorkoutForecast, WorkoutForecastWithNames } from '../services/forecastService';
+import { Q } from '../lib/queryPolicy';
 
 export interface UseWorkoutForecastResult {
   result: WorkoutForecastWithNames | null;
@@ -16,7 +17,7 @@ export function useWorkoutForecast(userId: string | null): UseWorkoutForecastRes
     queryKey: ['workoutForecast', userId],
     queryFn: () => getWorkoutForecast(userId as string),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    ...Q.SLOW,
     gcTime: 30 * 60 * 1000,
   });
 

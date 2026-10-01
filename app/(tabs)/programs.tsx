@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { Q } from '../../src/lib/queryPolicy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -116,7 +117,7 @@ export default function ProgramsScreen() {
     queryKey: ['userProgramsStatus', userId],
     queryFn: () => getUserProgramsStatus(userId as string),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
 
   const statusMap = useMemo(() => {

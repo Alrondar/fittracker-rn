@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getWeeklySummary } from '../services/weeklySummaryService';
 import type { WeeklySummaryResult } from '../engine/weeklySummary';
 import { useUnitPreferences } from './useUnitPreferences';
+import { Q } from '../lib/queryPolicy';
 
 export function useWeeklySummary(userId: string | null, weekOffset: number = 0) {
   const { unit } = useUnitPreferences();
@@ -13,6 +14,6 @@ export function useWeeklySummary(userId: string | null, weekOffset: number = 0) 
     queryKey: ['weeklySummary', userId, weekOffset, unit],
     queryFn: () => getWeeklySummary(userId as string, weekOffset, unit),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
 }

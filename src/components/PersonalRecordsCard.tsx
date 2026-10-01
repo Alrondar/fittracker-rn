@@ -15,6 +15,7 @@ import { StrengthLevelBadge } from './progress/StrengthLevelBadge';
 
 import { useQuery } from '@tanstack/react-query';
 import { profileService } from '../services/profileService';
+import { Q } from '../lib/queryPolicy';
 
 interface PersonalRecord {
   exerciseName: string;
@@ -91,7 +92,7 @@ function PersonalRecordCard({
     queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';

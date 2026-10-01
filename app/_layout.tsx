@@ -17,6 +17,7 @@ import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
 // feedback делегирует в системный Alert.alert).
 import { FeedbackDialog } from '../src/components/ui/FeedbackDialog';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
+import { Q } from '../src/lib/queryPolicy';
 import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
 
 if (Platform.OS !== 'web' && __DEV__) {
@@ -35,10 +36,11 @@ if (Platform.OS !== 'web' && __DEV__) {
 }
 
 // QueryClient создаётся ВНЕ компонента (правило CLAUDE.md)
+// PERF-10: тир базовой свежести — из queryPolicy (единый владелец).
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: Q.SLOW.staleTime,
       retry: 1,
     },
   },

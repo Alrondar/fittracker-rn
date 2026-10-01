@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { Q } from '../../src/lib/queryPolicy';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -171,7 +172,7 @@ export default function InjuriesScreen() {
     queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    ...Q.SLOW,
     select: (data) => (data?.gender === 'female' ? ('female' as const) : ('male' as const)),
   });
   const bodyMapGender = profileGender ?? 'male';

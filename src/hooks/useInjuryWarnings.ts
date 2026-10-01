@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ExerciseData } from '../types/workout';
 import { getActiveInjuries, getInjuryWarningRules } from '../services/profileService';
 import { getExerciseContraindications } from '../services/injuriesService';
+import { Q } from '../lib/queryPolicy';
+
 import {
   computeExerciseWarnings,
   UserInjury,
@@ -22,13 +24,13 @@ export function useInjuryWarnings(userId: string | null, exercises: ExerciseData
     queryKey: ['userInjuries', userId],
     queryFn: () => getActiveInjuries(userId as string),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
 
   const rulesQuery = useQuery<WarningRule[], Error>({
     queryKey: ['injuryExerciseWarnings'],
     queryFn: getInjuryWarningRules,
-    staleTime: Infinity,
+    ...Q.STATIC,
   });
 
   // ARCH-8: lookup противопоказаний по таблице (уровень 1) вместо keyword-эвристики.
@@ -37,7 +39,7 @@ export function useInjuryWarnings(userId: string | null, exercises: ExerciseData
     queryKey: ['exerciseContraindications', exerciseIds],
     queryFn: () => getExerciseContraindications(exerciseIds),
     enabled: exerciseIds.length > 0,
-    staleTime: Infinity,
+    ...Q.STATIC,
   });
 
   const activeInjuries = injuriesQuery.data ?? [];
@@ -53,7 +55,7 @@ export function useInjuryWarnings(userId: string | null, exercises: ExerciseData
       exercises
         .map((e) => `${e.id}:${e.primary_muscles.join(',')}:${e.secondary_muscles.join(',')}`)
         .join('|'),
-    [exercises],
+    [exercises]
   );
 
   const exerciseWarnings = useMemo<Record<string, InjuryWarning>>(() => {

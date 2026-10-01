@@ -11,6 +11,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getMuscleStats, type MuscleStatsRow } from '../services/muscleStatsService';
+import { Q } from '../lib/queryPolicy';
 
 export type UseMuscleStatsResult = {
   rows: MuscleStatsRow[] | undefined;
@@ -25,7 +26,7 @@ export function useMuscleStats(userId: string | null): UseMuscleStatsResult {
     queryKey: ['muscleStats', userId],
     queryFn: () => getMuscleStats(userId!),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    ...Q.SLOW,
   });
 
   return {

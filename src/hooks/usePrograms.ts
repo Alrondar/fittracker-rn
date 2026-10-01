@@ -4,6 +4,8 @@ import { feedback } from '../lib/feedback';
 import { useRouter } from 'expo-router';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Q } from '../lib/queryPolicy';
+
 import {
   getPrograms,
   getMyPrograms,
@@ -126,7 +128,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
       return allPages.length + 1;
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 2,
+    ...Q.FAST,
   });
 
   // ✅ ИСПРАВЛЕНО: Явная типизация

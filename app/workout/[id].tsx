@@ -5,6 +5,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, ScrollView, InteractionManager } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { Q } from '../../src/lib/queryPolicy';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -100,7 +101,7 @@ export default function WorkoutSessionScreen() {
     queryKey: ['workoutProgramInfo', id],
     queryFn: () => getWorkoutProgramInfo(id as string),
     enabled: !!id,
-    staleTime: 1000 * 60 * 10,
+    ...Q.SLOW, // PERF-10: было 10 мин; ['workouts'] инвалидируется на финиш (BUG-1)
   });
 
   const { activeInjuries, exerciseWarnings } = useInjuryWarnings(userId, exercises);
@@ -120,7 +121,7 @@ export default function WorkoutSessionScreen() {
     queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
   const { currentPhase } = useCycle(profileData?.gender);
   const progressionContext = useMemo<ProgressionContext>(() => {
