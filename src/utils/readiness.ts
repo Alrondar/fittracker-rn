@@ -1,23 +1,34 @@
 /**
  * P0 Вариант B: авто-расчёт readiness на основе деталей восстановления.
  * Чистая функция — без React/Supabase (CLAUDE.md §2).
- * 
+ *
+ * RD-UX (30.09): ЕДИНСТВЕННАЯ формула readiness — ReadinessSheet больше не
+ * считает свою; service-автопуть и превью в UI зовут эту функцию (устранено
+ * расхождение двух источников). Добавлен учёт fatigue (0.5, симметрично
+ * качеству сна) — раньше UI-формула его включала, эта — нет.
+ *
  * Логика (научно обоснованная):
  * - Сон 7–9ч = оптимум (NSCA), <6ч = риск восстановления
  * - Качество сна: линейная шкала 1–5
+ * - Усталость: 1 (свежий) → +1, 5 (разбит) → −1
  * - Стресс ≥4 = высокий риск (влияет на RPE, травмы)
  * - Soreness ≥4 = мышечная усталость
- * 
+ *
  * Возвращает null если нет данных — не выдумываем (PRODUCT.md §3.1).
  */
 export function calculateReadinessFromDetails(
   sleepHours: number | null,
   sleepQuality: number | null,
   stressLevel: number | null,
-  soreness: number | null
+  soreness: number | null,
+  fatigue: number | null = null
 ): number | null {
-  const hasData = sleepHours !== null || sleepQuality !== null || 
-                  stressLevel !== null || soreness !== null;
+  const hasData =
+    sleepHours !== null ||
+    sleepQuality !== null ||
+    stressLevel !== null ||
+    soreness !== null ||
+    fatigue !== null;
   if (!hasData) return null;
 
   let score = 3; // baseline
@@ -33,6 +44,11 @@ export function calculateReadinessFromDetails(
   // Качество сна: 1→-1, 2→-0.5, 3→0, 4→+0.5, 5→+1
   if (sleepQuality !== null) {
     score += (sleepQuality - 3) * 0.5;
+  }
+
+  // Усталость (1 — свежий, 5 — разбит): симметрично качеству сна
+  if (fatigue !== null) {
+    score += (3 - fatigue) * 0.5;
   }
 
   // Стресс: 1–2→+1, 3→0, 4→-1, 5→-1.5

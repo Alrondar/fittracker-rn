@@ -1,5 +1,11 @@
 // src/components/dashboard/ReadinessSheet.tsx
 // FEAT-1.8: чек-ин состояния перед тренировкой (раз в день).
+// RD-UX (30.09): шкалы 1–5 с обратной полярностью заменены вербальными
+// чипами (mapping — единый владелец src/constants/readinessScales.ts).
+// Пустой state: ничего не предвыбрано; в БД уходят только отвеченные поля
+// (patch-семантика upsertToday), readiness считается общей формулой
+// calculateReadinessFromDetails — прежняя локальная формула удалена как
+// второй источник истины.
 import React, { useState, useCallback } from 'react';
 import { View, Text, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { feedback } from '../../lib/feedback';
@@ -10,42 +16,54 @@ import { SheetShell } from '../ui/SheetShell';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
+import {
+  SLEEP_QUALITY_SCALE,
+  ENERGY_SCALE,
+  SORENESS_SCALE,
+  STRESS_SCALE,
+  readinessLabel,
+  type ReadinessScale,
+} from '../../constants/readinessScales';
+import { calculateReadinessFromDetails } from '../../utils/readiness';
+import { mapError } from '../../utils/errorMapper';
 import { readinessService } from '../../services/readinessService';
 import { cycleService } from '../../services/cycleService';
 import { useCycle } from '../../hooks/useCycle';
 import { useQueryClient } from '@tanstack/react-query';
 import { CycleCheckInSheet } from '../cycle/CycleCheckInSheet';
 
-const SCALE = [1, 2, 3, 4, 5];
-
-function ScaleRow({
-  label,
+function ChipScale({
+  scale,
   value,
   onChange,
   colors,
 }: {
-  label: string;
-  value: number;
+  scale: ReadinessScale;
+  value: number | null;
   onChange: (v: number) => void;
   colors: any;
 }) {
   return (
     <View style={{ marginBottom: SPACING.md }}>
-      <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.xs }]}>
-        {label}
+      <Text style={[typography.labelBold, { color: colors.textPrimary, marginBottom: SPACING.xs }]}>
+        {scale.label}
       </Text>
       <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
-        {SCALE.map((v) => {
-          const active = value === v;
+        {scale.options.map((opt) => {
+          const active = value === opt.value;
           return (
             <PressableScale
-              key={v}
-              onPress={() => onChange(v)}
+              key={opt.label}
+              onPress={() => onChange(opt.value)}
+              accessibilityRole="button"
+              accessibilityLabel={`${scale.label}: ${opt.label}`}
               style={{
                 flex: 1,
+                minHeight: 44,
                 paddingVertical: SPACING.sm,
+                paddingHorizontal: SPACING.xs,
                 borderRadius: BORDER_RADIUS.md,
-                borderWidth: 1,
+                borderWidth: active ? 2 : 1,
                 borderColor: active ? colors.primary : colors.border,
                 backgroundColor: active
                   ? withAlpha(colors.primary, 0.125)
@@ -61,13 +79,21 @@ function ScaleRow({
                     textAlign: 'center',
                   },
                 ]}
+                numberOfLines={2}
               >
-                {v}
+                {opt.label}
               </Text>
             </PressableScale>
           );
         })}
       </View>
+      {value === null && (
+        <Text
+          style={[typography.captionSmall, { color: colors.textTertiary, marginTop: SPACING.xs }]}
+        >
+          не отмечено
+        </Text>
+      )}
     </View>
   );
 }
@@ -100,31 +126,64 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
     await cycleService.deleteCycleEvent(eventId);
     queryClient.invalidateQueries({ queryKey: ['cycleEvents', userId] });
   };
-  const [sleepHours, setSleepHours] = useState('7');
-  const [sleepQuality, setSleepQuality] = useState(3);
-  const [fatigue, setFatigue] = useState(3);
-  const [soreness, setSoreness] = useState(3);
-  const [stress, setStress] = useState(3);
+  // RD-UX: пустой старт — null = «не отмечено», дефолтные 3 больше не пишутся.
+  const [sleepHours, setSleepHours] = useState('');
+  const [sleepQuality, setSleepQuality] = useState<number | null>(null);
+  // ENERGY_SCALE.value — это fatigue для БД (1 — свежий), семантика колонки не менялась.
+  const [fatigue, setFatigue] = useState<number | null>(null);
+  const [soreness, setSoreness] = useState<number | null>(null);
+  const [stress, setStress] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  // готовность: качество сна + инверсии усталости/боли/стресса
-  const readiness = Math.round((sleepQuality + (6 - fatigue) + (6 - soreness) + (6 - stress)) / 4);
+
+  const parsedSleep = parseFloat(sleepHours.replace(',', '.'));
+  // DB CHECK: sleep_hours numeric(3,1) 0..24 — за границей Postgres отдаёт
+  // сырую ошибку 23514 прямо в алерт. Не клампим молча: считаем ввод
+  // недействительным и подсвечиваем под полем.
+  const sleepInvalid = Number.isFinite(parsedSleep) && (parsedSleep < 0 || parsedSleep > 24);
+  const sleepHoursValue = Number.isFinite(parsedSleep) && !sleepInvalid ? parsedSleep : null;
+  const answeredCount =
+    (sleepHoursValue !== null ? 1 : 0) +
+    (sleepQuality !== null ? 1 : 0) +
+    (fatigue !== null ? 1 : 0) +
+    (soreness !== null ? 1 : 0) +
+    (stress !== null ? 1 : 0);
+  // Единая формула (utils/readiness.ts) — превью и service-автопуть считают одно и то же.
+  const readiness = calculateReadinessFromDetails(
+    sleepHoursValue,
+    sleepQuality,
+    stress,
+    soreness,
+    fatigue
+  );
   const readinessColor =
-    readiness <= 2 ? colors.error : readiness === 3 ? colors.warning : colors.success;
+    readiness == null
+      ? colors.textTertiary
+      : readiness <= 2
+        ? colors.error
+        : readiness === 3
+          ? colors.warning
+          : colors.success;
 
   const handleSave = useCallback(async () => {
     if (!userId) {
       onDone(true);
       return;
     }
+    if (answeredCount === 0) {
+      feedback.alert('Ничего не отмечено', 'Отметь хотя бы один пункт — или нажми «Пропустить»');
+      return;
+    }
     setSaving(true);
     try {
+      // readiness не отправляем: upsertToday досчитает его той же общей формулой
+      // (единый владелец) и включит в patch только отвеченные поля.
       await readinessService.upsertToday(userId, {
-        sleepHours: parseFloat(sleepHours.replace(',', '.')) || null,
+        sleepHours: sleepHoursValue,
         sleepQuality,
         fatigue,
         soreness,
         stress,
-        readiness,
+        readiness: null,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       // AUDIT-6: инвалидация кэша, чтобы StatusCard и ContextInsightCard
@@ -134,7 +193,7 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
         // VF-9: sleep/stress читаются движком через ['todayRecovery'] — инвалидировать вместе
         queryClient.invalidateQueries({ queryKey: ['todayRecovery', userId] });
       }
-      if (readiness <= 2) {
+      if (readiness !== null && readiness <= 2) {
         feedback.alert(
           'Готовность низкая',
           'Сегодня лучше снизить рабочие веса ~на 10% или выбрать лёгкие варианты упражнений'
@@ -142,11 +201,24 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
       }
       onDone(true);
     } catch (e: any) {
-      feedback.alert('Ошибка', e?.message || 'Не удалось сохранить');
+      // CLAUDE.md §2: user-facing errors — через mapError, сырой строки из
+      // Supabase не показываем.
+      feedback.alert('Ошибка', mapError(e));
     } finally {
       setSaving(false);
     }
-  }, [userId, sleepHours, sleepQuality, fatigue, soreness, stress, readiness, onDone, queryClient]);
+  }, [
+    userId,
+    answeredCount,
+    sleepHoursValue,
+    sleepQuality,
+    fatigue,
+    soreness,
+    stress,
+    readiness,
+    onDone,
+    queryClient,
+  ]);
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={() => onDone(true)}>
@@ -154,7 +226,8 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
         <Text
           style={[typography.caption, { color: colors.textSecondary, marginBottom: SPACING.md }]}
         >
-          30 секунд — и тренировка адаптируется под твоё состояние
+          30 секунд — и тренировка адаптируется под твоё состояние. Отмечай только то, что знаешь:
+          неотмеченное не сохраняется.
         </Text>
 
         <Text
@@ -175,9 +248,17 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
           keyboardType="decimal-pad"
           value={sleepHours}
           onChangeText={setSleepHours}
+          placeholder="например, 7"
           placeholderTextColor={colors.textTertiary}
         />
-        {parseFloat(sleepHours.replace(',', '.')) < 6 && (
+        {sleepInvalid && (
+          <Text
+            style={[typography.captionSmall, { color: colors.error, marginBottom: SPACING.md }]}
+          >
+            Укажи значение от 0 до 24 часов
+          </Text>
+        )}
+        {sleepHoursValue !== null && sleepHoursValue < 6 && (
           <Text
             style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}
           >
@@ -185,32 +266,16 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
           </Text>
         )}
 
-        <ScaleRow
-          label="Качество сна (5 — отлично)"
+        <ChipScale
+          scale={SLEEP_QUALITY_SCALE}
           value={sleepQuality}
           onChange={setSleepQuality}
           colors={colors}
         />
-        <ScaleRow
-          label="Усталость (1 — свежий)"
-          value={fatigue}
-          onChange={setFatigue}
-          colors={colors}
-        />
-        <ScaleRow
-          label="Боль в мышцах (1 — нет)"
-          value={soreness}
-          onChange={setSoreness}
-          colors={colors}
-        />
-
-        <ScaleRow
-          label="Стресс (1 — спокойно)"
-          value={stress}
-          onChange={setStress}
-          colors={colors}
-        />
-        {stress >= 4 && (
+        <ChipScale scale={ENERGY_SCALE} value={fatigue} onChange={setFatigue} colors={colors} />
+        <ChipScale scale={SORENESS_SCALE} value={soreness} onChange={setSoreness} colors={colors} />
+        <ChipScale scale={STRESS_SCALE} value={stress} onChange={setStress} colors={colors} />
+        {stress !== null && stress >= 4 && (
           <Text
             style={[typography.captionSmall, { color: colors.warning, marginBottom: SPACING.md }]}
           >
@@ -256,26 +321,40 @@ export function ReadinessSheet({ visible, userId, gender, onDone }: ReadinessShe
           }}
         >
           <Text style={[typography.labelBold, { color: colors.textPrimary }]}>Готовность</Text>
-          <Text style={[typography.h3, { color: readinessColor, fontWeight: '800' }]}>
-            {readiness}/5
-          </Text>
+          {readiness == null ? (
+            <Text style={[typography.caption, { color: colors.textTertiary }]}>
+              отметь хотя бы одно поле
+            </Text>
+          ) : (
+            <Text style={[typography.h3, { color: readinessColor, fontWeight: '800' }]}>
+              {readiness}/5 · {readinessLabel(readiness)}
+            </Text>
+          )}
         </View>
 
         <PressableScale
           onPress={handleSave}
-          disabled={saving}
+          disabled={saving || answeredCount === 0}
           style={{
             paddingVertical: SPACING.md,
             borderRadius: BORDER_RADIUS.lg,
-            backgroundColor: readinessColor,
+            backgroundColor: answeredCount === 0 ? colors.surfaceSecondary : readinessColor,
             alignItems: 'center',
+            opacity: answeredCount === 0 ? 0.6 : 1,
           }}
           haptic="none"
         >
           {saving ? (
             <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
-            <Text style={[typography.button, { color: colors.textInverse }]}>Сохранить</Text>
+            <Text
+              style={[
+                typography.button,
+                { color: answeredCount === 0 ? colors.textTertiary : colors.textInverse },
+              ]}
+            >
+              Сохранить
+            </Text>
           )}
         </PressableScale>
         <PressableScale
