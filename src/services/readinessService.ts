@@ -72,11 +72,14 @@ export const readinessService = {
 
     // P0 Вариант B: авто-расчёт readiness, если введены детали
     // Если пользователь ввёл детали — авто-score перезаписывает manual (если manual не задан явно)
+    // RD-UX: fatigue тоже деталь (раньше выпадал из hasDetails — чек-ин только
+    // «энергией» не считал readiness).
     const hasDetails =
       input.sleepHours !== null ||
       input.sleepQuality !== null ||
       input.stress !== null ||
-      input.soreness !== null;
+      input.soreness !== null ||
+      input.fatigue !== null;
 
     let finalReadiness = input.readiness ?? null;
     if (hasDetails && finalReadiness === null) {
@@ -84,7 +87,8 @@ export const readinessService = {
         input.sleepHours ?? null,
         input.sleepQuality ?? null,
         input.stress ?? null,
-        input.soreness ?? null
+        input.soreness ?? null,
+        input.fatigue ?? null
       );
     }
 

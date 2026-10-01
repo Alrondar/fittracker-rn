@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
+import { RANK_COLORS } from '../../src/constants/semanticColors';
 import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { useStore } from '../../src/store/useStore';
@@ -43,10 +44,6 @@ import {
   Pencil,
   AlertTriangle,
 } from 'lucide-react-native';
-
-// Фиксированная палитра рангов (золото/серебро/бронза) — семантика медалей,
-// не темовой цвет; вынесена в именованную константу вместо inline-hex.
-const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
 export default function ProfileScreen() {
   const { colors } = useTheme();

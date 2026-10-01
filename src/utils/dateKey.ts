@@ -30,3 +30,15 @@ export function toDateKeyFromIso(iso: string | null | undefined): string | null 
   if (Number.isNaN(d.getTime())) return null;
   return toDateKey(d);
 }
+
+/**
+ * CYC-3 (29.09): 'YYYY-MM-DD' → ЛОКАЛЬНЫЙ Date (полдень, чтобы datetime-field
+ * не уезжал через границу при форматировании). `new Date('YYYY-MM-DD')` парсит
+ * строку как UTC-полдень — в западных таймзонах показ даты отстаёт на сутки
+ * (данные при этом верные: сохраняется сам ключ).
+ */
+export function fromDateKey(key: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(key);
+  if (!m) return new Date(key);
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+}

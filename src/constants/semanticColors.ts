@@ -60,6 +60,10 @@ export const TREND_COLORS = {
   down: '#F44336',
 } as const;
 
+// ===== Ранги/медали (1-3 место) =====
+// Фиксированная золото/серебро/бронза — семантика медалей, не темовой цвет.
+export const RANK_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'] as const;
+
 // ===== Типы Toast =====
 export const TOAST_COLORS = {
   success: '#10b981',

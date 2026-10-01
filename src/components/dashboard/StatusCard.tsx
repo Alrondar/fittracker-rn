@@ -18,6 +18,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { typography } from '../../styles/typography';
 import { SPACING, scale, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { SEVERITY_COLORS } from '../../constants/semanticColors';
+import { readinessLabel } from '../../constants/readinessScales';
 import { BODY_PART_LABELS } from '../../constants/injuries';
 import { AppCard } from '../ui/AppCard';
 import { ReadinessSheet } from './ReadinessSheet';
@@ -222,6 +223,13 @@ export function StatusCard() {
             <Text style={[typography.h5, { color, fontWeight: '700' }]}>
               {readiness == null ? '—' : readiness}
             </Text>
+            {/* RD-UX: слово-подпись вместо голой цифры (шкалы чек-ина тоже
+                вербальные — единый язык модуля). */}
+            {readiness != null && (
+              <Text style={[typography.captionSmall, { color, fontSize: scale(9), marginTop: -2 }]}>
+                {readinessLabel(readiness)}
+              </Text>
+            )}
           </View>
         </View>
         <View style={{ flex: 1 }}>
