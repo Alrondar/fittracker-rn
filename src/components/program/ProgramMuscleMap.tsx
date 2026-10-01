@@ -18,6 +18,7 @@ import { calculateProgramMuscleLoad } from '../../utils/programMuscleLoad';
 import { SPACING } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import type { MuscleLoad, MuscleLoadMode } from '../../utils/muscleLoad';
+import { Q } from '../../lib/queryPolicy';
 
 type PhaseLike = {
   id: string;
@@ -46,7 +47,7 @@ export function ProgramMuscleMap({ phases }: ProgramMuscleMapProps) {
     queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    ...Q.SLOW,
     select: (data) => (data?.gender === 'female' ? ('female' as const) : ('male' as const)),
   });
   const bodyMapGender = profileGender ?? 'male';

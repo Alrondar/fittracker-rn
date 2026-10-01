@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { painService } from '../services/painService';
 import { calculatePainTrend, type PainTrendResult } from '../utils/painTrend';
+import { Q } from '../lib/queryPolicy';
 
 const WEEKS_BACK = 4;
 
@@ -26,7 +27,7 @@ export function usePainTrend(userId: string | null) {
     queryKey: ['painTrend', userId, range.queryKeyFrom, range.queryKeyTo],
     queryFn: () => painService.getPainEventsInRange(userId!, range.from, range.to),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 мин
+    ...Q.SLOW, // 5 мин
     select: (events) => calculatePainTrend(events, WEEKS_BACK),
   });
 

@@ -19,6 +19,7 @@ import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
 import { FeedbackDialog } from '../src/components/ui/FeedbackDialog';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
 import { applyWebFixes } from '../src/lib/webFixes';
+import { Q } from '../src/lib/queryPolicy';
 import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
 
 // WEB-ZOOM-1: пол 16px для полей ввода на тач-устройствах (иначе iOS Safari
@@ -41,10 +42,11 @@ if (Platform.OS !== 'web' && __DEV__) {
 }
 
 // QueryClient создаётся ВНЕ компонента (правило CLAUDE.md)
+// PERF-10: тир базовой свежести — из queryPolicy (единый владелец).
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: Q.SLOW.staleTime,
       retry: 1,
     },
   },

@@ -23,6 +23,7 @@ import { profileService } from '../../services/profileService';
 import { TrendingUp } from 'lucide-react-native';
 import { useStrengthStandards } from '../../hooks/useStrengthStandards';
 import { StrengthLevelBadge } from './StrengthLevelBadge';
+import { Q } from '../../lib/queryPolicy';
 
 function formatShort(dateStr: string): string {
   const [, m, d] = dateStr.split('-').map(Number);
@@ -146,7 +147,7 @@ function StrengthSeriesRow({
     queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
 
   // Лучший e1RM по всем точкам серии

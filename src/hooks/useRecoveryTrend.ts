@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { readinessService } from '../services/readinessService';
 import { useStore } from '../store/useStore';
+import { Q } from '../lib/queryPolicy';
 
 export function useRecoveryTrend(days = 7) {
   const { userId } = useStore();
@@ -10,7 +11,7 @@ export function useRecoveryTrend(days = 7) {
   return useQuery({
     queryKey: ['recoveryTrend', userId, days],
     queryFn: () => readinessService.getRecoveryTrend(userId!, days),
-    staleTime: 5 * 60 * 1000, // 5 минут
+    ...Q.SLOW, // 5 минут
     enabled: !!userId,
   });
 }

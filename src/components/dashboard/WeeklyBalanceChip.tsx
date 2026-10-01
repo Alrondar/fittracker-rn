@@ -19,6 +19,7 @@ import { profileService } from '../../services/profileService';
 import { useWeeklyNutrition } from '../../hooks/useWeeklyNutrition';
 import { calculateWeeklyCaloricBalance } from '../../utils/weeklyCaloricBalance';
 import { SheetShell } from '../ui/SheetShell';
+import { Q } from '../../lib/queryPolicy';
 
 const DAY_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -35,7 +36,7 @@ export function WeeklyBalanceChip() {
   const { data: targets } = useQuery({
     queryKey: ['nutritionTargets', userId],
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    ...Q.SLOW,
     queryFn: () => profileService.getNutritionTargets(userId!),
   });
 

@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useInfiniteQuery, useQuery, keepPreviousData } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Q } from '../lib/queryPolicy';
+
 import {
   getExercises,
   getFilterOptions,
@@ -22,8 +24,8 @@ const normalizeSearch = (s: string): string => s.trim().replace(/ё/gi, 'е');
 
 export function useExercises() {
   // ===== UI STATE =====
-  const [searchInput, setSearchInput] = useState('');   // печатается в поле
-  const [searchQuery, setSearchQuery] = useState('');   // debounce-значение для запроса
+  const [searchInput, setSearchInput] = useState(''); // печатается в поле
+  const [searchQuery, setSearchQuery] = useState(''); // debounce-значение для запроса
   const [showSearch, setShowSearch] = useState(false);
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -31,7 +33,7 @@ export function useExercises() {
   const [sortBy, setSortBy] = useState<ExerciseSortBy>('name-asc');
   const [showSortSheet, setShowSortSheet] = useState(false);
   const [showEquipmentSheet, setShowEquipmentSheet] = useState(false);
-  const [activationOnly, setActivationOnly] = useState(false);   // ✅ НОВОЕ
+  const [activationOnly, setActivationOnly] = useState(false); // ✅ НОВОЕ
 
   // Debounce + порог в 2 символа + нормализация «ё» → «е».
   // Одиночный символ не фильтрует список (показываем всё), но подсказка видна.
@@ -53,14 +55,14 @@ export function useExercises() {
   const { data: filterOptions } = useQuery({
     queryKey: ['exerciseFilterOptions'],
     queryFn: getFilterOptions,
-    staleTime: Infinity,
+    ...Q.STATIC,
   });
 
   const equipmentOptions: FilterOption[] = filterOptions?.equipment ?? [];
 
   const categoryCounts: Record<string, number> = useMemo(() => {
     const map: Record<string, number> = {};
-    (filterOptions?.categories ?? []).forEach(c => {
+    (filterOptions?.categories ?? []).forEach((c) => {
       map[c.value] = c.count;
     });
     return map;
@@ -78,14 +80,22 @@ export function useExercises() {
     isFetchingNextPage,
     refetch,
   } = useInfiniteQuery<ExerciseListItem[], Error>({
-    queryKey: ['exercises', selectedMuscles, selectedCategories, selectedEquipment, activationOnly, searchQuery, sortBy],
+    queryKey: [
+      'exercises',
+      selectedMuscles,
+      selectedCategories,
+      selectedEquipment,
+      activationOnly,
+      searchQuery,
+      sortBy,
+    ],
     queryFn: async ({ pageParam }): Promise<ExerciseListItem[]> => {
       return await getExercises({
         search: searchQuery || undefined,
         muscles: selectedMuscles.length > 0 ? selectedMuscles : undefined,
         categories: selectedCategories.length > 0 ? selectedCategories : undefined,
         equipment: selectedEquipment.length > 0 ? selectedEquipment : undefined,
-        activationOnly: activationOnly || undefined,   // ✅ НОВОЕ
+        activationOnly: activationOnly || undefined, // ✅ НОВОЕ
         sortBy,
         limit: PAGE_SIZE,
         offset: pageParam as number,
@@ -97,7 +107,7 @@ export function useExercises() {
       return allPages.length * PAGE_SIZE;
     },
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 5,
+    ...Q.SLOW,
   });
 
   const exercises: ExerciseListItem[] = data?.pages.flat() ?? [];
@@ -107,48 +117,51 @@ export function useExercises() {
   const isSearching = isFetching && !isFetchingNextPage;
 
   // Суммарный счётчик активных фильтров (мышцы + категории + оборудование)
-const activeFiltersCount =
-  selectedMuscles.length + selectedCategories.length + selectedEquipment.length + (activationOnly ? 1 : 0);
+  const activeFiltersCount =
+    selectedMuscles.length +
+    selectedCategories.length +
+    selectedEquipment.length +
+    (activationOnly ? 1 : 0);
 
   // ===== ДЕЙСТВИЯ =====
   const toggleMuscle = useCallback((muscle: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedMuscles(prev =>
-      prev.includes(muscle) ? prev.filter(m => m !== muscle) : [...prev, muscle]
+    setSelectedMuscles((prev) =>
+      prev.includes(muscle) ? prev.filter((m) => m !== muscle) : [...prev, muscle]
     );
   }, []);
 
   const toggleCategory = useCallback((category: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedCategories(prev =>
-      prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     );
   }, []);
 
   const toggleEquipment = useCallback((eq: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedEquipment(prev =>
-      prev.includes(eq) ? prev.filter(e => e !== eq) : [...prev, eq]
+    setSelectedEquipment((prev) =>
+      prev.includes(eq) ? prev.filter((e) => e !== eq) : [...prev, eq]
     );
   }, []);
 
   const toggleActivation = useCallback(() => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  setActivationOnly(prev => !prev);
-}, []);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActivationOnly((prev) => !prev);
+  }, []);
 
   const resetFilters = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedMuscles([]);
     setSelectedCategories([]);
     setSelectedEquipment([]);
-    setActivationOnly(false); 
+    setActivationOnly(false);
     setSearchInput('');
   }, []);
 
   const toggleSearch = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowSearch(prev => !prev);
+    setShowSearch((prev) => !prev);
   }, []);
 
   const closeSearch = useCallback(() => {
@@ -171,13 +184,13 @@ const activeFiltersCount =
     exercises,
     loading: isLoading,
     refreshing: isRefetching,
-    isSearching,        // ✅ для спиннера в поле поиска
+    isSearching, // ✅ для спиннера в поле поиска
     isError,
     hasMore: hasNextPage ?? false,
     loadingMore: isFetchingNextPage,
     searchInput,
     setSearchInput,
-    searchTooShort,     // ✅ для подсказки «минимум 2 символа»
+    searchTooShort, // ✅ для подсказки «минимум 2 символа»
     showSearch,
     toggleSearch,
     closeSearch,
@@ -200,7 +213,7 @@ const activeFiltersCount =
     onRefresh,
     loadMore,
     refetch,
-    activationOnly,      // ✅
-    toggleActivation,    // ✅
+    activationOnly, // ✅
+    toggleActivation, // ✅
   };
 }

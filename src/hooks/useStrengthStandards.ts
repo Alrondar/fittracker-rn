@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { calculateStrengthStandard, StrengthStandardResult } from '../utils/strengthStandards';
 import { profileService } from '../services/profileService';
+import { Q } from '../lib/queryPolicy';
 
 interface UseStrengthStandardsParams {
   exerciseName: string;
@@ -39,7 +40,7 @@ export function useStrengthStandards({
     queryKey: ['profile', userId],
     queryFn: () => profileService.getProfileData(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 минут
+    ...Q.SLOW, // 5 минут
   });
 
   const result = useMemo(() => {

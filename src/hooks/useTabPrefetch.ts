@@ -15,6 +15,7 @@ import { getHistory } from '../services/historyService';
 import { getProgressData } from '../services/progressService';
 import { getMuscleStats } from '../services/muscleStatsService';
 import { getMyPrograms, type Program } from '../services/programsService';
+import { Q } from '../lib/queryPolicy';
 import {
   getExercises,
   getFilterOptions,
@@ -41,12 +42,12 @@ const GROUPS: { delay: number; run: (qc: QueryClient, userId: string) => void }[
       void qc.prefetchQuery({
         queryKey: ['progress', userId],
         queryFn: () => getProgressData(userId),
-        staleTime: 1000 * 60 * 5,
+        ...Q.SLOW,
       }); // useProgress.ts:8
       void qc.prefetchQuery({
         queryKey: ['muscleStats', userId],
         queryFn: () => getMuscleStats(userId),
-        staleTime: 1000 * 60 * 5,
+        ...Q.SLOW,
       }); // useMuscleStats.ts:25
     },
   },
@@ -66,7 +67,7 @@ const GROUPS: { delay: number; run: (qc: QueryClient, userId: string) => void }[
         initialPageParam: 1,
         getNextPageParam: (lastPage: Program[], allPages: Program[][]) =>
           lastPage.length < 10 ? undefined : allPages.length + 1,
-        staleTime: 1000 * 60 * 2,
+        ...Q.FAST,
       });
     },
   },
@@ -79,7 +80,7 @@ const GROUPS: { delay: number; run: (qc: QueryClient, userId: string) => void }[
       void qc.prefetchQuery({
         queryKey: ['exerciseFilterOptions'],
         queryFn: getFilterOptions,
-        staleTime: Infinity,
+        ...Q.STATIC,
       });
       void qc.prefetchInfiniteQuery({
         queryKey: ['exercises', [], [], [], false, '', 'name-asc'],
@@ -88,7 +89,7 @@ const GROUPS: { delay: number; run: (qc: QueryClient, userId: string) => void }[
         initialPageParam: 0,
         getNextPageParam: (lastPage: ExerciseListItem[], allPages: ExerciseListItem[][]) =>
           lastPage.length < 40 ? undefined : allPages.length * 40,
-        staleTime: 1000 * 60 * 5,
+        ...Q.SLOW,
       });
     },
   },
