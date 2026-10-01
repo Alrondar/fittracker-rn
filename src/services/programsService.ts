@@ -933,14 +933,31 @@ export async function replaceExerciseInProgram(
 // ИНФО О ПРОГРАММЕ ДЛЯ ТРЕНИРОВКИ (шапка workout/[id])
 // ============================================================================
 export async function getWorkoutProgramInfo(workoutId: string): Promise<WorkoutProgramInfo | null> {
+  // PRG-400: embed `programs(name)` давал 400 и молча глотался: у workouts.program_id
+  // (text) НЕТ FK на programs(id) (uuid) — PostgREST не резолвит отношение.
+  // Единственный FK на workouts — user_id → profiles. Имя программы берём
+  // отдельным запросом (тот же паттерн, что за фазой ниже); ошибки — с логом,
+  // без тихого null.
   const { data: workout, error } = await supabase
     .from('workouts')
-    .select('program_id, phase_number, week_number, programs ( name )')
+    .select('program_id, phase_number, week_number')
     .eq('id', workoutId)
     .maybeSingle();
-  if (error || !workout?.program_id) return null;
+  if (error) {
+    console.warn('[programsService] getWorkoutProgramInfo (workouts):', error.message);
+    return null;
+  }
+  if (!workout?.program_id) return null;
 
-  const program = Array.isArray(workout.programs) ? workout.programs[0] : workout.programs;
+  const { data: program, error: programError } = await supabase
+    .from('programs')
+    .select('name')
+    .eq('id', workout.program_id)
+    .maybeSingle();
+  if (programError) {
+    console.warn('[programsService] getWorkoutProgramInfo (programs):', programError.message);
+  }
+
   let phaseName: string | undefined;
   let phaseType: string | undefined;
   if (workout.phase_number != null) {
