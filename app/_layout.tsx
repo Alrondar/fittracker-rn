@@ -184,8 +184,12 @@ function RootLayoutContent() {
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         {/* Онбординг-анкета: транзитный root-экран после регистрации — fade,
-            как и другие корневые сегменты (replace, не drill-in). */}
-        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+            как и другие корневые сегменты (replace, не drill-in).
+            NEOB-1w: имя листа — «onboarding/index» (folder+index регистрируется
+            полным путём; name="onboarding" не матчился → repeated
+            `[Layout children]: No route named "onboarding"` и fade не применялся).
+            Пути router.replace('/onboarding') это не касается — href резолвится на index. */}
+        <Stack.Screen name="onboarding/index" options={{ animation: 'fade' }} />
         <Stack.Screen
           name="exercise/[id]"
           options={{
