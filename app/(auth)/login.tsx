@@ -5,6 +5,7 @@ import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useWebKeyboardInset } from '../../src/hooks/useWebKeyboardInset';
 import { SPACING } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { AppButton } from '../../src/components/ui/AppButton';
@@ -23,6 +24,9 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setAuth, setJustRegistered } = useStore();
   const { colors, gradients } = useTheme();
+  // WEB-BUG-5 (остаток): KAV на RNW — noop; без этого поля («пароль») уезжают
+  // под клавиатуру мобильного браузера и не скроллятся к ним.
+  const webKbInset = useWebKeyboardInset();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -66,7 +70,10 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: colors.background }}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: webKbInset }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={{ flex: 1, justifyContent: 'center', padding: SPACING.xxl }}>
           {/* UX-5: бренд-бейдж = он же, что и иконка приложения (белый знак
               bench-press на градиентном круге темы), а не lucide Dumbbell. */}

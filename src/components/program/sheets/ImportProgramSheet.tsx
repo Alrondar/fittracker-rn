@@ -11,6 +11,7 @@ import {
 import { PressableScale } from '../../ui/PressableScale';
 import { X, Link2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
+import { useWebKeyboardInset } from '../../../hooks/useWebKeyboardInset';
 import { FONT_FAMILIES } from '../../../constants/fonts';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -33,6 +34,8 @@ export function ImportProgramSheet({
   onClose,
 }: ImportProgramSheetProps) {
   const { colors } = useTheme();
+  // WEB-BUG-5 (остаток): поле кода программы не должно уезжать под клавиатуру браузера.
+  const webKbInset = useWebKeyboardInset();
 
   return (
     <KeyboardAvoidingView
@@ -77,7 +80,7 @@ export function ImportProgramSheet({
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ padding: SPACING.xl }}
+            contentContainerStyle={{ padding: SPACING.xl, paddingBottom: SPACING.xl + webKbInset }}
           >
             <Text
               style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.md }]}

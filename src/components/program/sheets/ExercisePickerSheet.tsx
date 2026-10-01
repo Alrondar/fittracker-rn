@@ -17,6 +17,7 @@ import { FONT_FAMILIES } from '../../../constants/fonts';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { useExercises } from '../../../hooks/useExercises';
+import { useWebKeyboardInset } from '../../../hooks/useWebKeyboardInset';
 import { ExerciseListItem, ExerciseSortBy } from '../../../services/exercisesService';
 import { MUSCLE_GROUPS } from '../../../constants/muscleGroups';
 import { getMuscleColor, MUSCLE_COLORS } from '../../../constants/muscleColors';
@@ -125,6 +126,8 @@ export function ExercisePickerSheet({
   badgeStyles: _badgeStyles,
 }: ExercisePickerSheetProps) {
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  // WEB-BUG-5 (остаток): лист должен прокручиваться из-под клавиатуры браузера.
+  const webKbInset = useWebKeyboardInset();
   const {
     exercises,
     loading,
@@ -535,6 +538,7 @@ export function ExercisePickerSheet({
             <FlatList
               data={exercises}
               keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingBottom: 24 + webKbInset }}
               renderItem={({ item }) => (
                 <PickerRow item={item} onPress={handlePick} colors={colors} />
               )}

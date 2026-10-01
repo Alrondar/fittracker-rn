@@ -24,6 +24,7 @@ import {
 } from '../../src/services/goalsService';
 import { mapError } from '../../src/utils/errorMapper';
 import { calculateMacros } from '../../src/utils/macroCalculator';
+import { useWebKeyboardInset } from '../../src/hooks/useWebKeyboardInset';
 import { StepDots } from '../../src/components/goals/GoalsComponents';
 import { GoalsStep1 } from '../../src/components/goals/GoalsStep1';
 import { GoalsStep2 } from '../../src/components/goals/GoalsStep2';
@@ -33,6 +34,8 @@ export default function GoalsScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+  // WEB-BUG-5 (остаток): высота клавиатуры браузера (натив = 0, diff нулевой).
+  const webKbInset = useWebKeyboardInset();
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState(1);
@@ -222,7 +225,9 @@ export default function GoalsScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 + webKbInset }}
+        >
           <StepDots step={step} activeColor={colors.primary} inactiveColor={colors.border} />
 
           {step === 1 && (
