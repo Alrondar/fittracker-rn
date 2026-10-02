@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 02.10.2026 (web-port) [восстановлен после неудачного разруленного мержа 3b9f234; закрыты WEB-BUG-4/5/6, WEB-FZ-2(в), PRG-400, CTR-4; из main влито FD-SEED-2a (time_based на проде)]
+Срез: 02.10.2026 (web-port) [SWAP-1/BUG-12 влито из main (c04d495); база: восстановлен после мержа 3b9f234, закрыты WEB-BUG-4/5/6, WEB-FZ-2(в), PRG-400, CTR-4, FD-SEED-2a]
 
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
@@ -658,6 +658,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 | BUG-9 | 🟡 | ✅ | `useProfile` (5 параллельных запросов) без отмены: при logout→login другого аккаунта старый Promise.all может перетереть новый (`queryClient.clear()` useState-кэш не покрывает). Побочно: `workout/[id].tsx:123` зовёт хук ради gender и гоняет все 5 запросов |
 | BUG-10 | 🟡 | ✅ | `useProfile.saveNutrition` обновляет только локальный state — дашборд-кэши питания (`dailyNutrition/weeklyNutrition/nutritionLogs`) не инвалидируются |
 | BUG-11 | 🟡 | ✅ | `key={index}` в списках: `PersonalRecordsCard.tsx:54`, `profile.tsx:318`, `ExerciseProgressCard.tsx:126`, `WorkoutInjuryBanner.tsx:134` |
+| BUG-12 (SWAP-1) | 🟠 | ✅ | После свапа упражнения карточка сохраняла `previous*` СТАРОГО упражнения — `replaceExercise`/`replaceExerciseInProgramCb` спредили новые поля, но `sets` не трогали, а рекомендатор `calculateProgression` строит «Прошлый/Рекомендую» именно по `previousWeight` (`SetsGrid.tsx:787,820`) → чипы и авто-вес «дотягивались от старого» (риск неподъёмного веса; де-синхрон был только внутри сессии — перезаход экрана грузил историю по новому `exercise_id`). Фикс 02.10 (вердикт владельца, вариант «подтянуть реальную историю»): `swapCardFields` мгновенно обнуляет чужую `previous*`+`personalBest`; `reinjectExerciseHistory` (новый `fetchExerciseHistory` = форма запроса recentLogs из `fetchWorkoutSession`, + `getPersonalBests` по одному id) внедряет историю нового упражнения с guard'ом от пересвапа; в program-свапе — только после подтверждения сервера (rollback возвращает `previousExercise` как был); `resetToOriginal` восстановляет `previous*`/PB из снимка оригинала. tsc 0, eslint 0. Требует device-прогона: свап на упражнении со своей историей → чипы должны show историю НОВОГО, «Вернуть» → историю оригинала |
 
 ### Противоречия «правило vs код» (CTR)
 
