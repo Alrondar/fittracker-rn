@@ -27,6 +27,11 @@ export default function CreateWorkoutScreen() {
   const [creating, setCreating] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // LINT-HYGIENE: примитив наруши — в deps эффекта вместо params.hero
+  // (expo-router пересоздаёт объект params, но значение строки стабильно —
+  // повторного запуска создания тренировки не будет).
+  const heroParam = params.hero;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -51,7 +56,7 @@ export default function CreateWorkoutScreen() {
         if (!cancelled && workoutId) {
           router.replace({
             pathname: '/workout/[id]',
-            params: { id: workoutId, ...(params.hero ? { hero: '1' } : {}) },
+            params: { id: workoutId, ...(heroParam ? { hero: '1' } : {}) },
           });
         }
       } catch (e: any) {
@@ -70,7 +75,7 @@ export default function CreateWorkoutScreen() {
     return () => {
       cancelled = true;
     };
-  }, [userId, params.programId, params.repeatId, router]);
+  }, [userId, params.programId, params.repeatId, heroParam, router]);
 
   if (creating) {
     return (
