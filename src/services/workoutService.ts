@@ -389,6 +389,30 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
   };
 }
 
+/**
+ * SWAP-1: история одного упражнения для перевнедрения рекомендаций после свапа.
+ * Форма запроса = recentLogs из fetchWorkoutSession (те же фильтры: чужие
+ * тренировки, не разминки, created_at DESC) — чтобы previous* в карточке после
+ * замены совпадали с тем, что карточка получила бы при перезаходе экрана.
+ */
+export async function fetchExerciseHistory(
+  exerciseId: string,
+  excludeWorkoutId: string
+): Promise<RecentLog[]> {
+  const { data, error } = await supabase
+    .from('workout_logs')
+    .select(
+      'weight_kg, reps, reps_left, reps_right, rpe, set_number, workout_exercises(exercise_id)'
+    )
+    .eq('workout_exercises.exercise_id', exerciseId)
+    .neq('workout_exercises.workout_id', excludeWorkoutId)
+    .eq('is_warmup', false)
+    .order('created_at', { ascending: false })
+    .limit(300);
+  if (error) throw error;
+  return (data ?? []) as RecentLog[];
+}
+
 // ============================================================================
 // ALTERNATIVES (ENG-5 ranking, перенесено из useWorkoutSession.loader.ts)
 // ============================================================================

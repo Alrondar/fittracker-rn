@@ -12,7 +12,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { invalidateWorkoutAffectedCaches } from '../lib/queryInvalidation';
-import { ExerciseData, SetData, SetFeedbackPatch, ExercisePainState } from '../types/workout';
+import {
+  ExerciseData,
+  SetData,
+  SetFeedbackPatch,
+  ExercisePainState,
+  AlternativeExercise,
+} from '../types/workout';
 import { advanceProgramProgress, replaceExerciseInProgram } from '../services/programsService';
 import { getActiveInjuries, profileService } from '../services/profileService';
 import { painService, PainType } from '../services/painService';
@@ -24,6 +30,7 @@ import { getRestActions } from '../components/workout/RestTimerContext';
 import {
   fetchWorkoutSession,
   fetchAlternatives,
+  fetchExerciseHistory,
   FetchAlternativesResult,
   updateWorkout,
   upsertWorkoutLogs,
@@ -510,6 +517,83 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   // REPLACE / RESET
   // ============================================================================
+
+  // SWAP-1: раньше замена упражнения меняла карточку, но sets оставались с
+  // previous* СТАРОГО упражнения — рекомендатор (calculateProgression) строил
+  // «Прошлый/Рекомендую» по истории другого движения (риск неподъёмного веса).
+  // swapCardFields при замене мгновенно честно обнуляет чужую историю,
+  // reinjectExerciseHistory подтягивает реальную историю и PB нового упражнения
+  // (форма запроса = загрузка экрана → результат совпадает с перезаходом).
+  const swapCardFields = useCallback((exerciseIndex: number, alternative: AlternativeExercise) => {
+    setExercises((prev) => {
+      const updated = [...prev];
+      const ex = updated[exerciseIndex];
+      if (!ex) return prev;
+      updated[exerciseIndex] = {
+        ...ex,
+        id: alternative.id,
+        name: alternative.name,
+        primary_muscles: alternative.primary_muscles,
+        secondary_muscles: alternative.secondary_muscles,
+        technique: alternative.technique,
+        equipment: alternative.equipment ?? [],
+        settings: alternative.settings,
+        benefits: alternative.benefits,
+        risks: alternative.risks,
+        injuries: alternative.injuries,
+        media_url: alternative.media_url,
+        personalBest: null,
+        sets: ex.sets.map((s) => ({
+          ...s,
+          previousWeight: null,
+          previousReps: null,
+          previousRpe: null,
+        })),
+      };
+      return updated;
+    });
+  }, []);
+
+  const reinjectExerciseHistory = useCallback(
+    async (exerciseIndex: number, exerciseId: string) => {
+      try {
+        const [recentLogs, bests] = await Promise.all([
+          fetchExerciseHistory(exerciseId, workoutId),
+          userId
+            ? profileService.getPersonalBests(userId, [exerciseId])
+            : Promise.resolve({} as Record<string, number>),
+        ]);
+        const bySet = buildPrevLogsByExerciseId(recentLogs).get(exerciseId);
+        setExercises((prev) => {
+          const updated = [...prev];
+          const ex = updated[exerciseIndex];
+          // Гонка: пока была в сети, карточку могли пересвапить/вернуть —
+          // устаревший результат выбрасываем.
+          if (!ex || ex.id !== exerciseId) return prev;
+          updated[exerciseIndex] = {
+            ...ex,
+            personalBest: bests[exerciseId] ?? null,
+            sets: ex.sets.map((s, i) => {
+              const p = bySet?.get(i + 1);
+              return {
+                ...s,
+                previousWeight: p?.weight_kg ?? null,
+                previousReps: p?.reps ?? null,
+                previousRpe: p?.rpe ?? null,
+              };
+            }),
+          };
+          return updated;
+        });
+      } catch (error) {
+        // Провал = карточка остаётся в «нет истории» — это честнее и безопаснее,
+        // чем рекомендация от чужого упражнения.
+        console.warn('[useWorkoutSession] reinjectExerciseHistory:', error);
+      }
+    },
+    [workoutId, userId]
+  );
+
   const replaceExercise = useCallback(
     async (exerciseIndex: number, alternativeId: string) => {
       const exercise = exercisesRef.current[exerciseIndex];
@@ -548,24 +632,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         // Не прерываем локальное обновление UI, но логируем ошибку
       }
 
-      setExercises((prev) => {
-        const updated = [...prev];
-        updated[exerciseIndex] = {
-          ...updated[exerciseIndex],
-          id: alternative.id,
-          name: alternative.name,
-          primary_muscles: alternative.primary_muscles,
-          secondary_muscles: alternative.secondary_muscles,
-          technique: alternative.technique,
-          equipment: alternative.equipment ?? [],
-          settings: alternative.settings,
-          benefits: alternative.benefits,
-          risks: alternative.risks,
-          injuries: alternative.injuries,
-          media_url: alternative.media_url,
-        };
-        return updated;
-      });
+      swapCardFields(exerciseIndex, alternative);
+      void reinjectExerciseHistory(exerciseIndex, alternative.id);
 
       setReplacements((prev) => ({
         ...prev,
@@ -576,7 +644,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       // (UX-5 Feature 1) в [id].tsx; при отсутствии программы — действие настолько
       // лёгкое, что подтверждение не требуется (haptic + мгновенная замена).
     },
-    [loadAlternatives, userId, workoutId]
+    [loadAlternatives, userId, workoutId, swapCardFields, reinjectExerciseHistory]
   );
 
   // FD12-3: честный возврат. Раньше loadWorkout() перечитывал тренировку из БД,
@@ -641,6 +709,18 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
                   injuries: original.injuries,
                   alternatives: original.alternatives,
                   media_url: original.media_url,
+                  // SWAP-1: возвращаем и ИСТОРИЮ оригинала — previous* в текущих
+                  // сетах после свапа принадлежат замещавшему упражнению.
+                  personalBest: original.personalBest ?? null,
+                  sets: current.sets.map((s, i) => {
+                    const o = original.sets[i];
+                    return {
+                      ...s,
+                      previousWeight: o?.previousWeight ?? null,
+                      previousReps: o?.previousReps ?? null,
+                      previousRpe: o?.previousRpe ?? null,
+                    };
+                  }),
                 };
                 return updated;
               });
@@ -684,26 +764,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       // Snapshot для rollback при ошибке сервиса
       const previousExercise = { ...exercise };
 
-      // 1. Локальное (оптимистичное) обновление — как temporary
+      // 1. Локальное (оптимистичное) обновление — как temporary (SWAP-1:
+      // чужая previous*-история обнуляется сразу; своя подтянется после
+      // подтверждения сервера — при rollback previousExercise вернёт её как был)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setExercises((prev) => {
-        const updated = [...prev];
-        updated[exerciseIndex] = {
-          ...updated[exerciseIndex],
-          id: alternative.id,
-          name: alternative.name,
-          primary_muscles: alternative.primary_muscles,
-          secondary_muscles: alternative.secondary_muscles,
-          technique: alternative.technique,
-          equipment: alternative.equipment ?? [],
-          settings: alternative.settings,
-          benefits: alternative.benefits,
-          risks: alternative.risks,
-          injuries: alternative.injuries,
-          media_url: alternative.media_url,
-        };
-        return updated;
-      });
+      swapCardFields(exerciseIndex, alternative);
 
       // 2. Программная замена (persistent + sync будущих тренировок)
       try {
@@ -713,6 +778,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           alternative.id,
           alternative.name
         );
+        // SWAP-1: программа подтвердила замену — подтягиваем историю нового
+        // упражнения (совпадает с тем, что карточка получит при перезаходе).
+        void reinjectExerciseHistory(exerciseIndex, alternative.id);
         feedback.alert(
           'Заменено в программе',
           `${previousExercise.name} → ${alternative.name}\n\nИзменение применено к будущим тренировкам программы.`
@@ -731,7 +799,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         );
       }
     },
-    [programId, workoutId, loadAlternatives]
+    [programId, workoutId, loadAlternatives, swapCardFields, reinjectExerciseHistory]
   );
 
   // ============================================================================
