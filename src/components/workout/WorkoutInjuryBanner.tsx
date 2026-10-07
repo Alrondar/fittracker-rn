@@ -120,7 +120,7 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
           <X size={20} color={colors.textSecondary} />
         </PressableScale>
       </View>
-      {activeInjuries.map((injury, index) => {
+      {activeInjuries.map((injury) => {
         const bodyPartLabel = BODY_PART_LABELS[injury.body_part] || injury.body_part;
         const injuryTypeLabel = INJURY_TYPE_LABELS[injury.injury_type] || injury.injury_type;
         const severityLabel =
@@ -131,7 +131,10 @@ export const WorkoutInjuryBanner = memo(function WorkoutInjuryBanner({
               : 'низкая';
         return (
           <Text
-            key={index}
+            // QA-13 (аудит 06.10): был key={index} — добавление/удаление травмы из
+            // середины списка перемонтировало соседние строки. `ActiveInjury` id не
+            // содержит (tsc это и показал), поэтому ключ — составной по смыслу записи.
+            key={`${injury.body_part}:${injury.injury_type}:${injury.severity ?? ''}`}
             style={[
               typography.caption,
               { color: colors.textSecondary, lineHeight: 18, marginBottom: SPACING.xs },
