@@ -28,6 +28,12 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { FONT_FAMILIES } from '../../constants/fonts';
+import {
+  sanitizeNumericInput,
+  clampNumericValue,
+  MAX_WEIGHT_KG,
+  MAX_REPS,
+} from '../../utils/numericInput';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import {
@@ -217,8 +223,11 @@ const SetInput = memo(function SetInput({
         placeholder={placeholder}
         value={local}
         onChangeText={(v) => {
-          setLocal(v);
-          localRef.current = v;
+          // EDGE-12: «82,5» с RU-клавиатуры раньше молча записывалось как 82
+          // (parseFloat режет по запятой). Разделитель и мусор вычищаются на вводе.
+          const clean = sanitizeNumericInput(v, keyboardType);
+          setLocal(clean);
+          localRef.current = clean;
           scheduleCommit();
         }}
         onFocus={() => {
@@ -302,7 +311,12 @@ const SetRow = memo(
               keyboardType="decimal-pad"
               hasValue={!!set.weight}
               onChangeText={(v) =>
-                updateSet(exerciseIndex, startIndex + si, 'weight', fromDisplay(v))
+                updateSet(
+                  exerciseIndex,
+                  startIndex + si,
+                  'weight',
+                  clampNumericValue(fromDisplay(v), MAX_WEIGHT_KG)
+                )
               }
               colors={colors}
               cardStyles={cardStyles}
@@ -321,7 +335,14 @@ const SetRow = memo(
                   placeholder="L"
                   keyboardType="number-pad"
                   hasValue={!!set.reps_left}
-                  onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_left', v)}
+                  onChangeText={(v) =>
+                    updateSet(
+                      exerciseIndex,
+                      startIndex + si,
+                      'reps_left',
+                      clampNumericValue(v, MAX_REPS)
+                    )
+                  }
                   colors={colors}
                   cardStyles={cardStyles}
                 />
@@ -330,7 +351,14 @@ const SetRow = memo(
                   placeholder="R"
                   keyboardType="number-pad"
                   hasValue={!!set.reps_right}
-                  onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps_right', v)}
+                  onChangeText={(v) =>
+                    updateSet(
+                      exerciseIndex,
+                      startIndex + si,
+                      'reps_right',
+                      clampNumericValue(v, MAX_REPS)
+                    )
+                  }
                   colors={colors}
                   cardStyles={cardStyles}
                 />
@@ -342,7 +370,9 @@ const SetRow = memo(
                 placeholder="повт."
                 keyboardType="number-pad"
                 hasValue={!!set.reps}
-                onChangeText={(v) => updateSet(exerciseIndex, startIndex + si, 'reps', v)}
+                onChangeText={(v) =>
+                  updateSet(exerciseIndex, startIndex + si, 'reps', clampNumericValue(v, MAX_REPS))
+                }
                 colors={colors}
                 cardStyles={cardStyles}
               />
