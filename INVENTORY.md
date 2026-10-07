@@ -298,7 +298,7 @@ Important components:
 | useTheme|all UI|
 | useToast|all screens|
 | useDailyNutrition|Dashboard (AUDIT-1)|
-| useWeeklyNutrition|NutritionWeekCard (profile), NutritionWeekTable (Dashboard, AUDIT-1)|
+| useWeeklyNutrition|NutritionWeekTable (Dashboard, AUDIT-1), WeeklyBalanceChip|
 | useBurnedCalories|DashboardNutritionCard (AUDIT-1: 🔥-бейдж)|
 | useTodayReadiness|workout/[id] (ENG-3 readiness context) + StatusCard (AUDIT-6) + ContextInsightCard (readinessWarning, COACH-4) + ReadinessSheet (P0: auto-calculation)|
 | useWeeklySummary|Dashboard («Коротко о неделе», COACH-4/COACH-5) + Progress hub|
@@ -428,14 +428,14 @@ Body metrics schema (FEAT-2.3): `body_metrics` таблица содержит `
 Program editing is already split into multiple components/sheets, but the UX hierarchy remains a major audit target.
 Display modes (training/balanced/learn) реализованы через `useWorkoutDisplayMode` + `WorkoutDisplayModePicker` в settings (feature branch).
 ExerciseCard разбит на секции в `sections/`; порядок секций (UX-16): Header → TagsRow (exclusive toggle equipment/muscles) → Warning/Banners → SetsGrid (💡 + collapsible Recommendation + RPE overlay) → ActionsRow (rest pill + Info) → [Info tabs]. SetsGrid — главный рабочий блок, всегда выше справочной информации. Knowledge скрыт в training mode; technique доступен во всех режимах.
-Equipment вынесен из accordion в отдельную секцию `ExerciseCardEquipment`.
+Equipment/мышцы рендерит TagsRow в `sections/ExerciseCardTags.tsx` (отдельные секции `ExerciseCardEquipment`/`ExerciseCardMuscles` удалены как пустые заглушки — STR-A 07.10).
 Technique accordion доступна во всех display modes (safety: правильная техника = безопасность).
 Media/slider content монтируется только при раскрытии accordion (CLAUDE.md §8).
 Header variant D: Settings справа от названия, metadata слева, actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») справа.
 AlternativeExerciseCard (PR5): Польза/Риски/Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety до принятия решения); Техника выполнения — lazy-mount аккордеон через ExerciseCardTechnique; Противопоказания рендерятся только при наличии записей в injury_exercise_warnings.
 Pain persistent state (PR6): painService.getPainEventsForWorkout загружает pain_events при fetchWorkoutSession; painState маппится в ExerciseData через buildPainStateMap; savePainState/clearPainState с оптимистичным обновлением + откат; PainSheet prefill из painState + «Боль прошла» для delete; visual affordance «⚠ Боль отмечена» в header bubble; UNIQUE constraint (user_id, workout_id, exercise_id) предотвращает дубли.
 workout/[id].tsx split (PR8): WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo; showInjuryBanner state инкапсулирован в WorkoutInjuryBanner; файл уменьшен с ~673 до ~400 строк (CLAUDE.md §2).
-Knowledge disclosure cleanup (PR7): ExerciseCardKnowledge использует SectionSubheading из ExerciseCardTechnique; единообразие подзаголовков между «Техника выполнения» и «Важно знать»; lazy mount через everOpened в ExerciseInfoAccordion.
+Knowledge disclosure cleanup (PR7): единообразие подзаголовков между «Техника выполнения» и «Важно знать» держится через `SectionSubheading` (экспорт из `ExerciseCardTechnique`); lazy mount через everOpened в `ExerciseInfoAccordion`. «Важно знать» рендерит таб в `sections/ExerciseCardInfo.tsx` (PillToggle Техника/Важно знать); прежний аккордеон `ExerciseCardKnowledge` удалён (STR-A 07.10), его consumers переехали в Info-табы в UX-2.
 UX-3 decision (закрыто): warm-up реализован через вкладку WorkoutTabs + WarmupBlock (useWarmup). WARMUP-1 (24.09.2026): лист для разминки всё же появился — WarmupExerciseSheet (техника с картинками + изучаемые аналоги), но decision UX-3 по-прежнему верна для контекста вне карточек. History per-exercise частично закрыт per-set previous data в SetsGrid (FEAT-1.1) + вкладка History с деталями тренировок (historyService.getWorkoutDetail). Notes отложены — нет таблицы exercise_notes, не подтверждена потребность; вернуться после сбора feedback от пользователей.
 RPE frequency settings (UX-7): useRpeSettings — 3 опции (always / last-set default / off); SetsGrid проверяет predicate shouldShowRpeChip: уже введённые значения (rpe != null) показываются всегда, новые запросы — по настройке. Picker в profile/settings.tsx с segmented control и живым описанием.
 
@@ -499,7 +499,7 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H
 `src/components/dashboard/NutritionWeekTable.tsx` — AUDIT-1: недельная таблица КБЖУ+вода (стр. 2 pager)
 `src/components/dashboard/NutritionAddModal.tsx` — AUDIT-1: L2-модалка ввода приёма пищи
 `src/hooks/useDailyNutrition.ts` — AUDIT-1: daily + targets для Dashboard
-`src/hooks/useWeeklyNutrition.ts` — AUDIT-1: недельная агрегация питания (также для NutritionWeekCard в профиле)
+`src/hooks/useWeeklyNutrition.ts` — AUDIT-1: недельная агрегация питания (потребители: `dashboard/NutritionWeekTable`, `dashboard/WeeklyBalanceChip`)
 `src/hooks/useBurnedCalories.ts` — AUDIT-1: 🔥-бейдж в центре диаграммы
 `src/hooks/useTodayPain.ts` — AUDIT-6: «⚠ Боль сегодня»
 `src/components/progress/ProgressHero.tsx` — UX-11: главный ответ «Что сейчас происходит с моим прогрессом?»
