@@ -115,7 +115,7 @@
 
 | Пакет | Что | Gate |
 |---|---|---|
-| **STR-A: вычистить мёртвое** | 12 файлов из STR-1 (кроме `database.types.ts`) + 4 файла из STR-8 + 4 отработанных codemod-а | `tsc --noEmit` + `eslint .` |
+| **STR-A: вычистить мёртвое** | ✅ **выполнен 07.10** (main `58aede5`, web-port merge `7318429`): удалены все 12 файлов из STR-1, включая пару `NutritionWeekCard` + `nutritionTrend` — по явному решению владельца (`score`/чипы отклонения КБЖУ удалены вместе с ней, живых аналогов у них нет). `database.types.ts` не тронут (QA-1). Остаток STR-8 (лог/`.bak`/tmp/codemod-ы) — не удалялся, ждёт отдельного слова | `tsc --noEmit` exit 0, `eslint . --max-warnings 0` exit 0 — в обоих деревьях |
 | **STR-B: карта кода** | правки `INVENTORY.md §0` по всем 6 строкам STR-9 + одна таблица «фича → слои» из STR-6 | ручная сверка с деревом |
 | **STR-C: проводка** | решение по STR-2 (алиасы: включить и конвертировать ИЛИ удалить 9+8 записей), STR-3 (`test`/`patches`), STR-4 (объявить `@react-navigation/bottom-tabs`) | `tsc`, `expo export --platform web` |
 | **STR-D: переезд файлов** | 9 файлов из корня `src/components/` по папкам + склейка `Skeleton.tsx`/`ui/skeletons.tsx` в один `ui/skeletons.tsx` (rename-коммит, без изменения логики) | `tsc`, `eslint`, прогон 4 табов на устройстве |
