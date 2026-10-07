@@ -1,6 +1,6 @@
 # FitTracker — Current Status
 
-Срез: 06.10.2026 (web-port) [WEB-CTR-9 закрыт — вердикт владельца по общим файлам, правило зафиксировано в `AGENTS.md`; база 02.10: SWAP-1/BUG-12 из main (c04d495), закрыты WEB-BUG-4/5/6, WEB-FZ-2(в), PRG-400, CTR-4, FD-SEED-2a]
+Срез: 06.10.2026 (web-port) [аудиты скиллами 06.10 влито из main → §15.1; QA-2 закрыт (11 точек на mapError), EDGE-12 (санитизация ввода), A11Y-контраст (onInk/onPrimaryInk), refresh database.types; WEB-CTR-9 закрыт — правило общих файлов в `AGENTS.md`. База 02.10: SWAP-1/BUG-12 (c04d495), WEB-BUG-4/5/6, WEB-FZ-2(в), PRG-400, CTR-4, FD-SEED-2a]
 
 
 Источник фактического состояния — текущий `main`. Если документ расходится с кодом, код имеет приоритет, после чего документ актуализируется.
@@ -666,7 +666,7 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 |---|---:|---|---|
 | CTR-1 | 🔴 | ✅ | `src/hooks/useProgramEditor.ts:124,160,233` — прямые `supabase.rpc()` в хуке против §2/§9 («только src/services/»); причём `copy_program_for_user` и `create_workouts_for_program` УЖЕ имеют обёртки в programsService (`:545,:624`) — две точки вызова расходятся при смене сигнатуры; `save_program_snapshot` без обёртки |
 | CTR-2 | 🟠 | ✅ | Сырые `error.message` пользователю в мутациях: `useProgramEditor.ts:132,173`, `profile/injuries.tsx:239,253,271`, `workouts.tsx:134` — против §2 (mapError/extractMessage). Auth-паттерн корректен, мутации — нет |
-| CTR-3 | 🟠 | 🔲 | Файлы >500 строк против §2: SetsGrid 1483, progression.ts 1224, WeeklyReviewSection 1052, useWorkoutSession 963, programsService 925, MuscleStatsSection 789, ExercisePickerSheet 660, progress.tsx 649, profile.tsx 643, workout/[id].tsx 609 (+ StatusCard 602, WorkoutTimer 536…). Дрейф документа: INVENTORY §12 «workout/[id] уменьшен до ~400» — фактически 609 |
+| CTR-3 | 🟠 | 🔲 | Файлы >500 строк против §2 — **замер 06.10 (`wc -l`), прежние цифры устарели**: SetsGrid 1548, progression.ts 1226, useWorkoutSession 1061, WeeklyReviewSection 1052, programsService 1000, MuscleStatsSection 791, weeklySummary.ts 743, ExercisePickerSheet 667, progress.tsx 659, profile.tsx 653, workoutService 616, StatusCard 611, workout/[id].tsx 603, warmupService 587, programs.tsx 572, weeklySummaryService 567, exercise/[id].tsx 561, WorkoutTimer 545, profileService 537, dashboardService 514 = **20 носителей**. Исключения закреплены в `CLAUDE.md` §2 (не пилить): database.types.ts 1427, muscleSvgPaths.ts 1080, theme.ts 613. Порядок split'ов и швы — `spark-output/arch/dependency-impact-2026-10-06.md` (циклов импорта нет; скрытая связь — синглтон `bindRestActions/getRestActions`, `RestTimerContext.tsx:67–77`). Дрейф документа: INVENTORY §12 «workout/[id] уменьшен до ~400» — фактически 603 |
 | CTR-4 | 🟡 | ✅ | Вердикт владельца 01.10 — токены (main `1e35977`): `ON_MEDIA_SCRIM/TEXT/TEXT_DIM`, `ON_ACCENT_TEXT`, `SKELETON_SHIMMER` в `src/constants/theme.ts` + правило §7 (медиа → ON_MEDIA_*, шторки → `colors.overlay`). Применено: TechniqueMediaSlider (7 литералов), Skeleton shimmer, dashboard programDay; `sortOverlay` в card/filter.ts — мёртвый стиль (0 потребителей), удалён. Визуальный diff 0 |
 | CTR-5 | 🟢 | ✅ | `RANK_COLORS` убраны из inline в `app/(tabs)/profile.tsx:49` в токен `RANK_COLORS` в `src/constants/semanticColors.ts` (золото/серебро/бронза — семантика медалей, вне темовой палитры). Значения идентичны, рендер не меняется. Gates: tsc ✅ eslint ✅ (exit 0) |
 | CTR-6 | 🟢 | ✅ | Комментарий-шапка ExerciseSlider.tsx:3 всё ещё описывает `removeClippedSubviews={true}` как P1-A, хотя проп осознанно убран (SG-2) — свежий комментарий |
@@ -675,6 +675,28 @@ Baseline — после первого замера (REL-5 / PERF-9). Любая
 ### Проверено и чисто (не регрессировать)
 
 Supabase `.from/.auth` вне services — нет; `Alert.alert` мимо feedback.ts — нет; LayoutAnimation — нет; RN Image — нет; Math.random в keyExtractor — нет; Zustand хранит только auth; effective-date §4 (created_at) — не нарушается нигде; SheetShell-in-Modal с `isModal` — все 10 мест; FadeIn-над-Pressable — нет; prefetch-ключи `useTabPrefetch` совпадают с дефолтами экранов; keyExtractor'ы FlatList — по id; оптимистичные замены/боль имеют rollback.
+
+## 15.1 Аудиты 06.10.2026 (скиллами, read-only)
+
+Метод: 4 параллельных read-only агента со скиллами; ключевые находки верифицированы повторным чтением/пересчётом (не приняты на веру). Канон находок — артефакты, здесь только указатели и статусы:
+
+| Артефакт | ID | Что подтверждено |
+|---|---|---|
+| `spark-output/audit/a11y-wcag-2026-10-06.md` | A11Y-1…22 | контраст белого на `primary` в светлых темах: neon 2.13, orange 2.84, blue 3.87, pink 4.35 (не проходят AA), purple 5.70 (проходит); reduce-motion — 0 упоминаний при 18 `withRepeat`; `autoComplete`/`textContentType` — 0; `accessibilityLiveRegion` — 1 (`SetsGrid.tsx:1228`) |
+| `spark-output/audit/states-edge-2026-10-06.md` | EDGE-1…17 | `useWorkouts` — `error` не читается, сбой выглядит как «Нет тренировок» (`workouts.tsx:41`/`:196`); программа с ошибкой = «не найдена» без retry (`program/[id]/index.tsx:95`); сбой загрузки травм = «У вас нет активных травм» (`app/profile/injuries.tsx:408`); `NetInfo` в проекте нет, offline-очередь только в памяти |
+| `spark-output/audit/code-quality-2026-10-06.md` | QA-1…14 | гейты базлайна: `tsc --noEmit` exit 0, `eslint . --max-warnings 0` exit 0; `supabase.ts:10` без дженерика, `database.types.ts` не импортирован (2 упоминания — комментарии); `colors: any` — 79 |
+| `spark-output/arch/dependency-impact-2026-10-06.md` (+ `.dot`) | DEP-* | порядок split'ов, швы, RPC blast-radius; цифры CTR-3 обновлены в §15 выше |
+
+План починки и вердикты владельца (NetInfo, авто-контраст по luminance, полная миграция типов, пакеты по одному) — `spark-output/plan-2026-10-06-remediation.md`; сводный device-чек-лист — `spark-output/checklists/device-2026-10-06.md`.
+
+| ID | Пр. | Статус | Комментарий |
+|---|---:|---|---|
+| QA-1 (замер) | 🔴 | 🟡 | 06.10: `createClient<Database>` применялся и замерялся — **38 ошибок tsc в 12 сервисах** (profileService 9, programsService 7, metricsService 4, weeklySummary 3, injuries 3, forecast 3, programPhases 2, exercisesServiceNormalized 2, cycleService 2, workoutService 1, readiness 1, programSharing 1). Классы: `created_at: string` vs `string \| null` в рукописных интерфейсах, enum-union (`programs.level`, `cycle_events.event_type`) против `string`, `Json`-касты, `.is('skipped_at', 'null')` вместо `null`, и embed-формы (`exercises: {}[]` vs `{}`). Дженерик откачен, чтобы не уронить базлайн 0/0; правки — отдельный пакет по сервисам. Заодно найдено и исправлено: `types/database.types.ts` был **устаревшим** — в `program_exercises` не было `progression_policy` (колонка в проде есть, FD-SEED-2a её заполнял), из-за чего 11 ошибок в `workoutService` были ложными |
+| A11Y-контраст | 🔴 | 🟡 | 06.10: механизм готов — `src/utils/contrast.ts` (luminance/ratio/bestInkOn) + `onInk()/onPrimaryInk()` в `theme.ts`; чернила = первый кандидат из `[textInverse, textPrimary, #FFF, #000]`, набирающий 4.5:1. Переведено 8 поверхностей (AppButton primary/danger, PillToggle, pill таб-бара, CategoryStrip, MuscleGroupFilters, EquipmentSheet ×2, ProgramCard-badge). Расчёт по 10 темам: было 4 светлых ниже AA (2.13–4.35), стало 4.96–14.76 — ниже 4.5 не осталось. Остаток: ~60 мест `textInverse` вне акцентных фонов и hero-градиенты (`ON_ACCENT_TEXT` 1.27–3.75) — требуют перечисления и визуальной проверки |
+| EDGE-12 | 🟡 | ✅ | 06.10: `src/utils/numericInput.ts` (чистые функции) + внедрено в `SetsGrid` — «,» → «.», один разделитель, ≤2 знака, целые для повторов; кламп при коммите 500 кг / 200 повт. Поведение проверено прогоном скомпилированной утилиты (23 кейса). Не проверялось: фактический ввод с RU-клавиатуры на устройстве (чек-лист п.11) |
+| QA-2 (регресс CTR-2) | 🟠 | ✅ | 11 user-facing точек переводены на `mapError` (инвариант `CLAUDE.md` §2 «user-facing errors — mapError/extractMessage»): `NutritionAddModal.tsx`, `settings/ProfileSection.tsx` ×2, `useBodyMetrics.ts` ×2, `useProfile.ts`, `usePrograms.ts` ×3, `(tabs)/programs.tsx` ×2. Сырые тексты остались только там, где их видит разработчик (`console.warn` в сервисах) и в служебном `throw new Error(res.error.message)` (`app/progress/[id].tsx:43` — сообщение не рендерится). Gates: tsc exit 0, eslint exit 0 |
+| EDGE-1/2/5 («ошибка вместо пусты») | 🔴 | 🔲 | Пакет 1.1 плана: общий режим error+retry в `ui/StateBlock`, ~8 точек. Отложен: финальная проверка требует устройства (TalkBack + вёрстка) |
+| CTR-3 / EXCEPTIONS-1 | 🟠 | ✅ | Цифры >500 строк обновлены по `wc -l` (см. §15), в `CLAUDE.md` §2 закреплены исключения для `database.types.ts`/`muscleSvgPaths.ts`/`theme.ts` |
 
 ## 16. Update rule
 

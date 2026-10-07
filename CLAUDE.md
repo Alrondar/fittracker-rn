@@ -46,8 +46,8 @@
 - Profile создаётся DB trigger `handle_new_user`; `ensureProfile` идемпотентен.
 - Config — `src/lib/config.ts`, значения приходят из Expo config.
 - User-facing errors — `mapError/extractMessage` или `mapAuthError`.
-- User-facing алерты и подтверждения — только через `src/lib/feedback.ts` (`feedback.alert`), `Alert.alert` в коде UI не используется (грабля — INVENTORY.md §10.1).
-- Файл не должен разрастаться выше 500 строк; при >450 сначала рассмотреть split.
+- User-facing алерты и подтверждения — только через `src/lib/feedback.ts` (`feedback.alert`); `Alert.alert` в коде UI не используется (грабля — INVENTORY.md §10.1).
+- Файл не должен разрастаться выше 500 строк; при >450 сначала рассмотреть split. Исключения (не пилить — артефакты и данные): `src/types/database.types.ts` (генерируется Supabase, см. `generate_typescript_types`), `src/constants/muscleSvgPaths.ts` (SVG-пути), `src/constants/theme.ts` (палитра тем — один источник фактов по § «один факт — один владелец»). Для них действует прежний запрет править вручную только там, где это разрешено (theme — через токены).
 - `database.types.ts` должен соответствовать текущей схеме.
 - Новая логика не должна ломать persistence, safety или program-sync semantics.
 

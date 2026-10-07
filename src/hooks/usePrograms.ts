@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { feedback } from '../lib/feedback';
+import { mapError } from '../utils/errorMapper';
 
 import { useRouter } from 'expo-router';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -150,7 +151,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
       setShowCreateModal(false);
     },
     onError: (error: any) => {
-      showToast(error.message || 'Не удалось сохранить', 'error');
+      showToast(mapError(error), 'error');
     },
   });
 
@@ -167,7 +168,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
       showToast('Программа удалена', 'success');
     },
     onError: (error: any) => {
-      showToast(error.message || 'Не удалось удалить', 'error');
+      showToast(mapError(error), 'error');
     },
   });
 
@@ -307,7 +308,7 @@ export function usePrograms(options: UseProgramsOptions): UseProgramsReturn {
       setFormLevel(copiedProgram.level);
       setShowCreateModal(true);
     } catch (e: any) {
-      showToast(e.message || 'Не удалось скопировать программу', 'error');
+      showToast(mapError(e), 'error');
     }
   };
 

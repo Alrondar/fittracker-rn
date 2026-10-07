@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { mapError } from '../../utils/errorMapper';
 import { PressableScale } from '../ui/PressableScale';
 import { User, Mail, Lock, Save } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -51,7 +52,7 @@ export function ProfileSection() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       feedback.alert('Успех', 'Данные сохранены');
     } catch (e: any) {
-      feedback.alert('Ошибка', e.message);
+      feedback.alert('Не удалось сохранить', mapError(e));
     } finally {
       setSaving(false);
     }
@@ -71,7 +72,7 @@ export function ProfileSection() {
             await sendPasswordReset(email, passwordResetRedirect());
             feedback.alert('Успех', 'Письмо для смены пароля отправлено');
           } catch (e: any) {
-            feedback.alert('Ошибка', e.message);
+            feedback.alert('Не удалось отправить письмо', mapError(e));
           }
         },
       },

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { PressableScale } from './PressableScale';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, onInk } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 export type PillToggleOption<T extends string> = {
@@ -75,7 +75,7 @@ export function PillToggle<T extends string>({
               {Icon && (
                 <Icon
                   size={18}
-                  color={isSelected ? colors.textInverse : colors.textSecondary}
+                  color={isSelected ? onInk(colors.primary, colors) : colors.textSecondary}
                   strokeWidth={isSelected ? 2 : 1.5}
                 />
               )}
@@ -83,7 +83,7 @@ export function PillToggle<T extends string>({
                 style={[
                   typography.label,
                   {
-                    color: isSelected ? colors.textInverse : colors.textSecondary,
+                    color: isSelected ? onInk(colors.primary, colors) : colors.textSecondary,
                     fontWeight: isSelected ? '600' : '400',
                     marginTop: Icon ? SPACING.xs : 0,
                   },

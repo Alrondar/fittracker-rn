@@ -5,7 +5,7 @@ import { Dumbbell, ChevronDown } from 'lucide-react-native';
 import { FONT_FAMILIES } from '../../constants/fonts';
 
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha, onPrimaryInk } from '../../constants/theme';
 import { EXERCISE_CATEGORIES } from '../../constants/exerciseCategories';
 
 interface CategoryStripProps {
@@ -71,7 +71,7 @@ export function CategoryStrip({
               fontSize: 11,
               fontWeight: '700',
               fontFamily: FONT_FAMILIES.textSemiBold,
-              color: colors.textInverse,
+              color: onPrimaryInk(colors),
             }}
           >
             {equipmentSelectedCount}

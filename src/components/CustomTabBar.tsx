@@ -11,7 +11,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { SPACING, BORDER_RADIUS, scale } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, scale, onPrimaryInk } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import * as Haptics from 'expo-haptics';
 
@@ -122,7 +122,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             });
           };
 
-          const iconColor = isFocused ? colors.textInverse : colors.textSecondary;
+          const iconColor = isFocused ? onPrimaryInk(colors) : colors.textSecondary;
           const strokeWidth = isFocused ? 2 : 1.5;
 
           return (

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { feedback } from '../lib/feedback';
+import { mapError } from '../utils/errorMapper';
 import { metricsService } from '../services/metricsService';
 import { BodyMetric, MetricFormData } from '../types/metrics';
 
@@ -57,7 +58,7 @@ export function useBodyMetrics(userId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['body_metrics', userId] });
     },
     onError: (error: any) => {
-      feedback.alert('Ошибка', error.message || 'Не удалось сохранить замер');
+      feedback.alert('Не удалось сохранить замер', mapError(error));
     },
   });
 
@@ -68,7 +69,7 @@ export function useBodyMetrics(userId: string | null) {
       queryClient.invalidateQueries({ queryKey: ['body_metrics', userId] });
     },
     onError: (error: any) => {
-      feedback.alert('Ошибка', error.message || 'Не удалось удалить замер');
+      feedback.alert('Не удалось удалить замер', mapError(error));
     },
   });
 

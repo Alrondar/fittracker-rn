@@ -9,6 +9,7 @@
 // Ширина читается один раз при загрузке модуля: в app.json зафиксирован portrait,
 // поэтому поворота и рассинхрона между рендерами нет.
 import { Dimensions, PixelRatio, Platform } from 'react-native';
+import { bestInkOn } from '../utils/contrast';
 
 export interface ThemeColors {
   primary: string;
@@ -499,6 +500,24 @@ export const themeGroups: Record<string, { label: string; keys: string[] }> = {
 
 export type ThemeKey = keyof typeof themes;
 export type ThemeAccent = keyof typeof themeGroups;
+
+// A11Y (06.10): единый источник «чернил поверх акцента» — см. src/utils/contrast.ts.
+// Берётся первый кандидат из [textInverse темы, textPrimary темы, белый, чёрный],
+// который набирает AA 4.5:1; в темах, где белый и так закончен, ничего не меняется.
+const onInkCache = new Map<string, string>();
+
+/** Чернила поверх произвольного акцентного фона (primary, error, success…). */
+export function onInk(background: string, colors: ThemeColors): string {
+  const key = `${background}|${colors.textInverse}|${colors.textPrimary}`;
+  const cached = onInkCache.get(key);
+  if (cached) return cached;
+  const ink = bestInkOn(background, [colors.textInverse, colors.textPrimary, '#FFFFFF', '#000000']);
+  onInkCache.set(key, ink);
+  return ink;
+}
+
+/** Чернила поверх `colors.primary` (CTA, активный pill, чипы). */
+export const onPrimaryInk = (colors: ThemeColors): string => onInk(colors.primary, colors);
 
 // Алиасы для обратной совместимости
 export const lightTheme = purpleLightTheme;

@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   Zap,
 } from 'lucide-react-native';
-import { SPACING, BORDER_RADIUS, fontScale, withAlpha } from '../constants/theme';
+import { SPACING, BORDER_RADIUS, fontScale, withAlpha, onInk } from '../constants/theme';
 import { typography } from '../styles/typography';
 import { createCardStyles } from '../styles/components/card';
 import { createBadgeStyles } from '../styles/components/badge';
@@ -179,12 +179,12 @@ export const ProgramCard = memo(function ProgramCard({
                   backgroundColor: colors.success,
                 }}
               >
-                <CheckCircle2 size={12} color={colors.textInverse} strokeWidth={2.5} />
+                <CheckCircle2 size={12} color={onInk(colors.success, colors)} strokeWidth={2.5} />
                 <Text
                   style={{
                     fontSize: fontScale(10),
                     fontWeight: '700',
-                    color: colors.textInverse,
+                    color: onInk(colors.success, colors),
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                   }}

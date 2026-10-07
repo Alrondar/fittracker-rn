@@ -1,0 +1,56 @@
+{
+  "skill": "access",
+  "generated_at": "2026-10-06T00:00:00+03:00",
+  "project_name": "FitTracker RN",
+  "target": {
+    "type": "code",
+    "reference": "C:/projects/fittracker-rn (+ ../fittracker-rn-web web-port, отличия помечены [WEB])",
+    "scope": ["app/", "src/components/", "src/constants/theme.ts", "src/constants/semanticColors.ts", "src/lib/feedback.ts"]
+  },
+  "compliance_target": "AA",
+  "audit_mode": "auto",
+  "report": "spark-output/audit/a11y-wcag-2026-10-06.md",
+  "findings": [
+    { "id": "a11y-1", "wcag_criterion": "1.4.3 Contrast (Minimum)", "principle": "perceivable", "level": "AA", "severity": "blocker", "description": "Белый textInverse на colors.primary в CTA/пилюле таба: orange 2.84, blue 3.87, neon 2.13, pink 4.35:1 (light-темы)", "evidence": "src/components/ui/AppButton.tsx:37; src/constants/theme.ts:145,226,307,388", "suggestion": "Токен onPrimary с авторасчётом dark-ink (паттерн уже есть в dark-темах)", "fix_effort": "quick-win", "regulatory_reference": ["ADA Title III", "EAA"] },
+    { "id": "a11y-2", "wcag_criterion": "1.4.3", "principle": "perceivable", "level": "AA", "severity": "blocker", "description": "ON_ACCENT_TEXT/textInverse на градиентах hero/primary: 1.27–3.75:1", "evidence": "src/styles/components/dashboard.ts:44-52; src/components/program/ProgramHero.tsx:44-95", "suggestion": "Считать ink от конечных точек градиента", "fix_effort": "medium", "regulatory_reference": ["ADA", "EAA"] },
+    { "id": "a11y-3", "wcag_criterion": "1.4.3", "principle": "perceivable", "level": "AA", "severity": "blocker", "description": "Белые номера рангов на RANK_COLORS: gold 1.40, silver 1.82:1", "evidence": "app/(tabs)/profile.tsx:349-362; src/constants/semanticColors.ts:65", "suggestion": "Тёмные цифры на медалях", "fix_effort": "quick-win", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-4", "wcag_criterion": "1.4.3", "principle": "perceivable", "level": "AA", "severity": "blocker", "description": "colors.primary как текст (44 места): 2.13–3.87:1 в orange/neon/blue light", "evidence": "app/(auth)/login.tsx:110,150; AppButton.tsx:38-48", "suggestion": "Токен primaryText", "fix_effort": "medium", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-5", "wcag_criterion": "1.4.3 / 1.4.4", "principle": "perceivable", "level": "AA", "severity": "blocker", "description": "warning/success/error как text (≥25 мест, captionSmall 11px): warning 1.48–2.16, success 2.0–2.78, error 3.3–3.8 в light", "evidence": "StatusCard.tsx:572; ReadinessSheet.tsx:256-280; AppInput.tsx:53", "suggestion": "Токены *-text", "fix_effort": "medium", "regulatory_reference": ["ADA", "EAA"] },
+    { "id": "a11y-6", "wcag_criterion": "1.3.1 / 3.3.1 / 4.1.2", "principle": "robust", "level": "A", "severity": "blocker", "description": "AppInput label не связан с полем (нет accessibilityLabel на TextInput), error без live region и связи", "evidence": "src/components/ui/AppInput.tsx:26-56", "suggestion": "accessibilityLabel={label}; liveRegion на error", "fix_effort": "quick-win", "regulatory_reference": ["ADA", "EAA"] },
+    { "id": "a11y-7", "wcag_criterion": "2.2.2 Pause, Stop, Hide", "principle": "operable", "level": "A", "severity": "blocker", "description": "0 обращений к AccessibilityInfo/reduce-motion; бесконечные withRepeat (Skeleton/LoadingChip/BrandLoader/RecordsCard/WarmupBlock/WorkoutTimer pulse) + FadeIn-stagger", "evidence": "WorkoutTimer.tsx:233-244; Skeleton.tsx; grep=0 в обоих репо", "suggestion": "Канон-хук useReduceMotion + гейты (совместно с FZ-8)", "fix_effort": "medium", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-8", "wcag_criterion": "1.1.1 / 1.4.1", "principle": "perceivable", "level": "A", "severity": "blocker", "description": "Body/Muscle maps: зоны без label, контейнер label 'female-body-left', нагрузка = только цвет", "evidence": "src/components/workout/BodyMap.tsx:118-147,191; MuscleLoadMap.tsx:125-134", "suggestion": "Сводный label + текстовое дублирование уровней", "fix_effort": "major-rework", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-9", "wcag_criterion": "4.1.3 / 1.4.3", "principle": "robust", "level": "AA", "severity": "major", "description": "Toast: белый на #10b981/#ef4444 (2.54/3.76) и нет accessibilityLiveRegion", "evidence": "src/components/Toast.tsx:56-75,97-103", "suggestion": "liveRegion=polite + role alert + ink", "fix_effort": "quick-win", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-10", "wcag_criterion": "4.1.2", "principle": "robust", "level": "A", "severity": "major", "description": "Switch %жира и чипы PainSheet без role/state (selected/checked)", "evidence": "GoalsStep1.tsx:201-215; PainSheet.tsx:53,265,315,363", "suggestion": "accessibilityRole + state из label/value", "fix_effort": "quick-win", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-11", "wcag_criterion": "4.1.2 / 2.4.3", "principle": "robust", "level": "A", "severity": "major", "description": "SheetShell (non-Modal) не изолирует AT-фон, фокус не переносится (setAccessibilityFocus=0)", "evidence": "src/components/ui/SheetShell.tsx:273-287", "suggestion": "accessibilityViewIsModal + setAccessibilityFocus", "fix_effort": "medium", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-12", "wcag_criterion": "1.4.1 / 4.1.2", "principle": "perceivable", "level": "A", "severity": "major", "description": "SetsGrid ячейки: name=placeholder ('L','повт.'), без контекста сета/упр.; заполненность = только зелёный фон", "evidence": "src/components/workout/SetsGrid.tsx:190-236,301-342", "suggestion": "accessibilityLabel/value на SetInput", "fix_effort": "medium", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-13", "wcag_criterion": "2.5.1 / 2.1.1 [WEB]", "principle": "operable", "level": "A", "severity": "major", "description": "Reorder только pointer-drag (draggable-flatlist; [WEB] ReorderList без клавиатуры)", "evidence": "app/program/[id]/edit.tsx:12; DayCard.tsx:145,192; PhaseCard.tsx:191", "suggestion": "Кнопки ↑/↓ в editMode", "fix_effort": "medium", "regulatory_reference": ["ADA", "EAA (web)"] },
+    { "id": "a11y-14", "wcag_criterion": "1.4.3", "principle": "perceivable", "level": "AA", "severity": "major", "description": "blueLight textSecondary 4.15:1; purpleD secondary на surfaceSecondary 4.04:1", "evidence": "src/constants/theme.ts:117,119,242", "suggestion": "Подкорректировать токены", "fix_effort": "quick-win", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-15", "wcag_criterion": "2.5.5 (AAA→project 44pt) / 1.1.1", "principle": "operable", "level": "AAA", "severity": "major", "description": "Таргеты <44 и/или без имени: таймер-кнопки 36/40, точки пагинации 8×8 без label, X EquipmentSheet 28×28 без label, pips ~24×40", "evidence": "WarmupExerciseCard.tsx:196-217; DashboardNutritionCard.tsx:341-377; EquipmentSheet.tsx:90; StatusCard.tsx:246-256", "suggestion": "hitSlop до 44 + label", "fix_effort": "quick-win", "regulatory_reference": ["внутренний стандарт 44pt"] },
+    { "id": "a11y-16", "wcag_criterion": "1.3.5 Identify Input Purpose", "principle": "perceivable", "level": "AA", "severity": "major", "description": "autoComplete/textContentType = 0 во всём приложении (email/password/name)", "evidence": "app/(auth)/login.tsx:128-140; update-password.tsx:73-88", "suggestion": "Проброс autoComplete через AppInput", "fix_effort": "quick-win", "regulatory_reference": ["EAA/EN 301 549"] },
+    { "id": "a11y-17", "wcag_criterion": "1.4.11 Non-text Contrast", "principle": "perceivable", "level": "AA", "severity": "major", "description": "MACRO-кольца fats 1.63/water 2.30, линия графика #FDCB6E 1.51:1; диаграммы вне AT", "evidence": "semanticColors.ts:19-26,75; CircularNutritionChart.tsx, MacroPieChart.tsx", "suggestion": "Суммарный accessibilityLabel + затемнение жёлтого", "fix_effort": "medium", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-18", "wcag_criterion": "1.4.11", "principle": "perceivable", "level": "AA", "severity": "minor", "description": "ON_MEDIA_TEXT_DIM точки слайдера 1.41–3.23:1 (неактивные — exempt частично)", "evidence": "TechniqueMediaSlider.tsx:73; theme.ts:534", "suggestion": "alpha 0.75", "fix_effort": "quick-win", "regulatory_reference": [] },
+    { "id": "a11y-19", "wcag_criterion": "1.4.4 Resize Text", "principle": "perceivable", "level": "AA", "severity": "minor", "description": "numberOfLines=1 без adjusts (AppButton, SheetShell title); adjusts только WeeklyStatsCard/iOS; риск клиппинга при fontScale — не проверено на устройстве", "evidence": "AppButton.tsx:110; SheetShell.tsx:235; WeeklyStatsCard.tsx:31", "suggestion": "adjusts+minimumFontScale в канонах", "fix_effort": "medium", "regulatory_reference": ["ADA"] },
+    { "id": "a11y-20", "wcag_criterion": "2.1.2 [WEB]", "principle": "operable", "level": "A", "severity": "minor", "description": "FeedbackDialog [WEB]: есть role=alert/viewIsModal/Escape, нет focus-trap/autofocus/возврата фокуса", "evidence": "src/components/ui/FeedbackDialog.tsx:63-94", "suggestion": "Фокус-ловушка в web-хосте", "fix_effort": "quick-win", "regulatory_reference": ["EAA (web)"] },
+    { "id": "a11y-21", "wcag_criterion": "4.1.2", "principle": "robust", "level": "A", "severity": "minor", "description": "EquipmentSheet — своя шторка вне канона SheetShell: нет изоляции фона", "evidence": "src/components/exercises/EquipmentSheet.tsx:44-50", "suggestion": "Миграция на SheetShell", "fix_effort": "quick-win", "regulatory_reference": [] },
+    { "id": "a11y-22", "wcag_criterion": "1.1.1 / 4.1.2", "principle": "perceivable", "level": "A", "severity": "minor", "description": "Остаточные дыры label-покрытия (programs 12/0×, ExercisePickerSheet 15/0 и др.) — часть закрыта текстом-детками, точечно безымянные Pressable", "evidence": "grep onPress−accessibilityLabel; DashboardNutritionCard.tsx:158,188,214", "suggestion": "Расширить scripts/ux4-codemod", "fix_effort": "quick-win", "regulatory_reference": [] }
+  ],
+  "compliance_summary": {
+    "total_criteria_checked": 24,
+    "total_passed": 10,
+    "total_failed": 14,
+    "by_principle": {
+      "perceivable": { "passed": 3, "failed": 9 },
+      "operable": { "passed": 2, "failed": 4 },
+      "understandable": { "passed": 2, "failed": 1 },
+      "robust": { "passed": 3, "failed": 4 }
+    },
+    "conformance_level_achieved": "none (частичный A)",
+    "conformance_gap": ["1.4.3 палитры light (CTA/text)", "1.3.1/4.1.2 связка label-поле-state", "2.2.2 reduce-motion", "1.1.1 карты тела", "1.3.5 autoComplete", "4.1.3 live regions"]
+  },
+  "legal_risk_assessment": {
+    "applicable_regulations": ["ADA Title III (consumer, косвенно)", "EAA/EN 301 549 (если веб-порт публичный)"],
+    "risk_level": "medium",
+    "notes": "Фитнес-consumer без гос-мандатов; публичный веб-порт повышает риск. Юридическую квалификацию даёт法务 — аудит только техническая подготовка."
+  },
+  "not_verified_staticly": ["VoiceOver/TalkBack живое поведение", "клиппинг при large font", "рендер скрима на реальных фото", "[WEB] html lang / focus ring / aria-маппинг RNW", "эффективность hitSlop на устройстве"]
+}

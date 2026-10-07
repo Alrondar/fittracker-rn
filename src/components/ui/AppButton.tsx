@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS, fontScale } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, fontScale, onInk } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { PressableScale } from './PressableScale';
 
@@ -34,7 +34,9 @@ export function AppButton({
   const getVariantStyles = () => {
     switch (variant) {
       case 'primary':
-        return { backgroundColor: colors.primary, textColor: colors.textInverse };
+        // A11Y (06.10): белый на светлых акцентах не проходил AA (neon 2.13:1,
+        // orange 2.84:1) — чернила подбираются по luminance, палитра тем не меняется.
+        return { backgroundColor: colors.primary, textColor: onInk(colors.primary, colors) };
       case 'secondary':
         return {
           backgroundColor: 'transparent',
@@ -43,11 +45,11 @@ export function AppButton({
           borderWidth: 1,
         };
       case 'danger':
-        return { backgroundColor: colors.error, textColor: colors.textInverse };
+        return { backgroundColor: colors.error, textColor: onInk(colors.error, colors) };
       case 'ghost':
         return { backgroundColor: 'transparent', textColor: colors.primary };
       default:
-        return { backgroundColor: colors.primary, textColor: colors.textInverse };
+        return { backgroundColor: colors.primary, textColor: onInk(colors.primary, colors) };
     }
   };
 

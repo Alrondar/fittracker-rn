@@ -6,7 +6,7 @@ import { PressableScale } from '../ui/PressableScale';
 import * as Haptics from 'expo-haptics';
 import { Check } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha, onInk } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { MUSCLE_GROUPS } from '../../constants/muscleGroups';
 import { getMuscleColor, MUSCLE_COLORS } from '../../constants/muscleColors';
@@ -82,7 +82,7 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
                   <Text
                     style={[
                       typography.captionSmall,
-                      { fontWeight: '600', color: colors.textInverse },
+                      { fontWeight: '600', color: onInk(groupColor, colors) },
                     ]}
                   >
                     {selectedInGroup}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { feedback } from '../lib/feedback';
+import { mapError } from '../utils/errorMapper';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -99,7 +100,7 @@ export function useProfile(userId: string | null) {
       // без инвалидации они врали после добавления приёма из профиля.
       invalidateNutritionCaches(queryClient, userId);
     } catch (e: any) {
-      feedback.alert('Ошибка', e.message);
+      feedback.alert('Не удалось сохранить питание', mapError(e));
     }
   };
 

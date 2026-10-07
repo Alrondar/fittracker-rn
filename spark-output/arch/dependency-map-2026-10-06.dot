@@ -1,0 +1,76 @@
+// Dependency map — носители >500 строк (CTR-3), grain = файл
+// Срез 06.10.2026, доказательство: grep по import-строкам (не упоминаниям в комментариях)
+// Легенда: solid = static import; dashed = скрытая связь (context/singleton/RPC/Query key)
+digraph carriers {
+  rankdir=LR;
+  node [shape=box, fontsize=10];
+  edge [fontsize=8];
+
+  // --- носители (цвет = риск) ---
+  SetsGrid      [label="SetsGrid.tsx\n1548", fillcolor="#ffcccc", style=filled];
+  progression   [label="engine/progression.ts\n1226", fillcolor="#ccffcc", style=filled];
+  useWorkoutSession [label="useWorkoutSession.ts\n1061", fillcolor="#ffddaa", style=filled];
+  WeeklyReview  [label="WeeklyReviewSection.tsx\n1052", fillcolor="#ccffcc", style=filled];
+  programsService [label="programsService.ts\n1000", fillcolor="#ffddaa", style=filled];
+  MuscleStats   [label="MuscleStatsSection.tsx\n791", fillcolor="#ccffcc", style=filled];
+  PickerSheet   [label="ExercisePickerSheet.tsx\n667", fillcolor="#ffddaa", style=filled];
+  progressScr   [label="(tabs)/progress.tsx\n659", fillcolor="#ccffcc", style=filled];
+  profileScr    [label="(tabs)/profile.tsx\n653", fillcolor="#ccffcc", style=filled];
+  StatusCard    [label="StatusCard.tsx\n611", fillcolor="#ffcccc", style=filled];
+  workoutId     [label="workout/[id].tsx\n603", fillcolor="#ffcccc", style=filled];
+  WorkoutTimer  [label="WorkoutTimer.tsx\n545", fillcolor="#ccffcc", style=filled];
+  weeklySummaryEng [label="engine/weeklySummary.ts\n743 (новый)", fillcolor="#ccffcc", style=filled];
+  workoutService [label="workoutService.ts\n616 (новый)", fillcolor="#ffddaa", style=filled];
+  profileService [label="profileService.ts\n537 (новый)", fillcolor="#ffddaa", style=filled];
+
+  // --- потребители / границы ---
+  ExerciseCard  [label="ExerciseCard.tsx"];
+  RestCtx       [label="RestTimerContext.tsx\n(getRestActions singleton)"];
+  useWarmup     [label="useWarmup.ts"];
+  workoutHdr    [label="WorkoutScreenHeader.tsx"];
+  progSheets    [label="Editor sheets + PhaseCard/DayCard\n(useProgramEditor/usePrograms)"];
+  editorModals  [label="ProgramEditorModals.tsx"];
+  dashIndex     [label="(tabs)/index.tsx Dashboard"];
+  useEx         [label="useExercises → exercisesServiceNormalized"];
+  useWS         [label="useWeeklySummary"];
+  useMS         [label="useMuscleStats"];
+  useProg       [label="useProgress/useHistory"];
+  useProf       [label="useProfile/useCycle/useToday*"];
+
+  Supabase [shape=cylinder, label="Supabase\nRPC: copy_program_for_user,\nsave_program_snapshot,\ncreate_workouts_for_program,\nsync_program_changes_to_workouts,\nupsert_workout_logs,\nsearch_exercises,\nget_exercise_filter_counts"];
+
+  ExerciseCard -> SetsGrid;
+  SetsGrid -> progression;
+  SetsGrid -> RestCtx [style=dashed, label="startRestTimer / автоотдых"];
+  SetsGrid -> workoutService [style=dashed, label="через колбэки useWorkoutSession +\nuseRecommendationFeedback"];
+  workoutId -> useWorkoutSession;
+  useWorkoutSession -> RestCtx [style=dashed, label="bindRestActions (модульный синглтон)"];
+  useWorkoutSession -> workoutService;
+  useWorkoutSession -> programsService;
+  useWorkoutSession -> profileService;
+  useWorkoutSession -> useWarmup [style=dashed, label="общий экран"];
+  workoutId -> RestCtx;
+  workoutId -> WorkoutTimer;
+  workoutId -> progression;
+  workoutHdr -> WorkoutTimer;
+  ExerciseCard -> progression;
+  progressScr -> WeeklyReview;
+  progressScr -> MuscleStats;
+  progressScr -> useProg;
+  progressScr -> weeklySummaryEng [style=dashed, label="через useWeeklySummary"];
+  WeeklyReview -> useWS;
+  WeeklyReview -> weeklySummaryEng [style=dashed, label="InsightSeverity типы"];
+  useWS -> weeklySummaryEng;
+  MuscleStats -> useMS;
+  useMS -> Supabase [style=dashed, label="queryKey ['muscleStats', userId]"];
+  dashIndex -> StatusCard;
+  StatusCard -> useProf [style=dashed, label="9 хуков, прямые readinessService/cycleService"];
+  profileScr -> useProf;
+  profileScr -> Supabase [style=dashed, label="saveNutrition через профиль-слой"];
+  editorModals -> PickerSheet;
+  PickerSheet -> useEx;
+  useEx -> Supabase [style=dashed, label="RPC search_exercises"];
+  progSheets -> programsService;
+  programsService -> Supabase;
+  workoutService -> Supabase;
+}
