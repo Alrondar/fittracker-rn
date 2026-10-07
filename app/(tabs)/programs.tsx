@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
+import { mapError } from '../../src/utils/errorMapper';
 import { Q } from '../../src/lib/queryPolicy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -147,7 +148,7 @@ export default function ProgramsScreen() {
       showToast('Программа активирована', 'success');
     },
     onError: (error: any) => {
-      showToast(error.message || 'Не удалось активировать', 'error');
+      showToast(mapError(error), 'error');
     },
   });
 
@@ -168,7 +169,7 @@ export default function ProgramsScreen() {
       onRefresh();
       router.push(`/program/${newId}`);
     } catch (e: any) {
-      setImportError(e.message || 'Не удалось импортировать');
+      setImportError(mapError(e));
     } finally {
       setImporting(false);
     }

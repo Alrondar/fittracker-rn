@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Modal } from 'react-native';
 import { feedback } from '../../lib/feedback';
+import { mapError } from '../../utils/errorMapper';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { SPACING } from '../../constants/theme';
@@ -111,7 +112,7 @@ export function NutritionAddModal({ visible, onClose, editingLog }: NutritionAdd
     },
 
     onError: (error: Error) => {
-      feedback.alert('Ошибка', error.message || 'Не удалось сохранить');
+      feedback.alert('Не удалось сохранить', mapError(error));
     },
   });
 
