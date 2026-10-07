@@ -4,7 +4,7 @@ import { PressableScale } from '../ui/PressableScale';
 import { Search, Check, X } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
-import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
+import { SPACING, BORDER_RADIUS, withAlpha, onPrimaryInk } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { FilterOption } from '../../services/exercisesService';
@@ -178,7 +178,7 @@ export function EquipmentSheet({
                     alignItems: 'center',
                   }}
                 >
-                  {isSelected && <Check size={13} color={colors.textInverse} strokeWidth={3} />}
+                  {isSelected && <Check size={13} color={onPrimaryInk(colors)} strokeWidth={3} />}
                 </View>
               </PressableScale>
             );
@@ -233,7 +233,7 @@ export function EquipmentSheet({
               alignItems: 'center',
             }}
           >
-            <Text style={[typography.button, { color: colors.textInverse }]}>
+            <Text style={[typography.button, { color: onPrimaryInk(colors) }]}>
               Готово{selected.length > 0 ? ` · ${selected.length}` : ''}
             </Text>
           </PressableScale>
