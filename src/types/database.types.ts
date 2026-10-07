@@ -722,6 +722,7 @@ export type Database = {
           intensity: string
           position: number
           program_day_id: string
+          progression_policy: string | null
           reps_range: string
           rest_seconds: number
           sets: number
@@ -735,6 +736,7 @@ export type Database = {
           intensity: string
           position: number
           program_day_id: string
+          progression_policy?: string | null
           reps_range: string
           rest_seconds: number
           sets: number
@@ -748,6 +750,7 @@ export type Database = {
           intensity?: string
           position?: number
           program_day_id?: string
+          progression_policy?: string | null
           reps_range?: string
           rest_seconds?: number
           sets?: number
