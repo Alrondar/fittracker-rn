@@ -1,26 +1,33 @@
 // src/components/workout/AlternativeExerciseCard.tsx
-// PR5: карточка выбора замены — сравнение и решение.
-// Риски и Противопоказания — видимые блоки ПЕРЕД CTA (PRODUCT.md §8: safety сразу,
-// пользователь видит ограничения до принятия решения о замене).
-// Техника выполнения — аккордеон с lazy mount (CLAUDE.md §8).
-import React, { memo } from 'react';
+// ALT-L2 (08.10): карточка замены = L1-сводка + Info-блок, тем же механизмом, что
+// в основной карточке (UX-16 D3/D6): кнопка Info открывает inline-блок с табами
+// «Техника» / «Важно знать» (InfoButton + ExerciseCardInfo — общие с основной
+// карточкой носители). Info стоит в одном ряду с «Заменить», как в ActionsRow
+// основной карточки («Таймер» + Info).
+//
+// Почему переработана: страница слайдера ограничена высотой основной карточки
+// (ExerciseSlider: maxHeight = mainHeight, наследие SP-1/FX-2). Раньше сюда
+// рендерилась вся база знаний (Польза ~5 строк + Риски + Противопоказания +
+// аккордеон техники) — контент не влезал, а за клип уходило главное: CTA
+// «Заменить» (вложенный вертикальный ScrollView без nestedScrollEnabled на
+// Android не скроллится).
+//
+// На L1: название, бейдж связи, снаряды и мышцы, описание (benefits) ЦЕЛИКОМ без
+// усечения и противопоказания чипом (PRODUCT.md §8: ограничения видны ДО нажатия
+// «Заменить»). Ряд «Заменить» + Info идёт за описанием, а табы — под рядом, так
+// что раскрытие Info ничего не сдвигает.
+import React, { memo, useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
-import {
-  RotateCcw,
-  Sparkles,
-  ShieldAlert,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  Shuffle,
-} from 'lucide-react-native';
+import { RotateCcw, ShieldAlert } from 'lucide-react-native';
 import { SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import { EquipmentBubbles } from './EquipmentBubbles';
 import { MuscleBubbles } from './MuscleBubbles';
-import { ExerciseCardTechnique } from './sections/ExerciseCardTechnique';
+import { InfoButton } from './sections/ExerciseCardActions';
+import { ExerciseCardInfo } from './sections/ExerciseCardInfo';
+import { AlternativeRelationBadge } from './sections/AlternativeRelationBadge';
 import { AlternativeExercise } from '../../types/workout';
 
 interface AlternativeExerciseCardProps {
@@ -32,32 +39,6 @@ interface AlternativeExerciseCardProps {
   cardStyles: ReturnType<typeof createCardStyles>;
 }
 
-/** Главный заголовок видимого блока (без accordion). */
-function BlockHeading({
-  icon,
-  label,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  color: string;
-}) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: SPACING.xs,
-        marginTop: SPACING.md,
-        marginBottom: SPACING.sm,
-      }}
-    >
-      {icon}
-      <Text style={[typography.labelBold, { color }]}>{label}</Text>
-    </View>
-  );
-}
-
 export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   exercise,
   exerciseIndex,
@@ -65,10 +46,20 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   colors,
   cardStyles,
 }: AlternativeExerciseCardProps) {
-  const hasTechniqueBlock = !!exercise.technique || !!exercise.media_url || !!exercise.settings;
-  const hasBenefits = !!exercise.benefits;
-  const hasRisks = !!exercise.risks;
+  // UX-16 D3/D6 (как в ExerciseCard): state живёт в карточке, контент Info
+  // монтируется только при открытии и размонтируется при «Скрыть».
+  const [infoOpen, setInfoOpen] = useState(false);
+  const handleToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
+
+  const mediaUrl = exercise.media_url ?? null;
+  const settingsText = exercise.settings || '';
+  const hasMuscles = exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0;
   const hasInjuries = exercise.injuries.length > 0;
+  const hasTechniqueContent = !!(exercise.technique || mediaUrl || settingsText);
+  // «Важно знать» в табе = то, чего нет на L1: риски и противопоказания целиком.
+  // Описание (benefits) показываем выше полностью, дублировать его в табе нельзя.
+  const hasKnowledgeContent = !!(exercise.risks || hasInjuries);
+  const hasInfoContent = hasTechniqueContent || hasKnowledgeContent;
 
   return (
     <View
@@ -89,169 +80,105 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
         {exercise.name}
       </Text>
 
-      {/* ENG-5: бейдж типа замены (L1 — пользователь сразу видит семантику варианта) */}
-      {exercise.relation_type === 'progression' && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            alignSelf: 'flex-start',
-            gap: 4,
-            backgroundColor: withAlpha(colors.primary, 0.082),
-            paddingHorizontal: SPACING.sm,
-            paddingVertical: 3,
-            borderRadius: SPACING.sm,
-            marginBottom: SPACING.sm,
-          }}
-        >
-          <TrendingUp size={12} color={colors.primary} strokeWidth={2} />
-          <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
-            Прогрессия
-          </Text>
-        </View>
-      )}
-      {exercise.relation_type === 'regression' && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            alignSelf: 'flex-start',
-            gap: 4,
-            backgroundColor: withAlpha(colors.warning, 0.082),
-            paddingHorizontal: SPACING.sm,
-            paddingVertical: 3,
-            borderRadius: SPACING.sm,
-            marginBottom: SPACING.sm,
-          }}
-        >
-          <TrendingDown size={12} color={colors.warning} strokeWidth={2} />
-          <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
-            Упрощение
-          </Text>
-        </View>
-      )}
-      {exercise.relation_type === 'variation' && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            alignSelf: 'flex-start',
-            gap: 4,
-            backgroundColor: colors.surfaceSecondary,
-            paddingHorizontal: SPACING.sm,
-            paddingVertical: 3,
-            borderRadius: SPACING.sm,
-            marginBottom: SPACING.sm,
-          }}
-        >
-          <Shuffle size={12} color={colors.textSecondary} strokeWidth={2} />
-          <Text
-            style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '600' }]}
-          >
-            Вариант
-          </Text>
-        </View>
-      )}
+      {/* ENG-5: бейдж типа замены (L1 — семантика варианта) */}
+      <AlternativeRelationBadge relation={exercise.relation_type} compact />
 
-      {/* Summary: мышцы */}
-      {(exercise.primary_muscles.length > 0 || exercise.secondary_muscles.length > 0) && (
-        <View style={{ marginBottom: SPACING.sm }}>
+      {/* Summary: мышцы + оборудование */}
+      {hasMuscles && (
+        <View style={{ marginBottom: SPACING.xs }}>
           <MuscleBubbles
             primaryMuscles={exercise.primary_muscles}
             secondaryMuscles={exercise.secondary_muscles}
           />
         </View>
       )}
-
-      {/* Summary: оборудование */}
-      <View style={{ marginBottom: SPACING.md }}>
+      <View style={{ marginBottom: SPACING.sm }}>
         <EquipmentBubbles
           equipment={exercise.equipment}
           primaryMuscles={exercise.primary_muscles}
         />
       </View>
 
-      {/* === Блок «Польза» (всегда видимый) === */}
-      {hasBenefits && (
-        <>
-          <BlockHeading
-            icon={<Sparkles size={14} color={colors.success} />}
-            label="Польза"
-            color={colors.success}
-          />
-          <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-            {exercise.benefits}
-          </Text>
-        </>
-      )}
-
-      {/* === Блок «Риски» (всегда видимый, ПЕРЕД CTA) === */}
-      {hasRisks && (
-        <>
-          <BlockHeading
-            icon={<AlertTriangle size={14} color={colors.warning} />}
-            label="Риски"
-            color={colors.warning}
-          />
-          <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
-            {exercise.risks}
-          </Text>
-        </>
-      )}
-
-      {/* === Блок «Противопоказания» (всегда видимый, ПЕРЕД CTA) === */}
-      {hasInjuries && (
-        <>
-          <BlockHeading
-            icon={<ShieldAlert size={14} color={colors.error} />}
-            label="Противопоказания"
-            color={colors.error}
-          />
-          {exercise.injuries.map((inj, i) => (
-            <View
-              key={i}
-              style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}
-            >
-              <Text style={[typography.bodySmall, { color: colors.error, marginRight: 6 }]}>•</Text>
-              <Text
-                style={[
-                  typography.bodySmall,
-                  { color: colors.textSecondary, lineHeight: 18, flex: 1 },
-                ]}
-              >
-                {inj}
-              </Text>
-            </View>
-          ))}
-        </>
-      )}
-
-      {/* === CTA: Заменить на это === */}
-      <PressableScale
-        style={[
-          cardStyles.replaceButton,
-          {
-            borderColor: colors.primary,
-            backgroundColor: colors.primaryLight,
-            marginTop: SPACING.md,
-            marginBottom: SPACING.md,
-          },
-        ]}
-        onPress={() => onRequestReplace(exerciseIndex, exercise.id)}
-      >
-        <RotateCcw size={16} color={colors.primary} strokeWidth={2} />
-        <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>
-          Заменить на это
+      {/* Описание упражнения — целиком, без усечения (вердикт владельца 08.10).
+          В табе «Важно знать» его нет: там только то, что не влезло на L1 */}
+      {!!exercise.benefits && (
+        <Text style={[typography.bodySmall, { color: colors.textSecondary, lineHeight: 18 }]}>
+          {exercise.benefits}
         </Text>
-      </PressableScale>
+      )}
 
-      {/* === Аккордеон «Техника выполнения» (lazy mount через ExerciseCardTechnique) === */}
-      {hasTechniqueBlock && (
-        <ExerciseCardTechnique
+      {/* Safety (PRODUCT.md §8): противопоказания видимы до нажатия «Заменить» —
+          списком названий в чипе, а не абзацем. */}
+      {hasInjuries && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: SPACING.xs,
+            marginTop: SPACING.sm,
+            paddingHorizontal: SPACING.sm,
+            paddingVertical: 6,
+            borderRadius: SPACING.sm,
+            backgroundColor: withAlpha(colors.error, 0.082),
+          }}
+        >
+          <ShieldAlert size={13} color={colors.error} strokeWidth={2} style={{ marginTop: 1 }} />
+          <Text
+            style={[typography.captionSmall, { color: colors.error, flex: 1, lineHeight: 16 }]}
+            numberOfLines={2}
+          >
+            Нельзя при: {exercise.injuries.join(', ')}
+          </Text>
+        </View>
+      )}
+
+      {/* Действия в один ряд — та же композиция, что в ActionsRow основной
+          карточки («Таймер» + Info), только вместо таймера — «Заменить».
+          Ряд НАД Info-блоком: раскрытие табов не уводит кнопку за клип. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          gap: SPACING.sm,
+          marginTop: SPACING.md,
+        }}
+      >
+        <PressableScale
+          style={[
+            cardStyles.replaceButton,
+            {
+              flex: 1,
+              marginTop: 0,
+              marginBottom: 0,
+              borderColor: colors.primary,
+              backgroundColor: colors.primaryLight,
+            },
+          ]}
+          onPress={() => onRequestReplace(exerciseIndex, exercise.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Заменить на ${exercise.name}`}
+        >
+          <RotateCcw size={16} color={colors.primary} strokeWidth={2} />
+          <Text style={[cardStyles.replaceButtonText, { color: colors.primary }]}>Заменить</Text>
+        </PressableScale>
+
+        {/* UX-16 D6: та же кнопка Info, что в ActionsRow (общий носитель — InfoButton) */}
+        {hasInfoContent && (
+          <InfoButton onOpenInfo={handleToggleInfo} infoVisible={infoOpen} colors={colors} />
+        )}
+      </View>
+
+      {/* UX-16 D3: тот же Info-блок, что в основной карточке: PillToggle
+          «Техника» / «Важно знать», демонстрация, описание техники, настройки
+          оборудования, риски, противопоказания, empty-состояния */}
+      {infoOpen && hasInfoContent && (
+        <ExerciseCardInfo
           technique={exercise.technique}
-          mediaUrl={exercise.media_url}
-          settingsText={exercise.settings}
-          defaultExpanded={false}
+          mediaUrl={mediaUrl}
+          settingsText={settingsText}
+          benefits=""
+          risks={exercise.risks}
+          injuries={exercise.injuries}
           colors={colors}
         />
       )}

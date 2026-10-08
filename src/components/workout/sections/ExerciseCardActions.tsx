@@ -22,6 +22,65 @@ interface ExerciseCardActionsProps {
   colors: any;
 }
 
+interface InfoButtonProps {
+  onOpenInfo: () => void;
+  infoVisible: boolean;
+  colors: any;
+}
+
+/**
+ * ALT-L2 (08.10): кнопка Info вынесена из ActionsRow, чтобы карточка замены могла
+ * поставить её в один ряд со своей кнопкой «Заменить» (у основной карточки ряд
+ * «Таймер + Info»). Один носитель разметки, состояния и haptics — не копия.
+ */
+export const InfoButton = memo(function InfoButton({
+  onOpenInfo,
+  infoVisible,
+  colors,
+}: InfoButtonProps) {
+  const handleOpenInfo = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onOpenInfo();
+  };
+
+  return (
+    <PressableScale
+      onPress={handleOpenInfo}
+      accessibilityRole="button"
+      accessibilityLabel={infoVisible ? 'Скрыть информацию' : 'Показать информацию'}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.xs,
+        backgroundColor: infoVisible ? colors.primary : colors.surfaceSecondary,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: 10,
+        borderRadius: BORDER_RADIUS.md,
+        borderWidth: 1,
+        borderColor: infoVisible ? colors.primary : colors.border,
+      }}
+      haptic="none"
+    >
+      <Info
+        size={16}
+        color={infoVisible ? colors.textInverse : colors.textSecondary}
+        strokeWidth={2}
+      />
+      <Text
+        style={[
+          typography.captionSmall,
+          {
+            color: infoVisible ? colors.textInverse : colors.textSecondary,
+            fontWeight: '700',
+          },
+        ]}
+      >
+        {infoVisible ? 'Скрыть' : 'Info'}
+      </Text>
+    </PressableScale>
+  );
+});
+
 export const ExerciseCardActions = memo(function ExerciseCardActions({
   restSeconds,
   onStartRest,
@@ -33,11 +92,6 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
   const handleStartRest = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onStartRest();
-  };
-
-  const handleOpenInfo = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onOpenInfo();
   };
 
   // Не рендерим, если нет ни отдыха, ни инфо
@@ -82,40 +136,7 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
 
       {/* Info button */}
       {hasInfoContent && (
-        <PressableScale
-          onPress={handleOpenInfo}
-          accessibilityRole="button"
-          accessibilityLabel={infoVisible ? 'Скрыть информацию' : 'Показать информацию'}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: SPACING.xs,
-            backgroundColor: infoVisible ? colors.primary : colors.surfaceSecondary,
-            paddingHorizontal: SPACING.md,
-            paddingVertical: 10,
-            borderRadius: BORDER_RADIUS.md,
-            borderWidth: 1,
-            borderColor: infoVisible ? colors.primary : colors.border,
-          }}
-          haptic="none"
-        >
-          <Info
-            size={16}
-            color={infoVisible ? colors.textInverse : colors.textSecondary}
-            strokeWidth={2}
-          />
-          <Text
-            style={[
-              typography.captionSmall,
-              {
-                color: infoVisible ? colors.textInverse : colors.textSecondary,
-                fontWeight: '700',
-              },
-            ]}
-          >
-            {infoVisible ? 'Скрыть' : 'Info'}
-          </Text>
-        </PressableScale>
+        <InfoButton onOpenInfo={onOpenInfo} infoVisible={infoVisible} colors={colors} />
       )}
     </View>
   );
