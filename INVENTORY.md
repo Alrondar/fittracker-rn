@@ -99,7 +99,7 @@ Main components:
 `src/utils/mediaFit.ts` — чистая формула `coverCropLoss` + `pickMediaFit` + порог `COVER_LOSS_MAX` (MED-FIT); вынесена из компонента, чтобы прогонять на реальных размерах каталога через `npx tsx`
 `WarmupBlock`
 `WarmupExerciseCard.tsx` — компактный L1: номер-чекбокс + миниатюра техники + таймер; тап по карточке → WarmupExerciseSheet (WARMUP-1)
-`WarmupExerciseSheet.tsx` — L2 разминки (plain SheetShell с `visible`, state и рендер в корне workout/[id].tsx — не внутри ScrollView): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1)
+`WarmupExerciseSheet.tsx` — L2 разминки (plain SheetShell с `visible`, state и рендер в корне workout/[id].tsx — не внутри ScrollView): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1). WARMUP-3a: варианты приходят уже отфильтрованными по активным травмам + счётчик «N скрыто из-за травм» (как у ENG-5)
 `PainSheet`
 `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
 `sections/ExerciseCardHeader.tsx` — название + Settings + actions-bubbles («Боль» / «⚠ Боль отмечена», «Другие варианты») с PR6 pain affordance
@@ -122,8 +122,8 @@ Main hooks/services:
 `workout/useWorkoutSession.loader.ts` — загрузка workout + alternatives
 `useWorkoutDisplayMode.ts` — display mode preference (AsyncStorage persist)
 `useInjuryWarnings.ts`
-`useWarmup.ts`
-`useTimerSettings.ts`, `useUnitPreferences.ts`, `useRpeSettings.ts` — RPE prompt frequency (always/last-set/off, AsyncStorage persist)
+`useWarmup.ts` — WARMUP-3ab: сид подбора (`userId|день|травмы|regenCounter`), `regenerateWarmup` для ⟳, кэш вариантов по ключу `id|injuryKey`
+`useTimerSettings.ts`, `useUnitPreferences.ts`, `useRpeSettings.ts` — RPE prompt frequency (always/last-set/off, AsyncStorage persist); `useTimerSettings` с 08.10 хранит `warmupOrder` (graded/activation_first/stretch_first) вместо флага `activationFirst`, миграция прежнего значения 1-в-1
 `workoutService.ts`
 `warmupService.ts`
 `painService.ts`
@@ -360,7 +360,8 @@ Important components:
 | utils/intensityInfo.tsx|getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | utils/macroCalculator.ts|macro calculations|
 | engine/progression.ts|calculateProgression (ENG-1); explainProgression (ENG-2); applySafetyPrecedence (ENG-4); applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety). Чистые функции|
-| engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция|
+| engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция. **WARMUP-3a: переиспользуется вариантами разминки** (тип `injury_type` расширен до `string | null` под канон `contraindicationMatchesInjury`)|
+| engine/warmupPlan.ts|planWarmup (WARMUP-3b): скоринг по всему пулу, правило покрытия (top-3 мышцы + top-4 паттерна дня), бакеты general/activation/mobility/static с потолками состава, карта групп мышц, политика длительности `warmupDurationSeconds`, размер 5–8, взвешенная выборка по сиду (FNV-1a+mulberry32). Чистая функция, без React/Supabase — гоняется офлайн (`.ai/workspace/warmup-plan-check.ts`)|
 | engine/weeklySummary.ts|buildWeeklyInsights (ENG-6) + CI-5 goal-aware + calculateTrainingLoadContext (CI-2) + calculateDeloadContext (CI-6, 4 сигнала, threshold ≥3 или highLoad+(plateau/readinessDecline)). **P2**: добавлены `muscleFatigue` и `muscleStrength` в `WeeklySummaryData` для 3D Muscle Map. Чистые функции |
 
 # 10. Database / migrations
@@ -449,7 +450,7 @@ RPE frequency settings (UX-7): useRpeSettings — 3 опции (always / last-se
 - `e1rm.ts`: добавлена формула Wathan для reps > 12, предотвращающая завышение 1ПМ на 10–20%, которое дают Epley/Brzycki при мышечной выносливости.
 - `weeklySummaryService.ts` + `weeklySummary.ts`: внедрён полный расчёт ACWR (Acute:Chronic Workload Ratio). `weeklySummaryService` теперь вычисляет `chronicVolume` (средний объём за 4 недели) и передаёт его в engine. `calculateTrainingLoadContext` использует это для оценки риска травм (sweet spot 0.8–1.3, >1.5 warning), что является золотым стандартом спортивной медицины.
 - `progression.ts`: убраны жёсткие эвристики RPE по возрасту/фарме. Используются универсальные безопасные пороги (RPE ≤ 7 для прогресса, ≥ 9 для hold).
-- `warmupService.ts`: исправлена разминка для изоляции на blood flow протокол (40% x 12, 60% x 6), предотвращающий микротравмы холодных сухожилий.
+- `warmupService.ts` (WARMUP-3ab, 08.10): подбор вынесен в `engine/warmupPlan.ts`. Скоринг видит весь пул (178) вместо первых 80 без ORDER BY; покрытие мышц/паттернов дня; бакеты с потолками; длительность из политики (в `exercises` колонки длительности нет, совпадений «сек» в `settings` — 0/178); ⟳ перегенерирует по сиду. Варианты разминки фильтруются по травмам через `rankAlternatives` (раньше не фильтровались). Ramp-up протокол (40%×12/60%×6) НЕ реализован — см. ENG-12 в `STATUS.md §5`, спецификация хранится там.
 RPE quick-skip (UX-6): SetFeedbackEditor показывает кнопку «Пропустить» когда rpe == null (без onChange, просто onClose); при rpe != null — «Сбросить» (с onChange). Дефолт 7 — типичный рабочий RPE.
 Skip workout (FIT-7): пропуск = finished_at + skipped_at заполнены, started_at NULL, подходов нет. onlyCurrentDay: пропускается только тренировка, на которую указывает прогресс-поинтер user_programs (day→week→phase не рассинхронизируется). advanceProgramProgress вызывается sequential с retry (паттерн saveWorkout). Пропуск не попадает в History (historyService фильтрует по наличию логов). Программа без active program — пропуск недоступен.
 Program replacement (UX-5 Feature 1): replaceExerciseInProgram в programsService — 7 шагов (workout → workout_exercise → program_day → program_exercises → UPDATE program_exercises + exercise_name → UPDATE текущей workout_exercises.exercise_id для защиты от orphaned row в sync → syncProgramChanges). Alert в workout/[id].tsx через handleReplaceChoice: 3 кнопки при наличии программы (Отмена / Только сегодня / В программе destructive) или мгновенная temp-замена для ad-hoc тренировок. Rollback при ошибке sync (например, seeded программы с created_by IS NULL).
