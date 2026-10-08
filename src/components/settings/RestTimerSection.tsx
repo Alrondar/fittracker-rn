@@ -2,7 +2,7 @@
 // DA-P2-8: секция «Таймер отдыха».
 import React from 'react';
 import { View } from 'react-native';
-import { Volume2, BellRing, Clock, Vibrate, ArrowUpDown } from 'lucide-react-native';
+import { Volume2, BellRing, Clock, Vibrate } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { commonStyles } from '../../styles/common';
@@ -45,18 +45,8 @@ export function RestTimerSection() {
         value={settings.vibration}
         onToggle={(value) => updateSettings({ vibration: value })}
       />
-      <ToggleRow
-        icon={ArrowUpDown}
-        iconColor={colors.warning}
-        title="Активация перед растяжкой"
-        description={
-          settings.activationFirst
-            ? 'Сначала активация, затем растяжка'
-            : 'Сначала растяжка, затем активация'
-        }
-        value={settings.activationFirst}
-        onToggle={(value) => updateSettings({ activationFirst: value })}
-      />
+      {/* WARMUP-3b: тумблер «Активация перед растяжкой» переехал в секцию
+          «Предпочтения» как пресет «Порядок разминки» (три варианта вместо булева). */}
     </View>
   );
 }

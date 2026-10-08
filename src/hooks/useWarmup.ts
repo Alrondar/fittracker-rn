@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
-import { warmupService, WarmupExercise, InjuryExclusion } from '../services/warmupService';
+import {
+  warmupService,
+  WarmupExercise,
+  InjuryExclusion,
+  WarmupAlternativesResult,
+} from '../services/warmupService';
 import { UserInjury } from '../constants/injuries';
 import { useTimerSettings } from './useTimerSettings';
 import { useWebPageHidden } from './useWebPageHidden';
@@ -41,15 +46,21 @@ export function useWarmup(
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ✅ Кэш альтернатив разминки — ref, без ререндеров экрана.
-  const warmupAltsCacheRef = useRef<Record<string, WarmupExercise[]>>({});
+  // WARMUP-3a: ключ включает подпись травм — после изменения травмы список
+  // variants должен пересчитаться (иначе залипает противопоказанный набор).
+  const warmupAltsCacheRef = useRef<Record<string, WarmupAlternativesResult>>({});
 
   const { settings: timerSettings } = useTimerSettings();
-  const activationFirst = timerSettings.activationFirst;
+  const warmupOrder = timerSettings.warmupOrder;
 
   const exerciseKey = exercises.map((e) => e.id).join(',');
   const injuryKey = activeInjuries
     .map((i) => `${i.body_part}|${i.injury_type}|${i.severity}`)
     .join(',');
+
+  // WARMUP-3b: счётчик перегенераций входит в сид подбора. Без него ⟳ была
+  // детерминированным no-op: тот же скоринг → тот же список.
+  const [regenCounter, setRegenCounter] = useState(0);
 
   useEffect(() => {
     if (exercises.length > 0) {
@@ -58,7 +69,7 @@ export function useWarmup(
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseKey, injuryKey, activationFirst]);
+  }, [exerciseKey, injuryKey, warmupOrder, regenCounter]);
 
   useEffect(() => {
     return () => {
@@ -79,8 +90,12 @@ export function useWarmup(
       const result = await warmupService.generateWarmup(
         exercises,
         activeInjuries,
-        activationFirst,
-        userId
+        warmupOrder,
+        userId,
+        // сид подбора: пользователь + состав дня + травмы + номер перегенерации.
+        // Один и тот же сид → один и тот же набор (возврат на экран не «прыгает»),
+        // ⟳ меняет счётчик → другой набор.
+        `warmup|${userId ?? 'anon'}|${exerciseKey}|${injuryKey}|${regenCounter}`
       );
       setWarmupExercises(result.exercises);
       setExcludedByInjury(result.excludedByInjury);
@@ -91,6 +106,9 @@ export function useWarmup(
       setIsLoading(false);
     }
   };
+
+  /** WARMUP-3b: ⟳ в шапке блока — перегенерация с новым сидом (другой набор). */
+  const regenerateWarmup = useCallback(() => setRegenCounter((n) => n + 1), []);
 
   const clearTick = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -198,16 +216,27 @@ export function useWarmup(
   }, [warmupExercises]);
 
   // ✅ Загрузка альтернатив разминки с кэшем (паттерн из useWorkoutSession).
+  // WARMUP-3a: список фильтруется по активным травмам на стороне сервиса
+  // (общий rankAlternatives, как у основных упражнений) и приходит вместе со
+  // счётчиком скрытых — «N скрыто из-за травм».
   const loadWarmupAlternatives = useCallback(
-    async (exerciseId: string, primaryMuscles: string[]): Promise<WarmupExercise[]> => {
-      if (warmupAltsCacheRef.current[exerciseId]) {
-        return warmupAltsCacheRef.current[exerciseId];
-      }
-      const alts = await warmupService.getWarmupAlternatives(exerciseId, primaryMuscles);
-      warmupAltsCacheRef.current = { ...warmupAltsCacheRef.current, [exerciseId]: alts };
-      return alts;
+    async (exercise: WarmupExercise): Promise<WarmupAlternativesResult> => {
+      const key = `${exercise.id}|${injuryKey}`;
+      const cached = warmupAltsCacheRef.current[key];
+      if (cached) return cached;
+      const result = await warmupService.getWarmupAlternatives(
+        exercise.id,
+        {
+          primary_muscles: exercise.primary_muscles,
+          secondary_muscles: exercise.secondary_muscles,
+        },
+        activeInjuries
+      );
+      warmupAltsCacheRef.current = { ...warmupAltsCacheRef.current, [key]: result };
+      return result;
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [injuryKey, activeInjuries]
   );
 
   // ✅ Локальная замена упражнения разминки (по индексу) + WARMUP-2:
@@ -215,6 +244,9 @@ export function useWarmup(
   // его передаёт лист, где известен main). upsert идемпотентен
   // (user_id, origin_exercise_id); ошибка сети не откатывает локальную замену —
   // в текущей тренировке она видна в любом случае.
+  // WARMUP-3a: противопоказанных вариантов здесь уже нет — они отсекаются в
+  // getWarmupAlternatives, поэтому отдельного подтверждения на замену не нужно
+  // (так же устроены замены основных упражнений).
   const replaceWarmupExercise = useCallback(
     (index: number, alternative: WarmupExercise, originId?: string) => {
       setWarmupExercises((prev) => {
@@ -249,6 +281,7 @@ export function useWarmup(
     totalDuration,
     targetMuscles,
     generateWarmup,
+    regenerateWarmup,
     startExerciseTimer,
     stopTimer,
     markAsCompleted,

@@ -31,7 +31,11 @@ import { TechniqueMediaSlider, parseMediaUrls } from './TechniqueMediaSlider';
 import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
 import { SectionSubheading } from './sections/ExerciseCardTechnique';
 import { WarmupTypeChip } from './WarmupExerciseCard';
-import { WarmupExercise, WarmupRelationType } from '../../services/warmupService';
+import {
+  WarmupExercise,
+  WarmupRelationType,
+  WarmupAlternativesResult,
+} from '../../services/warmupService';
 
 const RELATION_META: Record<
   WarmupRelationType,
@@ -156,7 +160,8 @@ interface WarmupExerciseSheetProps {
   completed: boolean;
   onClose: () => void;
   onMarkCompleted: (id: string) => void;
-  loadAlternatives: (id: string, muscles: string[]) => Promise<WarmupExercise[]>;
+  /** WARMUP-3a: список уже отфильтрован по травмам, hiddenByInjury — сколько скрыто. */
+  loadAlternatives: (exercise: WarmupExercise) => Promise<WarmupAlternativesResult>;
   onReplace: (index: number, alt: WarmupExercise, originId?: string) => void;
 }
 
@@ -172,6 +177,7 @@ export function WarmupExerciseSheet({
   const { colors } = useTheme();
   const router = useRouter();
   const [alts, setAlts] = useState<WarmupExercise[]>([]);
+  const [hiddenByInjury, setHiddenByInjury] = useState(0);
   const [loadingAlts, setLoadingAlts] = useState(false);
   const [viewingAltId, setViewingAltId] = useState<string | null>(null);
 
@@ -189,10 +195,13 @@ export function WarmupExerciseSheet({
     let alive = true;
     setViewingAltId(null);
     setAlts([]);
+    setHiddenByInjury(0);
     setLoadingAlts(true);
-    loadAlternatives(main.id, main.primary_muscles)
-      .then((list) => {
-        if (alive) setAlts(list);
+    loadAlternatives(main)
+      .then((result) => {
+        if (!alive) return;
+        setAlts(result.exercises);
+        setHiddenByInjury(result.hiddenByInjury);
       })
       .finally(() => {
         if (alive) setLoadingAlts(false);
@@ -385,6 +394,16 @@ export function WarmupExerciseSheet({
               {alts.map((alt) => (
                 <AlternativeRow key={alt.id} alt={alt} onPress={openAlt} />
               ))}
+              {/* WARMUP-3a: прозрачность фильтрации — как «N скрыто из-за травм»
+                  у вариантов основных упражнений (ENG-5). */}
+              {hiddenByInjury > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <ShieldAlert size={12} color={colors.warning} />
+                  <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
+                    {hiddenByInjury} скрыто из-за травм
+                  </Text>
+                </View>
+              )}
             </View>
           )}
         </View>

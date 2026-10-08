@@ -161,6 +161,7 @@ export default function WorkoutSessionScreen() {
     loadWarmupAlternatives,
     replaceWarmupExercise,
     clearWarmupPreferences,
+    regenerateWarmup,
   } = useWarmup(warmupSource, activeInjuries, userId);
 
   const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
@@ -513,7 +514,8 @@ export default function WorkoutSessionScreen() {
               isAllCompleted={isWarmupCompleted}
               totalDuration={warmupTotalDuration}
               isCompleted={isWarmupExerciseCompleted}
-              onGenerateWarmup={generateWarmup}
+              // WARMUP-3b: ⟳ перегенерирует с новым сидом (раньше возвращала тот же набор)
+              onGenerateWarmup={regenerateWarmup}
               onStartTimer={startExerciseTimer}
               onStopTimer={stopWarmupTimer}
               onMarkCompleted={markWarmupCompleted}

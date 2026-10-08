@@ -27,7 +27,40 @@ interface WarningRow {
 }
 
 const asOne = <T>(value: T | T[] | null): T | null =>
-  Array.isArray(value) ? value[0] ?? null : value;
+  Array.isArray(value) ? (value[0] ?? null) : value;
+
+/**
+ * Equipment only — канонический доступ по exercise_equipment для случаев,
+ * когда relationships/warnings по большому списку id тянуть незачем
+ * (WARMUP-3b: скоринг разминки идёт по всему пулу, refs нужны только финальным).
+ */
+export async function getExerciseEquipment(
+  exerciseIds: string[]
+): Promise<Record<string, string[]>> {
+  if (exerciseIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('exercise_equipment')
+    .select('exercise_id, equipment(name)')
+    .in('exercise_id', exerciseIds);
+
+  if (error) throw error;
+
+  const result: Record<string, string[]> = {};
+  for (const id of exerciseIds) result[id] = [];
+
+  for (const row of (data ?? []) as unknown as EquipmentRow[]) {
+    const equipment = asOne(row.equipment);
+    if (equipment?.name && result[row.exercise_id]) result[row.exercise_id].push(equipment.name);
+  }
+  for (const list of Object.values(result)) {
+    const unique = [...new Set(list)];
+    list.length = 0;
+    list.push(...unique);
+  }
+
+  return result;
+}
 
 /**
  * Canonical exercise reference data.
@@ -36,15 +69,14 @@ const asOne = <T>(value: T | T[] | null): T | null =>
  * legacy columns from exercises. The normalized tables are the source of truth.
  */
 export async function getExerciseReferenceData(
-  exerciseIds: string[],
+  exerciseIds: string[]
 ): Promise<Record<string, ExerciseReferenceData>> {
   if (exerciseIds.length === 0) return {};
 
-const [equipmentRes, relationshipsRes, warningsRes] = await Promise.all([
-    supabase
-      .from('exercise_equipment')
-      .select('exercise_id, equipment(name)')
-      .in('exercise_id', exerciseIds),
+  const [equipmentMap, relationshipsRes, warningsRes] = await Promise.all([
+    // WARMUP-3b: тот же запрос вынесен в getExerciseEquipment — один владелец
+    // доступа к exercise_equipment, дубля нет.
+    getExerciseEquipment(exerciseIds),
 
     supabase
       .from('exercise_relationships')
@@ -58,7 +90,6 @@ const [equipmentRes, relationshipsRes, warningsRes] = await Promise.all([
       .in('exercise_id', exerciseIds),
   ]);
 
-  if (equipmentRes.error) throw equipmentRes.error;
   if (relationshipsRes.error) throw relationshipsRes.error;
   if (warningsRes.error) throw warningsRes.error;
 
@@ -67,11 +98,8 @@ const [equipmentRes, relationshipsRes, warningsRes] = await Promise.all([
     result[id] = { equipment: [], injuries: [], alternativeIds: [] };
   }
 
-  for (const row of (equipmentRes.data ?? []) as unknown as EquipmentRow[]) {
-    const equipment = asOne(row.equipment);
-    if (equipment?.name && result[row.exercise_id]) {
-      result[row.exercise_id].equipment.push(equipment.name);
-    }
+  for (const [id, equipment] of Object.entries(equipmentMap)) {
+    if (result[id]) result[id].equipment = equipment;
   }
 
   for (const row of (relationshipsRes.data ?? []) as unknown as RelationshipRow[]) {
@@ -86,8 +114,7 @@ const [equipmentRes, relationshipsRes, warningsRes] = await Promise.all([
   for (const row of (warningsRes.data ?? []) as unknown as WarningRow[]) {
     if (!row.exercise_id || !result[row.exercise_id]) continue;
     const text =
-      row.recommendation?.trim() ||
-      [row.body_part, row.injury_type].filter(Boolean).join(' — ');
+      row.recommendation?.trim() || [row.body_part, row.injury_type].filter(Boolean).join(' — ');
     if (text) result[row.exercise_id].injuries.push(text);
   }
 

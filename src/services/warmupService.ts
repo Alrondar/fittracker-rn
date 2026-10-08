@@ -6,7 +6,24 @@ import {
   contraindicationMatchesInjury,
 } from '../constants/injuries';
 import { getExerciseContraindications } from './injuriesService';
-import { getExerciseReferenceData } from './exerciseReferenceService';
+import { getExerciseReferenceData, getExerciseEquipment } from './exerciseReferenceService';
+import {
+  rankAlternatives,
+  type AlternativeCandidate,
+  type AlternativeSourceContext,
+} from '../engine/alternatives';
+import {
+  planWarmup,
+  classifyWarmupBucket,
+  warmupDurationSeconds,
+  isStrengthDay,
+  type WarmupOrder,
+  type WarmupPlanCandidate,
+  type WarmupContraindication,
+} from '../engine/warmupPlan';
+
+export type { WarmupOrder } from '../engine/warmupPlan';
+export type { WarmupBucket } from '../engine/warmupPlan';
 
 export type WarmupRelationType = 'variation' | 'alternative' | 'regression' | 'progression';
 
@@ -41,91 +58,59 @@ export interface WarmupGenerationResult {
   excludedByInjury: InjuryExclusion[];
 }
 
-// ===== Константы подбора =====
-const WARMUP_TOTAL = 7; // всего упражнений в разминке
-const MAX_ACTIVATION = 3; // не более активаций (остальное — растяжка)
+export interface WarmupAlternativesResult {
+  exercises: WarmupExercise[];
+  /** Сколько вариантов скрыто injury-ограничениями (тот же счётчик, что у ENG-5). */
+  hiddenByInjury: number;
+}
 
 // Пул разминки и полный набор полей варианта (WARMUP-2: общие для
 // getWarmupAlternatives и подстановки запомненных предпочтений).
 const WARMUP_POOL_OR = 'category.eq.stretching,can_be_activation.is.true';
 const WARMUP_FULL_FIELDS =
-  'id, name, technique, benefits, risks, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation';
-
-// Тренажёрное оборудование (приоритет в силовые дни)
-const MACHINE_KEYWORDS = ['тренаж', 'кроссовер', 'блок', 'pec deck', 'рукоят', 'смит', 'манжет'];
-
-// Оборудование силовой тренировки
-const STRENGTH_EQUIPMENT_KEYWORDS = [
-  'штанг',
-  'гантел',
-  'тренаж',
-  'кроссовер',
-  'блок',
-  'смит',
-  'гриф',
-  'гиря',
-];
-
-// Штраф за нагрузку на травмированную зону (high → полное исключение)
-const SEVERITY_PENALTY: Record<string, number> = { medium: 5, low: 2 };
+  'id, name, technique, benefits, risks, media_url, primary_muscles, secondary_muscles, settings, category, can_be_activation, movement_pattern, difficulty';
 
 /**
- * Лёгкие поля для этапа скоринга/фильтрации.
- * Тяжёлые тексты (technique/benefits/risks/media_url) НЕ тянем на 80 кандидатов —
- * они нужны только финальным 7 упражнениям (PERF-3).
- * injuries остаётся — нужен для финального WarmupExercise (отображение противопоказаний в UI).
+ * Лёгкие поля этапа скоринга (PERF-3): тяжёлые тексты (technique/benefits/risks/
+ * media_url) тянем только финальным упражнениям.
+ * WARMUP-3b: movement_pattern/difficulty/status добавлены — это сигналы покрытия,
+ * уровня дня и яруса качества; aliases не тянут (группы мышц раскрывает движок).
  */
-const WARMUP_LIGHT_FIELDS =
-  'id, name, primary_muscles, secondary_muscles, settings, category, can_be_activation';
+const WARMUP_PLAN_FIELDS =
+  'id, name, primary_muscles, secondary_muscles, category, can_be_activation, movement_pattern, difficulty, status, settings';
 
 /**
- * Кандидат после скоринга — без тяжёлых текстовых полей.
- * Тяжёлые поля грузятся отдельным запросом только для финального списка.
+ * WARMUP-3b: длительность из settings — только если текст реально содержит секунды.
+ * Прод 08.10: ни одна из 178 строк пула их не содержит (settings — это текст про
+ * оборудование), поэтому значение по умолчанию отсутствует, а не «30»: политику
+ * секунд задаёт engine/warmupPlan.BUCKET_SECONDS.
  */
-interface WarmupCandidate {
-  id: string;
-  name: string;
-  injuries: string[];
-  equipment: string[];
-  primary_muscles: string[];
-  secondary_muscles: string[];
-  duration_seconds: number;
-  relevance_score: number;
-  category: string | null;
-  can_be_activation: boolean;
-}
+export const parseWarmupDurationHint = (settings: string | null | undefined): number | null => {
+  if (!settings) return null;
+  const match = settings.match(/(\d+)\s*(сек|seconds|s)/i);
+  return match ? parseInt(match[1], 10) : null;
+};
 
-const isMachineEquipment = (equipment: string[]): boolean =>
-  equipment.some((eq) => {
-    const lower = eq.toLowerCase();
-    return MACHINE_KEYWORDS.some((kw) => lower.includes(kw));
-  });
-
-/** Силовая ли тренировка (по оборудованию основных упражнений) */
-const isStrengthFocused = (mainExercises: { equipment?: string[] }[]): boolean =>
-  mainExercises.some((ex) =>
-    (ex.equipment || []).some((eq) => {
-      const lower = eq.toLowerCase();
-      return STRENGTH_EQUIPMENT_KEYWORDS.some((kw) => lower.includes(kw));
-    })
-  );
+const labelExclusions = (byBodyPart: Record<string, number>): InjuryExclusion[] =>
+  Object.entries(byBodyPart)
+    .map(([bodyPart, count]) => ({
+      bodyPart,
+      bodyPartLabel: BODY_PART_LABELS[bodyPart] || bodyPart,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
 
 export const warmupService = {
   /**
    * Генерация разминки для целевых мышц тренировки.
-   * Источники: stretching + активация (can_be_activation).
-   * Баланс: не более MAX_ACTIVATION активаций, остальное — растяжка.
-   * Порядок: настраиваемый (activationFirst) — растяжка→активация или наоборот.
-   * Противопоказанные при травмах исключаются; тренажёры в приоритете в силовые дни.
    *
-   * PERF-3: двухфазный запрос — лёгкий select для 80 кандидатов (скоринг/фильтрация),
-   * затем тяжёлые поля (technique/benefits/risks/media_url) только для финальных 7.
+   * WARMUP-3b: весь скоринг/покрытие/состав — в engine/warmupPlan.ts (чистая
+   * функция). Здесь только: запрос кандидатов (весь пул, без произвольного
+   * limit(80)), refs, догрузка тяжёлых полей финальным упражнениям (PERF-3) и
+   * подстановка запомненных замен (WARMUP-2).
    *
-   * ARCH-8: уровень 1 (avoid) — lookup по таблице injury_exercise_warnings
-   * вместо keyword-эвристики matchesContraindication.
-   *
-   * WARMUP-2: при наличии userId применяет запомненные замены
-   * (warmup_preferences) — см. applyWarmupPreferences.
+   * @param order    пресет порядка разминки (настройка «Порядок разминки»)
+   * @param seed     детерминированный сид: ⟳ меняет набор, повторный заход — нет
    */
   async generateWarmup(
     mainExercises: {
@@ -135,214 +120,163 @@ export const warmupService = {
       equipment?: string[];
     }[],
     activeInjuries: UserInjury[] = [],
-    activationFirst: boolean = false,
-    userId?: string | null
+    order: WarmupOrder = 'graded',
+    userId?: string | null,
+    seed = 'warmup'
   ): Promise<WarmupGenerationResult> {
+    const empty: WarmupGenerationResult = { exercises: [], excludedByInjury: [] };
+
     try {
-      // 1. Целевые мышцы с приоритетами
-      const muscleScores: Record<string, number> = {};
+      // 1. Мышцы дня с приоритетами (primary +2 / secondary +1 — историческая семантика).
+      const dayMuscles: Record<string, number> = {};
       mainExercises.forEach((ex) => {
-        ex.primary_muscles?.forEach((m) => {
+        (ex.primary_muscles ?? []).forEach((m) => {
           const key = m.toLowerCase();
-          muscleScores[key] = (muscleScores[key] || 0) + 2;
+          dayMuscles[key] = (dayMuscles[key] || 0) + 2;
         });
-        ex.secondary_muscles?.forEach((m) => {
+        (ex.secondary_muscles ?? []).forEach((m) => {
           const key = m.toLowerCase();
-          muscleScores[key] = (muscleScores[key] || 0) + 1;
+          dayMuscles[key] = (dayMuscles[key] || 0) + 1;
         });
       });
-      if (Object.keys(muscleScores).length === 0) {
-        return { exercises: [], excludedByInjury: [] };
+      if (Object.keys(dayMuscles).length === 0) return empty;
+
+      const strengthFocused = isStrengthDay(mainExercises.map((ex) => ex.equipment ?? []));
+
+      // 2. Паттерны дня — лёгкий добор movement_pattern по упражнениям дня
+      //    (экран тренировки их не получает, тащить их через loader шире blast-radius).
+      const dayIds = mainExercises.map((ex) => ex.id);
+      const dayPatterns: Record<string, number> = {};
+      if (dayIds.length > 0) {
+        const { data: dayRows } = await supabase
+          .from('exercises')
+          .select('id, movement_pattern')
+          .in('id', dayIds);
+        (dayRows ?? []).forEach((row: { movement_pattern?: string | null }) => {
+          const pattern = row.movement_pattern?.toLowerCase();
+          if (!pattern) return;
+          dayPatterns[pattern] = (dayPatterns[pattern] || 0) + 1;
+        });
       }
-      const strengthFocused = isStrengthFocused(mainExercises);
 
-      // 2. Кандидаты: ЛЁГКИЙ select (без technique/benefits/risks/media_url).
-      //    Тяжёлые тексты × 80 строк не гоним по сети — они нужны только финальным 7 (PERF-3).
-      const { data: candidates, error } = await supabase
+      // 3. Кандидаты: ВЕСЬ пул (WARMUP-3b убрал limit(80) без ORDER BY — раньше
+      //    скоринг видел 80 из 178 строк в физическом порядке страниц),
+      //    order('name') — чтобы результат не зависел от переупаковки страниц.
+      const { data: rows, error } = await supabase
         .from('exercises')
-        .select(WARMUP_LIGHT_FIELDS)
-        .or('category.eq.stretching,can_be_activation.is.true')
-        .limit(80);
-      if (error || !candidates) return { exercises: [], excludedByInjury: [] };
+        .select(WARMUP_PLAN_FIELDS)
+        .or(WARMUP_POOL_OR)
+        .order('name');
+      if (error || !rows) return empty;
 
-      // ARCH-8: lookup противопоказаний по таблице (уровень 1) вместо keyword-эвристики.
-      // Загружаем один раз для всех кандидатов, только если есть активные травмы.
-      const candidateIds = candidates.map((c) => c.id);
+      const candidateIds = rows.map((r) => r.id);
+      // Оборудование — у канонического владельца (exerciseReferenceService),
+      // но без relationships/warnings для 178 строк: они нужны только финальным.
+      const equipmentById = await getExerciseEquipment(candidateIds);
 
-      const referenceData = await getExerciseReferenceData(candidateIds);
-
-      const contraindications =
+      const contraindications: Record<string, WarmupContraindication[]> =
         activeInjuries.length > 0 ? await getExerciseContraindications(candidateIds) : {};
 
-      // 3. Ранжирование + фильтрация по травмам (на лёгких полях)
-      const exclusionCounts: Record<string, number> = {};
-      const scored: WarmupCandidate[] = [];
-      for (const ex of candidates) {
-        const refs = referenceData[ex.id] ?? {
+      const candidates: WarmupPlanCandidate[] = rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        primary_muscles: r.primary_muscles ?? [],
+        secondary_muscles: r.secondary_muscles ?? [],
+        equipment: equipmentById[r.id] ?? [],
+        category: r.category ?? null,
+        can_be_activation: r.can_be_activation ?? false,
+        movement_pattern: r.movement_pattern ?? null,
+        difficulty: r.difficulty ?? null,
+        status: r.status ?? null,
+        duration_hint: parseWarmupDurationHint(r.settings),
+      }));
+
+      // 4. План (движок): покрытие мышц/паттернов, состав по бакетам, 5–8 пунктов,
+      //    взвешенная выборка по сиду.
+      const plan = planWarmup({
+        dayMuscles,
+        dayPatterns,
+        dayExerciseIds: dayIds,
+        strengthFocused,
+        candidates,
+        activeInjuries,
+        contraindications,
+        order,
+        seed,
+        daySize: mainExercises.length,
+      });
+
+      const excludedByInjury = labelExclusions(plan.excludedByBodyPart);
+      if (plan.exercises.length === 0) {
+        return { exercises: [], excludedByInjury };
+      }
+
+      // 5. Тяжёлые поля — ТОЛЬКО финальным упражнениям (PERF-3).
+      const finalIds = plan.exercises.map((e) => e.id);
+      const [{ data: heavyRows }, referenceData] = await Promise.all([
+        supabase
+          .from('exercises')
+          .select('id, technique, benefits, risks, media_url')
+          .in('id', finalIds),
+        getExerciseReferenceData(finalIds),
+      ]);
+      const heavyById = new Map((heavyRows ?? []).map((h) => [h.id, h] as const));
+
+      const exercises: WarmupExercise[] = plan.exercises.map((planned) => {
+        const heavy = heavyById.get(planned.id);
+        const refs = referenceData[planned.id] ?? {
           equipment: [],
           injuries: [],
           alternativeIds: [],
         };
-
-        const exMuscles = [...(ex.primary_muscles || []), ...(ex.secondary_muscles || [])].map(
-          (m) => m.toLowerCase()
-        );
-        let score = exMuscles.reduce((sum, m) => sum + (muscleScores[m] || 0), 0);
-        if (score <= 0) continue;
-
-        // Бонус за активацию (зависит от типа оборудования)
-        if (ex.can_be_activation) {
-          if (isMachineEquipment(refs.equipment)) {
-            if (strengthFocused) score += 3; // тренажёры — приоритет в силовые дни
-          } else {
-            score += 2; // резинки / собственный вес — всегда уместны
-          }
-        }
-
-        // Фильтрация по травмам
-        let excluded = false;
-        let penalty = 0;
-        const exContras = contraindications[ex.id] || [];
-        for (const injury of activeInjuries) {
-          // Уровень 1: прямое противопоказание → исключаем (канон FD12-6)
-          const hasContra = exContras.some((c) => contraindicationMatchesInjury(c, injury));
-          if (hasContra) {
-            excluded = true;
-            exclusionCounts[injury.body_part] = (exclusionCounts[injury.body_part] || 0) + 1;
-            break;
-          }
-          // Уровень 2: нагрузка на травмированную зону
-          if (
-            targetsInjuredMuscle(
-              ex.primary_muscles || [],
-              ex.secondary_muscles || [],
-              injury.body_part
-            )
-          ) {
-            if (injury.severity === 'high') {
-              excluded = true;
-              exclusionCounts[injury.body_part] = (exclusionCounts[injury.body_part] || 0) + 1;
-              break;
-            }
-            penalty += SEVERITY_PENALTY[injury.severity] ?? SEVERITY_PENALTY.low;
-          }
-        }
-        if (excluded) continue;
-        score -= penalty;
-
-        // Длительность из settings или дефолт 30 сек
-        const duration = parseWarmupDuration(ex.settings);
-        scored.push({
-          id: ex.id,
-          name: ex.name,
+        return {
+          id: planned.id,
+          name: planned.name,
+          technique: heavy?.technique || '',
+          benefits: heavy?.benefits || '',
+          risks: heavy?.risks || '',
           injuries: refs.injuries,
           equipment: refs.equipment,
-          primary_muscles: ex.primary_muscles || [],
-          secondary_muscles: ex.secondary_muscles || [],
-          duration_seconds: duration,
-          relevance_score: score,
-          category: ex.category ?? null,
-          can_be_activation: ex.can_be_activation ?? false,
-        });
-      }
-
-      // 4. Сбалансированный отбор: не более MAX_ACTIVATION активаций
-      const byScore = (a: WarmupCandidate, b: WarmupCandidate) =>
-        b.relevance_score - a.relevance_score;
-      const activationPool = scored.filter((ex) => ex.can_be_activation).sort(byScore);
-      const stretchingPool = scored.filter((ex) => !ex.can_be_activation).sort(byScore);
-      const activationSelected = activationPool.slice(0, MAX_ACTIVATION);
-      const stretchingSelected = stretchingPool.slice(0, WARMUP_TOTAL - activationSelected.length);
-      let selected = [...stretchingSelected, ...activationSelected];
-      // Если растяжки не хватило — добираем лучшей активацией сверх лимита
-      if (selected.length < WARMUP_TOTAL) {
-        const usedIds = new Set(selected.map((e) => e.id));
-        const remaining = scored.filter((e) => !usedIds.has(e.id)).sort(byScore);
-        selected = selected.concat(remaining.slice(0, WARMUP_TOTAL - selected.length));
-      }
-
-      // 5. Итоговый порядок + финальный список (ДО тяжёлой фазы)
-      const finalLight = selected
-        .sort((a, b) => {
-          const aAct = a.can_be_activation ? 1 : 0;
-          const bAct = b.can_be_activation ? 1 : 0;
-          if (aAct !== bAct) {
-            // activationFirst: активация (1) раньше; иначе растяжка (0) раньше
-            return activationFirst ? bAct - aAct : aAct - bAct;
-          }
-          return b.relevance_score - a.relevance_score; // внутри группы — по счёту
-        })
-        .slice(0, WARMUP_TOTAL);
-
-      const excludedByInjury: InjuryExclusion[] = Object.entries(exclusionCounts)
-        .map(([bodyPart, count]) => ({
-          bodyPart,
-          bodyPartLabel: BODY_PART_LABELS[bodyPart] || bodyPart,
-          count,
-        }))
-        .sort((a, b) => b.count - a.count);
-
-      // 6. Тяжёлые поля — ТОЛЬКО для финальных упражнений (PERF-3).
-      //    Вместо 80 × (technique + benefits + risks + media_url) по сети —
-      //    только ≤7 строк с тяжёлыми текстами.
-      if (finalLight.length === 0) {
-        return { exercises: [], excludedByInjury };
-      }
-      const finalIds = finalLight.map((e) => e.id);
-      const { data: heavyRows } = await supabase
-        .from('exercises')
-        .select('id, technique, benefits, risks, media_url')
-        .in('id', finalIds);
-      const heavyById = new Map((heavyRows || []).map((h) => [h.id, h] as const));
-
-      const exercises: WarmupExercise[] = finalLight.map((c) => {
-        const h = heavyById.get(c.id);
-        return {
-          id: c.id,
-          name: c.name,
-          technique: h?.technique || '',
-          benefits: h?.benefits || '',
-          risks: h?.risks || '',
-          injuries: c.injuries,
-          equipment: c.equipment,
-          media_url: h?.media_url || null,
-          primary_muscles: c.primary_muscles,
-          secondary_muscles: c.secondary_muscles,
-          duration_seconds: c.duration_seconds,
-          relevance_score: c.relevance_score,
-          category: c.category,
-          can_be_activation: c.can_be_activation,
+          media_url: heavy?.media_url || null,
+          primary_muscles: planned.primary_muscles,
+          secondary_muscles: planned.secondary_muscles,
+          duration_seconds: planned.duration_seconds,
+          relevance_score: planned.relevance_score,
+          category: planned.category,
+          can_be_activation: planned.can_be_activation,
         };
       });
-      // 7. WARMUP-2: подстановка запомненных замен поверх генерации.
+
+      // 6. WARMUP-2: подстановка запомненных замен поверх генерации.
       const finalExercises = userId
         ? await applyWarmupPreferences(exercises, userId, activeInjuries)
         : exercises;
       return { exercises: finalExercises, excludedByInjury };
     } catch (e) {
       console.error('Ошибка генерации разминки:', e);
-      return { exercises: [], excludedByInjury: [] };
+      return empty;
     }
   },
 
   /**
    * Варианты для упражнения РАЗМИНКИ: только stretching / активация.
    * Сначала — именованные аналоги из exercise_relationships (с relation_type,
-   * как в ENG-5 для основных упражнений), затем добор по пересечению мышц.
-   * Возвращает объекты в той же форме WarmupExercise (с duration_seconds),
-   * чтобы лист разминки рендерил вариант без адаптеров.
+   * как в ENG-5), затем добор по пересечению мышц.
    *
-   * Грузится лениво (по открытию WarmupExerciseSheet, кэш в useWarmup),
-   * тяжёлые тексты нужны для всех отображаемых вариантов.
+   * WARMUP-3a: список ранжируется и фильтруется тем же `rankAlternatives`, что и
+   * варианты основных упражнений, — два уровня injury-проверки (прямое
+   * противопоказание и high-нагрузка на зону) и счётчик скрытых. Раньше разминка
+   * про травмы не знала вообще и могла предложить противопоказанную замену.
    */
   async getWarmupAlternatives(
     exerciseId: string,
-    primaryMuscles: string[]
-  ): Promise<WarmupExercise[]> {
+    sourceMuscles: { primary_muscles: string[]; secondary_muscles: string[] },
+    activeInjuries: UserInjury[] = []
+  ): Promise<WarmupAlternativesResult> {
     try {
       const ALT_LIMIT = 20;
 
-      // 1. Именованные аналоги из графа связей (тот же источник, что у основных карточек).
+      // 1. Именованные аналоги из графа связей.
       const { data: relRows } = await supabase
         .from('exercise_relationships')
         .select('related_exercise_id, relation_type')
@@ -370,7 +304,6 @@ export const warmupService = {
           .or(WARMUP_POOL_OR);
         curated = data ?? [];
       }
-      // Аналоги, не попавшие в пул разминки, не предлагаем.
       for (const ex of curated) relationById.set(ex.id, relationById.get(ex.id) ?? 'alternative');
       const curatedIds = new Set(curated.map((ex) => ex.id));
 
@@ -384,24 +317,69 @@ export const warmupService = {
           .neq('id', exerciseId)
           .or(WARMUP_POOL_OR)
           .limit(remaining + curated.length);
-        if (primaryMuscles.length > 0) {
-          query = query.overlaps('primary_muscles', primaryMuscles);
+        if (sourceMuscles.primary_muscles.length > 0) {
+          query = query.overlaps('primary_muscles', sourceMuscles.primary_muscles);
         }
         const { data } = await query;
         muscleFill = (data ?? []).filter((ex) => !curatedIds.has(ex.id)).slice(0, remaining);
       }
 
       const rows = [...curated, ...muscleFill];
-      if (rows.length === 0) return [];
+      if (rows.length === 0) return { exercises: [], hiddenByInjury: 0 };
 
-      const referenceData = await getExerciseReferenceData(rows.map((ex) => ex.id));
+      const rowIds = rows.map((ex) => ex.id);
+      const [referenceData, sourceRow] = await Promise.all([
+        getExerciseReferenceData(rowIds),
+        supabase
+          .from('exercises')
+          .select('id, movement_pattern, difficulty')
+          .eq('id', exerciseId)
+          .single(),
+      ]);
 
-      return rows.map((ex) =>
-        mapWarmupExerciseRow(ex, referenceData[ex.id], relationById.get(ex.id) ?? null)
-      );
+      const contraindications: Record<string, WarmupContraindication[]> =
+        activeInjuries.length > 0 ? await getExerciseContraindications(rowIds) : {};
+
+      // 3. Ранжирование + injury-фильтр общим движком (ENG-5).
+      const candidates: AlternativeCandidate[] = rows.map((ex) => ({
+        id: ex.id,
+        primary_muscles: ex.primary_muscles ?? [],
+        secondary_muscles: ex.secondary_muscles ?? [],
+        equipment: referenceData[ex.id]?.equipment ?? [],
+        movement_pattern: ex.movement_pattern ?? null,
+        difficulty: (ex.difficulty ?? null) as AlternativeCandidate['difficulty'],
+        relationType: relationById.get(ex.id) ?? null,
+      }));
+
+      const sourceRefs = referenceData[exerciseId];
+      const source: AlternativeSourceContext = {
+        primaryMuscles: sourceMuscles.primary_muscles,
+        secondaryMuscles: sourceMuscles.secondary_muscles,
+        equipment: sourceRefs?.equipment ?? [],
+        movementPattern: (sourceRow.data?.movement_pattern ?? null) as string | null,
+        difficulty: (sourceRow.data?.difficulty ?? null) as AlternativeSourceContext['difficulty'],
+        hasPain: false,
+      };
+
+      const ranked = rankAlternatives(candidates, source, activeInjuries, contraindications);
+
+      const byId = new Map(rows.map((ex) => [ex.id, ex] as const));
+      const exercises: WarmupExercise[] = [];
+      for (const item of ranked.ordered) {
+        const row = byId.get(item.id);
+        if (!row) continue;
+        exercises.push(
+          mapWarmupExerciseRow(
+            row,
+            referenceData[row.id],
+            item.relationType ?? relationById.get(row.id) ?? null
+          )
+        );
+      }
+      return { exercises, hiddenByInjury: ranked.excludedCount };
     } catch (e) {
       console.error('Ошибка загрузки альтернатив разминки:', e);
-      return [];
+      return { exercises: [], hiddenByInjury: 0 };
     }
   },
 
@@ -445,6 +423,8 @@ interface WarmupAltRow {
   settings: string | null;
   category: string | null;
   can_be_activation: boolean | null;
+  movement_pattern?: string | null;
+  difficulty?: string | null;
 }
 
 const normalizeRelationType = (value: unknown): WarmupRelationType | null => {
@@ -459,14 +439,6 @@ const normalizeRelationType = (value: unknown): WarmupRelationType | null => {
   }
 };
 
-export const parseWarmupDuration = (settings: string | null | undefined): number => {
-  if (settings) {
-    const match = settings.match(/(\d+)\s*(сек|с|seconds|s)/i);
-    if (match) return parseInt(match[1], 10);
-  }
-  return 30;
-};
-
 // Общий маппер строки exercises (+refs) → WarmupExercise. Используется
 // getWarmupAlternatives и подстановкой предпочтений (WARMUP-2).
 function mapWarmupExerciseRow(
@@ -475,6 +447,11 @@ function mapWarmupExerciseRow(
   relationType: WarmupRelationType | null
 ): WarmupExercise {
   const r = refs ?? { equipment: [], injuries: [] };
+  const bucket = classifyWarmupBucket({
+    category: ex.category ?? null,
+    can_be_activation: ex.can_be_activation ?? false,
+    movement_pattern: ex.movement_pattern ?? null,
+  });
   return {
     id: ex.id,
     name: ex.name,
@@ -486,7 +463,9 @@ function mapWarmupExerciseRow(
     media_url: ex.media_url || null,
     primary_muscles: ex.primary_muscles || [],
     secondary_muscles: ex.secondary_muscles || [],
-    duration_seconds: parseWarmupDuration(ex.settings),
+    // WARMUP-3b: те же правила длительности, что у генерации (иначе вариант в листе
+    // показывал бы одни секунды, а после замены — другие).
+    duration_seconds: warmupDurationSeconds(bucket, parseWarmupDurationHint(ex.settings)),
     relevance_score: 0,
     category: ex.category ?? null,
     can_be_activation: ex.can_be_activation ?? false,
@@ -495,7 +474,7 @@ function mapWarmupExerciseRow(
 }
 
 // Валидность запомненной замены при активных травмах — те же уровни, что и в
-// генерации: прямое противопоказание или high-severity нагрузка на зону → мимо.
+// движке: прямое противопоказание или high-severity нагрузка на зону → мимо.
 function isPrefAllowedForInjuries(
   ex: WarmupAltRow,
   contras: { body_part: string; injury_type: string | null }[],

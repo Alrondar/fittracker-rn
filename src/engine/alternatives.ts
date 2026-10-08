@@ -95,7 +95,11 @@ export function rankAlternatives(
   candidates: AlternativeCandidate[],
   source: AlternativeSourceContext,
   activeInjuries: UserInjury[],
-  contraindications: Record<string, { body_part: string; injury_type: string }[]>
+  /**
+   * injury_type nullable — сигнатура совпадает с contraindicationMatchesInjury
+   * (в injury_exercise_warnings тип бывает 'other'/NULL, WARMUP-3a отдаёт его как есть).
+   */
+  contraindications: Record<string, { body_part: string; injury_type?: string | null }[]>
 ): RankAlternativesResult {
   const ordered: RankedAlternative[] = [];
   let excludedCount = 0;

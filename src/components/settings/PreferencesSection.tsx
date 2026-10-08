@@ -2,7 +2,7 @@
 // DA-P2-8: секция «Предпочтения» (единицы, гриф, режим карточки, RPE, напоминания, таймер).
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput } from 'react-native';
-import { Clock, LayoutGrid, Bell, Ruler, Vibrate } from 'lucide-react-native';
+import { Clock, LayoutGrid, Bell, Ruler, Vibrate, Flame } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings, RPE_PROMPT_DESCRIPTIONS } from '../../hooks/useRpeSettings';
@@ -16,6 +16,13 @@ import { typography } from '../../styles/typography';
 import { PillToggle } from '../ui/PillToggle';
 import { WorkoutDisplayModePicker } from '../workout/WorkoutDisplayModePicker';
 import { ToggleRow, SectionTitle } from './SettingsRows';
+
+/** Подпись выбранного порядка под PillToggle (паттерн RPE_PROMPT_DESCRIPTIONS). */
+const WARMUP_ORDER_DESCRIPTIONS: Record<string, string> = {
+  graded: 'Разогрев → активация → подвижность → растяжка. Рекомендуется перед силовой',
+  activation_first: 'Сначала активация и разогрев, затем мобилити и растяжка',
+  stretch_first: 'Сначала растяжка и мобилити, затем активация',
+};
 
 export function PreferencesSection() {
   const { colors } = useTheme();
@@ -145,6 +152,39 @@ export function PreferencesSection() {
           ]}
           value={rpeSettings.prompt}
           onChange={(prompt) => updateRpeSettings({ prompt })}
+        />
+      </View>
+
+      {/* WARMUP-3b: порядок разминки — на смену тумблеру «Активация перед растяжкой»
+          из секции «Таймер отдыха» (там он и не про таймер, и не давал режима
+          «разогрев первым»). */}
+      <View
+        style={[
+          cardStyles.compact,
+          { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+        ]}
+      >
+        <View style={{ marginBottom: SPACING.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+            <Flame size={20} color={colors.warning} style={{ marginRight: SPACING.sm }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+                Порядок разминки
+              </Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>
+                {WARMUP_ORDER_DESCRIPTIONS[timerSettings.warmupOrder]}
+              </Text>
+            </View>
+          </View>
+        </View>
+        <PillToggle
+          options={[
+            { key: 'graded', label: 'По порядку' },
+            { key: 'activation_first', label: 'Активация' },
+            { key: 'stretch_first', label: 'Растяжка' },
+          ]}
+          value={timerSettings.warmupOrder}
+          onChange={(warmupOrder) => updateTimerSettings({ warmupOrder })}
         />
       </View>
 
