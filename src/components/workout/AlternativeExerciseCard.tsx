@@ -185,6 +185,7 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
           marginTop: SPACING.sm,
           paddingVertical: SPACING.md,
           paddingHorizontal: SPACING.md,
+          minHeight: 44, // PRODUCT.md §3.1 — тач-таргет не меньше 44 pt
           borderRadius: BORDER_RADIUS.md,
           borderWidth: 1,
           borderColor: colors.border,
