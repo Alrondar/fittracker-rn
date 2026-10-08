@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Image, type ImageLoadEventData } from 'expo-image';
 import { FONT_FAMILIES } from '../../constants/fonts';
-import { pickMediaFit } from '../../utils/mediaFit';
+import { mediaBoxHeight } from '../../utils/mediaFit';
 import { Image as ImageIcon } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
@@ -86,67 +86,6 @@ interface TechniqueMediaSliderProps {
   autoPlay?: boolean;
 }
 
-// MED-FIT: формула потерь кадра и порог — в src/utils/mediaFit.ts (проверяется на
-// реальных размерах каталога через tsx, без монтирования компонента).
-
-/** Радиус размытия подложки под «целиком» — чтобы contain не висел на сером поле. */
-const BACKDROP_BLUR = 28;
-
-interface MediaSlideProps {
-  uri: string;
-  width: number;
-  height: number;
-}
-
-/**
- * Один слайд: стартует как cover (им и остаётся для 93% каталога), а по реальным
- * размерам из onLoad решает, не слишком ли много отсекается. Если слишком —
- * перерисовывается в contain по размытой подложке из той же картинки.
- */
-const MediaSlide = memo(function MediaSlide({ uri, width, height }: MediaSlideProps) {
-  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-
-  const handleLoad = useCallback((e: ImageLoadEventData) => {
-    const src = e?.source;
-    if (!src?.width || !src?.height) return;
-    setNatural((prev) =>
-      prev && prev.w === src.width && prev.h === src.height ? prev : { w: src.width, h: src.height }
-    );
-  }, []);
-
-  const w = width > 0 ? width : '100%';
-  const fit = natural ? pickMediaFit(natural.w, natural.h, width, height) : 'cover';
-
-  if (fit === 'contain') {
-    return (
-      <View style={{ width: w, height, overflow: 'hidden' }}>
-        <Image
-          source={{ uri }}
-          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-          contentFit="cover"
-          blurRadius={BACKDROP_BLUR}
-        />
-        <Image
-          source={{ uri }}
-          style={{ width: w, height }}
-          contentFit="contain"
-          transition={250}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <Image
-      source={{ uri }}
-      style={{ width: w, height }}
-      contentFit="cover"
-      transition={250}
-      onLoad={handleLoad}
-    />
-  );
-});
-
 export function TechniqueMediaSlider({
   mediaUrl,
   height = 190,
@@ -156,6 +95,25 @@ export function TechniqueMediaSlider({
   const urls = useMemo(() => parseMediaUrls(mediaUrl), [mediaUrl]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [width, setWidth] = useState(0);
+  // MED-FIT: настоящие пропорции кадра приходят из onLoad. Высота бокса подстраивается
+  // под них, поэтому картинка заполняет бокс целиком (cover) — без боковых полей и без
+  // обрезки. У обеих рамок одного упражнения пропорции одинаковы (замер 0.jpg/1.jpg по
+  // каталогу), так что при перелистывании и автоплее высота не прыгает.
+  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+  const handleLoad = useCallback((e: ImageLoadEventData) => {
+    const src = e?.source;
+    if (!src?.width || !src?.height) return;
+    setNatural((prev) =>
+      prev && prev.w === src.width && prev.h === src.height ? prev : { w: src.width, h: src.height }
+    );
+  }, []);
+  // Замена упражнения — другие кадры: старую высоту не держим (до нового onLoad
+  // работает прежняя фиксированная).
+  useEffect(() => {
+    setNatural(null);
+  }, [mediaUrl]);
+  const boxH = mediaBoxHeight(width, natural?.w ?? 0, natural?.h ?? 0, height);
+  const slideW = width > 0 ? width : '100%';
   const [isTouching, setIsTouching] = useState(false);
   const listRef = useRef<FlatList<string>>(null);
   const activeIndexRef = useRef(0);
@@ -204,7 +162,7 @@ export function TechniqueMediaSlider({
           setWidth((prev) => (Math.abs(prev - next) < 1 ? prev : next));
         }}
         style={{
-          height,
+          height: boxH,
           borderRadius: BORDER_RADIUS.md,
           overflow: 'hidden',
           backgroundColor: colors.surfaceSecondary,
@@ -223,7 +181,15 @@ export function TechniqueMediaSlider({
             const vx = Math.abs(e.nativeEvent.velocity?.x ?? 0);
             if (vx < 0.5) handleScrollEnd(e);
           }}
-          renderItem={({ item }) => <MediaSlide uri={item} width={width} height={height} />}
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: item }}
+              style={{ width: slideW, height: boxH }}
+              contentFit="cover"
+              transition={250}
+              onLoad={handleLoad}
+            />
+          )}
         />
       </View>
 
