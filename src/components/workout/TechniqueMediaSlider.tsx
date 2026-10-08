@@ -86,6 +86,18 @@ interface TechniqueMediaSliderProps {
   autoPlay?: boolean;
 }
 
+// ⚠️ ВРЕМЕННО (MED-DBG, 08.10) — диагностика серого второго кадра на Android.
+// Убрать целиком после диагноза: этот объект и все вызовы DBG.log(...) из файла.
+const DBG = {
+  on: true,
+  seq: 0,
+  log(tag: string, data: Record<string, unknown>) {
+    if (!DBG.on) return;
+    DBG.seq += 1;
+    console.warn(`[MED-DBG #${DBG.seq}] ${tag} ${JSON.stringify(data)}`);
+  },
+};
+
 export function TechniqueMediaSlider({
   mediaUrl,
   height = 190,
@@ -120,6 +132,15 @@ export function TechniqueMediaSlider({
   }, [mediaUrl]);
   const boxH = mediaBoxHeight(width, natural?.w ?? 0, natural?.h ?? 0, height);
   const slideW = width > 0 ? width : '100%';
+  // MED-DBG: сам факт и частота перерисовок — главный кандидат на «мелькнуло и пропало».
+  DBG.log('render', {
+    h: height,
+    width,
+    boxH,
+    natural,
+    slides: urls.length,
+    activeIndex,
+  });
   const [isTouching, setIsTouching] = useState(false);
   const listRef = useRef<FlatList<string>>(null);
   const activeIndexRef = useRef(0);
@@ -128,6 +149,8 @@ export function TechniqueMediaSlider({
     (index: number) => {
       if (width <= 0 || urls.length === 0) return;
       const clamped = ((index % urls.length) + urls.length) % urls.length;
+      // MED-DBG: видно, листает ли автоплей в момент, когда кадр гаснет.
+      DBG.log('goTo', { from: activeIndexRef.current, to: clamped, width, slides: urls.length });
       activeIndexRef.current = clamped;
       setActiveIndex(clamped);
       listRef.current?.scrollToOffset({ offset: clamped * width, animated: true });
@@ -164,7 +187,24 @@ export function TechniqueMediaSlider({
         style={{ width: slideW, height: boxH }}
         contentFit="cover"
         transition={250}
-        onLoad={handleLoad}
+        onLoad={(e) => {
+          // MED-DBG: повторный onLoad для того же index = слайд перезагружается.
+          DBG.log('onLoad', {
+            index,
+            uri: sources[index].uri.slice(-26),
+            w: e?.source?.width,
+            h: e?.source?.height,
+            boxH,
+          });
+          handleLoad(e);
+        }}
+        onError={(e) =>
+          DBG.log('onError', {
+            index,
+            uri: sources[index].uri.slice(-26),
+            err: (e as { error?: { message?: string } })?.error?.message ?? String(e),
+          })
+        }
       />
     ),
     [sources, slideW, boxH, handleLoad]
@@ -175,7 +215,11 @@ export function TechniqueMediaSlider({
   return (
     <View style={{ marginTop: SPACING.md }}>
       <View
-        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          DBG.log('layout', { width: w, prev: width, boxH });
+          setWidth(w);
+        }}
         style={{
           height: boxH,
           borderRadius: BORDER_RADIUS.md,
