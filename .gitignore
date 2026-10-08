@@ -54,3 +54,6 @@ data/*
 !data/exercises/**/*
 # локальный деплой-артефакт веб-версии (Qoder Sites), не источник
 web-deploy/
+
+# черновик сгенерированных кадров: источник для data/exercises, в git не нужен
+vibe_images/
