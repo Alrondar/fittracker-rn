@@ -187,6 +187,12 @@ export function TechniqueMediaSlider({
         style={{ width: slideW, height: boxH }}
         contentFit="cover"
         transition={250}
+        onLoadStart={() =>
+          // MED-DBG: onLoadStart без последующего onLoad = загрузка стартовала и не
+          // закончилась; вообще без onLoadStart при сером кадре = картинка готова,
+          // но не перекрашивается (проблема отрисовки, а не загрузки).
+          DBG.log('onLoadStart', { index, uri: sources[index].uri.slice(-26), boxH })
+        }
         onLoad={(e) => {
           // MED-DBG: повторный onLoad для того же index = слайд перезагружается.
           DBG.log('onLoad', {
