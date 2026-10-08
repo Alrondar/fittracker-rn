@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { View, Text, FlatList, Image as NativeImage } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { Image, type ImageLoadEventData } from 'expo-image';
+import { Image } from 'expo-image';
 import { FONT_FAMILIES } from '../../constants/fonts';
 import { mediaBoxHeight } from '../../utils/mediaFit';
 import { Image as ImageIcon } from 'lucide-react-native';
@@ -93,26 +93,52 @@ export function TechniqueMediaSlider({
 }: TechniqueMediaSliderProps) {
   const { colors } = useTheme();
   const urls = useMemo(() => parseMediaUrls(mediaUrl), [mediaUrl]);
+  // MED-FIT-2 (08.10): объект источника живёт в memo, а не в литерале внутри renderItem.
+  // Литерал `{{ uri: item }}` создаётся заново на каждый рендер, а перерисовка случается
+  // по трём поводам (onLayout ширины, onLoad пропорций, конец скролла) — на Android
+  // expo-image перезапускал загрузку и показывал placeholder контейнера: вторая рамка
+  // мелькала и гасла до серого квадрата.
+  const sources = useMemo(() => urls.map((uri) => ({ uri })), [urls]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [width, setWidth] = useState(0);
-  // MED-FIT: настоящие пропорции кадра приходят из onLoad. Высота бокса подстраивается
-  // под них, поэтому картинка заполняет бокс целиком (cover) — без боковых полей и без
-  // обрезки. У обеих рамок одного упражнения пропорции одинаковы (замер 0.jpg/1.jpg по
-  // каталогу), так что при перелистывании и автоплее высота не прыгает.
-  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-  const handleLoad = useCallback((e: ImageLoadEventData) => {
-    const src = e?.source;
-    if (!src?.width || !src?.height) return;
-    setNatural((prev) =>
-      prev && prev.w === src.width && prev.h === src.height ? prev : { w: src.width, h: src.height }
-    );
-  }, []);
-  // Замена упражнения — другие кадры: старую высоту не держим (до нового onLoad
-  // работает прежняя фиксированная).
+  // MED-FIT-3 (08.10): высота бокса известна ДО монтирования списка.
+  //
+  // MED-FIT v2 брал пропорции из onLoad уже отрендеренного Image: высота менялась
+  // 220→253 на живых слайдах, VirtualizedList перемонтировал ячейки, и обе рамки
+  // грузились повторно (замер на устройстве: два полных цикла onLoad на одно открытие).
+  // Офскриновый второй кадр после такой пересборки не перекрашивался — на экране это
+  // серый контейнер через долю секунды после появления кадра.
+  // Поэтому размер кадра теперь замеряется заранее через NativeImage.getSize по первому
+  // URI (рамки одного упражнения пропорциональны — см. замер каталога в mediaFit.ts),
+  // а FlatList монтируется один раз с финальной высотой.
+  const [probed, setProbed] = useState<{ w: number; h: number } | null>(null);
+  const [probeDone, setProbeDone] = useState(false);
   useEffect(() => {
-    setNatural(null);
-  }, [mediaUrl]);
-  const boxH = mediaBoxHeight(width, natural?.w ?? 0, natural?.h ?? 0, height);
+    setProbed(null);
+    setProbeDone(false);
+    const first = urls[0];
+    if (!first) {
+      setProbeDone(true);
+      return;
+    }
+    let alive = true;
+    NativeImage.getSize(
+      first,
+      (w, h) => {
+        if (!alive) return;
+        setProbed({ w, h });
+        setProbeDone(true);
+      },
+      () => {
+        if (!alive) return;
+        setProbeDone(true); // держим прежнюю фиксированную высоту, список всё равно смонтируется
+      }
+    );
+    return () => {
+      alive = false;
+    };
+  }, [urls]);
+  const boxH = mediaBoxHeight(width, probed?.w ?? 0, probed?.h ?? 0, height);
   const slideW = width > 0 ? width : '100%';
   const [isTouching, setIsTouching] = useState(false);
   const listRef = useRef<FlatList<string>>(null);
@@ -150,7 +176,23 @@ export function TechniqueMediaSlider({
     [urls.length]
   );
 
+  // Хук обязан быть до раннего return — иначе порядок хуков плывёт на пустом каталоге.
+  const renderItem = useCallback(
+    ({ index }: { index: number }) => (
+      <Image
+        source={sources[index]}
+        style={{ width: slideW, height: boxH }}
+        contentFit="cover"
+        transition={250}
+      />
+    ),
+    [sources, slideW, boxH]
+  );
+
   if (urls.length === 0) return null;
+  // Пока размер кадра не известен, список не монтируем: иначе первая же смена высоты
+  // пересоберёт ячейки и вернёт тот самый серый кадр (MED-FIT-3).
+  if (!probeDone) return <View style={{ marginTop: SPACING.md, height }} />;
 
   return (
     <View style={{ marginTop: SPACING.md }}>
@@ -171,7 +213,7 @@ export function TechniqueMediaSlider({
         <FlatList
           ref={listRef}
           data={urls}
-          keyExtractor={(_, i) => `media-${i}`}
+          keyExtractor={(uri) => uri}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -181,15 +223,7 @@ export function TechniqueMediaSlider({
             const vx = Math.abs(e.nativeEvent.velocity?.x ?? 0);
             if (vx < 0.5) handleScrollEnd(e);
           }}
-          renderItem={({ item }) => (
-            <Image
-              source={{ uri: item }}
-              style={{ width: slideW, height: boxH }}
-              contentFit="cover"
-              transition={250}
-              onLoad={handleLoad}
-            />
-          )}
+          renderItem={renderItem}
         />
       </View>
 
