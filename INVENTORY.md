@@ -95,7 +95,8 @@ Main components:
 `WorkoutTabs`
 `UnitToggle`
 `ExerciseInfoAccordion`
-`TechniqueMediaSlider`
+`TechniqueMediaSlider` — горизонтальный слайдер кадров техники (FlatList + pagingEnabled, автоплей 3 с, точки + счётчик на скриме). Бокс: высота фиксирована вызывающим (190 в карточках, 220 на странице упражнения), ширина = 100% контейнера из `onLayout`. MED-FIT (08.10): режим показа выбирает `src/utils/mediaFit.ts` — старт как `cover`, а по реальным размерам из `onLoad` (`pickMediaFit`) переключает на `contain` по размытой подложке, если `cover` съел бы больше 35% кадра; ширина ещё не измерена (onLayout не пришёл) → остаётся cover. `parseMediaUrls` из `…/0.jpg` всегда мастерит пару `0.jpg + 1.jpg`
+`src/utils/mediaFit.ts` — чистая формула `coverCropLoss` + `pickMediaFit` + порог `COVER_LOSS_MAX` (MED-FIT); вынесена из компонента, чтобы прогонять на реальных размерах каталога через `npx tsx`
 `WarmupBlock`
 `WarmupExerciseCard.tsx` — компактный L1: номер-чекбокс + миниатюра техники + таймер; тап по карточке → WarmupExerciseSheet (WARMUP-1)
 `WarmupExerciseSheet.tsx` — L2 разминки (plain SheetShell с `visible`, state и рендер в корне workout/[id].tsx — не внутри ScrollView): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1)
