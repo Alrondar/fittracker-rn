@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { View, Text, FlatList, Image as NativeImage } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { Image, type ImageLoadEventData } from 'expo-image';
+import { Image } from 'expo-image';
 import { FONT_FAMILIES } from '../../constants/fonts';
 import { mediaBoxHeight } from '../../utils/mediaFit';
 import { Image as ImageIcon } from 'lucide-react-native';
@@ -113,31 +113,52 @@ export function TechniqueMediaSlider({
   const sources = useMemo(() => urls.map((uri) => ({ uri })), [urls]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [width, setWidth] = useState(0);
-  // MED-FIT: настоящие пропорции кадра приходят из onLoad. Высота бокса подстраивается
-  // под них, поэтому картинка заполняет бокс целиком (cover) — без боковых полей и без
-  // обрезки. У обеих рамок одного упражнения пропорции одинаковы (замер 0.jpg/1.jpg по
-  // каталогу), так что при перелистывании и автоплее высота не прыгает.
-  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-  const handleLoad = useCallback((e: ImageLoadEventData) => {
-    const src = e?.source;
-    if (!src?.width || !src?.height) return;
-    setNatural((prev) =>
-      prev && prev.w === src.width && prev.h === src.height ? prev : { w: src.width, h: src.height }
-    );
-  }, []);
-  // Замена упражнения — другие кадры: старую высоту не держим (до нового onLoad
-  // работает прежняя фиксированная).
+  // MED-FIT-3 (08.10): высота бокса известна ДО монтирования списка.
+  //
+  // MED-FIT v2 брал пропорции из onLoad уже отрендеренного Image: высота менялась
+  // 220→253 на живых слайдах, VirtualizedList перемонтировал ячейки, и обе рамки
+  // грузились повторно (замер логов MED-DBG #7→#15). Офскриновый второй кадр после
+  // такой пересборки не перекрашивался — пользователь видел серый контейнер.
+  // Поэтому размер кадра теперь замеряется заранее через Image.getSize по первому
+  // URI (рамки одного упражнения пропорциональны — см. замер каталога в mediaFit.ts),
+  // а FlatList монтируется один раз с финальной высотой.
+  const [probed, setProbed] = useState<{ w: number; h: number } | null>(null);
+  const [probeDone, setProbeDone] = useState(false);
   useEffect(() => {
-    setNatural(null);
-  }, [mediaUrl]);
-  const boxH = mediaBoxHeight(width, natural?.w ?? 0, natural?.h ?? 0, height);
+    setProbed(null);
+    setProbeDone(false);
+    const first = urls[0];
+    if (!first) {
+      setProbeDone(true);
+      return;
+    }
+    let alive = true;
+    NativeImage.getSize(
+      first,
+      (w, h) => {
+        if (!alive) return;
+        DBG.log('probe', { uri: first.slice(-26), w, h });
+        setProbed({ w, h });
+        setProbeDone(true);
+      },
+      () => {
+        if (!alive) return;
+        DBG.log('probe-fail', { uri: first.slice(-26) });
+        setProbeDone(true); // держим прежнюю фиксированную высоту, список всё равно смонтируется
+      }
+    );
+    return () => {
+      alive = false;
+    };
+  }, [urls]);
+  const boxH = mediaBoxHeight(width, probed?.w ?? 0, probed?.h ?? 0, height);
   const slideW = width > 0 ? width : '100%';
   // MED-DBG: сам факт и частота перерисовок — главный кандидат на «мелькнуло и пропало».
   DBG.log('render', {
     h: height,
     width,
     boxH,
-    natural,
+    probed,
     slides: urls.length,
     activeIndex,
   });
@@ -202,7 +223,6 @@ export function TechniqueMediaSlider({
             h: e?.source?.height,
             boxH,
           });
-          handleLoad(e);
         }}
         onError={(e) =>
           DBG.log('onError', {
@@ -213,10 +233,13 @@ export function TechniqueMediaSlider({
         }
       />
     ),
-    [sources, slideW, boxH, handleLoad]
+    [sources, slideW, boxH]
   );
 
   if (urls.length === 0) return null;
+  // Пока размер кадра не известен, список не монтируем: иначе первая же смена высоты
+  // пересоберёт ячейки и вернёт тот самый серый кадр (MED-FIT-3).
+  if (!probeDone) return <View style={{ marginTop: SPACING.md, height }} />;
 
   return (
     <View style={{ marginTop: SPACING.md }}>
