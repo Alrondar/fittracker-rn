@@ -335,8 +335,14 @@ export const ExerciseSlider = memo(function ExerciseSlider({
               {/* FX-2: если карточка замены выше основной — вертикальный скролл
                   внутри страницы (maxHeight = высота основной карточки, которая
                   растёт вместе с её контентом). Ритм между упражнениями
-                  одинаковый, но основная карточка не клиппуется. */}
+                  одинаковый, но основная карточка не клиппуется.
+                  ALT-L2 (08.10): при развёрнутом аккордеоне «Подробнее» карточка
+                  замены заведомо выше основной — без nestedScrollEnabled
+                  вертикальный ScrollView внутри FlatList → горизонтального
+                  ScrollView на Android не скроллится вообще, и всё, что ушло за
+                  maxHeight (в т.ч. CTA), становится недостижимым. */}
               <ScrollView
+                nestedScrollEnabled
                 showsVerticalScrollIndicator={false}
                 style={mainHeight > 0 ? { maxHeight: mainHeight } : undefined}
               >
