@@ -18,9 +18,10 @@
 // что раскрытие Info ничего не сдвигает.
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 import { PressableScale } from '../ui/PressableScale';
-import { RotateCcw, ShieldAlert } from 'lucide-react-native';
-import { SPACING, withAlpha } from '../../constants/theme';
+import { RotateCcw, ShieldAlert, BookOpen, ChevronRight } from 'lucide-react-native';
+import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
 import { EquipmentBubbles } from './EquipmentBubbles';
@@ -50,6 +51,7 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   // монтируется только при открытии и размонтируется при «Скрыть».
   const [infoOpen, setInfoOpen] = useState(false);
   const handleToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
+  const router = useRouter();
 
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
@@ -167,6 +169,37 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
           <InfoButton onOpenInfo={handleToggleInfo} infoVisible={infoOpen} colors={colors} />
         )}
       </View>
+
+      {/* L3: страница упражнения в справочнике — id замены это id упражнения из
+          справочника (тот же маршрут, что у «Полной карточки упражнения» в листе
+          разминки). Тertiary-действие: контурная кнопка тише primary «Заменить». */}
+      <PressableScale
+        onPress={() => router.push(`/exercise/${exercise.id}`)}
+        accessibilityRole="link"
+        accessibilityLabel={`Открыть страницу упражнения: ${exercise.name}`}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: SPACING.xs,
+          marginTop: SPACING.sm,
+          paddingVertical: SPACING.md,
+          paddingHorizontal: SPACING.md,
+          borderRadius: BORDER_RADIUS.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: 'transparent',
+        }}
+      >
+        <BookOpen size={15} color={colors.textSecondary} strokeWidth={2} />
+        <Text
+          style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700' }]}
+          numberOfLines={1}
+        >
+          Открыть страницу упражнения
+        </Text>
+        <ChevronRight size={14} color={colors.textTertiary} />
+      </PressableScale>
 
       {/* UX-16 D3: тот же Info-блок, что в основной карточке: PillToggle
           «Техника» / «Важно знать», демонстрация, описание техники, настройки
