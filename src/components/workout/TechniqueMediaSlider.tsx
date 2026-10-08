@@ -93,6 +93,12 @@ export function TechniqueMediaSlider({
 }: TechniqueMediaSliderProps) {
   const { colors } = useTheme();
   const urls = useMemo(() => parseMediaUrls(mediaUrl), [mediaUrl]);
+  // MED-FIT-2 (08.10): объект источника живёт в memo, а не в литерале внутри renderItem.
+  // Литерал `{{ uri: item }}` создаётся заново на каждый рендер, а перерисовка случается
+  // по трём поводам (onLayout ширины, onLoad пропорций, конец скролла) — на Android
+  // expo-image перезапускал загрузку и показывал placeholder контейнера: вторая рамка
+  // мелькала и гасла до серого квадрата.
+  const sources = useMemo(() => urls.map((uri) => ({ uri })), [urls]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [width, setWidth] = useState(0);
   // MED-FIT: настоящие пропорции кадра приходят из onLoad. Высота бокса подстраивается
@@ -150,6 +156,20 @@ export function TechniqueMediaSlider({
     [urls.length]
   );
 
+  // Хук обязан быть до раннего return — иначе порядок хуков плывёт на пустом каталоге.
+  const renderItem = useCallback(
+    ({ index }: { index: number }) => (
+      <Image
+        source={sources[index]}
+        style={{ width: slideW, height: boxH }}
+        contentFit="cover"
+        transition={250}
+        onLoad={handleLoad}
+      />
+    ),
+    [sources, slideW, boxH, handleLoad]
+  );
+
   if (urls.length === 0) return null;
 
   return (
@@ -166,7 +186,7 @@ export function TechniqueMediaSlider({
         <FlatList
           ref={listRef}
           data={urls}
-          keyExtractor={(_, i) => `media-${i}`}
+          keyExtractor={(uri) => uri}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -176,15 +196,7 @@ export function TechniqueMediaSlider({
             const vx = Math.abs(e.nativeEvent.velocity?.x ?? 0);
             if (vx < 0.5) handleScrollEnd(e);
           }}
-          renderItem={({ item }) => (
-            <Image
-              source={{ uri: item }}
-              style={{ width: slideW, height: boxH }}
-              contentFit="cover"
-              transition={250}
-              onLoad={handleLoad}
-            />
-          )}
+          renderItem={renderItem}
         />
       </View>
 
