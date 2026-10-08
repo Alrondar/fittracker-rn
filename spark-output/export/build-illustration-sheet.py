@@ -13,7 +13,7 @@ import io
 import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DS = os.path.join(ROOT, 'data', 'free-exercise-db-main', 'free-exercise-db-main', 'exercises')
+DS = os.path.join(ROOT, 'data', 'exercises')
 OUT = os.path.join(os.path.dirname(__file__), 'exercise-illustrations-pilot.html')
 
 # (id папки датасета, русское название, есть ли пара кадров)
@@ -84,7 +84,7 @@ def main():
         u'<!doctype html><meta charset="utf-8"><title>CAT-1b · пилот иллюстраций</title>'
         u'<style>%s</style>'
         u'<h1>Пилот схем-иллюстраций</h1>'
-        u'<div class="sub">Файлы: <code>data/free-exercise-db-main/…/exercises/&lt;Id&gt;/0.jpg</code> · '
+        u'<div class="sub">Файлы: <code>data/exercises/&lt;Id&gt;/0.jpg</code> · '
         u'850×567 (3:2) — как у 93%% кадров каталога, чтобы <code>pickMediaFit</code> оставлял cover без letterbox. '
         u'Контактный лист пересобирается скриптом <code>build-illustration-sheet.py</code>.</div>'
         u'%s'

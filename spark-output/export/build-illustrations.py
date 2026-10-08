@@ -17,7 +17,7 @@ from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC = os.path.join(ROOT, 'vibe_images')
-DST = os.path.join(ROOT, 'data', 'free-exercise-db-main', 'free-exercise-db-main', 'exercises')
+DST = os.path.join(ROOT, 'data', 'exercises')
 SIZE = (850, 567)
 QUALITY = 88
 

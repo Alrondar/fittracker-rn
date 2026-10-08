@@ -22,7 +22,7 @@
 | Safety | `injury_exercise_warnings`: 22 правила с `exercise_id IS NULL` (глобальные, по части тела/мышце) + 257 адресных |
 | Словарь мышц | `src/constants/muscleGroups.ts` — фильтр «Мышцы» и карта мышц работают по этому списку, новое значение вне списка в фильтре не появится |
 | Паттерны | домен свободный (`hinge`, `hip_abduction`, `shoulder_raise`, …), CHECK-констрейнта нет — но 86 строк стоят без паттерна |
-| Датасет-источник | `data/free-exercise-db-main/…/exercises` — 873 JSON + папки картинок, Unlicense (public domain), картинки доступны по `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/<Id>/0.jpg` |
+| Датасет-источник | `data/exercises` — 873 JSON + папки картинок, Unlicense (public domain), картинки доступны по `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/<Id>/0.jpg` |
 
 ## 2. Разбор запрошенных семейств (перечислены все строки семейства, не по одному поиску)
 
