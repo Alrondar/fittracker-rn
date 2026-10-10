@@ -8,6 +8,8 @@ import { mediaBoxHeight } from '../../utils/mediaFit';
 import { Image as ImageIcon } from 'lucide-react-native';
 
 import { useTheme } from '../../hooks/useTheme';
+import { useMediaGender } from '../../hooks/useMediaGender';
+import { parseMediaUrls, isGenderedMedia, type MediaGender } from '../../utils/mediaScheme';
 import {
   SPACING,
   BORDER_RADIUS,
@@ -17,45 +19,50 @@ import {
 } from '../../constants/theme';
 
 const AUTOPLAY_MS = 3000;
+/** Активный чип пола лежит белым по тёмному скриму — тот же приём, что у лейбла «ТЕХНИКА». */
+const ON_MEDIA_CHIP_TEXT = '#101315';
 
-/**
- * Парсит media_url из БД.
- * Паттерн free-exercise-db: ".../0.jpg" → генерирует 0.jpg + 1.jpg.
- * Также поддерживает JSON-массив и список через запятую/перенос.
- */
-export const parseMediaUrls = (mediaUrl: string | null | undefined): string[] => {
-  if (!mediaUrl) return [];
-  const trimmed = String(mediaUrl).trim();
-  if (!trimmed) return [];
-
-  if (trimmed.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) {
-        return parsed
-          .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
-          .map((u) => u.trim());
-      }
-    } catch {
-      /* не JSON — идём дальше */
-    }
-  }
-
-  if (/[,\n;]/.test(trimmed)) {
-    return trimmed
-      .split(/[,\n;]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-
-  // Паттерн free-exercise-db: ".../0.jpg" → 0.jpg + 1.jpg
-  const match = trimmed.match(/^(.*\/)(\d+)\.(jpg|jpeg|png|webp)$/i);
-  if (match) {
-    return [`${match[1]}0.${match[3]}`, `${match[1]}1.${match[3]}`];
-  }
-
-  return [trimmed];
-};
+function GenderChip({
+  active,
+  label,
+  accessibilityLabel,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+}) {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+      style={{
+        minWidth: 20,
+        alignItems: 'center',
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        borderRadius: BORDER_RADIUS.sm,
+        borderWidth: 1,
+        borderColor: active ? ON_MEDIA_TEXT : ON_MEDIA_TEXT_DIM,
+        backgroundColor: active ? ON_MEDIA_TEXT : 'transparent',
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 10,
+          fontWeight: '700',
+          fontFamily: FONT_FAMILIES.textBold,
+          color: active ? ON_MEDIA_CHIP_TEXT : ON_MEDIA_TEXT,
+        }}
+      >
+        {label}
+      </Text>
+    </PressableScale>
+  );
+}
 
 function Dot({ active, onPress }: { active: boolean; onPress: () => void }) {
   const widthSV = useSharedValue(active ? 16 : 6);
@@ -92,7 +99,13 @@ export function TechniqueMediaSlider({
   autoPlay = true,
 }: TechniqueMediaSliderProps) {
   const { colors } = useTheme();
-  const urls = useMemo(() => parseMediaUrls(mediaUrl), [mediaUrl]);
+  const profileGender = useMediaGender();
+  // Override живёт в компоненте: тап по чипу пола не трогает профиль и не уезжает в кэш.
+  const [genderOverride, setGenderOverride] = useState<MediaGender | null>(null);
+  const gender = genderOverride ?? profileGender;
+  // Переключатель нужен только там, где есть вторая пара кадров: у легаси выбирать нечего.
+  const gendered = isGenderedMedia(mediaUrl);
+  const urls = useMemo(() => parseMediaUrls(mediaUrl, gender), [mediaUrl, gender]);
   // MED-FIT-2 (08.10): объект источника живёт в memo, а не в литерале внутри renderItem.
   // Литерал `{{ uri: item }}` создаётся заново на каждый рендер, а перерисовка случается
   // по трём поводам (onLayout ширины, onLoad пропорций, конец скролла) — на Android
@@ -113,14 +126,20 @@ export function TechniqueMediaSlider({
   // а FlatList монтируется один раз с финальной высотой.
   const [probed, setProbed] = useState<{ w: number; h: number } | null>(null);
   const [probeDone, setProbeDone] = useState(false);
+  // Ключ папки, для которой размер уже снят. Смена пола меняет только суффикс файла
+  // (`00f` → `00m`), пропорции остаются прежние, а пересъёмка размера на каждый тап
+  // схлопнула бы бокс до фиксированной высоты — тот самый серый кадр из MED-FIT-3.
+  const folderKey = urls.length > 0 ? urls[0].slice(0, urls[0].lastIndexOf('/')) : '';
+  const probedKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    setProbed(null);
-    setProbeDone(false);
     const first = urls[0];
     if (!first) {
       setProbeDone(true);
       return;
     }
+    if (probedKeyRef.current === folderKey) return;
+    setProbed(null);
+    setProbeDone(false);
     let alive = true;
     NativeImage.getSize(
       first,
@@ -128,6 +147,7 @@ export function TechniqueMediaSlider({
         if (!alive) return;
         setProbed({ w, h });
         setProbeDone(true);
+        probedKeyRef.current = folderKey;
       },
       () => {
         if (!alive) return;
@@ -137,7 +157,7 @@ export function TechniqueMediaSlider({
     return () => {
       alive = false;
     };
-  }, [urls]);
+  }, [urls, folderKey]);
   const boxH = mediaBoxHeight(width, probed?.w ?? 0, probed?.h ?? 0, height);
   const slideW = width > 0 ? width : '100%';
   const [isTouching, setIsTouching] = useState(false);
@@ -246,6 +266,22 @@ export function TechniqueMediaSlider({
         <Text style={{ color: ON_MEDIA_TEXT, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
           ТЕХНИКА
         </Text>
+        {gendered && (
+          <View style={{ flexDirection: 'row', gap: 4, marginLeft: 2 }}>
+            <GenderChip
+              active={gender === 'female'}
+              label="Ж"
+              accessibilityLabel="Показать технику на женской фигуре"
+              onPress={() => setGenderOverride('female')}
+            />
+            <GenderChip
+              active={gender === 'male'}
+              label="М"
+              accessibilityLabel="Показать технику на мужской фигуре"
+              onPress={() => setGenderOverride('male')}
+            />
+          </View>
+        )}
       </View>
 
       {urls.length > 1 && (
