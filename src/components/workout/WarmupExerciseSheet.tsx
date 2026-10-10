@@ -27,7 +27,9 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { SheetShell } from '../ui/SheetShell';
 import { AppButton } from '../ui/AppButton';
-import { TechniqueMediaSlider, parseMediaUrls } from './TechniqueMediaSlider';
+import { TechniqueMediaSlider } from './TechniqueMediaSlider';
+import { parseMediaUrls } from '../../utils/mediaScheme';
+import { useMediaGender } from '../../hooks/useMediaGender';
 import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
 import { SectionSubheading } from './sections/ExerciseCardTechnique';
 import { WarmupTypeChip } from './WarmupExerciseCard';
@@ -79,7 +81,8 @@ interface AlternativeRowProps {
 
 function AlternativeRow({ alt, onPress }: AlternativeRowProps) {
   const { colors } = useTheme();
-  const thumb = parseMediaUrls(alt.media_url)[0];
+  const mediaGender = useMediaGender();
+  const thumb = parseMediaUrls(alt.media_url, mediaGender)[0];
   return (
     <PressableScale
       accessibilityRole="button"

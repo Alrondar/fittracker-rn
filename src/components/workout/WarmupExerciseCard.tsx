@@ -19,7 +19,8 @@ import { Play, Pause, Check, Clock, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
-import { parseMediaUrls } from './TechniqueMediaSlider';
+import { parseMediaUrls } from '../../utils/mediaScheme';
+import { useMediaGender } from '../../hooks/useMediaGender';
 import { WarmupExercise } from '../../services/warmupService';
 
 const formatTime = (seconds: number) =>
@@ -96,7 +97,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
 
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
-  const thumbnail = parseMediaUrls(exercise.media_url)[0];
+  const mediaGender = useMediaGender();
+  const thumbnail = parseMediaUrls(exercise.media_url, mediaGender)[0];
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 70).duration(300)}>
