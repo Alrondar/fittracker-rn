@@ -169,3 +169,46 @@
 **По умолчанию, без ответа владельца:** стойка в пуловере — стопы на ширине плеч, параллельно, обе целиком на полу (вопрос 5 списка). Если нужен шаг — правится одним кадром, `STANCE LOCK` в промпте уже есть.
 
 После ответов и отмашки — женские пары этих пяти позиций (10 кадров), мужским отдельным заходом, как в партии 6.
+
+---
+
+## Мужская партия (10.10, вечер): статус и одна пересъёмка в очереди
+
+| Поз. | Мужская пара | Вердикт |
+|---|---|---|
+| `Wide-Grip Lat Pulldown` | `00m/01m` разложены | принят |
+| `Bent Over Barbell Row` | `00m/01m` разложены | принят, **вид со спины остаётся** («тяга штанги в наклоне тоже ок. оставь вид со спины») |
+| `One-Arm Dumbbell Row` | `00m/01m` разложены | принят |
+| `Pullups` | `00m/01m` разложены | принят |
+| `Straight-Arm Pulldown` | `00m/01m` разложены | принят |
+| `Reverse Grip Bent-Over Rows` | **принята v3 (10.11)**, v1 и v2 в `vibe_images/rejected-2026-10-10/` | переснята дважды: v1 при виде со спины — хват читается прямым; v2 с камерой спереди — всё ещё прямым; v3 принята после того, как правило хвата стало ПЕРВЫМ блоком промпта |
+
+**Блокер:** `ImageGen` отвечает `403 code 112` (квитанция со ссылкой на тариф) — лимит генерации исчерпан, проверено тремя вызовами 10.11. Ниже — готовые промпты, пересъёмка = два вызова `1536x1024` с именами `Reverse_Grip_Bent-Over_Rows_start_m` и `Reverse_Grip_Bent-Over_Rows_finish_m`, затем `build-illustrations.py --ids Reverse_Grip_Bent-Over_Rows`.
+
+Оба промпта = промпт принятой мужской пары прямого хвата (камера: три-четверти со спины ~40° от прямой «за спиной», высота таза, 2,8 м, голова к правому краю, ноги к левому), с заменой блока хвата и с тремя блоками, которых не было в первом прогоне: `REVERSE GRIP`, `IDENTICAL GRIP LOCK`, `BAR HORIZONTAL LOCK` + явный `DEPTH ORDER`.
+
+### Кадр 0 — старт (супинированный хват)
+
+```
+GRIP — REVERSE / SUPINATED, THE DEFINING FEATURE OF THIS EXERCISE: THE PALM SIDE OF BOTH HANDS FACES THE CAMERA AND FACES UP toward his body, THE BACKS OF HIS HANDS FACE DOWN AND AWAY FROM THE CAMERA AND MUST NOT BE SEEN, forearms rotated so the thumbs point inward toward his thighs, elbows slightly out.
+IDENTICAL GRIP LOCK: both hands hold the bar in EXACTLY THE SAME way, as mirror images of each other on the shaft, both fully wrapped around it, fingers closed around the metal. NEVER one hand overhand and the other underhand, never a hammer grip, never an open hand with spread fingers. If the two hands look different, the image is WRONG.
+BAR HORIZONTAL LOCK: the shaft is PARALLEL TO THE FLOOR — the left end and the right end are at EXACTLY THE SAME HEIGHT, the bar does NOT tilt toward the body, one end is not higher or nearer to his hip than the other, the bar does not run diagonally into him.
+DEPTH ORDER: from the camera to the background the order is (1) the barbell, (2) his body, (3) the backdrop. Where the shaft crosses in front of his legs the METAL is visible and it OCCLUDES his shins — the bar is never behind his legs and never behind his hips.
+ARM LOCK (start): both arms are completely STRAIGHT, the bar hanging under the shoulders at a level below his knees.
+FORBIDDEN: an overhand grip with the knuckles up (this row is reverse-grip); two different grips in the two hands; an open hand; the bar behind his legs; a tilted or diagonal barbell; a round lower back; the torso rising upright.
+```
+
+### Кадр 1 — финиш (супинированный хват)
+
+```
+Тот же блок GRIP / IDENTICAL GRIP LOCK / BAR HORIZONTAL LOCK / DEPTH ORDER, что в кадре 0, плюс:
+SCENE: FINISHED position — the bar pulled UP to his LOWER ABDOMEN / upper hips, elbows driven BACK along his ribs and past the line of his back, shoulder blades squeezed together.
+TORSO ANGLE LOCK: his torso is hinged forward about 45° from the floor and this angle is IDENTICAL in both frames — if he is more upright here than in the companion frame the image is WRONG.
+ELBOW PATH LOCK: his elbows point BACK toward the rear of the frame, close along the ribs, never flared out to the sides, never still straight.
+DEPTH ORDER (finish): the bar crosses in FRONT of his abdomen — where it passes his shorts the METAL is visible and occludes the fabric; the bar must not disappear behind his hips.
+FORBIDDEN: an overhand grip; two different grips; the bar behind his hips; a diagonal bar; the torso rising upright.
+```
+
+Проверка принятой пары — три признака, по которым она была завернута: (1) обе ладони смотрят в камеру, тыльная сторона кистей не видна; (2) кисти идентичны и обе обхвачены; (3) гриф горизонтален и лежит ПЕРЕД телом, а не за тазом.
+
+**Итог 10.11 — что реально переломило хват.** При виде со спины супинация не читается физически: камера при обоих хватах видит тыльную сторону кисти, поэтому правка «сделала прямым хватом» при задней камере неисполнима. Помогли два шага: (1) мужская пара переведена на камеру **своей же принятой женской пары** — три-четверти спереди ~40°, голова к правому краю (это правило «одна камера на все четыре кадра позиции», а не самодеятельная смена ракурса); (2) блок хвата стал **ПЕРВЫМ** в промпте и описан языком перекрытия: «гриф лежит в двух раскрытых ладонях, обращённых вверх; пальцы обхватывают его снизу и наружу, их подушечки видны ПЕРЕД металлом, костяшки с дальней стороны скрыты; если видно тыльную сторону кисти или костяшки сверху грифа — это прямой хват, кадр неверный». Финишный кадр v3 принят владельцем как есть («бери последние изображения»), отдельная v4 не понадобилась. Проверка хвата делается увеличенным фрагментом (`spark-output/export/qc/revgrip-hands-v3.jpg`), а не общим планом: на 850 px кисть занимает ~40 px.

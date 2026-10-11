@@ -48,6 +48,10 @@ NEW = {
     'Pullups': 'Подтягивания',
     'Straight-Arm_Pulldown': 'Пуловер в блоке (Straight-Arm Pulldown)',
     'Reverse_Grip_Bent-Over_Rows': 'Тяга штанги в наклоне обратным хватом',
+    'Dumbbell_Squat': 'Приседания с гантелями',
+    'Dumbbell_Lunges': 'Выпады с гантелями',
+    'Split_Squat_with_Dumbbells': 'Болгарские выпады',
+    'Leg_Press': 'Жим ногами в тренажёре',
 }
 # 16 позиций CAT-1 — те же, что в миграции media_url
 CAT1 = [
