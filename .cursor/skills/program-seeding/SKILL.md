@@ -11,6 +11,8 @@ description: Генерация и выкладка готовых (seeded) тр
 
 **Tracker first:** программы — курируемый контент, не LLM-генерация в проде (ROADMAP: AI-last, CI-7 optional).
 
+**Смежные скиллы (не дублировать друг друга):** персональная программа конкретному пользователю (`created_by` = владелец, вкладка «Мои») — `.cursor/skills/program-personal/SKILL.md`, включая возможности и пределы редактора и SQL-срез по истории; отбор движений по БД упражнений — `.cursor/skills/exercise-catalog/SKILL.md`. Этот файл владеет схемой `programs/program_phases/program_days/program_exercises`, инвариантами seed'а и транспортом `apply_migration`.
+
 ## Схема (проверено по проде 25.09.2026)
 
 DDL этих таблиц нет в `supabase/migrations/` (исторически вне репозитория) — источник истины: `information_schema` / MCP `execute_sql`, или `src/services/programsService.ts` + `copy_program_for_user`.
