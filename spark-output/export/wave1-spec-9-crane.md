@@ -270,8 +270,12 @@ and both dumbbells fully visible, nothing cut off by the edge.
 
 ## Именование и приёмка
 
-Файлы: `Crane_Single_Leg_Glute_Hinge_start` / `_finish` (жен), `..._start_m` /
+Файлы: `Crane_Single-Leg_Glute_Hinge_start` / `_finish` (жен), `..._start_m` /
 `..._finish_m` (муж) — `build-illustrations.py` разложит их в `00f/01f/00m/01m` сам.
+Имя с дефисом — **13.10**: папка и черновики переименованы под `name_eng`
+(«Crane Single-Leg Glute Hinge»), чтобы `check-media-names.py` сходился; в
+`20261011180000_add_crane_single_leg_glute_hinge.sql` осталась старая запись в комментарии —
+это история применённой миграции, её не правим.
 
 Сверх восьми признаков §1.2 проверяется четыре, по порядку важности:
 
