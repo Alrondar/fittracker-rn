@@ -288,6 +288,10 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   // web-ветке рендера.
   const openAlternatives = useCallback(() => {
     setAltsMounted(true);
+    // Прыжок сам по себе не гарантирует события onScroll (если полоса уже стоит
+    // на этой странице, скролла нет), а видимость строки поиска зависит от
+    // индекса страницы в React → задаём индекс явно.
+    setPageIndex(1);
     requestAnimationFrame(() =>
       scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: true })
     );
@@ -296,7 +300,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   // SEARCH-ALT на десктопе: у упражнения без альтернатив нет peek-карточки, за
   // которую обычно тянут полосу, поэтому скролл к слоту даёт сам слот.
   const openSearchSlot = useCallback(() => {
-    scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: true });
+    setPageIndex(1);
+    scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: Platform.OS !== 'web' });
   }, [cardWidth]);
 
   const peekCard = (
