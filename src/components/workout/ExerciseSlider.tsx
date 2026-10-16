@@ -174,7 +174,10 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     if (picked && picked.id === exercise.id) {
       setPicked(null);
       // Замена приземлилась в основную карточку — к ней и возвращаемся.
-      scrollRef.current?.scrollTo({ x: 0, animated: true });
+      // На RNW анимированный scrollTo не доезжает, если в том же коммите меняется
+      // состав страниц (карточка из поиска уходит, встаёт peek): индекс страницы мы
+      // уже сбросили, а DOM остался на чужой странице — отсюда мгновенный скролл.
+      scrollRef.current?.scrollTo({ x: 0, animated: Platform.OS !== 'web' });
       setPageIndex(0);
     }
   }, [exercise.id, picked]);
