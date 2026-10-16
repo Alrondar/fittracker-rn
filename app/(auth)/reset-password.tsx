@@ -4,6 +4,7 @@ import { feedback } from '../../src/lib/feedback';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
@@ -18,6 +19,9 @@ export default function ResetPasswordScreen() {
   const [sent, setSent] = useState(false);
   const router = useRouter();
   const { colors } = useTheme();
+  // NAV-INSET (16.10): у группы авторизации нет SafeAreaView — край экрана
+  // (статус-бар сверху, системные кнопки снизу) резервировем сами.
+  const insets = useSafeAreaInsets();
 
   const handleSend = async () => {
     if (!email.trim()) {
@@ -46,6 +50,8 @@ export default function ResetPasswordScreen() {
       contentContainerStyle={{
         flexGrow: 1,
         padding: SPACING.xxl,
+        paddingTop: SPACING.xxl + insets.top,
+        paddingBottom: SPACING.xxl + insets.bottom,
         backgroundColor: colors.background,
       }}
     >

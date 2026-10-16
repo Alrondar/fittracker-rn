@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import { Search, Check, X } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha, onPrimaryInk } from '../../constants/theme';
@@ -16,6 +15,13 @@ interface EquipmentSheetProps {
   onToggle: (equipment: string) => void;
   onReset: () => void;
   onClose: () => void;
+  /**
+   * NAV-INSET (16.10): резерв снизу нужен только когда лист живёт в нативном
+   * Modal — то окно доходит до физического низа, и системные кнопки лежат поверх.
+   * В сцене вкладок низ итак над таб-баром (он резервирует inset сам), поэтому
+   * значение считает вызывающая сторона, а не лист.
+   */
+  bottomInset?: number;
 }
 
 export function EquipmentSheet({
@@ -24,11 +30,9 @@ export function EquipmentSheet({
   onToggle,
   onReset,
   onClose,
+  bottomInset = 0,
 }: EquipmentSheetProps) {
   const { colors } = useTheme();
-  // NAV-INSET (16.10): лист прижат к физическому низу экрана — в edge-to-edge
-  // системные кнопки лежат поверх панели, и «Готово» становится недостижимым.
-  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
 
   const filteredOptions = useMemo(() => {
@@ -64,7 +68,7 @@ export function EquipmentSheet({
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           maxHeight: '75%',
-          paddingBottom: SPACING.lg + insets.bottom,
+          paddingBottom: SPACING.lg + bottomInset,
         }}
       >
         {/* Ручка */}

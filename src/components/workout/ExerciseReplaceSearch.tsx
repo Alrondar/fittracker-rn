@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { SlidersHorizontal, X } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '../../lib/queryPolicy';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -45,6 +46,9 @@ export const ExerciseReplaceSearchControls = memo(function ExerciseReplaceSearch
   sideInset,
 }: ControlsProps) {
   const { colors } = useTheme();
+  // Шкаф снаряжения живёт в нативном Modal: его окно доходит до физического
+  // низа, поэтому резерв нав-бара передаётся листу снаружи (сам лист его не знает).
+  const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
   // Фильтры раскрываются по первому фокусу и остаются раскрытыми, пока видна
   // строка: схлопывать по blur нельзя — на Android blur приходит ещё на
@@ -144,6 +148,7 @@ export const ExerciseReplaceSearchControls = memo(function ExerciseReplaceSearch
           onToggle={search.toggleEquipment}
           onReset={() => search.equipment.forEach((item) => search.toggleEquipment(item))}
           onClose={() => setShowEquipment(false)}
+          bottomInset={insets.bottom}
         />
       </Modal>
     </View>

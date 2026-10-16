@@ -11,7 +11,6 @@ import {
 import { PressableScale } from '../../ui/PressableScale';
 import { X, Link2 } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWebKeyboardInset } from '../../../hooks/useWebKeyboardInset';
 import { FONT_FAMILIES } from '../../../constants/fonts';
 import { SPACING, BORDER_RADIUS } from '../../../constants/theme';
@@ -37,9 +36,6 @@ export function ImportProgramSheet({
   const { colors } = useTheme();
   // WEB-BUG-5 (остаток): поле кода программы не должно уезжать под клавиатуру браузера.
   const webKbInset = useWebKeyboardInset();
-  // NAV-INSET (16.10): в edge-to-edge системные кнопки лежат поверх листа —
-  // без резерва снизу «Импортировать» недостижима.
-  const insets = useSafeAreaInsets();
 
   return (
     <KeyboardAvoidingView
@@ -84,10 +80,7 @@ export function ImportProgramSheet({
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              padding: SPACING.xl,
-              paddingBottom: SPACING.xl + webKbInset + insets.bottom,
-            }}
+            contentContainerStyle={{ padding: SPACING.xl, paddingBottom: SPACING.xl + webKbInset }}
           >
             <Text
               style={[typography.body, { color: colors.textSecondary, marginBottom: SPACING.md }]}
