@@ -199,6 +199,21 @@ function mapExercise(ex: ProgramExerciseRow): ProgramExercise {
   };
 }
 
+/**
+ * Позиция в дне: null в конец, при равных — id. `|| 0` раньше ставил пустую
+ * позицию в НАЧАЛО, а `.order('position')` у PostgREST (создание тренировки из
+ * дня) и порядок синхронизации держат null в конце — экраны разъезжались.
+ */
+function comparePosition(
+  a: { position: number | null; id: string },
+  b: { position: number | null; id: string }
+): number {
+  const ap = a.position ?? Number.MAX_SAFE_INTEGER;
+  const bp = b.position ?? Number.MAX_SAFE_INTEGER;
+  if (ap !== bp) return ap - bp;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
 function mapDay(day: ProgramDayRow): ProgramDay {
   return {
     id: day.id,
@@ -209,9 +224,7 @@ function mapDay(day: ProgramDayRow): ProgramDay {
     name: day.name,
     position: day.position ?? undefined,
     created_at: day.created_at ?? undefined,
-    exercises: (day.program_exercises || [])
-      .sort((a, b) => (a.position || 0) - (b.position || 0))
-      .map(mapExercise),
+    exercises: (day.program_exercises || []).sort(comparePosition).map(mapExercise),
   };
 }
 

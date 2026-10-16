@@ -41,10 +41,17 @@ export function buildExercisesData(
   // ADD-BELOW (16.10): порядок экрана = order_index строк workout_exercises.
   // Сортировка стабильная, поэтому пока у всех строк order_index null (старые
   // тренировки), ничего не меняется: остаётся прежний порядок отдачи Postgres.
+  // Равные order_index (перестановка в программе: синхронизация обновляла
+  // position, но не order_index) дописываем по position, иначе их порядок
+  // зависит от того, в каком порядке строки вернул Postgres.
   const ordered = [...workoutExercises].sort((a, b) => {
     const ai = a.order_index ?? Number.MAX_SAFE_INTEGER;
     const bi = b.order_index ?? Number.MAX_SAFE_INTEGER;
-    return ai - bi;
+    if (ai !== bi) return ai - bi;
+    const ap = a.position ?? Number.MAX_SAFE_INTEGER;
+    const bp = b.position ?? Number.MAX_SAFE_INTEGER;
+    if (ap !== bp) return ap - bp;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
   });
 
   return ordered
