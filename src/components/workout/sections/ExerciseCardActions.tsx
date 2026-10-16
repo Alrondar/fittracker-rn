@@ -7,7 +7,7 @@
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
 import { PressableScale } from '../../ui/PressableScale';
-import { Clock, Info } from 'lucide-react-native';
+import { Clock, Info, Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
@@ -19,6 +19,13 @@ interface ExerciseCardActionsProps {
   onOpenInfo: () => void;
   infoVisible: boolean;
   hasInfoContent: boolean;
+  /**
+   * ADD-BELOW (16.10): блок добавлен человеком из поиска в этой сессии —
+   * показываем tertiary-строку «Убрать из тренировки» (логи уйдут каскадом,
+   * подтверждение делает экран).
+   */
+  removable?: boolean;
+  onRemoveAdded?: () => void;
   colors: any;
 }
 
@@ -87,6 +94,8 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
   onOpenInfo,
   infoVisible,
   hasInfoContent,
+  removable = false,
+  onRemoveAdded,
   colors,
 }: ExerciseCardActionsProps) {
   const handleStartRest = () => {
@@ -94,49 +103,80 @@ export const ExerciseCardActions = memo(function ExerciseCardActions({
     onStartRest();
   };
 
-  // Не рендерим, если нет ни отдыха, ни инфо
-  if (restSeconds <= 0 && !hasInfoContent) return null;
+  const handleRemove = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onRemoveAdded?.();
+  };
+
+  // Не рендерим, если нет ни отдыха, ни инфо, ни удаления
+  if (!removable && restSeconds <= 0 && !hasInfoContent) return null;
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: SPACING.sm,
-        marginTop: SPACING.md,
-        marginBottom: SPACING.md,
-      }}
-    >
-      {restSeconds > 0 && (
+    <View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: SPACING.sm,
+          marginTop: SPACING.md,
+          marginBottom: SPACING.md,
+        }}
+      >
+        {restSeconds > 0 && (
+          <PressableScale
+            onPress={handleStartRest}
+            accessibilityRole="button"
+            accessibilityLabel={`Открыть таймер отдыха (пресет ${restSeconds} секунд)`}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: SPACING.xs,
+              backgroundColor: withAlpha(colors.primary, 0.082),
+              paddingHorizontal: SPACING.md,
+              paddingVertical: 10,
+              borderRadius: BORDER_RADIUS.md,
+              borderWidth: 1,
+              borderColor: withAlpha(colors.primary, 0.251),
+              flex: 1,
+              minHeight: 44,
+            }}
+            haptic="none"
+          >
+            <Clock size={16} color={colors.primary} strokeWidth={2} />
+            <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
+              Таймер
+            </Text>
+          </PressableScale>
+        )}
+
+        {/* Info button */}
+        {hasInfoContent && (
+          <InfoButton onOpenInfo={onOpenInfo} infoVisible={infoVisible} colors={colors} />
+        )}
+      </View>
+
+      {/* ADD-BELOW: tertiary-действие под рядом кнопок — ниже «Таймера» и Info,
+          чтобы не толкаться в одном ряду и не уезжать за клип при Info. */}
+      {removable && (
         <PressableScale
-          onPress={handleStartRest}
+          onPress={handleRemove}
           accessibilityRole="button"
-          accessibilityLabel={`Открыть таймер отдыха (пресет ${restSeconds} секунд)`}
+          accessibilityLabel="Убрать добавленное упражнение из тренировки"
           style={{
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: SPACING.xs,
-            backgroundColor: withAlpha(colors.primary, 0.082),
-            paddingHorizontal: SPACING.md,
-            paddingVertical: 10,
-            borderRadius: BORDER_RADIUS.md,
-            borderWidth: 1,
-            borderColor: withAlpha(colors.primary, 0.251),
-            flex: 1,
-            minHeight: 44,
+            marginTop: -SPACING.sm,
+            paddingVertical: SPACING.sm,
           }}
           haptic="none"
         >
-          <Clock size={16} color={colors.primary} strokeWidth={2} />
-          <Text style={[typography.captionSmall, { color: colors.primary, fontWeight: '700' }]}>
-            Таймер
+          <Trash2 size={13} color={colors.error} strokeWidth={2} />
+          <Text style={[typography.captionSmall, { color: colors.error, fontWeight: '700' }]}>
+            Убрать из тренировки
           </Text>
         </PressableScale>
-      )}
-
-      {/* Info button */}
-      {hasInfoContent && (
-        <InfoButton onOpenInfo={onOpenInfo} infoVisible={infoVisible} colors={colors} />
       )}
     </View>
   );
