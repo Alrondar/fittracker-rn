@@ -3,6 +3,7 @@ import { ScrollView, Text } from 'react-native';
 import { feedback } from '../../src/lib/feedback';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { AppCard } from '../../src/components/ui/AppCard';
@@ -17,6 +18,9 @@ export default function UpdatePasswordScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { colors } = useTheme();
+  // NAV-INSET (16.10): у группы авторизации нет SafeAreaView — край экрана
+  // (статус-бар сверху, системные кнопки снизу) резервировем сами.
+  const insets = useSafeAreaInsets();
 
   const handleSave = async () => {
     if (password.length < 6) {
@@ -45,6 +49,8 @@ export default function UpdatePasswordScreen() {
         flexGrow: 1,
         justifyContent: 'center',
         padding: SPACING.xxl,
+        paddingTop: SPACING.xxl + insets.top,
+        paddingBottom: SPACING.xxl + insets.bottom,
         backgroundColor: colors.background,
       }}
     >

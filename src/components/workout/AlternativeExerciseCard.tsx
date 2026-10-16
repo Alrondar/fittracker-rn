@@ -20,7 +20,7 @@ import React, { memo, useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableScale } from '../ui/PressableScale';
-import { RotateCcw, ShieldAlert, BookOpen, ChevronRight } from 'lucide-react-native';
+import { RotateCcw, ShieldAlert, BookOpen, ChevronRight, Search } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
@@ -36,6 +36,8 @@ interface AlternativeExerciseCardProps {
   exerciseIndex: number;
   // UX-5 Feature 1: запрос на замену — caller выбирает тип (temp vs program)
   onRequestReplace: (exIndex: number, altId: string) => void;
+  /** SEARCH-ALT: карточка выбрана из поиска по базе, а не из связей упражнения. */
+  fromSearch?: boolean;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
 }
@@ -44,6 +46,7 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   exercise,
   exerciseIndex,
   onRequestReplace,
+  fromSearch = false,
   colors,
   cardStyles,
 }: AlternativeExerciseCardProps) {
@@ -81,6 +84,30 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
       >
         {exercise.name}
       </Text>
+
+      {/* SEARCH-ALT: семантика источника связи — L1, как у бейджа типа замены */}
+      {fromSearch && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 4,
+            paddingHorizontal: SPACING.sm,
+            paddingVertical: 3,
+            borderRadius: SPACING.sm,
+            marginBottom: SPACING.xs,
+            backgroundColor: colors.surfaceSecondary,
+          }}
+        >
+          <Search size={11} color={colors.textSecondary} strokeWidth={2.5} />
+          <Text
+            style={[typography.captionSmall, { color: colors.textSecondary, fontWeight: '700' }]}
+          >
+            из поиска
+          </Text>
+        </View>
+      )}
 
       {/* ENG-5: бейдж типа замены (L1 — семантика варианта) */}
       <AlternativeRelationBadge relation={exercise.relation_type} compact />

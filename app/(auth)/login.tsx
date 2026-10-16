@@ -5,6 +5,7 @@ import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWebKeyboardInset } from '../../src/hooks/useWebKeyboardInset';
 import { SPACING } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
@@ -27,6 +28,9 @@ export default function LoginScreen() {
   // WEB-BUG-5 (остаток): KAV на RNW — noop; без этого поля («пароль») уезжают
   // под клавиатуру мобильного браузера и не скроллятся к ним.
   const webKbInset = useWebKeyboardInset();
+  // NAV-INSET (16.10): у группы авторизации нет SafeAreaView, и в edge-to-edge
+  // экран лежит под статус-баром сверху и под системными кнопками снизу.
+  const insets = useSafeAreaInsets();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -71,7 +75,11 @@ export default function LoginScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: webKbInset }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top,
+          paddingBottom: webKbInset + insets.bottom,
+        }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ flex: 1, justifyContent: 'center', padding: SPACING.xxl }}>

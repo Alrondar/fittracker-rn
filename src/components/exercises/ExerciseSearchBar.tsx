@@ -14,9 +14,18 @@ interface Props {
   onChangeText: (text: string) => void;
   isSearching: boolean;
   tooShort: boolean;
+  /** SEARCH-ALT: на экране тренировки фильтры раскрываются по фокусу поля. */
+  onFocus?: () => void;
 }
 
-export function ExerciseSearchBar({ inputRef, value, onChangeText, isSearching, tooShort }: Props) {
+export function ExerciseSearchBar({
+  inputRef,
+  value,
+  onChangeText,
+  isSearching,
+  tooShort,
+  onFocus,
+}: Props) {
   const { colors } = useTheme();
 
   return (
@@ -44,6 +53,7 @@ export function ExerciseSearchBar({ inputRef, value, onChangeText, isSearching, 
           placeholderTextColor={colors.textTertiary}
           value={value}
           onChangeText={onChangeText}
+          onFocus={onFocus}
           returnKeyType="search"
         />
         {value.length > 0 && (

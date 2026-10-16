@@ -5,16 +5,32 @@
 //    265+ этого файла (CTR-6, аудит 28.09: комментарий был устаревшим)
 //  - P1-B: stagger-загрузка альтернатив (500мс + index*100мс) — не блокирует TTI
 // ENG-5: ранжирование альтернатив + подпись excludedCount
+// SEARCH-ALT (16.10): над полосой слайдеров — приклеенная строка поиска замены по
+// всей базе. Видна только на слайде замены, одно правило для всех упражнений:
+// у упражнения без альтернатив для свайпа существует пустой слайд-слот, и
+// выбранное из поиска занимает ПЕРВЫЙ слайд замены, прежние уезжают вправо.
+// Карточка из поиска живёт в этом монтировании блока и в БД не пишется.
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  Platform,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Search } from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { useLayoutWidth } from '../../hooks/useLayoutWidth';
 import { createCardStyles } from '../../styles/components/card';
 import { ExerciseCard } from './ExerciseCard';
 import { WorkoutCardDisplayMode } from '../../types/workout';
 import { AlternativeExerciseCard } from './AlternativeExerciseCard';
+import { ExerciseReplaceSearchControls, ExerciseReplaceSearchPanel } from './ExerciseReplaceSearch';
+import { useExerciseReplaceSearch } from '../../hooks/useExerciseReplaceSearch';
+import type { UserInjury } from '../../constants/injuries';
 import { ExerciseData, AlternativeExercise, SetData, SetFeedbackPatch } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import { AlternativeSourceInput } from '../../engine/alternatives';
@@ -53,9 +69,13 @@ interface ExerciseSliderProps {
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
-  // UX-5 Feature 1: запрос замены (caller выбирает temp vs program)
-  onRequestReplace: (exIndex: number, altId: string) => void;
+  // UX-5 Feature 1: запрос замены (caller выбирает temp vs program).
+  // SEARCH-ALT: third arg — готовая карточка, выбранная из поиска по базе
+  // (её нет среди связей упражнения, поэтому искать её в alternatives бессмысленно).
+  onRequestReplace: (exIndex: number, altId: string, preset?: AlternativeExercise) => void;
   resetToOriginal: (exIndex: number) => void;
+  /** SEARCH-ALT: активные травмы — для предупреждений в выдаче поиска замен. */
+  activeInjuries: UserInjury[];
   startRestTimer: (seconds: number, ownerIndex?: number | null) => void;
   getIntensityInfo: (intensity: string) => {
     label: string;
@@ -97,6 +117,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   applyProgression,
   isSetCompleted,
   onRequestReplace,
+  activeInjuries,
   resetToOriginal,
   startRestTimer,
   getIntensityInfo,
@@ -130,6 +151,66 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const [altsMounted, setAltsMounted] = useState(false);
 
   const hasAlts = exercise.alternatives.length > 0 || isReplaced;
+
+  // ===== SEARCH-ALT (16.10) =====
+  const [pageIndex, setPageIndex] = useState(0);
+  const [picked, setPicked] = useState<AlternativeExercise | null>(null);
+  const [controlsBox, setControlsBox] = useState({ y: 0, h: 0 });
+  // Общий ref полосы: им пользуются и WEB-2 (тап по peek-странице), и SEARCH-ALT
+  // (скролл к выбранному из поиска и возврат к основной карточке после замены).
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Строка видна на слайде замены — одно правило для всех упражнений (вердикт
+  // владельца 16.10): над основной карточкой её нет. У упражнения без альтернатив
+  // для свайпа есть пустой слайд-слот, карточка в него встаёт только по выбору.
+  const showSearch = pageIndex > 0;
+  const searchSlot = !hasAlts && !picked;
+  const search = useExerciseReplaceSearch(activeInjuries, showSearch);
+
+  // Выбранное стало основным упражнением (замена прошла) → слот из поиска
+  // больше не нужен. Отмена в подтверждении и откат программной замены id не
+  // меняют, поэтому карточка остаётся на месте.
+  useEffect(() => {
+    if (picked && picked.id === exercise.id) {
+      setPicked(null);
+      // Замена приземлилась в основную карточку — к ней и возвращаемся.
+      scrollRef.current?.scrollTo({ x: 0, animated: true });
+      setPageIndex(0);
+    }
+  }, [exercise.id, picked]);
+
+  const scrollToPickedRef = useRef(false);
+
+  const handlePicked = useCallback((card: AlternativeExercise) => {
+    setPicked(card);
+    // Слот выбранного — первый справа от основной карточки. Скроллим по
+    // onContentSizeChange: страница только что добавлена, и пока контент не
+    // измерен, scrollTo клампится к прежней ширине (Android).
+    scrollToPickedRef.current = true;
+  }, []);
+
+  const handleContentSizeChange = useCallback(() => {
+    if (!scrollToPickedRef.current) return;
+    scrollToPickedRef.current = false;
+    scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: true });
+  }, [cardWidth]);
+
+  const handlePickedReplace = useCallback(
+    (exIndex: number, altId: string) => {
+      if (picked) onRequestReplace(exIndex, altId, picked);
+    },
+    [onRequestReplace, picked]
+  );
+
+  const handleSliderScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const page = Math.round(e.nativeEvent.contentOffset.x / (cardWidth + H_GAP));
+      // Только при смене страницы: писать стейт на каждый кадр — новый рендер
+      // блока на скролле (CLAUDE.md §8).
+      setPageIndex((prev) => (prev === page ? prev : page));
+    },
+    [cardWidth]
+  );
 
   // PERF (фризы скролла): страницы альтернатив монтируются ТОЛЬКО по первому
   // горизонтальному свайпу этого слайдера (handleScrollBeginDrag), а не по
@@ -186,7 +267,16 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     if (!altsMounted && hasAlts) setAltsMounted(true);
   }, [altsMounted, hasAlts]);
 
-  const scrollRef = useRef<ScrollView>(null);
+  // WEB-2 + SEARCH-ALT: на вебе `onScrollBeginDrag` от мыши/колеса не приходит,
+  // поэтому открытие страниц замен живёт в том же onScroll, что считает активную
+  // страницу. На нативе ветка пустая: там работает onScrollBeginDrag.
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (Platform.OS === 'web') handleScrollBeginDrag();
+      handleSliderScroll(e);
+    },
+    [handleScrollBeginDrag, handleSliderScroll]
+  );
 
   // WEB-2: тап по peek-странице — tap-альтернатива жесту (PRODUCT.md §3.2). На
   // десктопе горизонтальный скролл мышью недоступен, а на вебе ещё и
@@ -198,6 +288,12 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     requestAnimationFrame(() =>
       scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: true })
     );
+  }, [cardWidth]);
+
+  // SEARCH-ALT на десктопе: у упражнения без альтернатив нет peek-карточки, за
+  // которую обычно тянут полосу, поэтому скролл к слоту даёт сам слот.
+  const openSearchSlot = useCallback(() => {
+    scrollRef.current?.scrollTo({ x: cardWidth + H_GAP, animated: true });
   }, [cardWidth]);
 
   const peekCard = (
@@ -229,6 +325,35 @@ export const ExerciseSlider = memo(function ExerciseSlider({
     </View>
   );
 
+  // SEARCH-ALT: пустой слайд-слот у упражнения без альтернатив. Рамки нет
+  // намеренно: карточки здесь быть не должно (вердикт владельца 16.10).
+  const searchSlotBody = (
+    <View
+      style={{
+        height: mainHeight > 0 ? mainHeight : undefined,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: SPACING.sm,
+        paddingHorizontal: SPACING.lg,
+      }}
+    >
+      <Search size={20} color={colors.textTertiary} strokeWidth={2} />
+      <Text
+        style={{
+          color: colors.textTertiary,
+          fontSize: 12,
+          fontWeight: '600',
+          textAlign: 'center',
+        }}
+      >
+        Упражнение из поиска появится здесь
+      </Text>
+      {Platform.OS === 'web' && (
+        <Text style={{ color: colors.textTertiary, fontSize: 11 }}>Тапни, чтобы открыть</Text>
+      )}
+    </View>
+  );
+
   const showPlaceholder = loadingAlts;
   const showPeek = !loadingAlts && hasAlts && !altsMounted;
   const showAlts = !loadingAlts && altsMounted && alternatives.length > 0;
@@ -236,17 +361,56 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   const showAllExcluded =
     !loadingAlts && altsMounted && alternatives.length === 0 && excludedCount > 0;
 
+  // SEARCH-ALT: выбранное из поиска занимает первый слайд замены, поэтому из
+  // списка движка оно исключается — иначе две одинаковые карточки подряд.
+  const shownAlts = picked ? alternatives.filter((alt) => alt.id !== picked.id) : alternatives;
+
   const childCount =
     1 +
+    (picked ? 1 : 0) +
+    (searchSlot ? 1 : 0) +
     (showPlaceholder ? 1 : 0) +
     (showPeek ? 1 : 0) +
-    (showAlts ? alternatives.length : 0) +
+    (showAlts ? shownAlts.length : 0) +
     (showAllExcluded ? 1 : 0);
 
   const snapOffsets = useMemo(
     () => Array.from({ length: childCount }, (_, i) => i * (cardWidth + H_GAP)),
     [childCount, cardWidth]
   );
+
+  /**
+   * Страница-замена: FX-2 — если карточка выше основной, внутри страницы свой
+   * вертикальный скролл (maxHeight = высота основной карточки, которая растёт
+   * вместе с её контентом). Ритм между упражнениями одинаковый, но основная
+   * карточка не клиппуется. ALT-L2 (08.10): при развёрнутом блоке Info карточка
+   * замены заведомо выше основной — без nestedScrollEnabled вертикальный
+   * ScrollView внутри FlatList → горизонтального ScrollView на Android не
+   * скроллится вообще, и всё, что ушло за maxHeight (в т.ч. CTA), становится
+   * недостижимым.
+   */
+  const renderAltPage = (card: AlternativeExercise, fromSearch: boolean) => (
+    <View key={card.id} style={{ width: cardWidth }}>
+      <ScrollView
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+        style={mainHeight > 0 ? { maxHeight: mainHeight } : undefined}
+      >
+        <AlternativeExerciseCard
+          exercise={card}
+          exerciseIndex={exerciseIndex}
+          onRequestReplace={fromSearch ? handlePickedReplace : onRequestReplace}
+          fromSearch={fromSearch}
+          colors={colors}
+          cardStyles={cardStyles}
+        />
+      </ScrollView>
+    </View>
+  );
+
+  // Панель выдачи не должна выходить за границы ячейки списка (на Android
+  // вылезший за cell оверлей теряет тапы) → потолок = высота основной карточки.
+  const panelMaxHeight = Math.max(200, Math.min(340, mainHeight || 340));
 
   return (
     <View style={{ marginTop: SPACING.md }}>
@@ -275,12 +439,28 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         </Text>
       )}
 
+      {/* SEARCH-ALT: строка приклеена над полосой и НЕ скроллится по горизонтали.
+          Её высота замеряется, чтобы панель выдачи встала ровно под неё. */}
+      {showSearch && (
+        <View
+          onLayout={(e) => {
+            const { y, height } = e.nativeEvent.layout;
+            setControlsBox((prev) => (prev.y === y && prev.h === height ? prev : { y, h: height }));
+          }}
+        >
+          <ExerciseReplaceSearchControls search={search} sideInset={PAD} />
+        </View>
+      )}
+
       <ScrollView
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
         decelerationRate="fast"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onContentSizeChange={handleContentSizeChange}
         // removeClippedSubviews убран (см. workout/[id].tsx): карточки содержат
         // TextInput, детач вью ронял responder/blur ячеек SetsGrid. Не возвращать.
         // FX-2 (26.09): высота слайдера БОЛЬШЕ не фиксируется через style.height.
@@ -293,10 +473,6 @@ export const ExerciseSlider = memo(function ExerciseSlider({
         // карточка мерируется по реальному контенту, mainHeight растёт вместе с ней,
         // а альтернативы ограничены maxHeight (внутренний вертикальный скролл).
         onScrollBeginDrag={handleScrollBeginDrag}
-        // WEB-2: на вебе `onScrollBeginDrag` от мыши/колеса не приходит —
-        // страховка через onScroll (обработчик идемпотентен), натив не затронут.
-        onScroll={Platform.OS === 'web' ? handleScrollBeginDrag : undefined}
-        scrollEventThrottle={Platform.OS === 'web' ? 64 : undefined}
         contentContainerStyle={{ paddingHorizontal: PAD, gap: H_GAP, alignItems: 'flex-start' }}
       >
         <View
@@ -330,6 +506,31 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             addSet={addSet}
           />
         </View>
+
+        {/* SEARCH-ALT: слайд выбранного из поиска — первым справа от основной */}
+        {picked && renderAltPage(picked, true)}
+
+        {/* SEARCH-ALT: у упражнения без альтернатив — пустой слайд-слот: карточки
+            в нём нет, она появится только после выбора из поиска. Без слота
+            свайпать некуда и строка была бы недостижима; рамки не рисуем
+            намеренно — это не карточка. */}
+        {searchSlot &&
+          (Platform.OS === 'web' ? (
+            // WEB-2: горизонтального свайпа на десктопе нет, поэтому слот — кнопка.
+            <PressableScale
+              key="search-slot"
+              onPress={openSearchSlot}
+              accessibilityRole="button"
+              accessibilityLabel="Открыть поиск упражнения для замены"
+              style={{ width: cardWidth }}
+            >
+              {searchSlotBody}
+            </PressableScale>
+          ) : (
+            <View key="search-slot" style={{ width: cardWidth }}>
+              {searchSlotBody}
+            </View>
+          ))}
 
         {showPlaceholder && (
           <View
@@ -365,33 +566,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             peekCard
           ))}
 
-        {showAlts &&
-          alternatives.map((alt) => (
-            <View key={alt.id} style={{ width: cardWidth }}>
-              {/* FX-2: если карточка замены выше основной — вертикальный скролл
-                  внутри страницы (maxHeight = высота основной карточки, которая
-                  растёт вместе с её контентом). Ритм между упражнениями
-                  одинаковый, но основная карточка не клиппуется.
-                  ALT-L2 (08.10): при развёрнутом аккордеоне «Подробнее» карточка
-                  замены заведомо выше основной — без nestedScrollEnabled
-                  вертикальный ScrollView внутри FlatList → горизонтального
-                  ScrollView на Android не скроллится вообще, и всё, что ушло за
-                  maxHeight (в т.ч. CTA), становится недостижимым. */}
-              <ScrollView
-                nestedScrollEnabled
-                showsVerticalScrollIndicator={false}
-                style={mainHeight > 0 ? { maxHeight: mainHeight } : undefined}
-              >
-                <AlternativeExerciseCard
-                  exercise={alt}
-                  exerciseIndex={exerciseIndex}
-                  onRequestReplace={onRequestReplace}
-                  colors={colors}
-                  cardStyles={cardStyles}
-                />
-              </ScrollView>
-            </View>
-          ))}
+        {showAlts && shownAlts.map((alt) => renderAltPage(alt, false))}
 
         {showAllExcluded && (
           <View
@@ -419,6 +594,21 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           </View>
         )}
       </ScrollView>
+
+      {/* SEARCH-ALT: выдача — последний ребёнок блока, чтобы лежать ПОВЕРХ
+          карточек (на Android следующий sibling рисуется поверх предыдущего).
+          Пока строка не измерена (h = 0), панель не показываем: иначе на один
+          кадр она легла бы на самое себя, а не под строку. */}
+      {showSearch && controlsBox.h > 0 && (
+        <ExerciseReplaceSearchPanel
+          search={search}
+          excludeExerciseId={exercise.id}
+          top={controlsBox.y + controlsBox.h + SPACING.xs}
+          sideInset={PAD}
+          maxHeight={panelMaxHeight}
+          onPicked={handlePicked}
+        />
+      )}
     </View>
   );
 });

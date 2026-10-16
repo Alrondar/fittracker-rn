@@ -15,6 +15,13 @@ interface EquipmentSheetProps {
   onToggle: (equipment: string) => void;
   onReset: () => void;
   onClose: () => void;
+  /**
+   * NAV-INSET (16.10): резерв снизу нужен только когда лист живёт в нативном
+   * Modal — то окно доходит до физического низа, и системные кнопки лежат поверх.
+   * В сцене вкладок низ итак над таб-баром (он резервирует inset сам), поэтому
+   * значение считает вызывающая сторона, а не лист.
+   */
+  bottomInset?: number;
 }
 
 export function EquipmentSheet({
@@ -23,6 +30,7 @@ export function EquipmentSheet({
   onToggle,
   onReset,
   onClose,
+  bottomInset = 0,
 }: EquipmentSheetProps) {
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
@@ -60,7 +68,7 @@ export function EquipmentSheet({
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           maxHeight: '75%',
-          paddingBottom: SPACING.lg,
+          paddingBottom: SPACING.lg + bottomInset,
         }}
       >
         {/* Ручка */}

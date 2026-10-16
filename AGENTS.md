@@ -58,11 +58,25 @@
 
 ## Skills
 
-Agent skills живут внутри документов (отдельных файлов скиллов нет):
+Часть навыков живёт внутри документов, часть — файлами в `.cursor/skills/<name>/SKILL.md` (формат: frontmatter `name`/`description`, дальше Overview → инварианты → Workflow → Запрещено → Source of truth → Resources). Перед задачей по домену читать соответствующий скилл, а не пересобирать его по коду.
+
+Внутри документов:
 
 - **Design skill** → `PRODUCT.md §3.1–3.5` + `UX_AUDIT_PLAN.md` (2026 trends checklist).
 - **Performance skill** → `CLAUDE.md §8` (performance gate) + `STATUS.md §12` (метрики).
 - **Code review** → `CLAUDE.md §14` (workflow gates) + `CLAUDE.md §13` (checklist).
+
+Файловые (`.cursor/skills/`):
+
+- **program-seeding** — выкладка каталожных (`created_by IS NULL`) программ: схема, 12 инвариантов, транспорт `apply_migration`, `references/validate.sql`.
+- **program-personal** — персональная программа пользователю: бриф, диагноз по истории, компоновка, доставка (редактор предпочтительно / SQL как путь B), валидация, blast-radius запуска. Владельцы деталей: `references/editor-matrix.md` (возможности и грабли редактора), `references/user-profile-sql.md` (SQL-срез по пользователю).
+- **exercise-catalog** — сбор программ по БД упражнений: семантика `exercises`, `search_exercises`, снаряжение/рёбра/противопоказания, ловушки каталога.
+- **engine-pure** — чистые функции `src/engine/` (прогрессия, safety precedence, alternatives, reason codes).
+- **workout-ux** — экран тренировки: уровни L1/L2/L3, recommendation card, временная замена vs замена в программе.
+- **supabase-rpc** — граница `src/services/`, RLS/SECURITY DEFINER, идемпотентность, регенерация типов.
+- **fittracker-audit** — read-only аудит экрана по чеклисту.
+
+Разделение одного факта: схема и seed-механика — у `program-seeding`; каталог упражнений — у `exercise-catalog`; личный путь и редактор — у `program-personal`. Дубли в другие скиллы запрещены так же, как между документами.
 
 ## Веб-порт: отдельный worktree
 

@@ -4,6 +4,8 @@ import { feedback } from '../../lib/feedback';
 import { PressableScale } from '../ui/PressableScale';
 import { X, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SPACING } from '../../constants/theme';
 import { createCardStyles } from '../../styles/components/card';
 import { SetData } from '../../types/workout';
 
@@ -43,6 +45,7 @@ export function ExerciseSettingsModal({
   colors,
   cardStyles,
 }: ExerciseSettingsModalProps) {
+  const insets = useSafeAreaInsets();
   const [localSets, setLocalSets] = useState(0);
   const [localRest, setLocalRest] = useState(0);
 
@@ -124,7 +127,15 @@ export function ExerciseSettingsModal({
         onPress={handleBackdropPress}
       >
         <Pressable
-          style={[cardStyles.settingsSheetContainer, { backgroundColor: colors.surface }]}
+          style={[
+            cardStyles.settingsSheetContainer,
+            {
+              backgroundColor: colors.surface,
+              // NAV-INSET (16.10): reserve под системные кнопки — лист прижат к
+              // физическому низу, и «Сохранить» уходил под нав-бар.
+              paddingBottom: SPACING.lg + insets.bottom,
+            },
+          ]}
           onPress={(e) => e.stopPropagation()}
         >
           <View style={cardStyles.settingsSheetHeader}>

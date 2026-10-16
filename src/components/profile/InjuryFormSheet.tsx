@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal, ScrollView, Text, View } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import { useTheme } from '../../hooks/useTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BORDER_RADIUS, SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { AppButton } from '../ui/AppButton';
@@ -33,6 +34,7 @@ export function InjuryFormSheet({
   onSave,
 }: InjuryFormSheetProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [bodyPart, setBodyPart] = useState('');
   const [injuryType, setInjuryType] = useState('');
@@ -92,7 +94,14 @@ export function InjuryFormSheet({
             </PressableScale>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: SPACING.lg }}>
+          <ScrollView
+            contentContainerStyle={{
+              padding: SPACING.lg,
+              // NAV-INSET (16.10): системные кнопки в edge-to-edge лежат поверх
+              // листа — без резерва снизу кнопки «Отмена/Сохранить» недостижимы.
+              paddingBottom: SPACING.lg + insets.bottom,
+            }}
+          >
             {/* Часть тела */}
             <Text
               style={[

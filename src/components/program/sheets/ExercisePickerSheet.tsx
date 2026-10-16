@@ -18,6 +18,7 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../../constants/theme';
 import { typography } from '../../../styles/typography';
 import { useExercises } from '../../../hooks/useExercises';
 import { useWebKeyboardInset } from '../../../hooks/useWebKeyboardInset';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebRefreshButton } from '../../ui/WebRefreshButton';
 import { ExerciseListItem, ExerciseSortBy } from '../../../services/exercisesService';
 import { MUSCLE_GROUPS } from '../../../constants/muscleGroups';
@@ -129,6 +130,9 @@ export function ExercisePickerSheet({
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   // WEB-BUG-5 (остаток): лист должен прокручиваться из-под клавиатуры браузера.
   const webKbInset = useWebKeyboardInset();
+  // NAV-INSET (16.10): reserve под системные кнопки — в edge-to-edge они лежат
+  // поверх листа, и нижние строки выдачи/кнопка сортировки становились недостижимы.
+  const insets = useSafeAreaInsets();
   const {
     exercises,
     loading,
@@ -541,7 +545,7 @@ export function ExercisePickerSheet({
             <FlatList
               data={exercises}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={{ paddingBottom: 24 + webKbInset }}
+              contentContainerStyle={{ paddingBottom: 24 + webKbInset + insets.bottom }}
               renderItem={({ item }) => (
                 <PickerRow item={item} onPress={handlePick} colors={colors} />
               )}
@@ -614,6 +618,7 @@ export function ExercisePickerSheet({
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               padding: SPACING.lg,
+              paddingBottom: SPACING.lg + insets.bottom,
             }}
           >
             <Text style={[typography.h5, { color: colors.textPrimary, marginBottom: SPACING.md }]}>

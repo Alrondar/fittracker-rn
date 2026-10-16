@@ -12,6 +12,11 @@ import {
   WarningRule,
 } from '../constants/injuries';
 
+// Пустые значения-константы: один и тот же идентификатор, пока данных нет.
+const NO_INJURIES: UserInjury[] = [];
+const NO_RULES: WarningRule[] = [];
+const NO_CONTRAINDICATIONS: Record<string, never[]> = {};
+
 /**
  * Предупреждения о травмах для упражнений тренировки.
  * Серверные данные — через React Query; расчёт — мемоизированная чистая функция.
@@ -42,9 +47,18 @@ export function useInjuryWarnings(userId: string | null, exercises: ExerciseData
     ...Q.STATIC,
   });
 
-  const activeInjuries = injuriesQuery.data ?? [];
-  const warningsRules = rulesQuery.data ?? [];
-  const contraindications = contraindicationsQuery.data ?? {};
+  // Стабильные ссылки, когда данных ещё нет: `?? []` на каждый рендер давал бы
+  // новый массив → React.memo блока ExerciseSlider не держит, а activeInjuries
+  // ещё и проп этого блока (SEARCH-ALT).
+  const injuriesData = injuriesQuery.data;
+  const rulesData = rulesQuery.data;
+  const contraindicationsData = contraindicationsQuery.data;
+  const activeInjuries = useMemo(() => injuriesData ?? NO_INJURIES, [injuriesData]);
+  const warningsRules = useMemo(() => rulesData ?? NO_RULES, [rulesData]);
+  const contraindications = useMemo(
+    () => contraindicationsData ?? NO_CONTRAINDICATIONS,
+    [contraindicationsData]
+  );
 
   // Стабильный ключ по id+мышцам. Ввод веса/повторов меняет sets, но НЕ
   // id/мышцы → ключ не меняется → exerciseWarnings (и ссылки warning для карточек)

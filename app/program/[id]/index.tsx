@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Share, Platform } from 'react-native';
 import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sprout, Dumbbell, Flame, Play } from 'lucide-react-native';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
@@ -29,6 +29,8 @@ export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors } = useTheme();
+  // NAV-INSET (16.10): экран доходит до физического низа — низ списка мерим от inset.
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
 
@@ -160,7 +162,7 @@ export default function ProgramDetailScreen() {
     >
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
         <ProgramHero

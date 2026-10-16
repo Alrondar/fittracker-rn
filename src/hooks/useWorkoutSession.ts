@@ -595,17 +595,22 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   );
 
   const replaceExercise = useCallback(
-    async (exerciseIndex: number, alternativeId: string) => {
+    async (exerciseIndex: number, alternativeId: string, preset?: AlternativeExercise) => {
       const exercise = exercisesRef.current[exerciseIndex];
       if (!exercise) return;
 
-      const loaded = await loadAlternatives(exercise.id, {
-        primaryMuscles: exercise.primary_muscles,
-        secondaryMuscles: exercise.secondary_muscles,
-        equipment: exercise.equipment,
-        hasPain: !!exercise.painState,
-      });
-      const alternative = loaded.alternatives.find((item) => item.id === alternativeId);
+      // SEARCH-ALT: карточка, выбранная из поиска по базе, приходит готовой —
+      // искать её среди связей упражнения бессмысленно (её там нет).
+      const alternative =
+        preset ??
+        (
+          await loadAlternatives(exercise.id, {
+            primaryMuscles: exercise.primary_muscles,
+            secondaryMuscles: exercise.secondary_muscles,
+            equipment: exercise.equipment,
+            hasPain: !!exercise.painState,
+          })
+        ).alternatives.find((item) => item.id === alternativeId);
       if (!alternative) return;
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -748,17 +753,22 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
    * (программа не изменилась, UI должен показывать оригинал).
    */
   const replaceExerciseInProgramCb = useCallback(
-    async (exerciseIndex: number, alternativeId: string) => {
+    async (exerciseIndex: number, alternativeId: string, preset?: AlternativeExercise) => {
       const exercise = exercisesRef.current[exerciseIndex];
       if (!exercise || !programId) return;
 
-      const loaded = await loadAlternatives(exercise.id, {
-        primaryMuscles: exercise.primary_muscles,
-        secondaryMuscles: exercise.secondary_muscles,
-        equipment: exercise.equipment,
-        hasPain: !!exercise.painState,
-      });
-      const alternative = loaded.alternatives.find((item) => item.id === alternativeId);
+      // SEARCH-ALT: тот же путь, что у временной замены — готовая карточка из
+      // поиска не проходит через связи упражнения.
+      const alternative =
+        preset ??
+        (
+          await loadAlternatives(exercise.id, {
+            primaryMuscles: exercise.primary_muscles,
+            secondaryMuscles: exercise.secondary_muscles,
+            equipment: exercise.equipment,
+            hasPain: !!exercise.painState,
+          })
+        ).alternatives.find((item) => item.id === alternativeId);
       if (!alternative) return;
 
       // Snapshot для rollback при ошибке сервиса
