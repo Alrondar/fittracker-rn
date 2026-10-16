@@ -7,7 +7,7 @@ import { View, Text, FlatList, ScrollView, InteractionManager } from 'react-nati
 import { feedback } from '../../src/lib/feedback';
 import { Q } from '../../src/lib/queryPolicy';
 import { useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -22,7 +22,7 @@ import { useUnitPreferences } from '../../src/hooks/useUnitPreferences';
 import { getWorkoutProgramInfo } from '../../src/services/programsService';
 import { SPACING } from '../../src/constants/theme';
 import { commonStyles } from '../../src/styles/common';
-import { SetData, ExercisePainState } from '../../src/types/workout';
+import { SetData, ExercisePainState, AlternativeExercise } from '../../src/types/workout';
 import { RestTimerProvider, RestChip } from '../../src/components/workout/RestTimerContext';
 import { WorkoutTimerProvider } from '../../src/components/workout/WorkoutTimer';
 import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
@@ -54,8 +54,11 @@ export default function WorkoutSessionScreen() {
   const { id, hero } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors } = useTheme();
-  // UX-16 D1: WorkoutScreenFooter удалён — insets.bottom больше не нужен
-  // const insets = useSafeAreaInsets();
+  // UX-16 D1: WorkoutScreenFooter удалён — шапка с стартом/финишем, footer не нужен.
+  // NAV-INSET (16.10): inset вернулся, но только как резерв низа скролла —
+  // экран с edges={['top']} доходит до физического низа, и в edge-to-edge
+  // системные кнопки ложатся на последнюю карточку.
+  const insets = useSafeAreaInsets();
   const { unit, setUnit } = useUnitPreferences();
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const { mode: displayMode } = useWorkoutDisplayMode();
@@ -311,10 +314,10 @@ export default function WorkoutSessionScreen() {
   //   Для готовых (seeded) программ replaceExerciseInProgram упадёт
   //   («Program not found» из RPC) → rollback + Alert с объяснением.
   const handleReplaceChoice = useCallback(
-    (exerciseIndex: number, alternativeId: string) => {
+    (exerciseIndex: number, alternativeId: string, preset?: AlternativeExercise) => {
       if (!programId) {
         // Ad-hoc тренировка — только временная замена, без выбора
-        replaceExercise(exerciseIndex, alternativeId);
+        replaceExercise(exerciseIndex, alternativeId, preset);
         return;
       }
       feedback.alert(
@@ -324,12 +327,12 @@ export default function WorkoutSessionScreen() {
           { text: 'Отмена', style: 'cancel' },
           {
             text: 'Только сегодня',
-            onPress: () => replaceExercise(exerciseIndex, alternativeId),
+            onPress: () => replaceExercise(exerciseIndex, alternativeId, preset),
           },
           {
             text: 'В программе',
             style: 'destructive',
-            onPress: () => replaceExerciseInProgram(exerciseIndex, alternativeId),
+            onPress: () => replaceExerciseInProgram(exerciseIndex, alternativeId, preset),
           },
         ]
       );
@@ -350,6 +353,7 @@ export default function WorkoutSessionScreen() {
         applyProgression={applyProgression}
         isSetCompleted={isSetCompleted}
         onRequestReplace={handleReplaceChoice}
+        activeInjuries={activeInjuries}
         resetToOriginal={resetToOriginal}
         startRestTimer={startRestTimer}
         getIntensityInfo={getIntensityInfo}
@@ -377,6 +381,7 @@ export default function WorkoutSessionScreen() {
       applyProgression,
       isSetCompleted,
       handleReplaceChoice,
+      activeInjuries,
       resetToOriginal,
       startRestTimer,
       getIntensityInfo,
@@ -503,7 +508,7 @@ export default function WorkoutSessionScreen() {
 
         {hasWarmup && activeTab === 'warmup' && (
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 120 }}
+            contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
             showsVerticalScrollIndicator={false}
           >
             <WarmupBlock
@@ -538,7 +543,7 @@ export default function WorkoutSessionScreen() {
               renderItem={renderItem}
               extraData={unit}
               ListEmptyComponent={renderEmpty}
-              contentContainerStyle={{ paddingBottom: 120 }}
+              contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
               showsVerticalScrollIndicator={false}
               windowSize={5}
               initialNumToRender={3}

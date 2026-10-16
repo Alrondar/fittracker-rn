@@ -5,7 +5,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Clock, Dumbbell, Flame, X } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
@@ -33,6 +33,8 @@ export default function WorkoutReportScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
+  // NAV-INSET (16.10): экран доходит до физического низа — низ списка мерим от inset.
+  const insets = useSafeAreaInsets();
   const { unitLabel, kgToUnit } = useWeightDisplay();
   const { userId } = useStore();
 
@@ -203,7 +205,7 @@ export default function WorkoutReportScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
         {/* Заголовок тренировки */}

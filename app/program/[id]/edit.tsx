@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, BackHandler } from 'react-native';
 import { feedback } from '../../../src/lib/feedback';
 import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
 import {
   ScaleDecorator,
@@ -32,6 +32,8 @@ export default function ProgramEditScreen() {
   const { id } = useLocalSearchParams();
   const { userId } = useStore();
   const { colors } = useTheme();
+  // NAV-INSET (16.10): экран доходит до физического низа — низ списка мерим от inset.
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
 
@@ -214,7 +216,7 @@ export default function ProgramEditScreen() {
 
       <NestableScrollContainer
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}

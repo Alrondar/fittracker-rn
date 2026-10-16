@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, DimensionValue } from 'react-native';
 import { PressableScale } from '../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -158,6 +158,9 @@ export default function ExerciseDetailScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+  // NAV-INSET (16.10): экран лежит под системными кнопками (edges=['top']),
+  // поэтому нижний резерв списка считается от реального инсета, а не от константы.
+  const insets = useSafeAreaInsets();
   // Стили создаются один раз на смену темы (паттерн CLAUDE.md)
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const {
@@ -214,7 +217,7 @@ export default function ExerciseDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero: слайдер техники (0.jpg ↔ 1.jpg, автоплей) */}
