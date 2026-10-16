@@ -764,35 +764,31 @@ export async function syncProgramChanges(programId: string): Promise<SyncProgram
 }
 
 // ============================================================================
-// PROGRAM EXERCISE REPLACEMENT (UX-5 Feature 1)
+// КОНТЕКСТ ПРОГРАММЫ ДЛЯ СТРОКИ ТРЕНИРОВКИ
 // ============================================================================
 
+/** Всё, что нужно знать о строке тренировки, чтобы достучаться до её программы. */
+interface ProgramExerciseTarget {
+  programId: string;
+  dayId: string;
+  /** position строки workout_exercises — первичный ключ матчинга с программой. */
+  position: number | null;
+  exerciseId: string | null;
+  /** Строка программы: по position, при промахе — по exercise_id. */
+  programExerciseId: string | null;
+}
+
 /**
- * UX-5 Feature 1: Заменить упражнение в программе (постоянная замена).
+ * Разрешает workout_exercise → program + day + program_exercise.
  *
- * Алгоритм:
- * 1. Разрешить workout → program_id + phase/week/day.
- * 2. Разрешить workout_exercise → position + old exercise_id (для fallback-матчинга).
- * 3. Найти program_day по цепочке с fallback'ами (зеркалит startProgramWorkout).
- * 4. Найти program_exercise: сначала по (day, position), затем по (day, old exercise_id).
- * 5. UPDATE program_exercises: exercise_id + exercise_name.
- * 6. UPDATE текущей workout_exercises: exercise_id = новый — чтобы sync не пересоздал
- *    строку и не осиротил pending workout_logs (для не начатых тренировок sync иначе
- *    удалил бы старое упражнение как orphaned по exercise_id и вставил новое с новым id).
- * 7. syncProgramChanges(program_id) — распространить на будущие тренировки.
- *
- * Ограничения RPC sync_program_changes_to_workouts:
- * - SECURITY DEFINER с проверкой programs.created_by = auth.uid().
- * - Для готовых (seeded) программ с created_by IS NULL вызов упадёт с
- *   "Program not found". Caller должен обрабатывать ошибку и сообщать пользователю,
- *   что программа недоступна для редактирования.
+ * Цепочка поиска дня зеркалит startProgramWorkout и держится в ОДНОМ месте
+ * намеренно: и замена упражнения в программе (UX-5), и вставка нового (ADD-BELOW)
+ * обязаны попадать в один и тот же день, иначе правка уедет не туда.
  */
-export async function replaceExerciseInProgram(
+async function resolveProgramExerciseTarget(
   workoutId: string,
-  workoutExerciseId: string,
-  newExerciseId: string,
-  newExerciseName: string
-): Promise<void> {
+  workoutExerciseId: string
+): Promise<ProgramExerciseTarget> {
   // 1. Workout context
   const { data: workout, error: workoutError } = await supabase
     .from('workouts')
@@ -807,7 +803,7 @@ export async function replaceExerciseInProgram(
 
   const { program_id, phase_number, week_number, day_index } = workout;
 
-  // 2. Текущая строка workout_exercise — position + old exercise_id для fallback-матчинга
+  // 2. Текущая строка workout_exercise — position + exercise_id для fallback-матчинга
   const { data: workoutExercise, error: weError } = await supabase
     .from('workout_exercises')
     .select('position, exercise_id')
@@ -902,7 +898,49 @@ export async function replaceExerciseInProgram(
       .maybeSingle();
     programExerciseId = data?.id ?? null;
   }
-  if (!programExerciseId) throw new Error('Упражнение в программе не найдено');
+
+  return {
+    programId: program_id,
+    dayId,
+    position: workoutExercise.position ?? null,
+    exerciseId: workoutExercise.exercise_id ?? null,
+    programExerciseId,
+  };
+}
+
+// ============================================================================
+// PROGRAM EXERCISE REPLACEMENT (UX-5 Feature 1)
+// ============================================================================
+
+/**
+ * UX-5 Feature 1: Заменить упражнение в программе (постоянная замена).
+ *
+ * Алгоритм:
+ * 1. Разрешить workout → program_id + phase/week/day.
+ * 2. Разрешить workout_exercise → position + old exercise_id (для fallback-матчинга).
+ * 3. Найти program_day по цепочке с fallback'ами (зеркалит startProgramWorkout).
+ * 4. Найти program_exercise: сначала по (day, position), затем по (day, old exercise_id).
+ * 5. UPDATE program_exercises: exercise_id + exercise_name.
+ * 6. UPDATE текущей workout_exercises: exercise_id = новый — чтобы sync не пересоздал
+ *    строку и не осиротил pending workout_logs (для не начатых тренировок sync иначе
+ *    удалил бы старое упражнение как orphaned по exercise_id и вставил новое с новым id).
+ * 7. syncProgramChanges(program_id) — распространить на будущие тренировки.
+ *
+ * Ограничения RPC sync_program_changes_to_workouts:
+ * - SECURITY DEFINER с проверкой programs.created_by = auth.uid().
+ * - Для готовых (seeded) программ с created_by IS NULL вызов упадёт с
+ *   "Program not found". Caller должен обрабатывать ошибку и сообщать пользователю,
+ *   что программа недоступна для редактирования.
+ */
+export async function replaceExerciseInProgram(
+  workoutId: string,
+  workoutExerciseId: string,
+  newExerciseId: string,
+  newExerciseName: string
+): Promise<void> {
+  const target = await resolveProgramExerciseTarget(workoutId, workoutExerciseId);
+  if (!target.programExerciseId) throw new Error('Упражнение в программе не найдено');
+  const programExerciseId = target.programExerciseId;
 
   // 5. Update program_exercises (колонки: exercise_name + exercise_id; primary_muscles
   // в program_exercises нет — подтягивается через JOIN с exercises таблицей)
@@ -926,7 +964,89 @@ export async function replaceExerciseInProgram(
 
   // 7. Sync будущих тренировок. Для готовых (seeded) программ может упасть —
   // см. комментарий в начале функции.
-  await syncProgramChanges(program_id);
+  await syncProgramChanges(target.programId);
+}
+
+// ============================================================================
+// ADD-BELOW (16.10): новое упражнение в день программы, сразу после блока
+// ============================================================================
+
+/** Дефолты добавляемого блока — те же, что у пикера упражнений в редакторе. */
+export const NEW_PROGRAM_EXERCISE_DEFAULTS = {
+  sets: 4,
+  reps_range: '8-12',
+  rest_seconds: 90,
+  intensity: 'medium',
+} as const;
+
+/**
+ * Вставляет упражнение в тот же день программы — сразу ПОСЛЕ строки, которая
+ * соответствует указанному блоку тренировки. Позиции последующих сдвигаются на 1,
+ * затем sync разносит день по будущим не начатым тренировкам.
+ *
+ * `save_program_snapshot` и `sync_program_changes_to_workouts` требуют владельца
+ * (created_by = auth.uid()); у готовой программы created_by IS NULL, поэтому
+ * доступ проверяем ДО первой записи — иначе остались бы сдвинутые позиции и
+ * строка в программе, которую править нельзя.
+ *
+ * Атомарности здесь нет намеренно: прод-DDL под фичу не заводили (решение
+ * владельца 16.10), так что обрыв сети посередине оставляет программу частично
+ * изменённой — caller обязан сказать об этом человеку.
+ */
+export async function addExerciseToProgramBelow(
+  workoutId: string,
+  afterWorkoutExerciseId: string,
+  exercise: { id: string; name: string }
+): Promise<void> {
+  const target = await resolveProgramExerciseTarget(workoutId, afterWorkoutExerciseId);
+
+  const { data: program, error: programError } = await supabase
+    .from('programs')
+    .select('created_by')
+    .eq('id', target.programId)
+    .maybeSingle();
+
+  if (programError) throw programError;
+  if (!program?.created_by) {
+    throw new Error('Программа недоступна для редактирования');
+  }
+
+  if (target.position == null) {
+    throw new Error('У блока тренировки нет позиции в программе');
+  }
+
+  const insertAt = target.position + 1;
+
+  const { data: following, error: shiftError } = await supabase
+    .from('program_exercises')
+    .select('id, position')
+    .eq('program_day_id', target.dayId)
+    .gte('position', insertAt)
+    .order('position', { ascending: false });
+
+  if (shiftError) throw shiftError;
+
+  // Сдвиг идём снизу вверх: сверху вниз строки начали бы занимать позиции друг
+  // друга, и вторая половина дня собралась бы в неверном порядке.
+  for (const row of following ?? []) {
+    const { error } = await supabase
+      .from('program_exercises')
+      .update({ position: (row.position ?? insertAt) + 1 })
+      .eq('id', row.id);
+    if (error) throw error;
+  }
+
+  const { error: insertError } = await supabase.from('program_exercises').insert({
+    program_day_id: target.dayId,
+    exercise_id: exercise.id,
+    exercise_name: exercise.name,
+    position: insertAt,
+    ...NEW_PROGRAM_EXERCISE_DEFAULTS,
+  });
+
+  if (insertError) throw insertError;
+
+  await syncProgramChanges(target.programId);
 }
 
 // ============================================================================

@@ -81,7 +81,9 @@ export const ExerciseReplaceSearchControls = memo(function ExerciseReplaceSearch
               alignItems: 'center',
               gap: SPACING.md,
               paddingHorizontal: SPACING.lg,
-              paddingBottom: SPACING.md,
+              // Отступ до карточек здесь НЕ задают: его даёт marginTop самой
+              // полосы в ExerciseSlider — один источник для свёрнутой и
+              // раскрытой строки.
             }}
           >
             <PressableScale
@@ -223,6 +225,9 @@ export function ExerciseReplaceSearchPanel({
       injuries: data.injuries,
       media_url: data.media_url,
       relation_type: null,
+      // ADD-BELOW: связи отдаём сразу — добавленный из поиска блок с ними
+      // показывает свои замены, а не пустой слот до первого перезахода.
+      alternatives: data.alternatives,
     });
   }, [detail.data, detail.isError, pickedId, onPicked]);
 

@@ -24,6 +24,13 @@ export interface SessionWERow {
   target_rpe: number | null;
   /** FD-4: политика прогрессии из снапшота (миграция 20260925161000). */
   progression_policy?: string | null;
+  /**
+   * ADD-BELOW (16.10): порядок строк экрана. Раньше он не выбирался вовсе —
+   * список жил в том порядке, в который их вернул Postgres (то есть порядок
+   * вставки), и вставка упражнения «под» конкретным не переживала перезаход.
+   */
+  order_index?: number | null;
+  position?: number | null;
 }
 
 export interface SessionWorkoutRow {

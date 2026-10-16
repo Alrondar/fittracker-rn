@@ -314,7 +314,7 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
   const { data: workout, error } = await supabase
     .from('workouts')
     .select(
-      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
+      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
     )
     .eq('id', workoutId)
     .single();
@@ -612,5 +612,101 @@ export async function updateWorkoutExerciseSettings(
     .update(patch)
     .eq('id', workoutExerciseId);
 
+  if (error) throw error;
+}
+
+// ============================================================================
+// ADD-BELOW (16.10): вставка нового упражнения в тренировку
+// ============================================================================
+
+/** Настройки блока, созданного из поиска (дефолты те же, что у пикера программы). */
+export interface NewWorkoutExercise {
+  exercise_id: string;
+  target_sets: number;
+  target_reps_range: string;
+  rest_seconds: number;
+  intensity: string;
+}
+
+/**
+ * Вставляет упражнение сразу ПОСЛЕ строки `afterWorkoutExerciseId`.
+ *
+ * Порядок экрана держится на `order_index` (его раньше никто не читал — см.
+ * fetchWorkoutSession), поэтому после вставки список перенумеровывается заново
+ * в том порядке, который получился. Обновления идут параллельно; строк в
+ * тренировке единицы, атомарность здесь сознательно принесена в жертву —
+ * прод-DDL под эту фичу владелец не заводил (решение 16.10).
+ *
+ * `position` у новой строки остаётся null: это локальный блок, у которого нет
+ * строки в программе. Не путать с `replaceExerciseInProgram`, который как раз
+ * матчит program_exercise по position, — трогать position у существующих строк
+ * нельзя.
+ */
+export async function addWorkoutExerciseBelow(
+  workoutId: string,
+  afterWorkoutExerciseId: string,
+  input: NewWorkoutExercise
+): Promise<{ id: string }> {
+  const { data: created, error: insertError } = await supabase
+    .from('workout_exercises')
+    .insert({
+      workout_id: workoutId,
+      exercise_id: input.exercise_id,
+      order_index: -1, // временное: получит настоящее при перенумерации ниже
+      target_sets: input.target_sets,
+      sets: input.target_sets,
+      target_reps_range: input.target_reps_range,
+      target_reps: parseTargetReps(input.target_reps_range),
+      rest_seconds: input.rest_seconds,
+      intensity: input.intensity,
+      progression_policy: 'linear',
+    })
+    .select('id')
+    .single();
+
+  if (insertError) throw insertError;
+  if (!created) throw new Error('Не удалось добавить упражнение');
+
+  const { data: rows, error: rowsError } = await supabase
+    .from('workout_exercises')
+    .select('id, order_index')
+    .eq('workout_id', workoutId)
+    .neq('id', created.id)
+    .order('order_index', { ascending: true });
+
+  if (rowsError) throw rowsError;
+
+  const anchor = (rows ?? []).findIndex((row) => row.id === afterWorkoutExerciseId);
+  if (anchor < 0) {
+    // Якоря нет в списке (кто-то удалил строку параллельно) — убираем за собой
+    // вставленное упражнение и честно сообщаем об этом наверх.
+    await supabase.from('workout_exercises').delete().eq('id', created.id);
+    throw new Error('Упражнение тренировки не найдено');
+  }
+
+  const ordered = (rows ?? []).slice();
+  ordered.splice(anchor + 1, 0, { id: created.id, order_index: -1 });
+
+  const previousIndex = new Map((rows ?? []).map((row) => [row.id, row.order_index]));
+  const changed = ordered
+    .map((row, index) => ({ id: row.id, order_index: index }))
+    .filter((row) => previousIndex.get(row.id) !== row.order_index);
+
+  await Promise.all(
+    changed.map((row) =>
+      supabase.from('workout_exercises').update({ order_index: row.order_index }).eq('id', row.id)
+    )
+  );
+
+  return { id: created.id };
+}
+
+/**
+ * Удаляет блок тренировки, добавленный вручную. workout_logs висят на строке с
+ * ON DELETE CASCADE (проверено в прод-схеме), так что введённые подходы уходят
+ * вместе с ней — пользователь должен это видеть в подтверждении.
+ */
+export async function removeWorkoutExercise(workoutExerciseId: string): Promise<void> {
+  const { error } = await supabase.from('workout_exercises').delete().eq('id', workoutExerciseId);
   if (error) throw error;
 }

@@ -73,6 +73,18 @@ interface ExerciseSliderProps {
   // SEARCH-ALT: third arg — готовая карточка, выбранная из поиска по базе
   // (её нет среди связей упражнения, поэтому искать её в alternatives бессмысленно).
   onRequestReplace: (exIndex: number, altId: string, preset?: AlternativeExercise) => void;
+  /**
+   * ADD-BELOW (16.10): «Добавить сюда» / «Добавить в программу» с карточки,
+   * выбранной из поиска. Карточку передаём здесь — её нет среди связей упражнения,
+   * и по id на экране её не найти.
+   */
+  onAddPicked?: (
+    exIndex: number,
+    card: AlternativeExercise,
+    scope: 'here' | 'program'
+  ) => Promise<void>;
+  /** ADD-BELOW: убрать блок, добавленный в этой сессии (подтверждение — на экране). */
+  onRemoveAdded?: (exIndex: number) => void;
   resetToOriginal: (exIndex: number) => void;
   /** SEARCH-ALT: активные травмы — для предупреждений в выдаче поиска замен. */
   activeInjuries: UserInjury[];
@@ -117,6 +129,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   applyProgression,
   isSetCompleted,
   onRequestReplace,
+  onAddPicked,
+  onRemoveAdded,
   activeInjuries,
   resetToOriginal,
   startRestTimer,
@@ -200,6 +214,16 @@ export const ExerciseSlider = memo(function ExerciseSlider({
       if (picked) onRequestReplace(exIndex, altId, picked);
     },
     [onRequestReplace, picked]
+  );
+
+  // ADD-BELOW: карточка из поиска известна только здесь (её нет среди связей),
+  // поэтому прокидываем её в экран вместе с выбором области добавления.
+  const handleAddPicked = useCallback(
+    async (exIndex: number, scope: 'here' | 'program') => {
+      if (!picked || !onAddPicked) return;
+      await onAddPicked(exIndex, picked, scope);
+    },
+    [picked, onAddPicked]
   );
 
   const handleSliderScroll = useCallback(
@@ -343,6 +367,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
           exerciseIndex={exerciseIndex}
           onRequestReplace={fromSearch ? handlePickedReplace : onRequestReplace}
           fromSearch={fromSearch}
+          onAdd={fromSearch && onAddPicked ? handleAddPicked : undefined}
+          addAfterName={fromSearch ? exercise.name : undefined}
           colors={colors}
           cardStyles={cardStyles}
         />
@@ -396,6 +422,10 @@ export const ExerciseSlider = memo(function ExerciseSlider({
 
       <ScrollView
         ref={sliderRef}
+        // SEARCH-ALT: зазор между приклеенной строкой и карточками. У строки
+        // своего нижнего отступа нет — иначе в свёрнутом состоянии он один, а в
+        // раскрытом (с фильтрами) другой.
+        style={{ marginTop: showSearch ? SPACING.md : 0 }}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToOffsets={snapOffsets}
@@ -438,6 +468,7 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             onOpenPain={onOpenPain}
             onSavePainQuick={onSavePainQuick}
             onClearPainQuick={onClearPainQuick}
+            onRemoveAdded={onRemoveAdded}
             colors={colors}
             cardStyles={cardStyles}
             unit={unit}

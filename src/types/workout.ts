@@ -66,6 +66,12 @@ export interface ExerciseData {
   personalBest?: number | null;
   /** P1.1: Политика прогрессии (linear, double_progression, greyskull, time_based) */
   progression_policy?: ProgressionPolicy;
+  /**
+   * ADD-BELOW (16.10): блок добавлен человеком из поиска в этой сессии, а не
+   * пришёл из плана. Только локальный флаг: у строки есть workout_exercise_id,
+   * по нему и удаляем. Даёт карточке кнопку «Убрать».
+   */
+  isAddedHere?: boolean;
 }
 
 export interface AlternativeExercise {
@@ -83,6 +89,12 @@ export interface AlternativeExercise {
   reps_range?: string;
   /** ENG-5: тип связи для бейджа (↗ прогрессия / ↘ упрощение / вариант). */
   relation_type?: 'variation' | 'alternative' | 'regression' | 'progression' | null;
+  /**
+   * ADD-BELOW: id связанных упражнений из каталога. Нужны, чтобы блок,
+   * добавленный из поиска, сразу умел показывать свои замены, а не получал их
+   * только после перезахода на экран.
+   */
+  alternatives?: string[];
 }
 // Display mode для карточек упражнений в тренировке
 export type WorkoutCardDisplayMode = 'training' | 'balanced' | 'learn';

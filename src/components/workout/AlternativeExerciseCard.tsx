@@ -17,10 +17,18 @@
 // «Заменить»). Ряд «Заменить» + Info идёт за описанием, а табы — под рядом, так
 // что раскрытие Info ничего не сдвигает.
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PressableScale } from '../ui/PressableScale';
-import { RotateCcw, ShieldAlert, BookOpen, ChevronRight, Search } from 'lucide-react-native';
+import {
+  RotateCcw,
+  ShieldAlert,
+  BookOpen,
+  ChevronRight,
+  Search,
+  Plus,
+  Layers,
+} from 'lucide-react-native';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { createCardStyles } from '../../styles/components/card';
@@ -38,6 +46,14 @@ interface AlternativeExerciseCardProps {
   onRequestReplace: (exIndex: number, altId: string) => void;
   /** SEARCH-ALT: карточка выбрана из поиска по базе, а не из связей упражнения. */
   fromSearch?: boolean;
+  /**
+   * ADD-BELOW (16.10): есть только у карточки из поиска — два tertiary-действия
+   * «добавить как новое упражнение под тем, где искал». Возвращает promise:
+   * кнопка держит спиннер и не пускает повторный тап, пока идёт запись.
+   */
+  onAdd?: (exIndex: number, scope: 'here' | 'program') => Promise<void>;
+  /** Название упражнения, под которое вставляем — для подписи над кнопками. */
+  addAfterName?: string;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
 }
@@ -47,6 +63,8 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   exerciseIndex,
   onRequestReplace,
   fromSearch = false,
+  onAdd,
+  addAfterName,
   colors,
   cardStyles,
 }: AlternativeExerciseCardProps) {
@@ -55,6 +73,21 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
   const [infoOpen, setInfoOpen] = useState(false);
   const handleToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
   const router = useRouter();
+  // Какое из двух «добавить» сейчас в сети (null = ни одно).
+  const [adding, setAdding] = useState<'here' | 'program' | null>(null);
+
+  const handleAdd = useCallback(
+    async (scope: 'here' | 'program') => {
+      if (!onAdd || adding) return;
+      setAdding(scope);
+      try {
+        await onAdd(exerciseIndex, scope);
+      } finally {
+        setAdding(null);
+      }
+    },
+    [onAdd, adding, exerciseIndex]
+  );
 
   const mediaUrl = exercise.media_url ?? null;
   const settingsText = exercise.settings || '';
@@ -196,6 +229,78 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
           <InfoButton onOpenInfo={handleToggleInfo} infoVisible={infoOpen} colors={colors} />
         )}
       </View>
+
+      {/* ADD-BELOW (16.10): добавить это упражнение НОВЫМ блоком сразу под тем,
+          в котором искали. Вторичные действия:primary «Заменить» остаётся одним
+          акцентом на блок (PRODUCT.md §3.1). Строка НАД Info-блоком — по той же
+          причине, что ряд «Заменить + Info»: раскрытие табов не уводит кнопки за
+          клип страницы слайдера. */}
+      {!!onAdd && (
+        <View style={{ marginTop: SPACING.md }}>
+          {!!addAfterName && (
+            <Text
+              style={[typography.captionSmall, { color: colors.textTertiary, marginBottom: 6 }]}
+              numberOfLines={1}
+            >
+              добавить как новое под «{addAfterName}»
+            </Text>
+          )}
+          <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
+            {(
+              [
+                { scope: 'here', label: 'Добавить сюда', Icon: Plus },
+                { scope: 'program', label: 'Добавить в программу', Icon: Layers },
+              ] as const
+            ).map(({ scope, label, Icon }) => {
+              const busy = adding === scope;
+              const blocked = adding !== null && !busy;
+              return (
+                <PressableScale
+                  key={scope}
+                  onPress={() => handleAdd(scope)}
+                  disabled={blocked}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    scope === 'here'
+                      ? `Добавить ${exercise.name} в эту тренировку под «${addAfterName ?? ''}»`
+                      : `Добавить ${exercise.name} в программу и в эту тренировку`
+                  }
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: SPACING.xs,
+                    minHeight: 44, // PRODUCT.md §3.1 — тач-таргет не меньше 44 pt
+                    paddingVertical: SPACING.sm,
+                    paddingHorizontal: SPACING.sm,
+                    borderRadius: BORDER_RADIUS.md,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: 'transparent',
+                    opacity: blocked ? 0.5 : 1,
+                  }}
+                >
+                  {busy ? (
+                    <ActivityIndicator size="small" color={colors.textSecondary} />
+                  ) : (
+                    <Icon size={14} color={colors.textSecondary} strokeWidth={2} />
+                  )}
+                  <Text
+                    style={[
+                      typography.captionSmall,
+                      { color: colors.textSecondary, fontWeight: '700' },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {/* L3: страница упражнения в справочнике — id замены это id упражнения из
           справочника (тот же маршрут, что у «Полной карточки упражнения» в листе

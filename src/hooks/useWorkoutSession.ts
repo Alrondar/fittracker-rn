@@ -19,7 +19,12 @@ import {
   ExercisePainState,
   AlternativeExercise,
 } from '../types/workout';
-import { advanceProgramProgress, replaceExerciseInProgram } from '../services/programsService';
+import {
+  advanceProgramProgress,
+  replaceExerciseInProgram,
+  addExerciseToProgramBelow,
+  NEW_PROGRAM_EXERCISE_DEFAULTS,
+} from '../services/programsService';
 import { getActiveInjuries, profileService } from '../services/profileService';
 import { painService, PainType } from '../services/painService';
 import { mapError } from '../utils/errorMapper';
@@ -36,6 +41,8 @@ import {
   upsertWorkoutLogs,
   updateWorkoutExerciseId,
   updateWorkoutExerciseSettings,
+  addWorkoutExerciseBelow,
+  removeWorkoutExercise,
 } from '../services/workoutService';
 import {
   buildExercisesData,
@@ -813,6 +820,128 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   );
 
   // ============================================================================
+  // ADD-BELOW (16.10): упражнение из поиска — новым блоком под текущим
+  // ============================================================================
+
+  /**
+   * Локальный блок для добавленного упражнения. Дефолты подходов — общие с
+   * пикером программы (NEW_PROGRAM_EXERCISE_DEFAULTS), чтобы блок, добавленный
+   * отсюда и блок, добавленный в редакторе, выглядели одинаково.
+   */
+  const buildAddedExercise = (
+    card: AlternativeExercise,
+    workoutExerciseId: string
+  ): ExerciseData => ({
+    id: card.id,
+    workout_exercise_id: workoutExerciseId,
+    name: card.name,
+    primary_muscles: card.primary_muscles,
+    secondary_muscles: card.secondary_muscles,
+    technique: card.technique,
+    equipment: card.equipment ?? [],
+    settings: card.settings,
+    benefits: card.benefits,
+    risks: card.risks,
+    injuries: card.injuries,
+    alternatives: card.alternatives ?? [],
+    media_url: card.media_url,
+    target_sets: NEW_PROGRAM_EXERCISE_DEFAULTS.sets,
+    rest_seconds: NEW_PROGRAM_EXERCISE_DEFAULTS.rest_seconds,
+    intensity: NEW_PROGRAM_EXERCISE_DEFAULTS.intensity,
+    reps_range: NEW_PROGRAM_EXERCISE_DEFAULTS.reps_range,
+    target_rpe: null,
+    progression_policy: 'linear',
+    painState: null,
+    personalBest: null,
+    // Ключи reps_left/reps_right обязательны: без них isSetCompleted считает
+    // пустой сет завершённым (наследие mapper'а).
+    sets: Array.from({ length: NEW_PROGRAM_EXERCISE_DEFAULTS.sets }, () => ({
+      weight: '',
+      reps: '',
+      reps_left: '',
+      reps_right: '',
+    })),
+    isAddedHere: true,
+  });
+
+  /**
+   * Добавляет выбранное из поиска упражнение новым блоком сразу после
+   * `exerciseIndex`.
+   *
+   * Порядок «сначала блок тренировки, потом программа» не случайность: для НЕ
+   * начатой тренировки sync сам вставил бы строку по программе, и мы получили бы
+   * дубль. Когда строка уже есть, sync её не трогает (только подтягивает position).
+   *
+   * Ошибку отдаём наверх без Alert — текст подтверждения и объяснение отказа
+   * живут на экране (паттерн handleReplaceChoice).
+   */
+  const addExerciseFromSearch = useCallback(
+    async (exerciseIndex: number, card: AlternativeExercise, scope: 'here' | 'program') => {
+      const source = exercisesRef.current[exerciseIndex];
+      if (!source) return;
+
+      let createdId: string;
+      try {
+        const created = await addWorkoutExerciseBelow(workoutId, source.workout_exercise_id, {
+          exercise_id: card.id,
+          target_sets: NEW_PROGRAM_EXERCISE_DEFAULTS.sets,
+          target_reps_range: NEW_PROGRAM_EXERCISE_DEFAULTS.reps_range,
+          rest_seconds: NEW_PROGRAM_EXERCISE_DEFAULTS.rest_seconds,
+          intensity: NEW_PROGRAM_EXERCISE_DEFAULTS.intensity,
+        });
+        createdId = created.id;
+      } catch (error) {
+        console.error('[useWorkoutSession] addExerciseFromSearch insert:', error);
+        throw new Error(mapError(error));
+      }
+
+      const newIndex = exerciseIndex + 1;
+      setExercises((prev) => {
+        const updated = [...prev];
+        updated.splice(newIndex, 0, buildAddedExercise(card, createdId));
+        return updated;
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // История нового упражнения (прошлые подходы + PR) подтягивается тем же
+      // путём, что при замене: результат совпадает с перезаходом на экран.
+      void reinjectExerciseHistory(newIndex, card.id);
+
+      if (scope !== 'program') return;
+
+      try {
+        await addExerciseToProgramBelow(workoutId, source.workout_exercise_id, {
+          id: card.id,
+          name: card.name,
+        });
+      } catch (error) {
+        console.error('[useWorkoutSession] addExerciseToProgramBelow:', error);
+        // В программе блока нет — убираем и локальный, и строку тренировки,
+        // чтобы «не добавлено» значило «не добавлено нигде».
+        setExercises((prev) => prev.filter((ex) => ex.workout_exercise_id !== createdId));
+        try {
+          await removeWorkoutExercise(createdId);
+        } catch (rollbackError) {
+          console.error('[useWorkoutSession] add-to-program rollback:', rollbackError);
+        }
+        throw error;
+      }
+    },
+    [workoutId, reinjectExerciseHistory]
+  );
+
+  /** Убирает блок, добавленный в этой сессии. Логи уходят каскадом (ON DELETE CASCADE). */
+  const removeAddedExercise = useCallback(async (exerciseIndex: number) => {
+    const exercise = exercisesRef.current[exerciseIndex];
+    if (!exercise?.isAddedHere) return;
+
+    await removeWorkoutExercise(exercise.workout_exercise_id);
+    setExercises((prev) =>
+      prev.filter((ex) => ex.workout_exercise_id !== exercise.workout_exercise_id)
+    );
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
+
+  // ============================================================================
   // PR6: PAIN STATE (upsert / delete + оптимистичное локальное обновление)
   // ============================================================================
   const savePainState = useCallback(
@@ -1062,6 +1191,8 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     updateExerciseSettings,
     replaceExercise,
     replaceExerciseInProgram: replaceExerciseInProgramCb,
+    addExerciseFromSearch,
+    removeAddedExercise,
     resetToOriginal,
     savePainState,
     clearPainState,

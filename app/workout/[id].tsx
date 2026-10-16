@@ -92,6 +92,8 @@ export default function WorkoutSessionScreen() {
     programId,
     replaceExercise,
     replaceExerciseInProgram,
+    addExerciseFromSearch,
+    removeAddedExercise,
     resetToOriginal,
     savePainState,
     clearPainState,
@@ -340,6 +342,80 @@ export default function WorkoutSessionScreen() {
     [programId, replaceExercise, replaceExerciseInProgram]
   );
 
+  // ADD-BELOW (16.10): вставить выбранное из поиска НОВЫМ блоком под тем, где
+  // искали. Подтверждение держит экран, запись — хук (паттерн handleReplaceChoice).
+  const handleAddPicked = useCallback(
+    async (exerciseIndex: number, card: AlternativeExercise, scope: 'here' | 'program') => {
+      const run = () =>
+        addExerciseFromSearch(exerciseIndex, card, scope).catch((error: any) => {
+          feedback.alert(
+            scope === 'program' ? 'Не удалось добавить в программу' : 'Не удалось добавить',
+            scope === 'program'
+              ? `${error?.message || 'Программа не изменена.'}\n\nВ тренировке упражнения тоже нет — если нужна только она, бери «Добавить сюда».`
+              : error?.message || 'Попробуй ещё раз.'
+          );
+        });
+
+      if (scope === 'program') {
+        if (!programId) {
+          feedback.alert(
+            'Программы нет',
+            'Эта тренировка не привязана к программе — добавить можно только в неё саму.'
+          );
+          return;
+        }
+        feedback.alert(
+          'Добавить в программу?',
+          `«${card.name}» встанет в этот тренировочный день, в текущую тренировку и во все будущие тренировки программы.`,
+          [
+            { text: 'Отмена', style: 'cancel' },
+            { text: 'Добавить', onPress: () => void run() },
+          ]
+        );
+        return;
+      }
+
+      // «Добавить сюда» обратимо (на карточке есть «Убрать»), поэтому без
+      // подтверждения — кроме случая, когда обещание держать нельзя: тренировка
+      // из программы ещё не начата, и sync сотрёт строку при сохранении программы.
+      if (programId && !isWorkoutActive) {
+        feedback.alert(
+          'Добавить только в эту тренировку?',
+          `Тренировка ещё не начата. Как только сохранятся изменения программы, «${card.name}» из неё исчезнет — в плане такого упражнения нет.`,
+          [
+            { text: 'Отмена', style: 'cancel' },
+            { text: 'Добавить', onPress: () => void run() },
+          ]
+        );
+        return;
+      }
+
+      void run();
+    },
+    [programId, isWorkoutActive, addExerciseFromSearch]
+  );
+
+  const handleRemoveAdded = useCallback(
+    (exerciseIndex: number) => {
+      feedback.alert(
+        'Убрать упражнение из тренировки?',
+        'Блок и введённые в нём подходы удалятся. Отменить это можно только через редактор программы, если упражнение там есть.',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Убрать',
+            style: 'destructive',
+            onPress: () =>
+              removeAddedExercise(exerciseIndex).catch((error: any) =>
+                feedback.alert('Не удалось убрать', error?.message || 'Попробуй ещё раз.')
+              ),
+          },
+        ]
+      );
+    },
+    [removeAddedExercise]
+  );
+
   const renderItem = useCallback(
     ({ item, index }: { item: any; index: number }) => (
       <ExerciseSlider
@@ -353,6 +429,8 @@ export default function WorkoutSessionScreen() {
         applyProgression={applyProgression}
         isSetCompleted={isSetCompleted}
         onRequestReplace={handleReplaceChoice}
+        onAddPicked={handleAddPicked}
+        onRemoveAdded={handleRemoveAdded}
         activeInjuries={activeInjuries}
         resetToOriginal={resetToOriginal}
         startRestTimer={startRestTimer}
@@ -381,6 +459,8 @@ export default function WorkoutSessionScreen() {
       applyProgression,
       isSetCompleted,
       handleReplaceChoice,
+      handleAddPicked,
+      handleRemoveAdded,
       activeInjuries,
       resetToOriginal,
       startRestTimer,

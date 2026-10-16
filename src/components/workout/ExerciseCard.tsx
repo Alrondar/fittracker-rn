@@ -65,6 +65,13 @@ interface ExerciseCardProps {
   onSavePainQuick?: (exerciseIndex: number, ps: ExercisePainState) => void;
   onClearPainQuick?: (exerciseIndex: number) => void;
   onOpenAlternatives?: (exerciseIndex: number) => void;
+  /**
+   * ADD-BELOW (16.10): убрать блок, добавленный из поиска в этой сессии.
+   * Кнопка появляется только у своих (exercise.isAddedHere) — чужие строки
+   * приходят из плана, и удаление их из тренировки выглядело бы как «исчезнет
+   * при следующем синке».
+   */
+  onRemoveAdded?: (exerciseIndex: number) => void;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
   unit: WeightUnit;
@@ -96,6 +103,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   onSavePainQuick,
   onClearPainQuick,
   onOpenAlternatives,
+  onRemoveAdded,
   colors,
   cardStyles,
   unit,
@@ -148,6 +156,11 @@ export const ExerciseCard = memo(function ExerciseCard({
     if (hasSets) setPainMorphOpen(true);
     else onOpenPain?.(exerciseIndex);
   }, [hasSets, onOpenPain, exerciseIndex]);
+
+  // ADD-BELOW: стабильная ссылка, иначе memo рядa действий не держится.
+  const handleRemoveAdded = useCallback(() => {
+    onRemoveAdded?.(exerciseIndex);
+  }, [onRemoveAdded, exerciseIndex]);
   // prefill части тела по мышцам упражнения — та же логика, что в PainSheet
   const defaultBodyPart = useMemo(() => {
     if (!hasSets) return null;
@@ -301,6 +314,8 @@ export const ExerciseCard = memo(function ExerciseCard({
           onOpenInfo={handleToggleInfo}
           infoVisible={infoOpen}
           hasInfoContent={hasInfoContent}
+          removable={isMain && !!(exercise as ExerciseData).isAddedHere}
+          onRemoveAdded={handleRemoveAdded}
           colors={colors}
         />
 
