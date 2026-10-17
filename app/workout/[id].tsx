@@ -83,6 +83,8 @@ export default function WorkoutSessionScreen() {
     handleTimerTick,
     handleTimerStart,
     handleTimerStop,
+    resetSession,
+    timerResetToken,
     loadAlternatives,
     updateSet,
     updateSetFeedback,
@@ -553,6 +555,7 @@ export default function WorkoutSessionScreen() {
             onTick={handleTimerTick}
             onStart={handleTimerStart}
             onStop={handleTimerStop}
+            resetToken={timerResetToken}
           >
             <WorkoutScreenHeader
               workoutName={workoutName}
@@ -563,6 +566,7 @@ export default function WorkoutSessionScreen() {
               colors={colors}
               saving={saving}
               onRequestFinish={openFinishSheet}
+              onRequestReset={resetSession}
             />
           </WorkoutTimerProvider>
         </HeroIn>

@@ -29,6 +29,8 @@ interface WorkoutScreenHeaderProps {
   saving: boolean;
   /** FX-1: тап по «Завершить» — экран открывает confirm-лист в своём корне. */
   onRequestFinish: () => void;
+  /** RESET-T: тап по ↺ в панели — экран/хук решают, спрашивать ли подтверждение. */
+  onRequestReset?: () => void;
 }
 
 export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
@@ -40,6 +42,7 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
   colors,
   saving,
   onRequestFinish,
+  onRequestReset,
 }: WorkoutScreenHeaderProps) {
   const router = useRouter();
 
@@ -90,7 +93,12 @@ export const WorkoutScreenHeader = memo(function WorkoutScreenHeader({
           <WorkoutTimerPill colors={colors} onRequestFinish={onRequestFinish} saving={saving} />
         </View>
       </View>
-      <WorkoutTimerPanel colors={colors} onRequestFinish={onRequestFinish} saving={saving} />
+      <WorkoutTimerPanel
+        colors={colors}
+        onRequestFinish={onRequestFinish}
+        onRequestReset={onRequestReset}
+        saving={saving}
+      />
     </>
   );
 });
