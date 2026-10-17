@@ -18,7 +18,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import { Play, Pause, Clock, Square } from 'lucide-react-native';
+import { Play, Pause, Clock, Square, RefreshCw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
@@ -62,6 +62,8 @@ interface WorkoutTimerProviderProps {
   onTick: (seconds: number) => void;
   onStart: () => void;
   onStop: () => void;
+  /** RESET-T: меняется владельцем сессии, когда счётчик нужно обнулить. */
+  resetToken?: number;
   children: React.ReactNode;
 }
 
@@ -79,6 +81,7 @@ export function WorkoutTimerProvider({
   onTick,
   onStart,
   onStop,
+  resetToken,
   children,
 }: WorkoutTimerProviderProps) {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -196,6 +199,32 @@ export function WorkoutTimerProvider({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setExpanded((prev) => !prev);
   }, []);
+
+  // RESET-T: обнуление счётчика без onStop и без записи в БД — запись делает хук.
+  // pauseInternal после него отработает no-op (runningRef уже false), поэтому
+  // порядок эффектов внутри провайдера (sync по initialSeconds → реак на
+  // isActive) не может вернуть сброшенное время.
+  const resetInternal = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    startedAtRef.current = null;
+    accumulatedRef.current = 0;
+    runningRef.current = false;
+    setRunning(false);
+    setSeconds(0);
+    onTickRef.current(0);
+  }, []);
+
+  // Сброс приходит токеном от владельца сессии (хука): панель не лезет в БД,
+  // хук не лезет в отображение таймера. Первый рендер токена — не сброс.
+  const lastResetTokenRef = useRef(resetToken);
+  useEffect(() => {
+    if (resetToken === undefined || resetToken === lastResetTokenRef.current) return;
+    lastResetTokenRef.current = resetToken;
+    resetInternal();
+  }, [resetToken, resetInternal]);
 
   const phase: TimerPhase = running ? 'running' : seconds > 0 ? 'paused' : 'idle';
 
@@ -399,12 +428,15 @@ export const WorkoutTimerPill = memo(function WorkoutTimerPill({
 export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
   colors,
   onRequestFinish,
+  // RESET-T: сброс начала тренировки. Панель не знает про БД — только триггерит.
+  onRequestReset,
   // BUG-6 (аудит 28.09): панельный финиш должен гаситься во время сохранения —
   // иначе «Завершить» из панели повторял saveWorkout (двойной advanceProgramProgress).
   saving = false,
 }: {
   colors: any;
   onRequestFinish: () => void;
+  onRequestReset?: () => void;
   saving?: boolean;
 }) {
   const { formatted, running, phase, expanded, toggle } = useWorkoutTimerCtx();
@@ -484,6 +516,32 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
             </Text>
           </View>
         </View>
+
+        {/* RESET-T: сброс начала. Появляется только когда есть что сбрасывать
+            (идёт или уже отсчитано), чтобы не было мёртвого контролла. Свой
+            второстепенный стиль и 44 px вместо 52 — на 320 px в ряд с паузой и
+            подписью статуса влезает только так. */}
+        {phase !== 'idle' && onRequestReset ? (
+          <PressableScale
+            onPress={onRequestReset}
+            accessibilityRole="button"
+            accessibilityLabel="Сбросить начало тренировки"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surfaceSecondary,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginRight: SPACING.sm,
+            }}
+            haptic="none"
+          >
+            <RefreshCw size={19} color={colors.textSecondary} strokeWidth={2.2} />
+          </PressableScale>
+        ) : null}
 
         <PressableScale
           onPress={toggle}

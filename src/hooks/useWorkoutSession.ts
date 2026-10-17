@@ -44,6 +44,7 @@ import {
   updateWorkoutExerciseSettings,
   addWorkoutExerciseBelow,
   removeWorkoutExercise,
+  clearWorkoutLogs,
 } from '../services/workoutService';
 import {
   buildExercisesData,
@@ -589,6 +590,125 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     },
     [persistExerciseSettings]
   );
+
+  // ============================================================================
+  // RESET-T: сброс начала тренировки
+  // ============================================================================
+
+  // Токен — единственный способ сказать провайдеру таймера «обнули отображение»,
+  // не заставляя панель писать в БД, а хук — владеть интервалом таймера.
+  const [timerResetToken, setTimerResetToken] = useState(0);
+
+  // «Есть что терять» = в любом подходе заполнено хотя бы одно поле, включая
+  // обратную связь без веса (Ф3): иначе подтверждение пропустило бы случай
+  // «отметил только RPE».
+  const hasLoggedSets = useCallback((): boolean => {
+    return exercisesRef.current.some((exercise) =>
+      (exercise.sets || []).some(
+        (set) =>
+          set.weight !== '' ||
+          set.reps !== '' ||
+          (set.reps_left ?? '') !== '' ||
+          (set.reps_right ?? '') !== '' ||
+          set.rpe != null ||
+          set.rir != null ||
+          set.difficulty != null
+      )
+    );
+  }, []);
+
+  const applySessionReset = useCallback(
+    async (clearLogs: boolean) => {
+      // Снимаем debounce: неотправленный ввод после сброса уезжать уже не должен.
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+
+      if (clearLogs) {
+        const workoutExerciseIds = exercisesRef.current
+          .map((exercise) => exercise.workout_exercise_id)
+          .filter(Boolean);
+        pendingLogsRef.current.clear();
+        await clearWorkoutLogs(workoutExerciseIds);
+        // Значения в состоянии гасим обязательно: в БД их нет, а сетки остались
+        // бы заполненными и при следующем флэше вернули бы удалённое.
+        setExercises((prev) =>
+          prev.map((exercise) => ({
+            ...exercise,
+            sets: exercise.sets.map((set) => ({
+              ...set,
+              weight: '',
+              reps: '',
+              reps_left: '',
+              reps_right: '',
+              rpe: null,
+              rir: null,
+              difficulty: null,
+              estimatedReps: null,
+              isWarmup: false,
+            })),
+          }))
+        );
+      } else {
+        // Время сбрасываем ПОСДЛЕ того, как подходы дописаны: иначе сброс
+        // лишает пользователя данные, которые он успел ввести.
+        await joinFlush();
+      }
+
+      await updateWorkout(workoutId, { started_at: null, duration_seconds: 0 });
+
+      // Порядок важен: активность гасим до токена, иначе автостарт по isActive
+      // и unmount-запись вернули бы started_at/duration_seconds обратно.
+      isWorkoutActiveRef.current = false;
+      setIsWorkoutActive(false);
+      startedSavedRef.current = false;
+      currentTimeRef.current = 0;
+      setInitialTime(0);
+      setTimerResetToken((prev) => prev + 1);
+
+      if (userId) invalidateWorkoutAffectedCaches(queryClient, userId);
+    },
+    [workoutId, userId, queryClient, joinFlush]
+  );
+
+  const resetSession = useCallback(() => {
+    if (isFinishingRef.current) return;
+
+    const run = (clearLogs: boolean) => {
+      void (async () => {
+        try {
+          await applySessionReset(clearLogs);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          feedback.alert(
+            'Тренировка сброшена',
+            clearLogs
+              ? 'Таймер и записанные подходы обнулены. Начни заново по «Начать».'
+              : 'Таймер обнулён, подходы остались. Начни заново по «Начать».'
+          );
+        } catch (error: any) {
+          console.error('[useWorkoutSession] resetSession:', error);
+          feedback.alert('Ошибка', mapError(error));
+        }
+      })();
+    };
+
+    // Если подходов нет — терять нечего, одного тапа достаточно.
+    if (!hasLoggedSets()) {
+      run(false);
+      return;
+    }
+
+    feedback.alert(
+      'Сбросить начало тренировки?',
+      'Таймер вернётся к 00:00, тренировка снова станет «не начата». Завершать и пересоздавать её не нужно.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { text: 'Только время', onPress: () => run(false) },
+        { text: 'Время и подходы', style: 'destructive', onPress: () => run(true) },
+      ]
+    );
+  }, [applySessionReset, hasLoggedSets]);
 
   // ============================================================================
   // REPLACE / RESET
@@ -1267,5 +1387,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     clearPainState,
     startRestTimer,
     saveWorkout,
+    resetSession,
+    timerResetToken,
   };
 }

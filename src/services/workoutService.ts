@@ -546,9 +546,13 @@ export async function fetchAlternatives(
 export async function updateWorkout(
   workoutId: string,
   updates: {
-    started_at?: string;
-    finished_at?: string;
-    duration_seconds?: number;
+    /**
+     * RESET-T: `null` — это не «не трогаем», а «очищаем колонку» (сброс начала
+     * пишет started_at = NULL, чтобы тренировка снова стала «не начата»).
+     */
+    started_at?: string | null;
+    finished_at?: string | null;
+    duration_seconds?: number | null;
   }
 ): Promise<void> {
   const { error } = await supabase.from('workouts').update(updates).eq('id', workoutId);
@@ -588,6 +592,23 @@ export async function upsertWorkoutLogs(
     p_logs: logs,
     p_total_sets: totalSets ?? null,
   });
+
+  if (error) throw error;
+}
+
+/**
+ * RESET-T: удаляет все подходы тренировки — осознанный пункт в подтверждении
+ * сброса начала. Список id передаём явно: фильтр по вложенной таблице для
+ * DELETE PostgREST не поддерживается, а RLS-политика `workout_logs_delete`
+ * пускает владельца (workout_exercises → workouts.user_id = auth.uid()).
+ */
+export async function clearWorkoutLogs(workoutExerciseIds: string[]): Promise<void> {
+  if (workoutExerciseIds.length === 0) return;
+
+  const { error } = await supabase
+    .from('workout_logs')
+    .delete()
+    .in('workout_exercise_id', workoutExerciseIds);
 
   if (error) throw error;
 }
