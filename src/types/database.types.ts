@@ -1294,7 +1294,9 @@ export type Database = {
         Returns: undefined
       }
       upsert_workout_logs: {
-        Args: { p_logs: Json[]; p_workout_exercise_id: string }
+        // hand-added (миграция 20261017143000, F5) — CLI-генерации в репо нет,
+        // см. MEMORY reference-supabase-mcp
+        Args: { p_logs: Json[]; p_workout_exercise_id: string; p_total_sets?: number | null }
         Returns: undefined
       }
     }

@@ -63,17 +63,25 @@ export function buildExercisesData(
       }
 
       const targetSets = we.target_sets ?? 3;
+      const savedLogs = logsByWorkoutExercise[we.id] || [];
+
+      // F2 (17.10): сетка не может быть уже того, что уже сохранено. Число сетов
+      // бралось строго из target_sets, и подход сверх плана — добавленный через
+      // addSet, чей persist target_sets не доехал (он fire-and-forget), — при
+      // перезаходе исчезал вместе с вписанными весом и повторами.
+      const maxSavedSet = savedLogs.reduce((max, log) => Math.max(max, log.set_number ?? 0), 0);
+      const renderedSets = Math.max(targetSets, maxSavedSet);
+
       const sets: SetData[] = [];
-      for (let i = 0; i < targetSets; i++) {
+      for (let i = 0; i < renderedSets; i++) {
         // reps_left/right инициализируются пустыми строками: без ключей
         // isSetCompleted (set.reps_left !== '') считает пустой сет завершённым
         sets.push({ weight: '', reps: '', reps_left: '', reps_right: '' });
       }
 
-      const savedLogs = logsByWorkoutExercise[we.id] || [];
       savedLogs.forEach((log) => {
         const index = log.set_number - 1;
-        if (index >= 0 && index < targetSets) {
+        if (index >= 0 && index < renderedSets) {
           sets[index] = {
             ...sets[index],
             weight: log.weight_kg != null ? String(log.weight_kg) : '',

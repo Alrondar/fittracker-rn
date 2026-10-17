@@ -6,6 +6,7 @@
 // (useWorkoutSession.rest.ts удалён 28.09, FZ-1: таймер отдыха живёт в
 //  RestTimerProvider, src/components/workout/RestTimerContext.tsx)
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { feedback } from '../lib/feedback';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -151,13 +152,22 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             log.weight_kg !== null ||
             log.reps !== null ||
             log.reps_left !== null ||
-            log.reps_right !== null
+            log.reps_right !== null ||
+            // F3 (17.10): сет, где заполнены только обратная связь (RPE/RIR/
+            // сложность), раньше отсекался на клиенте и не уходил в БД вообще —
+            // после возврата отметка усилия исчезала. Читатели нагрузки
+            // (рекомендации, прогноз, недельный объём) такие строки фильтруют,
+            // чтобы пустой по весу сет не сбил «Прошлый/Рекомендую».
+            log.rpe !== null ||
+            log.rir !== null ||
+            log.difficulty !== null
         );
 
       if (formattedLogs.length === 0) return;
 
       try {
-        await upsertWorkoutLogs(workoutExerciseId, formattedLogs);
+        // F5: длина массива экрана = верхняя граница заменяемого диапазона.
+        await upsertWorkoutLogs(workoutExerciseId, formattedLogs, exerciseLogs.length);
       } catch (error) {
         console.error('[flushPendingLogs] error:', error);
         failures++;
@@ -211,14 +221,27 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       setWorkoutName(workoutRow.name ?? 'Тренировка');
       setProgramId(workoutRow.program_id);
 
-      // Восстановление активной тренировки
+      // Восстановление активной тренировки.
+      // F1 (17.10): базой времени служит накопленный duration_seconds (пишется при
+      // уходе с экрана и на «Завершить»), а не wall-clock от started_at. Прежнее
+      // правило брало now − started_at и требовало elapsed < 86400: сессия,
+      // оставленная на ночь или на сутки, открывалась с 00:00 и неактивным
+      // таймером, хотя отработанное время лежало в БД (в проде 4 из 5 открытых
+      // тренировок попадали под этот отказ).
       if (workoutRow.started_at && !workoutRow.finished_at) {
-        const startTime = new Date(workoutRow.started_at);
-        const now = new Date();
-        const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-        if (elapsed > 0 && elapsed < 86400) {
-          setInitialTime(elapsed);
-          currentTimeRef.current = elapsed;
+        const stored = workoutRow.duration_seconds;
+        const elapsed = Math.floor((Date.now() - new Date(workoutRow.started_at).getTime()) / 1000);
+
+        let resumeFrom: number | null = null;
+        if (stored && stored > 0) {
+          resumeFrom = stored;
+        } else if (elapsed > 0 && elapsed < 86400) {
+          resumeFrom = elapsed;
+        }
+
+        if (resumeFrom !== null) {
+          setInitialTime(resumeFrom);
+          currentTimeRef.current = resumeFrom;
           startedSavedRef.current = true; // started_at уже в БД — не перезаписывать автостартом
           setIsWorkoutActive(true);
         }
@@ -272,6 +295,36 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   useEffect(() => {
     loadWorkout();
   }, [loadWorkout]);
+
+  // F4 (17.10): уход в фон = тот же долг, что и unmount. Раньше запись была
+  // только на unmount и на debounce 500 мс: приложение, закрытое сразу после
+  // ввода, теряло последние значения (pendingLogsRef к этому моменту уже очищен
+  // у начавшегося flush, а упавший запрос возвращается в память, которая умрёт
+  // вместе с процессом). 'hidden' — имя состояния на вебе (RNW не отдаёт
+  // 'background'/'inactive'), на нативе оно не встречается.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      // RNW присылает 'visible'/'hidden' — в типах React Native их нет, поэтому
+      // сравнение идёт через string-широкое приведение (Platform-специфичных
+      // веток здесь заводить нечего: на нативе 'hidden' просто не встречается).
+      const stateName = state as string;
+      if (stateName !== 'background' && stateName !== 'inactive' && stateName !== 'hidden') return;
+
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      void joinFlush();
+
+      if (isWorkoutActiveRef.current && !isFinishingRef.current && currentTimeRef.current > 0) {
+        updateWorkout(workoutId, { duration_seconds: currentTimeRef.current }).catch((error) => {
+          console.error('[useWorkoutSession] AppState flush:', error);
+        });
+      }
+    });
+
+    return () => subscription.remove();
+  }, [joinFlush, workoutId]);
 
   // Cleanup при unmount
   useEffect(() => {
@@ -476,8 +529,20 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const weId = exercisesRef.current[exerciseIndex]?.workout_exercise_id;
       if (weId)
         persistExerciseSettings(weId, { target_sets: newSetsCount, rest_seconds: newRestSeconds });
+
+      // F2/F5 (17.10): осознанное СОКРАЩЕНИЕ числа подходов должно уехать в БД
+      // сразу. Ф5 заменяет только диапазон 1..p_total_sets, поэтому без этого
+      // сигнала убранный подход при следующем открытии вернулся бы (Ф2 рисует
+      // max(target_sets, сохранённый максимум)). Длина берётся из среза, который
+      // видит пользователь, а не из target_sets: при живой сетке 5 и устаревшем
+      // target_sets 3 (путь addSet) именно срез отражает намерение.
+      const before = exercisesRef.current[exerciseIndex]?.sets ?? [];
+      if (weId && before.length > newSetsCount) {
+        pendingLogsRef.current.set(weId, before.slice(0, newSetsCount));
+        scheduleFlush();
+      }
     },
-    [persistExerciseSettings]
+    [persistExerciseSettings, scheduleFlush]
   );
 
   // ENG-13: добавить N сетов (для warmup toggle auto-add). Раньше экран вызывал
@@ -512,9 +577,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       });
       // Снаружи updaters (апдейтер остаётся чистым — CLAUDE.md §9): одно
       // событие → ref синхронен, target_sets + count даёт итог за один запрос
+      // F2 (17.10): итог считается от ФАКТИЧЕСКОЙ длины сетки, а не от
+      // target_sets — при сохранённых подходах сверх плана (addSet не доехал до
+      // БД) target_sets + count записал бы число меньше показанного.
       if (exercise) {
+        const shown = exercise.sets?.length ?? exercise.target_sets;
         persistExerciseSettings(exercise.workout_exercise_id, {
-          target_sets: exercise.target_sets + count,
+          target_sets: Math.max(exercise.target_sets, shown) + count,
         });
       }
     },
