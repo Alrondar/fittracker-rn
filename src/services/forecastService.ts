@@ -144,6 +144,8 @@ export async function getWorkoutForecast(userId: string): Promise<WorkoutForecas
       )
       .in('workout_exercises.exercise_id', exerciseIds)
       .eq('is_warmup', false)
+      // F3: сет без веса и повторов ненесёт нагрузки — в прогноз ему не место.
+      .or('weight_kg.not.is.null,reps.not.is.null,reps_left.not.is.null,reps_right.not.is.null')
       .gte('created_at', sinceIso),
     supabase
       .from('workouts')

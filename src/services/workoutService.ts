@@ -407,6 +407,10 @@ export async function fetchExerciseHistory(
     .eq('workout_exercises.exercise_id', exerciseId)
     .neq('workout_exercises.workout_id', excludeWorkoutId)
     .eq('is_warmup', false)
+    // F3: строки без веса и повторов (отметка только усилия, см. flushPendingLogs)
+    // не должны становиться «последним подходом» для рекомендации — здесь берётся
+    // первый лог на (упражнение, номер подхода) по created_at DESC.
+    .or('weight_kg.not.is.null,reps.not.is.null,reps_left.not.is.null,reps_right.not.is.null')
     .order('created_at', { ascending: false })
     .limit(300);
   if (error) throw error;
@@ -571,11 +575,18 @@ export async function upsertWorkoutLogs(
     is_warmup?: boolean;
     /** ENG-13: оценка повторов для незавершённого сета */
     is_estimated_reps?: boolean;
-  }[]
+  }[],
+  /**
+   * F5 (17.10): сколько сетов упражнения экран показывает сейчас. RPC заменяет
+   * только диапазон 1..totalSets — раньше он зачищал ВСЕ подходы, и сохранённый
+   * подход сверх показанного числа терялся безвозвратно.
+   */
+  totalSets?: number
 ): Promise<void> {
   const { error } = await supabase.rpc('upsert_workout_logs', {
     p_workout_exercise_id: workoutExerciseId,
     p_logs: logs,
+    p_total_sets: totalSets ?? null,
   });
 
   if (error) throw error;

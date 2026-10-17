@@ -373,6 +373,9 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
         .select('weight_kg, reps, reps_left, reps_right, workout_exercises!inner(exercise_id)')
         .in('workout_exercises.exercise_id', exercisedIdsArr)
         .eq('is_warmup', false) // ENG-13: baseline для PR — только рабочие сеты
+        // F3: epley по сету без веса и повторов дал бы ноль в выборке и тянул
+        // вниз среднее/максимум по упражнению.
+        .or('weight_kg.not.is.null,reps.not.is.null,reps_left.not.is.null,reps_right.not.is.null')
         .lt('completed_at', range.startISO)
         .order('id')
         .range(from, to)
