@@ -16,6 +16,7 @@
 //   8. fallback                          → hold · INCONCLUSIVE
 
 import type { SetData, ProgressionPolicy } from '../types/workout';
+import { snapToLoadable, stepLoadable } from './loadables';
 
 // ============================================================================
 // ТИПЫ
@@ -48,6 +49,11 @@ export interface ProgressionResult {
   /** Рекомендуемые повторы. null при no_data или отсутствии таргета. */
   suggestedReps: number | null;
   reason: ProgressionReason;
+  /**
+   * PLATE-SNAP: «сырое» число до округления под снаряд. Нужно, чтобы UI мог
+   * честно сказать «считали 12,72, берём 12» вместо молчаливой подмены.
+   */
+  loadableFrom?: number;
 }
 
 export interface ProgressionInput {
@@ -88,6 +94,14 @@ export interface ProgressionInput {
   targetRpe?: number | null;
   /** P1.1: Политика прогрессии. */
   policy?: ProgressionPolicy;
+  /**
+   * PLATE-SNAP: снаряжение упражнения (из `equipment` справочника). Нужно, чтобы
+   * рекомендация округлялась до веса, который реально взять: гантели ходят шагом
+   * 1/2 кг, штанга — парами блинов, стек тренажёра — шагом 5 кг.
+   */
+  equipment?: (string | null)[] | string | null;
+  /** PLATE-SNAP: вес грифа в кг (из настроек пользователя), 0 если не штанга. */
+  barWeightKg?: number;
 }
 
 /**
@@ -321,6 +335,58 @@ const DEFAULT_STEP_KG = 2.5;
  * - Оценка усталости = текущие завершённые рабочие сеты (не previousReps!).
  */
 export function calculateProgression(input: ProgressionInput): ProgressionResult {
+  return applyLoadableSnap(decideWithContext(input), input);
+}
+
+/**
+ * PLATE-SNAP: последняя миля. Любой рекомендованный вес приводится к тому, что
+ * реально повесить: гантели 1–10 шагом 1 и 12–50 шагом 2, штанга — парами
+ * блинов (шаг 2,5 кг), гири шагом 4, стек тренажёра шагом 5. Делается в одном
+ * месте, а не в каждой ветке: ветков много (линейная, три политики, safety и
+ * readiness поверх), и в любой из них может родиться «12,72 кг».
+ *
+ * Отдельно бережёт смысл действия: если округление вернуло тот же вес, что был,
+ * снижение и повышение всё равно уезжают на соседный доступный вес — иначе
+ * «снизить вес» превращалось бы в «держи».
+ */
+function applyLoadableSnap(result: ProgressionResult, input: ProgressionInput): ProgressionResult {
+  const raw = result.suggestedWeight;
+  if (raw == null) return result;
+
+  const bar = input.barWeightKg ?? 0;
+  const base = result.reason?.factors?.lastWeight ?? null;
+  let snapped = snapToLoadable(raw, input.equipment, bar) ?? raw;
+
+  if (result.action === 'decrease' && base != null && snapped >= base) {
+    const stepped = stepLoadable(base, 'down', input.equipment, bar);
+    if (stepped < base) {
+      snapped = stepped;
+    } else {
+      // Снаряд не даёт снизить вес дальше (например, пустой гриф 20 кг или
+      // минимальная гантель). Честнее сказать «ниже некуда» и сместить нагрузку
+      // на повторы, чем молча вернуть «тот же вес» под вывеской «снижаем».
+      return {
+        ...result,
+        action: 'hold',
+        suggestedWeight: base,
+        loadableFrom: raw,
+        reason: {
+          ...result.reason,
+          code: 'EQUIPMENT_FLOOR',
+          ruText: `${result.reason.ruText}, но это минимальный вес снаряда — снижай объём`,
+        },
+      };
+    }
+  }
+  if (result.action === 'increase' && base != null && snapped <= base) {
+    snapped = stepLoadable(base, 'up', input.equipment, bar);
+  }
+
+  if (snapped === raw) return result;
+  return { ...result, suggestedWeight: snapped, loadableFrom: raw };
+}
+
+function decideWithContext(input: ProgressionInput): ProgressionResult {
   const result = decideProgression(input);
 
   // FD11-9: контексты восстановления/цикла (сон, стресс, лютеиновая, овуляция)
@@ -542,9 +608,23 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
   // 0.5/0.6: recovery (сон/стресс) и cycle (лютеиновая/овуляция) — обработаны
   // обёрткой calculateProgression (FD11-9): только downgrade increase→hold.
 
-  // 1. Полный отказ
+  // 1. Полный отказ. Раньше снимался ровно один шаг (1,25 кг в гипертрофии), и
+  // после округления под снаряд это часто оказывалось «тем же весом» — RPE 10
+  // переставал что-либо менять. Теперь забирается max(один шаг, 5%): для 12 кг
+  // это 1 кг, для 100 кг — 5 кг.
   if (evalRpe === 10) {
-    return decreaseResult('MAX_EFFORT', 'Отказ — снижаем вес');
+    const reduction = Math.max(effectiveStepKg, round2(baseWeight * 0.05));
+    const newWeight = Math.max(0, round2(baseWeight - reduction));
+    return {
+      action: 'decrease',
+      suggestedWeight: newWeight > 0 ? newWeight : null,
+      suggestedReps: targetRange ? targetRange.min : null,
+      reason: {
+        code: 'MAX_EFFORT',
+        ruText: `Отказ (RPE 10) — снижаем на ${round2(reduction)} кг`,
+        factors,
+      },
+    };
   }
 
   // ENG-13: Weight trend signal — если текущий рабочий вес значительно ниже прошлого,
@@ -817,6 +897,15 @@ export function explainProgression(
         label: 'RPE',
         value: 'не записан',
         emphasis: 'default',
+      });
+      break;
+
+    case 'EQUIPMENT_FLOOR':
+      items.push({
+        kind: 'signal',
+        label: 'Снаряд',
+        value: `${w(lastWeight ?? 0)} ${uL} — минимальная сборка, ниже класть нечего`,
+        emphasis: 'warning',
       });
       break;
 
