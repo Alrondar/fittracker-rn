@@ -6,7 +6,8 @@
 // Живой recompute по текущим сетам — задача COACH-1 (Recommendation card).
 //
 // Решения в порядке приоритета (первое совпадение — результат):
-//   1. lastRpe === 10                    → decrease · MAX_EFFORT
+//   1. lastRpe === 10, отказ повторный   → decrease · MAX_EFFORT
+//      Одиночный отказ (10 только в одном подходе) → hold · MAX_EFFORT_SINGLE
 //   2. repsAllAtMax + lastRpe <= 7       → increase · READY_TO_PROGRESS
 //   3. repsAllAtMax + no RPE             → increase · ALL_MAX_REPS
 //   4. lastRpe >= 9                      → hold · HIGH_RPE_HOLD
@@ -503,6 +504,19 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
       ? (currentCompleted[currentCompleted.length - 1].rpe ?? null)
       : (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ?? null);
 
+  // RPE по всем оцениваемым рабочим сетам — нужен, чтобы отличить одиночный
+  // отказ от повторного (MAX_EFFORT_SINGLE).
+  const evalRpeList =
+    currentCompleted.length > 0
+      ? currentCompleted.map((s) => s.rpe ?? null)
+      : workingSetsWithHistory.map((s) => s.previousRpe ?? null);
+  // RPE «прошлого раза» по последнему рабочему сету: есть только когда оцениваем
+  // текущую сессию (в fallback-ветке это то же число, что и evalRpe).
+  const lastSetPreviousRpe =
+    currentCompleted.length > 0
+      ? (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ?? null)
+      : null;
+
   const allAtMax = targetRange != null && evalReps.every((r) => r >= targetRange.max);
   const allAtMin = targetRange != null && evalReps.every((r) => r >= targetRange.min);
   const anyBelowMin = targetRange != null && evalReps.some((r) => r < targetRange.min);
@@ -608,20 +622,38 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
   // 0.5/0.6: recovery (сон/стресс) и cycle (лютеиновая/овуляция) — обработаны
   // обёрткой calculateProgression (FD11-9): только downgrade increase→hold.
 
-  // 1. Полный отказ. Раньше снимался ровно один шаг (1,25 кг в гипертрофии), и
-  // после округления под снаряд это часто оказывалось «тем же весом» — RPE 10
-  // переставал что-либо менять. Теперь забирается max(один шаг, 5%): для 12 кг
-  // это 1 кг, для 100 кг — 5 кг.
+  // 1. Отказ. Снижаем только за подтверждённый: 10 в двух рабочих подходах
+  // сейчас, либо прошлый раз тоже 10, либо повторы ниже минимума диапазона
+  // (подход сорван). Одиночный отказ в последнем подходе — штатный режим
+  // гипертрофии, вес держим (вердикт владельца 18.10). Величина снятия —
+  // max(один шаг, 5%): раньше это были 1,25 кг, которые съедались округлением
+  // под снаряд, и RPE 10 визуально ничего не менял.
   if (evalRpe === 10) {
     const reduction = Math.max(effectiveStepKg, round2(baseWeight * 0.05));
     const newWeight = Math.max(0, round2(baseWeight - reduction));
+    const confirmedFailure =
+      evalRpeList.filter((r) => r === 10).length >= 2 || lastSetPreviousRpe === 10;
+    if (confirmedFailure || allBelowMin) {
+      return {
+        action: 'decrease',
+        suggestedWeight: newWeight > 0 ? newWeight : null,
+        suggestedReps: targetRange ? targetRange.min : null,
+        reason: {
+          code: 'MAX_EFFORT',
+          ruText: `Отказ (RPE 10) — снижаем на ${round2(reduction)} кг`,
+          factors,
+        },
+      };
+    }
     return {
-      action: 'decrease',
-      suggestedWeight: newWeight > 0 ? newWeight : null,
+      action: 'hold',
+      suggestedWeight: baseWeight,
       suggestedReps: targetRange ? targetRange.min : null,
       reason: {
-        code: 'MAX_EFFORT',
-        ruText: `Отказ (RPE 10) — снижаем на ${round2(reduction)} кг`,
+        code: 'MAX_EFFORT_SINGLE',
+        ruText: `Отказ (RPE 10) в одном подходе — вес держим; повторится — снизим на ${round2(
+          reduction
+        )} кг`,
         factors,
       },
     };
@@ -841,6 +873,15 @@ export function explainProgression(
         kind: 'signal',
         label: 'RPE',
         value: `${lastRpe} — полный отказ (0 в запасе)`,
+        emphasis: 'warning',
+      });
+      break;
+
+    case 'MAX_EFFORT_SINGLE':
+      items.push({
+        kind: 'signal',
+        label: 'RPE',
+        value: `${lastRpe} — отказ в одном подходе, не повторялся`,
         emphasis: 'warning',
       });
       break;

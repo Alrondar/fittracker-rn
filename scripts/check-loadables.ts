@@ -86,6 +86,7 @@ type Case = {
   equipment: string[];
   expectAction: string;
   expectCode?: string;
+  expectReps?: number;
 };
 
 const run = (c: Case) => {
@@ -116,46 +117,101 @@ const run = (c: Case) => {
     if (res.action === 'decrease') {
       check(`${c.name}: снижение ниже базы`, w < base, `${base} → ${w}`);
     }
+    if (c.expectReps != null) {
+      check(
+        `${c.name}: повтор ${res.suggestedReps}`,
+        res.suggestedReps === c.expectReps,
+        String(res.suggestedReps)
+      );
+    }
   }
   return res;
 };
 
-// RPE 10 на пустом грифе: снижать нечем → честный hold с новым кодом, а не
-// «снижаем» с тем же числом на экране.
+// RPE 10 в одном подходе — вес держим (вердикт владельца 18.10): доводить
+// последний подход до отказа в гипертрофии — норма, терять из-за этого вес
+// нельзя. Порог срабатывает только на подтверждённом отказе.
 run({
-  name: 'RPE 10 на пустом грифе (20 кг)',
-  sets: [{ weight: '20', reps: '10', rpe: 10, previousWeight: 20, previousReps: 10 }],
+  name: 'Одиночный отказ на штанге 60 кг',
+  sets: [{ weight: '60', reps: '10', rpe: 10, previousWeight: 60, previousReps: 10 }],
+  repsRange: '8-10',
+  equipment: ['Штанга'],
+  expectAction: 'hold',
+  expectCode: 'MAX_EFFORT_SINGLE',
+  expectReps: 8,
+});
+
+// Подтверждение №1 — 10 в двух рабочих подходах этой тренировки.
+run({
+  name: 'Отказ в двух подходах, штанга 60 кг',
+  sets: [
+    { weight: '60', reps: '10', rpe: 10, previousWeight: 60, previousReps: 10 },
+    { weight: '60', reps: '9', rpe: 10, previousWeight: 60, previousReps: 10 },
+  ],
+  repsRange: '8-10',
+  equipment: ['Штанга'],
+  expectAction: 'decrease',
+  expectCode: 'MAX_EFFORT',
+});
+
+// Подтверждение №2 — прошлый тренировочный раз тоже был с отказом.
+run({
+  name: 'Отказ второй тренировке подряд',
+  sets: [
+    { weight: '12', reps: '10', rpe: 10, previousWeight: 12, previousReps: 10, previousRpe: 10 },
+  ],
+  repsRange: '8-10',
+  equipment: ['Гантели'],
+  expectAction: 'decrease',
+  expectCode: 'MAX_EFFORT',
+});
+run({
+  name: 'Прошлый раз не отказ (previousRpe 9) — держим',
+  sets: [
+    { weight: '12', reps: '10', rpe: 10, previousWeight: 12, previousReps: 10, previousRpe: 9 },
+  ],
+  repsRange: '8-10',
+  equipment: ['Гантели'],
+  expectAction: 'hold',
+  expectCode: 'MAX_EFFORT_SINGLE',
+});
+
+// Исключение из правила: отказ + повторы ниже минимума диапазона = подход
+// сорван, тут снижение и с одного раза.
+run({
+  name: 'Отказ и повторы ниже таргета',
+  sets: [{ weight: '20', reps: '5', rpe: 10, previousWeight: 20, previousReps: 10 }],
+  repsRange: '8-10',
+  equipment: ['Гантели'],
+  expectAction: 'decrease',
+  expectCode: 'MAX_EFFORT',
+});
+
+// Подтверждённый отказ на пустом грифе: снижать нечем → честный hold с новым
+// кодом, а не «снижаем» с тем же числом на экране.
+run({
+  name: 'Подтверждённый отказ на пустом грифе (20 кг)',
+  sets: [
+    { weight: '20', reps: '10', rpe: 10, previousWeight: 20, previousReps: 10 },
+    { weight: '20', reps: '10', rpe: 10, previousWeight: 20, previousReps: 10 },
+  ],
   repsRange: '8-10',
   equipment: ['Штанга'],
   expectAction: 'hold',
   expectCode: 'EQUIPMENT_FLOOR',
 });
 
-// RPE 10 со снарядами: отказ обязан сдвинуть вес вниз, а не держать.
+// Снижение всегда приходит в номинал снаряда: 60 → 57,5; 12 → 10.
 run({
-  name: 'RPE 10 на штанге 60 кг',
-  sets: [{ weight: '60', reps: '10', rpe: 10, previousWeight: 60, previousReps: 10 }],
-  repsRange: '8-10',
-  equipment: ['Штанга'],
-  expectAction: 'decrease',
-  expectCode: 'MAX_EFFORT',
-});
-run({
-  name: 'RPE 10 на гантелях 12 кг',
-  sets: [{ weight: '12', reps: '10', rpe: 10, previousWeight: 12, previousReps: 10 }],
+  name: 'Отказ в двух подходах на гантелях 12 кг',
+  sets: [
+    { weight: '12', reps: '10', rpe: 10, previousWeight: 12, previousReps: 10 },
+    { weight: '12', reps: '10', rpe: 10, previousWeight: 12, previousReps: 10 },
+  ],
   repsRange: '8-10',
   equipment: ['Гантели'],
   expectAction: 'decrease',
   expectCode: 'MAX_EFFORT',
-});
-
-// RPE 10 + повторы ниже таргета — тоже снижение (раньше держали).
-run({
-  name: 'RPE 10 и повторы ниже таргета',
-  sets: [{ weight: '20', reps: '5', rpe: 10, previousWeight: 20, previousReps: 10 }],
-  repsRange: '8-10',
-  equipment: ['Гантели'],
-  expectAction: 'decrease',
 });
 
 // RPE 9 — как и раньше, hold.
