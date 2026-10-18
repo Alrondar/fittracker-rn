@@ -11,9 +11,9 @@ export function useWorkouts(userId: string | null) {
     enabled: !!userId,
   });
 
-  const skip = async (workoutId: string, programId: string) => {
+  const skip = async (workoutId: string) => {
     if (!userId) throw new Error('User not authenticated');
-    await skipWorkout(workoutId, userId, programId);
+    await skipWorkout(workoutId, userId);
     // BUG-2 (аудит 28.09): пропуск сдвигает прогресс программы и все сводки —
     // инвалидируем полный список зависимых кэшей, а не только ['workouts'].
     invalidateWorkoutAffectedCaches(queryClient, userId);

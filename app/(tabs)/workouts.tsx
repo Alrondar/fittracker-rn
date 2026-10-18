@@ -131,7 +131,7 @@ export default function WorkoutsScreen() {
     if (!skipTarget || !activeProgram) return;
     setSkipping(true);
     try {
-      await skip(skipTarget.id, activeProgram.programId);
+      await skip(skipTarget.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSkipTarget(null);
     } catch (error: any) {

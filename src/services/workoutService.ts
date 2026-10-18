@@ -560,6 +560,58 @@ export async function updateWorkout(
   if (error) throw error;
 }
 
+export type WorkoutFinishStatus =
+  | 'advanced'
+  | 'completed'
+  | 'already_advanced'
+  | 'pointer_stale'
+  | 'not_active'
+  | 'no_workout'
+  | 'finished_no_program';
+
+export interface WorkoutFinishResult {
+  status: WorkoutFinishStatus;
+  phase: number;
+  week: number;
+  day: number;
+  /** true — тренировка была завершена и до этого вызова (повторный тап, ретрай). */
+  alreadyFinished: boolean;
+}
+
+/**
+ * ADV-atomic (18.10): закрыть тренировку и сдвинуть прогресс-указатель одним
+ * вызовом. RPC `finish_workout_and_advance` пишет finished_at (+skipped_at для
+ * пропуска) и двигает указатель в одной транзакции по CAS-правилу: тройка
+ * тренировки должна совпадать с указателем. Раньше это были два запроса
+ * (`updateWorkout` + `advanceProgramProgress`), и между ними база была видна в
+ * состоянии «день закрыт, указатель на нём».
+ */
+export async function finishWorkoutAndAdvance(
+  userId: string,
+  workoutId: string,
+  finishedAt: string,
+  durationSeconds: number | null,
+  skipped = false
+): Promise<WorkoutFinishResult> {
+  const { data, error } = await supabase.rpc('finish_workout_and_advance', {
+    p_user_id: userId,
+    p_workout_id: workoutId,
+    p_finished_at: finishedAt,
+    p_duration_seconds: durationSeconds,
+    p_skipped: skipped,
+  });
+  if (error) throw error;
+
+  const row = (data ?? {}) as unknown as Record<string, unknown>;
+  return {
+    status: (typeof row.status === 'string' ? row.status : 'no_workout') as WorkoutFinishStatus,
+    phase: Number(row.phase ?? 1),
+    week: Number(row.week ?? 1),
+    day: Number(row.day ?? 1),
+    alreadyFinished: row.already_finished === true,
+  };
+}
+
 /**
  * Upsert workout logs через RPC.
  */

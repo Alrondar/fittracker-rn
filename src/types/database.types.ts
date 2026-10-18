@@ -1237,6 +1237,18 @@ export type Database = {
         Args: { p_program_id: string; p_user_id: string }
         Returns: number
       }
+      // ADV-atomic (миграция 20261018150000). Запись добавлена вручную по
+      // формату генератора (CLI-линковки проекта нет).
+      finish_workout_and_advance: {
+        Args: {
+          p_duration_seconds?: number | null
+          p_finished_at: string
+          p_skipped?: boolean
+          p_user_id: string
+          p_workout_id: string
+        }
+        Returns: Json
+      }
       generate_share_code: { Args: { p_program_id: string }; Returns: string }
       get_exercise_filter_counts: { Args: never; Returns: Json }
       migrate_exercise_equipment: { Args: never; Returns: undefined }

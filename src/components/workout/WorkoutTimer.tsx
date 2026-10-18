@@ -431,7 +431,7 @@ export const WorkoutTimerPanel = memo(function WorkoutTimerPanel({
   // RESET-T: сброс начала тренировки. Панель не знает про БД — только триггерит.
   onRequestReset,
   // BUG-6 (аудит 28.09): панельный финиш должен гаситься во время сохранения —
-  // иначе «Завершить» из панели повторял saveWorkout (двойной advanceProgramProgress).
+  // иначе «Завершить» из панели повторял saveWorkout (двойной финиш).
   saving = false,
 }: {
   colors: any;
