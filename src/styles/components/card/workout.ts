@@ -105,7 +105,11 @@ export const createWorkoutCardStyles = (colors: any) =>
     setInputContainer: {
       flex: 1,
       minWidth: 0,
-      padding: 8,
+      // SG-PLATE: рамка добавляет 2 px к высоте, поэтому вертикальный отступ
+      // уменьшен на ширину кромки — внешняя геометрия строки остаётся прежней
+      // (было 32 px, должно остаться 32 px).
+      paddingHorizontal: 8,
+      paddingVertical: 7,
       borderRadius: BORDER_RADIUS.md,
       // SG-PLATE: подложка пустой ячейки (`surfaceSecondary`) отличается от
       // карточки в 1,04–1,41 раза — глазами это «рамка пропала». Во всех тёмных
