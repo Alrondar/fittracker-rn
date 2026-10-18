@@ -61,7 +61,7 @@ DECLARE
   v_wk_phase    int;
   v_wk_week     int;
   v_wk_day      int;
-  v_phase_id    uuid;
+  v_phase_id    text;
   v_weeks_count int;
   v_days        int;
   v_new_phase   int;
@@ -126,6 +126,8 @@ BEGIN
     );
   END IF;
 
+  -- program_phases.id и program_days.phase_id в этой схеме — text, а не uuid
+  -- (схема наследует текстовый programs.id); переменная обязана быть text.
   SELECT pp.id, coalesce(pp.weeks_count, 1)
     INTO v_phase_id, v_weeks_count
     FROM program_phases pp
