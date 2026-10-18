@@ -22,6 +22,7 @@ import {
 } from '../types/workout';
 import {
   advanceProgramProgress,
+  type ProgramProgressAdvance,
   replaceExerciseInProgram,
   addExerciseToProgramBelow,
   NEW_PROGRAM_EXERCISE_DEFAULTS,
@@ -1274,39 +1275,47 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           if (userId) invalidateWorkoutAffectedCaches(queryClient, userId);
 
           if (programId && userId) {
-            try {
-              const progress = await advanceProgramProgress(userId, programId);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              if (progress.isCompleted) {
+            // BUG-6 (18.10): сдвиг делает база, а холостые статусы
+            // ('already_advanced', 'pointer_stale', 'no_workout', 'not_active')
+            // означают «указатель не тронут: этот день уже учтён». До правки
+            // такой же вызов молча перескакивал ещё один тренировочный день.
+            const reportProgress = (progress: ProgramProgressAdvance, withTime: boolean) => {
+              if (progress.status === 'completed') {
                 feedback.alert(
                   'Программа завершена!',
                   'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
                 );
                 router.replace('/(tabs)/programs');
-              } else {
-                feedback.alert(
-                  'Тренировка завершена!',
-                  `Время: ${formattedTime}\nСледующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}\n\nСохранено подходов: ${totalLogs}`
-                );
-                router.replace('/(tabs)/workouts');
+                return;
               }
+
+              const pointerLine =
+                progress.status === 'advanced'
+                  ? `Следующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}`
+                  : `Прогресс не менялся: этот день уже учтён. Сейчас: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}`;
+
+              feedback.alert(
+                'Тренировка завершена!',
+                withTime
+                  ? `Время: ${formattedTime}\n${pointerLine}\n\nСохранено подходов: ${totalLogs}`
+                  : pointerLine
+              );
+              router.replace('/(tabs)/workouts');
+            };
+
+            try {
+              const progress = await advanceProgramProgress(userId, programId, workoutId);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              reportProgress(progress, true);
             } catch (progressError: any) {
               console.error('Ошибка обновления прогресса:', progressError);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
               const retryAdvance = async () => {
                 try {
-                  const progress = await advanceProgramProgress(userId!, programId!);
+                  const progress = await advanceProgramProgress(userId!, programId!, workoutId);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  if (progress.isCompleted) {
-                    feedback.alert(
-                      'Программа завершена!',
-                      'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
-                    );
-                    router.replace('/(tabs)/programs');
-                  } else {
-                    router.replace('/(tabs)/workouts');
-                  }
+                  reportProgress(progress, false);
                 } catch (e: any) {
                   feedback.alert(
                     'Не удалось продвинуть прогресс',
