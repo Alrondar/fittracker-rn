@@ -4,7 +4,7 @@
 // Запуск: npx tsx scripts/check-loadables.ts
 
 import { snapToLoadable, stepLoadable, ladderForEquipment } from '../src/engine/loadables';
-import { calculateProgression } from '../src/engine/progression';
+import { calculateProgression, explainProgression } from '../src/engine/progression';
 import type { SetData } from '../src/types/workout';
 
 let passed = 0;
@@ -236,6 +236,42 @@ check(
   'Повышение на гантелях: 13,25 заменено на 14 и записано в loadableFrom',
   near(up.suggestedWeight ?? 0, 14) && near(up.loadableFrom ?? 0, 13.25),
   `${up.suggestedWeight} (сырое ${up.loadableFrom})`
+);
+
+// ===== 5. подписи, которые видит пользователь =====
+const engine = (sets: SetData[], equipment: string[]) =>
+  calculateProgression({
+    sets,
+    repsRange: '8-10',
+    currentPhaseType: 'hypertrophy',
+    equipment,
+    barWeightKg: 20,
+  });
+
+const single60 = engine(
+  [{ weight: '60', reps: '10', rpe: 10, previousWeight: 60, previousReps: 10 }],
+  ['Штанга']
+);
+const single12 = engine(
+  [{ weight: '12', reps: '10', rpe: 10, previousWeight: 12, previousReps: 10 }],
+  ['Гантели']
+);
+
+check(
+  'подпись одиночного отказа: дробное число через запятую',
+  single12.reason.ruText.includes('1,25 кг') && !/\d\.\d/.test(single12.reason.ruText),
+  single12.reason.ruText
+);
+const rpeLine = explainProgression(single60, 'kg').find((i) => i.label === 'RPE')?.value ?? '';
+check(
+  'сигнал RPE в «Почему?» не печатает null (прошлый раз без RPE)',
+  rpeLine.startsWith('10 —') && !rpeLine.includes('null'),
+  rpeLine
+);
+check(
+  'вывод для одиночного отказа: вес не меняется, повтор — нижняя граница',
+  single60.suggestedWeight === 60 && single60.suggestedReps === 8,
+  `${single60.suggestedWeight} × ${single60.suggestedReps}`
 );
 
 console.log(`\nИтог: ${passed} из ${passed + failed} проверок зелёные`);

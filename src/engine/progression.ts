@@ -640,7 +640,7 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
         suggestedReps: targetRange ? targetRange.min : null,
         reason: {
           code: 'MAX_EFFORT',
-          ruText: `Отказ (RPE 10) — снижаем на ${round2(reduction)} кг`,
+          ruText: `Отказ (RPE 10) — снижаем на ${numText(reduction)} кг`,
           factors,
         },
       };
@@ -651,7 +651,7 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
       suggestedReps: targetRange ? targetRange.min : null,
       reason: {
         code: 'MAX_EFFORT_SINGLE',
-        ruText: `Отказ (RPE 10) в одном подходе — вес держим; повторится — снизим на ${round2(
+        ruText: `Отказ (RPE 10) в одном подходе — вес держим; повторится — снизим на ${numText(
           reduction
         )} кг`,
         factors,
@@ -801,6 +801,11 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+/** Число внутри русской подписи: 1.25 → «1,25», иначе фраза читается как опечатка. */
+function numText(n: number): string {
+  return String(round2(n)).replace('.', ',');
+}
 // ============================================================================
 // ENG-2: STRUCTURED REASONS (объяснения «Почему?»)
 // ============================================================================
@@ -872,7 +877,9 @@ export function explainProgression(
       items.push({
         kind: 'signal',
         label: 'RPE',
-        value: `${lastRpe} — полный отказ (0 в запасе)`,
+        // Единица взята из условия ветки: lastRpe — это RPE «прошлого раза», и
+        // без записи прошлого раза подпись печатала «null».
+        value: '10 — полный отказ (0 в запасе)',
         emphasis: 'warning',
       });
       break;
@@ -881,7 +888,7 @@ export function explainProgression(
       items.push({
         kind: 'signal',
         label: 'RPE',
-        value: `${lastRpe} — отказ в одном подходе, не повторялся`,
+        value: '10 — отказ в одном подходе, не повторялся',
         emphasis: 'warning',
       });
       break;
