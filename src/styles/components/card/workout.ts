@@ -107,6 +107,14 @@ export const createWorkoutCardStyles = (colors: any) =>
       minWidth: 0,
       padding: 8,
       borderRadius: BORDER_RADIUS.md,
+      // SG-PLATE: подложка пустой ячейки (`surfaceSecondary`) отличается от
+      // карточки в 1,04–1,41 раза — глазами это «рамка пропала». Во всех тёмных
+      // палитрах `border` буквально равен `surfaceSecondary`, поэтому единственная
+      // гарантированно видимая кромка — `textTertiary` (тот же токен, что у
+      // плейсхолдера, заложен под 4.6:1). WCAG 1.4.11 требует ≥3:1 для границы
+      // поля ввода.
+      borderWidth: 1,
+      borderColor: colors.textTertiary,
       alignItems: 'center',
     } as ViewStyle,
     setInput: {
