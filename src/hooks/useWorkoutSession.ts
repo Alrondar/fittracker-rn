@@ -21,8 +21,6 @@ import {
   AlternativeExercise,
 } from '../types/workout';
 import {
-  advanceProgramProgress,
-  type ProgramProgressAdvance,
   replaceExerciseInProgram,
   addExerciseToProgramBelow,
   NEW_PROGRAM_EXERCISE_DEFAULTS,
@@ -46,6 +44,8 @@ import {
   addWorkoutExerciseBelow,
   removeWorkoutExercise,
   clearWorkoutLogs,
+  finishWorkoutAndAdvance,
+  type WorkoutFinishResult,
 } from '../services/workoutService';
 import {
   buildExercisesData,
@@ -1206,7 +1206,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // ============================================================================
   const saveWorkout = useCallback(async () => {
     // BUG-6 (аудит 28.09): re-entry guard — повторный тап «Завершить» (pill +
-    // панель в шапке) во время сети вызывал advanceProgramProgress дважды.
+    // панель в шапке) во время сети повторял финиш целиком.
     if (isFinishingRef.current) return;
     if (!isWorkoutActive && currentTimeRef.current === 0) {
       feedback.alert(
@@ -1226,7 +1226,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     {
       {
         // BUG-6 (аудит 28.09): re-entry guard — повторный «Завершить» (пилюля
-        // или панель) во время сети повторял бы advanceProgramProgress.
+        // или панель) во время сети повторял бы финиш целиком.
         if (isFinishingRef.current) return;
         setSaving(true);
         setIsFinishing(true);
@@ -1253,15 +1253,6 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             return;
           }
 
-          try {
-            await updateWorkout(workoutId, {
-              finished_at: new Date().toISOString(),
-              duration_seconds: durationSeconds,
-            });
-          } catch (error) {
-            throw error;
-          }
-
           let totalLogs = 0;
           exercisesRef.current.forEach((ex) => {
             ex.sets.forEach((s) => {
@@ -1269,85 +1260,91 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             });
           });
 
+          if (!userId) throw new Error('Нет активной сессии');
+
           // BUG-1 (аудит 28.09): финиш меняет дашборд/прогресс/историю/мышцы/
           // недельку/прогноз — раньше не инвалидировалось ничего, экраны врали
           // до staleTime (5 мин).
-          if (userId) invalidateWorkoutAffectedCaches(queryClient, userId);
+          invalidateWorkoutAffectedCaches(queryClient, userId);
 
-          if (programId && userId) {
-            // BUG-6 (18.10): сдвиг делает база, а холостые статусы
-            // ('already_advanced', 'pointer_stale', 'no_workout', 'not_active')
-            // означают «указатель не тронут: этот день уже учтён». До правки
-            // такой же вызов молча перескакивал ещё один тренировочный день.
-            const reportProgress = (progress: ProgramProgressAdvance, withTime: boolean) => {
-              if (progress.status === 'completed') {
-                feedback.alert(
-                  'Программа завершена!',
-                  'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
-                );
-                router.replace('/(tabs)/programs');
-                return;
-              }
-
-              const pointerLine =
-                progress.status === 'advanced'
-                  ? `Следующий день: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}`
-                  : `Прогресс не менялся: этот день уже учтён. Сейчас: Фаза ${progress.phase} · Неделя ${progress.week} · День ${progress.day}`;
-
-              feedback.alert(
-                'Тренировка завершена!',
-                withTime
-                  ? `Время: ${formattedTime}\n${pointerLine}\n\nСохранено подходов: ${totalLogs}`
-                  : pointerLine
-              );
-              router.replace('/(tabs)/workouts');
-            };
-
-            try {
-              const progress = await advanceProgramProgress(userId, programId, workoutId);
+          // ADV-atomic (18.10): закрытие тренировки и сдвиг указателя — одна
+          // транзакция на базе. Холостые статусы ('already_advanced',
+          // 'pointer_stale', 'not_active') означают «указатель не тронут: этот
+          // день уже учтён». До переноса в БД такой же вызов молча
+          // перескакивал ещё один тренировочный день.
+          const reportFinish = (result: WorkoutFinishResult) => {
+            if (result.status === 'finished_no_program') {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              reportProgress(progress, true);
-            } catch (progressError: any) {
-              console.error('Ошибка обновления прогресса:', progressError);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-
-              const retryAdvance = async () => {
-                try {
-                  const progress = await advanceProgramProgress(userId!, programId!, workoutId);
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  reportProgress(progress, false);
-                } catch (e: any) {
-                  feedback.alert(
-                    'Не удалось продвинуть прогресс',
-                    e?.message ||
-                      'Прогресс можно продвинуть автоматически при следующей тренировке.'
-                  );
-                }
-              };
-
               feedback.alert(
-                'Тренировка сохранена',
-                `Время: ${formattedTime}\nСохранено подходов: ${totalLogs}\n\n` +
-                  `Не удалось обновить прогресс программы: ${progressError?.message || 'неизвестная ошибка'}.\n\nПовторить обновление прогресса сейчас?`,
-                [
-                  {
-                    text: 'Позже',
-                    style: 'cancel',
-                    onPress: () => router.replace('/(tabs)/workouts'),
-                  },
-                  { text: 'Повторить', onPress: retryAdvance },
-                ]
+                'Успех',
+                `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
               );
+              // FIX-ROUTES: вкладки history больше нет (UX-11) — RecentWorkouts
+              // живёт в прогресс-хабе.
+              router.replace('/(tabs)/progress');
+              return;
             }
-          } else {
+
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+            if (result.status === 'completed') {
+              feedback.alert(
+                'Программа завершена!',
+                'Поздравляем! Ты прошёл всю программу. Выбери новую в разделе «Программы».'
+              );
+              router.replace('/(tabs)/programs');
+              return;
+            }
+
+            const pointerLine =
+              result.status === 'advanced'
+                ? `Следующий день: Фаза ${result.phase} · Неделя ${result.week} · День ${result.day}`
+                : `Прогресс не менялся: этот день уже учтён. Сейчас: Фаза ${result.phase} · Неделя ${result.week} · День ${result.day}`;
+
             feedback.alert(
-              'Успех',
-              `Тренировка завершена!\nВремя: ${formattedTime}\nСохранено подходов: ${totalLogs}`
+              'Тренировка завершена!',
+              `Время: ${formattedTime}\n${pointerLine}\n\nСохранено подходов: ${totalLogs}`
             );
-            // FIX-ROUTES: вкладки history больше нет (UX-11) — RecentWorkouts
-            // живёт в прогресс-хабе.
-            router.replace('/(tabs)/progress');
+            router.replace('/(tabs)/workouts');
+          };
+
+          // Один запрос = вся запись целиком: повтор (кнопка «Повторить», второй
+          // тап «Завершить») безопасен — база не переставляет первую метку
+          // финиша и не двигает указатель второй раз.
+          const doFinish = async () => {
+            const result = await finishWorkoutAndAdvance(
+              userId,
+              workoutId,
+              new Date().toISOString(),
+              durationSeconds
+            );
+            reportFinish(result);
+          };
+
+          try {
+            await doFinish();
+          } catch (finishError: any) {
+            console.error('[useWorkoutSession] finishWorkoutAndAdvance:', finishError);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            // Раз training-часть не записана, позволяем повторить «Завершить».
+            setIsFinishing(false);
+            isFinishingRef.current = false;
+            feedback.alert(
+              'Не удалось завершить тренировку',
+              `${mapError(finishError)}\n\nПодходы сохранены, тренировка ещё не помечена завершённой.`,
+              [
+                { text: 'Позже', style: 'cancel' },
+                {
+                  text: 'Повторить',
+                  onPress: () => {
+                    void doFinish().catch((retryError: any) => {
+                      console.error('[useWorkoutSession] finish retry:', retryError);
+                      feedback.alert('Ошибка', mapError(retryError));
+                    });
+                  },
+                },
+              ]
+            );
           }
         } catch (error: any) {
           console.error('[useWorkoutSession] saveWorkout:', error);
@@ -1361,7 +1358,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         }
       }
     }
-  }, [isWorkoutActive, workoutId, programId, userId, router, joinFlush, queryClient]);
+  }, [isWorkoutActive, workoutId, userId, router, joinFlush, queryClient]);
 
   return {
     workoutName,

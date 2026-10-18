@@ -436,43 +436,6 @@ export async function completeProgram(userProgramId: string): Promise<void> {
   if (error) throw error;
 }
 
-// BUG-6 (18.10.2026): сдвиг прогресс-указателя перенесён в Postgres —
-// supabase/migrations/20261018090000_advance_program_progress_idempotent.sql.
-// Клиент больше не считает «+1 день»: он передаёт тренировку, ради которой
-// двигают прогресс, и база сверяет её тройку с указателем. Поэтому повтор
-// вызова (ретрай после сетевой ошибки, второе устройство, возврат в
-// просроченную сессию) возвращает холостой статус, а не перескоки через день.
-export type AdvanceStatus =
-  'advanced' | 'completed' | 'already_advanced' | 'pointer_stale' | 'not_active' | 'no_workout';
-
-export interface ProgramProgressAdvance {
-  status: AdvanceStatus;
-  phase: number;
-  week: number;
-  day: number;
-}
-
-export async function advanceProgramProgress(
-  userId: string,
-  programId: string,
-  workoutId: string
-): Promise<ProgramProgressAdvance> {
-  const { data, error } = await supabase.rpc('advance_program_progress', {
-    p_user_id: userId,
-    p_program_id: programId,
-    p_workout_id: workoutId,
-  });
-  if (error) throw error;
-
-  const row = (data ?? {}) as unknown as Record<string, unknown>;
-  return {
-    status: (typeof row.status === 'string' ? row.status : 'not_active') as AdvanceStatus,
-    phase: Number(row.phase ?? 1),
-    week: Number(row.week ?? 1),
-    day: Number(row.day ?? 1),
-  };
-}
-
 // ============================================================================
 // КОПИРОВАНИЕ ГОТОВОЙ ПРОГРАММЫ (PROG-1)
 // ============================================================================

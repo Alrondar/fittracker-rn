@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { finishWorkoutAndAdvance } from './workoutService';
 
 export interface ActiveProgram {
   programId: string;
@@ -115,28 +116,12 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
 
 /**
  * UX-5 Feature 2: Пропустить тренировку программы.
- * Sequential: 1) update workouts (finished_at + skipped_at) → 2) advanceProgramProgress.
- * Паттерн saveWorkout: sequential + retry при ошибке advance.
- * BUG-6 (18.10): сдвиг получает id тренировки и сверяет её тройку с указателем,
- * поэтому повторный вызов (кнопка «Повторить» на экране тренировок) холостой.
+ * ADV-atomic (18.10): раньше — два запроса (запись finished_at/skipped_at,
+ * затем сдвиг указателя). Теперь один RPC пишет обе метки и двигает указатель
+ * в одной транзакции по CAS-правилу, поэтому «Повторить» на экране тренировок
+ * не может пропустить второй день. programId больше не нужен: база берёт
+ * программу и тройку дня из самой строки тренировки.
  */
-export async function skipWorkout(
-  workoutId: string,
-  userId: string,
-  programId: string
-): Promise<void> {
-  const { error: updateError } = await supabase
-    .from('workouts')
-    .update({
-      finished_at: new Date().toISOString(),
-      skipped_at: new Date().toISOString(),
-    })
-    .eq('id', workoutId)
-    .eq('user_id', userId);
-
-  if (updateError) throw updateError;
-
-  // advanceProgramProgress — из programsService (dynamic import для избежания circular dependency)
-  const { advanceProgramProgress } = await import('./programsService');
-  await advanceProgramProgress(userId, programId, workoutId);
+export async function skipWorkout(workoutId: string, userId: string): Promise<void> {
+  await finishWorkoutAndAdvance(userId, workoutId, new Date().toISOString(), null, true);
 }
