@@ -53,6 +53,7 @@ import {
   weightToDisplay,
   weightFromDisplay,
   weightPlaceholder,
+  lbToKg,
 } from '../../hooks/useUnitPreferences';
 import { SetFeedbackChip } from './SetFeedbackControl';
 import { RpeEditor } from './RpeEditor';
@@ -551,6 +552,9 @@ export const SetsGrid = memo(function SetsGrid({
   // FEAT-1.5: Plate Math UI
   const { getBarWeight } = useBarbellSettings();
   const barWeight = getBarWeight(equipment, unit);
+  // PLATE-SNAP: стабильный ключ снаряжения для мемо рекомендации (массив пропсов
+  // пересоздаётся на каждый рендер).
+  const equipmentKey = Array.isArray(equipment) ? equipment.join('|') : String(equipment ?? '');
   // COACH-3: fire-and-forget запись feedback (ошибки глотаются тихо).
   const { submitFeedback } = useRecommendationFeedback();
   // UX-7: настройка частоты запроса RPE
@@ -853,6 +857,11 @@ export const SetsGrid = memo(function SetsGrid({
       targetSetIndex: progressionSetIndex ?? undefined,
       targetRpe,
       policy,
+      // PLATE-SNAP: движок возвращает «что повесить», а не абстрактное число —
+      // без снаряжения и веса грифа наружу уходило «12,72 кг». Список передаётся
+      // из стабильного ключа, чтобы мемо не пересчитывалось на каждый рендер.
+      equipment: equipmentKey ? equipmentKey.split('|') : undefined,
+      barWeightKg: unit === 'kg' ? barWeight : lbToKg(barWeight),
       ...(progressionContext ?? {}),
     });
     const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
@@ -867,6 +876,12 @@ export const SetsGrid = memo(function SetsGrid({
     progressionSetIndex,
     policy,
     progressionContext,
+    // PLATE-SNAP: список снаряжения приходит из пропсов новым массивом на
+    // каждый рендер родителя, поэтому в зависимости — стабильный ключ, а не сам
+    // массив (иначе мемо пересчитывался бы на каждый ре-рендер карточки).
+    equipmentKey,
+    unit,
+    barWeight,
   ]);
 
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
