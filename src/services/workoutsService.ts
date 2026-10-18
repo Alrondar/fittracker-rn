@@ -117,6 +117,8 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
  * UX-5 Feature 2: Пропустить тренировку программы.
  * Sequential: 1) update workouts (finished_at + skipped_at) → 2) advanceProgramProgress.
  * Паттерн saveWorkout: sequential + retry при ошибке advance.
+ * BUG-6 (18.10): сдвиг получает id тренировки и сверяет её тройку с указателем,
+ * поэтому повторный вызов (кнопка «Повторить» на экране тренировок) холостой.
  */
 export async function skipWorkout(
   workoutId: string,
@@ -136,5 +138,5 @@ export async function skipWorkout(
 
   // advanceProgramProgress — из programsService (dynamic import для избежания circular dependency)
   const { advanceProgramProgress } = await import('./programsService');
-  await advanceProgramProgress(userId, programId);
+  await advanceProgramProgress(userId, programId, workoutId);
 }

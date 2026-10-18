@@ -428,18 +428,6 @@ export async function getActiveUserProgram(): Promise<UserProgram | null> {
   return data;
 }
 
-export async function updateProgramProgress(
-  userProgramId: string,
-  week: number,
-  day: number
-): Promise<void> {
-  const { error } = await supabase
-    .from('user_programs')
-    .update({ current_week: week, current_day: day })
-    .eq('id', userProgramId);
-  if (error) throw error;
-}
-
 export async function completeProgram(userProgramId: string): Promise<void> {
   const { error } = await supabase
     .from('user_programs')
@@ -448,103 +436,41 @@ export async function completeProgram(userProgramId: string): Promise<void> {
   if (error) throw error;
 }
 
+// BUG-6 (18.10.2026): сдвиг прогресс-указателя перенесён в Postgres —
+// supabase/migrations/20261018090000_advance_program_progress_idempotent.sql.
+// Клиент больше не считает «+1 день»: он передаёт тренировку, ради которой
+// двигают прогресс, и база сверяет её тройку с указателем. Поэтому повтор
+// вызова (ретрай после сетевой ошибки, второе устройство, возврат в
+// просроченную сессию) возвращает холостой статус, а не перескоки через день.
+export type AdvanceStatus =
+  'advanced' | 'completed' | 'already_advanced' | 'pointer_stale' | 'not_active' | 'no_workout';
+
+export interface ProgramProgressAdvance {
+  status: AdvanceStatus;
+  phase: number;
+  week: number;
+  day: number;
+}
+
 export async function advanceProgramProgress(
   userId: string,
-  programId: string
-): Promise<{ phase: number; week: number; day: number; isCompleted: boolean }> {
-  const { data: current, error: fetchError } = await supabase
-    .from('user_programs')
-    .select('id, current_phase, current_week, current_day')
-    .eq('user_id', userId)
-    .eq('program_id', programId)
-    .eq('is_active', true)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .single();
-  if (fetchError) {
-    if (fetchError.code === 'PGRST116') throw new Error('Активная программа не найдена');
-    throw fetchError;
-  }
+  programId: string,
+  workoutId: string
+): Promise<ProgramProgressAdvance> {
+  const { data, error } = await supabase.rpc('advance_program_progress', {
+    p_user_id: userId,
+    p_program_id: programId,
+    p_workout_id: workoutId,
+  });
+  if (error) throw error;
 
-  const { data: phases } = await supabase
-    .from('program_phases')
-    .select('phase_number, weeks_count, program_days ( week_number, day_number )')
-    .eq('program_id', programId)
-    .order('phase_number', { ascending: true });
-
-  // Типы a/b/p/d выводятся из supabase-join; any больше не нужен.
-  const orderedPhases = (phases || []).sort((a, b) => a.phase_number - b.phase_number);
-  const curPhase = current.current_phase ?? 1;
-  const curWeek = current.current_week ?? 1;
-  const curDay = current.current_day ?? 1;
-
-  if (orderedPhases.length === 0) {
-    const { count } = await supabase
-      .from('program_days')
-      .select('*', { count: 'exact', head: true })
-      .eq('program_id', programId);
-    const totalDays = count || 5;
-    const { data: prog } = await supabase
-      .from('programs')
-      .select('duration')
-      .eq('id', programId)
-      .single();
-    const actualWeeks = prog?.duration || 8;
-    let newWeek = curWeek;
-    let newDay = curDay + 1;
-    if (newDay > totalDays) {
-      newDay = 1;
-      newWeek += 1;
-      if (newWeek > actualWeeks) {
-        await supabase
-          .from('user_programs')
-          .update({ is_active: false, completed_at: new Date().toISOString() })
-          .eq('id', current.id);
-        return { phase: 1, week: actualWeeks, day: totalDays, isCompleted: true };
-      }
-    }
-    await supabase
-      .from('user_programs')
-      .update({ current_week: newWeek, current_day: newDay })
-      .eq('id', current.id);
-    return { phase: 1, week: newWeek, day: newDay, isCompleted: false };
-  }
-
-  const phase = orderedPhases.find((p) => p.phase_number === curPhase) || orderedPhases[0];
-  const daysFor = (week: number): number => {
-    const all = phase.program_days || [];
-    const inWeek = all.filter((d) => d.week_number === week);
-    if (inWeek.length > 0) return inWeek.length;
-    return all.filter((d) => d.week_number === 1).length || 1;
+  const row = (data ?? {}) as unknown as Record<string, unknown>;
+  return {
+    status: (typeof row.status === 'string' ? row.status : 'not_active') as AdvanceStatus,
+    phase: Number(row.phase ?? 1),
+    week: Number(row.week ?? 1),
+    day: Number(row.day ?? 1),
   };
-  const totalDaysThisWeek = daysFor(curWeek);
-
-  let newPhase = curPhase;
-  let newWeek = curWeek;
-  let newDay = curDay + 1;
-  if (newDay > totalDaysThisWeek) {
-    newDay = 1;
-    newWeek = curWeek + 1;
-    if (newWeek > (phase.weeks_count || 1)) {
-      newWeek = 1;
-      newPhase = curPhase + 1;
-      if (!orderedPhases.some((p) => p.phase_number === newPhase)) {
-        await supabase
-          .from('user_programs')
-          .update({ is_active: false, completed_at: new Date().toISOString() })
-          .eq('id', current.id);
-        return { phase: curPhase, week: curWeek, day: totalDaysThisWeek, isCompleted: true };
-      }
-    }
-  }
-
-  const { error: updateError } = await supabase
-    .from('user_programs')
-    .update({ current_phase: newPhase, current_week: newWeek, current_day: newDay })
-    .eq('id', current.id);
-  if (updateError) throw updateError;
-
-  return { phase: newPhase, week: newWeek, day: newDay, isCompleted: false };
 }
 
 // ============================================================================

@@ -1222,6 +1222,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      // BUG-6 (миграция 20261018090000). Внимание: запись добавлена вручную по
+      // формату генератора (CLI-линковки проекта нет) — при первой же полной
+      // регенерации сверить с генератором.
+      advance_program_progress: {
+        Args: { p_program_id: string; p_user_id: string; p_workout_id: string }
+        Returns: Json
+      }
       copy_program_for_user: {
         Args: { p_program_id: string; p_user_id: string }
         Returns: string
