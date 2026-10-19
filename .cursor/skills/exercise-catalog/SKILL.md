@@ -88,7 +88,7 @@ select e.id, e.name, e.difficulty, eq_agg.names
 
 - `exercise_relationships(exercise_id → related_exercise_id, relation_type ∈ `variation`|`alternative`|`regression`|`progression`, confidence, status ∈ `suggested`|`approved`). На срезе 3558 рёбер, из них `approved` всего 31 — почти всё `suggested`. Приложение читает **исходящие** рёбра со `status in ('approved','suggested')` (`src/services/exerciseReferenceService.ts`), поэтому сид рёбер заводят в обе стороны. Вывод для подбора: наличие approved-ребра — редкость, замену считать по скорингу `src/engine/alternatives.ts` (совпадение мышц, паттерн, снаряжение, боль/травма, `regression` как приоритет при ограничении), а не по «есть ли ссылка».
 - `injury_exercise_warnings(body_part, muscle_group, exercise_id, injury_type, level ∈ avoid|caution, recommendation)`. На срезе 282 строки, 8 частей тела, 259 из них `avoid`. Резолвится **по `exercise_id`**, поэтому `exercise_id IS NULL` в программе = молча выпавшее противопоказание (и не работающие warmup/alternatives).
-- `user_injuries` — на срезе прода **0 строк**: травматож конкретного пользователя из БД не берётся, его нужно спросить (или попросить завести в профиле). Чтение в приложении: `injuriesService.getExerciseContraindications`, хук `useInjuryWarnings`, движок `progression.ts:applySafetyPrecedence`.
+- `user_injuries` — на срезе прода **0 строк**: травматож конкретного пользователя из БД не берётся, его нужно спросить (или попросить завести в профиле). Чтение в приложении: `injuriesService.getExerciseContraindications`, хук `useInjuryWarnings`, движок `progression/overrides.ts:applySafetyPrecedence`.
 
 ## Запрещено
 

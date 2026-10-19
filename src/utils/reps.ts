@@ -2,7 +2,7 @@
 //
 // Единый способ получить количество повторений из лога подхода с учётом
 // unilateral-упражнений (reps_left/reps_right вместо общего reps).
-// Согласовано с engine/progression.ts getReps: рабочий объём unilateral-сета —
+// Согласовано с engine/progression/sets.ts getReps: рабочий объём unilateral-сета —
 // это сумма повторений на левую и правую стороны (L+R), а не максимум.
 //
 // Приоритет: общий reps (если заполнен) → иначе сумма reps_left + reps_right.
