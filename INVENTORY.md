@@ -90,7 +90,8 @@ Main components:
 `SetsGrid.tsx`
 `RecommendationCard.tsx` — COACH-1 recommendation card: suggested weight × reps, Принять/Изменить, Почему?; presentation-only, управляется `SetsGrid`
 `SetFeedbackControl.tsx`
-`RestTimer.tsx`
+`RestTimerContext.tsx` — провайдер авто-отдыха + синглтон `bindRestActions`/`getRestActions` (его читают из `useWorkoutSession.ts`, поэтому перенос файла меняет не только UI)
+`RestDial.tsx` — циферблат отдыха (L2)
 `WorkoutTimer`
 `WorkoutTabs`
 `UnitToggle`
@@ -114,15 +115,14 @@ Main components:
 `src/hooks/useExerciseReplaceSearch.ts` (SEARCH-ALT) — отдельный хук, а не `useExercises`, потому что `useExercises` на монтировании сразу тянет 40 строк без запроса, а здесь запрос имеет смысл только при открытой строке и ≥2 символах либо активном фильтре; одна страница 60 строк вместо бесконечной прокрутки; по строкам выдачи считается «нельзя при активной травме» — не скрываем, предупреждаем (вердикт владельца 16.10).
 `ExerciseReplaceSearch.tsx` — SEARCH-ALT (16.10): поиск замены по всей базе на экране тренировки. Два экспорта намеренно разделены: `ExerciseReplaceSearchControls` (приклеен над полосой слайдеров, не скроллится по горизонтали: строка `ExerciseSearchBar` + `MuscleGroupFilters` + шкаф `EquipmentSheet` в нативном Modal) и `ExerciseReplaceSearchPanel` (выдача — ПОСЛЕДНИЙ ребёнок блока, чтобы лежать поверх карточек: на Android следующий sibling рисуется поверх предыдущего, `zIndex` между sibling'ами ненадёжен). Состояние поиска живёт в `ExerciseSlider` (`useExerciseReplaceSearch`): карточка, выбранная из поиска, занимает ПЕРВЫЙ слайд замены (прежние уезжают вправо), не пишется в БД и сбрасывается при выходе с экрана; «Заменить» в ней = тот же путь, что у движковых замен (`onRequestReplace(index, id, preset)`). Панель выдачи не выше основной карточки (`maxHeight = mainHeight`), иначе оверлей вылезает за границы ячейки FlatList и на Android теряет тапы. Грабли: после выбора выдача прячется (иначе закрыла бы результат тапа); `Modal` внутри ячейки списка — кандидат на проверку на устройстве, при артефактах состояние листа переносится в корень экрана (паттерн PainSheet/FX-1)
 `src/hooks/useExerciseReplaceSearch.ts` — SEARCH-ALT: отдельный хук, а не `useExercises`, потому что `useExercises` на монтировании сразу тянет 40 строк без запроса, а здесь запрос имеет смысл только при открытой строке и ≥2 символах (или активном фильтре); одна страница на 60 строк; по строкам выдачи считается «нельзя при активной травме» (не скрываем, предупреждаем — вердикт владельца 16.10)
-`RpeOverlay.tsx` — onboarding-overlay для RPE над таблицей (UX-16 D4)
+`RpeEditor.tsx` — редактор RPE внутри строки сетов (UX-RPE-1 26.09: тёмная карточка поверх таблицы `RpeOverlay` удалена, инлайн + авто-коммит)
 `PlateMathRow.tsx` — компактная строка с иконкой и разборкой веса штанги (FEAT-1.5, Variant B: Balanced)
 `WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle; WT-2: единый pill-таймер (idle=«Начать»/tap старт, running=время+панель, paused=тап продолжить) + кнопка «Завершить» (confirm-лист), отдельной кнопки «Начать» больше нет
 `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
 Main hooks/services:
-`useWorkoutSession.ts` — thin wrapper, композиция модулей ниже
+`useWorkoutSession.ts` — 1399 строк, НЕ тонкий wrapper: в нём ещё живут flush, persist-мутации, финиш, замена и pain-состояния; наруу торчат 3 ключа, которые никто не читает (`setIsWorkoutActive`, `currentTimeRef`, `alternativesCache`). Нарезка — очередь CTR-3, волна 3
 `workout/useWorkoutSession.types.ts` — внутренние типы join-структур
 `workout/useWorkoutSession.mapper.ts` — чистые функции маппинга
-`workout/useWorkoutSession.rest.ts` — rest timer логика
 `workout/useWorkoutSession.loader.ts` — загрузка workout + alternatives
 `useWorkoutDisplayMode.ts` — display mode preference (AsyncStorage persist)
 `useInjuryWarnings.ts`
