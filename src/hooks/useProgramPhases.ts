@@ -243,13 +243,6 @@ export function useProgramPhases({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const getDaysForPhase = (phaseId: string): ProgramDay[] => {
-    if (!editedProgram || !editedProgram.days) return [];
-    return editedProgram.days
-      .filter((d) => d.phase_id === phaseId)
-      .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
-  };
-
   const onDayDragEnd = (data: ProgramDay[], phaseId?: string) => {
     if (!editedProgram || !editedProgram.days) return;
     if (phaseId) {
@@ -275,7 +268,6 @@ export function useProgramPhases({
     movePhase,
     addDayToPhase,
     removeDay,
-    getDaysForPhase,
     copyTemplateToWeek,
     resetWeekToTemplate,
     addDayToPhaseWeek,
