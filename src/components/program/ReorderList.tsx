@@ -63,6 +63,13 @@ function WebReorderList<T>({ data, keyExtractor, renderItem, onDragEnd }: Reorde
 
   const startDrag = useCallback((key: string) => setDragKey(key), []);
 
+  // FZ-5: `drag`/`getIndex` выдаются строке один раз на ключ. Без этого каждая
+  // перерисовка списка создавала новой стрелки, и React.memo в карточках
+  // никогда не «скажет нет» — мемоизация строк редактора на вебе не работала.
+  // Индекс читается из map в момент вызова, поэтому getIndex остаётся свежим.
+  const rowApiRef = useRef(new Map<string, { drag: () => void; getIndex: () => number }>());
+  const indexByKeyRef = useRef(new Map<string, number>());
+
   useEffect(() => {
     if (dragKey === null) return undefined;
 
@@ -105,6 +112,15 @@ function WebReorderList<T>({ data, keyExtractor, renderItem, onDragEnd }: Reorde
     <View>
       {data.map((item, index) => {
         const key = keyExtractor(item, index);
+        indexByKeyRef.current.set(key, index);
+        let rowApi = rowApiRef.current.get(key);
+        if (!rowApi) {
+          rowApi = {
+            drag: () => startDrag(key),
+            getIndex: () => indexByKeyRef.current.get(key) ?? 0,
+          };
+          rowApiRef.current.set(key, rowApi);
+        }
         return (
           <View
             key={key}
@@ -116,9 +132,9 @@ function WebReorderList<T>({ data, keyExtractor, renderItem, onDragEnd }: Reorde
             {renderItem({
               item,
               index,
-              drag: () => startDrag(key),
+              drag: rowApi.drag,
               isActive: dragKey === key,
-              getIndex: () => index,
+              getIndex: rowApi.getIndex,
             })}
           </View>
         );
