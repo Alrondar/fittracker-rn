@@ -14,6 +14,8 @@ import { WorkoutForecastSheet } from '../../src/components/dashboard/WorkoutFore
 import type { WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { LoadingChip } from '../../src/components/ui/LoadingChip';
+import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner } from '../../src/components/ui/StaleBanner';
 import { mapError } from '../../src/utils/errorMapper';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -36,7 +38,7 @@ export default function WorkoutsScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-  const { data, isPending, isFetching, refetch, skip } = useWorkouts(userId);
+  const { data, isPending, isFetching, isError, refetch, skip } = useWorkouts(userId);
   const activeProgram = data?.activeProgram ?? null;
   const sections = useMemo(() => data?.sections ?? [], [data]);
   const progress = useMemo(() => data?.progress ?? { completed: 0, total: 0 }, [data]);
@@ -299,8 +301,26 @@ export default function WorkoutsScreen() {
           {/* PERF-11: явный признак идущей загрузки поверх макета. */}
           <LoadingChip />
         </>
+      ) : isError && !data ? (
+        // EDGE-1 (аудит 06.10): при сетевом/RLS-сбое экран печатал «Нет тренировок.
+        // Активируйте программу» — правдоподобную ложь вместо повтора.
+        <StateBlock
+          tone="error"
+          title="Не удалось загрузить тренировки"
+          description="Проверьте соединение — обычно помогает повтор. Твои тренировки никуда не делись."
+          actionLabel="Повторить"
+          onAction={onRefresh}
+        />
       ) : (
         <>
+          {/* EDGE-10: повтор не дошёл, но кэш живые — данные остаются на экране. */}
+          {isError && (
+            <StaleBanner
+              onRetry={onRefresh}
+              style={{ marginHorizontal: SPACING.lg, marginBottom: SPACING.md }}
+            />
+          )}
+
           {activeProgram && (
             <ActiveProgramHeaderCard activeProgram={activeProgram} progress={progress} />
           )}

@@ -30,6 +30,8 @@ import { AppCard } from '../../src/components/ui/AppCard';
 import { AppBadge } from '../../src/components/ui/AppBadge';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { ListSkeleton } from '../../src/components/Skeleton';
+import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner } from '../../src/components/ui/StaleBanner';
 import { InjuryFormSheet } from '../../src/components/profile/InjuryFormSheet';
 import { InjuryBodyMap } from '../../src/components/profile/InjuryBodyMap';
 import {
@@ -160,6 +162,8 @@ export default function InjuriesScreen() {
   const {
     injuries,
     loading,
+    isError,
+    loaded,
     refetch,
     createInjury,
     updateInjury,
@@ -287,6 +291,38 @@ export default function InjuriesScreen() {
     );
   }
 
+  // EDGE-5 (аудит 06.10): сбой загрузки выдавал «У вас нет активных травм» — safety-обманка,
+  // вместе со списком молча пропадали предупреждения на экране тренировки.
+  // Отказ показываем только когда ответа базы не было вовсе (`!loaded`): пустой список
+  // из кэша — честное «травм нет», а не сбой.
+  if (isError && !loaded) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View
+          style={[
+            commonStyles.navHeader,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}
+        >
+          <PressableScale onPress={() => router.back()} style={commonStyles.backButton}>
+            <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
+          </PressableScale>
+          <Text style={[typography.h4, { color: colors.textPrimary }]}>Травмы и ограничения</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <StateBlock
+            tone="error"
+            title="Не удалось загрузить список травм"
+            description="Пока список не загружен, предупреждения по травмам в тренировке не показываются. Проверьте соединение — обычно помогает повтор."
+            actionLabel="Повторить"
+            onAction={() => refetch()}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <View
@@ -303,6 +339,9 @@ export default function InjuriesScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
+        {/* EDGE-10: список в кэше живые, а повтор не дошёл — данные не прячем. */}
+        {isError && <StaleBanner onRetry={() => refetch()} style={{ marginBottom: SPACING.md }} />}
+
         <InjuryBodyMap
           injuries={injuries}
           selectedZones={selectedZones}

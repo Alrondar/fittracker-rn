@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Award, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import { Award, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { useStore } from '../../src/store/useStore';
@@ -26,7 +26,8 @@ import { SPACING, BORDER_RADIUS, withAlpha } from '../../src/constants/theme';
 import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppCard } from '../../src/components/ui/AppCard';
-import { AppButton } from '../../src/components/ui/AppButton';
+import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner } from '../../src/components/ui/StaleBanner';
 import { ProgressHero } from '../../src/components/progress/ProgressHero';
 import { ProgressStats } from '../../src/components/progress/ProgressStats';
 import { WeeklyReviewSection } from '../../src/components/progress/WeeklyReviewSection';
@@ -170,6 +171,10 @@ export default function ProgressScreen() {
   const tabReady = useDeferredTabContent();
   const showLoadingSkeleton = useMinPending(isLoading || !tabReady);
   const isEmpty = flatWorkouts.length === 0 && (progressData?.totalWorkouts ?? 0) === 0;
+  // EDGE-10 (аудит 06.10): полный отказ показываем только когда данных нет вовсе;
+  // неудачный рефетч при живом кэше = устаревшие данные + явный «Обновить».
+  const noProgressData = !historyData || !progressData;
+  const isStale = (isHistoryError || isProgressError) && !noProgressData;
 
   if (!userId) {
     return (
@@ -188,40 +193,20 @@ export default function ProgressScreen() {
     );
   }
 
-  if (isHistoryError || isProgressError) {
+  if ((isHistoryError || isProgressError) && noProgressData) {
     return (
       <SafeAreaView
         style={[commonStyles.container, { backgroundColor: colors.background }]}
         edges={['top']}
       >
-        <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl }}
-        >
-          <AlertTriangle size={48} color={colors.warning} strokeWidth={1.5} />
-          <Text
-            style={[
-              typography.h4,
-              { color: colors.textPrimary, marginTop: SPACING.md, textAlign: 'center' },
-            ]}
-          >
-            Не удалось загрузить прогресс
-          </Text>
-          <Text
-            style={[
-              typography.body,
-              { color: colors.textSecondary, marginTop: SPACING.xs, textAlign: 'center' },
-            ]}
-          >
-            Проверьте соединение и попробуйте снова
-          </Text>
-          <AppButton
-            title="Повторить"
-            variant="primary"
-            onPress={() => {
-              refetchHistory();
-              refetchProgress();
-            }}
-            style={{ marginTop: SPACING.lg, paddingHorizontal: SPACING.xl }}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* UX-2 (audit-4): StateBlock вместо голого «иконка + текст + кнопка». */}
+          <StateBlock
+            tone="error"
+            title="Не удалось загрузить прогресс"
+            description="Проверьте соединение — обычно помогает повтор. Записанные тренировки не потеряны."
+            actionLabel="Повторить"
+            onAction={onRefresh}
           />
         </View>
       </SafeAreaView>
@@ -347,6 +332,9 @@ export default function ProgressScreen() {
           />
         }
       >
+        {/* EDGE-10: рефетч не дошёл, но кэш живые — данные остаются на экране. */}
+        {isStale && <StaleBanner onRetry={onRefresh} style={{ marginBottom: SPACING.md }} />}
+
         {/* Зона 1: Обзор (L1) */}
         <View style={{ marginBottom: SPACING.lg, gap: SPACING.md }}>
           <ProgressHero

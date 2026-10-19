@@ -29,8 +29,7 @@ export function useInjuries(userId: string | null) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: InjuryInput }) =>
-      updateInjury(id, input),
+    mutationFn: ({ id, input }: { id: string; input: InjuryInput }) => updateInjury(id, input),
     onSuccess: invalidate,
   });
 
@@ -47,6 +46,11 @@ export function useInjuries(userId: string | null) {
   return {
     injuries: injuriesQuery.data ?? [],
     loading: injuriesQuery.isPending,
+    // EDGE-5 (аудит 06.10): без этого поля экран сбоя не отличает от «травм нет».
+    isError: injuriesQuery.isError,
+    // EDGE-ERR (19.10): пустой список из кэша — это «травм нет», а не сбой; нужен
+    // признак «хотя бы один ответ базы был», иначе офлайн-рефетч пугает отказом.
+    loaded: injuriesQuery.data !== undefined,
     refetch: injuriesQuery.refetch,
     createInjury: createMutation.mutateAsync,
     updateInjury: updateMutation.mutateAsync,

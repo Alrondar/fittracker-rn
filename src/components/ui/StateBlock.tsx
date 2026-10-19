@@ -19,6 +19,9 @@ export interface StateBlockProps {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Третьестепенное действие: выход из тупика (EDGE-2 — экран «не найдена» был тупиком). */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
   /** 'error' — предупреждающая иконка/акцент; 'empty' — нейтральная. */
   tone?: 'error' | 'empty';
 }
@@ -29,6 +32,8 @@ export function StateBlock({
   description,
   actionLabel,
   onAction,
+  secondaryLabel,
+  onSecondary,
   tone = 'empty',
 }: StateBlockProps) {
   const { colors } = useTheme();
@@ -53,6 +58,15 @@ export function StateBlock({
 
       {actionLabel && onAction ? (
         <AppButton title={actionLabel} variant="primary" onPress={onAction} />
+      ) : null}
+
+      {secondaryLabel && onSecondary ? (
+        <AppButton
+          title={secondaryLabel}
+          variant="ghost"
+          onPress={onSecondary}
+          style={styles.secondary}
+        />
       ) : null}
     </FadeIn>
   );
@@ -80,5 +94,8 @@ const styles = StyleSheet.create({
   desc: {
     textAlign: 'center',
     marginBottom: SPACING.lg,
+  },
+  secondary: {
+    marginTop: SPACING.sm,
   },
 });
