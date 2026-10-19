@@ -363,6 +363,7 @@ Important components:
 | utils/errorMapper.ts|user-facing error mapping|
 | utils/intensityInfo.tsx|getIntensityInfo: label/color/bgColor/icon для intensity badge (PR8)|
 | utils/macroCalculator.ts|macro calculations|
+| utils/muscleStats.ts|Чистые производные секции «Мышцы» (H-MUSCLE-2): filterRowsByPeriod, rowsToMuscleLoad, computeFatigue/fatigueBucket, computeStrength, topExercisesInPeriod, labelFor. Без React и темы — вынесено из MuscleStatsSection (CTR-3)|
 | engine/progression/|calculateProgression (ENG-1, core.ts); explainProgression (ENG-2, explanations.ts); applySafetyPrecedence (ENG-4) и applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety) в overrides.ts; политики — policies.ts; округление под снаряд — snap.ts; импорт идёт через barrel `engine/progression`. Чистые функции|
 | engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция. **WARMUP-3a: переиспользуется вариантами разминки** (тип `injury_type` расширен до `string | null` под канон `contraindicationMatchesInjury`)|
 | engine/warmupPlan.ts|planWarmup (WARMUP-3b): скоринг по всему пулу, правило покрытия (top-3 мышцы + top-4 паттерна дня), бакеты general/activation/mobility/static с потолками состава, карта групп мышц, политика длительности `warmupDurationSeconds`, размер 5–8, взвешенная выборка по сиду (FNV-1a+mulberry32). Чистая функция, без React/Supabase — гоняется офлайн (`.ai/workspace/warmup-plan-check.ts`)|
@@ -529,7 +530,7 @@ Recent additions (COACH-4 / COACH-5 / UX-11 / AUDIT-1 / AUDIT-6 / H-MUSCLE-1 / H
 `src/components/workout/MuscleLoadMap.tsx` — H-MUSCLE-1/2/3: переиспользуемый компонент карты + легенды (отчёт + progress hub), добавлены `selectedSlug` и `onEntryTap` для фильтрации
 `src/services/muscleStatsService.ts` — H-MUSCLE-2: единственный Supabase-запрос для вкладки «Мышцы» в Progress hub
 `src/hooks/useMuscleStats.ts` — H-MUSCLE-2: React Query обёртка (staleTime 5 мин)
-`src/components/progress/MuscleStatsSection.tsx` — H-MUSCLE-2: секция «Мышцы» с 3 вкладками (Нагрузка/Усталость/Сила)
+`src/components/progress/MuscleStatsSection.tsx` — H-MUSCLE-2: секция «Мышцы» с 3 вкладками (Нагрузка/Усталость/Сила); чистые производные (фильтр периода, нагрузка/усталость/сила по slug'ам, топ упражнений) — в `src/utils/muscleStats.ts`
 `src/utils/programMuscleLoad.ts` — H-MUSCLE-4: чистая функция `calculateProgramMuscleLoad` для агрегации плановых сетов/неделю по фазам программы
 `src/components/program/ProgramMuscleMap.tsx` — H-MUSCLE-4: карта покрытия мышц в Program Detail (средневзвешенные сеты/неделю)
 `src/components/profile/InjuryBodyMap.tsx` — H-MUSCLE-5: визуальная карта зон травм, синхронизированная с chips-фильтром (arms/torso/legs)
