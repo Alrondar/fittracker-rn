@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import {
@@ -17,65 +17,34 @@ import * as Haptics from 'expo-haptics';
 // WEB-3b: ReorderList = NestableDraggableFlatList на нативе, long-press drag на вебе.
 import { ReorderList, RowDecorator } from './ReorderList';
 import { DayCard } from './DayCard';
-import { ProgramPhase, ProgramDay, ProgramExercise } from '../../services/programsService';
+import { ProgramPhase, ProgramDay } from '../../services/programsService';
+import type { EditorActions } from '../../hooks/useProgramEditorRows';
 import { getPhaseMeta, getPhaseColor } from '../../constants/phaseTypes';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
 interface PhaseCardProps {
   phase: ProgramPhase;
-  phaseIndex: number;
-  phaseCount: number;
+  /** Дни фазы — стабильный массив см. useDaysByPhase (FZ-5). */
   days: ProgramDay[];
-  allDays: ProgramDay[];
   editMode: boolean;
   colors: any;
   cardStyles: any;
-  badgeStyles: any;
-  /** @deprecated Фазы теперь перетаскиваются через DraggableFlatList в edit.tsx. Пропсы оставлены для обратной совместимости. */
-  onMoveUp?: () => void;
-  /** @deprecated Фазы теперь перетаскиваются через DraggableFlatList в edit.tsx. Пропсы оставлены для обратной совместимости. */
-  onMoveDown?: () => void;
-  onEditPhase: () => void;
-  onRemovePhase: () => void;
-  onAddDay: () => void;
-  onAddDayToWeek?: (week: number) => void;
-  onCopyTemplateToWeek?: (week: number) => void;
-  onResetWeekToTemplate?: (week: number) => void;
-  onDayDragEnd: (data: ProgramDay[]) => void;
-  onEditDaySettings: (day: ProgramDay, flatIndex: number) => void;
-  onExerciseSettings: (day: ProgramDay, exerciseIndex: number) => void;
-  onAddExercise: (flatIndex: number) => void;
-  onRemoveExercise: (flatIndex: number, exerciseIndex: number) => void;
-  onExerciseDragEnd: (flatIndex: number, data: ProgramExercise[]) => void;
+  /** Действия редактора; один неизменный объект на все строки (FZ-5). */
+  actions: EditorActions;
   /** Drag handle от DraggableFlatList (edit.tsx). */
   onDrag?: () => void;
   /** Активен ли drag сейчас. */
   isActive?: boolean;
 }
 
-export function PhaseCard({
+export const PhaseCard = memo(function PhaseCard({
   phase,
-  phaseIndex: _phaseIndex,
-  phaseCount: _phaseCount,
   days,
-  allDays,
   editMode,
   colors,
   cardStyles,
-  badgeStyles,
-  onEditPhase,
-  onRemovePhase,
-  onAddDay,
-  onAddDayToWeek,
-  onCopyTemplateToWeek,
-  onResetWeekToTemplate,
-  onDayDragEnd,
-  onEditDaySettings,
-  onExerciseSettings,
-  onAddExercise,
-  onRemoveExercise,
-  onExerciseDragEnd,
+  actions,
   onDrag,
   isActive,
 }: PhaseCardProps) {
@@ -88,35 +57,31 @@ export function PhaseCard({
   const weeksCount = phase.weeks_count || 1;
 
   const sortByDay = (a: ProgramDay, b: ProgramDay) => (a.day_number || 0) - (b.day_number || 0);
-  const weekDays = days.filter((d) => (d.week_number ?? 1) === selectedWeek).sort(sortByDay);
-  const templateDays = days.filter((d) => (d.week_number ?? 1) === 1).sort(sortByDay);
+  // FZ-5: дни долой из рендера — раньше filter+sort×2 гонялись на каждую
+  // перерисовку экрана, включая открытие шторки и смену выбранного дня.
+  const { weekDays, templateDays } = useMemo(() => {
+    const all = days;
+    return {
+      weekDays: all.filter((d) => (d.week_number ?? 1) === selectedWeek).sort(sortByDay),
+      templateDays: all.filter((d) => (d.week_number ?? 1) === 1).sort(sortByDay),
+    };
+  }, [days, selectedWeek]);
   const isOverridden = selectedWeek === 1 || weekDays.length > 0;
   const displayDays = isOverridden ? weekDays : templateDays;
   const isInherited = !isOverridden;
   const canEditDays = editMode && isOverridden;
 
-  const getFlatIndex = (day: ProgramDay) => allDays.indexOf(day);
-
-  const renderDayCard = (day: ProgramDay, drag?: () => void, isActive?: boolean) => {
-    const flatIndex = getFlatIndex(day);
-    return (
-      <DayCard
-        day={day}
-        dayIndex={flatIndex}
-        colors={colors}
-        cardStyles={cardStyles}
-        badgeStyles={badgeStyles}
-        editMode={canEditDays}
-        isActive={isActive}
-        onDrag={drag}
-        onEditSettings={() => onEditDaySettings(day, flatIndex)}
-        onExerciseSettings={(exerciseIndex: number) => onExerciseSettings(day, exerciseIndex)}
-        onAddExercise={() => onAddExercise(flatIndex)}
-        onRemoveExercise={(exerciseIndex: number) => onRemoveExercise(flatIndex, exerciseIndex)}
-        onExerciseDragEnd={(data) => onExerciseDragEnd(flatIndex, data)}
-      />
-    );
-  };
+  const renderDayCard = (day: ProgramDay, drag?: () => void, isDayActive?: boolean) => (
+    <DayCard
+      day={day}
+      colors={colors}
+      cardStyles={cardStyles}
+      editMode={canEditDays}
+      isActive={isDayActive}
+      onDrag={drag}
+      actions={actions}
+    />
+  );
 
   return (
     <View style={{ marginBottom: SPACING.md, marginHorizontal: SPACING.lg }}>
@@ -197,14 +162,14 @@ export function PhaseCard({
               </PressableScale>
             )}
             <PressableScale
-              onPress={onEditPhase}
+              onPress={() => actions.editPhase(phase.id)}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={{ padding: 4 }}
             >
               <Settings size={16} color={colors.primary} strokeWidth={2} />
             </PressableScale>
             <PressableScale
-              onPress={onRemovePhase}
+              onPress={() => actions.removePhase(phase.id)}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={{ padding: 4 }}
             >
@@ -279,9 +244,9 @@ export function PhaseCard({
               <Text style={[typography.captionSmall, { color: colors.warning, flex: 1 }]}>
                 Неделя {selectedWeek} использует шаблон недели 1
               </Text>
-              {editMode && onCopyTemplateToWeek && (
+              {editMode && (
                 <PressableScale
-                  onPress={() => onCopyTemplateToWeek(selectedWeek)}
+                  onPress={() => actions.copyTemplateToWeek(phase.id, selectedWeek)}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 >
                   <Copy size={14} color={colors.primary} strokeWidth={2} />
@@ -296,9 +261,9 @@ export function PhaseCard({
           )}
 
           {/* Сброс к шаблону */}
-          {isOverridden && selectedWeek > 1 && editMode && onResetWeekToTemplate && (
+          {isOverridden && selectedWeek > 1 && editMode && (
             <PressableScale
-              onPress={() => onResetWeekToTemplate(selectedWeek)}
+              onPress={() => actions.resetWeekToTemplate(phase.id, selectedWeek)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -318,7 +283,7 @@ export function PhaseCard({
           {canEditDays ? (
             <ReorderList
               data={displayDays}
-              onDragEnd={({ data }) => onDayDragEnd(data as ProgramDay[])}
+              onDragEnd={({ data }) => actions.dayDragEnd(data as ProgramDay[], phase.id)}
               keyExtractor={(item: ProgramDay) => item.id}
               renderItem={({ item: day, drag, isActive }) => (
                 <RowDecorator>{renderDayCard(day, drag, isActive)}</RowDecorator>
@@ -331,7 +296,7 @@ export function PhaseCard({
           {/* Добавить день (только для переопределённой недели) */}
           {canEditDays && (
             <PressableScale
-              onPress={() => (onAddDayToWeek ? onAddDayToWeek(selectedWeek) : onAddDay())}
+              onPress={() => actions.addDayToWeek(phase.id, selectedWeek)}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -353,4 +318,4 @@ export function PhaseCard({
       )}
     </View>
   );
-}
+});

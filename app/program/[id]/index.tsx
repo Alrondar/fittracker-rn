@@ -7,6 +7,7 @@ import { Sprout, Dumbbell, Flame, Play } from 'lucide-react-native';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useProgramEditor } from '../../../src/hooks/useProgramEditor';
+import { NOOP_ACTIONS, NO_DAYS, useDaysByPhase } from '../../../src/hooks/useProgramEditorRows';
 import { mapError } from '../../../src/utils/errorMapper';
 import { SPACING } from '../../../src/constants/theme';
 import { commonStyles } from '../../../src/styles/common';
@@ -46,10 +47,13 @@ export default function ProgramDetailScreen() {
     retryLoad,
     starting,
     handleStartProgram,
-    getDaysForPhase,
     showScheduleEditor,
     setShowScheduleEditor,
   } = useProgramEditor(id as string, userId);
+
+  // FZ-5: дни фаз считаются один раз за изменение дерева, а не на каждую
+  // перерисовку экрана — карточка фазы получает тот же массив, что и раньше.
+  const daysByPhase = useDaysByPhase(program?.days);
 
   // ===== Шаринг по коду =====
   const [showShareModal, setShowShareModal] = useState(false);
@@ -133,7 +137,6 @@ export default function ProgramDetailScreen() {
 
   const levelInfo = getLevelInfo(program.level);
   const phases = program.phases || [];
-  const allDays = program.days || [];
   const canEdit = !!program.created_by && program.created_by === userId;
 
   // ===== Действия шаринга =====
@@ -205,32 +208,15 @@ export default function ProgramDetailScreen() {
 
         {/* ===== Фазы ===== */}
         <View style={{ paddingTop: SPACING.md }}>
-          {phases.map((phase, phaseIndex) => (
+          {phases.map((phase) => (
             <PhaseCard
               key={phase.id}
               phase={phase}
-              phaseIndex={phaseIndex}
-              phaseCount={phases.length}
-              days={getDaysForPhase(phase.id)}
-              allDays={allDays}
+              days={daysByPhase[phase.id] ?? NO_DAYS}
               editMode={false}
               colors={colors}
               cardStyles={cardStyles}
-              badgeStyles={badgeStyles}
-              onMoveUp={() => {}}
-              onMoveDown={() => {}}
-              onEditPhase={() => {}}
-              onRemovePhase={() => {}}
-              onAddDay={() => {}}
-              onDayDragEnd={() => {}}
-              onEditDaySettings={() => {}}
-              onExerciseSettings={() => {}}
-              onAddExercise={() => {}}
-              onRemoveExercise={() => {}}
-              onExerciseDragEnd={() => {}}
-              onAddDayToWeek={() => {}}
-              onCopyTemplateToWeek={() => {}}
-              onResetWeekToTemplate={() => {}}
+              actions={NOOP_ACTIONS}
             />
           ))}
         </View>

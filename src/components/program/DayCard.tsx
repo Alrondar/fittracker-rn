@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { View, Text } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
 import {
@@ -14,8 +14,8 @@ import * as Haptics from 'expo-haptics';
 // WEB-3b: ReorderList = NestableDraggableFlatList на нативе, long-press drag на вебе.
 import { ReorderList, RowDecorator } from './ReorderList';
 import { ProgramDay, ProgramExercise } from '../../services/programsService';
+import type { EditorActions } from '../../hooks/useProgramEditorRows';
 import { createCardStyles } from '../../styles/components/card';
-import { createBadgeStyles } from '../../styles/components/badge';
 import { getMuscleColor } from '../../constants/muscleColors';
 import { typography } from '../../styles/typography';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
@@ -89,34 +89,23 @@ function ExerciseMuscles({ muscles, colors }: { muscles: string[]; colors: any }
 
 interface DayCardProps {
   day: ProgramDay;
-  dayIndex: number;
   colors: any;
   cardStyles: ReturnType<typeof createCardStyles>;
-  badgeStyles: ReturnType<typeof createBadgeStyles>;
   editMode: boolean;
   isActive?: boolean;
   onDrag?: () => void;
-  onEditSettings: () => void;
-  onExerciseSettings: (exerciseIndex: number) => void;
-  onAddExercise: () => void;
-  onRemoveExercise: (exerciseIndex: number) => void;
-  onExerciseDragEnd?: (data: ProgramExercise[]) => void;
+  /** Действия редактора; приходят одним неизменным объектом (FZ-5). */
+  actions: EditorActions;
 }
 
-export function DayCard({
+export const DayCard = memo(function DayCard({
   day,
-  dayIndex: _dayIndex,
   colors,
   cardStyles,
-  badgeStyles: _badgeStyles,
   editMode,
   isActive,
   onDrag,
-  onEditSettings,
-  onExerciseSettings,
-  onAddExercise,
-  onRemoveExercise,
-  onExerciseDragEnd,
+  actions,
 }: DayCardProps) {
   const [expanded, setExpanded] = useState(false);
   const exercises = day.exercises || [];
@@ -138,7 +127,7 @@ export function DayCard({
     const muscles = (exercise as MusclesHolder).primary_muscles || [];
     return (
       <View style={[cardStyles.dayCardExerciseItem, { opacity: isDragging ? 0.5 : 1 }]}>
-        {editMode && onExerciseDragEnd && (
+        {editMode && (
           <PressableScale
             onLongPress={drag}
             delayLongPress={150}
@@ -152,7 +141,7 @@ export function DayCard({
         )}
         <PressableScale
           style={cardStyles.dayCardExerciseItemBody}
-          onPress={() => editMode && onExerciseSettings(exIndex)}
+          onPress={() => editMode && actions.exerciseSettings(day.id, exIndex)}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Text style={[cardStyles.dayCardExerciseItemName, { flex: 1 }]} numberOfLines={2}>
@@ -168,7 +157,7 @@ export function DayCard({
         </PressableScale>
         {editMode && (
           <PressableScale
-            onPress={() => onRemoveExercise(exIndex)}
+            onPress={() => actions.removeExercise(day.id, exIndex)}
             style={cardStyles.dayCardExerciseDeleteButton}
           >
             <Trash2 size={16} color={colors.error} strokeWidth={2} />
@@ -214,7 +203,10 @@ export function DayCard({
           </View>
         </PressableScale>
         {editMode && (
-          <PressableScale onPress={() => onEditSettings()} style={cardStyles.dayCardSettingsButton}>
+          <PressableScale
+            onPress={() => actions.editDay(day.id)}
+            style={cardStyles.dayCardSettingsButton}
+          >
             <Settings size={16} color={colors.primary} strokeWidth={2} />
           </PressableScale>
         )}
@@ -239,10 +231,10 @@ export function DayCard({
       {/* Тело дня (список упражнений) */}
       {expanded && (
         <View style={cardStyles.dayCardExercisesContainer}>
-          {editMode && onExerciseDragEnd ? (
+          {editMode ? (
             <ReorderList
               data={exercises}
-              onDragEnd={({ data }) => onExerciseDragEnd(data as ProgramExercise[])}
+              onDragEnd={({ data }) => actions.exerciseDragEnd(day.id, data as ProgramExercise[])}
               keyExtractor={(item: ProgramExercise) => item.id}
               renderItem={({ item: exercise, drag, isActive: isExerciseActive }) => {
                 const exIndex = exercises.indexOf(exercise as ProgramExercise);
@@ -264,7 +256,10 @@ export function DayCard({
             ))
           )}
           {editMode && (
-            <PressableScale onPress={onAddExercise} style={cardStyles.dayCardAddButton}>
+            <PressableScale
+              onPress={() => actions.addExercise(day.id)}
+              style={cardStyles.dayCardAddButton}
+            >
               <Plus size={16} color={colors.primary} strokeWidth={2} />
               <Text style={cardStyles.dayCardAddButtonText}>Добавить упражнение</Text>
             </PressableScale>
@@ -273,4 +268,4 @@ export function DayCard({
       )}
     </View>
   );
-}
+});

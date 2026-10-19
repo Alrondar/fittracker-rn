@@ -5,12 +5,17 @@ import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Save, X } from 'lucide-react-native';
-import { NestableScrollContainer } from 'react-native-draggable-flatlist';
+import { NestableScrollContainer, type RenderItemParams } from 'react-native-draggable-flatlist';
 // WEB-3b: ReorderList = NestableDraggableFlatList на нативе, long-press drag на вебе.
 import { ReorderList, RowDecorator } from '../../../src/components/program/ReorderList';
 import { useStore } from '../../../src/store/useStore';
 import { useTheme } from '../../../src/hooks/useTheme';
 import { useProgramEditor } from '../../../src/hooks/useProgramEditor';
+import {
+  NO_DAYS,
+  useDaysByPhase,
+  useProgramEditorActions,
+} from '../../../src/hooks/useProgramEditorRows';
 import { mapError } from '../../../src/utils/errorMapper';
 import { SPACING } from '../../../src/constants/theme';
 import { commonStyles } from '../../../src/styles/common';
@@ -40,6 +45,7 @@ export default function ProgramEditScreen() {
   const buttonStyles = useMemo(() => createButtonStyles(colors), [colors]);
 
   // initialEditMode = true для экрана редактирования
+  const editor = useProgramEditor(id as string, userId, true);
   const {
     program,
     editedProgram,
@@ -47,7 +53,6 @@ export default function ProgramEditScreen() {
     saving,
     setEditMode,
     saveProgram,
-    getDaysForPhase,
     showDaySettings,
     setShowDaySettings,
     showExerciseSettings,
@@ -59,32 +64,41 @@ export default function ProgramEditScreen() {
     showPhaseSettings,
     setShowPhaseSettings,
     selectedDay,
-    setSelectedDay,
     selectedExercise,
-    setSelectedExercise,
     selectedDayIndex,
-    setSelectedDayIndex,
     selectedExerciseIndex,
-    setSelectedExerciseIndex,
     selectedPhaseIndex,
-    setSelectedPhaseIndex,
     updateExerciseParams,
     updateDaySettings,
     updateSchedule,
-    onExerciseDragEnd,
-    removeExercise,
     handleAddExerciseFromPicker,
     addPhase,
-    removePhase,
-    updatePhaseSettings,
-    addDayToPhase,
-    copyTemplateToWeek,
-    resetWeekToTemplate,
-    addDayToPhaseWeek,
-    onDayDragEnd,
-    onPhaseDragEnd,
     isDirty,
-  } = useProgramEditor(id as string, userId, true);
+  } = editor;
+
+  // FZ-5 (аудит 28.09): строки редактора получают неизменные props — список дней
+  // с сохраняемой идентичностью и один объект действий вместо двенадцати стрелок.
+  // Без этого мемоизация PhaseCard/DayCard не срабатывает никогда.
+  const daysByPhase = useDaysByPhase(editedProgram?.days);
+  const actions = useProgramEditorActions(editor);
+
+  const renderPhaseRow = useCallback(
+    ({ item: phase, drag, isActive }: RenderItemParams<ProgramPhase>) => (
+      <RowDecorator>
+        <PhaseCard
+          phase={phase}
+          days={daysByPhase[phase.id] ?? NO_DAYS}
+          editMode
+          colors={colors}
+          cardStyles={cardStyles}
+          actions={actions}
+          onDrag={drag}
+          isActive={isActive}
+        />
+      </RowDecorator>
+    ),
+    [daysByPhase, actions, colors, cardStyles]
+  );
 
   const handleSave = async () => {
     try {
@@ -256,57 +270,9 @@ export default function ProgramEditScreen() {
         {/* Фазы с drag & drop (web: long-press drag, WEB-3b) */}
         <ReorderList
           data={phases}
-          onDragEnd={({ data }) => onPhaseDragEnd(data)}
+          onDragEnd={({ data }) => editor.onPhaseDragEnd(data)}
           keyExtractor={(item: ProgramPhase) => item.id}
-          renderItem={({ item: phase, drag, isActive, getIndex }) => {
-            const phaseIndex = getIndex() ?? 0;
-            return (
-              <RowDecorator>
-                <PhaseCard
-                  phase={phase}
-                  phaseIndex={phaseIndex}
-                  phaseCount={phases.length}
-                  days={getDaysForPhase(phase.id)}
-                  allDays={allDays}
-                  editMode={true}
-                  colors={colors}
-                  cardStyles={cardStyles}
-                  badgeStyles={badgeStyles}
-                  onDrag={drag}
-                  isActive={isActive}
-                  onEditPhase={() => {
-                    setSelectedPhaseIndex(phaseIndex);
-                    setShowPhaseSettings(true);
-                  }}
-                  onRemovePhase={() => removePhase(phaseIndex)}
-                  onAddDay={() => addDayToPhase(phaseIndex)}
-                  onDayDragEnd={(data) => onDayDragEnd(data, phase.id)}
-                  onEditDaySettings={(day, flatIndex) => {
-                    setSelectedDay(day);
-                    setSelectedDayIndex(flatIndex);
-                    setShowDaySettings(true);
-                  }}
-                  onExerciseSettings={(day, exerciseIndex) => {
-                    setSelectedDay(day);
-                    setSelectedExercise(day.exercises?.[exerciseIndex] || null);
-                    setSelectedExerciseIndex(exerciseIndex);
-                    setShowExerciseSettings(true);
-                  }}
-                  onAddExercise={(flatIndex) => {
-                    setSelectedDayIndex(flatIndex);
-                    setShowExercisePicker(true);
-                  }}
-                  onRemoveExercise={(flatIndex, exerciseIndex) =>
-                    removeExercise(flatIndex, exerciseIndex)
-                  }
-                  onExerciseDragEnd={onExerciseDragEnd}
-                  onAddDayToWeek={(week) => addDayToPhaseWeek(phaseIndex, week)}
-                  onCopyTemplateToWeek={(week) => copyTemplateToWeek(phaseIndex, week)}
-                  onResetWeekToTemplate={(week) => resetWeekToTemplate(phaseIndex, week)}
-                />
-              </RowDecorator>
-            );
-          }}
+          renderItem={renderPhaseRow}
         />
 
         {/* Кнопка добавить фазу */}
@@ -358,7 +324,7 @@ export default function ProgramEditScreen() {
         selectedPhase={selectedPhaseIndex >= 0 ? phases[selectedPhaseIndex] : null}
         onSavePhaseSettings={(settings) => {
           if (selectedPhaseIndex >= 0) {
-            updatePhaseSettings(selectedPhaseIndex, settings);
+            editor.updatePhaseSettings(selectedPhaseIndex, settings);
             setShowPhaseSettings(false);
           }
         }}
