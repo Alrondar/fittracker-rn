@@ -13,8 +13,8 @@ import { commonStyles } from '../../../src/styles/common';
 import { createCardStyles } from '../../../src/styles/components/card';
 import { createBadgeStyles } from '../../../src/styles/components/badge';
 import { createButtonStyles } from '../../../src/styles/components/button';
-import { typography } from '../../../src/styles/typography';
 import { ListSkeleton } from '../../../src/components/Skeleton';
+import { StateBlock } from '../../../src/components/ui/StateBlock';
 import { Toast } from '../../../src/components/Toast';
 import { useToast } from '../../../src/hooks/useToast';
 import { LEVEL_COLORS } from '../../../src/constants/semanticColors';
@@ -42,6 +42,8 @@ export default function ProgramDetailScreen() {
   const {
     program,
     loading,
+    loadError,
+    retryLoad,
     starting,
     handleStartProgram,
     getDaysForPhase,
@@ -94,17 +96,37 @@ export default function ProgramDetailScreen() {
     );
   }
 
+  // EDGE-2 (аудит 06.10): сбой загрузки показывал «Программа не найдена» — правдоподобную
+  // ложь в тупике без повтора и выхода. «Не найдена» и «не загрузилась» теперь разные ветки.
+  if (loadError) {
+    return (
+      <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <StateBlock
+            tone="error"
+            title="Не удалось загрузить программу"
+            description="Проверьте соединение — обычно помогает повтор. Программа никуда не делась."
+            actionLabel="Повторить"
+            onAction={retryLoad}
+            secondaryLabel="К программам"
+            onSecondary={() => router.replace('/(tabs)/programs')}
+          />
+        </View>
+      </View>
+    );
+  }
+
   if (!program) {
     return (
       <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
-        <Text
-          style={[
-            typography.body,
-            { color: colors.textSecondary, textAlign: 'center', marginTop: 100 },
-          ]}
-        >
-          Программа не найдена
-        </Text>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <StateBlock
+            title="Программа не найдена"
+            description="Возможно, её удалили или код программы больше не действует."
+            actionLabel="К каталогу программ"
+            onAction={() => router.replace('/(tabs)/programs')}
+          />
+        </View>
       </View>
     );
   }

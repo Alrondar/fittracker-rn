@@ -35,6 +35,7 @@ export function useProgramEditor(
   const router = useRouter();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [starting, setStarting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(initialEditMode);
@@ -91,15 +92,25 @@ export function useProgramEditor(
   }, [programId]);
 
   const loadProgram = async () => {
+    setLoadError(false);
     try {
       const data = await getProgramWithDays(programId);
       setProgram(data);
       setEditedProgram(data);
     } catch (e) {
+      // EDGE-2 (аудит 06.10): ошибку глотал console.error, и экран при сетевом сбое
+      // показывал «Программа не найдена». getProgramWithDays бросает только на реальный
+      // сбой — «строк нет» (PGRST116) приходит как null, так что ветки различимы.
       console.error('Ошибка загрузки программы:', e);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const retryLoad = () => {
+    setLoading(true);
+    void loadProgram();
   };
 
   const handleStartProgram = async () => {
@@ -369,6 +380,8 @@ export function useProgramEditor(
     program,
     editedProgram,
     loading,
+    loadError,
+    retryLoad,
     starting,
     saving,
     editMode,

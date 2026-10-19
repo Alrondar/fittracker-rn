@@ -31,6 +31,7 @@ import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { useDeferredTabContent } from '../../src/hooks/useDeferredTabContent';
 import { useTabPrefetch } from '../../src/hooks/useTabPrefetch';
 import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner } from '../../src/components/ui/StaleBanner';
 import { HeroOut } from '../../src/components/ui/HeroMorph';
 import { FadeIn } from '../../src/components/FadeIn';
 import { NutritionAddModal } from '../../src/components/dashboard/NutritionAddModal';
@@ -189,18 +190,24 @@ export default function DashboardScreen() {
     );
   }
 
-  if (isError || !data) {
+  // EDGE-10 (аудит 06.10): отказ рефетча при живом кэше не должен выбивать рабочий
+  // экран в полный отказ — отказ показываем только когда данных нет вовсе.
+  if (!data) {
     return (
       <SafeAreaView style={[styles.container, { flex: 1 }]}>
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          {/* UX-2 (audit-4): единый StateBlock вместо голого «текст + кнопка». */}
-          <StateBlock
-            tone="error"
-            title="Не удалось загрузить данные"
-            description="Проверьте соединение — обычно помогает повтор."
-            actionLabel="Повторить"
-            onAction={() => refetch()}
-          />
+          {isError ? (
+            /* UX-2 (audit-4): единый StateBlock вместо голого «текст + кнопка». */
+            <StateBlock
+              tone="error"
+              title="Не удалось загрузить данные"
+              description="Проверьте соединение — обычно помогает повтор."
+              actionLabel="Повторить"
+              onAction={() => refetch()}
+            />
+          ) : (
+            <LoadingChip />
+          )}
         </View>
       </SafeAreaView>
     );
@@ -222,6 +229,14 @@ export default function DashboardScreen() {
           />
         }
       >
+        {/* EDGE-10: данные в кэше живые, а повтор не дошёл — экран остаётся рабочим. */}
+        {isError && (
+          <StaleBanner
+            onRetry={onRefresh}
+            style={{ marginHorizontal: SPACING.lg, marginBottom: SPACING.md }}
+          />
+        )}
+
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Text
