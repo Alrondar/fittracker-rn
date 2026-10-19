@@ -1,6 +1,6 @@
 # Skill: Engine Pure Functions
 
-**Когда использовать:** При работе с `src/engine/` (`progression/`, `alternatives.ts`, `weeklySummary.ts`), создании чистой бизнес-логики без React/Supabase зависимостей.
+**Когда использовать:** При работе с `src/engine/` (`progression/`, `alternatives.ts`, `weeklySummary/`), создании чистой бизнес-логики без React/Supabase зависимостей.
 
 ## Контекст
 Директория `src/engine/` содержит чистые функции для детерминированных тренировочных решений. Это фундамент Training Engine, работающий без AI.
