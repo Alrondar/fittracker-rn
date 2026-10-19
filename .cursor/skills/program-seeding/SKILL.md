@@ -48,7 +48,7 @@ DDL этих таблиц нет в `supabase/migrations/` (историческ
 2. `created_by IS NULL` — признак seeded. На нём держатся: вкладка ready, `copyProgramForUser` (`programsService.ts:541`), rollback замены упражнения (`app/workout/[id].tsx:289` — `replaceExerciseInProgram` для seeded падает, это ожидаемо).
 3. **`target_rpe` и `progression_policy` доезжают до тренировки (с 25.09, RPE-1).** Раньше обе терялись: `copy_program_for_user` копировал 8 колонок из 10, `create_workouts_for_program` вставлял `workout_exercises` тем же укороченным списком, а `save_program_snapshot` вообще не писал `target_rpe` (в проде было 0 значений). Теперь все три функции несут оба поля, и seeded-программа **может** задавать `target_rpe` (CHECK 1–10) и `progression_policy`. Ограничение остаётся: `target_rpe` — единственный способ выразить «запас 1–2 повторения», `intensity low/medium/high` его не заменяет; исторические строки (до 25.09) остаются NULL и заполнятся только при следующем сохранении.
 4. `exercise_id` ставить из каталога (`exercises`, 826 шт., есть `status approved|needs_review` — отдавать `approved`). `exercise_name` копировать из той же строки 1-в-1 — по нему ищутся alternatives/warmup/injury-данные.
-5. `duration` = сумма `weeks_count` всех фаз; канон deload −30% объёма (см. `src/engine/progression.ts`, FD-P2c).
+5. `duration` = сумма `weeks_count` всех фаз; канон deload −30% объёма (см. `src/engine/progression/`, FD-P2c).
 6. Миграции репозитория **append-only**: исправление существующей seeded-программы — новая миграция с DELETE по явному `id` + ре-вставка, не правка старого файла.
 7. Известный долг: 6 существующих seeded-программ есть только в проде, без seed-миграций в репо. Новые программы обязаны иметь миграцию (иначе `supabase start`-replay их потеряет).
 8. **Тренировки — снимки.** `create_workouts_for_program` копирует `sets/reps_range/rest/intensity` в `workout_exercises`; правка `program_exercises` НЕ меняет уже созданные тренировки пользователя. Поэтому blast-radius контент-правки = вкладка ready + будущие копирования (проверено прод-данными 25.09: 24 тренировки StrongLifts остались со старыми значениями после ребаланса программ).
@@ -92,7 +92,7 @@ phases → days → exercises с резолвом `exercise_id` по точно�
 - Схема/констрейнты: MCP `information_schema` + `pg_constraint` (не документы).
 - Копирование: `supabase/migrations/20260924051742_copy_program_for_user_uid_check.sql`.
 - Consum'еры seeded-семантики: `src/services/programsService.ts` (`copyProgramForUser`, `share_code` импорт), `app(tabs)/programs.tsx`, `app/workout/[id].tsx`.
-- Прогрессия/edges: `src/engine/progression.ts`; продукты: `PRODUCT.md` §готовые программы; этапность: `ROADMAP.md` B/C.
+- Прогрессия/edges: `src/engine/progression/`; продукты: `PRODUCT.md` §готовые программы; этапность: `ROADMAP.md` B/C.
 
 ## Resources
 

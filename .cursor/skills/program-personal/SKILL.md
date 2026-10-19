@@ -54,7 +54,7 @@ description: Составление ПЕРСОНАЛЬНОЙ тренирово�
 2. **Уровень = доступный словарь движений.** Beginner: без `difficulty='advanced'`, плио и олимпийских; intermediate — 1–2 сложных движения максимум; advanced — без искусственных ограничений, но с проверкой `technique`/`risks`.
 3. **Дыра в истории = ограничение программы, а не возможность.** Если группа мышц не тренировалась 4+ недели или имеет ноль рабочих подходов за 12 недель, стартовый объём по ней ниже среднего, прогрессия `double_progression`, а не `linear`.
 4. **Ограничения по боли/травме — до компоновки.** `injury_exercise_warnings` с `level='avoid'` снимает движение независимо от того, как оно выглядит в плане; оставшиеся `caution` снижают объём/интенсивность по этой группе.
-5. **`phase_type='deload'` обязан быть значением поля, а не именем фазы.** Движок читает `strength|hypertrophy|endurance|deload` (`src/engine/progression.ts:76`); «Дилоуд» с типом `custom` или `power` не даст ни 0.9-го веса, ни `DELOAD_PHASE` (подробности и полный список несовпадений — `references/editor-matrix.md`).
+5. **`phase_type='deload'` обязан быть значением поля, а не именем фазы.** Движок читает `strength|hypertrophy|endurance|deload` (`src/engine/progression/types.ts:63`); «Дилоуд» с типом `custom` или `power` не даст ни 0.9-го веса, ни `DELOAD_PHASE` (подробности и полный список несовпадений — `references/editor-matrix.md`).
 6. **`duration` = сумма `weeks_count` фаз** — но редактор при сохранении фаз `duration` не пересчитывает. Личная программа, собранная в UI, обязана быть проверена на это вручную (запрос conformance, см. Шаг 5).
 
 Избегать: двух подряд одинаковых `movement_pattern`, дублей `position` в дне, упражнений без `exercise_id`, «до отказа» в силовой фазе beginner'а, тайминга в `reps_range` без понимания, что движок будет поднимать вес «по повторам» (`program-seeding`, инвариант 10).
@@ -141,7 +141,7 @@ select ph.phase_number, ph.phase_type, count(distinct pd.id) days,
 - Схема/инварианты seed'а: `program-seeding/SKILL.md` + `spark-output/specs/program-import-format.md`; колонки — `information_schema` / `src/types/database.types.ts`.
 - Пути чтения/записи личной программы: `src/services/programsService.ts` (`getMyPrograms` `.eq('created_by', userId)`, `createProgram`, `getProgramWithPhases`, `startProgram`, `activateProgram`, `replaceExerciseInProgram`, `saveProgramSnapshot`), `src/hooks/useProgramEditor.ts`, `src/hooks/useProgramPhases.ts`.
 - Возможности редактора и его пределы: `references/editor-matrix.md` (срез кода 11.10) + сами экраны `app/program/[id]/edit.tsx`, `src/components/program/sheets/*`.
-- Срез по пользователю: `references/user-profile-sql.md`; движок прогрессии — `src/engine/progression.ts`, скилл `engine-pure`.
+- Срез по пользователю: `references/user-profile-sql.md`; движок прогрессии — `src/engine/progression/`, скилл `engine-pure`.
 - Статусы и открытый долг по программам: `STATUS.md` (секции PROG-*, FD-SEED-*, RPE-*, WARMUP-*), роли экранов и blast-radius — `INVENTORY.md` §Programs/Editor, §11.
 
 ## Resources

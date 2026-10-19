@@ -7,7 +7,7 @@
 - **Эффективная дата** тренировки: `coalesce(finished_at, started_at, created_at)`; `created_at` — не дата занятия (`CLAUDE.md` §4).
 - **Рабочий подход**: `workout_logs.is_warmup = false`; разминка не входит в объём и рекорды (`exercisesServiceNormalized.ts:194-204`).
 - **Связь логов**: держаться `workout_logs.workout_exercise_id → workout_exercises.workout_id`. Колонка `workout_logs.workout_id` заполнена несогласованно: на этом пользователе «призрачных» тренировок получается 8 по `workout_id` против 5 по связи через `workout_exercises`.
-- **Объём по мышцам**: primary вес 1.0, secondary 0.5 — та же методология, что в движке (`src/engine/weeklySummary.ts`, `muscleVolume`/`muscleFatigue`/`chronicVolume`/`muscleStrength.daysAgo`). SQL нужен для среза по конкретному человеку до обращения к коду; пороги «мало/много» — из `weeklySummary`, не из этого файла.
+- **Объём по мышцам**: primary вес 1.0, secondary 0.5 — та же методология, что в движке (`src/engine/weeklySummary/`, `muscleVolume`/`muscleFatigue`/`chronicVolume`/`muscleStrength.daysAgo`). SQL нужен для среза по конкретному человеку до обращения к коду; пороги «мало/много» — из `weeklySummary`, не из этого файла.
 
 ## 0. Профиль, замеры, готовность, травмы
 
@@ -130,7 +130,7 @@ select count(*) working_sets,
    and w.finished_at >= now() - interval '12 weeks';
 ```
 
-Кейс: 315 рабочих сетов, 258 с RPE (82%), средний 8.17, 11 сетов с нулевым весом (собственный вес — не ошибка). Если `with_rpe/working_sets < 0.5`, `target_rpe` в программе задавать осторожно (только в ключевых) и предупреждать, что движок без RPE прогрессирует только по повторам (`ExerciseSettingsSheet` подсказка, `progression.ts:parseRepsRange`).
+Кейс: 315 рабочих сетов, 258 с RPE (82%), средний 8.17, 11 сетов с нулевым весом (собственный вес — не ошибка). Если `with_rpe/working_sets < 0.5`, `target_rpe` в программе задавать осторожно (только в ключевых) и предупреждать, что движок без RPE прогрессирует только по повторам (`ExerciseSettingsSheet` подсказка, `progression/core.ts:parseRepsRange`).
 
 ## 6. Боли: где именно и на каких движениях
 

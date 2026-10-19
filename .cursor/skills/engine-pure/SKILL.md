@@ -1,6 +1,6 @@
 # Skill: Engine Pure Functions
 
-**Когда использовать:** При работе с `src/engine/` (`progression.ts`, `alternatives.ts`, `weeklySummary.ts`), создании чистой бизнес-логики без React/Supabase зависимостей.
+**Когда использовать:** При работе с `src/engine/` (`progression/`, `alternatives.ts`, `weeklySummary/`), создании чистой бизнес-логики без React/Supabase зависимостей.
 
 ## Контекст
 Директория `src/engine/` содержит чистые функции для детерминированных тренировочных решений. Это фундамент Training Engine, работающий без AI.
@@ -10,13 +10,13 @@
    - Никаких импортов React, React Query, Zustand или Supabase.
    - Функции принимают данные как аргументы и возвращают результат.
    - Легко покрываются unit-тестами (SCALE-1).
-2. **Progression (`progression.ts`)**:
+2. **Progression (`progression/`)**:
    - 9 правил в порядке приоритета: MAX_EFFORT, MAX_EFFORT_SINGLE, READY_TO_PROGRESS, ALL_MAX_REPS, HIGH_RPE_HOLD, CONSOLIDATE, OVERREACHED, MISSED_REPS, INCONCLUSIVE.
    - RPE 10 снижает вес только на подтверждённом отказе (10 в двух рабочих подходах сейчас, или прошлый раз тоже 10, или повторы ниже минимума диапазона). Одиночный отказ → hold · MAX_EFFORT_SINGLE (вердикт владельца 18.10).
    - `targetSetIndex`: рекомендация для сета N строится от его собственного `previousWeight` (работает для пирамид).
    - `is_warmup` сеты исключены из оценки.
    - Усталость оценивается по завершённым рабочим сетам текущей сессии (SESSION_FATIGUE, SESSION_LIGHT_DAY).
-3. **Safety Precedence (`progression.ts`)**:
+3. **Safety Precedence (`progression/`)**:
    - Порядок: `injury/pain constraints` > `training constraints` > `recommendation` > `AI`.
    - `applySafetyPrecedence`: stopExercise → PAIN_STOPPED; warning.level=avoid → INJURY_AVOID; hasPain + base.increase → PAIN_RECORDED (downgrade to hold).
    - Engine **никогда** не обходит `injury_exercise_warnings` (hard constraint).
