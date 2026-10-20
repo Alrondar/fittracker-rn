@@ -471,6 +471,52 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     [scheduleFlush]
   );
 
+  /**
+   * WARMUP-3d (ENG-12): разминочная лесенка. Подходы добавляются В КОНЕЦ
+   * таблицы с флагом isWarmup — номера рабочих подходов (set_number) не
+   * сдвигаются, иначе mapper (`index = set_number - 1`) и история по
+   * (exercise_id, set_number) соврали бы после перезахода.
+   * Вес предзаполняется, повторы остаются пустыми: подход не считается
+   * сделанным, пока человек не ввёл их сам.
+   */
+  const addWarmupRampSets = useCallback(
+    (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => {
+      if (steps.length === 0) return;
+      const exercise = exercisesRef.current[exerciseIndex];
+      if (!exercise) return;
+      const lastWithHistory = [...exercise.sets].reverse().find((s) => s.previousWeight != null);
+      const ramp: SetData[] = steps.map((st) => ({
+        weight: String(st.weightKg),
+        reps: '',
+        reps_left: '',
+        reps_right: '',
+        isWarmup: true,
+        previousWeight: lastWithHistory?.previousWeight ?? null,
+        previousReps: lastWithHistory?.previousReps ?? null,
+        previousRpe: lastWithHistory?.previousRpe ?? null,
+      }));
+      const nextSets = [...exercise.sets, ...ramp];
+      setExercises((prev) => {
+        const updated = [...prev];
+        const ex = { ...updated[exerciseIndex] };
+        ex.sets = nextSets;
+        // VF-4: тот же инвариант, что у addSet — target_sets обязан догонять
+        // сетку, иначе mapper при перезаходе выбросит новые подходы.
+        ex.target_sets = nextSets.length;
+        updated[exerciseIndex] = ex;
+        return updated;
+      });
+      // Снаружи апдейтера (§9): предзаполненный вес — уже данные, их надо
+      // отфlushить, иначе после перезахода строки вернутся пустыми.
+      pendingLogsRef.current.set(exercise.workout_exercise_id, nextSets);
+      scheduleFlush();
+      persistExerciseSettings(exercise.workout_exercise_id, {
+        target_sets: Math.max(exercise.target_sets, exercise.sets.length) + steps.length,
+      });
+    },
+    [persistExerciseSettings, scheduleFlush]
+  );
+
   const applyProgression = useCallback(
     (exerciseIndex: number, newWeight: number) => {
       setExercises((prev) => {
@@ -1381,6 +1427,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     updateSet,
     updateSetFeedback,
     addSet,
+    addWarmupRampSets,
     applyProgression,
     isSetCompleted,
     updateExerciseSettings,

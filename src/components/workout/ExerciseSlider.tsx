@@ -116,6 +116,9 @@ interface ExerciseSliderProps {
   workoutId: string;
   // ENG-13: добавить новый сет (для warmup toggle auto-add)
   addSet: (exerciseIndex: number, count?: number) => void;
+  /** WARMUP-3d (ENG-12): лесенка разминки — прокидывается в SetsGrid. */
+  addWarmupRamp?: (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => void;
+  showWarmupRamp?: boolean;
 }
 
 export const ExerciseSlider = memo(function ExerciseSlider({
@@ -147,6 +150,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   progressionContext = null,
   workoutId,
   addSet,
+  addWarmupRamp,
+  showWarmupRamp,
 }: ExerciseSliderProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
@@ -477,6 +482,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             progressionContext={progressionContext}
             workoutId={workoutId}
             addSet={addSet}
+            addWarmupRamp={addWarmupRamp}
+            showWarmupRamp={showWarmupRamp}
           />
         </View>
 

@@ -15,7 +15,7 @@
 import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { PressableScale } from '../ui/PressableScale';
-import { TrendingUp, X, Lightbulb, Gauge, Trophy } from 'lucide-react-native';
+import { TrendingUp, X, Lightbulb, Gauge, Trophy, Flame } from 'lucide-react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -73,6 +73,7 @@ import {
   ReadinessOverride,
 } from '../../engine/progression';
 import type { ProgressionContext } from '../../engine/progression';
+import { planRampUp, rampPctLabel } from '../../engine/warmupRamp';
 import { RecommendationCard } from './RecommendationCard';
 import { perfMark, perfPaint } from '../../utils/perf';
 
@@ -487,6 +488,15 @@ interface SetsGridProps {
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
   addSet: (exerciseIndex: number, count?: number) => void;
+  /**
+   * WARMUP-3d (ENG-12): разминочная лесенка. Показывается только у первого
+   * упражнения дня (вердикт владельца 20.10) и только когда есть от чего считать
+   * верх — рекомендация движка или вес «прошлого раза».
+   */
+  addWarmupRamp?: (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => void;
+  showWarmupRamp?: boolean;
+  /** Интенсивность упражнения: high|medium → compound-лесенка, low → blood-flow. */
+  intensity?: string | null;
   // FEAT-1.1 v2: прогрессия пер-сет через updateSet; applyProgression оставлен
   // в сигнатуре опционально для совместимости с ExerciseCard (не вызывается).
   applyProgression?: (exerciseIndex: number, newWeight: number) => void;
@@ -529,6 +539,9 @@ export const SetsGrid = memo(function SetsGrid({
   updateSet,
   updateSetFeedback,
   addSet,
+  addWarmupRamp,
+  showWarmupRamp,
+  intensity,
   isSetCompleted,
   startRestTimer,
   colors,
@@ -879,6 +892,32 @@ export const SetsGrid = memo(function SetsGrid({
     // PLATE-SNAP: список снаряжения приходит из пропсов новым массивом на
     // каждый рендер родителя, поэтому в зависимости — стабильный ключ, а не сам
     // массив (иначе мемо пересчитывался бы на каждый ре-рендер карточки).
+    equipmentKey,
+    unit,
+    barWeight,
+  ]);
+
+  // WARMUP-3d (ENG-12): разминочная лесенка к первому упражнению дня.
+  // Верх = рекомендация движка (то же число, что показывает чип), фолбэк —
+  // previousWeight последнего подхода; если ни того ни другого — лесенки нет.
+  // Уже добавленные ступени (разминочный подход с весом) прячут чип, чтобы
+  // повторное нажатие не удваивало лесенку.
+  const rampPlan = useMemo(() => {
+    if (!showWarmupRamp || !addWarmupRamp) return null;
+    if (sets.some((s) => s.isWarmup && s.weight !== '')) return null;
+    const lastPrevious = [...sets].reverse().find((s) => s.previousWeight != null)?.previousWeight;
+    return planRampUp({
+      topWeightKg: recommendation?.suggestedWeight ?? lastPrevious ?? null,
+      intensity,
+      equipment: equipmentKey ? equipmentKey.split('|') : undefined,
+      barWeightKg: unit === 'kg' ? barWeight : lbToKg(barWeight),
+    });
+  }, [
+    showWarmupRamp,
+    addWarmupRamp,
+    sets,
+    recommendation,
+    intensity,
     equipmentKey,
     unit,
     barWeight,
@@ -1513,6 +1552,34 @@ export const SetsGrid = memo(function SetsGrid({
                 colors={colors}
               />
             </View>
+          )}
+
+          {/* WARMUP-3d: разминочная лесенка (только первое упражнение дня) */}
+          {rampPlan && (
+            <PressableScale
+              onPress={() => addWarmupRamp!(exerciseIndex, rampPlan.steps)}
+              accessibilityRole="button"
+              accessibilityLabel={`Добавить разминочные подходы: ${rampPlan.steps
+                .map((s) => `${rampPctLabel(s.pct)} на ${s.reps}`)
+                .join(', ')}`}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'flex-start',
+                gap: 6,
+                paddingHorizontal: SPACING.sm,
+                paddingVertical: 6,
+                marginBottom: SPACING.xs,
+                borderRadius: BORDER_RADIUS.full,
+                backgroundColor: withAlpha(colors.warning, 0.12),
+              }}
+            >
+              <Flame size={13} color={colors.warning} />
+              <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
+                Разогреться:{' '}
+                {rampPlan.steps.map((s) => `${rampPctLabel(s.pct)}×${s.reps}`).join(' · ')}
+              </Text>
+            </PressableScale>
           )}
 
           {/* Ряды подходов через вынесенный memo SetRow */}

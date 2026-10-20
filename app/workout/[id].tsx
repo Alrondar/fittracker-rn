@@ -102,6 +102,7 @@ export default function WorkoutSessionScreen() {
     clearPainState,
     startRestTimer,
     addSet,
+    addWarmupRampSets,
     saveWorkout,
   } = useWorkoutSession(id as string, userId);
 
@@ -462,6 +463,9 @@ export default function WorkoutSessionScreen() {
         progressionContext={progressionContext}
         workoutId={id as string}
         addSet={addSet}
+        // WARMUP-3d: лесенка разминки — только у первого упражнения дня.
+        addWarmupRamp={addWarmupRampSets}
+        showWarmupRamp={index === 0}
       />
     ),
     [
@@ -491,6 +495,7 @@ export default function WorkoutSessionScreen() {
       readinessContext,
       progressionContext,
       addSet,
+      addWarmupRampSets,
     ]
   );
 
