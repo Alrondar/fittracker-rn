@@ -49,6 +49,9 @@ interface ExerciseCardProps {
   updateSetFeedback: (exIndex: number, setIndex: number, patch: SetFeedbackPatch) => void;
   /** ENG-13: добавить новый сет (для warmup toggle auto-add) */
   addSet: (exerciseIndex: number, count?: number) => void;
+  /** WARMUP-3d (ENG-12): разминочная лесенка, пробрасывается в SetsGrid. */
+  addWarmupRamp?: (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => void;
+  showWarmupRamp?: boolean;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number, ownerIndex?: number | null) => void;
@@ -94,6 +97,8 @@ export const ExerciseCard = memo(function ExerciseCard({
   updateSet,
   updateSetFeedback,
   addSet,
+  addWarmupRamp,
+  showWarmupRamp,
   applyProgression,
   isSetCompleted,
   startRestTimer,
@@ -289,6 +294,9 @@ export const ExerciseCard = memo(function ExerciseCard({
             updateSet={updateSet}
             updateSetFeedback={updateSetFeedback}
             addSet={addSet}
+            addWarmupRamp={addWarmupRamp}
+            showWarmupRamp={showWarmupRamp}
+            intensity={(exercise as ExerciseData).intensity}
             applyProgression={applyProgression}
             isSetCompleted={isSetCompleted}
             startRestTimer={startRestTimer}
