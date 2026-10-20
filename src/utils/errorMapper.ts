@@ -3,11 +3,10 @@
  * Правило: в Alert/Toast пользователю показываем ТОЛЬКО результат mapError/mapAuthError.
  * Сырой текст уходит в console.error на стороне вызывающего, а не в UI.
  *
- * Не зависит от supabase-типов (структурная типизация), чтобы не тащить耦合.
+ * Не зависит от supabase-типов (структурная типизация), чтобы не тащить связанность с клиентом Supabase.
  */
 
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null;
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 
 /** Достаёт человекочитаемое сообщение из любого вида ошибки. */
 export function extractMessage(error: unknown): string {
@@ -28,10 +27,15 @@ export function extractMessage(error: unknown): string {
 export function mapError(error: unknown): string {
   const raw = extractMessage(error);
   if (!raw) return 'Произошла неизвестная ошибка. Попробуй ещё раз.';
-  const m = raw.toLowerCase();
+  // PostgREST меняет формулировки между версиями, но код (`PGRST116`, `42501`, …)
+  // стабилен — матчим и по нему, иначе свежий текст вендора уходит в UI сырым.
+  const code = isRecord(error) && typeof error.code === 'string' ? error.code : '';
+  const m = `${raw} ${code}`.toLowerCase();
 
   // Сеть / недоступность
-  if (/fetch failed|network|enotfound|econnrefused|econnreset|timeout|offline|failed to fetch/.test(m)) {
+  if (
+    /fetch failed|network|enotfound|econnrefused|econnreset|timeout|offline|failed to fetch/.test(m)
+  ) {
     return 'Нет связи с сервером. Проверь интернет и попробуй ещё раз.';
   }
   // Доступ / RLS
@@ -52,8 +56,8 @@ export function mapError(error: unknown): string {
   }
   // Не найдено (включая Supabase .single()/.maybeSingle() на пустой выборке)
   if (
-    /not found|no rows|404|pgrst116|json object requested|multiple .* rows returned|pgrst114/.test(
-      m,
+    /not found|no rows|404|pgrst116|json object requested|cannot coerce|multiple .* rows returned|pgrst114/.test(
+      m
     )
   ) {
     return 'Данные не найдены. Возможно, они были удалены.';
