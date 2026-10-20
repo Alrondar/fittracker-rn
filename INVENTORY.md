@@ -98,8 +98,10 @@ Main components:
 `ExerciseInfoAccordion`
 `TechniqueMediaSlider` — горизонтальный слайдер кадров техники (FlatList + pagingEnabled, автоплей 3 с, точки + счётчик на скриме). Ширина = 100% контейнера из `onLayout`, высота адаптивна под кадр (MED-FIT 08.10): `mediaBoxHeight(width, imgW, imgH, height)` из `src/utils/mediaFit.ts`, где `height` (190 в карточках / 220 на странице упражнения) — минимум, а потолок 1.5 × ширина; размеры берутся из `onLoad`. `contentFit` всегда `cover` → ни боковых полей, ни обрезки на всём измеренном каталоге. Пока размеры/ширина неизвестны — прежняя фиксированная высота. `parseMediaUrls` из `…/0.jpg` всегда мастерит пару `0.jpg + 1.jpg`
 `src/utils/mediaFit.ts` — чистая формула `mediaBoxHeight` + потолок `MAX_BOX_H_RATIO` + диагностика `coverCropLoss` (MED-FIT); вынесена из компонента, чтобы прогонять на реальных размерах каталога через `npx tsx`
-`WarmupBlock`
-`WarmupExerciseCard.tsx` — компактный L1: номер-чекбокс + миниатюра техники + таймер; тап по карточке → WarmupExerciseSheet (WARMUP-1)
+`WarmupBlock` — лента разминки (WARMUP-3c): текущее упражнение крупной карточкой, остальные строками очереди; управление вынесено в `WarmupActionBar`
+`WarmupExerciseCard.tsx` — крупная карточка текущего: номер-чекбокс (тап ставит и снимает отметку) + миниатюра техники + остаток; ⏸ = пауза с сохранением остатка, долгий тап = сброс; тап по карточке → WarmupExerciseSheet по `id` (WARMUP-1, 3c)
+`WarmupQueueRow.tsx` — строка очереди 44 px (WARMUP-3c): чекбокс, название, длительность, ▶; тап по строке поднимает упражнение в «текущие»
+`WarmupActionBar.tsx` — липкая панель вкладки «Разминка» (WARMUP-3c): «Пропустить» + «К тренировке n/m», полоса прогресса; заменила футер внутри ScrollView и авто-переключение вкладки
 `WarmupExerciseSheet.tsx` — L2 разминки (plain SheetShell с `visible`, state и рендер в корне workout/[id].tsx — не внутри ScrollView): медиа-слайдер техники сверху, Польза/Риски/Противопоказания, «Похожие варианты» с просмотром аналога без замены и бейджами relation_type (WARMUP-1). WARMUP-3a: варианты приходят уже отфильтрованными по активным травмам + счётчик «N скрыто из-за травм» (как у ENG-5)
 `PainSheet`
 `WorkoutDisplayModePicker.tsx` — segmented control выбора display mode (в settings)
@@ -368,6 +370,7 @@ Important components:
 | engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция. **WARMUP-3a: переиспользуется вариантами разминки** (тип `injury_type` расширен до `string | null` под канон `contraindicationMatchesInjury`)|
 | engine/warmupPlan.ts|planWarmup (WARMUP-3b): скоринг по всему пулу, правило покрытия (top-3 мышцы + top-4 паттерна дня), бакеты general/activation/mobility/static с потолками состава, карта групп мышц, политика длительности `warmupDurationSeconds`, размер 5–8, взвешенная выборка по сиду (FNV-1a+mulberry32). Чистая функция, без React/Supabase — гоняется офлайн (`.ai/workspace/warmup-plan-check.ts`)|
 | engine/weeklySummary/|buildWeeklyInsights (ENG-6) + CI-5 goal-aware + calculateTrainingLoadContext (CI-2) + calculateDeloadContext (CI-6, 4 сигнала, threshold ≥3 или highLoad+(plateau/readinessDecline)). **P2**: добавлены `muscleFatigue` и `muscleStrength` в `WeeklySummaryData` для 3D Muscle Map. Чистые функции |
+| engine/warmupRamp.ts|planRampUp (WARMUP-3d / ENG-12): лесенка разминочных весов — протокол по `intensity` (high\|medium → compound 50×5/70×3/85×1, low → blood-flow 40×12/60×6), верх = рекомендация движка с фолбэком на previousWeight, округление через `snapToLoadable`, отсекание дублей и ступеней ≥ верха; null, если строить не из чего. Офлайн: `scripts/check-warmup-ramp.ts` |
 
 # 10. Database / migrations
 Important migrations include:
