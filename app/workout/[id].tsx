@@ -159,6 +159,7 @@ export default function WorkoutSessionScreen() {
     warmupExercises,
     excludedByInjury,
     isLoading: isWarmupLoading,
+    warmupSettled,
     activeTimerId,
     currentWarmupId,
     pausedId: warmupPausedId,
@@ -175,7 +176,7 @@ export default function WorkoutSessionScreen() {
     replaceWarmupExercise,
     clearWarmupPreferences,
     regenerateWarmup,
-  } = useWarmup(warmupSource, activeInjuries, userId);
+  } = useWarmup(warmupSource, activeInjuries, userId, !loading);
 
   // WARMUP-3c: счётчик для липкой панели (isCompleted из хука — новая функция
   // каждый рендер, поэтому без useMemo: считает по 5–7 элементам).
@@ -259,11 +260,14 @@ export default function WorkoutSessionScreen() {
   // WARMUP-3c: раньше при 5/5 этот эффект сам переключал вкладку на «Тренировку» —
   // экран уезжал из-под пальцев посреди разминки. Теперь переход — только по CTA на
   // липкой панели (WarmupActionBar); второй эффект удалён намеренно.
+  // BUG-14: уход разрешён только после реальной попытки подбора (`warmupSettled`);
+  // на первом рендере списка ещё нет, и прежний флаг isLoading гаслся веткой `else`
+  // в useWarmup ещё до загрузки дня → экран стартовал с «Тренировки».
   useEffect(() => {
-    if (!isWarmupLoading && warmupExercises.length === 0 && activeTab === 'warmup') {
+    if (warmupSettled && warmupExercises.length === 0 && activeTab === 'warmup') {
       setActiveTab('workout');
     }
-  }, [isWarmupLoading, warmupExercises.length, activeTab]);
+  }, [warmupSettled, warmupExercises.length, activeTab]);
 
   // ===== TTI: когда данные пришли → замеряем и ждём "interactive" =====
   const ttiMeasuredRef = useRef(false);

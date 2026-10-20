@@ -33,11 +33,19 @@ export interface WarmupSourceExercise {
 export function useWarmup(
   exercises: WarmupSourceExercise[],
   activeInjuries: UserInjury[] = [],
-  userId?: string | null
+  userId?: string | null,
+  // BUG-14: пока день не загружен, `exercises` пустой не потому, что разминки
+  // нет, а потому, что данных ещё нет. До этого флага ветка `else` в эффекте
+  // гасила isLoading на первом рендере, и экран успевал переключиться с
+  // «Разминки» на «Тренировку» до первого же подбора.
+  dataReady = true
 ) {
   const [warmupExercises, setWarmupExercises] = useState<WarmupExercise[]>([]);
   const [excludedByInjury, setExcludedByInjury] = useState<InjuryExclusion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // BUG-14: «подбор реально отработал» (или источников нет осознанно). Только по
+  // нему экран имеет право уйти с «Разминки», когда список пуст.
+  const [settled, setSettled] = useState(false);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
   // WARMUP-3c: тап по строке очереди «поднимает» упражнение, а не только
@@ -74,13 +82,15 @@ export function useWarmup(
   const [regenCounter, setRegenCounter] = useState(0);
 
   useEffect(() => {
+    if (!dataReady) return;
     if (exercises.length > 0) {
       generateWarmup();
     } else {
       setIsLoading(false);
+      setSettled(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseKey, injuryKey, warmupOrder, regenCounter]);
+  }, [dataReady, exerciseKey, injuryKey, warmupOrder, regenCounter]);
 
   useEffect(() => {
     return () => {
@@ -93,6 +103,7 @@ export function useWarmup(
 
   const generateWarmup = async () => {
     setIsLoading(true);
+    setSettled(false);
     if (timerRef.current) clearInterval(timerRef.current);
     setActiveTimerId(null);
     setPausedBoth(null);
@@ -117,6 +128,7 @@ export function useWarmup(
       console.error('Ошибка генерации разминки:', e);
     } finally {
       setIsLoading(false);
+      setSettled(true);
     }
   };
 
@@ -337,6 +349,9 @@ export function useWarmup(
     warmupExercises,
     excludedByInjury,
     isLoading,
+    // BUG-14: «пробовали ли уже подбирать» — единственный корректный сигнал для
+    // экрана уйти с вкладки разминки, когда список пуст.
+    warmupSettled: settled,
     completedIds,
     activeTimerId,
     currentWarmupId,
