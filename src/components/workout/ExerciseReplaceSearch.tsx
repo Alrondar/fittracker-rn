@@ -244,10 +244,11 @@ export function ExerciseReplaceSearchPanel({
 
   if (!search.hasCriteria && !search.isError) return null;
 
-  // Противопоказанное при активной травме упражнение остаётся в выдаче с
-  // предупреждением (вердикт 16.10); выбранное — обязательно, иначе карточка
-  // исчезнет на глазах.
-  const visibleRows = rows.filter((row) => !search.warnings[row.id] || row.id === pickedId);
+  // Вердикт владельца 16.10: противопоказанное при активной травме упражнение
+  // НЕ скрывается — строка остаётся в выдаче с чипом «Нельзя при: …», решение
+  // принимает человек. Прежняя фильтрация вырезала такие строки из компактной
+  // панели (они доживали только до шторки «Показать все»), то есть спорила и с
+  // вердиктом, и с этим комментарием, и со счётчиком на кнопке.
 
   return (
     <>
@@ -302,7 +303,7 @@ export function ExerciseReplaceSearchPanel({
                 </View>
               )}
               <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} bounces={false}>
-                {visibleRows.slice(0, PANEL_VISIBLE).map((row) => (
+                {rows.slice(0, PANEL_VISIBLE).map((row) => (
                   <ExerciseRow
                     key={row.id}
                     item={row}
@@ -312,7 +313,7 @@ export function ExerciseReplaceSearchPanel({
                   />
                 ))}
               </ScrollView>
-              {!search.isFetching && visibleRows.length === 0 && (
+              {!search.isFetching && rows.length === 0 && (
                 <Text
                   style={[
                     typography.bodySmall,
