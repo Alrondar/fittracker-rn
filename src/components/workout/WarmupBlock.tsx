@@ -10,32 +10,36 @@ import Animated, {
   withRepeat,
   Easing,
 } from 'react-native-reanimated';
-import { Flame, RefreshCw, SkipForward, AlertTriangle } from 'lucide-react-native';
+import { Flame, RefreshCw, AlertTriangle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
-import { AppButton } from '../ui/AppButton';
 import { WarmupExerciseCard } from './WarmupExerciseCard';
+import { WarmupQueueRow } from './WarmupQueueRow';
 import { WarmupExercise, InjuryExclusion } from '../../services/warmupService';
 
 interface WarmupBlockProps {
   warmupExercises: WarmupExercise[];
   isLoading: boolean;
   activeTimerId: string | null;
+  pausedId: string | null;
+  /** WARMUP-3c: «текущее» показывается крупной карточкой, остальные — строками. */
+  currentId: string | null;
+  /** Суммарная длительность ленты — считается в useWarmup, здесь только показываем. */
+  totalDuration: number;
   // FZ-6 (аудит 28.09): timeLeft больше не prop — тик читается из стора
   // (useWarmupTick), экран от него не перерендеривается.
-  isAllCompleted: boolean;
-  totalDuration: number;
   excludedByInjury: InjuryExclusion[];
   isCompleted: (id: string) => boolean;
   onGenerateWarmup: () => void;
   onStartTimer: (id: string) => void;
-  onStopTimer: () => void;
-  onMarkCompleted: (id: string) => void;
-  onSkip: () => void;
+  onPauseTimer: () => void;
+  onResetTimer: (id: string) => void;
+  onToggleCompleted: (id: string) => void;
+  onFocus: (id: string) => void;
   /** Открыть L2 лист разминки (рендерится в корне экрана, WARMUP-1). */
-  onOpenDetails: (index: number) => void;
+  onOpenDetails: (id: string) => void;
   /** WARMUP-2: долгий тап на ⟳ — забыть запомненные замены (caller сам перезапускает генерацию). */
   onResetPreferences?: () => void;
 }
@@ -44,15 +48,17 @@ export function WarmupBlock({
   warmupExercises,
   isLoading,
   activeTimerId,
-  isAllCompleted,
+  pausedId,
+  currentId,
   totalDuration,
   excludedByInjury,
   isCompleted,
   onGenerateWarmup,
   onStartTimer,
-  onStopTimer,
-  onMarkCompleted,
-  onSkip,
+  onPauseTimer,
+  onResetTimer,
+  onToggleCompleted,
+  onFocus,
   onOpenDetails,
   onResetPreferences,
 }: WarmupBlockProps) {
@@ -62,7 +68,6 @@ export function WarmupBlock({
   const timeLeft = useWarmupTick();
   const { colors } = useTheme();
   const pulse = useSharedValue(0.35);
-  const footerProgress = useSharedValue(0);
 
   // Пульсация скелетона при загрузке
   useEffect(() => {
@@ -77,20 +82,6 @@ export function WarmupBlock({
   }, [isLoading, pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
-
-  const completedCount = warmupExercises.filter((ex) => isCompleted(ex.id)).length;
-
-  // Анимация прогресса в футере
-  useEffect(() => {
-    footerProgress.value = withTiming(completedCount / Math.max(warmupExercises.length, 1), {
-      duration: 350,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [completedCount, warmupExercises.length, footerProgress]);
-
-  const footerProgressStyle = useAnimatedStyle(() => ({
-    width: `${footerProgress.value * 100}%`,
-  }));
 
   const targetMuscles = useMemo(() => {
     const set = new Set<string>();
@@ -235,85 +226,41 @@ export function WarmupBlock({
         </PressableScale>
       </View>
 
-      {/* Список упражнений */}
+      {/* Лента: текущее — крупной карточкой, остальные — строками очереди */}
       <View style={{ paddingHorizontal: SPACING.lg, paddingTop: SPACING.xs }}>
         {warmupExercises.map((exercise, index) => {
-          const active = activeTimerId === exercise.id;
+          if (exercise.id !== currentId) {
+            return (
+              <WarmupQueueRow
+                key={exercise.id}
+                exercise={exercise}
+                index={index}
+                completed={isCompleted(exercise.id)}
+                onStartTimer={onStartTimer}
+                onToggleCompleted={onToggleCompleted}
+                onFocus={onFocus}
+              />
+            );
+          }
           return (
             <WarmupExerciseCard
               key={exercise.id}
               exercise={exercise}
               index={index}
               completed={isCompleted(exercise.id)}
-              isActive={active}
-              // timeLeft только активной карточке → неактивные не ловят тик и
+              isActive={activeTimerId === exercise.id}
+              isPaused={pausedId === exercise.id}
+              // timeLeft только текущей карточке → остальные не ловят тик и
               // не перерисовываются (React.memo bail out). Фикс лага разминки.
-              timeLeft={active ? timeLeft : 0}
+              timeLeft={timeLeft}
               onStartTimer={onStartTimer}
-              onStopTimer={onStopTimer}
-              onMarkCompleted={onMarkCompleted}
+              onPauseTimer={onPauseTimer}
+              onResetTimer={onResetTimer}
+              onToggleCompleted={onToggleCompleted}
               onOpen={onOpenDetails}
             />
           );
         })}
-      </View>
-
-      {/* Футер: пропуск + прогресс выполнения */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: SPACING.md,
-          paddingHorizontal: SPACING.lg,
-          paddingTop: SPACING.xs,
-          paddingBottom: SPACING.lg,
-        }}
-      >
-        <AppButton
-          title="Пропустить"
-          variant="secondary"
-          size="medium"
-          icon={<SkipForward size={16} color={colors.primary} />}
-          onPress={onSkip}
-          style={{ flex: 1 }}
-        />
-        <View style={{ flex: 1.3 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-            <Text style={[typography.captionSmall, { color: colors.textSecondary }]}>
-              Выполнено
-            </Text>
-            <Text
-              style={[
-                typography.captionSmall,
-                {
-                  color: isAllCompleted ? colors.success : colors.textPrimary,
-                  fontWeight: '700',
-                },
-              ]}
-            >
-              {isAllCompleted ? 'Готово ✓' : `${completedCount}/${warmupExercises.length}`}
-            </Text>
-          </View>
-          <View
-            style={{
-              height: 6,
-              backgroundColor: colors.surfaceSecondary,
-              borderRadius: 3,
-              overflow: 'hidden',
-            }}
-          >
-            <Animated.View
-              style={[
-                {
-                  height: '100%',
-                  backgroundColor: isAllCompleted ? colors.success : colors.warning,
-                  borderRadius: 3,
-                },
-                footerProgressStyle,
-              ]}
-            />
-          </View>
-        </View>
       </View>
     </View>
   );

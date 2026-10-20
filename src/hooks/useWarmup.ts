@@ -40,6 +40,17 @@ export function useWarmup(
   const [isLoading, setIsLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
+  // WARMUP-3c: тап по строке очереди «поднимает» упражнение, а не только
+  // запускает таймер. Приоритет «текущего» — см. currentWarmupId.
+  const [focusId, setFocusId] = useState<string | null>(null);
+  // WARMUP-3c: ⏸ = пауза с сохранением остатка (раньше Stop выбрасывал остаток,
+  // и «продолжить» означало «заново с 45 сек»). Сброс — долгий тап на ⏸.
+  const [paused, setPaused] = useState<{ id: string; remaining: number } | null>(null);
+  const pausedRef = useRef<{ id: string; remaining: number } | null>(null);
+  const setPausedBoth = useCallback((next: { id: string; remaining: number } | null) => {
+    pausedRef.current = next;
+    setPaused(next);
+  }, []);
   // FZ-6: тик разминки больше не state экрана — стор (useWarmupTick);
   // ref-зеркало нужно только для арифметики интервала.
   const timeLeftRef = useRef(0);
@@ -84,6 +95,8 @@ export function useWarmup(
     setIsLoading(true);
     if (timerRef.current) clearInterval(timerRef.current);
     setActiveTimerId(null);
+    setPausedBoth(null);
+    setFocusId(null);
     timeLeftRef.current = 0;
     publishWarmupTick(0);
     try {
@@ -132,12 +145,13 @@ export function useWarmup(
       clearTick();
       activeIdRef.current = null;
       setActiveTimerId(null);
+      if (pausedRef.current?.id === exerciseId) setPausedBoth(null);
       timeLeftRef.current = 0;
       publishWarmupTick(0);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setCompletedIds((prev) => new Set(prev).add(exerciseId));
     },
-    [clearTick]
+    [clearTick, setPausedBoth]
   );
 
   const runTick = useCallback(() => {
@@ -177,27 +191,75 @@ export function useWarmup(
       const exercise = warmupExercises.find((e) => e.id === exerciseId);
       if (!exercise) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      // Продолжаем с остатка, если это то же упражнение, что поставили на паузу;
+      // для другого — старт с полной длительности (чужая пауза снимается).
+      const resume = pausedRef.current?.id === exerciseId ? pausedRef.current.remaining : 0;
+      setPausedBoth(null);
+      const seconds = resume > 0 ? resume : exercise.duration_seconds;
       setActiveTimerId(exerciseId);
       activeIdRef.current = exerciseId;
-      endsAtRef.current = Date.now() + exercise.duration_seconds * 1000;
-      timeLeftRef.current = exercise.duration_seconds;
-      publishWarmupTick(exercise.duration_seconds);
+      endsAtRef.current = Date.now() + seconds * 1000;
+      timeLeftRef.current = seconds;
+      publishWarmupTick(seconds);
       runTick();
     },
-    [warmupExercises, runTick]
+    [warmupExercises, runTick, setPausedBoth]
   );
 
-  const stopTimer = useCallback(() => {
+  /** WARMUP-3c: ⏸ — пауза с сохранением остатка; повторный тап на ▶ продолжает. */
+  const pauseTimer = useCallback(() => {
+    const id = activeIdRef.current;
+    if (!id) return;
+    const secLeft = Math.max(0, Math.ceil((endsAtRef.current - Date.now()) / 1000));
     clearTick();
     activeIdRef.current = null;
     setActiveTimerId(null);
-    timeLeftRef.current = 0;
-    publishWarmupTick(0);
-  }, [clearTick]);
-
-  const markAsCompleted = useCallback((exerciseId: string) => {
+    timeLeftRef.current = secLeft;
+    publishWarmupTick(secLeft);
+    setPausedBoth({ id, remaining: secLeft });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCompletedIds((prev) => new Set(prev).add(exerciseId));
+  }, [clearTick, setPausedBoth]);
+
+  /** WARMUP-3c: долгий тап на ⏸ — сброс: остаток убирается, упражнение не выполнено. */
+  const resetTimer = useCallback(
+    (exerciseId: string) => {
+      if (activeIdRef.current === exerciseId) {
+        clearTick();
+        activeIdRef.current = null;
+        setActiveTimerId(null);
+        timeLeftRef.current = 0;
+        publishWarmupTick(0);
+      }
+      if (pausedRef.current?.id === exerciseId) setPausedBoth(null);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [clearTick, setPausedBoth]
+  );
+
+  const setFocus = useCallback((exerciseId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFocusId(exerciseId);
+  }, []);
+
+  /** «Текущее» крупно: запущенное → на паузе → поднят вручную → первый невыполненный. */
+  const currentWarmupId = useMemo(() => {
+    const exists = (id: string | null) =>
+      !!id && warmupExercises.some((e) => e.id === id) && !completedIds.has(id);
+    if (exists(activeTimerId)) return activeTimerId;
+    if (paused && exists(paused.id)) return paused.id;
+    if (exists(focusId)) return focusId;
+    return warmupExercises.find((e) => !completedIds.has(e.id))?.id ?? null;
+  }, [warmupExercises, completedIds, activeTimerId, paused, focusId]);
+
+  /** WARMUP-3c: тап по ✓ и ставит отметку, и снимает её. */
+  const toggleCompleted = useCallback((exerciseId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCompletedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) next.delete(exerciseId);
+      else next.add(exerciseId);
+      return next;
+    });
   }, []);
 
   const isCompleted = (exerciseId: string) => completedIds.has(exerciseId);
@@ -277,14 +339,18 @@ export function useWarmup(
     isLoading,
     completedIds,
     activeTimerId,
+    currentWarmupId,
+    pausedId: paused?.id ?? null,
     isAllCompleted,
     totalDuration,
     targetMuscles,
     generateWarmup,
     regenerateWarmup,
     startExerciseTimer,
-    stopTimer,
-    markAsCompleted,
+    pauseTimer,
+    resetTimer,
+    setFocus,
+    toggleCompleted,
     isCompleted,
     loadWarmupAlternatives,
     replaceWarmupExercise,

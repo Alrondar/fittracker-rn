@@ -60,13 +60,19 @@ interface WarmupExerciseCardProps {
   index: number;
   completed: boolean;
   isActive: boolean;
-  /** Передаётся ТОЛЬКО активной карточке; неактивным — 0, чтобы memo не сбивался тиком. */
+  /** WARMUP-3c: стоит на паузе — показываем остаток и ▶ «продолжить». */
+  isPaused: boolean;
+  /** Передаётся ТОЛЬКО активной/приостановленной карточке; остальным — 0. */
   timeLeft: number;
   onStartTimer: (id: string) => void;
-  onStopTimer: () => void;
-  onMarkCompleted: (id: string) => void;
-  /** Открыть WarmupExerciseSheet (техника, аналоги, действия). */
-  onOpen: (index: number) => void;
+  /** ⏸ — пауза с сохранением остатка. */
+  onPauseTimer: () => void;
+  /** Долгий тап на ⏸ — сброс остатка (упражнение остаётся невыполненным). */
+  onResetTimer: (id: string) => void;
+  /** Тап по ✓ — поставить или снять отметку (WARMUP-3c). */
+  onToggleCompleted: (id: string) => void;
+  /** Открыть WarmupExerciseSheet — по id, чтобы перестановка ленты не сдвигала лист. */
+  onOpen: (id: string) => void;
 }
 
 export const WarmupExerciseCard = memo(function WarmupExerciseCard({
@@ -74,10 +80,12 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
   index,
   completed,
   isActive,
+  isPaused,
   timeLeft,
   onStartTimer,
-  onStopTimer,
-  onMarkCompleted,
+  onPauseTimer,
+  onResetTimer,
+  onToggleCompleted,
   onOpen,
 }: WarmupExerciseCardProps) {
   const { colors } = useTheme();
@@ -85,15 +93,15 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
 
   // Плавный прогресс-бар таймера (синхронизирован с тиком раз в секунду)
   useEffect(() => {
-    if (isActive && exercise.duration_seconds > 0) {
+    if ((isActive || isPaused) && exercise.duration_seconds > 0) {
       progress.value = withTiming(timeLeft / exercise.duration_seconds, {
-        duration: 950,
+        duration: isActive ? 950 : 200,
         easing: Easing.linear,
       });
     } else {
       progress.value = withTiming(0, { duration: 200 });
     }
-  }, [isActive, timeLeft, exercise.duration_seconds, progress]);
+  }, [isActive, isPaused, timeLeft, exercise.duration_seconds, progress]);
 
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
@@ -105,16 +113,22 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={`Открыть технику: ${exercise.name}`}
-        onPress={() => onOpen(index)}
+        onPress={() => onOpen(exercise.id)}
         style={{
-          backgroundColor: isActive ? withAlpha(colors.warning, 0.071) : colors.surface,
+          backgroundColor: isActive
+            ? withAlpha(colors.warning, 0.071)
+            : isPaused
+              ? withAlpha(colors.warning, 0.04)
+              : colors.surface,
           borderRadius: BORDER_RADIUS.lg,
           borderWidth: 1,
           borderColor: isActive
             ? colors.warning
-            : completed
-              ? withAlpha(colors.success, 0.376)
-              : colors.border,
+            : isPaused
+              ? withAlpha(colors.warning, 0.55)
+              : completed
+                ? withAlpha(colors.success, 0.376)
+                : colors.border,
           marginBottom: SPACING.sm,
           opacity: completed && !isActive ? 0.7 : 1,
           padding: SPACING.md,
@@ -123,13 +137,15 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {/* Номер/галочка: тап = быстро отметить выполненным */}
           <PressableScale
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: completed }}
-            accessibilityLabel={completed ? 'Выполнено' : `Отметить выполненным: ${exercise.name}`}
-            onPress={() => {
-              if (!completed) onMarkCompleted(exercise.id);
-            }}
+            accessibilityLabel={
+              completed
+                ? `Снять отметку: ${exercise.name}`
+                : `Отметить выполненным: ${exercise.name}`
+            }
+            onPress={() => onToggleCompleted(exercise.id)}
             style={{
               width: 34,
               height: 34,
@@ -195,51 +211,65 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
                 {formatTime(timeLeft)}
               </Text>
               <PressableScale
-                onPress={onStopTimer}
+                onPress={onPauseTimer}
+                onLongPress={() => onResetTimer(exercise.id)}
                 accessibilityRole="button"
-                accessibilityLabel="Остановить таймер"
+                accessibilityLabel="Пауза; долгое нажатие — сбросить остаток"
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
                   backgroundColor: colors.surfaceSecondary,
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}
               >
-                <Pause size={16} color={colors.textPrimary} />
+                <Pause size={18} color={colors.textPrimary} />
               </PressableScale>
             </View>
           ) : (
-            <PressableScale
-              onPress={() => onStartTimer(exercise.id)}
-              accessibilityRole="button"
-              accessibilityLabel={`Запустить таймер: ${exercise.name}`}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: completed ? colors.successLight : colors.warning,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              {completed ? (
-                <Check size={18} color={colors.success} />
-              ) : (
-                <Play
-                  size={16}
-                  color={colors.textInverse}
-                  fill={colors.textInverse}
-                  style={{ marginLeft: 2 }}
-                />
+            <View style={{ alignItems: 'center', gap: 2 }}>
+              {isPaused && (
+                <Text style={[typography.captionSmall, { color: colors.warning }]}>
+                  {formatTime(timeLeft)}
+                </Text>
               )}
-            </PressableScale>
+              <PressableScale
+                onPress={() => onStartTimer(exercise.id)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isPaused
+                    ? `Продолжить таймер: ${exercise.name}`
+                    : `Запустить таймер: ${exercise.name}`
+                }
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: completed ? colors.successLight : colors.warning,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {completed ? (
+                  <Check size={18} color={colors.success} />
+                ) : (
+                  <Play
+                    size={17}
+                    color={colors.textInverse}
+                    fill={colors.textInverse}
+                    style={{ marginLeft: 2 }}
+                  />
+                )}
+              </PressableScale>
+            </View>
           )}
         </View>
 
-        {/* Прогресс-бар таймера */}
-        {isActive && (
+        {/* Прогресс-бар таймера (и на паузе — остаток виден) */}
+        {(isActive || isPaused) && (
           <View
             style={{
               height: 4,
