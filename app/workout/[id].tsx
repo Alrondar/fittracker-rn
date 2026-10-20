@@ -27,6 +27,7 @@ import { RestTimerProvider, RestChip } from '../../src/components/workout/RestTi
 import { WorkoutTimerProvider } from '../../src/components/workout/WorkoutTimer';
 import { ExerciseSlider } from '../../src/components/workout/ExerciseSlider';
 import { WarmupBlock } from '../../src/components/workout/WarmupBlock';
+import { WarmupActionBar } from '../../src/components/workout/WarmupActionBar';
 import { WarmupExerciseSheet } from '../../src/components/workout/WarmupExerciseSheet';
 import { WorkoutTabs, WorkoutTabKey } from '../../src/components/workout/WorkoutTabs';
 import {
@@ -158,12 +159,16 @@ export default function WorkoutSessionScreen() {
     excludedByInjury,
     isLoading: isWarmupLoading,
     activeTimerId,
+    currentWarmupId,
+    pausedId: warmupPausedId,
     isAllCompleted: isWarmupCompleted,
     totalDuration: warmupTotalDuration,
     generateWarmup,
     startExerciseTimer,
-    stopTimer: stopWarmupTimer,
-    markAsCompleted: markWarmupCompleted,
+    pauseTimer: pauseWarmupTimer,
+    resetTimer: resetWarmupTimer,
+    setFocus: focusWarmupExercise,
+    toggleCompleted: toggleWarmupCompleted,
     isCompleted: isWarmupExerciseCompleted,
     loadWarmupAlternatives,
     replaceWarmupExercise,
@@ -171,18 +176,29 @@ export default function WorkoutSessionScreen() {
     regenerateWarmup,
   } = useWarmup(warmupSource, activeInjuries, userId);
 
+  // WARMUP-3c: счётчик для липкой панели (isCompleted из хука — новая функция
+  // каждый рендер, поэтому без useMemo: считает по 5–7 элементам).
+  const completedWarmupCount = warmupExercises.filter((e) =>
+    isWarmupExerciseCompleted(e.id)
+  ).length;
+
   const [activeTab, setActiveTab] = useState<WorkoutTabKey>('warmup');
   const [settingsTarget, setSettingsTarget] = useState<ExerciseSettingsTarget | null>(null);
 
   // WARMUP-1: L2 лист разминки. State и рендер — в корне экрана, вне ScrollView
   // (паттерн PainSheet): Modal/оверлей, вложенный в скролл-контент, на Android
   // обрезается клипом и перехватывает незавершённый жест тапа (открытие-и-закрытие).
-  const [warmupDetailIndex, setWarmupDetailIndex] = useState<number | null>(null);
-  const openWarmupDetails = useCallback((i: number) => {
+  const [warmupDetailId, setWarmupDetailId] = useState<string | null>(null);
+  const openWarmupDetails = useCallback((id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setWarmupDetailIndex(i);
+    setWarmupDetailId(id);
   }, []);
-  const closeWarmupDetails = useCallback(() => setWarmupDetailIndex(null), []);
+  const closeWarmupDetails = useCallback(() => setWarmupDetailId(null), []);
+  // Лист живёт по id, но WarmupExerciseSheet меняет упражнение по индексу —
+  // выводим индекс из id на каждом рендере (лента ≤7 элементов).
+  const warmupDetailIndex = warmupDetailId
+    ? warmupExercises.findIndex((e) => e.id === warmupDetailId)
+    : -1;
 
   // WARMUP-2: сброс запомненных замен (long-press ⟳ в WarmupBlock) → регенерация
   const handleResetWarmupPreferences = useCallback(() => {
@@ -239,17 +255,14 @@ export default function WorkoutSessionScreen() {
     exercisesRef.current = exercises;
   }, [exercises]);
 
+  // WARMUP-3c: раньше при 5/5 этот эффект сам переключал вкладку на «Тренировку» —
+  // экран уезжал из-под пальцев посреди разминки. Теперь переход — только по CTA на
+  // липкой панели (WarmupActionBar); второй эффект удалён намеренно.
   useEffect(() => {
     if (!isWarmupLoading && warmupExercises.length === 0 && activeTab === 'warmup') {
       setActiveTab('workout');
     }
   }, [isWarmupLoading, warmupExercises.length, activeTab]);
-
-  useEffect(() => {
-    if (isWarmupCompleted && warmupExercises.length > 0) {
-      setActiveTab('workout');
-    }
-  }, [isWarmupCompleted, warmupExercises.length]);
 
   // ===== TTI: когда данные пришли → замеряем и ждём "interactive" =====
   const ttiMeasuredRef = useRef(false);
@@ -591,28 +604,43 @@ export default function WorkoutSessionScreen() {
         />
 
         {hasWarmup && activeTab === 'warmup' && (
-          <ScrollView
-            contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
-            showsVerticalScrollIndicator={false}
-          >
-            <WarmupBlock
-              warmupExercises={warmupExercises}
-              isLoading={isWarmupLoading}
-              excludedByInjury={excludedByInjury}
-              activeTimerId={activeTimerId}
+          <>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <WarmupBlock
+                warmupExercises={warmupExercises}
+                isLoading={isWarmupLoading}
+                excludedByInjury={excludedByInjury}
+                activeTimerId={activeTimerId}
+                pausedId={warmupPausedId}
+                currentId={currentWarmupId}
+                totalDuration={warmupTotalDuration}
+                isCompleted={isWarmupExerciseCompleted}
+                // WARMUP-3b: ⟳ перегенерирует с новым сидом (раньше возвращала тот же набор)
+                onGenerateWarmup={regenerateWarmup}
+                onStartTimer={startExerciseTimer}
+                onPauseTimer={pauseWarmupTimer}
+                onResetTimer={resetWarmupTimer}
+                onToggleCompleted={toggleWarmupCompleted}
+                onFocus={focusWarmupExercise}
+                onOpenDetails={openWarmupDetails}
+                onResetPreferences={handleResetWarmupPreferences}
+              />
+            </ScrollView>
+            {/* WARMUP-3c: «Пропустить» и переход к тренировке — липкая панель вне
+            ScrollView: раньше они уезжали за экран на ленте из 5 упражнений */}
+            <WarmupActionBar
+              completedCount={completedWarmupCount}
+              totalCount={warmupExercises.length}
               isAllCompleted={isWarmupCompleted}
-              totalDuration={warmupTotalDuration}
-              isCompleted={isWarmupExerciseCompleted}
-              // WARMUP-3b: ⟳ перегенерирует с новым сидом (раньше возвращала тот же набор)
-              onGenerateWarmup={regenerateWarmup}
-              onStartTimer={startExerciseTimer}
-              onStopTimer={stopWarmupTimer}
-              onMarkCompleted={markWarmupCompleted}
               onSkip={() => setActiveTab('workout')}
-              onOpenDetails={openWarmupDetails}
-              onResetPreferences={handleResetWarmupPreferences}
+              onGoToWorkout={() => setActiveTab('workout')}
             />
-          </ScrollView>
+            <View style={{ height: insets.bottom }} />
+          </>
         )}
 
         {(!hasWarmup || activeTab === 'workout') && (
@@ -663,18 +691,17 @@ export default function WorkoutSessionScreen() {
           onClearPain={clearPainForCurrent}
         />
 
-        {/* WARMUP-1: L2 лист техники/аналогов разминки — в корне экрана (паттерн PainSheet) */}
+        {/* WARMUP-1: L2 лист техники/аналогов разминки — в корне экрана (паттерн PainSheet).
+        WARMUP-3c: открывается по id, чтобы перестановка ленты не сдвигала содержимое листа. */}
         <WarmupExerciseSheet
-          exercise={
-            warmupDetailIndex !== null ? (warmupExercises[warmupDetailIndex] ?? null) : null
-          }
-          index={warmupDetailIndex ?? 0}
+          exercise={warmupDetailIndex >= 0 ? warmupExercises[warmupDetailIndex] : null}
+          index={Math.max(warmupDetailIndex, 0)}
           completed={
-            warmupDetailIndex !== null &&
-            isWarmupExerciseCompleted(warmupExercises[warmupDetailIndex]?.id ?? '')
+            warmupDetailIndex >= 0 &&
+            isWarmupExerciseCompleted(warmupExercises[warmupDetailIndex].id)
           }
           onClose={closeWarmupDetails}
-          onMarkCompleted={markWarmupCompleted}
+          onMarkCompleted={toggleWarmupCompleted}
           loadAlternatives={loadWarmupAlternatives}
           onReplace={replaceWarmupExercise}
         />
