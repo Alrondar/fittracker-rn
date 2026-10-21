@@ -1,0 +1,26 @@
+STYLE — READ FIRST AND OBEY: a stylized CGI 3D render in the visual language of a modern fitness app illustration, semi-realistic but unmistakably RENDERED: smooth matte shading over skin and muscle, slightly idealized anatomy, clean painted surfaces. THIS IS NOT A PHOTOGRAPH — no camera grain, no photographic skin pores, no real gym, no lens depth of field; not a cartoon, not a line icon.
+
+POSE RULE — READ SECOND AND OBEY, THIS IS THE DEFINING FEATURE OF THE EXERCISE: he is LYING FACE DOWN on an inclined bench, chest and belly pressed against the pad, head above the top edge of the pad, and he raises two dumbbells by pulling his shoulder blades together. The bench is set at about 30° — head end up, foot end down. He is not standing, not bent over at the waist and not lying on a flat floor.
+
+SCENE: INCLINE PRONE W-RAISE with dumbbells, START of the rep. A man lies chest-down on the pad of an incline bench, viewed from behind. His hips, thighs and legs run down the slope of the pad to the lower-right corner of the frame, knees slightly bent, the soles of his shoes visible. His arms hang straight DOWN from his shoulders, perpendicular to the floor, triceps alongside his ribs, and he holds one dumbbell in each hand at the lowest point — the dumbbells hang below shoulder level, near the floor. His shoulder blades are relaxed and NOT retracted, his head is above the top edge of the pad, eyes looking down at the bench.
+
+DUMBBELL COUNT LOCK: exactly TWO dumbbells in the whole scene, one in each hand, both hanging below his shoulders. The floor is empty — no rack, no extra dumbbells, no barbell.
+ARMS OUTSIDE LOCK: both arms and both dumbbells sit entirely OUTSIDE the silhouette of his body — a strip of background is visible between each dumbbell and the nearest part of his torso or leg. Nothing merges into the bench pad.
+BENCH COMPLETENESS LOCK: the whole incline bench is in frame — the pad, the fixed frame under it and both support feet on the floor; the pad is a single flat black cushion at about 30°, no adjustable backrest arm in front of his chest.
+DEPTH ORDER: from the camera — his back and shoulders, then the bench pad behind and under him, then his legs down the pad. His body is IN FRONT of the pad, the pad never covers his back.
+HEAD AND NECK LOCK: his head is above the upper edge of the pad, neck in the continuation of the spine, chin slightly tucked, not hanging down.
+HIP LOCK: hips and pelvis stay on the pad; his lower back does not arch and his hips do not lift off the bench.
+SHOULDER LOCK: in this starting frame the shoulders are DOWN and relaxed, the arms fully extended, the dumbbells hanging.
+
+CAMERA: view from BEHIND, slightly toward the head end, about 20° off straight back, camera at 1.3 m height, 2.8 m away. We see his whole back from neck to heels, both shoulder blades, the back of both arms and the incline bench under him. His head and arms are in the LEFT half of the frame, his feet in the RIGHT half.
+ORIENTATION LOCK: head and dumbbells to the LEFT, feet to the RIGHT. Never mirrored.
+SCALE LOCK: one metre of his body occupies the same number of pixels as in the companion frame of this pair; the camera does not move, does not zoom, does not change height.
+FRAMING LOCK: the whole man and the whole bench fill the frame diagonally; his head sits at about 5 percent from the top edge, his heels at about 80 percent, both dumbbells fully inside the frame, nothing cropped.
+SINGLE FRAME: one continuous scene filling the whole canvas — no collage, no split panels, no inset, no duplicated figure, no second view of the same exercise.
+
+CHARACTER LOCK: athletic man in his late 20s, LEAN and athletic, NOT bulky, short dark-brown hair cropped at the sides, clean-shaven, black sleeveless training top, black shorts, black sneakers with white soles, neutral focused expression. Slim athletic build, no bodybuilder mass. Exactly this one man, no other person.
+
+HIGHLIGHT: a soft, semi-transparent warm-red X-ray glow visible through his body over the POSTERIOR DELTOIDS and the MID AND LOWER TRAPEZIUS on BOTH sides of his upper back, following the real muscle contours and tapering at the edges. In this starting frame the glow is dim — the muscle is not yet contracted. His neck, lats, lower back and legs stay completely unlit and dark. The dumbbells and the bench stay dark.
+BACKGROUND: seamless desaturated cool blue-grey studio backdrop with soft gradient and gentle vignette, soft floor shadow under the bench feet and his shoes, matte dark-grey metal with black pads, hex-shaped black rubber dumbbell ends, no logos, no text, no numbers, no watermark, no mirrors.
+
+FORBIDDEN: a standing or seated position; bent-over rows at the waist without a bench; lying face up on the bench; a flat bench instead of an inclined one; arms raised forward or overhead; elbows bent in this starting frame; dumbbells resting on the pad or on his back; one dumbbell; three or more dumbbells; a barbell; a photograph; a different body type — no bulky wide-shouldered bodybuilder. 3:2 landscape composition.
