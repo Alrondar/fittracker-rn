@@ -438,8 +438,35 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     [scheduleFlush]
   );
 
+  // ENG-13: снятие флага «Разминка» убирает и слот, который auto-add доборал при
+  // включении, — иначе после отмены в сетке навсегда остаётся пустая строка, а
+  // target_sets дня уже завышен. Убирается только последний совсем незаполненный
+  // слот (ни веса, ни повторов, ни отметки усилия): у него нет строки в
+  // workout_logs, поэтому история не теряет ни подхода, ни RPE.
   const updateSetFeedback = useCallback(
     (exerciseIndex: number, setIndex: number, patch: SetFeedbackPatch) => {
+      const snapshot = exercisesRef.current[exerciseIndex];
+      const snapshotSets = snapshot?.sets ?? [];
+      const lastSet = snapshotSets[snapshotSets.length - 1];
+      const lastIsBlank =
+        !!lastSet &&
+        !lastSet.isWarmup &&
+        lastSet.weight === '' &&
+        lastSet.reps === '' &&
+        (lastSet.reps_left ?? '') === '' &&
+        (lastSet.reps_right ?? '') === '' &&
+        lastSet.rpe == null &&
+        lastSet.rir == null &&
+        lastSet.difficulty == null &&
+        lastSet.estimatedReps == null;
+      const shrinkTo =
+        patch.isWarmup === false &&
+        (snapshot?.sets[setIndex]?.isWarmup ?? false) &&
+        snapshotSets.length > 1 &&
+        lastIsBlank
+          ? snapshotSets.length - 1
+          : null;
+
       setExercises((prev) => {
         const exercise = prev[exerciseIndex];
         const set = exercise.sets[setIndex];
@@ -459,16 +486,24 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
         const updated = [...prev];
         const newExercise = { ...exercise };
-        const newSets = [...exercise.sets];
+        let newSets = [...exercise.sets];
         newSets[setIndex] = { ...set, ...patch };
+        if (shrinkTo !== null && newSets.length > shrinkTo) {
+          newSets = newSets.slice(0, shrinkTo);
+          newExercise.target_sets = shrinkTo;
+        }
         newExercise.sets = newSets;
         updated[exerciseIndex] = newExercise;
         pendingLogsRef.current.set(exercise.workout_exercise_id, newSets);
         scheduleFlush();
         return updated;
       });
+
+      if (shrinkTo !== null && snapshot) {
+        persistExerciseSettings(snapshot.workout_exercise_id, { target_sets: shrinkTo });
+      }
     },
-    [scheduleFlush]
+    [scheduleFlush, persistExerciseSettings]
   );
 
   /**

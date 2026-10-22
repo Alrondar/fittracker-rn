@@ -92,6 +92,10 @@ const REJECTION_REASONS: { code: UserRejectionReason; label: string }[] = [
 // 'resolved' — ответ записан, prompt скрыт.
 type FeedbackState = { status: 'idle' } | { status: 'reasonPrompt' } | { status: 'resolved' };
 
+// ENG-13: подписью «Р» помечается разминочный слот — он не входит в нумерацию
+// рабочих подходов, но остаётся в workout_logs под своим позиционным set_number.
+const WARMUP_LABEL = 'Р';
+
 // Чистая функция вне компонента — не зависит от props/state.
 const getSetRowsConfig = (total: number): number[] => {
   if (total <= 4) return [total];
@@ -254,6 +258,8 @@ interface SetRowProps {
   rowSets: SetData[];
   startIndex: number;
   rowIndex: number;
+  /** ENG-13: подписи подходов для всего упражнения (рабочие — 1..K, разминочные — «Р»). */
+  labels: string[];
   exerciseIndex: number;
   updateSet: (
     exIndex: number,
@@ -280,6 +286,7 @@ const SetRow = memo(
     rowSets,
     startIndex,
     rowIndex,
+    labels,
     exerciseIndex,
     updateSet,
     unit,
@@ -295,13 +302,21 @@ const SetRow = memo(
     return (
       <View key={rowIndex} style={cardStyles.setRow}>
         <View style={cardStyles.setNumbersRow}>
-          {rowSets.map((_, si) => (
-            <View key={si} style={cardStyles.setNumber}>
-              <Text style={[cardStyles.setNumberText, { color: colors.textPrimary }]}>
-                {startIndex + si + 1}
-              </Text>
-            </View>
-          ))}
+          {rowSets.map((_, si) => {
+            const label = labels[startIndex + si];
+            return (
+              <View key={si} style={cardStyles.setNumber}>
+                <Text
+                  style={[
+                    cardStyles.setNumberText,
+                    { color: label === WARMUP_LABEL ? colors.textTertiary : colors.textPrimary },
+                  ]}
+                >
+                  {label}
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
         <View style={cardStyles.setInputsRow}>
@@ -459,8 +474,6 @@ const SetRow = memo(
 interface SetsGridProps {
   exerciseIndex: number;
   sets: SetData[];
-  /** ENG-13: базовое количество подходов (до пометки разминочными) для расчёта автодобавления. */
-  targetSets: number;
   restSeconds: number;
   /** ENG-1: диапазон повторов для прогрессии. null = no target (fallback to RPE only). */
   repsRange?: string | null;
@@ -525,7 +538,6 @@ interface SetsGridProps {
 export const SetsGrid = memo(function SetsGrid({
   exerciseIndex,
   sets,
-  targetSets,
   restSeconds,
   repsRange,
   targetRpe,
@@ -735,6 +747,22 @@ export const SetsGrid = memo(function SetsGrid({
     [sets, isSetCompleted]
   );
   const allSetsDone = sets.length > 0 && completedSets === sets.length;
+
+  // ENG-13: номер над подходом — порядковый номер РАБОЧЕГО подхода, разминочный
+  // слот показывается как «Р». Нумерация в workout_logs остаётся позиционной
+  // (set_number = индекс + 1, mapper восстанавливает слот по set_number - 1),
+  // меняется только то, что видит человек.
+  const setLabels = useMemo(() => {
+    let working = 0;
+    return sets.map((s) => (s.isWarmup ? WARMUP_LABEL : String(++working)));
+  }, [sets]);
+  const warmupSetCount = useMemo(() => sets.filter((s) => s.isWarmup).length, [sets]);
+  const workingSetCount = sets.length - warmupSetCount;
+  const completedWorkingSets = useMemo(
+    () => sets.filter((s) => !s.isWarmup && isSetCompleted(s)).length,
+    [sets, isSetCompleted]
+  );
+  const allWorkingSetsDone = workingSetCount > 0 && completedWorkingSets === workingSetCount;
 
   // ============================================================================
   // UX-3a (I-5): PR-момент — glow-баннер + scale-pop + success-хаптика при
@@ -1148,36 +1176,23 @@ export const SetsGrid = memo(function SetsGrid({
   }, [feedbackSetIndex, exerciseIndex, updateSetFeedback, closeRpeEditor]);
 
   // ENG-13: toggle warmup flag for a set
-  // Auto-add new working sets to maintain the original number of working sets.
-  // Formula: added sets = current warmup count (after toggle).
-  // Example: target=4. Mark 1 as warmup -> +1 set (total 5: 1 warmup + 4 working).
-  // Mark 2 as warmup -> +2 sets (total 6: 2 warmup + 4 working), etc.
+  // Рабочих подходов после переключения должно оставаться столько же, поэтому
+  // включение добирает РОВНО один пустой слот в конец. Раньше формула была
+  // «targetSets + число разминочных», и она же ломалась со второго нажатия:
+  // addSet поднимает target_sets до длины сетки, поэтому база переставала быть
+  // числом рабочих подходов и второй toggle добавлял два слота вместо одного.
+  // Снятие флага убирает слот внутри updateSetFeedback — там же, где живёт
+  // target_sets дня.
   const handleToggleWarmup = useCallback(
     (setIndex: number) => {
       const sets = setsRef.current; // FZ-2: ref вместо deps — стабильная идентичность
       const set = sets[setIndex];
       const newIsWarmup = !set.isWarmup;
 
-      // Сначала обновляем флаг
       updateSetFeedback(exerciseIndex, setIndex, { isWarmup: newIsWarmup });
-
-      if (newIsWarmup) {
-        // Считаем, сколько будет разминочных подходов ПОСЛЕ обновления
-        const warmupCount = sets.filter((s, idx) => idx === setIndex || s.isWarmup).length;
-
-        // Целевое общее количество подходов = базовое (targetSets) + количество разминочных
-        const targetTotalSets = targetSets + warmupCount;
-
-        // Сколько нужно добавить, чтобы достичь целевого количества
-        const toAdd = targetTotalSets - sets.length;
-
-        if (toAdd > 0) {
-          // VF-4: пакетное добавление — один state-update и один persist
-          addSet(exerciseIndex, toAdd);
-        }
-      }
+      if (newIsWarmup) addSet(exerciseIndex, 1);
     },
-    [exerciseIndex, updateSetFeedback, addSet, targetSets]
+    [exerciseIndex, updateSetFeedback, addSet]
   );
 
   // Фикс «пустой рамки»: обёртка подсказки рендерится только если хотя бы один
@@ -1219,14 +1234,15 @@ export const SetsGrid = memo(function SetsGrid({
             style={[
               typography.captionSmall,
               {
-                color: allSetsDone ? colors.success : colors.textTertiary,
+                color: allWorkingSetsDone ? colors.success : colors.textTertiary,
                 fontWeight: '700',
                 marginLeft: 'auto',
               },
             ]}
           >
-            {allSetsDone ? '✓ ' : ''}
-            {completedSets}/{sets.length}
+            {allWorkingSetsDone ? '✓ ' : ''}
+            {completedWorkingSets}/{workingSetCount}
+            {warmupSetCount > 0 ? ` · разм ${warmupSetCount}` : ''}
           </Text>
           {/* UX-16 D5: 💡 button для раскрытия RecommendationCard */}
           {recommendation && recommendation.action !== 'no_data' && (
@@ -1592,6 +1608,7 @@ export const SetsGrid = memo(function SetsGrid({
                 rowSets={rowSets}
                 startIndex={startIndex}
                 rowIndex={rowIndex}
+                labels={setLabels}
                 exerciseIndex={exerciseIndex}
                 updateSet={updateSet}
                 unit={unit}
