@@ -926,6 +926,11 @@ export const SetsGrid = memo(function SetsGrid({
     barWeight,
   ]);
 
+  // Плашка скрывается по крестику и остаётся скрытой до перезахода в день:
+  // состояние живёт в экране, намеренно без записи в базу — «убери, что мешает
+  // сейчас» не должно превращаться в настройку, которую потом негде отменить.
+  const [rampHidden, setRampHidden] = useState(false);
+
   // WARMUP-3d (ENG-12): разминочная лесенка к первому упражнению дня.
   // Верх = рекомендация движка (то же число, что показывает чип), фолбэк —
   // previousWeight последнего подхода; если ни того ни другого — лесенки нет.
@@ -1576,41 +1581,60 @@ export const SetsGrid = memo(function SetsGrid({
               какие веса и что будет после — «50%×5 · 70%×3 · 85%×1» не отвечало
               ни на один: база процента нигде не названа, а «·» читалось как
               «один на выбор» (вердикт владельца 22.10). */}
-          {rampPlan && (
-            <PressableScale
-              onPress={() => addWarmupRamp!(exerciseIndex, rampPlan.steps)}
-              accessibilityRole="button"
-              accessibilityLabel={`Добавить ${rampPlan.steps.length} разминочных подхода перед рабочими: ${rampPlan.steps
-                .map((s) => `${toDisplay(String(s.weightKg))} ${unit} на ${s.reps}`)
-                .join(', ')}. Затем рабочий ${toDisplay(String(rampPlan.topWeightKg))} ${unit}`}
+          {rampPlan && !rampHidden && (
+            <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 alignSelf: 'flex-start',
-                gap: 6,
-                paddingHorizontal: SPACING.sm,
-                paddingVertical: 6,
+                gap: 2,
                 marginBottom: SPACING.xs,
-                borderRadius: BORDER_RADIUS.full,
-                backgroundColor: withAlpha(colors.warning, 0.12),
               }}
             >
-              <Flame size={13} color={colors.warning} />
-              <View style={{ gap: 1 }}>
-                <Text
-                  style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}
-                >
-                  Разминка:{' '}
-                  {rampPlan.steps
-                    .map((s) => `${toDisplay(String(s.weightKg))}×${s.reps}`)
-                    .join(' → ')}
-                </Text>
-                <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
-                  {rampPlan.steps.length} подряд, затем рабочий{' '}
-                  {toDisplay(String(rampPlan.topWeightKg))} {unit}
-                </Text>
-              </View>
-            </PressableScale>
+              <PressableScale
+                onPress={() => addWarmupRamp!(exerciseIndex, rampPlan.steps)}
+                accessibilityRole="button"
+                accessibilityLabel={`Добавить ${
+                  rampPlan.steps.length
+                } разминочных подхода перед рабочими: ${rampPlan.steps
+                  .map((s) => `${toDisplay(String(s.weightKg))} ${unit} на ${s.reps}`)
+                  .join(', ')}. Затем рабочий ${toDisplay(String(rampPlan.topWeightKg))} ${unit}`}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: SPACING.sm,
+                  paddingVertical: 6,
+                  borderRadius: BORDER_RADIUS.full,
+                  backgroundColor: withAlpha(colors.warning, 0.12),
+                }}
+              >
+                <Flame size={13} color={colors.warning} />
+                <View style={{ gap: 1 }}>
+                  <Text
+                    style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}
+                  >
+                    Разминка:{' '}
+                    {rampPlan.steps
+                      .map((s) => `${toDisplay(String(s.weightKg))}×${s.reps}`)
+                      .join(' → ')}
+                  </Text>
+                  <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                    {rampPlan.steps.length} подряд, затем рабочий{' '}
+                    {toDisplay(String(rampPlan.topWeightKg))} {unit}
+                  </Text>
+                </View>
+              </PressableScale>
+              <PressableScale
+                onPress={() => setRampHidden(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Скрыть лесенку разминки"
+                hitSlop={10}
+                style={{ padding: SPACING.xs }}
+              >
+                <X size={14} color={colors.textTertiary} strokeWidth={2.5} />
+              </PressableScale>
+            </View>
           )}
 
           {/* Ряды подходов через вынесенный memo SetRow */}
