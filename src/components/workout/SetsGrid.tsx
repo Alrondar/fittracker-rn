@@ -97,7 +97,15 @@ type FeedbackState = { status: 'idle' } | { status: 'reasonPrompt' } | { status:
 const WARMUP_LABEL = 'Р';
 
 // Чистая функция вне компонента — не зависит от props/state.
-const getSetRowsConfig = (total: number): number[] => {
+// У односторонних упражнений в колонке два поля (L и R), и при трёх-четырёх
+// колонках в ряд значения в них перестают влезать целиком — такой ряд режем по
+// два подхода. Обычная раскладка не меняется.
+const getSetRowsConfig = (total: number, isUnilateral: boolean): number[] => {
+  if (isUnilateral) {
+    const rows: number[] = [];
+    for (let left = total; left > 0; left -= 2) rows.push(Math.min(2, left));
+    return rows;
+  }
   if (total <= 4) return [total];
   if (total === 5) return [3, 2];
   if (total === 6) return [3, 3];
@@ -617,7 +625,10 @@ export const SetsGrid = memo(function SetsGrid({
   );
 
   const [feedbackSetIndex, setFeedbackSetIndex] = useState<number | null>(null);
-  const setRowsConfig = useMemo(() => getSetRowsConfig(sets.length), [sets.length]);
+  const setRowsConfig = useMemo(
+    () => getSetRowsConfig(sets.length, isUnilateral),
+    [sets.length, isUnilateral]
+  );
 
   // ============================================================================
   // UX-RPE-1: морфинг «таблица ⇄ RPE-редактор»
