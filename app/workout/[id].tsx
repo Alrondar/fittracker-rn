@@ -437,6 +437,20 @@ export default function WorkoutSessionScreen() {
     [removeAddedExercise]
   );
 
+  // WARMUP-3d: скрытые плашки лесенки живут до выхода из дня (вердикт владельца
+  // 23.10). Состояние поднято с карточки на экран: упражнения рендерит FlatList
+  // с windowSize 5, он размонтирует строки вне окна, и локальный useState
+  // возвращал плашку при прокрутке длинного дня.
+  const [hiddenRamps, setHiddenRamps] = useState<Set<number>>(new Set());
+  const hideRamp = useCallback((index: number) => {
+    setHiddenRamps((prev) => {
+      if (prev.has(index)) return prev;
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  }, []);
+
   const renderItem = useCallback(
     ({ item, index }: { item: any; index: number }) => (
       <ExerciseSlider
@@ -474,10 +488,14 @@ export default function WorkoutSessionScreen() {
         // high|medium. Для изоляции (blood_flow) чип не показываем.
         addWarmupRamp={addWarmupRampSets}
         showWarmupRamp={rampProtocolForIntensity(item.intensity) === 'compound'}
+        rampHidden={hiddenRamps.has(index)}
+        onHideRamp={hideRamp}
       />
     ),
     [
       id,
+      hiddenRamps,
+      hideRamp,
       replacements,
       displayMode,
       loadAlternatives,

@@ -509,6 +509,13 @@ interface SetsGridProps {
    */
   addWarmupRamp?: (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => void;
   showWarmupRamp?: boolean;
+  /**
+   * WARMUP-3d: плашка скрыта крестиком. Состояние держит экран, а не карточка:
+   * FlatList размонтирует строки вне окна, и локальный useState возвращал
+   * плашку при прокрутке дня. Скрытие живёт до выхода из дня.
+   */
+  rampHidden?: boolean;
+  onHideRamp?: (exerciseIndex: number) => void;
   /** Интенсивность упражнения: high|medium → compound-лесенка, low → blood-flow. */
   intensity?: string | null;
   // FEAT-1.1 v2: прогрессия пер-сет через updateSet; applyProgression оставлен
@@ -554,6 +561,8 @@ export const SetsGrid = memo(function SetsGrid({
   addSet,
   addWarmupRamp,
   showWarmupRamp,
+  rampHidden,
+  onHideRamp,
   intensity,
   isSetCompleted,
   startRestTimer,
@@ -925,11 +934,6 @@ export const SetsGrid = memo(function SetsGrid({
     unit,
     barWeight,
   ]);
-
-  // Плашка скрывается по крестику и остаётся скрытой до перезахода в день:
-  // состояние живёт в экране, намеренно без записи в базу — «убери, что мешает
-  // сейчас» не должно превращаться в настройку, которую потом негде отменить.
-  const [rampHidden, setRampHidden] = useState(false);
 
   // WARMUP-3d (ENG-12): разминочная лесенка к первому упражнению дня.
   // Верх = рекомендация движка (то же число, что показывает чип), фолбэк —
@@ -1626,7 +1630,7 @@ export const SetsGrid = memo(function SetsGrid({
                 </View>
               </PressableScale>
               <PressableScale
-                onPress={() => setRampHidden(true)}
+                onPress={() => onHideRamp?.(exerciseIndex)}
                 accessibilityRole="button"
                 accessibilityLabel="Скрыть лесенку разминки"
                 hitSlop={8}
