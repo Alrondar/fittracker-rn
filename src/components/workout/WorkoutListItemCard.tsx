@@ -8,6 +8,7 @@ import { PressableScale } from '../ui/PressableScale';
 import type { ForecastDifficulty } from '../../utils/workoutForecast';
 import {
   getWorkoutStatus,
+  isStartableInCurrentWeek,
   formatDuration,
   forecastDifficultyColor,
   forecastDifficultyBorderColor,
@@ -42,6 +43,9 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
   const { colors } = useTheme();
   const status = getWorkoutStatus(item, activeProgram);
   const isNext = status === 'next';
+  // PTR-ORDER: любой незакрытый день текущей недели запускается и пропускается,
+  // даже если указатель стоит на другом.
+  const startable = isStartableInCurrentWeek(item, activeProgram);
   const phaseColor = getPhaseColor(section.phaseType, colors);
   const phaseMeta = getPhaseMeta(section.phaseType);
   const PhaseIcon = phaseMeta.icon;
@@ -62,9 +66,11 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
           ? withAlpha(colors.success, 0.38)
           : colors.border;
 
-  // UX-5 Feature 2: long press только для «Следующая» (скоуп подтверждён)
+  // UX-5 Feature 2: long press = пропуск. PTR-ORDER (вердикт владельца 22.10)
+  // расширяет скоуп: пропустить можно любой незакрытый день недели, не только
+  // тот, на котором стоит указатель.
   const handleLongPress = () => {
-    if (status !== 'next') return;
+    if (!isNext && !startable) return;
     onSkipRequest({ id: item.id, name: item.name });
   };
 
@@ -202,7 +208,7 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
           ) : (
             <Text style={[typography.caption, { color: colors.textSecondary }]}>{dateStr}</Text>
           )}
-          {(status === 'next' || status === 'in_progress') && (
+          {(status === 'in_progress' || status === 'next' || startable) && (
             <Text style={[typography.labelBold, { color: colors.primary }]}>
               {status === 'in_progress' ? 'Продолжить →' : 'Начать →'}
             </Text>

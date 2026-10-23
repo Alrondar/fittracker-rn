@@ -73,7 +73,7 @@ import {
   ReadinessOverride,
 } from '../../engine/progression';
 import type { ProgressionContext } from '../../engine/progression';
-import { planRampUp, rampPctLabel } from '../../engine/warmupRamp';
+import { planRampUp } from '../../engine/warmupRamp';
 import { RecommendationCard } from './RecommendationCard';
 import { perfMark, perfPaint } from '../../utils/perf';
 
@@ -1570,14 +1570,18 @@ export const SetsGrid = memo(function SetsGrid({
             </View>
           )}
 
-          {/* WARMUP-3d: разминочная лесенка (только первое упражнение дня) */}
+          {/* WARMUP-3d: разминочная лесенка (только первое упражнение дня).
+              Подпись обязана отвечать на три вопроса разом: сколько подходов,
+              какие веса и что будет после — «50%×5 · 70%×3 · 85%×1» не отвечало
+              ни на один: база процента нигде не названа, а «·» читалось как
+              «один на выбор» (вердикт владельца 22.10). */}
           {rampPlan && (
             <PressableScale
               onPress={() => addWarmupRamp!(exerciseIndex, rampPlan.steps)}
               accessibilityRole="button"
-              accessibilityLabel={`Добавить разминочные подходы: ${rampPlan.steps
-                .map((s) => `${rampPctLabel(s.pct)} на ${s.reps}`)
-                .join(', ')}`}
+              accessibilityLabel={`Добавить ${rampPlan.steps.length} разминочных подхода перед рабочими: ${rampPlan.steps
+                .map((s) => `${toDisplay(String(s.weightKg))} ${unit} на ${s.reps}`)
+                .join(', ')}. Затем рабочий ${toDisplay(String(rampPlan.topWeightKg))} ${unit}`}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -1591,10 +1595,20 @@ export const SetsGrid = memo(function SetsGrid({
               }}
             >
               <Flame size={13} color={colors.warning} />
-              <Text style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}>
-                Разогреться:{' '}
-                {rampPlan.steps.map((s) => `${rampPctLabel(s.pct)}×${s.reps}`).join(' · ')}
-              </Text>
+              <View style={{ gap: 1 }}>
+                <Text
+                  style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}
+                >
+                  Разминка:{' '}
+                  {rampPlan.steps
+                    .map((s) => `${toDisplay(String(s.weightKg))}×${s.reps}`)
+                    .join(' → ')}
+                </Text>
+                <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>
+                  {rampPlan.steps.length} подряд, затем рабочий{' '}
+                  {toDisplay(String(rampPlan.topWeightKg))} {unit}
+                </Text>
+              </View>
             </PressableScale>
           )}
 
