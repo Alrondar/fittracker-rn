@@ -52,6 +52,9 @@ interface ExerciseCardProps {
   /** WARMUP-3d (ENG-12): разминочная лесенка, пробрасывается в SetsGrid. */
   addWarmupRamp?: (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => void;
   showWarmupRamp?: boolean;
+  /** WARMUP-3d: плашка лесенки скрыта (состояние живёт на экране, не в карточке). */
+  rampHidden?: boolean;
+  onHideRamp?: (exerciseIndex: number) => void;
   applyProgression: (exerciseIndex: number, newWeight: number) => void;
   isSetCompleted: (set: SetData) => boolean;
   startRestTimer: (seconds: number, ownerIndex?: number | null) => void;
@@ -99,6 +102,8 @@ export const ExerciseCard = memo(function ExerciseCard({
   addSet,
   addWarmupRamp,
   showWarmupRamp,
+  rampHidden,
+  onHideRamp,
   applyProgression,
   isSetCompleted,
   startRestTimer,
@@ -294,6 +299,8 @@ export const ExerciseCard = memo(function ExerciseCard({
             addSet={addSet}
             addWarmupRamp={addWarmupRamp}
             showWarmupRamp={showWarmupRamp}
+            rampHidden={rampHidden}
+            onHideRamp={onHideRamp}
             intensity={(exercise as ExerciseData).intensity}
             applyProgression={applyProgression}
             isSetCompleted={isSetCompleted}

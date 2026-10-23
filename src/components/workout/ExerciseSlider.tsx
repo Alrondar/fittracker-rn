@@ -119,6 +119,9 @@ interface ExerciseSliderProps {
   /** WARMUP-3d (ENG-12): лесенка разминки — прокидывается в SetsGrid. */
   addWarmupRamp?: (exerciseIndex: number, steps: { weightKg: number; reps: number }[]) => void;
   showWarmupRamp?: boolean;
+  /** WARMUP-3d: плашка лесенки скрыта (состояние живёт на экране, не в карточке). */
+  rampHidden?: boolean;
+  onHideRamp?: (exerciseIndex: number) => void;
 }
 
 export const ExerciseSlider = memo(function ExerciseSlider({
@@ -152,6 +155,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
   addSet,
   addWarmupRamp,
   showWarmupRamp,
+  rampHidden,
+  onHideRamp,
 }: ExerciseSliderProps) {
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = screenWidth - 32;
@@ -484,6 +489,8 @@ export const ExerciseSlider = memo(function ExerciseSlider({
             addSet={addSet}
             addWarmupRamp={addWarmupRamp}
             showWarmupRamp={showWarmupRamp}
+            rampHidden={rampHidden}
+            onHideRamp={onHideRamp}
           />
         </View>
 
