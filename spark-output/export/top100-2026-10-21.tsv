@@ -1,0 +1,100 @@
+1	8f017a2a-5115-4cee-8e3d-ffdbf7b7236f	Жим гантелей сидя	Seated Dumbbell Press	Seated_Dumbbell_Press	71	125	up	248
+2	efa318ff-02ea-40ac-910a-68e4ab910e57	Тяга штанги в наклоне	Bent Over Barbell Row	Bent_Over_Barbell_Row	61	112	our	287
+3	eb299866-a21a-4e33-9a8b-4ce0486ea5c4	Тяга верхнего блока к груди широким хватом	Wide-Grip Lat Pulldown	Wide-Grip_Lat_Pulldown	67	104	our	291
+4	8a3dd8f1-0d0a-485b-a31a-75921af08be9	Махи гантелями перед собой	Front Dumbbell Raise	Front_Dumbbell_Raise	43	100	up	242
+5	033d05e1-473e-49e9-8cfe-bce82239e883	Приседания со штангой на плечах	Barbell Squat	Barbell_Squat	50	92	our	410
+6	2b2f46fb-6e99-4a01-8558-5fed7d0add09	Разгибание ног в тренажере	Leg Extensions	Leg_Extensions	46	86	up	302
+7	cc379eca-f15f-49cf-afb9-6ab50c7d3f6f	Разгибание рук на верхнем блоке (канат)	Triceps Pushdown - Rope Attachment	Triceps_Pushdown_-_Rope_Attachment	50	82	up	307
+8	ace537ec-f0c6-4ae7-b47d-ca3bacd8188e	Жим штанги лежа на горизонтальной скамье	Barbell Bench Press - Medium Grip	Barbell_Bench_Press_-_Medium_Grip	49	82	our	300
+9	0d7f121e-be39-407b-89c2-39cc85c6e7e3	Жим ногами в тренажёре	Leg Press	Leg_Press	52	75	our	287
+10	2666d36f-f295-401b-b36f-1399ab5929d9	Сгибание ног лежа	Lying Leg Curls	Lying_Leg_Curls	40	77	up	295
+11	7700bf50-ff3c-44ea-98d3-5b56fab80d99	Подъем штанги на бицепс стоя	Close-Grip Standing Barbell Curl	Close-Grip_Standing_Barbell_Curl	40	68	our	257
+12	e4bcc6ac-eec8-4a7d-a29d-d97a5848f8f4	Подтягивания широким хватом	Wide-Grip Pull-Up	Wide-Grip_Lat_Pulldown	32	73	up	274
+13	be4f02cc-6958-4592-8728-820569b8710d	Румынская становая тяга (румынка)	Romanian Deadlift	Romanian_Deadlift	52	51	our	386
+14	e0fabf95-1533-4b0f-b120-ca6062641110	Махи гантелями в наклоне	Bent Over Dumbbell Rear Delt Raise With Head On Bench	Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench	30	73	up	268
+15	47e3f7b4-062c-4e0c-922c-050e6be282e5	Мёртвый жук	Dead Bug	Dead_Bug	37	51	up	308
+16	a4b05d2e-6249-40b5-9947-fb6fbce69041	Жим гантелей на наклонной скамье	Incline Dumbbell Press	Incline_Dumbbell_Press	29	55	up	260
+17	c0944293-93db-4eea-a915-15bb3cf8e814	Тяга гантели одной рукой в наклоне	One-Arm Dumbbell Row	One-Arm_Dumbbell_Row	31	48	our	312
+18	15754cec-44e1-4977-9935-75e5a5224d72	Отжимания на брусьях (акцент грудь)	Dips - Chest Version	Dips_-_Chest_Version	29	50	up	280
+19	b639cd36-53df-46fd-9edf-b3bcef984076	Тяга каната к лицу (Face Pull)	Face Pull	Face_Pull	27	46	up	300
+20	6d1ab063-1c74-4d4b-8f95-94966c649dcd	Румынская тяга гири на одной ноге	Kettlebell One-Legged Deadlift	Kettlebell_One-Legged_Deadlift	2	71	up	343
+21	a673a68c-3b75-46c8-8fcb-da8962a14a80	Жим штанги стоя (армейский жим)	Standing Barbell Military Press	Standing_Military_Press	22	48	up	264
+22	c7180f08-97da-4252-b316-dd3984a6259d	Подъем на носки стоя	Standing Calf Raises	Standing_Calf_Raises	20	49	up	285
+23	5e5be93b-5511-4c80-afa1-6b1c9b2c535d	Фронтальные приседания	Front Squat (Clean Grip)	Front_Squat_Clean_Grip	28	40	up	345
+24	37d6ecbf-28db-459a-bb58-0a5d4f221f13	Жим штанги на наклонной скамье (30–45°)	Barbell Incline Bench Press - Medium Grip	Barbell_Incline_Bench_Press_-_Medium_Grip	22	45	up	300
+25	0f91bfa0-a417-4874-b8e1-bb5ba13412c7	Сгибание ног сидя	Seated Leg Curl	Seated_Leg_Curl	25	42	up	288
+26	5fefb645-f408-4363-95d5-21955ff5c66e	Выпады с гантелями	Dumbbell Lunges	Dumbbell_Lunges	25	40	our	273
+27	507a334c-a3c1-4adc-86d8-05d19b9f77aa	Разводка в кроссовере (сведение рук)	Cable Crossover	Cable_Crossover	18	43	our	286
+28	d141a282-3f8b-40aa-91d0-9c89d56d3667	Сгибание рук на бицепс (молот)	Hammer Curls	Hammer_Curls	26	33	our	288
+29	5daa66c2-8a1e-4e94-9eb4-c025770fd721	Подъем на носки сидя	Seated Calf Raise	Seated_Calf_Raise	17	40	up	271
+30	aefdc8dc-bd06-4270-b2f2-3efa4f5360e8	Французский жим сидя	Seated Barbell Overhead Triceps Extension	Seated_Barbell_Overhead_Triceps_Extension	16	40	our	253
+31	128c1160-8371-4019-a349-dfc39928b369	Махи гантелями в стороны стоя	Side Lateral Raise	Side_Lateral_Raise	33	19	up	236
+32	2210f473-552a-4bdd-bf89-25f43aa32ea1	Ягодичный мостик со штангой	Barbell Hip Thrust	Barbell_Hip_Thrust	38	10	our	410
+33	2d072094-7f50-4a4f-bae2-a3b0b004d9ee	Тяга нижнего блока к поясу сидя	Seated Cable Row	Seated_Cable_Rows	22	24	up	277
+34	99e41686-535c-4315-b076-ec7a1adc5a6a	Планка на локтях (классическая)	Plank	Plank	19	25	up	260
+35	c28b458a-7382-44ba-a638-0432ad19bfda	Болгарские выпады	Split Squat with Dumbbells	Split_Squat_with_Dumbbells	29	10	our	294
+36	19f4f807-e47c-4741-98bd-f940dfd30b92	Подъем на носки в тренажере для жима ногами	Calf Press On The Leg Press Machine	Calf_Press_On_The_Leg_Press_Machine	23	16	up	331
+37	7561eee7-2ebc-49e6-b118-d00995febd23	Румынская тяга в Смите	Smith Machine Stiff-Legged Deadlift	Smith_Machine_Stiff-Legged_Deadlift	12	27	up	308
+38	f337d88f-cce7-472f-9046-c4347b6d1612	Становая тяга (становая)	Barbell Deadlift	Barbell_Deadlift	16	21	up	381
+39	06bc27b8-e79f-4120-aecf-db385c1e97a6	Пуловер в блоке (Straight-Arm Pulldown)	Straight-Arm Pulldown	Straight-Arm_Pulldown	12	25	our	338
+40	5c3ee50c-f547-41ba-968d-ae926e04e19c	Подъем гантелей на бицепс стоя	Dumbbell Bicep Curl	Dumbbell_Bicep_Curl	28	8	our	260
+41	7348da65-09c6-4acc-84d3-6b63845bff98	Приседания в Смите	Smith Machine Squat	Smith_Machine_Squat	12	24	up	347
+42	1753eff9-7399-47f9-a02b-78c78708d8b9	Сгибание рук на бицепс (молот) на наклонной скамье	Incline Hammer Curls	Incline_Hammer_Curls	0	36	up	283
+43	bb1fbbb4-36df-4bff-b800-d82be5e1cda9	Разгибание рук на верхнем блоке (прямая рукоять)	Triceps Pushdown - Straight Bar	Triceps_Pushdown_-_Straight_Bar	12	22	our	260
+44	6d9e1427-008e-424d-a9e0-a837cb7853a1	Отведение ноги назад в кроссовере на одной ноге	One-Legged Cable Kickback	One-Legged_Cable_Kickback	18	15	up	260
+45	9564b145-308a-4595-8293-be4ddbc3422c	Разводка гантелей лежа	Dumbbell Fly	Dumbbell_Fly	9	24	our	288
+46	85dd4a2c-1d51-4e21-a237-95c843f54d5a	Обратные разведения в Pec Deck	Reverse Machine Flyes	Reverse_Machine_Flyes	8	25	up	316
+47	822f7bec-bd5e-4cce-83bc-8fb0a4537864	Отведение ноги в сторону в тренажере	Thigh Abductor	Thigh_Abductor	12	19	up	295
+48	1d20086e-c63d-4c7b-a6fc-1f4a6dc15380	Болгарские выпады в Смите	Smith Machine Bulgarian Split Squat	Smith_Machine_Bulgarian_Split_Squat	0	30	our	296
+49	a5e522e8-6be8-4ce4-95e4-fd2e8094e8f0	Скручивания велосипед	Air Bike	Air_Bike	20	8	up	337
+50	72464e46-e44f-4754-ae3e-f7d388182c31	Французский жим EZ-штанги лежа	Lying Triceps Press	Lying_Triceps_Press	8	18	up	280
+51	210a2218-46ab-42a3-adc9-255040200d3f	Гиперэкстензия	Hyperextensions (Back Extensions)	Hyperextensions_Back_Extensions	16	8	up	333
+52	0a90e00b-0029-4bf3-b40f-0a2ca9cfb753	Жим в тренажере Chest Press	Leverage Chest Press	Leverage_Chest_Press	8	15	up	301
+53	8c31971a-7630-4e3e-8fc2-3392f6b7ff7d	Обратные выпады с гантелями	Dumbbell Rear Lunge	Dumbbell_Rear_Lunge	3	20	up	291
+54	c2f7f3e6-a95a-4c55-b2ed-eb32c591244f	Подъем гантелей на бицепс сидя	Seated Dumbbell Curl	Seated_Dumbbell_Curl	7	16	up	266
+55	754836fd-222e-46fb-899c-36f22d0ad934	Жим гантелей лежа на горизонтальной скамье	Dumbbell Bench Press	Dumbbell_Bench_Press	18	4	our	276
+56	21c7ae46-3a76-4e30-9ff7-6b7e6b508a42	Изометрическая тяга в рычажном тренажере	Leverage Iso Row	Leverage_Iso_Row	4	18	up	290
+57	89e3a200-0b99-4216-b93c-6da6e5ddad36	Обратные разведения гантелей в наклоне	Reverse Flyes	Reverse_Flyes	7	15	up	285
+58	7e2e4d87-592f-4525-8ef7-a6c3075f9e2e	Скручивания на полу	Crunches	Crunches	16	5	up	236
+59	a24cdaab-5a78-4e64-90d9-6636fc8dbcd6	Приседания плие с гантелью	Plie Dumbbell Squat	Plie_Dumbbell_Squat	10	10	up	301
+60	096a36f2-a7b9-4ed8-b872-6d4c75b6a0cf	Разгибание рук на трицепс в кроссовере с нижнего блока	Low Cable Triceps Extension	Low_Cable_Triceps_Extension	6	14	up	307
+61	c006f2dc-1b37-418e-bb88-77fc0ce3f5b8	Становая тяга с возвышения (дефицитная тяга)	Deficit Deadlift	Deficit_Deadlift	0	20	up	338
+62	b9c957fd-a7c9-4d76-a7ed-4d19ba2524d3	Жим ногами с высокой постановкой стоп	High Foot Position Leg Press	Leg_Press	2	16	up	347
+63	e1bb078f-2e20-4091-ab21-f0905b286011	Зашагивания на высокую тумбу (Single-Leg Box Squat)	Single-Leg High Box Squat	Single-Leg_High_Box_Squat	2	16	up	309
+64	2ddedfdd-7ccf-4334-a0c6-600dd7fb9ef3	Сгибание ног в кроссовере	Lying Cable Curl	Lying_Cable_Curl	2	16	up	289
+65	5e082615-fb9a-4e5a-9595-ae3f061f5c21	Ягодичный мостик со штангой на полу	Barbell Glute Bridge	Barbell_Glute_Bridge	2	16	up	368
+66	8a3fd521-ff71-4e1c-84e7-182c8f669782	Боковая планка	Side Bridge	Side_Bridge	9	8	up	275
+67	f0759799-4dba-4411-81e6-42d9d9f6c6d5	Отведение ноги в сторону в нижнем блоке	Low Cable Hip Abduction	Low_Cable_Hip_Abduction	12	4	our	332
+68	01c296c8-2f09-41a2-a8ba-78efa1f7a96c	Тяга верхнего блока V-образной рукоятью	V-Bar Pulldown	V-Bar_Pulldown	5	9	up	309
+69	6315cf66-a125-459d-91b6-ec136cf1506c	Подтягивания	Pullups	Pullups	11	2	our	290
+70	c606424e-6e7c-41bb-a485-759260dd0474	Сведение рук в тренажере Pec Deck (Бабочка)	Butterfly	Butterfly	8	5	up	265
+71	daa82b69-5743-4173-93d0-9f1f940b9923	Становая тяга на прямых ногах с широкой постановкой	Wide Stance Stiff Legs	Wide_Stance_Stiff_Legs	12	0	our	316
+72	ca48c18f-8614-4a7a-8602-4fb47d625b4d	Журавлик	Crane Single-Leg Glute Hinge	Crane_Single-Leg_Glute_Hinge	8	4	our	724
+73	7151e050-2674-48b5-908d-85690e5f96d9	Тяга гантелей в наклоне нейтральным хватом	Bent Over Two-Dumbbell Row With Palms In	Bent_Over_Two-Dumbbell_Row_With_Palms_In	11	0	up	308
+74	ca484397-0464-4372-a0a1-7cf328abd530	Подъем ног в висе на турнике	Hanging Leg Raise	Hanging_Leg_Raise	6	4	up	294
+75	1a5a25d7-c095-4ab1-94ed-745e3994bf56	Приседания с гантелями	Dumbbell Squat	Dumbbell_Squat	8	0	our	270
+76	0be5b21e-1397-4542-975a-56c8785119e0	Жим в тренажере Shoulder Press	Machine Shoulder (Military) Press	Machine_Shoulder_Military_Press	4	4	up	260
+77	49d123ef-d4b1-454d-9ad7-18df8f1b2adc	Махи гантелями в стороны сидя	Seated Side Lateral Raise	Seated_Side_Lateral_Raise	4	4	up	241
+78	338e6705-d95b-4ef7-8117-5b2ac0aa0808	Подтягивание коленей к груди сидя на скамье	Seated Flat Bench Leg Pull-In	Seated_Flat_Bench_Leg_Pull-In	4	4	up	263
+79	eb8310ff-6c77-4070-a981-4fbcb5711807	Приседания с гантелями до скамьи	Dumbbell Squat To A Bench	Dumbbell_Squat_To_A_Bench	4	4	up	271
+80	2dd9bdbf-d8c2-4d27-995a-36e5df7310f1	Разгибание рук на трицепс в кроссовере (прямая рукоять)	Triceps Pushdown	Triceps_Pushdown	4	4	up	242
+81	7a3ccbdf-8711-4532-a2b4-b841edd4cb90	Тяга в тренажере (Row)	Machine Row	Machine_Row	4	4	our	318
+82	5f214a11-cabc-4155-b73a-1812e0f303e9	Ягодичный мостик на полу	Butt Lift (Bridge)	Barbell_Glute_Bridge	4	4	up	299
+83	269df31a-cbe8-4c2c-b72a-48b55675d93b	Сгибание рук на бицепс в кроссовере стоя	Standing Biceps Cable Curl	Standing_Biceps_Cable_Curl	3	4	our	325
+84	7ce20e42-9c02-4d57-a460-601b4de1333c	Тяга верхнего блока одной рукой	One Arm Lat Pulldown	One_Arm_Lat_Pulldown	3	4	up	319
+85	437b6328-899f-4eae-8d99-cd6cad70dc70	Отведение ноги в сторону с резинкой	Band Hip Abduction	Band_Hip_Abduction	6	0	our	280
+86	271f85a7-e75b-4f2d-879a-4a4ec6358c60	Отжимания от пола	Pushups	Pushups	6	0	our	258
+87	2361d277-030a-4cf6-89cc-e6c61bcf355a	Попеременный жим гантелей стоя	Standing Alternating Dumbbell Press	Standing_Alternating_Dumbbell_Press	6	0	up	293
+88	298495f1-7001-4ced-89ab-27490644dda2	Тяга Т-грифа	T-Bar Row with Handle	T-Bar_Row_with_Handle	6	0	up	301
+89	928da30a-596d-43d6-ab21-ff7008153509	Ножницы лёжа на животе	Flutter Kicks	Flutter_Kicks	5	0	up	335
+90	e34fc282-9380-45c8-8a9b-e9a469b234de	Разведение рук с резинкой (Pull Apart)	Band Pull Apart	Band_Pull_Apart	5	0	up	253
+91	2f6cf819-31a7-4225-9da5-f4e5db783c06	Жим в Хаммере на плечи	Leverage Shoulder Press	Leverage_Shoulder_Press	4	1	up	232
+92	3ea7550b-66d8-4f16-bf5d-3ac80a4473e1	Жим от груди в тренажёре	Machine Bench Press	Machine_Bench_Press	4	1	up	285
+93	033eb835-81ce-453a-a785-fef2e426a070	Сведение ног в тренажере	Thigh Adductor	Thigh_Adductor	4	1	up	299
+94	8287ddff-f208-45a3-8b00-3eab5f185461	Жим ногами с узкой постановкой стоп	Narrow Stance Leg Press	Narrow_Stance_Leg_Press	1	4	up	280
+95	4e36cf74-041c-4e06-bcda-1ec02f826b05	Махи в кроссовере на среднюю дельту	Cable Lateral Raise	Cable_Seated_Lateral_Raise	2	3	up	259
+96	b064dd5f-6f2e-49e3-bcdb-282aaca17dc7	Обратная гиперэкстензия	Reverse Hyperextension	Reverse_Hyperextension	1	4	up	310
+97	fef4cc00-7072-4ae5-8115-e0828a3a1e99	Зашагивания на тумбу	Barbell Step Ups	Barbell_Step_Ups	4	0	up	344
+98	b366f031-f569-4564-94de-562593af7621	Разводка на заднюю дельту сидя в наклоне	Seated Bent-Over Rear Delt Raise	Seated_Bent-Over_Rear_Delt_Raise	4	0	up	253
+99	d4745323-62f5-4a5e-969a-005a0394c288	Скручивания на верхнем блоке (молитва)	Cable Crunch	Cable_Crunch	4	0	up	351
+100	4ed4b5a9-de19-4dd9-8cab-6bf030e0f7c7	Тяга верхнего блока обратным хватом	Underhand Cable Pulldowns	Underhand_Cable_Pulldowns	4	0	up	289
