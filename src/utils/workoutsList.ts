@@ -33,6 +33,28 @@ export function getWorkoutStatus(
   return 'upcoming';
 }
 
+/**
+ * PTR-ORDER (23.10): день текущей недели, который ещё не закрыт. Его можно
+ * начать или пропустить, даже если указатель стоит на другом: порядок живёт на
+ * Главной (там всегда первый незакрытый), а в списке день выбирается свободно.
+ * За пределами текущей недели — нет: там ещё нечего переносить вперёд.
+ */
+export function isStartableInCurrentWeek(
+  w: {
+    skipped_at?: string | null;
+    finished_at?: string | null;
+    phase_number: number;
+    week_number: number;
+  },
+  activeProgram: ActiveProgram | null
+): boolean {
+  if (!activeProgram) return false;
+  if (w.skipped_at || w.finished_at) return false;
+  return (
+    w.phase_number === activeProgram.currentPhase && w.week_number === activeProgram.currentWeek
+  );
+}
+
 export function formatDuration(seconds: number): string {
   return `${Math.floor(seconds / 60)} мин`;
 }

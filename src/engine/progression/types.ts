@@ -20,6 +20,12 @@ export interface ProgressionReason {
     currentPhaseType?: 'strength' | 'hypertrophy' | 'endurance' | 'deload';
     /** Фича 2: Целевой RPE для упражнения. */
     targetRpe?: number | null;
+    /**
+     * ТРЕН-22.10: чем задана планка `lastWeight` — историей целевого слота
+     * («прошлый раз») или весом, уже поднятым в ЭТОЙ тренировке. Нужен, чтобы
+     * объяснение не ссылалось на число, которого человек сегодня не делал.
+     */
+    anchor?: 'history' | 'session';
   };
 }
 

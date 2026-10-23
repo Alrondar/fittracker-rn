@@ -57,7 +57,28 @@ export function parseRepsRange(
  * - Оценка усталости = текущие завершённые рабочие сеты (не previousReps!).
  */
 export function calculateProgression(input: ProgressionInput): ProgressionResult {
-  return applyLoadableSnap(decideWithContext(input), input);
+  const result = applyLoadableSnap(decideWithContext(input), input);
+
+  // ТРЕН-22.10: когда планку задала текущая тренировка, а не «прошлый раз»,
+  // это надо сказать вслух — иначе объяснение ссылается на число, которого
+  // человек сегодня не поднимал, и выглядит как возврат назад.
+  const { factors } = result.reason;
+  if (
+    factors.anchor === 'session' &&
+    result.suggestedWeight != null &&
+    factors.lastWeight != null
+  ) {
+    return {
+      ...result,
+      reason: {
+        ...result.reason,
+        ruText: `${result.reason.ruText} — от ${numText(
+          factors.lastWeight
+        )} кг, которые ты уже сделал в этой тренировке`,
+      },
+    };
+  }
+  return result;
 }
 
 function decideWithContext(input: ProgressionInput): ProgressionResult {
@@ -132,13 +153,39 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
     };
   }
 
-  // 2. Базовый вес = previousWeight целевого сета (для пирамид)
-  // Если targetSetIndex передан и имеет previousWeight — используем его.
-  // Иначе fallback на последний completed сет с историей (старая логика).
+  // 2. Текущие завершённые РАБОЧИЕ сеты — нужны и для оценки усталости, и для
+  // якоря веса, поэтому считаемся до базы.
+  // (weight !== '' && (reps !== '' || (reps_left && reps_right)) = завершён;
+  // !isWarmup = рабочий). ENG-13: если reps пустое, но есть estimatedReps или
+  // reps_left/right — тоже учитываем.
+  const currentCompleted = completedWorkingSets(sets);
+
+  // 3. Базовый вес. Якорь — previousWeight целевого слота (для пирамид), НО не
+  // ниже максимального веса, уже поднятого в этой тренировке (ТРЕН-22.10).
+  // Без этого правила на пирамиде 40/45/50 движок советовал для 4-го подхода
+  // исторические 35 кг этого слота, то есть возвращал человека назад посреди
+  // тренировки; понижать планку текущая сессия не вправе — за это отвечает
+  // avgRatio (SESSION_FATIGUE / SESSION_LIGHT_DAY).
   const targetSet = targetSetIndex != null ? sets[targetSetIndex] : null;
-  const baseWeight =
+  const historyWeight =
     ((targetSet?.previousWeight ?? null) as number | null) ??
     (workingSetsWithHistory[workingSetsWithHistory.length - 1].previousWeight as number);
+  const sessionMaxWeight = currentCompleted.reduce((max, s) => {
+    const w = parseFloat(s.weight);
+    return Number.isFinite(w) && w > max ? w : max;
+  }, 0);
+  const anchoredBySession = sessionMaxWeight > historyWeight;
+  const baseWeight = anchoredBySession ? sessionMaxWeight : historyWeight;
+  const withAnchor = (result: ProgressionResult): ProgressionResult => ({
+    ...result,
+    reason: {
+      ...result.reason,
+      factors: {
+        ...result.reason.factors,
+        anchor: anchoredBySession ? ('session' as const) : ('history' as const),
+      },
+    },
+  });
 
   // Данные "прошлый раз" для хинта
   const hintReps = (targetSet?.previousReps ??
@@ -147,11 +194,6 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
     targetSet?.previousRpe ??
     workingSetsWithHistory[workingSetsWithHistory.length - 1].previousRpe ??
     null;
-
-  // 3. Текущие завершённые РАБОЧИЕ сеты — для оценки усталости
-  // (weight !== '' && (reps !== '' || (reps_left && reps_right)) = завершён; !isWarmup = рабочий)
-  // ENG-13: если reps пустое, но есть estimatedReps или reps_left/right — тоже учитываем
-  const currentCompleted = completedWorkingSets(sets);
 
   // 4. Оценка: если есть currentCompleted, используем их; иначе fallback на прошлые данные
   const evalReps =
@@ -189,6 +231,7 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
     targetRange,
     currentPhaseType: input.currentPhaseType,
     targetRpe: input.targetRpe,
+    anchor: anchoredBySession ? 'session' : 'history',
   };
 
   // P1.2: Корректировка шага на основе фазы программы
@@ -202,32 +245,27 @@ function decideProgression(input: ProgressionInput): ProgressionResult {
   // обрабатывается и возвращает результат выше.
   const shouldConsiderDeload = input.weeksInBlock != null && input.weeksInBlock > 6;
 
-  // P1.1: Ветвление по политике прогрессии
+  // P1.1: Ветвление по политике прогрессии. Якорь проставляется обёрткой —
+  // политики строят собственные `factors` и про сессию ничего не знают.
   if (input.policy === 'double_progression') {
-    return calculateDoubleProgression(
-      input,
-      targetRange,
-      effectiveStepKg,
-      baseWeight,
-      shouldConsiderDeload
+    return withAnchor(
+      calculateDoubleProgression(
+        input,
+        targetRange,
+        effectiveStepKg,
+        baseWeight,
+        shouldConsiderDeload
+      )
     );
   }
   if (input.policy === 'greyskull') {
-    return calculateGreyskull(
-      input,
-      targetRange,
-      effectiveStepKg,
-      baseWeight,
-      shouldConsiderDeload
+    return withAnchor(
+      calculateGreyskull(input, targetRange, effectiveStepKg, baseWeight, shouldConsiderDeload)
     );
   }
   if (input.policy === 'time_based') {
-    return calculateTimeBased(
-      input,
-      targetRange,
-      effectiveStepKg,
-      baseWeight,
-      shouldConsiderDeload
+    return withAnchor(
+      calculateTimeBased(input, targetRange, effectiveStepKg, baseWeight, shouldConsiderDeload)
     );
   }
   // default: linear (текущая логика ниже)

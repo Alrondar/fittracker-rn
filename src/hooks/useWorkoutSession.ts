@@ -1377,10 +1377,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               return;
             }
 
+            // PTR-ORDER (23.10): «не сдвинулся» теперь означает и «закрыт день
+            // вне очереди» — указатель стоит на первом незакрытом, и трогать его
+            // не нужно. Раньше эта же ветка читалась только как «день учтён».
             const pointerLine =
               result.status === 'advanced'
                 ? `Следующий день: Фаза ${result.phase} · Неделя ${result.week} · День ${result.day}`
-                : `Прогресс не менялся: этот день уже учтён. Сейчас: Фаза ${result.phase} · Неделя ${result.week} · День ${result.day}`;
+                : `Указатель не тронут — он на первом незакрытом дне: Фаза ${result.phase} · Неделя ${result.week} · День ${result.day}`;
 
             feedback.alert(
               'Тренировка завершена!',
