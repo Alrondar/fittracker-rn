@@ -49,6 +49,7 @@ import { useTodayRecovery } from '../../src/hooks/useTodayRecovery';
 import { profileService } from '../../src/services/profileService';
 import { useCycle } from '../../src/hooks/useCycle';
 import type { ProgressionContext } from '../../src/engine/progression';
+import { rampProtocolForIntensity } from '../../src/engine/warmupRamp';
 
 export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
@@ -467,9 +468,12 @@ export default function WorkoutSessionScreen() {
         progressionContext={progressionContext}
         workoutId={id as string}
         addSet={addSet}
-        // WARMUP-3d: лесенка разминки — только у первого упражнения дня.
+        // WARMUP-3d: лесенка разминки — перед каждым тяжёлым движением
+        // (вердикт владельца 23.10, раньше было «только первое упражнения дня»).
+        // «Тяжёлое» берём из того же протокола, что и сама лесенка: compound =
+        // high|medium. Для изоляции (blood_flow) чип не показываем.
         addWarmupRamp={addWarmupRampSets}
-        showWarmupRamp={index === 0}
+        showWarmupRamp={rampProtocolForIntensity(item.intensity) === 'compound'}
       />
     ),
     [
