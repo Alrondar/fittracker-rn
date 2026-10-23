@@ -1586,11 +1586,19 @@ export const SetsGrid = memo(function SetsGrid({
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                alignSelf: 'flex-start',
-                gap: 2,
+                alignSelf: 'stretch',
+                gap: 6,
+                paddingLeft: SPACING.sm,
+                paddingRight: 2,
+                paddingVertical: 4,
                 marginBottom: SPACING.xs,
+                borderRadius: BORDER_RADIUS.full,
+                backgroundColor: withAlpha(colors.warning, 0.12),
               }}
             >
+              {/* Плашка на всю ширину, но нажимаемые зоны разделены: вся строка
+                  кроме крестика — «добавить лесенку», крестик — «скрыть». Оба
+                  внутри одного фона, чтобы визуально это была одна таблетка. */}
               <PressableScale
                 onPress={() => addWarmupRamp!(exerciseIndex, rampPlan.steps)}
                 accessibilityRole="button"
@@ -1599,18 +1607,10 @@ export const SetsGrid = memo(function SetsGrid({
                 } разминочных подхода перед рабочими: ${rampPlan.steps
                   .map((s) => `${toDisplay(String(s.weightKg))} ${unit} на ${s.reps}`)
                   .join(', ')}. Затем рабочий ${toDisplay(String(rampPlan.topWeightKg))} ${unit}`}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: SPACING.sm,
-                  paddingVertical: 6,
-                  borderRadius: BORDER_RADIUS.full,
-                  backgroundColor: withAlpha(colors.warning, 0.12),
-                }}
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 4 }}
               >
                 <Flame size={13} color={colors.warning} />
-                <View style={{ gap: 1 }}>
+                <View style={{ gap: 1, flex: 1 }}>
                   <Text
                     style={[typography.captionSmall, { color: colors.warning, fontWeight: '700' }]}
                   >
@@ -1629,8 +1629,8 @@ export const SetsGrid = memo(function SetsGrid({
                 onPress={() => setRampHidden(true)}
                 accessibilityRole="button"
                 accessibilityLabel="Скрыть лесенку разминки"
-                hitSlop={10}
-                style={{ padding: SPACING.xs }}
+                hitSlop={8}
+                style={{ padding: 8 }}
               >
                 <X size={14} color={colors.textTertiary} strokeWidth={2.5} />
               </PressableScale>
