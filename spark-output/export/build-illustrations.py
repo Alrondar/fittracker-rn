@@ -22,6 +22,7 @@ pickMediaFit (src/utils/mediaFit.ts) оставляет cover без letterbox.
 import argparse
 import glob
 import os
+from media_root import media_root
 import re
 import sys
 
@@ -29,7 +30,8 @@ from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC = os.path.join(ROOT, 'vibe_images')
-DST = os.path.join(ROOT, 'data', 'exercises')
+DST = media_root(required=False)  # кадры живут в соседнем репозитории медиа
+os.makedirs(DST, exist_ok=True)
 SIZE = (850, 567)
 QUALITY = 88
 

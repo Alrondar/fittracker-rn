@@ -12,6 +12,7 @@ import { ProfileSection } from '../../src/components/settings/ProfileSection';
 import { AppearanceSection } from '../../src/components/settings/AppearanceSection';
 import { PreferencesSection } from '../../src/components/settings/PreferencesSection';
 import { RestTimerSection } from '../../src/components/settings/RestTimerSection';
+import { OfflineDataSection } from '../../src/components/settings/OfflineDataSection';
 import { AboutSection } from '../../src/components/settings/AboutSection';
 
 // DA-P2-8: экран разбит на секции в src/components/settings/* (было 909 строк).
@@ -45,6 +46,7 @@ export default function SettingsScreen() {
         <AppearanceSection />
         <PreferencesSection />
         <RestTimerSection />
+        <OfflineDataSection />
         <AboutSection />
       </ScrollView>
     </SafeAreaView>

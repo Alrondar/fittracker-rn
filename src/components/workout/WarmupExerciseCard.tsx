@@ -20,6 +20,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SPACING, BORDER_RADIUS, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 import { parseMediaUrls } from '../../utils/mediaScheme';
+import { resolveFrame } from '../../lib/mediaCache';
 import { useMediaGender } from '../../hooks/useMediaGender';
 import { WarmupExercise } from '../../services/warmupService';
 
@@ -106,7 +107,8 @@ export const WarmupExerciseCard = memo(function WarmupExerciseCard({
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   const mediaGender = useMediaGender();
-  const thumbnail = parseMediaUrls(exercise.media_url, mediaGender)[0];
+  const remoteThumb = parseMediaUrls(exercise.media_url, mediaGender)[0];
+  const thumbnail = remoteThumb ? resolveFrame(remoteThumb) : undefined;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 70).duration(300)}>

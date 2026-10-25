@@ -14,6 +14,15 @@
 // переводим на новую схему только когда в папке лежат ОБЕ пары. Иначе профиль «мужчина»
 // упрётся в 404, потому что на уровне кода наличие второй пары неотличимо от наличия
 // первой — оба имени вычисляются из одного префикса.
+//
+// Номер версии (`...00f.jpg?v=3`) — способ проткнуть кэш телефона без пересборки
+// приложения: кадр перезаписан под тем же именем, а адрес меняется, поэтому и дисковый
+// кэш загрузки, и наше локальное хранилище кадров (src/lib/mediaCache.ts) видят новый
+// ключ. Хост на это согласен: raw.githubusercontent отдаёт те же байты по адресу с
+// хвостом и ключует свой край по полному адресу (проверено HEAD-запросом 24.10).
+// Поэтому хвост срезается ДО сопоставления со схемой и возвращается на каждый выведенный
+// кадр — якоря `$` в обеих регулярках иначе выбрасывают позицию в одиночный проброс и
+// ломают пару кадров вместе с переключателем пола.
 
 export type MediaGender = 'female' | 'male';
 
@@ -21,6 +30,12 @@ export type MediaGender = 'female' | 'male';
 const GENDERED = /^(.*\/)00([fm])\.(jpg|jpeg|png|webp)$/i;
 /** Легаси free-exercise-db: префикс папки + одна цифра. */
 const LEGACY = /^(.*\/)(\d+)\.(jpg|jpeg|png|webp)$/i;
+
+/** `https://…/00f.jpg?v=3` → путь без хвоста и сам хвост с `?`. */
+const splitMediaQuery = (url: string): [string, string] => {
+  const q = url.indexOf('?');
+  return q < 0 ? [url, ''] : [url.slice(0, q), url.slice(q)];
+};
 
 /**
  * Парсит `media_url` из БД в список рамок слайдера.
@@ -58,21 +73,28 @@ export const parseMediaUrls = (
       .filter(Boolean);
   }
 
-  const gendered = trimmed.match(GENDERED);
+  const [path, query] = splitMediaQuery(trimmed);
+
+  const gendered = path.match(GENDERED);
   if (gendered) {
     const suffix = gender === 'male' ? 'm' : 'f';
-    return [`${gendered[1]}00${suffix}.${gendered[3]}`, `${gendered[1]}01${suffix}.${gendered[3]}`];
+    return [
+      `${gendered[1]}00${suffix}.${gendered[3]}${query}`,
+      `${gendered[1]}01${suffix}.${gendered[3]}${query}`,
+    ];
   }
 
   // Паттерн free-exercise-db: ".../0.jpg" → 0.jpg + 1.jpg
-  const legacy = trimmed.match(LEGACY);
+  const legacy = path.match(LEGACY);
   if (legacy) {
-    return [`${legacy[1]}0.${legacy[3]}`, `${legacy[1]}1.${legacy[3]}`];
+    return [`${legacy[1]}0.${legacy[3]}${query}`, `${legacy[1]}1.${legacy[3]}${query}`];
   }
 
   return [trimmed];
 };
 
 /** Есть ли у позиции гендерная схема — то есть нужен ли переключатель в UI. */
-export const isGenderedMedia = (mediaUrl: string | null | undefined): boolean =>
-  GENDERED.test(String(mediaUrl ?? '').trim());
+export const isGenderedMedia = (mediaUrl: string | null | undefined): boolean => {
+  const [path] = splitMediaQuery(String(mediaUrl ?? '').trim());
+  return GENDERED.test(path);
+};

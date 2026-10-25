@@ -13,6 +13,11 @@ FitTracker — Code & Screen Inventory
 | Компоненты фич|src/components/<feature>/ :  workout/ ,  program/ ,  dashboard/ ,  exercises/ ,  profile/|
 | Shared UI|src/components/ui/  ( AppButton ,  AppCard ,  SheetShell ,  FeedbackDialog ,  Skeleton ,  PillToggle , …)|
 | Alert/confirm пользователю|`src/lib/feedback.ts`  ( `feedback.alert` ) — не `Alert.alert` , см. 10.1|
+| Файлы кадров техники|отдельный репозиторий `../fittracker-exercise-media` (`exercises/<Папка>/00f.jpg` …), отдаётся `raw.githubusercontent.com`; путь для скриптов — `spark-output/export/media_root.py` (`FT_MEDIA_ROOT`), переезд адресов — `supabase/migrations/20261025180000_repoint_frames_to_media_repo.sql`|
+| Кадры техники (офлайн-запас)|`src/lib/mediaCache.ts` — хранилище с потолком 25 МБ; `src/hooks/useStageDayFrames.ts` — подогрев кадров дня и разминки; `src/utils/mediaScheme.ts` — разбор `media_url` (версия кадра в хвосте `?v=`)|
+| Справочник офлайн|`src/lib/exerciseSnapshot.ts` — снимок и `networkOrSnapshot`; `src/services/exerciseSnapshotService.ts` — сборка постранично; `src/utils/exerciseSearchLocal.ts` — локальная выборка (двойник `search_exercises`)|
+| Активная программа офлайн|`src/lib/programSnapshot.ts` — снимок на пользователя; `src/services/programSnapshotService.ts` — скачивание (структура + кадры программы и замен); `src/utils/framePlan.ts` — какие кадры качать; `src/utils/workoutSections.ts` — построение списка дней (общее для сети и снимка)|
+| Локальное хранилище снимков|`src/lib/localStore.ts` — файл на телефоне, IndexedDB в браузере; объём, возраст и очистка — `src/components/settings/OfflineDataSection.tsx`|
 | Хуки|src/hooks/ , feature-подпапки ( hooks/workout/ ,  hooks/program/ , …)|
 | Supabase boundary|src/services/  (единственное место для  supabase.from/auth/rpc )|
 | Тема/токены/константы|src/constants/  ( theme.ts ,  semanticColors.ts ,  phaseTypes.ts ,  injuries.ts , …)|

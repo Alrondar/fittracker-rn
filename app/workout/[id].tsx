@@ -18,6 +18,7 @@ import { getIntensityInfo as getIntensityInfoUtil } from '../../src/utils/intens
 import { useWorkoutSession } from '../../src/hooks/useWorkoutSession';
 import { useInjuryWarnings } from '../../src/hooks/useInjuryWarnings';
 import { useWarmup } from '../../src/hooks/useWarmup';
+import { useStageDayFrames } from '../../src/hooks/useStageDayFrames';
 import { useUnitPreferences } from '../../src/hooks/useUnitPreferences';
 import { getWorkoutProgramInfo } from '../../src/services/programsService';
 import { SPACING } from '../../src/constants/theme';
@@ -178,6 +179,14 @@ export default function WorkoutSessionScreen() {
     clearWarmupPreferences,
     regenerateWarmup,
   } = useWarmup(warmupSource, activeInjuries, userId, !loading);
+
+  // Кадры дня и разминки качаются заранее: техника на экране и миниатюры разминки
+  // остаются картинкой, а не серым боксом, когда связи нет.
+  const dayMediaUrls = useMemo(
+    () => [...exercises, ...warmupExercises].map((e) => e.media_url),
+    [exercises, warmupExercises]
+  );
+  useStageDayFrames(dayMediaUrls, !loading);
 
   // WARMUP-3c: счётчик для липкой панели (isCompleted из хука — новая функция
   // каждый рендер, поэтому без useMemo: считает по 5–7 элементам).

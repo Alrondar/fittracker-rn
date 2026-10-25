@@ -14,11 +14,12 @@ import argparse
 import hashlib
 import json
 import os
+from media_root import media_root
 import urllib.request
 import urllib.error
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-MEDIA = os.path.join(ROOT, 'data', 'exercises')
+MEDIA = media_root()
 TSV = os.path.join(ROOT, 'spark-output', 'export', 'top100-2026-10-21.tsv')
 CACHE = os.path.join(ROOT, 'spark-output', 'export', 'refs', 'top100', 'live')
 UP = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'

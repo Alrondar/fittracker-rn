@@ -19,6 +19,7 @@
 import argparse
 import json
 import os
+from media_root import media_root
 import random
 import re
 import sys
@@ -27,7 +28,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DATA = os.path.join(ROOT, 'data', 'exercises')
+DATA = media_root()  # ../fittracker-exercise-media/exercises, см. media_root.py
 MANIFEST = os.path.join(ROOT, 'spark-output', 'export', 'illustrations-manifest.json')
 WANT = (850, 567)          # 3:2 — формат каталога, при котором pickMediaFit оставляет cover
 MAX_KB = 120               # наш кадр ~45 КБ; больше — значит не ужали
@@ -51,6 +52,32 @@ def head(url, timeout=20):
         return 0
 
 
+def probe_urls(it):
+    """Адреса, которые по этому media_url реально запросит рендер.
+
+    Набор рамок диктует имя в URL, а не содержимое папки (src/utils/mediaScheme.ts
+    достраивает вторую рамку из него). Хвост `?v=N` — часть ключа кэша, пробуем его
+    ровно так, как он записан в строке базы.
+    """
+    url = it.get('media_url') or ''
+    path, _, query = url.partition('?')
+    name = path.rsplit('/', 1)[-1].lower()
+    if not name:
+        return []
+    ext = name.rsplit('.', 1)[-1]
+    prefix = path.rsplit('/', 1)[0]
+    if re.match(r'00[fm]\.(jpg|jpeg|png|webp)$', name):
+        # Гендерная схема: обе пары — мужская обязательна по инварианту данных,
+        # иначе профиль «мужчина» упрётся в 404.
+        names = ['00f', '01f', '00m', '01m']
+    elif re.match(r'\d\.(jpg|jpeg|png|webp)$', name):
+        names = ['0', '1']
+    else:
+        names = [name.rsplit('.', 1)[0]]
+    tail = ('?' + query) if query else ''
+    return ['%s/%s.%s%s' % (prefix, n, ext, tail) for n in names]
+
+
 def check_local(it, hard, warn):
     fid = it['folder']
     d = os.path.join(DATA, fid) if fid else None
@@ -72,7 +99,9 @@ def check_local(it, hard, warn):
     # скрывала ровно этот класс: девять карточек остались с битым URL после того, как
     # легаси сняли до миграции (10.10). Кадр отдаём мы или upstream — тоже из URL:
     # чужие файлы на наш рендер не влияют.
-    url_name = (it.get('media_url') or '').rsplit('/', 1)[-1].lower()
+    # Номер версии в хвосте адреса (`?v=3`) — часть ключа кэша, а не имени файла:
+    # на диске кадр лежит без хвоста, см. src/utils/mediaScheme.ts.
+    url_name = (it.get('media_url') or '').split('?', 1)[0].rsplit('/', 1)[-1].lower()
     # Рендер ходит в папку из URL, а не в папку по name_eng: у девяти позиций они
     # расходятся (например Cable Glute Kickback ссылается на High_Cable_Hip_Abduction).
     rd = os.path.join(DATA, it.get('url_folder') or fid)
@@ -132,8 +161,7 @@ def main():
     nocover = [i for i in items if i['ref'] == 'none']
 
     if a.http and ours:
-        probes = ['%s/%d.jpg' % (i['media_url'].rsplit('/', 1)[0], n)
-                  for i in ours for n in (0, 1)]
+        probes = [u for it in ours for u in probe_urls(it)]
         with ThreadPoolExecutor(max_workers=8) as ex:
             codes = list(ex.map(head, probes))
         for (p, c) in zip(probes, codes):

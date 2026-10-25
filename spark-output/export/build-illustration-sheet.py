@@ -11,9 +11,10 @@
 import base64
 import io
 import os
+from media_root import media_root
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DS = os.path.join(ROOT, 'data', 'exercises')
+DS = media_root()
 OUT = os.path.join(os.path.dirname(__file__), 'exercise-illustrations-pilot.html')
 
 # (id папки датасета, русское название, есть ли пара кадров)
