@@ -20,6 +20,7 @@ import { FeedbackDialog } from '../src/components/ui/FeedbackDialog';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
 import { applyWebFixes } from '../src/lib/webFixes';
 import { initMediaCache } from '../src/lib/mediaCache';
+import { applyOfflineFrameCap } from '../src/hooks/useOfflineSettings';
 import { readSnapshotRows } from '../src/lib/exerciseSnapshot';
 import { clearLastProgramSnapshot } from '../src/lib/programSnapshot';
 import { refreshExerciseSnapshot } from '../src/services/exerciseSnapshotService';
@@ -96,6 +97,9 @@ function RootLayoutContent() {
         // Индекс локальных кадров техники читаем до снятия гейта: первый же экран
         // должен грузить уже скачанные файлы, а не начинать скачивание на показе.
         // Кадры — справочник, а не данные пользователя, поэтому при выходе их не трогаем.
+        // Потолок хранилища применяется до чтения индекса: вытеснение опирается на него,
+        // и «расширил до 100 МБ» должно действовать с первого же кадра этого запуска.
+        await applyOfflineFrameCap();
         await initMediaCache();
         // Снимок справочника поднимаем и обновляем в фоне: файл (1,9 МБ) не должен
         // стоять на критическом пути старта, а протухший снимок сам себя не догрузит.

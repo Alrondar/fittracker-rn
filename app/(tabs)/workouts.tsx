@@ -30,6 +30,8 @@ import { ActiveProgramHeaderCard } from '../../src/components/workout/ActiveProg
 import { WorkoutsFilterSheet } from '../../src/components/workout/WorkoutsFilterSheet';
 import { SkipWorkoutSheet } from '../../src/components/workout/SkipWorkoutSheet';
 import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
+import { useMediaGender } from '../../src/hooks/useMediaGender';
+import { useAutoProgramDownload, useOfflineProgram } from '../../src/hooks/useOfflineProgram';
 
 // DA-P2-8: карточка элемента, шапка программы, sheet-ы и хелперы вынесены
 // в src/components/workout/* и src/utils/workoutsList.ts (было 726 строк).
@@ -44,6 +46,22 @@ export default function WorkoutsScreen() {
   const progress = useMemo(() => data?.progress ?? { completed: 0, total: 0 }, [data]);
   const loading = isPending;
   const refreshing = isFetching && !isPending;
+
+  // Офлайн: значок в карточке прогресса говорит про ЭТУ программу (переключился на
+  // другую — значит «офлайн выключен»), а автоскачивание срабатывает один раз на
+  // программу за запуск, если настройка включена.
+  const gender = useMediaGender();
+  const autoPending = useAutoProgramDownload(
+    userId,
+    activeProgram?.programId,
+    gender,
+    progress.completed
+  );
+  const { downloaded: offlineDownloaded } = useOfflineProgram(
+    userId,
+    activeProgram?.programId,
+    autoPending
+  );
 
   // UX-5 Feature 2: skip workout
   const [skipTarget, setSkipTarget] = useState<{ id: string; name: string } | null>(null);
@@ -322,7 +340,11 @@ export default function WorkoutsScreen() {
           )}
 
           {activeProgram && (
-            <ActiveProgramHeaderCard activeProgram={activeProgram} progress={progress} />
+            <ActiveProgramHeaderCard
+              activeProgram={activeProgram}
+              progress={progress}
+              offline={offlineDownloaded}
+            />
           )}
 
           <View style={{ flex: 1 }}>

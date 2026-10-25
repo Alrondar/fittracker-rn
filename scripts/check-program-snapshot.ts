@@ -7,6 +7,11 @@
 // в приложении, это прогон на устройстве и в браузере.
 import { buildWorkoutsData, type WorkoutListRow } from '../src/utils/workoutSections';
 import { planProgramFrames } from '../src/utils/framePlan';
+import {
+  pickFromCache,
+  type ProgramCacheDoc,
+  type ProgramSnapshotData,
+} from '../src/utils/programCache';
 import type { SnapshotExerciseRow } from '../src/utils/exerciseSearchLocal';
 
 const row = (
@@ -177,6 +182,50 @@ const frameCases: [string, () => unknown, unknown][] = [
   ],
 ];
 
+// Выбор снимка, когда на устройстве лежит несколько программ (src/lib/programSnapshot.ts,
+// pickFromCache): правило «свой экран — свой снимок» и есть смысл карты программ.
+const snap = (programId: string, workoutIds: string[]): ProgramSnapshotData =>
+  ({
+    programId,
+    workouts: workoutIds.map((id) => ({ id })),
+  }) as unknown as ProgramSnapshotData;
+
+const cacheOf = (
+  activeProgramId: string | null,
+  programs: ProgramSnapshotData[]
+): ProgramCacheDoc => ({
+  activeProgramId,
+  programs: Object.fromEntries(programs.map((p) => [p.programId, p])),
+});
+
+const two = cacheOf('B', [snap('A', ['wa1', 'wa2']), snap('B', ['wb1'])]);
+
+const pickCases: [string, () => unknown, unknown][] = [
+  ['без подсказки берут программу под указателем', () => pickFromCache(two)?.programId, 'B'],
+  [
+    'явный id читает свою программу, а не указатель',
+    () => pickFromCache(two, { programId: 'A' })?.programId,
+    'A',
+  ],
+  [
+    'тренировка ищется по всем скачанным программам',
+    () => pickFromCache(two, { workoutId: 'wa2' })?.programId,
+    'A',
+  ],
+  [
+    'неизвестная тренировка откатывается к указателю',
+    () => pickFromCache(two, { workoutId: 'нет' })?.programId,
+    'B',
+  ],
+  ['указателя нет — снимка нет', () => pickFromCache(cacheOf(null, [snap('A', ['wa1'])])), null],
+  ['пустое хранилище', () => pickFromCache(null, { programId: 'A' }), null],
+  [
+    'указатель на нескачанную программу = снимка нет',
+    () => pickFromCache(cacheOf('C', [snap('A', ['wa1'])])),
+    null,
+  ],
+];
+
 let failed = 0;
 const run = (set: [string, () => unknown, unknown][]) => {
   for (const [name, get, want] of set) {
@@ -192,9 +241,10 @@ const run = (set: [string, () => unknown, unknown][]) => {
 
 run(cases);
 run(frameCases);
+run(pickCases);
 console.log(
   failed === 0
-    ? `\nВСЕ ${cases.length + frameCases.length} СЛУЧАЯ ЗЕЛЁНЫЕ`
+    ? `\nВСЕ ${cases.length + frameCases.length + pickCases.length} СЛУЧАЯ ЗЕЛЁНЫЕ`
     : `\nПРОВАЛОВ: ${failed}`
 );
 process.exit(failed === 0 ? 0 : 1);
