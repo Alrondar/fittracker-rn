@@ -49,11 +49,12 @@ yarn-error.*
 # Игнорируем всё в папке data
 data/*
 
-# Разрешаем папку exercises и её содержимое
-!data/exercises/
-!data/exercises/**/*
+# Кадров техники в проекте больше нет: они в публичном репозитории
+# Alrondar/fittracker-exercise-media, сюда приходят только адреса из media_url.
+# Исключение !data/exercises/ снято вместе с папкой (25.10).
+
 # локальный деплой-артефакт веб-версии (Qoder Sites), не источник
 web-deploy/
 
-# черновик сгенерированных кадров: источник для data/exercises, в git не нужен
+# черновик сгенерированных кадров: источник для ../fittracker-exercise-media, в git не нужен
 vibe_images/
