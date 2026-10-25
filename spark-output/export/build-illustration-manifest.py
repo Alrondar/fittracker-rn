@@ -83,11 +83,28 @@ def fetch_prod():
     return rows, used
 
 
-def frames_present(folder_id):
+GENDERED_NAME = re.compile(r'00([fm])\.(jpg|jpeg|png|webp)$', re.I)
+
+
+def url_frames(url):
+    """Имена рамок, которые запросит клиент по этому media_url (src/utils/mediaScheme.ts)."""
+    path = (url or '').split('?', 1)[0]
+    name = path.rsplit('/', 1)[-1].lower()
+    g = GENDERED_NAME.match(name)
+    if g:
+        ext = name.rsplit('.', 1)[-1]
+        return ['00f.%s' % ext, '01f.%s' % ext, '00m.%s' % ext, '01m.%s' % ext]
+    if re.match(r'\d\.(jpg|jpeg|png|webp)$', name):
+        ext = name.rsplit('.', 1)[-1]
+        return ['0.%s' % ext, '1.%s' % ext]
+    return [name] if name else []
+
+
+def frames_present(folder_id, names=('0.jpg', '1.jpg')):
     d = os.path.join(DATA, folder_id) if folder_id else None
     if not d or not os.path.isdir(d):
         return 0
-    return sum(1 for i in (0, 1) if os.path.exists(os.path.join(d, '%d.jpg' % i)))
+    return sum(1 for nm in names if os.path.exists(os.path.join(d, nm)))
 
 
 def build(rows):
@@ -100,16 +117,21 @@ def build(rows):
         host = ('ours' if url and any(m in url for m in OUR_HOST_MARK) else
                 'upstream' if url and UPSTREAM_MARK in url else
                 'none' if not url else 'other')
-        frames = frames_present(fid) if fid else 0
-        # Референс = локально есть на что посмотреть. Искать надо по папке, на которую
-        # реально ссылается media_url: у 56 позиций slug(name_eng) с ней расходится.
         url_folder = folder_of(url)
-        ref_frames = frames or (frames_present(url_folder) if url_folder else 0)
-        ref = ('ours' if host == 'ours' and frames == 2 else
+        wanted = url_frames(url)
+        url_name = (url or '').split('?', 1)[0].rsplit('/', 1)[-1].lower()
+        gendered = bool(GENDERED_NAME.match(url_name))
+        # «Наш кадр нарисован нами» — это гендерная схема (00f/01f/00m/01m), а не хост:
+        # с 25.10 мы отдаём и зеркало апстрима, поэтому по одному хосту готовность
+        # волны больше не определяется (ложный done = 758 позиций).
+        present = frames_present(url_folder, wanted) if (host == 'ours' and url_folder) else 0
+        done = host == 'ours' and gendered and present == len(wanted)
+        # Референс = локально есть на что посмотреть: и наша рисовка, и зеркало.
+        ref_frames = present or (frames_present(fid) if fid else 0)
+        ref = ('ours' if done else
                'upstream' if ref_frames else 'none')
-        done = host == 'ours' and frames == 2
         if done:
-            used_folders[fid] += 1
+            used_folders[url_folder or fid] += 1
         wave = ('done' if done else
                 'core' if (r.get('can_be_activation') or r.get('_in_program')) else
                 'approved' if r.get('status') == 'approved' else 'rest')
@@ -131,7 +153,8 @@ def build(rows):
             'primary': (r.get('primary_muscles') or [None])[0],
             'media_host': host,
             'media_url': url,
-            'frames_local': frames,
+            'frames_local': present,
+            'authored': done,
             'ref': ref,
             'wave': wave,
             'est_min': round(est, 2),

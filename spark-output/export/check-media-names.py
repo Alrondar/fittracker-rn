@@ -80,12 +80,16 @@ def probe_urls(it):
 
 def check_local(it, hard, warn):
     fid = it['folder']
-    d = os.path.join(DATA, fid) if fid else None
+    # Рендер ходит в папку из URL, а не в папку по name_eng: у 54 позиций они
+    # расходятся, и проверка по name_eng давала бы ложное «папки нет → 404».
+    rd = os.path.join(DATA, it.get('url_folder') or fid) if (it.get('url_folder') or fid) else None
+    d = rd
     if not d or not os.path.isdir(d):
         # Для чужих кадров это не беда, если папка из её же URL на месте: расхождение
         # имени отдельной строкой отчёта (mismatch). Тревога — только когда кадра нет нигде.
         if it['media_host'] == 'ours':
-            hard.append('%-44s наш кадр, а папки нет → 404 в карточке' % (fid or '<нет name_eng>'))
+            hard.append('%-44s наш кадр, а папки %s нет → 404 в карточке'
+                        % (fid or '<нет name_eng>', os.path.basename(rd or '')))
         elif it['ref'] == 'none':
             warn.append('%-44s кадра нет ни по name_eng, ни по URL' % (fid or '<нет name_eng>'))
         return
@@ -102,24 +106,30 @@ def check_local(it, hard, warn):
     # Номер версии в хвосте адреса (`?v=3`) — часть ключа кэша, а не имени файла:
     # на диске кадр лежит без хвоста, см. src/utils/mediaScheme.ts.
     url_name = (it.get('media_url') or '').split('?', 1)[0].rsplit('/', 1)[-1].lower()
-    # Рендер ходит в папку из URL, а не в папку по name_eng: у девяти позиций они
-    # расходятся (например Cable Glute Kickback ссылается на High_Cable_Hip_Abduction).
-    rd = os.path.join(DATA, it.get('url_folder') or fid)
     if it['media_host'] != 'ours':
         names = []
+        authored = False
     elif re.match(r'00[fm]\.(jpg|jpeg|png|webp)$', url_name):
         # Гендерная схема: обе пары обязательны, иначе профиль «мужчина» уйдёт в 404.
         names = ['00f.jpg', '01f.jpg', '00m.jpg', '01m.jpg']
+        authored = True
     elif re.match(r'\d\.(jpg|jpeg|png|webp)$', url_name):
         names = ['0.jpg', '1.jpg']
+        # Легаси-имена на нашем хосте — зеркало чужой рисовки (переехало 25.10 вместе
+        # с адресами). existence проверяем, нормы 850×567 и 8–120 КБ к ней не
+        # применяются: они про наши иллюстрации, а не про чужие файлы.
+        authored = False
     else:
         names = [url_name] if url_name else []
-    if os.path.exists(os.path.join(d, '00f.jpg')) and not os.path.exists(os.path.join(d, '00m.jpg')):
+        authored = False
+    if os.path.exists(os.path.join(rd, '00f.jpg')) and not os.path.exists(os.path.join(rd, '00m.jpg')):
         warn.append('%s: женская пара есть, мужской нет (00m/01m) — на новую схему не переводить' % fid)
     for nm in names:
         p = os.path.join(rd, nm)
         if not os.path.exists(p):
             hard.append('%s: нет %s в %s, а media_url ведёт на неё' % (fid, nm, os.path.basename(rd)))
+            continue
+        if not authored:
             continue
         kb = os.path.getsize(p) / 1024
         try:

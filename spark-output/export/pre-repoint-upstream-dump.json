@@ -1,0 +1,4550 @@
+[
+ {
+  "id": "4d2f5b01-4ba3-401e-8fad-36b7234dbbb1",
+  "name": "JM-жим",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/JM_Press/0.jpg"
+ },
+ {
+  "id": "9a14d4b6-86f6-4dea-b892-32e2514e34fd",
+  "name": "Австралийские подтягивания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Inverted_Row/0.jpg"
+ },
+ {
+  "id": "ec70d039-fc52-4635-936f-c7b8de17d2e6",
+  "name": "Австралийские подтягивания в петлях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Inverted_Row_with_Straps/0.jpg"
+ },
+ {
+  "id": "c0e0e17f-0a8a-499f-b7ea-c1730624ef35",
+  "name": "Алмазные отжимания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_-_Close_Triceps_Position/0.jpg"
+ },
+ {
+  "id": "ce79d914-430f-48b0-b4a2-4e79639f1005",
+  "name": "Антигравитационный жим штанги лёжа животом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Anti-Gravity_Press/0.jpg"
+ },
+ {
+  "id": "a944b859-1090-4551-a778-13c4bdb8369c",
+  "name": "Армейский жим гири одной рукой в сторону",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Military_Press_To_The_Side/0.jpg"
+ },
+ {
+  "id": "59822021-1842-4d78-bdf3-c47333a979fe",
+  "name": "Армейский жим двух гирь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Two-Arm_Kettlebell_Military_Press/0.jpg"
+ },
+ {
+  "id": "e8affb9b-9914-46a5-a8c8-ee41223fac0d",
+  "name": "Армейский жим сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Barbell_Military_Press/0.jpg"
+ },
+ {
+  "id": "80dbbc6e-7c6f-492e-a79a-f16ab4b40878",
+  "name": "Баланс в рывке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_Balance/0.jpg"
+ },
+ {
+  "id": "256af2e1-9e2a-4f65-8570-7e09f9726abe",
+  "name": "Баланс в рывке с подседом (снатч-баланс)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Heaving_Snatch_Balance/0.jpg"
+ },
+ {
+  "id": "684b3906-d1e6-40b3-9680-103037872eb6",
+  "name": "Баланс в толчке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jerk_Balance/0.jpg"
+ },
+ {
+  "id": "31de7901-897b-4f64-9b0d-4d05d4828955",
+  "name": "Баланс на балансировочной доске",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Balance_Board/0.jpg"
+ },
+ {
+  "id": "756856fa-fc0f-4ee3-9cce-6df8f96f808d",
+  "name": "Баланс на фитболе лицом вниз",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Downward_Facing_Balance/0.jpg"
+ },
+ {
+  "id": "19df724e-3e68-4bc9-a3bd-319612b82788",
+  "name": "Бег и ходьба по пересечённой местности",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Trail_Running_Walking/0.jpg"
+ },
+ {
+  "id": "3576bbdb-7ad4-4aef-a7bd-fd844a00e364",
+  "name": "Бег на беговой дорожке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jogging_Treadmill/0.jpg"
+ },
+ {
+  "id": "6520bf67-3c07-4413-97a5-54176fad2cf5",
+  "name": "Бег с захлёстом голени",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Moving_Claw_Series/0.jpg"
+ },
+ {
+  "id": "2ce3c8dd-98af-4c63-b2bf-3d7cf5d7c74b",
+  "name": "Бой с канатами (баттл-роп)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Battling_Ropes/0.jpg"
+ },
+ {
+  "id": "8a3fd521-ff71-4e1c-84e7-182c8f669782",
+  "name": "Боковая планка",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Bridge/0.jpg"
+ },
+ {
+  "id": "f5315a6e-902e-428c-94cc-fe75ecf9ab0a",
+  "name": "Боковая ходьба с фитнес-резинкой (монстер-уок)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Monster_Walk/0.jpg"
+ },
+ {
+  "id": "09cc9bbe-be9d-44d5-b588-7ee3c529c018",
+  "name": "Боковые выпады со штангой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Side_Split_Squat/0.jpg"
+ },
+ {
+  "id": "938ce01a-5cfa-442c-9e5e-911f0343db7f",
+  "name": "Боковые запрыгивания на тумбу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Box_Jump/0.jpg"
+ },
+ {
+  "id": "0a8fd161-c08d-46c8-9a5c-3fcfb5f46d40",
+  "name": "Боковые наклоны в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_High-Pulley_Cable_Side_Bends/0.jpg"
+ },
+ {
+  "id": "7400f44c-9269-4c25-9f13-ff1ec3fa8904",
+  "name": "Боковые наклоны с медболом на фитболе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Ball_Side_Bend/0.jpg"
+ },
+ {
+  "id": "efca29f4-ae51-45b8-8be2-708652d3b96a",
+  "name": "Боковые прыжки на одной ноге",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_Lateral_Hop/0.jpg"
+ },
+ {
+  "id": "c46c8528-6e51-4a1a-afb7-09f8fc6c531c",
+  "name": "Боковые прыжки с ноги на ногу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Bound/0.jpg"
+ },
+ {
+  "id": "7ebcbd62-ad02-411e-a54a-792a5317d7d6",
+  "name": "Боковые прыжки через барьер с ускорением",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Hop-Sprint/0.jpg"
+ },
+ {
+  "id": "b45bc11d-2280-4f58-8738-6f89fea6bb09",
+  "name": "Боковые прыжки через конусы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Cone_Hops/0.jpg"
+ },
+ {
+  "id": "f70af2c7-081d-4439-af53-53e1bf6b3b0e",
+  "name": "Боковые складки",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Jackknife/0.jpg"
+ },
+ {
+  "id": "a59577e7-0168-41c9-92be-e46b5680e5d0",
+  "name": "Боковые скручивания лёжа на полу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Oblique_Crunches_-_On_The_Floor/0.jpg"
+ },
+ {
+  "id": "a8936001-e845-44c7-8b43-c75f50215046",
+  "name": "Болгарские выпады в петлях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Split_Squat/0.jpg"
+ },
+ {
+  "id": "06ccda84-5aef-4636-8fb4-4367f63b0f1b",
+  "name": "Болгарские выпады в тренажёре Смита",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Single-Leg_Split_Squat/0.jpg"
+ },
+ {
+  "id": "eefc1959-da98-430a-ae1b-18660c012042",
+  "name": "Болгарские приседания со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Leg_Barbell_Squat/0.jpg"
+ },
+ {
+  "id": "5f1c18f3-5220-4694-aa96-92903d06125f",
+  "name": "Бросок дзюдоиста в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Judo_Flip/0.jpg"
+ },
+ {
+  "id": "cd87a219-8665-489f-b9b0-3b66339ed3cc",
+  "name": "Бросок медбола двумя руками из-за головы лёжа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Supine_Two-Arm_Overhead_Throw/0.jpg"
+ },
+ {
+  "id": "4c999a16-9010-466f-a779-fe917dd404d5",
+  "name": "Бросок медбола из спортивной стойки",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Return_Push_from_Stance/0.jpg"
+ },
+ {
+  "id": "d7e9b37b-e98d-4459-943e-b91867707c72",
+  "name": "Бросок медбола из-за головы",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Catch_and_Overhead_Throw/0.jpg"
+ },
+ {
+  "id": "6ca1c159-632e-4036-b429-9de1a91949a5",
+  "name": "Бросок медбола назад из-за головы",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Backward_Medicine_Ball_Throw/0.jpg"
+ },
+ {
+  "id": "0185e022-a251-48ec-944a-be33427c7cd9",
+  "name": "Бросок медбола одной рукой из-за головы лёжа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Supine_One-Arm_Overhead_Throw/0.jpg"
+ },
+ {
+  "id": "03b333f2-e9c8-42a0-9b6c-7e1168ece69c",
+  "name": "Бросок медбола от груди",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Medicine_Ball_Chest_Pass/0.jpg"
+ },
+ {
+  "id": "d6264e19-45fe-4a69-8eb0-8d950377edbc",
+  "name": "Бросок медбола от груди лёжа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Supine_Chest_Throw/0.jpg"
+ },
+ {
+  "id": "cb43a7ab-34d9-46ad-bb89-c7d60b3f1d83",
+  "name": "Бросок медбола снизу вверх",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Medicine_Ball_Scoop_Throw/0.jpg"
+ },
+ {
+  "id": "c7d70e56-37a9-4ac5-8827-42058d9ac593",
+  "name": "Быстрые прыжки на месте (скиппинг)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Fast_Skipping/0.jpg"
+ },
+ {
+  "id": "8dcee0ac-086c-4df6-849d-8c858e4855f8",
+  "name": "Быстрый прыжок на тумбу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Quick_Leap/0.jpg"
+ },
+ {
+  "id": "c4596ad1-860f-4f44-9f0d-643b12ecd043",
+  "name": "Велотренажер (стационарный)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycling_Stationary/0.jpg"
+ },
+ {
+  "id": "1c399815-5a97-43cb-b37b-6c83d4f953c2",
+  "name": "Велотренажер с посадкой назад",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Recumbent_Bike/0.jpg"
+ },
+ {
+  "id": "4a342162-ead6-45e1-ae5e-5228d0ae1058",
+  "name": "Вертикальный мах гантелью",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Vertical_Swing/0.jpg"
+ },
+ {
+  "id": "cb72032c-c1bc-4bab-8351-5e64f0c5fc7e",
+  "name": "Взрывные отжимания с отрывом рук",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plyo_Push-up/0.jpg"
+ },
+ {
+  "id": "623f4aa7-34b2-4b7e-9dcb-d479e94c77db",
+  "name": "Взрывные отжимания с перекладыванием гири",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plyo_Kettlebell_Pushups/0.jpg"
+ },
+ {
+  "id": "c5e23980-edb1-4766-8ea7-b493c0b40d0b",
+  "name": "Взятие гантелей на грудь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Clean/0.jpg"
+ },
+ {
+  "id": "8a54f04a-5bd4-4f2e-b70e-96a58a0598e0",
+  "name": "Взятие гири на грудь (перевёрнутая, из виса)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bottoms-Up_Clean_From_The_Hang_Position/0.jpg"
+ },
+ {
+  "id": "473774f1-d31d-4f88-8868-1c30d71fc77a",
+  "name": "Взятие гири на грудь одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Clean/0.jpg"
+ },
+ {
+  "id": "aed9204e-b765-44a7-ac7e-51f2f0ead967",
+  "name": "Взятие гири на грудь открытой ладонью",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Open_Palm_Kettlebell_Clean/0.jpg"
+ },
+ {
+  "id": "c0c2a6c3-0718-4ffd-9927-6716d4793af9",
+  "name": "Взятие гири на грудь открытой ладонью одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Open_Palm_Kettlebell_Clean/0.jpg"
+ },
+ {
+  "id": "bb9d7e88-90ce-44f8-8a97-cb7d7a6f34a0",
+  "name": "Взятие гири с виса",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Hang_Clean/0.jpg"
+ },
+ {
+  "id": "7c5ee4fa-e1bd-4e32-bc7d-3ff567074d15",
+  "name": "Взятие двух гирь на грудь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Two-Arm_Kettlebell_Clean/0.jpg"
+ },
+ {
+  "id": "9ba33e2d-bb77-4764-8cef-16a70a99acfe",
+  "name": "Взятие на грудь и жим стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_and_Press/0.jpg"
+ },
+ {
+  "id": "cb30ee3a-7a04-4bd2-b276-773e775ebdae",
+  "name": "Взятие на грудь и толчок",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_and_Jerk/0.jpg"
+ },
+ {
+  "id": "7be695d6-7b1f-4d8d-9982-84c7f923fc0b",
+  "name": "Взятие на грудь и толчок гири одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Clean_and_Jerk/0.jpg"
+ },
+ {
+  "id": "83d33cbd-b7b0-499d-85ab-6e633965a6b8",
+  "name": "Взятие на грудь с плинтов",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_from_Blocks/0.jpg"
+ },
+ {
+  "id": "a66b11db-c1be-4434-8740-11f64356fe91",
+  "name": "Взятие штанги на грудь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean/0.jpg"
+ },
+ {
+  "id": "c9cc1bde-5fff-466a-945d-df464900b5f7",
+  "name": "Взятие штанги на грудь в разножке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Clean/0.jpg"
+ },
+ {
+  "id": "58cfeb6a-7755-437d-a124-33802d4cee9b",
+  "name": "Взятие штанги на грудь в силовом стиле (Power Clean)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Power_Clean/0.jpg"
+ },
+ {
+  "id": "75f80395-0983-4c2a-a585-79549ec8d4ea",
+  "name": "Взятие штанги на грудь с виса",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hang_Clean/0.jpg"
+ },
+ {
+  "id": "902871f2-40e4-4c40-bb1d-41962903b474",
+  "name": "Взятие штанги на грудь с виса в силовом стиле в тренажере Смита",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Hang_Power_Clean/0.jpg"
+ },
+ {
+  "id": "fcab6afd-59c5-49c8-9ad6-930efb517a7b",
+  "name": "Взятие штанги на грудь с виса в тренажере Смита",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Hang_Power_Clean/0.jpg"
+ },
+ {
+  "id": "839f4d27-04c2-406a-a26f-a0748810b19d",
+  "name": "Взятие штанги на грудь с виса ниже колен",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hang_Clean_-_Below_the_Knees/0.jpg"
+ },
+ {
+  "id": "62970bb6-8761-4322-9777-2faa5132b98f",
+  "name": "Взятие штанги на грудь с плинтов (Power Clean)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Power_Clean_from_Blocks/0.jpg"
+ },
+ {
+  "id": "baa27dcb-6db6-4438-820b-fb696fbe1312",
+  "name": "Вис на одной руке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Handed_Hang/0.jpg"
+ },
+ {
+  "id": "4508a86b-7e2d-4623-bd31-4b45ae4975ae",
+  "name": "Внешняя ротация плеча в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation_with_Cable/0.jpg"
+ },
+ {
+  "id": "cb315b69-45bf-4e8b-9f98-9dca7bf2be0d",
+  "name": "Внешняя ротация плеча в нижнем блоке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation/0.jpg"
+ },
+ {
+  "id": "47e52092-6a48-4cec-b9aa-ff790eaa4199",
+  "name": "Внешняя ротация плеча с резинкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation_with_Band/0.jpg"
+ },
+ {
+  "id": "aed5a3f7-6118-484f-89bd-fa8a4771cb2f",
+  "name": "Внутренняя ротация плеча в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Internal_Rotation/0.jpg"
+ },
+ {
+  "id": "92ebe747-ad24-443e-84d0-5070bd5d5814",
+  "name": "Внутренняя ротация плеча с резинкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Internal_Rotation_with_Band/0.jpg"
+ },
+ {
+  "id": "dadecb7e-acdb-48a1-a240-483e331e1a0b",
+  "name": "Вокруг света с гантелями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Around_The_Worlds/0.jpg"
+ },
+ {
+  "id": "c514eaf0-e9ff-414c-9246-8843d0eef5ea",
+  "name": "Восьмерка с гирей",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Figure_8/0.jpg"
+ },
+ {
+  "id": "bc39af1e-7451-40b0-a3dc-063b5c177ae5",
+  "name": "Вращение блина (Car Drivers)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Car_Drivers/0.jpg"
+ },
+ {
+  "id": "fc2f132e-9414-4649-a1ab-bde16b4bdbe3",
+  "name": "Вращение грифа (Wrist Roller)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wrist_Roller/0.jpg"
+ },
+ {
+  "id": "136cb2f8-f40c-4ed8-a7f2-3f4d8cf507c1",
+  "name": "Вращения голеностопом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ankle_Circles/0.jpg"
+ },
+ {
+  "id": "f12d6792-9764-4e9a-b2de-70f1d49ab668",
+  "name": "Вращения запястий с прямым грифом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wrist_Rotations_with_Straight_Bar/0.jpg"
+ },
+ {
+  "id": "788a3fe5-078b-4b47-ac29-61ccd2b2fde8",
+  "name": "Вращения запястями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wrist_Circles/0.jpg"
+ },
+ {
+  "id": "14d44e4a-5f59-4647-a73a-97d9f69ef89e",
+  "name": "Вращения коленями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Knee_Circles/0.jpg"
+ },
+ {
+  "id": "0238baf2-f430-497e-b757-64d7dab1d2ae",
+  "name": "Вращения локтями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elbow_Circles/0.jpg"
+ },
+ {
+  "id": "8ead999b-b4e8-4724-a890-8fbfe1043754",
+  "name": "Вращения плечами",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Shoulder_Circles/0.jpg"
+ },
+ {
+  "id": "9971f1fd-3acf-4047-aabc-5593b44b3a9a",
+  "name": "Вращения руками",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arm_Circles/0.jpg"
+ },
+ {
+  "id": "04f38f15-c22f-43f6-9849-e660022e0272",
+  "name": "Вращения с гантелями (Spell Caster)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spell_Caster/0.jpg"
+ },
+ {
+  "id": "d47d37a8-136c-4d35-931d-737eb3cb84b3",
+  "name": "Выпады вперед в петлях (Suspended Fallout)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Fallout/0.jpg"
+ },
+ {
+  "id": "6131ef06-5cce-4363-90d8-b09054f781c5",
+  "name": "Выпады с передачей гири под ногой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lunge_Pass_Through/0.jpg"
+ },
+ {
+  "id": "b84d37c1-d58e-470f-857b-fbbb74c12637",
+  "name": "Выпады со штангой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/0.jpg"
+ },
+ {
+  "id": "08d4eb34-f092-44b3-a71a-992d0d122a4e",
+  "name": "Выпрыгивания из выпада",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Jump/0.jpg"
+ },
+ {
+  "id": "8820ed15-08d7-49dd-8bf9-b2955ca7199c",
+  "name": "Выход силой на турнике",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Muscle_Up/0.jpg"
+ },
+ {
+  "id": "d214102c-043c-4aa0-b198-96d9069803ef",
+  "name": "Выход силой с раскачкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kipping_Muscle_Up/0.jpg"
+ },
+ {
+  "id": "0cac699a-e5cd-4175-a95a-279cf9d46da2",
+  "name": "Гакк-приседания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg"
+ },
+ {
+  "id": "f7ddc82f-18b4-4278-bc41-adc5fe1b95c9",
+  "name": "Гакк-приседания со штангой (сзади)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hack_Squat/0.jpg"
+ },
+ {
+  "id": "210a2218-46ab-42a3-adc9-255040200d3f",
+  "name": "Гиперэкстензия",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_Back_Extensions/0.jpg"
+ },
+ {
+  "id": "d447d641-ac0e-406e-853f-a8f5176f1ffd",
+  "name": "Гиперэкстензия на скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_With_No_Hyperextension_Bench/0.jpg"
+ },
+ {
+  "id": "6a9f66cd-4049-4b78-921f-6c68334acfea",
+  "name": "Гиперэкстензия с медболом на фитболе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Ball_Hyperextension/0.jpg"
+ },
+ {
+  "id": "906bc1e4-ca95-4c18-a266-8600176ced59",
+  "name": "Гоблет-приседания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/0.jpg"
+ },
+ {
+  "id": "e21f781c-3eef-42a5-846e-7e08c93930d8",
+  "name": "Гребной тренажер",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/0.jpg"
+ },
+ {
+  "id": "26a14daf-bf55-49f9-9748-ed3586108ca9",
+  "name": "Гусеница",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Inchworm/0.jpg"
+ },
+ {
+  "id": "c99365fc-ac6a-46c6-89d7-a4b2ae24fc61",
+  "name": "Двойной захлест голени в прыжке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Double_Leg_Butt_Kick/0.jpg"
+ },
+ {
+  "id": "53566e59-7ca5-428b-9f59-1610525571f3",
+  "name": "Диагональные прыжки с ноги на ногу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Leg_Diagonal_Bound/0.jpg"
+ },
+ {
+  "id": "86bf5459-1964-4e2d-8fed-d433e48a0eac",
+  "name": "Динамическая растяжка бицепса бедра 90/90",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/90_90_Hamstring/0.jpg"
+ },
+ {
+  "id": "ec0b1694-b050-461d-b07a-e845cfbdce46",
+  "name": "Динамическая растяжка груди",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dynamic_Chest_Stretch/0.jpg"
+ },
+ {
+  "id": "e1d7c0c8-4244-48dc-bc38-817fbd722a63",
+  "name": "Динамическая растяжка спины",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dynamic_Back_Stretch/0.jpg"
+ },
+ {
+  "id": "c127f9e6-ae9d-4b70-b4dd-8fedfbb7fbed",
+  "name": "Динамические выпады",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squats/0.jpg"
+ },
+ {
+  "id": "c7053107-e075-4644-ac3e-7be97f1e242e",
+  "name": "Дровосек в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Wood_Chop/0.jpg"
+ },
+ {
+  "id": "051156b4-0410-4266-b75f-68670a1b368d",
+  "name": "Езда на велосипеде (на улице)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycling/0.jpg"
+ },
+ {
+  "id": "2bf4b7dd-fc1f-451e-8a83-eb17df3596c2",
+  "name": "Железный крест (с гантелями)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Iron_Cross/0.jpg"
+ },
+ {
+  "id": "7851eee9-d44c-4038-af7d-624cc50b1cb6",
+  "name": "Железный крест в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Iron_Cross/0.jpg"
+ },
+ {
+  "id": "c9bcb7a0-96fe-44bc-b078-99130821a72b",
+  "name": "Жим EZ-штанги узким хватом лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_EZ-Bar_Press/0.jpg"
+ },
+ {
+  "id": "5048ebb0-e930-4324-998c-faac2f6f5148",
+  "name": "Жим Арнольда",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Arnold_Dumbbell_Press/0.jpg"
+ },
+ {
+  "id": "9a879607-102b-4a1b-b7bd-7abe75e5577e",
+  "name": "Жим Арнольда с гирей",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Arnold_Press/0.jpg"
+ },
+ {
+  "id": "7ff5ac00-f3c2-4ba6-853d-5d67dba3081e",
+  "name": "Жим Брэдфорда сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bradford_Rocky_Presses/0.jpg"
+ },
+ {
+  "id": "6478893f-f4f0-487f-ac74-39b84bef6b6f",
+  "name": "Жим Брэдфорда стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bradford_Press/0.jpg"
+ },
+ {
+  "id": "a2e4b093-48f1-485b-92f0-ddf4ab7b19e5",
+  "name": "Жим в кроссовере на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Cable_Chest_Press/0.jpg"
+ },
+ {
+  "id": "fd16fd41-e661-48ee-87be-a27fe7b0ad47",
+  "name": "Жим в кроссовере с нижних блоков лёжа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg"
+ },
+ {
+  "id": "6554d7e8-3c36-428b-804f-bd8ed92f5823",
+  "name": "Жим в кроссовере сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Chest_Press/0.jpg"
+ },
+ {
+  "id": "3decd028-d511-4a31-9b1b-b829cec7d457",
+  "name": "Жим в кроссовере стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Chest_Press/0.jpg"
+ },
+ {
+  "id": "0a90e00b-0029-4bf3-b40f-0a2ca9cfb753",
+  "name": "Жим в тренажере Chest Press",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg"
+ },
+ {
+  "id": "0be5b21e-1397-4542-975a-56c8785119e0",
+  "name": "Жим в тренажере Shoulder Press",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Shoulder_Military_Press/0.jpg"
+ },
+ {
+  "id": "edc14ebb-68d2-406b-9f2b-4104f00adcb2",
+  "name": "Жим в тренажере на трицепс (Dips Machine)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dip_Machine/0.jpg"
+ },
+ {
+  "id": "79584d7c-5bda-4d3f-9cf7-ad6e8ae1e0b4",
+  "name": "Жим в тренажере Смита (горизонтальный)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bench_Press/0.jpg"
+ },
+ {
+  "id": "e6e33757-d572-4b23-baa3-0d46b5922867",
+  "name": "Жим в тренажере Смита на наклонной скамье вниз головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Smith_Press/0.jpg"
+ },
+ {
+  "id": "2f6cf819-31a7-4225-9da5-f4e5db783c06",
+  "name": "Жим в Хаммере на плечи",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "d652bb4a-03df-41a3-9095-ac96753a1801",
+  "name": "Жим гантелей лежа на полу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Floor_Press/0.jpg"
+ },
+ {
+  "id": "9bcd991e-3849-431d-96bf-2d40590a1a14",
+  "name": "Жим гантелей лежа нейтральным хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press_with_Neutral_Grip/0.jpg"
+ },
+ {
+  "id": "668309c4-7be6-41e9-a2be-a9d8ba81d547",
+  "name": "Жим гантелей лежа обратным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Dumbbell_Press/0.jpg"
+ },
+ {
+  "id": "a4b05d2e-6249-40b5-9947-fb6fbce69041",
+  "name": "Жим гантелей на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg"
+ },
+ {
+  "id": "fb392a40-7965-4ed2-a0ad-718af88f79d5",
+  "name": "Жим гантелей на наклонной скамье вниз головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Bench_Press/0.jpg"
+ },
+ {
+  "id": "e0604c73-3c6a-4ce3-a9c7-442de26721cb",
+  "name": "Жим гантелей на наклонной скамье нейтральным хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Grip_Incline_DB_Bench_Press/0.jpg"
+ },
+ {
+  "id": "8f017a2a-5115-4cee-8e3d-ffdbf7b7236f",
+  "name": "Жим гантелей сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Press/0.jpg"
+ },
+ {
+  "id": "0357e0fd-8bf0-4793-85cf-7626b03091c2",
+  "name": "Жим гантели одной рукой лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Dumbbell_Bench_Press/0.jpg"
+ },
+ {
+  "id": "8fecbdf1-b17d-4538-9efb-8c13e1906fcc",
+  "name": "Жим гантели одной рукой сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "8427a1ee-7507-446c-91e7-a2ead6685ea4",
+  "name": "Жим гири лежа с перекинутой ногой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg-Over_Floor_Press/0.jpg"
+ },
+ {
+  "id": "5fa104ab-fc3d-4d68-a5c9-5f8d4c65cfaf",
+  "name": "Жим гири одной рукой лежа на полу (увеличенная амплитуда)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Extended_Range_One-Arm_Kettlebell_Floor_Press/0.jpg"
+ },
+ {
+  "id": "41ecd4df-c2b5-4b1b-9f3b-be66580609be",
+  "name": "Жим гири одной рукой с отведенным локтем",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Para_Press/0.jpg"
+ },
+ {
+  "id": "556556b1-a4aa-4216-a66d-6f0f9016c484",
+  "name": "Жим гири с наклоном (Bent Press)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Press/0.jpg"
+ },
+ {
+  "id": "a19e9d92-29b9-49e5-bd31-7c5c8597df0d",
+  "name": "Жим гири сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Seated_Press/0.jpg"
+ },
+ {
+  "id": "c31b0925-6c10-4c5e-9112-9800bd458f86",
+  "name": "Жим ногами в тренажёре Смита",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Leg_Press/0.jpg"
+ },
+ {
+  "id": "b9c957fd-a7c9-4d76-a7ed-4d19ba2524d3",
+  "name": "Жим ногами с высокой постановкой стоп",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg"
+ },
+ {
+  "id": "8287ddff-f208-45a3-8b00-3eab5f185461",
+  "name": "Жим ногами с узкой постановкой стоп",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Leg_Press/0.jpg"
+ },
+ {
+  "id": "3ea7550b-66d8-4f16-bf5d-3ac80a4473e1",
+  "name": "Жим от груди в тренажёре",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bench_Press/0.jpg"
+ },
+ {
+  "id": "94db2cbc-d31e-4498-916f-1d2ca0399688",
+  "name": "Жим от груди вниз головой в рычажном тренажёре",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Decline_Chest_Press/0.jpg"
+ },
+ {
+  "id": "63e87a38-5284-4a19-8239-9107267d1aba",
+  "name": "Жим от груди на наклонной скамье в рычажном тренажёре",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Incline_Chest_Press/0.jpg"
+ },
+ {
+  "id": "81036684-0847-47a0-87dd-96ebb427b0af",
+  "name": "Жим Паллофа в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pallof_Press/0.jpg"
+ },
+ {
+  "id": "92173dee-94d9-4faa-8280-548c2247fe2f",
+  "name": "Жим Паллофа с поворотом в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pallof_Press_With_Rotation/0.jpg"
+ },
+ {
+  "id": "2aad6e01-24dc-4c0a-aee8-91843ce4d31a",
+  "name": "Жим плеч в кроссовере сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "848c128f-4ac4-4f1e-a304-e614d9074835",
+  "name": "Жим плеч в кроссовере стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "b87fd7dd-493f-45aa-90bc-266afee6df42",
+  "name": "Жим плеч с фитнес-резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Shoulder_Press_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "0e982186-2105-4ee0-b027-6ad6d830d9da",
+  "name": "Жим с досками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Board_Press/0.jpg"
+ },
+ {
+  "id": "8a4ea55f-646e-449e-b227-d5824708c1ff",
+  "name": "Жим с цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chain_Press/0.jpg"
+ },
+ {
+  "id": "ef37f62c-ddee-4a76-976b-03d1299cd42c",
+  "name": "Жим Свенда",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Svend_Press/0.jpg"
+ },
+ {
+  "id": "479366f5-8875-4f51-9875-c508d7d26b28",
+  "name": "Жим Тейта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tate_Press/0.jpg"
+ },
+ {
+  "id": "78e357d7-6102-4a87-864b-8191e1d9ce58",
+  "name": "Жим узким хватом на наклонной скамье с переходом во французский жим",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Close-Grip_Bench_To_Skull_Crusher/0.jpg"
+ },
+ {
+  "id": "567b48bb-40ca-4fc8-9c03-be3e3cca05f5",
+  "name": "Жим штанги лежа (гильотина)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Guillotine_Bench_Press/0.jpg"
+ },
+ {
+  "id": "3f99f404-dbf7-4810-8ae8-dec9fa139fde",
+  "name": "Жим штанги лежа (пауэрлифтинг)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_Powerlifting/0.jpg"
+ },
+ {
+  "id": "efaf0488-d67f-438d-9a7d-a5529c646bd9",
+  "name": "Жим штанги лежа на полу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Floor_Press/0.jpg"
+ },
+ {
+  "id": "f8ac2418-1532-47d3-8ca0-d4fbaa7160c2",
+  "name": "Жим штанги лежа на полу с цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Floor_Press_with_Chains/0.jpg"
+ },
+ {
+  "id": "2d7f0ad0-897e-435e-8a07-e481e90d4879",
+  "name": "Жим штанги лежа обратным хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Triceps_Bench_Press/0.jpg"
+ },
+ {
+  "id": "06e68a04-e08b-4f31-bd5a-d1ca6a2b99fa",
+  "name": "Жим штанги лежа с обратными резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Bench_Press/0.jpg"
+ },
+ {
+  "id": "2a402503-04f8-4734-b0da-225ea3171846",
+  "name": "Жим штанги лежа с резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "67fd8ba4-7797-455b-b790-4004efa55f9a",
+  "name": "Жим штанги лежа с цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_with_Chains/0.jpg"
+ },
+ {
+  "id": "e3a1cbcf-8fc8-488b-b80c-3acb0ec7704a",
+  "name": "Жим штанги лежа широким хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Barbell_Bench_Press/0.jpg"
+ },
+ {
+  "id": "37d6ecbf-28db-459a-bb58-0a5d4f221f13",
+  "name": "Жим штанги на наклонной скамье (30–45°)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg"
+ },
+ {
+  "id": "7a671fd3-8574-4c54-b03a-7ae3fe4a39bc",
+  "name": "Жим штанги на наклонной скамье в Смите",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Incline_Bench_Press/0.jpg"
+ },
+ {
+  "id": "7fd34ac8-8092-4472-9297-4daa4fd44a59",
+  "name": "Жим штанги на наклонной скамье вниз головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Barbell_Bench_Press/0.jpg"
+ },
+ {
+  "id": "fb4d29c5-382c-4c18-ac60-2082c6bdfef6",
+  "name": "Жим штанги на наклонной скамье вниз головой в тренажере Смита",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Decline_Press/0.jpg"
+ },
+ {
+  "id": "ccf7568f-a78b-48c3-a80f-301d446bf4df",
+  "name": "Жим штанги на наклонной скамье вниз головой широким хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Decline_Barbell_Bench_Press/0.jpg"
+ },
+ {
+  "id": "31654be6-e747-4f22-aec3-f251cc16422f",
+  "name": "Жим штанги одной рукой в упоре (Linear Jammer)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Arm_Linear_Jammer/0.jpg"
+ },
+ {
+  "id": "217367f2-9baf-4937-afaf-e6eb599cd00f",
+  "name": "Жим штанги одной рукой лежа на полу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Floor_Press/0.jpg"
+ },
+ {
+  "id": "281c0690-386d-4a89-aa81-467f9109c42a",
+  "name": "Жим штанги с плинтов",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pin_Presses/0.jpg"
+ },
+ {
+  "id": "ea8f5abb-9fd3-415f-af07-e252cc6a7589",
+  "name": "Жим штанги сидя (армейский жим)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "a673a68c-3b75-46c8-8fcb-da8962a14a80",
+  "name": "Жим штанги стоя (армейский жим)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/0.jpg"
+ },
+ {
+  "id": "17c88780-5e54-4ee0-92da-67e0968a5a8f",
+  "name": "Жим штанги стоя в Смите",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "88903acc-463c-4918-a441-c296d1f626a0",
+  "name": "Жим штанги стоя из-за головы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Barbell_Press_Behind_Neck/0.jpg"
+ },
+ {
+  "id": "47151e4c-67bc-49cc-9c3c-90ee00975b0e",
+  "name": "Жим штанги узким хватом в тренажере Смита",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Close-Grip_Bench_Press/0.jpg"
+ },
+ {
+  "id": "9828dbd3-8d2e-473e-ad19-fc9eb91002bb",
+  "name": "Жим штанги узким хватом к подбородку лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Close-Grip_Barbell_Triceps_Press_To_Chin/0.jpg"
+ },
+ {
+  "id": "0f11cfd4-8912-4dd3-a0a3-d6f20632c788",
+  "name": "Жим штанги узким хватом лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Barbell_Bench_Press/0.jpg"
+ },
+ {
+  "id": "476b9a48-816d-45d1-a847-162941b585f5",
+  "name": "Запрыгивание на тумбу лицом вперед",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Box_Jump/0.jpg"
+ },
+ {
+  "id": "b4744287-72e3-4a96-925c-7a651d640626",
+  "name": "Запрыгивание на тумбу с гантелью из положения сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Seated_Box_Jump/0.jpg"
+ },
+ {
+  "id": "f014d155-0e5d-4e20-b8f4-fb5901c3002b",
+  "name": "Запрыгивание на тумбу с одной ноги",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Push-off/0.jpg"
+ },
+ {
+  "id": "b49c5ce1-a99c-4aba-9641-cd25f28a57d2",
+  "name": "Захлест голени на одной ноге",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Butt_Kick/0.jpg"
+ },
+ {
+  "id": "e1bb078f-2e20-4091-ab21-f0905b286011",
+  "name": "Зашагивания на высокую тумбу (Single-Leg Box Squat)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_High_Box_Squat/0.jpg"
+ },
+ {
+  "id": "fef4cc00-7072-4ae5-8115-e0828a3a1e99",
+  "name": "Зашагивания на тумбу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Step_Ups/0.jpg"
+ },
+ {
+  "id": "3551ee3f-8ba8-406a-b816-01f6d996a813",
+  "name": "Зашагивания на тумбу с гантелями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Step_Ups/0.jpg"
+ },
+ {
+  "id": "21c7ae46-3a76-4e30-9ff7-6b7e6b508a42",
+  "name": "Изометрическая тяга в рычажном тренажере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Iso_Row/0.jpg"
+ },
+ {
+  "id": "224b0891-28c0-46ae-a83f-e536edaaf8c3",
+  "name": "Изометрические дворники",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Isometric_Wipers/0.jpg"
+ },
+ {
+  "id": "2796c4e7-353f-4f54-8ebf-74640d5c7d58",
+  "name": "Изометрическое сжатие груди",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Isometric_Chest_Squeezes/0.jpg"
+ },
+ {
+  "id": "d5024a09-e75a-40f0-a815-38215edb3a1d",
+  "name": "Изометрическое упражнение для шеи (вперед-назад)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Isometric_Neck_Exercise_-Front_And_Back/0.jpg"
+ },
+ {
+  "id": "3c7824ca-aaeb-4824-b4df-5a54aea18036",
+  "name": "Имитация конькобежца (Skating)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Skating/0.jpg"
+ },
+ {
+  "id": "b5d8c893-da8d-4235-99f3-3700ca0ae475",
+  "name": "Классические подъемы корпуса (Sit-Up)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit-Up/0.jpg"
+ },
+ {
+  "id": "ad96a296-f8b4-40a2-9168-3952f26c089b",
+  "name": "Концентрированный подъем на бицепс",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Concentration_Curls/0.jpg"
+ },
+ {
+  "id": "38d6554c-3551-411b-8f08-fbac0f612765",
+  "name": "Концентрированный подъем штанги на бицепс сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Close-Grip_Concentration_Barbell_Curl/0.jpg"
+ },
+ {
+  "id": "b419d3b1-73c0-4e71-a670-fd1692c573e1",
+  "name": "Копенгагенские приведения (Copenhagen Adduction)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg"
+ },
+ {
+  "id": "52cc9965-760e-49e9-a6fb-40c5ee81d02a",
+  "name": "Косые скручивания (локоть к колену)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cross-Body_Crunch/0.jpg"
+ },
+ {
+  "id": "894040dc-36b4-424b-8a68-92b800c251f3",
+  "name": "Косые скручивания лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Oblique_Crunches/0.jpg"
+ },
+ {
+  "id": "e2930969-4960-4b6f-87e1-0854185ea9fb",
+  "name": "Косые скручивания на наклонной скамье вниз головой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Oblique_Crunch/0.jpg"
+ },
+ {
+  "id": "88a5066c-b7c6-4689-a64b-041193b1fad4",
+  "name": "Кошачья растяжка (Cat-Cow)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg"
+ },
+ {
+  "id": "559fcebc-580a-4b33-b6b4-c7d7bf03e878",
+  "name": "Круговые движения бедром лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hip_Circles_prone/0.jpg"
+ },
+ {
+  "id": "5b0a3c63-36db-4fbb-b8d1-e7e0fa5346e3",
+  "name": "Кубинский жим (Cuban Press)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cuban_Press/0.jpg"
+ },
+ {
+  "id": "5fc17877-96cb-4ae4-9b6d-df12f3435c61",
+  "name": "Лазание по канату",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Climb/0.jpg"
+ },
+ {
+  "id": "915b8685-2c5c-4843-873b-2972a7ca48eb",
+  "name": "Линейный жим со штангой в замке",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Landmine_Linear_Jammer/0.jpg"
+ },
+ {
+  "id": "ea4899ac-3c4f-4d42-9f01-980b321a4f0e",
+  "name": "Линейный прыжок в глубину",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Linear_Depth_Jump/0.jpg"
+ },
+ {
+  "id": "41daa67b-9414-42c3-87ee-6b148b32d75e",
+  "name": "Лондонские мосты (спуск по канату)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/London_Bridges/0.jpg"
+ },
+ {
+  "id": "0503f839-46a4-4df3-9ce9-22a655522217",
+  "name": "Лопаточные подтягивания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Scapular_Pull-Up/0.jpg"
+ },
+ {
+  "id": "8419dcf7-1868-46d1-8fe8-c14a36d4f2c6",
+  "name": "Лучшая в мире растяжка (World's Greatest Stretch)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Worlds_Greatest_Stretch/0.jpg"
+ },
+ {
+  "id": "fd629069-0b51-407a-b93b-0548ed7ef4e9",
+  "name": "Махи в кроссовере на заднюю дельту (перекрестно)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rear_Delt_Fly/0.jpg"
+ },
+ {
+  "id": "c6880d3b-d2e2-466e-a88e-06a1c1f28c43",
+  "name": "Махи в наклоне в нижнем блоке",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Low-Pulley_Side_Lateral/0.jpg"
+ },
+ {
+  "id": "65785fae-5fba-42b6-86ce-39823cc6a625",
+  "name": "Махи в стороны с резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Raise_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "aed89a28-5317-4391-ae65-ec946708f4ba",
+  "name": "Махи гантелей вверх лежа на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Incline_Lateral_Raise/0.jpg"
+ },
+ {
+  "id": "1aea7365-d2e1-42c0-966d-c9cc9d467d8d",
+  "name": "Махи гантелью в сторону лежа на скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_One-Arm_Lateral_Raise/0.jpg"
+ },
+ {
+  "id": "8967d953-8c66-4322-afc0-b9728305ff43",
+  "name": "Махи гантелью в сторону одной рукой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Side_Laterals/0.jpg"
+ },
+ {
+  "id": "e0fabf95-1533-4b0f-b120-ca6062641110",
+  "name": "Махи гантелями в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench/0.jpg"
+ },
+ {
+  "id": "7f42909d-5dc0-4a0a-9dfe-38bb392895b5",
+  "name": "Махи гантелями в стороны (частичная амплитуда)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Power_Partials/0.jpg"
+ },
+ {
+  "id": "519b3e8c-1901-4bd6-a1ce-46d7a2e84a87",
+  "name": "Махи гантелями в стороны и перед собой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Laterals_to_Front_Raise/0.jpg"
+ },
+ {
+  "id": "49d123ef-d4b1-454d-9ad7-18df8f1b2adc",
+  "name": "Махи гантелями в стороны сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Side_Lateral_Raise/0.jpg"
+ },
+ {
+  "id": "128c1160-8371-4019-a349-dfc39928b369",
+  "name": "Махи гантелями в стороны стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg"
+ },
+ {
+  "id": "a4756848-00aa-4ab1-9a2c-25b193ab5bca",
+  "name": "Махи гантелями на заднюю дельту лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Rear_Delt_Raise/0.jpg"
+ },
+ {
+  "id": "8a3dd8f1-0d0a-485b-a31a-75921af08be9",
+  "name": "Махи гантелями перед собой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Dumbbell_Raise/0.jpg"
+ },
+ {
+  "id": "cc010aa7-5df3-4ed3-8a79-9218531ee861",
+  "name": "Махи гирей одной рукой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Swings/0.jpg"
+ },
+ {
+  "id": "b023f748-166b-4722-8844-a8f12b8c0b03",
+  "name": "Махи ногой в сторону стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Leg_Raises/0.jpg"
+ },
+ {
+  "id": "b3a3ca99-658d-4e29-8279-668f77597ea9",
+  "name": "Махи ногой вперед (динамическая растяжка)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Leg_Raises/0.jpg"
+ },
+ {
+  "id": "8520d17b-84ca-42d0-b9d5-f45e4b6899ee",
+  "name": "Махи ногой назад на четвереньках",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rear_Leg_Raises/0.jpg"
+ },
+ {
+  "id": "b8522893-f917-404c-8ca1-3d085611487c",
+  "name": "Мельница с гирей",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Windmill/0.jpg"
+ },
+ {
+  "id": "25dd0063-5815-466b-8868-37ded9c17502",
+  "name": "Мельница с двумя гирями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Double_Kettlebell_Windmill/0.jpg"
+ },
+ {
+  "id": "add5483d-7840-4053-bc2b-409b4f83f9aa",
+  "name": "Мёртвая тяга",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Barbell_Deadlift/0.jpg"
+ },
+ {
+  "id": "09f12000-623b-430b-baec-995a4845a7e3",
+  "name": "Мёртвый подъём гири на грудь",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Dead_Clean/0.jpg"
+ },
+ {
+  "id": "9a783377-fb7a-4f1a-9852-c721338dbb18",
+  "name": "МФР бицепса бедра",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hamstring-SMR/0.jpg"
+ },
+ {
+  "id": "a1d13a75-724e-4ca8-b6d4-8d2bd063de7c",
+  "name": "МФР брахиалиса",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Brachialis-SMR/0.jpg"
+ },
+ {
+  "id": "604dddfe-85b5-473e-a366-b13f38f09dca",
+  "name": "МФР грушевидной мышцы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Piriformis-SMR/0.jpg"
+ },
+ {
+  "id": "a36d3eac-76df-4314-b525-08961f0c5fe8",
+  "name": "МФР икроножных мышц",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calves-SMR/0.jpg"
+ },
+ {
+  "id": "24bac140-c41c-4c25-aafa-ad0836f49da0",
+  "name": "МФР квадрицепса",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Quadriceps-SMR/0.jpg"
+ },
+ {
+  "id": "e37d5c89-e40a-43a4-9b6d-382bfa76c08c",
+  "name": "МФР малоберцовых мышц",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Peroneals-SMR/0.jpg"
+ },
+ {
+  "id": "1331a5d5-df6d-4d49-9cf4-7cf5e34721b6",
+  "name": "МФР мышц шеи",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Neck-SMR/0.jpg"
+ },
+ {
+  "id": "c0233979-315b-4003-9c16-2d096d1cd8d7",
+  "name": "МФР передней большеберцовой мышцы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Anterior_Tibialis-SMR/0.jpg"
+ },
+ {
+  "id": "f186449b-4c76-4a8c-9a5d-c1b437cf0b1b",
+  "name": "МФР подвздошно-большеберцового тракта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Iliotibial_Tract-SMR/0.jpg"
+ },
+ {
+  "id": "67027268-161f-4a1c-bb6d-fdb8936dbfb1",
+  "name": "МФР поясницы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lower_Back-SMR/0.jpg"
+ },
+ {
+  "id": "f97070f5-9402-42db-bda3-7b8638f99921",
+  "name": "МФР приводящих мышц бедра",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Adductor/0.jpg"
+ },
+ {
+  "id": "68689b41-cc9a-44bd-a6ef-15de25e8f504",
+  "name": "МФР ромбовидных мышц",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rhomboids-SMR/0.jpg"
+ },
+ {
+  "id": "3b6748ba-3d28-46e6-a26b-8f0d860e0dfa",
+  "name": "МФР стоп",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Foot-SMR/0.jpg"
+ },
+ {
+  "id": "1366a1af-d7a4-44e2-8346-057499d1e309",
+  "name": "МФР широчайших мышц",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Latissimus_Dorsi-SMR/0.jpg"
+ },
+ {
+  "id": "9083664a-7cc9-42db-82ea-26659810b50f",
+  "name": "Наклон таза с переходом в ягодичный мостик",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pelvic_Tilt_Into_Bridge/0.jpg"
+ },
+ {
+  "id": "c304f919-c70c-44a0-a8dd-9e1d01e90917",
+  "name": "Наклоны в сторону с гантелью",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Side_Bend/0.jpg"
+ },
+ {
+  "id": "6ac8acee-137d-4fe9-8063-de6c33043499",
+  "name": "Наклоны в сторону со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Side_Bend/0.jpg"
+ },
+ {
+  "id": "b9f53e78-d1e1-4d56-ae25-1353ec41abb5",
+  "name": "Наклоны с фитнес-резинкой от стойки (пул-тру)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Good_Morning_Pull_Through/0.jpg"
+ },
+ {
+  "id": "e821fba4-d9ed-4aa9-91a6-5cc25fd0e2b6",
+  "name": "Наклоны со штангой (гуд морнинг)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Good_Morning/0.jpg"
+ },
+ {
+  "id": "5ff759be-96f6-46a9-ab01-6e79efedf013",
+  "name": "Наклоны со штангой на цепях",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Bar_Good_Morning/0.jpg"
+ },
+ {
+  "id": "16eb257e-08b3-4e09-bcbd-78dc733b1744",
+  "name": "Наклоны со штангой с плинтов",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Good_Morning_off_Pins/0.jpg"
+ },
+ {
+  "id": "66696310-6291-45df-b698-209874c779d8",
+  "name": "Наклоны со штангой сидя (гуд морнинг сидя)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Good_Mornings/0.jpg"
+ },
+ {
+  "id": "dd22320d-25fe-4a16-b686-698fa6ab24b0",
+  "name": "Неполные скручивания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/3_4_Sit-Up/0.jpg"
+ },
+ {
+  "id": "5b0ccd85-82c9-4d51-98fd-fcfedc66f562",
+  "name": "Ножницы (скрещивание ног)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Scissor_Kick/0.jpg"
+ },
+ {
+  "id": "928da30a-596d-43d6-ab21-ff7008153509",
+  "name": "Ножницы лёжа на животе",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flutter_Kicks/0.jpg"
+ },
+ {
+  "id": "b064dd5f-6f2e-49e3-bcdb-282aaca17dc7",
+  "name": "Обратная гиперэкстензия",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Hyperextension/0.jpg"
+ },
+ {
+  "id": "e3d6f900-91b9-4d51-b879-b9fdee7b3e0c",
+  "name": "Обратные выпады с возвышения",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elevated_Back_Lunge/0.jpg"
+ },
+ {
+  "id": "8c31971a-7630-4e3e-8fc2-3392f6b7ff7d",
+  "name": "Обратные выпады с гантелями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Rear_Lunge/0.jpg"
+ },
+ {
+  "id": "85dd4a2c-1d51-4e21-a237-95c843f54d5a",
+  "name": "Обратные разведения в Pec Deck",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Machine_Flyes/0.jpg"
+ },
+ {
+  "id": "89e3a200-0b99-4216-b93c-6da6e5ddad36",
+  "name": "Обратные разведения гантелей в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes/0.jpg"
+ },
+ {
+  "id": "29158527-b45b-4df9-ab94-a325be41b5d8",
+  "name": "Обратные разведения гантелей с внешней ротацией",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Flyes_With_External_Rotation/0.jpg"
+ },
+ {
+  "id": "a186cd9b-4348-435f-b2aa-082e42484c83",
+  "name": "Обратные разведения с санями (Sled Reverse Flye)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Reverse_Flye/0.jpg"
+ },
+ {
+  "id": "b9ff1347-c093-44f5-a9df-576b28b3c468",
+  "name": "Обратные скручивания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Crunch/0.jpg"
+ },
+ {
+  "id": "beadd236-bcba-4953-a16e-f75af92ec5d3",
+  "name": "Обратные скручивания в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Reverse_Crunch/0.jpg"
+ },
+ {
+  "id": "a4bf7002-c184-4676-aabe-ab674615b1c8",
+  "name": "Обратные скручивания в петлях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Reverse_Crunch/0.jpg"
+ },
+ {
+  "id": "516513d9-50c0-41e0-819b-2375cba63a4d",
+  "name": "Обратные скручивания на наклонной скамье вниз головой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Reverse_Crunch/0.jpg"
+ },
+ {
+  "id": "0d5b32fd-6e14-4a00-9216-29211180230d",
+  "name": "Обратный выпад с поворотом корпуса",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crossover_Reverse_Lunge/0.jpg"
+ },
+ {
+  "id": "2c149c0d-bc2c-468b-8226-0f791afc2e23",
+  "name": "Обхват коленей к груди лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hug_Knees_To_Chest/0.jpg"
+ },
+ {
+  "id": "07c65046-041b-4177-91a3-b3b0e0c0b5af",
+  "name": "Олимпийские приседания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Olympic_Squat/0.jpg"
+ },
+ {
+  "id": "822f7bec-bd5e-4cce-83bc-8fb0a4537864",
+  "name": "Отведение ноги в сторону в тренажере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Thigh_Abductor/0.jpg"
+ },
+ {
+  "id": "6d9e1427-008e-424d-a9e0-a837cb7853a1",
+  "name": "Отведение ноги назад в кроссовере на одной ноге",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Legged_Cable_Kickback/0.jpg"
+ },
+ {
+  "id": "7e3e802f-b8b5-4e80-a7d5-aab5d4254f29",
+  "name": "Отведение ноги назад на полу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Glute_Kickback/0.jpg"
+ },
+ {
+  "id": "d5cf28ee-da9e-402a-88d8-c8424ac43b37",
+  "name": "Отведение ноги назад стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Lift/0.jpg"
+ },
+ {
+  "id": "bd7ea178-6a05-4d86-b933-559dab994d54",
+  "name": "Отжимания в петлях (TRX)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Push-Up/0.jpg"
+ },
+ {
+  "id": "ee67b7c7-0df4-4f57-b758-d58e1e2debad",
+  "name": "Отжимания в стойке на руках",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Handstand_Push-Ups/0.jpg"
+ },
+ {
+  "id": "15754cec-44e1-4977-9935-75e5a5224d72",
+  "name": "Отжимания на брусьях (акцент грудь)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/0.jpg"
+ },
+ {
+  "id": "59bc6807-51d8-41e6-9855-1954d01d32c2",
+  "name": "Отжимания на брусьях (акцент трицепс)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg"
+ },
+ {
+  "id": "3205874e-2089-4a9c-8c07-29fa8ea22b35",
+  "name": "Отжимания на кольцах",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ring_Dips/0.jpg"
+ },
+ {
+  "id": "4fc6bfd7-8048-4900-b1c7-6f3faa740ac6",
+  "name": "Отжимания на наклонной скамье обратным хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Reverse_Grip/0.jpg"
+ },
+ {
+  "id": "f1d94f4f-01c6-4d49-a363-0989547ae90a",
+  "name": "Отжимания на наклонной скамье широким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Wide/0.jpg"
+ },
+ {
+  "id": "37c2eefc-ab6f-47d0-ac57-33b9fbb8c057",
+  "name": "Отжимания на одной руке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Arm_Push-Up/0.jpg"
+ },
+ {
+  "id": "8ed86095-8d79-4a43-a1ed-66dca3819e45",
+  "name": "Отжимания на параллельных брусьях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Parallel_Bar_Dip/0.jpg"
+ },
+ {
+  "id": "725feace-e7ee-40fc-95b2-f31b0fbb3afd",
+  "name": "Отжимания на трицепс от скамьи",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Dips/0.jpg"
+ },
+ {
+  "id": "16d36890-bd4b-46c7-a4ab-ce8b8ccca6da",
+  "name": "Отжимания на трицепс от скамьи с весом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Bench_Dip/0.jpg"
+ },
+ {
+  "id": "9db4bcff-1ec7-4c06-a47e-4b4d16369ef5",
+  "name": "Отжимания на трицепс с весом тела",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Body_Tricep_Press/0.jpg"
+ },
+ {
+  "id": "8ae8265b-ca54-447a-b0be-be7d8c447e28",
+  "name": "Отжимания от скамьи (руки на возвышении)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up/0.jpg"
+ },
+ {
+  "id": "25d475b6-512d-4b98-8115-682fc75ffef7",
+  "name": "Отжимания от скамьи с запрыгиванием на упоры",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Depth_Jump/0.jpg"
+ },
+ {
+  "id": "74d77a2f-03ad-420c-8052-2aea54f53c79",
+  "name": "Отжимания от скамьи средним хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Medium/0.jpg"
+ },
+ {
+  "id": "a6064914-87c5-47d4-a62b-5e4b21061a90",
+  "name": "Отжимания от скамьи узким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up_Close-Grip/0.jpg"
+ },
+ {
+  "id": "361ffdc0-039c-4736-b1d8-415440ddbdb6",
+  "name": "Отжимания по кругу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clock_Push-Up/0.jpg"
+ },
+ {
+  "id": "46de1108-8d76-4d6b-8c9f-9f65ff74ab6a",
+  "name": "Отжимания с ногами на возвышении",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Push-Up/0.jpg"
+ },
+ {
+  "id": "60e3d71a-55c9-4d36-b666-b6a92d213736",
+  "name": "Отжимания с ногами на фитболе",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_With_Feet_On_An_Exercise_Ball/0.jpg"
+ },
+ {
+  "id": "305ffd20-4fd7-409e-a1a8-553368165dbc",
+  "name": "Отжимания с падением (Drop Push)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Drop_Push/0.jpg"
+ },
+ {
+  "id": "ed52c0b0-e558-4121-b7e0-772fcc2bfefc",
+  "name": "Отжимания с переходом в боковую планку",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Up_to_Side_Plank/0.jpg"
+ },
+ {
+  "id": "d0669001-0240-4290-8573-3505f0ca8a28",
+  "name": "Отжимания узким и широким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups_Close_and_Wide_Hand_Positions/0.jpg"
+ },
+ {
+  "id": "c8cdac19-9779-4b90-b47c-f9bf272abff7",
+  "name": "Отжимания узким хватом с упором на гантель",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Push-Up_off_of_a_Dumbbell/0.jpg"
+ },
+ {
+  "id": "8dad225c-d761-49dd-873e-6d6bc46e5f6d",
+  "name": "Отжимания широким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Up_Wide/0.jpg"
+ },
+ {
+  "id": "03a969b2-948f-4d87-bf52-e27905c1d469",
+  "name": "Паучьи сгибания (Spider Curl)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spider_Curl/0.jpg"
+ },
+ {
+  "id": "e216c15a-2f03-4d65-89eb-16d414e0c094",
+  "name": "Передача гири между ног",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pass_Between_The_Legs/0.jpg"
+ },
+ {
+  "id": "175e527f-c432-47ae-a542-1827d1e768e7",
+  "name": "Перепрыгивания через тумбу боком (Box Shuffle)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_to_Side_Box_Shuffle/0.jpg"
+ },
+ {
+  "id": "88a95f3d-77e6-4567-9393-55f76e653edc",
+  "name": "Пиратский корабль с гирей",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pirate_Ships/0.jpg"
+ },
+ {
+  "id": "b67c684f-aa27-4750-aa40-89f069e2f5c9",
+  "name": "Повороты корпуса с блином (Russian Twist с блином)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plate_Twist/0.jpg"
+ },
+ {
+  "id": "7180d174-7aaf-4479-8246-e0db8d515188",
+  "name": "Повороты корпуса с медболом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Medicine_Ball_Full_Twist/0.jpg"
+ },
+ {
+  "id": "c5779b04-ac2f-4c9d-a366-dc7d75688c38",
+  "name": "Повороты корпуса с фитболом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Torso_Rotation/0.jpg"
+ },
+ {
+  "id": "fd3fd551-5c2c-4ad2-93f5-52572603b175",
+  "name": "Повороты корпуса со штангой в замке (Landmine 180)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Landmine_180s/0.jpg"
+ },
+ {
+  "id": "6c9b1c94-f38c-4bab-bf53-5bb9a2d27ec3",
+  "name": "Повороты со штангой сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Barbell_Twist/0.jpg"
+ },
+ {
+  "id": "1f2d0242-b9c7-4667-b06a-86f96c25e6ba",
+  "name": "Подсед в толчке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jerk_Dip_Squat/0.jpg"
+ },
+ {
+  "id": "20f47874-bed5-426a-ac7a-caa1627bcbd5",
+  "name": "Подтягивание коленей к груди лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Pull-In/0.jpg"
+ },
+ {
+  "id": "096c3be3-6002-4cdf-b942-dcf342c46f11",
+  "name": "Подтягивание коленей к груди лежа на скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flat_Bench_Leg_Pull-In/0.jpg"
+ },
+ {
+  "id": "27066212-e12c-41a1-a488-9096af7ab241",
+  "name": "Подтягивание коленей к груди на фитболе",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Exercise_Ball_Pull-In/0.jpg"
+ },
+ {
+  "id": "338e6705-d95b-4ef7-8117-5b2ac0aa0808",
+  "name": "Подтягивание коленей к груди сидя на скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Flat_Bench_Leg_Pull-In/0.jpg"
+ },
+ {
+  "id": "68db4b24-6994-4813-8b04-f2528d5b1ec3",
+  "name": "Подтягивание одного колена к груди лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Knee_To_Chest/0.jpg"
+ },
+ {
+  "id": "887d06d8-4a3c-4d5a-b7fa-c9cef283a72c",
+  "name": "Подтягивания «Рокки» (к груди и за голову)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocky_Pull-Ups_Pulldowns/0.jpg"
+ },
+ {
+  "id": "f215b8e8-5edc-4496-8c63-529b04549be4",
+  "name": "Подтягивания Жиронды к груди (Sternum Chins)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Gironda_Sternum_Chins/0.jpg"
+ },
+ {
+  "id": "829c11b9-4bac-4b3c-b5ed-9805d5462615",
+  "name": "Подтягивания за голову широким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Rear_Pull-Up/0.jpg"
+ },
+ {
+  "id": "9e1cc523-1018-4c68-b4c9-a2da4cec8078",
+  "name": "Подтягивания нейтральным хватом (V-рукоять)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/V-Bar_Pullup/0.jpg"
+ },
+ {
+  "id": "26f3cd92-d72f-4a14-acb8-f6982f1dbd0d",
+  "name": "Подтягивания обратным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/0.jpg"
+ },
+ {
+  "id": "3cb03c35-1257-47ef-b4ca-6975da97f51d",
+  "name": "Подтягивания одной рукой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Chin-Up/0.jpg"
+ },
+ {
+  "id": "288eeaf1-8a95-46e9-8e5e-be54ce237cf3",
+  "name": "Подтягивания с дополнительным весом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Pull_Ups/0.jpg"
+ },
+ {
+  "id": "a910d28b-1319-4625-8108-b089b01c4398",
+  "name": "Подтягивания с подъемом коленей (Gorilla Chin)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Gorilla_Chin_Crunch/0.jpg"
+ },
+ {
+  "id": "fa0f9354-d475-4f4d-8d52-010172dbcd08",
+  "name": "Подтягивания с резинкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Assisted_Pull-Up/0.jpg"
+ },
+ {
+  "id": "d0d092ea-c663-4ff1-b536-716d036aa5a4",
+  "name": "Подтягивания смешанным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mixed_Grip_Chin/0.jpg"
+ },
+ {
+  "id": "235d00c3-fa3a-47e5-8906-79a3c07b2a31",
+  "name": "Подъем бедер с согнутыми ногами",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Knee_Hip_Raise/0.jpg"
+ },
+ {
+  "id": "eddd6c61-3ba1-487a-a17c-416614c75b81",
+  "name": "Подъем блина перед собой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Plate_Raise/0.jpg"
+ },
+ {
+  "id": "7932dcd7-e037-4bc5-ba00-07ec19193186",
+  "name": "Подъем гантелей в плоскости лопатки (Scaption)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Scaption/0.jpg"
+ },
+ {
+  "id": "3ca6ca78-d1c6-4a47-9e08-525104b019e7",
+  "name": "Подъем гантелей на бицепс лежа лицом вниз на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Prone_Incline_Curl/0.jpg"
+ },
+ {
+  "id": "c2f7f3e6-a95a-4c55-b2ed-eb32c591244f",
+  "name": "Подъем гантелей на бицепс сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Curl/0.jpg"
+ },
+ {
+  "id": "8acee458-2aa0-4ee2-b4d9-88b39d210738",
+  "name": "Подъем гантелей на внутреннюю часть бицепса сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Inner_Biceps_Curl/0.jpg"
+ },
+ {
+  "id": "813c576c-b688-4699-8c1a-e24d5a76d6e7",
+  "name": "Подъем гантелей перед собой лежа на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Incline_Dumbbell_Raise/0.jpg"
+ },
+ {
+  "id": "1d0db54c-b0d3-4682-9934-1a5281ad5ace",
+  "name": "Подъем гантелей через стороны (Dumbbell Raise)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Raise/0.jpg"
+ },
+ {
+  "id": "8448f05f-1c77-4df7-9e63-35814bfe4ab2",
+  "name": "Подъем двух гантелей перед собой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Two-Dumbbell_Raise/0.jpg"
+ },
+ {
+  "id": "1a312d26-5620-41d7-8d2f-182d2f452796",
+  "name": "Подъем и опускание плеч",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Shoulder_Raise/0.jpg"
+ },
+ {
+  "id": "a63df6d2-226d-40d8-9b9f-05feaffc8b31",
+  "name": "Подъем коленей в висе (Wind Sprints)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wind_Sprints/0.jpg"
+ },
+ {
+  "id": "1ec64c99-27c2-4448-a504-8e3cd1884123",
+  "name": "Подъем корпуса в тренажере GHD (Glute-Ham Raise)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Glute_Ham_Raise/0.jpg"
+ },
+ {
+  "id": "0c798c90-0ac0-4f2c-bb55-d10de886e6df",
+  "name": "Подъем корпуса из планки (Body-Up)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Body-Up/0.jpg"
+ },
+ {
+  "id": "4c145d92-4769-43ea-85c8-3c535b579032",
+  "name": "Подъем корпуса лежа на полу (Glute-Ham Raise без тренажера)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Floor_Glute-Ham_Raise/0.jpg"
+ },
+ {
+  "id": "cbb7dd36-5181-4ea4-a0e7-b989ac99fcb6",
+  "name": "Подъем корпуса с блином (Otis-Up)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Otis-Up/0.jpg"
+ },
+ {
+  "id": "2257f11f-5ec8-4881-9507-c81d24af8db7",
+  "name": "Подъем корпуса с жимом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Press_Sit-Up/0.jpg"
+ },
+ {
+  "id": "5f010a80-5886-46d5-b42b-78f1cfa91e0f",
+  "name": "Подъем на бицепс в кроссовере (нижний блок)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg"
+ },
+ {
+  "id": "cf3882bf-1ac1-403f-ac31-e841909eef2d",
+  "name": "Подъем на бицепс в тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bicep_Curl/0.jpg"
+ },
+ {
+  "id": "b69cd965-04cb-4623-9142-08c887b68021",
+  "name": "Подъем на бицепс на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Curl/0.jpg"
+ },
+ {
+  "id": "faecbdb7-b89c-41d3-816c-b7c7df073e4f",
+  "name": "Подъем на бицепс на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Preacher_Curl/0.jpg"
+ },
+ {
+  "id": "fe6b8456-b3fc-44f8-8d19-170e648cd3fe",
+  "name": "Подъем на бицепс с EZ-грифом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_EZ_Bar_Curl/0.jpg"
+ },
+ {
+  "id": "119bea03-e5f4-4070-8b44-e05682090231",
+  "name": "Подъем на носки (осёл)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/0.jpg"
+ },
+ {
+  "id": "98a632a4-6ac4-45ab-8bcc-638f4437bf44",
+  "name": "Подъем на носки в Смите",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Calf_Raise/0.jpg"
+ },
+ {
+  "id": "c2964083-4cac-4d0d-a843-deca931755aa",
+  "name": "Подъем на носки лицом к грифу в тренажере Смита",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Reverse_Calf_Raises/0.jpg"
+ },
+ {
+  "id": "80d2ad1e-2cd6-464b-b1d8-a1b10ed09821",
+  "name": "Подъем на носки с наклоном вперед (ослик)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Donkey_Calf_Raises/0.jpg"
+ },
+ {
+  "id": "52f343f5-ea67-468c-a0a6-da2842928609",
+  "name": "Подъем на носки с фитнес-резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raises_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "5daa66c2-8a1e-4e94-9eb4-c025770fd721",
+  "name": "Подъем на носки сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Raise/0.jpg"
+ },
+ {
+  "id": "d6968f78-a30c-4370-b6ce-aea0124c4c91",
+  "name": "Подъем на носки сидя с гантелью на колене (одной ногой)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Seated_One-Leg_Calf_Raise/0.jpg"
+ },
+ {
+  "id": "9a99e582-b4b7-423e-b44c-5e630bb6d9b8",
+  "name": "Подъем на носки сидя со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Seated_Calf_Raise/0.jpg"
+ },
+ {
+  "id": "06d1a173-341f-4c40-9ee8-25b8dd067982",
+  "name": "Подъем на носки со штангой стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Barbell_Calf_Raise/0.jpg"
+ },
+ {
+  "id": "c7180f08-97da-4252-b316-dd3984a6259d",
+  "name": "Подъем на носки стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg"
+ },
+ {
+  "id": "1bfd5830-97cd-4b79-afd7-f0506ab3a124",
+  "name": "Подъем на носки стоя на гантели",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Raise_On_A_Dumbbell/0.jpg"
+ },
+ {
+  "id": "ca484397-0464-4372-a0a1-7cf328abd530",
+  "name": "Подъем ног в висе на турнике",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg"
+ },
+ {
+  "id": "ba855ec2-64c3-4280-bef6-2158a7e01006",
+  "name": "Подъем ног в упоре на брусьях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Knee_Hip_Raise_On_Parallel_Bars/0.jpg"
+ },
+ {
+  "id": "aa8a1433-a98f-49de-b1cf-793e1506360f",
+  "name": "Подъем ног с подкручиванием таза",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bottoms_Up/0.jpg"
+ },
+ {
+  "id": "c809697d-e784-4986-bf19-f7d3b6b65908",
+  "name": "Подъем одной гантели перед собой двумя руками",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Dumbbell_Raise/0.jpg"
+ },
+ {
+  "id": "8c178a8f-223b-4521-83c0-8b408eb8741a",
+  "name": "Подъем прямых ног в висе (складка)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Pike/0.jpg"
+ },
+ {
+  "id": "493e6fda-4f10-4dd9-93d9-f54a9a5abc2c",
+  "name": "Подъем прямых ног лежа на скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flat_Bench_Lying_Leg_Raise/0.jpg"
+ },
+ {
+  "id": "47b66bed-d067-41de-a99a-0f82c3b6c5c0",
+  "name": "Подъем руки перед собой в кроссовере одной рукой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Cable_Raise/0.jpg"
+ },
+ {
+  "id": "59c5cd19-2a06-4e0d-9628-41d9e1685b62",
+  "name": "Подъем таза в тренажере Смита",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Hip_Raise/0.jpg"
+ },
+ {
+  "id": "00344072-0bbe-4d03-a1c9-808284311607",
+  "name": "Подъем таза из планки на предплечьях (Butt-Ups)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butt-Ups/0.jpg"
+ },
+ {
+  "id": "d7355978-7ab6-4b8d-bfb5-16797a6a57d8",
+  "name": "Подъем штанги на бицепс лежа на высокой скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_High_Bench_Barbell_Curl/0.jpg"
+ },
+ {
+  "id": "37a05bf8-9a06-479f-935c-bcfec585d399",
+  "name": "Подъем штанги на бицепс лежа на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Curls_Lying_Against_An_Incline/0.jpg"
+ },
+ {
+  "id": "ae9847d8-12cc-4952-b51a-4ca95708aa62",
+  "name": "Подъем штанги на бицепс обратным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Barbell_Curl/0.jpg"
+ },
+ {
+  "id": "f9c4f781-5589-463f-8e83-c31194e7c07c",
+  "name": "Подъем штанги на бицепс стоя широким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Standing_Barbell_Curl/0.jpg"
+ },
+ {
+  "id": "2c883c56-c71a-4d1a-8946-1216fcf6a492",
+  "name": "Подъем штанги на наклонной скамье (передние дельты)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Shoulder_Raise/0.jpg"
+ },
+ {
+  "id": "2d3c8201-e52f-4e05-96bd-527bb9e5b517",
+  "name": "Подъем штанги на наклонной скамье в Смите (передние дельты)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Incline_Shoulder_Raise/0.jpg"
+ },
+ {
+  "id": "f5a0c74f-cec3-4cbc-a8ff-84df7d57923a",
+  "name": "Подъем штанги перед собой и пуловер",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Raise_And_Pullover/0.jpg"
+ },
+ {
+  "id": "de47de29-be70-4789-b449-e985181da355",
+  "name": "Подъемы корпуса с резинками и отягощением",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Sit-Ups_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "93a86d3d-a427-4698-a972-ea79174f19b3",
+  "name": "Поза ребенка",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg"
+ },
+ {
+  "id": "72298963-0234-40df-bd5d-1a6adbc30b93",
+  "name": "Покачивающийся подъем на носки стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocking_Standing_Calf_Raise/0.jpg"
+ },
+ {
+  "id": "5f8f8259-1540-4ee1-84d4-be0e40228d23",
+  "name": "Попеременная тяга гири в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Kettlebell_Row/0.jpg"
+ },
+ {
+  "id": "83b6e390-aadd-4327-936c-6f0920860e7c",
+  "name": "Попеременное взятие гири на грудь из виса",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Hang_Clean/0.jpg"
+ },
+ {
+  "id": "e4250b1e-0f7b-42f9-bd42-c8039b5b5702",
+  "name": "Попеременное взятие двух гирь на грудь из виса",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Double_Kettlebell_Alternating_Hang_Clean/0.jpg"
+ },
+ {
+  "id": "6d3a8698-e1de-4ee6-8a9e-d1295dfd008b",
+  "name": "Попеременные касания пяток",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Heel_Touchers/0.jpg"
+ },
+ {
+  "id": "9733c381-f37b-4133-a16b-ebc5f0d6a45a",
+  "name": "Попеременный жим гантелей в стороны (See-Saw Press)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/See-Saw_Press_Alternating_Side_Press/0.jpg"
+ },
+ {
+  "id": "2361d277-030a-4cf6-89cc-e6c61bcf355a",
+  "name": "Попеременный жим гантелей стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Alternating_Dumbbell_Press/0.jpg"
+ },
+ {
+  "id": "e97db0d5-c0fd-4cbd-8bdf-677f05ea8ffd",
+  "name": "Попеременный жим гирь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Seesaw_Press/0.jpg"
+ },
+ {
+  "id": "e44d9376-b0bc-4c97-8569-375a4e3306cf",
+  "name": "Попеременный жим гирь лежа на полу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Floor_Press/0.jpg"
+ },
+ {
+  "id": "cb6d337e-d2d6-49cf-8ff8-6618bb60d92a",
+  "name": "Попеременный жим гирь стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Kettlebell_Press/0.jpg"
+ },
+ {
+  "id": "565cf18c-ae19-44b3-9e93-1c0fd5e49c18",
+  "name": "Попеременный жим плеч в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Cable_Shoulder_Press/0.jpg"
+ },
+ {
+  "id": "d5e2940f-e570-4ca9-b21f-5809a6554956",
+  "name": "Попеременный подъем гантелей на бицепс",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Alternate_Bicep_Curl/0.jpg"
+ },
+ {
+  "id": "a4c8aeb0-2303-4fb7-8d3c-fbb568dfc292",
+  "name": "Попеременный подъем гантелей на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Incline_Dumbbell_Curl/0.jpg"
+ },
+ {
+  "id": "8a813678-628e-4138-9bed-94da2635e629",
+  "name": "Попеременный подъем гантелей перед собой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Deltoid_Raise/0.jpg"
+ },
+ {
+  "id": "8b6243b5-b769-4d42-9afe-48cabdb41fec",
+  "name": "Попеременный подъем на бицепс (молот)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Hammer_Curl/0.jpg"
+ },
+ {
+  "id": "38d30c18-a2f6-42db-b8fd-a1092170d4d2",
+  "name": "Потягивания вверх стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upward_Stretch/0.jpg"
+ },
+ {
+  "id": "cd595cae-ec86-4068-a1bd-2b85f616b3bc",
+  "name": "Приведение ноги в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hip_Adduction/0.jpg"
+ },
+ {
+  "id": "4947e943-1bda-45ee-a963-20f3fedc790a",
+  "name": "Приседания в пол-амплитуды (Sit Squats)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit_Squats/0.jpg"
+ },
+ {
+  "id": "7348da65-09c6-4acc-84d3-6b63845bff98",
+  "name": "Приседания в Смите",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Squat/0.jpg"
+ },
+ {
+  "id": "00f87f22-ef20-4daf-abdd-c834cac88695",
+  "name": "Приседания в тренажере лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Machine_Squat/0.jpg"
+ },
+ {
+  "id": "bed06e42-a97a-4897-a3a1-02146c313080",
+  "name": "Приседания Джефферсона",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jefferson_Squats/0.jpg"
+ },
+ {
+  "id": "d1b184be-6dd4-447b-89e3-4ee153678ace",
+  "name": "Приседания Зерчера",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zercher_Squats/0.jpg"
+ },
+ {
+  "id": "94d3e850-622a-4c1a-ae5b-d898a7c47bf9",
+  "name": "Приседания на коленях",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Squat/0.jpg"
+ },
+ {
+  "id": "622844b0-ec29-4550-9549-5ca46f892c14",
+  "name": "Приседания на одной ноге (пистолетик) в тренажере Смита",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Pistol_Squat/0.jpg"
+ },
+ {
+  "id": "7e564b9c-5348-498b-a61d-dea7e6c7c8a6",
+  "name": "Приседания на одной ноге с гирей",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pistol_Squat/0.jpg"
+ },
+ {
+  "id": "cc018032-7cb9-429f-8128-8a3ba0ce85c6",
+  "name": "Приседания на тумбу с обратными резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Box_Squat/0.jpg"
+ },
+ {
+  "id": "3e13840d-8151-4634-9a8d-0edf971937ec",
+  "name": "Приседания на тумбу со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat/0.jpg"
+ },
+ {
+  "id": "1c5454ab-6f62-4b11-a858-c6709578e2e5",
+  "name": "Приседания на тумбу со штангой и резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat_with_Bands/0.jpg"
+ },
+ {
+  "id": "926d068e-510e-48b0-842c-38bd8618c4c7",
+  "name": "Приседания на тумбу со штангой и цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Squat_with_Chains/0.jpg"
+ },
+ {
+  "id": "a24cdaab-5a78-4e64-90d9-6636fc8dbcd6",
+  "name": "Приседания плие с гантелью",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plie_Dumbbell_Squat/0.jpg"
+ },
+ {
+  "id": "27a36db9-4e4e-43cd-bf23-e25d62da42b8",
+  "name": "Приседания с весом тела",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg"
+ },
+ {
+  "id": "4aee71a9-8dcc-490d-b712-5864fb9238ba",
+  "name": "Приседания с выпрыгиванием",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Freehand_Jump_Squat/0.jpg"
+ },
+ {
+  "id": "56e1a1d2-74d0-40fa-bb96-83c601b8cea7",
+  "name": "Приседания с выпрыгиванием и дополнительным весом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Jump_Squat/0.jpg"
+ },
+ {
+  "id": "fda52b06-0516-4928-9311-6fb8159c2ea2",
+  "name": "Приседания с выпрыгиванием на коленях",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Jump_Squat/0.jpg"
+ },
+ {
+  "id": "eb8310ff-6c77-4070-a981-4fbcb5711807",
+  "name": "Приседания с гантелями до скамьи",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Squat_To_A_Bench/0.jpg"
+ },
+ {
+  "id": "c96b998b-82a8-4528-a4c5-ab4c36a03193",
+  "name": "Приседания с гирей над головой одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Overhead_Kettlebell_Squats/0.jpg"
+ },
+ {
+  "id": "4076c2de-8883-4b1c-9ed1-2073e23646fd",
+  "name": "Приседания с перемещением блина",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Plate_Movers/0.jpg"
+ },
+ {
+  "id": "415bf344-dd8c-41c0-92ce-a76485940ca6",
+  "name": "Приседания с поясным отягощением",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Squat/0.jpg"
+ },
+ {
+  "id": "b1d05c79-1318-4324-8a5d-e679b51c44b2",
+  "name": "Приседания с фитнес-резинками",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squats_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "2e3d5791-69f0-4462-9568-ed780ca3a47a",
+  "name": "Приседания со стулом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chair_Squat/0.jpg"
+ },
+ {
+  "id": "b4987c94-aa70-4d30-81c1-7e88b4262938",
+  "name": "Приседания со штангой (полная амплитуда)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/0.jpg"
+ },
+ {
+  "id": "29c818c5-90d7-4c4e-965a-4b584c6d68b8",
+  "name": "Приседания со штангой до скамьи",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat_To_A_Bench/0.jpg"
+ },
+ {
+  "id": "271e2a5b-a35d-4f0b-ad3d-20eadba69d61",
+  "name": "Приседания со штангой и резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Bands/0.jpg"
+ },
+ {
+  "id": "187ffd19-7916-4327-9225-f8bda0f41845",
+  "name": "Приседания со штангой и цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_with_Chains/0.jpg"
+ },
+ {
+  "id": "0bbae8d2-8311-4fdd-88f9-2001eee83891",
+  "name": "Приседания со штангой над головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Squat/0.jpg"
+ },
+ {
+  "id": "21f3f0e0-8764-4065-8526-6a1669978bcb",
+  "name": "Приседания со штангой с узкой постановкой ног",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Narrow_Stance_Squats/0.jpg"
+ },
+ {
+  "id": "cf693841-bf33-458a-a158-cbfc4938db5f",
+  "name": "Приседания со штангой с широкой постановкой ног",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide_Stance_Barbell_Squat/0.jpg"
+ },
+ {
+  "id": "74bac9b3-0b6e-4eae-9be7-0c85394185fe",
+  "name": "Приставка Кариока (Carioca)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Carioca_Quick_Step/0.jpg"
+ },
+ {
+  "id": "6dc3d454-45ba-4a2e-a69d-f712625e08b5",
+  "name": "Прогулка фермера (Farmer's Walk)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/0.jpg"
+ },
+ {
+  "id": "e42c983d-23de-4d07-9dbc-43e51be4fd79",
+  "name": "Продвинутая мельница с гирей",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Advanced_Kettlebell_Windmill/0.jpg"
+ },
+ {
+  "id": "fde81a6e-d5b5-40f0-ac43-4b9cd29cffec",
+  "name": "Продвинутая растяжка паха",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Intermediate_Groin_Stretch/0.jpg"
+ },
+ {
+  "id": "f484b602-454a-4b89-90d7-69453d2fc70e",
+  "name": "Продвинутая растяжка сгибателей бедра и квадрицепса",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Intermediate_Hip_Flexor_and_Quad_Stretch/0.jpg"
+ },
+ {
+  "id": "3c476c44-61c5-4396-ac64-abd7001b2bed",
+  "name": "Пронация предплечья с гантелью лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_Pronation/0.jpg"
+ },
+ {
+  "id": "879e0b4d-7f3d-4112-bf19-3c4c8ea2e632",
+  "name": "Проходка выпадами с весом тела",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Walking_Lunge/0.jpg"
+ },
+ {
+  "id": "3d30a3db-f818-43c4-b8e8-341e101876e2",
+  "name": "Проходка выпадами со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/0.jpg"
+ },
+ {
+  "id": "a78db776-4e3e-4855-b75c-6b3180da8dad",
+  "name": "Прыжки в упор лежа (Groiners)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Groiners/0.jpg"
+ },
+ {
+  "id": "0f2195f4-8e6e-4f18-a958-c3ef058c7edc",
+  "name": "Прыжки из приседа (Frog Hops)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Frog_Hops/0.jpg"
+ },
+ {
+  "id": "4f828ccd-5696-41f0-9195-ca576d3a112d",
+  "name": "Прыжки на одной ноге через конусы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_Hop_Progression/0.jpg"
+ },
+ {
+  "id": "afecc5ef-e0e7-448a-b6da-72124ac9647f",
+  "name": "Прыжки на скакалке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/0.jpg"
+ },
+ {
+  "id": "749a8d2d-7ea2-4658-9b1b-f4abbfbc3378",
+  "name": "Прыжки на тумбу (серия)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Jump_Multiple_Response/0.jpg"
+ },
+ {
+  "id": "ebe874ac-d645-4199-bb00-e6e9796a4589",
+  "name": "Прыжки через барьеры",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hurdle_Hops/0.jpg"
+ },
+ {
+  "id": "ee8fb05d-d0ac-49d0-ad94-1e92c4ad7077",
+  "name": "Прыжки через скамью (Bench Jump)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Jump/0.jpg"
+ },
+ {
+  "id": "778c2153-1278-4768-b5d4-4887e1374976",
+  "name": "Прыжки через тумбу с проносом ноги (Box Skip)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Box_Skip/0.jpg"
+ },
+ {
+  "id": "c798cc8e-1d65-4fe2-9b3a-53498f832d1e",
+  "name": "Прыжок «Ножницы»",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Scissors_Jump/0.jpg"
+ },
+ {
+  "id": "85ce1ce5-95a1-436f-a315-f015c240a2cc",
+  "name": "Прыжок «Ракета»",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rocket_Jump/0.jpg"
+ },
+ {
+  "id": "027af93d-c146-4f8d-92bc-68c81f04b15c",
+  "name": "Прыжок в глубину с запрыгиванием на возвышение",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Depth_Jump_Leap/0.jpg"
+ },
+ {
+  "id": "54de453d-39f7-4f1c-940d-7ffd176026d7",
+  "name": "Прыжок в длину с места в сторону",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Standing_Long_Jump/0.jpg"
+ },
+ {
+  "id": "a57dc640-60fe-4c26-87e2-a560542af278",
+  "name": "Прыжок с подтягиванием коленей",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Knee_Tuck_Jump/0.jpg"
+ },
+ {
+  "id": "1dde1253-981f-436f-a416-49f3d768f1c9",
+  "name": "Прыжок с тумбы на одной ноге (Stride Jump)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_Stride_Jump/0.jpg"
+ },
+ {
+  "id": "d9be80b7-aa96-4458-ba51-c2a09082e641",
+  "name": "Пуловер в кроссовере лежа на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Incline_Pushdown/0.jpg"
+ },
+ {
+  "id": "ea80a6de-03b3-4f39-af20-8f4771c008be",
+  "name": "Пуловер с гантелью",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Dumbbell_Pullover/0.jpg"
+ },
+ {
+  "id": "0719d4a4-b699-41df-8d90-9d553046efbd",
+  "name": "Пуловер со штангой лежа (согнутые руки)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Barbell_Pullover/0.jpg"
+ },
+ {
+  "id": "92adb77b-fc30-465b-834b-15289ff6ea6b",
+  "name": "Пуловер со штангой на наклонной скамье вниз головой широким хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Decline_Barbell_Pullover/0.jpg"
+ },
+ {
+  "id": "a4e1a02f-a7df-436c-8653-16d379ba0cf9",
+  "name": "Пуловер со штангой на спину",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Barbell_Pullover/0.jpg"
+ },
+ {
+  "id": "e34fc282-9380-45c8-8a9b-e9a469b234de",
+  "name": "Разведение рук с резинкой (Pull Apart)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Pull_Apart/0.jpg"
+ },
+ {
+  "id": "f6638e5a-d1ae-4d30-be87-2fef73e5799a",
+  "name": "Разводка в кроссовере на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Cable_Flye/0.jpg"
+ },
+ {
+  "id": "726e06e3-4b97-43fa-a9a4-4f0dab18575c",
+  "name": "Разводка гантелей лежа на полу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Flyes/0.jpg"
+ },
+ {
+  "id": "80b70f73-5c25-4078-8251-e04ccc08080d",
+  "name": "Разводка гантелей на заднюю дельту лежа на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_Rear_Lateral_Raise/0.jpg"
+ },
+ {
+  "id": "07ed5816-3f5e-4d56-a78b-9b8552ce7c31",
+  "name": "Разводка гантелей на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Flyes/0.jpg"
+ },
+ {
+  "id": "eca90ab1-a8db-4e8c-8404-5360fa95a443",
+  "name": "Разводка гантелей на наклонной скамье вниз головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Flyes/0.jpg"
+ },
+ {
+  "id": "70c5a73e-537e-486a-93f2-f36dd9b30b4a",
+  "name": "Разводка гантелей на наклонной скамье с разворотом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Flyes_-_With_A_Twist/0.jpg"
+ },
+ {
+  "id": "9751c5f8-c8aa-44b2-8b11-44a3b6917c55",
+  "name": "Разводка гантели на заднюю дельту лежа на наклонной скамье (одной рукой)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_One-Arm_Rear_Lateral_Raise/0.jpg"
+ },
+ {
+  "id": "3d0a4d8e-154a-4ede-8030-3195fd35e49c",
+  "name": "Разводка на заднюю дельту с резинкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Back_Flyes_-With_Bands/0.jpg"
+ },
+ {
+  "id": "b366f031-f569-4564-94de-562593af7621",
+  "name": "Разводка на заднюю дельту сидя в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_Rear_Delt_Raise/0.jpg"
+ },
+ {
+  "id": "d05e799d-86aa-4006-aaff-8c5232564587",
+  "name": "Разводка одной гантелей лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Flat_Bench_Dumbbell_Flye/0.jpg"
+ },
+ {
+  "id": "1b0ede10-1cbd-448b-ab3e-0075eeedca27",
+  "name": "Разводка с весом тела (на EZ-грифе)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Flyes/0.jpg"
+ },
+ {
+  "id": "79b8159d-9381-4ad3-81dc-f0cd74de355a",
+  "name": "Разгибание бедра с резинкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hip_Extension_with_Bands/0.jpg"
+ },
+ {
+  "id": "99455e61-2013-49aa-a178-b77f0909ac6e",
+  "name": "Разгибание запястий с гантелями лежа на скамье (ладони вниз)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench/0.jpg"
+ },
+ {
+  "id": "7ec56de4-f700-4921-996f-e7a589efead2",
+  "name": "Разгибание запястий с гантелями сидя (ладони вниз)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Palms-Down_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "1943b51c-226a-4a6b-855a-4e62228c0999",
+  "name": "Разгибание запястий со штангой лежа на скамье (ладони вниз)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Palms-Down_Wrist_Curl_Over_A_Bench/0.jpg"
+ },
+ {
+  "id": "2a5f2f73-72fb-4120-8ed8-f461c66aa8f0",
+  "name": "Разгибание запястья с гантелью сидя (ладонь вниз)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_One-Arm_Dumbbell_Palms-Down_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "9a77e5f5-f1b9-4294-9ef2-ad552ef61c97",
+  "name": "Разгибание ног в Смите (с адаптером)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Leg_Press/0.jpg"
+ },
+ {
+  "id": "2b2f46fb-6e99-4a01-8558-5fed7d0add09",
+  "name": "Разгибание ног в тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg"
+ },
+ {
+  "id": "5ebd7e5e-32fd-47e3-8686-d580e2cfbe98",
+  "name": "Разгибание ноги в тренажере одной ногой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Leg_Leg_Extension/0.jpg"
+ },
+ {
+  "id": "7e000533-256a-4b1f-abc8-f65c5df7d033",
+  "name": "Разгибание обеих рук на трицепс сидя в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "c71845ce-3a20-4772-858d-4f7b6d981431",
+  "name": "Разгибание рук в кроссовере обратным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg"
+ },
+ {
+  "id": "cc379eca-f15f-49cf-afb9-6ab50c7d3f6f",
+  "name": "Разгибание рук на верхнем блоке (канат)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg"
+ },
+ {
+  "id": "2dd9bdbf-d8c2-4d27-995a-36e5df7310f1",
+  "name": "Разгибание рук на трицепс в кроссовере (прямая рукоять)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg"
+ },
+ {
+  "id": "a0d3e409-2202-46b8-b2ef-c9a49102cfd0",
+  "name": "Разгибание рук на трицепс в кроссовере на коленях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Cable_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "096a36f2-a7b9-4ed8-b872-6d4c75b6a0cf",
+  "name": "Разгибание рук на трицепс в кроссовере с нижнего блока",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "ebfe6198-1ca5-4593-8c16-d6d638c09d86",
+  "name": "Разгибание рук на трицепс в тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "24a1cd79-3e3d-48ac-8341-c6e1b02f8548",
+  "name": "Разгибание рук на трицепс из-за головы с канатом в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg"
+ },
+ {
+  "id": "457afc23-fb5b-48e7-82dc-ea62adfa43e9",
+  "name": "Разгибание рук на трицепс с гантелями в наклоне (кикбэк)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "87e0b220-85c9-465c-8f22-2f7b7a07f6cf",
+  "name": "Разгибание рук на трицепс с гантелями лежа (пронированный хват)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Tricep_Extension_-Pronated_Grip/0.jpg"
+ },
+ {
+  "id": "a86e0b80-404b-4b58-b4b4-49418c10ec43",
+  "name": "Разгибание рук на трицепс с резинкой из-за головы",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Band_Overhead_Triceps/0.jpg"
+ },
+ {
+  "id": "3a848d50-be9c-47df-b920-badfdad01b85",
+  "name": "Разгибание рук на трицепс с санями над головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Overhead_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "d8441ceb-3807-453e-9f1d-f836cfc77d6e",
+  "name": "Разгибание рук над головой в кроссовере (канат)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Overhead_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "12a09938-ef7c-45b0-86b5-0285122ca812",
+  "name": "Разгибание рук с цепями (Chain Handle Extension)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chain_Handle_Extension/0.jpg"
+ },
+ {
+  "id": "fe104c4b-b15c-4adf-a354-3f129f961c74",
+  "name": "Разгибание руки на трицепс в кроссовере (одной рукой)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_One_Arm_Tricep_Extension/0.jpg"
+ },
+ {
+  "id": "1fd54983-cc5e-48a9-b53e-2cfca3da6921",
+  "name": "Разгибание руки на трицепс с гантелью в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "70cd9796-6fbb-4278-9f94-f94386554c82",
+  "name": "Разгибание руки на трицепс с гантелью лежа (пронированный хват)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Pronated_Dumbbell_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "d493fde1-7223-4bf9-a121-bfa1f7ebd42b",
+  "name": "Разгибание руки назад в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Incline_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "e2fa44ff-8ef5-4ab6-bb69-db6abf95c2dd",
+  "name": "Разгибание руки назад в наклоне (кикбэк)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "2692ecb9-10e5-48ff-b0b0-95bb3dd8e79f",
+  "name": "Разгибание руки с гантелью в наклоне (кикбэк)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tricep_Dumbbell_Kickback/0.jpg"
+ },
+ {
+  "id": "4b8974d0-7551-4da2-8e38-b842e731dab5",
+  "name": "Разгибание спины лежа на животе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lower_Back_Curl/0.jpg"
+ },
+ {
+  "id": "a88e0712-8e58-4771-9ab2-c0d206d0f9b4",
+  "name": "Растяжка «Железный крест»",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Iron_Crosses_stretch/0.jpg"
+ },
+ {
+  "id": "3a3d4c40-497e-4655-bc31-1db0eb2843a9",
+  "name": "Растяжка «Мельница» лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Windmills/0.jpg"
+ },
+ {
+  "id": "8624ab54-e56d-4f6b-bb9a-5b7364355562",
+  "name": "Растяжка бегуна",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Runners_Stretch/0.jpg"
+ },
+ {
+  "id": "fd2415bf-61e8-4071-b0ca-6c8129b5295f",
+  "name": "Растяжка бицепса бедра и икроножной мышцы сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Hamstring_and_Calf_Stretch/0.jpg"
+ },
+ {
+  "id": "6ef55552-37b6-40eb-8b82-cb7a40fa0a63",
+  "name": "Растяжка бицепса бедра лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hamstring_Stretch/0.jpg"
+ },
+ {
+  "id": "6545deb4-6a2f-4ed7-a0ed-382a9ecc793c",
+  "name": "Растяжка бицепса бедра лежа с партнером",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Hamstring/0.jpg"
+ },
+ {
+  "id": "07fa3e80-2f19-42f3-8a5c-a018fed60e68",
+  "name": "Растяжка бицепса бедра с поднятой ногой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg-Up_Hamstring_Stretch/0.jpg"
+ },
+ {
+  "id": "36c7b498-316e-4ad9-a731-a48fda241820",
+  "name": "Растяжка бицепса бедра сидя на полу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Floor_Hamstring_Stretch/0.jpg"
+ },
+ {
+  "id": "76843c23-681c-4e1a-a8eb-e1afaed6bf4c",
+  "name": "Растяжка бицепса бедра сидя на скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chair_Leg_Extended_Stretch/0.jpg"
+ },
+ {
+  "id": "0faffb29-5e19-4f34-a8ce-0e05ead27492",
+  "name": "Растяжка бицепса бедра сидя с партнером",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Hamstring/0.jpg"
+ },
+ {
+  "id": "830726d2-1bfd-4972-9fd7-952fe3b303c7",
+  "name": "Растяжка бицепса сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Biceps/0.jpg"
+ },
+ {
+  "id": "d72a410f-b77c-4a76-a6f1-2fabba6024d7",
+  "name": "Растяжка бицепса стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Biceps_Stretch/0.jpg"
+ },
+ {
+  "id": "e8754beb-f6e3-4ade-88e6-77213fb95c14",
+  "name": "Растяжка в положении сидя (шпагат)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/The_Straddle/0.jpg"
+ },
+ {
+  "id": "43ee41c4-14cc-4b6a-b476-16a7617beb91",
+  "name": "Растяжка вверх сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Overhead_Stretch/0.jpg"
+ },
+ {
+  "id": "6560ef91-9820-4be6-a83e-51a6b397d9b9",
+  "name": "Растяжка верхней части спины и ног сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upper_Back-Leg_Grab/0.jpg"
+ },
+ {
+  "id": "9e07f425-01f3-4da6-8891-21e2e6862d5d",
+  "name": "Растяжка верхней части спины стоя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upper_Back_Stretch/0.jpg"
+ },
+ {
+  "id": "db5cc9a9-91e4-4c5a-bea8-9614ff89e94e",
+  "name": "Растяжка верхней части тела сидя на скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chair_Upper_Body_Stretch/0.jpg"
+ },
+ {
+  "id": "725a58d0-825b-40a0-9d5f-cdabef3a1d30",
+  "name": "Растяжка груди (локти назад)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elbows_Back/0.jpg"
+ },
+ {
+  "id": "0d3eb2f5-5a8d-4cb9-b761-7a4a95d56757",
+  "name": "Растяжка груди за головой с партнером",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Behind_Head_Chest_Stretch/0.jpg"
+ },
+ {
+  "id": "0c8abed8-03e8-42ee-bbe2-b20e5275bafd",
+  "name": "Растяжка груди и передней дельты с палкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_And_Front_Of_Shoulder_Stretch/0.jpg"
+ },
+ {
+  "id": "8e3108e7-dbe8-4ad6-aa03-1c569001d102",
+  "name": "Растяжка груди на фитболе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_Stretch_on_Stability_Ball/0.jpg"
+ },
+ {
+  "id": "9aa842a4-b977-4f61-acd1-baca8f806ee8",
+  "name": "Растяжка задней большеберцовой мышцы с резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Posterior_Tibialis_Stretch/0.jpg"
+ },
+ {
+  "id": "fb034bf7-e71f-451d-a84e-6291c5ac2021",
+  "name": "Растяжка икр сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Calf_Stretch/0.jpg"
+ },
+ {
+  "id": "f7c57c5f-0ee5-49d0-9f47-e95b86ae2438",
+  "name": "Растяжка икр у стены (упор на ладони)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Stretch_Hands_Against_Wall/0.jpg"
+ },
+ {
+  "id": "41fa8275-8e15-4226-87a2-5ebe6e01cf00",
+  "name": "Растяжка икр у стены (упор на предплечья)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Stretch_Elbows_Against_Wall/0.jpg"
+ },
+ {
+  "id": "2d4aafef-5646-4f14-b1cc-d868c4770512",
+  "name": "Растяжка квадрицепса и груди лежа на животе (половинная саранча)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Half_Locust/0.jpg"
+ },
+ {
+  "id": "9f6fa17e-6520-40ac-bade-17118a36bad3",
+  "name": "Растяжка квадрицепса лежа на боку",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Quad_Stretch/0.jpg"
+ },
+ {
+  "id": "652118be-6d5b-490d-bbf8-8fc987d681f0",
+  "name": "Растяжка квадрицепса лежа на животе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Prone_Quadriceps/0.jpg"
+ },
+ {
+  "id": "4bb377d5-161d-4031-ae4e-af1f09b876f7",
+  "name": "Растяжка квадрицепса лежа на спине",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/On-Your-Back_Quad_Stretch/0.jpg"
+ },
+ {
+  "id": "29b9e062-0836-4e86-b9d9-ea2d71826c1a",
+  "name": "Растяжка квадрицепса на четвереньках",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/All_Fours_Quad_Stretch/0.jpg"
+ },
+ {
+  "id": "275d51de-59ed-4178-b22c-1b01f496c7cf",
+  "name": "Растяжка квадрицепса с взглядом в потолок",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Looking_At_Ceiling/0.jpg"
+ },
+ {
+  "id": "a11349c6-4129-4781-8e67-395e7334c9b9",
+  "name": "Растяжка малоберцовых мышц с резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Peroneals_Stretch/0.jpg"
+ },
+ {
+  "id": "69fab25e-4a6e-4e47-84b1-1d6db01f82e0",
+  "name": "Растяжка на фитболе (Пирамида)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pyramid/0.jpg"
+ },
+ {
+  "id": "cf09d442-5808-4417-941a-7b5b2ea39a97",
+  "name": "Растяжка отводящих мышц бедра лежа (с партнером)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Crossover/0.jpg"
+ },
+ {
+  "id": "7ee86c08-7aa4-4c64-99d2-a0228286f534",
+  "name": "Растяжка паха и спины",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Groin_and_Back_Stretch/0.jpg"
+ },
+ {
+  "id": "155dee7d-0e15-49f6-95f6-fc75c6f61373",
+  "name": "Растяжка паха лежа на боку",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lying_Groin_Stretch/0.jpg"
+ },
+ {
+  "id": "a5830664-3eac-48ae-bca2-7925b364eb17",
+  "name": "Растяжка паха лежа с согнутыми ногами (с партнером)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Bent_Leg_Groin/0.jpg"
+ },
+ {
+  "id": "146aa111-4f37-4365-85a3-258b93536abd",
+  "name": "Растяжка передней дельты сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Front_Deltoid/0.jpg"
+ },
+ {
+  "id": "faab6c41-f82c-4108-b043-b65f8fd4ae8a",
+  "name": "Растяжка плеч «Вокруг света»",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Round_The_World_Shoulder_Stretch/0.jpg"
+ },
+ {
+  "id": "0abf62ec-19f9-4791-a2f3-aad70bf456c5",
+  "name": "Растяжка плеча (рука через грудь)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Shoulder_Stretch/0.jpg"
+ },
+ {
+  "id": "f53f2a38-09e9-4519-b223-8b18241addea",
+  "name": "Растяжка плеча и предплечья через тело",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Wrist_Pull/0.jpg"
+ },
+ {
+  "id": "3ad7d380-6f05-4a7f-b74a-404d0ffa7393",
+  "name": "Растяжка подвздошно-большеберцового тракта и ягодиц",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/IT_Band_and_Glute_Stretch/0.jpg"
+ },
+ {
+  "id": "ce007eb1-4726-41d6-a7d6-84c30746ff40",
+  "name": "Растяжка позвоночника сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spinal_Stretch/0.jpg"
+ },
+ {
+  "id": "79733b99-4b38-44d7-9fa2-0c28becea799",
+  "name": "Растяжка поясницы сидя на стуле",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chair_Lower_Back_Stretch/0.jpg"
+ },
+ {
+  "id": "b4e921e1-0dba-4af1-b310-f23942840a3f",
+  "name": "Растяжка предплечий на коленях",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Forearm_Stretch/0.jpg"
+ },
+ {
+  "id": "b02b9c9d-7faa-4ba3-9223-8c5e885fbc7f",
+  "name": "Растяжка сгибателей бедра на коленях",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Hip_Flexor/0.jpg"
+ },
+ {
+  "id": "f47977c8-e96f-4d5d-95e6-53fe53ab25ca",
+  "name": "Растяжка середины спины",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Middle_Back_Stretch/0.jpg"
+ },
+ {
+  "id": "a4cce10b-6e6f-42e5-9102-9de3966ff135",
+  "name": "Растяжка спины и ягодиц с фитболом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hug_A_Ball/0.jpg"
+ },
+ {
+  "id": "9119e0e9-a4bb-4d32-bbbe-bc4cb9acea0f",
+  "name": "Растяжка танцора",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dancers_Stretch/0.jpg"
+ },
+ {
+  "id": "e84e66f3-52dd-4b61-baa1-465f31374a4f",
+  "name": "Растяжка трицепса за головой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Stretch/0.jpg"
+ },
+ {
+  "id": "0d439fda-ecdf-4e7c-9cf8-84a76bbfdecf",
+  "name": "Растяжка трицепса стоя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tricep_Side_Stretch/0.jpg"
+ },
+ {
+  "id": "afb865ee-64fc-423d-9ac1-240a1f3a047f",
+  "name": "Растяжка шеи (наклон головы к груди)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin_To_Chest_Stretch/0.jpg"
+ },
+ {
+  "id": "78f35844-b4a2-46b7-853f-825e875d7801",
+  "name": "Растяжка шеи в сторону",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Neck_Stretch/0.jpg"
+ },
+ {
+  "id": "fc264426-f9d5-487d-9ba0-947487735aad",
+  "name": "Растяжка широчайших лежа на боку",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side-Lying_Floor_Stretch/0.jpg"
+ },
+ {
+  "id": "55dbfef9-7326-41ce-aece-7390a0362ce9",
+  "name": "Растяжка широчайших над головой (с партнером)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Lat/0.jpg"
+ },
+ {
+  "id": "85dfc98c-6da2-4e24-81f5-31c927d29dc8",
+  "name": "Растяжка широчайших у стены",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Against_Wall/0.jpg"
+ },
+ {
+  "id": "825e8b48-4ef1-4af5-97c7-08f411f4582a",
+  "name": "Растяжка ягодиц (лодыжка на колено)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ankle_On_The_Knee/0.jpg"
+ },
+ {
+  "id": "e823aadf-89c4-4fee-907f-309e84fc623b",
+  "name": "Растяжка ягодиц лежа (с партнером)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Glute/0.jpg"
+ },
+ {
+  "id": "5ba07f34-549a-4360-b24c-999946b4aa95",
+  "name": "Растяжка ягодиц сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Glute/0.jpg"
+ },
+ {
+  "id": "d8a63040-8208-40f8-881c-e2c198c6187b",
+  "name": "Ролик для пресса (Ab Wheel)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg"
+ },
+ {
+  "id": "804457db-cefa-446a-acf1-a8f3fea381c3",
+  "name": "Ролик со штангой (на коленях)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Ab_Rollout_-_On_Knees/0.jpg"
+ },
+ {
+  "id": "ecbc7d83-b035-4ffb-aea5-56559d61b893",
+  "name": "Ролик со штангой (стоя)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Ab_Rollout/0.jpg"
+ },
+ {
+  "id": "97b53da4-6a9e-4163-8a8a-3738977f10c5",
+  "name": "Ролик со штангой со скамьи",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Rollout_from_Bench/0.jpg"
+ },
+ {
+  "id": "7561eee7-2ebc-49e6-b118-d00995febd23",
+  "name": "Румынская тяга в Смите",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Stiff-Legged_Deadlift/0.jpg"
+ },
+ {
+  "id": "6d1ab063-1c74-4d4b-8f95-94966c649dcd",
+  "name": "Румынская тяга гири на одной ноге",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_One-Legged_Deadlift/0.jpg"
+ },
+ {
+  "id": "85018d1f-693a-4b3b-a7ae-7fca06148f4e",
+  "name": "Румынская тяга с возвышения",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift_from_Deficit/0.jpg"
+ },
+ {
+  "id": "93b5c2a7-3fd3-4856-bf36-ad54e18cbd10",
+  "name": "Русские скручивания в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Russian_Twists/0.jpg"
+ },
+ {
+  "id": "49f994f1-4c89-4042-ab5a-92a2cd37d440",
+  "name": "Русский твист (Russian Twist)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg"
+ },
+ {
+  "id": "7b7289f0-7c7e-4ba2-9dfb-8a21f582857d",
+  "name": "Рывок гири одной рукой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Snatch/0.jpg"
+ },
+ {
+  "id": "2d5aa140-fda3-4720-a8ab-c095a4be6eb6",
+  "name": "Рывок гири одной рукой в разножке",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Split_Snatch/0.jpg"
+ },
+ {
+  "id": "510a9b2b-61f1-40f0-9a92-8123cd901de5",
+  "name": "Рывок двух гирь",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Double_Kettlebell_Snatch/0.jpg"
+ },
+ {
+  "id": "1d1c3760-f2ea-45fd-96b2-66084d35ad3d",
+  "name": "Рывок штанги",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch/0.jpg"
+ },
+ {
+  "id": "af827edb-1209-4c0b-ad14-2c4bd84cdbde",
+  "name": "Рывок штанги без подседа (Muscle Snatch)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Muscle_Snatch/0.jpg"
+ },
+ {
+  "id": "0dde02cd-35f9-48fd-9d84-9c399ba1f36d",
+  "name": "Рывок штанги в разножке",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Snatch/0.jpg"
+ },
+ {
+  "id": "d59f25af-59de-470a-b836-3b74fd1493a5",
+  "name": "Рывок штанги в силовом стиле",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Power_Snatch/0.jpg"
+ },
+ {
+  "id": "68a955f0-8b12-4cbd-bca3-3f4214fd4dd5",
+  "name": "Рывок штанги с виса",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hang_Snatch/0.jpg"
+ },
+ {
+  "id": "d569a72d-750e-4488-8f89-071ed891f5c4",
+  "name": "Рывок штанги с виса ниже колен",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hang_Snatch_-Below_Knees/0.jpg"
+ },
+ {
+  "id": "e9d07939-4bb9-4ea9-ab05-698bd99c123b",
+  "name": "Рывок штанги с плинтов",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_from_Blocks/0.jpg"
+ },
+ {
+  "id": "f3b6df3c-4e89-4239-89d4-feb22e7fc745",
+  "name": "Рывок штанги с плинтов в силовом стиле",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Power_Snatch_from_Blocks/0.jpg"
+ },
+ {
+  "id": "1c624e45-fb64-4534-b790-8d7ed511ea38",
+  "name": "Сведение лопаток с гантелями лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Middle_Back_Shrug/0.jpg"
+ },
+ {
+  "id": "033eb835-81ce-453a-a785-fef2e426a070",
+  "name": "Сведение ног в тренажере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Thigh_Adductor/0.jpg"
+ },
+ {
+  "id": "838e191d-751c-4093-89ec-a1785ed22600",
+  "name": "Сведение рук в кроссовере лежа на горизонтальной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flat_Bench_Cable_Flyes/0.jpg"
+ },
+ {
+  "id": "3e3c5ca0-096c-47cb-815d-106284238424",
+  "name": "Сведение рук в кроссовере снизу вверх",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg"
+ },
+ {
+  "id": "c606424e-6e7c-41bb-a485-759260dd0474",
+  "name": "Сведение рук в тренажере Pec Deck (Бабочка)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg"
+ },
+ {
+  "id": "b80802c2-95be-48bb-af59-ed5f59ed55d1",
+  "name": "Сведение руки в кроссовере (одной рукой)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Arm_Cable_Crossover/0.jpg"
+ },
+ {
+  "id": "735a2075-53a5-49a3-ae9e-1fae50ef60c1",
+  "name": "Сгибание бедра с резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hip_Flexion_with_Band/0.jpg"
+ },
+ {
+  "id": "522a8d27-ac01-4d3d-89b3-72909e3cc716",
+  "name": "Сгибание запястий в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "1cb8ad3f-ddcb-4c9d-a5de-55a6e23914e0",
+  "name": "Сгибание запястий в нижнем блоке сидя (ладони вверх)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "67cd93af-24a9-4817-824e-798b52530c7c",
+  "name": "Сгибание запястий с гантелями лежа на скамье (ладони вверх)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench/0.jpg"
+ },
+ {
+  "id": "44c18113-30e7-4690-b98a-30281d535290",
+  "name": "Сгибание запястий с гантелями сидя (ладони вверх)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Palms-Up_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "8bbde788-165e-4441-bf42-e408d74ef68f",
+  "name": "Сгибание запястий со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Palms-Up_Barbell_Wrist_Curl_Over_A_Bench/0.jpg"
+ },
+ {
+  "id": "9d252afa-6beb-483b-9ad1-5594dcc8cb49",
+  "name": "Сгибание запястий со штангой (на пальцах)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Finger_Curls/0.jpg"
+ },
+ {
+  "id": "b6d1aba2-b755-49c4-9928-85161c1b19d1",
+  "name": "Сгибание запястий со штангой сидя (ладони вниз)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Palms-Down_Barbell_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "049b69bc-e5cc-458a-a092-5d9f5d50bd06",
+  "name": "Сгибание запястья с гантелью сидя (ладонь вверх)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_One-Arm_Dumbbell_Palms-Up_Wrist_Curl/0.jpg"
+ },
+ {
+  "id": "2ddedfdd-7ccf-4334-a0c6-600dd7fb9ef3",
+  "name": "Сгибание ног в кроссовере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Cable_Curl/0.jpg"
+ },
+ {
+  "id": "2666d36f-f295-401b-b36f-1399ab5929d9",
+  "name": "Сгибание ног лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg"
+ },
+ {
+  "id": "9636b1d2-9953-4b38-8b61-2b1f1cec139d",
+  "name": "Сгибание ног лежа с сопротивлением (с партнером)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Prone_Manual_Hamstring/0.jpg"
+ },
+ {
+  "id": "153f5e22-c303-4d87-960b-06b6a51a82a5",
+  "name": "Сгибание ног на фитболе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ball_Leg_Curl/0.jpg"
+ },
+ {
+  "id": "0f91bfa0-a417-4874-b8e1-bb5ba13412c7",
+  "name": "Сгибание ног сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg"
+ },
+ {
+  "id": "deb5bbbf-7225-4054-baa4-59289a3d2790",
+  "name": "Сгибание ног сидя с резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Band_Hamstring_Curl/0.jpg"
+ },
+ {
+  "id": "1753eff9-7399-47f9-a02b-78c78708d8b9",
+  "name": "Сгибание рук на бицепс (молот) на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Hammer_Curls/0.jpg"
+ },
+ {
+  "id": "ddc88320-f98f-482f-a978-171fe6ce7f1d",
+  "name": "Сгибание рук на бицепс (молот) через тело",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cross_Body_Hammer_Curl/0.jpg"
+ },
+ {
+  "id": "2016910a-5fb0-4a45-9292-f881d3963f91",
+  "name": "Сгибание рук на бицепс в верхнем блоке",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/High_Cable_Curls/0.jpg"
+ },
+ {
+  "id": "ba5d8eb4-df29-4a48-acc8-dfb7fc84bebc",
+  "name": "Сгибание рук на бицепс в кроссовере из-за головы",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Cable_Curl/0.jpg"
+ },
+ {
+  "id": "c828794f-b7f6-4318-bda4-68b90f644161",
+  "name": "Сгибание рук на бицепс в кроссовере на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Preacher_Curl/0.jpg"
+ },
+ {
+  "id": "b9cd57e6-9d7c-4ce8-8b76-f2459f8babcb",
+  "name": "Сгибание рук на бицепс в кроссовере обратным хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Cable_Curl/0.jpg"
+ },
+ {
+  "id": "a9e8a9a2-ff79-459f-9902-e3fc65ee7260",
+  "name": "Сгибание рук на бицепс в тренажере на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Preacher_Curls/0.jpg"
+ },
+ {
+  "id": "ac2df273-8417-4183-a4c5-fd57a7a558b6",
+  "name": "Сгибание рук на бицепс на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Inner_Biceps_Curl/0.jpg"
+ },
+ {
+  "id": "22d43795-f58e-46af-a0ef-20b43e4a54cf",
+  "name": "Сгибание рук с EZ-грифом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Curl/0.jpg"
+ },
+ {
+  "id": "c3163cb0-2cd9-49ca-98c9-bc2d07a64545",
+  "name": "Сгибание рук с EZ-грифом и резинкой узким хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_EZ-Bar_Curl_with_Band/0.jpg"
+ },
+ {
+  "id": "b2368c9e-7ab5-4d15-b688-c25f2c9b9458",
+  "name": "Сгибание рук с EZ-грифом обратным хватом на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Barbell_Preacher_Curls/0.jpg"
+ },
+ {
+  "id": "763f2447-6389-41c7-b134-f1eeca2182df",
+  "name": "Сгибание рук с блином обратным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Plate_Curls/0.jpg"
+ },
+ {
+  "id": "7f48f90d-a214-46dd-9c2c-21691f4fe60a",
+  "name": "Сгибание рук с гантелями (молот) на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Preacher_Hammer_Dumbbell_Curl/0.jpg"
+ },
+ {
+  "id": "82ba7db1-a1d8-4130-95fe-e879b0ce9dcb",
+  "name": "Сгибание рук с гантелями лежа на спине",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Supine_Dumbbell_Curl/0.jpg"
+ },
+ {
+  "id": "57b49199-8819-4a02-b1ad-7ae51c8707be",
+  "name": "Сгибание рук с гантелями на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Two-Arm_Dumbbell_Preacher_Curl/0.jpg"
+ },
+ {
+  "id": "b483afdd-ea4b-4bf4-b290-255e9c4ab07a",
+  "name": "Сгибание рук узким хватом в верхнем блоке лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Close-Grip_Bar_Curl_On_High_Pulley/0.jpg"
+ },
+ {
+  "id": "e1887293-e02b-473b-bfe1-4232d7114ab2",
+  "name": "Сгибание руки с гантелью на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Dumbbell_Preacher_Curl/0.jpg"
+ },
+ {
+  "id": "90f8ea72-407e-4d2f-af02-d460642a3fa8",
+  "name": "Сгибания Зоттмана",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zottman_Curl/0.jpg"
+ },
+ {
+  "id": "1c1a3fbd-1f08-4c1d-8afd-68cbd8151586",
+  "name": "Сгибания Зоттмана на скамье Скотта",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zottman_Preacher_Curl/0.jpg"
+ },
+ {
+  "id": "01cc9823-461d-4e1d-a22e-12737a296728",
+  "name": "Сгибания ног (GHR) без тренажера",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Natural_Glute_Ham_Raise/0.jpg"
+ },
+ {
+  "id": "7b3150ea-57ec-41a2-99ef-40cee439f501",
+  "name": "Серия толчков медбола от груди с падением",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_Push_multiple_response/0.jpg"
+ },
+ {
+  "id": "15243249-b881-42aa-8fd4-8766e9826a6c",
+  "name": "Силовые приседания с обратными резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Power_Squat/0.jpg"
+ },
+ {
+  "id": "4a404501-e59b-475f-accc-a64fa7890dbf",
+  "name": "Сисси-приседания с отягощением",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Sissy_Squat/0.jpg"
+ },
+ {
+  "id": "f1ac9b22-7f2f-4fd4-99cb-effd4b6b6887",
+  "name": "Скалолаз",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/0.jpg"
+ },
+ {
+  "id": "19b8131e-8b6c-4891-af2f-65c059907468",
+  "name": "Скалолаз с подтягиванием колена к локтю",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spider_Crawl/0.jpg"
+ },
+ {
+  "id": "e4c69408-3d46-44e2-8c25-c4ff3b40bbc4",
+  "name": "Складка (Джекнайф)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jackknife_Sit-Up/0.jpg"
+ },
+ {
+  "id": "bf957e15-044c-4f9b-925a-f5aa562a97ba",
+  "name": "Скольжение пятками для бицепса бедра",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Platform_Hamstring_Slides/0.jpg"
+ },
+ {
+  "id": "dc6182d5-d7ea-4bca-99d3-255e6ce9ca17",
+  "name": "Скоростные приседания на тумбу",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Box_Squat/0.jpg"
+ },
+ {
+  "id": "3a4b27d0-963d-4228-8d2d-9a7db32681b6",
+  "name": "Скоростные приседания со штангой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Speed_Squats/0.jpg"
+ },
+ {
+  "id": "86dcb7d4-9dfe-4850-9360-27742b441b14",
+  "name": "Скручивания «Кокон»",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cocoons/0.jpg"
+ },
+ {
+  "id": "ad784fb2-857d-45ca-b2cb-308f083d63f5",
+  "name": "Скручивания «Лягушка»",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Frog_Sit-Ups/0.jpg"
+ },
+ {
+  "id": "3951d949-211e-44e0-b32a-7a13a1e69653",
+  "name": "Скручивания в кроссовере на коленях с поворотами",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists/0.jpg"
+ },
+ {
+  "id": "8d8cf1ec-d99a-453a-87e0-4a7ee12d056b",
+  "name": "Скручивания в кроссовере сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Seated_Crunch/0.jpg"
+ },
+ {
+  "id": "4dbeb4a6-4c63-4342-93c9-8c007b886d9f",
+  "name": "Скручивания в тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Crunch_Machine/0.jpg"
+ },
+ {
+  "id": "a5e522e8-6be8-4ce4-95e4-fd2e8094e8f0",
+  "name": "Скручивания велосипед",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Air_Bike/0.jpg"
+ },
+ {
+  "id": "e383f7a8-386a-40cf-a407-cb162031b1d8",
+  "name": "Скручивания локоть к колену",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elbow_to_Knee/0.jpg"
+ },
+ {
+  "id": "d4745323-62f5-4a5e-969a-005a0394c288",
+  "name": "Скручивания на верхнем блоке (молитва)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg"
+ },
+ {
+  "id": "8399f888-b4ce-42a1-b8c9-0a6a3dcaad16",
+  "name": "Скручивания на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Crunch/0.jpg"
+ },
+ {
+  "id": "7e2e4d87-592f-4525-8ef7-a6c3075f9e2e",
+  "name": "Скручивания на полу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/0.jpg"
+ },
+ {
+  "id": "bb56fa22-dc3c-4c13-8838-9a445a8f3a06",
+  "name": "Скручивания на фитболе",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Exercise_Ball_Crunch/0.jpg"
+ },
+ {
+  "id": "a9154916-08c0-42ad-b2db-e6536cfab1b3",
+  "name": "Скручивания на фитболе в кроссовере с боковыми наклонами",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bosu_Ball_Cable_Crunch_With_Side_Bends/0.jpg"
+ },
+ {
+  "id": "c2dbbe56-0bfd-45cf-9a92-44c82095e22e",
+  "name": "Скручивания с канатом в кроссовере (молитва)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Crunch/0.jpg"
+ },
+ {
+  "id": "e6430098-23a7-4a79-9117-18b5cef5e590",
+  "name": "Скручивания с касанием носков",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Toe_Touchers/0.jpg"
+ },
+ {
+  "id": "77d7a8d6-258a-4231-8795-fd477cf8962f",
+  "name": "Скручивания с медболом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Weighted_Crunches/0.jpg"
+ },
+ {
+  "id": "ac35ca21-6bea-4c51-a2df-44a13aa3108c",
+  "name": "Скручивания с ногами на фитболе",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunch_-_Legs_On_Exercise_Ball/0.jpg"
+ },
+ {
+  "id": "6f4ecb96-20fd-43f1-8915-65180e09a66a",
+  "name": "Скручивания с подтягиванием коленей",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tuck_Crunch/0.jpg"
+ },
+ {
+  "id": "6ed84398-3750-416d-ba09-c1c558495e4f",
+  "name": "Скручивания с руками за головой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunch_-Hands_Overhead/0.jpg"
+ },
+ {
+  "id": "b3216dd7-0c4f-408e-a916-40cb0f375d3b",
+  "name": "Скручивания Янды",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Janda_Sit-Up/0.jpg"
+ },
+ {
+  "id": "4ea4b927-58f8-487c-967e-3883bca3bf4b",
+  "name": "Сопротивление шеи с блином лежа на животе",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Face_Down_Plate_Neck_Resistance/0.jpg"
+ },
+ {
+  "id": "d03bb635-9657-4e15-b4a0-d7ba5f0b0656",
+  "name": "Сопротивление шеи с блином лежа на спине",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Face_Up_Plate_Neck_Resistance/0.jpg"
+ },
+ {
+  "id": "b10e3c3b-7c42-44a6-b039-8dc434f5f9d6",
+  "name": "Сопротивление шеи с шлейкой сидя",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Head_Harness_Neck_Resistance/0.jpg"
+ },
+ {
+  "id": "1c127392-41a4-4ced-a2af-69396bb6a2f0",
+  "name": "Спринт по кругу через конус (Cone Drill)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single-Cone_Sprint_Drill/0.jpg"
+ },
+ {
+  "id": "eb72493f-5e1c-4557-859c-fad297f15bdb",
+  "name": "Спринт с санями (Prowler)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Prowler_Sprint/0.jpg"
+ },
+ {
+  "id": "e860dbb0-c592-4420-9e14-3b56ddb16036",
+  "name": "Спринт со сменой ног на скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Sprint/0.jpg"
+ },
+ {
+  "id": "0438bbea-5798-489d-9eb6-3f07840226aa",
+  "name": "Спринтерские выпады в Смите",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lunge_Sprint/0.jpg"
+ },
+ {
+  "id": "f337d88f-cce7-472f-9046-c4347b6d1612",
+  "name": "Становая тяга (становая)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg"
+ },
+ {
+  "id": "46040d82-332a-492f-ab70-d712c3276429",
+  "name": "Становая тяга в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Deadlifts/0.jpg"
+ },
+ {
+  "id": "8e0e2489-060b-4810-98d9-cdab50d73ae3",
+  "name": "Становая тяга в рычажном тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Deadlift/0.jpg"
+ },
+ {
+  "id": "a68b1e1b-8e1e-4728-b236-56d5d937ef62",
+  "name": "Становая тяга для взятия на грудь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_Deadlift/0.jpg"
+ },
+ {
+  "id": "e61b233a-2533-4a32-8a71-e3257ab79ce0",
+  "name": "Становая тяга для рывка",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_Deadlift/0.jpg"
+ },
+ {
+  "id": "00ecea9e-9060-4e53-864c-7ff99b14cec6",
+  "name": "Становая тяга одной рукой сбоку",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Side_Deadlift/0.jpg"
+ },
+ {
+  "id": "c006f2dc-1b37-418e-bb88-77fc0ce3f5b8",
+  "name": "Становая тяга с возвышения (дефицитная тяга)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deficit_Deadlift/0.jpg"
+ },
+ {
+  "id": "a4cb4b8b-92ed-473b-9713-8de473aa57f9",
+  "name": "Становая тяга с обратными резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Deadlift/0.jpg"
+ },
+ {
+  "id": "830127d4-bd8b-4779-a899-a0e3702d0a51",
+  "name": "Становая тяга с резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deadlift_with_Bands/0.jpg"
+ },
+ {
+  "id": "b26bfc05-301f-4c71-9f12-67714718c4d7",
+  "name": "Становая тяга с трэп-грифом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Trap_Bar_Deadlift/0.jpg"
+ },
+ {
+  "id": "3bed81be-4d9a-46d0-9b10-4f7e7474fccd",
+  "name": "Становая тяга с цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Deadlift_with_Chains/0.jpg"
+ },
+ {
+  "id": "c086f3c9-ae01-4a91-ba6e-1e66a8e22f9b",
+  "name": "Статическая растяжка паха с партнером",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Adductor_Groin/0.jpg"
+ },
+ {
+  "id": "d33b323b-dac7-4e61-9d50-651e2ba1c81e",
+  "name": "Степпер (Stairmaster)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stairmaster/0.jpg"
+ },
+ {
+  "id": "9e25668e-f8f0-4af7-bba6-39925af155d4",
+  "name": "Сумо-тяга гири к подбородку",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Sumo_High_Pull/0.jpg"
+ },
+ {
+  "id": "990b2de3-a050-453b-af5c-a118efd07176",
+  "name": "Сумо-тяга с обратными резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Band_Sumo_Deadlift/0.jpg"
+ },
+ {
+  "id": "cfdbd746-60b5-415c-a026-d7ae0e20dda0",
+  "name": "Сумо-тяга с цепями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift_with_Chains/0.jpg"
+ },
+ {
+  "id": "52004a7c-759f-4642-bbe5-a8db01f5d49a",
+  "name": "Супермен",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Superman/0.jpg"
+ },
+ {
+  "id": "5643ac5f-2e5c-4584-9c5a-d1d9bfc136ae",
+  "name": "Супинация предплечья с гантелью лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lying_Supination/0.jpg"
+ },
+ {
+  "id": "3c506b85-08e4-4b84-a256-28738539e369",
+  "name": "Техника спринтерского старта из низкого положения (3 фазы)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Linear_3-Part_Start_Technique/0.jpg"
+ },
+ {
+  "id": "ece69f02-a586-40c0-b5b2-272c72025145",
+  "name": "Толчок гири одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Jerk/0.jpg"
+ },
+ {
+  "id": "cceea9d9-4b65-4c6f-92d1-b21ca9977997",
+  "name": "Толчок гири одной рукой в разножке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Split_Jerk/0.jpg"
+ },
+ {
+  "id": "92591f81-24a4-4fe4-88ff-5716a28df075",
+  "name": "Толчок двух гирь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Double_Kettlebell_Jerk/0.jpg"
+ },
+ {
+  "id": "01cc75a5-dd45-4bca-841b-20d074a19936",
+  "name": "Толчок медбола из упора на одной руке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_Push_from_3_point_stance/0.jpg"
+ },
+ {
+  "id": "3be49e72-38c8-4b7c-815e-6587fc51a13b",
+  "name": "Толчок медбола от груди с падением",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_Push_single_response/0.jpg"
+ },
+ {
+  "id": "40a4e4ff-6480-4fce-86a2-a05e62f9417b",
+  "name": "Толчок медбола с ускорением",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_Push_with_Run_Release/0.jpg"
+ },
+ {
+  "id": "25d2c59d-f1b1-4307-8136-8031526f572c",
+  "name": "Толчок тяжелого мешка",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Heavy_Bag_Thrust/0.jpg"
+ },
+ {
+  "id": "e86d402e-e9b6-45f8-a26c-6c305fb56925",
+  "name": "Толчок штанги в присед",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Squat_Jerk/0.jpg"
+ },
+ {
+  "id": "cb6d1f69-6c2b-490f-81d3-c4f947a7fa42",
+  "name": "Толчок штанги в разножке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Jerk/0.jpg"
+ },
+ {
+  "id": "04b26957-77bf-4cf9-a297-ae47a100e07c",
+  "name": "Толчок штанги в силовом стиле (Power Jerk)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Power_Jerk/0.jpg"
+ },
+ {
+  "id": "75aa14ef-340c-4659-b066-3f218ee3cee6",
+  "name": "Трастер с гирями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Thruster/0.jpg"
+ },
+ {
+  "id": "5dc2e450-339c-4c13-bd65-b891204552fc",
+  "name": "Турецкий подъем с гирей (через выпад)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Turkish_Get-Up_Lunge_style/0.jpg"
+ },
+ {
+  "id": "823c72ef-c33f-4b1c-8b77-1f3fec70e355",
+  "name": "Тяга блока стоя (Дровосек)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Lift/0.jpg"
+ },
+ {
+  "id": "824adfb9-1a72-4770-8d8e-a954e83023bb",
+  "name": "Тяга в кроссовере одной рукой (Shotgun Row)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Shotgun_Row/0.jpg"
+ },
+ {
+  "id": "1581d922-f176-46a6-bb44-e6c05004b98e",
+  "name": "Тяга в наклоне в Смите",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bent_Over_Row/0.jpg"
+ },
+ {
+  "id": "430fb46b-e5ac-4c9b-8470-8e06224e2f88",
+  "name": "Тяга в петлях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Suspended_Row/0.jpg"
+ },
+ {
+  "id": "01c296c8-2f09-41a2-a8ba-78efa1f7a96c",
+  "name": "Тяга верхнего блока V-образной рукоятью",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/V-Bar_Pulldown/0.jpg"
+ },
+ {
+  "id": "3d53c38e-041b-4ec9-9f76-9fd930ae6354",
+  "name": "Тяга верхнего блока за голову широким хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Pulldown_Behind_The_Neck/0.jpg"
+ },
+ {
+  "id": "d5565aba-c138-4706-95df-595a01629bc2",
+  "name": "Тяга верхнего блока к груди (полная амплитуда)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Full_Range-Of-Motion_Lat_Pulldown/0.jpg"
+ },
+ {
+  "id": "c59d12ab-94c6-4d4f-9489-3cee3b21bf7e",
+  "name": "Тяга верхнего блока на коленях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_High_Pulley_Row/0.jpg"
+ },
+ {
+  "id": "4ed4b5a9-de19-4dd9-8cab-6bf030e0f7c7",
+  "name": "Тяга верхнего блока обратным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Underhand_Cable_Pulldowns/0.jpg"
+ },
+ {
+  "id": "7ce20e42-9c02-4d57-a460-601b4de1333c",
+  "name": "Тяга верхнего блока одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One_Arm_Lat_Pulldown/0.jpg"
+ },
+ {
+  "id": "b452aafa-1276-4212-93ec-8a3997f22bbd",
+  "name": "Тяга верхнего блока одной рукой на коленях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Single-Arm_High_Pulley_Row/0.jpg"
+ },
+ {
+  "id": "0b54295f-39eb-453b-a27a-95a9da9b9afa",
+  "name": "Тяга верхнего блока узким хватом к груди",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg"
+ },
+ {
+  "id": "6d011b29-9ccf-4ed8-9769-3f978ab3a008",
+  "name": "Тяга весом тела (перевернутая)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Mid_Row/0.jpg"
+ },
+ {
+  "id": "9543ef35-60c2-4061-a088-a876cfb06b13",
+  "name": "Тяга гантелей в наклоне на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Incline_Row/0.jpg"
+ },
+ {
+  "id": "7151e050-2674-48b5-908d-85690e5f96d9",
+  "name": "Тяга гантелей в наклоне нейтральным хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Dumbbell_Row_With_Palms_In/0.jpg"
+ },
+ {
+  "id": "db4fdb91-865c-4469-8048-0b1cda4c4ff6",
+  "name": "Тяга гантелей в наклоне прямым хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Dumbbell_Row/0.jpg"
+ },
+ {
+  "id": "d78a957a-6a82-4956-9d67-32b64085a898",
+  "name": "Тяга гантели одной рукой к подбородку",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_One-Arm_Upright_Row/0.jpg"
+ },
+ {
+  "id": "4d329c9c-7afa-49b0-aa49-093a9df616a4",
+  "name": "Тяга гири в упоре лежа (Renegade Row)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternating_Renegade_Row/0.jpg"
+ },
+ {
+  "id": "72c3d9b1-892a-4f21-8fc7-270af20dcd58",
+  "name": "Тяга гири одной рукой в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Row/0.jpg"
+ },
+ {
+  "id": "f617319d-fe2c-4ccb-9c36-96107f1bfecb",
+  "name": "Тяга горизонтального блока с возвышения",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elevated_Cable_Rows/0.jpg"
+ },
+ {
+  "id": "9538e150-7707-4180-b3c6-fc79579d0d4f",
+  "name": "Тяга двух гирь в наклоне",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Two-Arm_Kettlebell_Row/0.jpg"
+ },
+ {
+  "id": "ac888e18-9825-4cda-aa66-fa45a5319853",
+  "name": "Тяга для взятия штанги на грудь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_Pull/0.jpg"
+ },
+ {
+  "id": "9639590a-6b8c-4fd0-88df-0c901b43a3e0",
+  "name": "Тяга для рывка",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_Pull/0.jpg"
+ },
+ {
+  "id": "410e2f24-712c-49c7-8712-a0878416e2b3",
+  "name": "Тяга изогнутой штанги в наклоне лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Cambered_Barbell_Row/0.jpg"
+ },
+ {
+  "id": "dfe3f137-22ca-45d2-8771-9179ab5aeedb",
+  "name": "Тяга к верху в рычажном тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_High_Row/0.jpg"
+ },
+ {
+  "id": "3e9f6477-b10c-45bd-a081-d46fc38c3ada",
+  "name": "Тяга к подбородку в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Cable_Row/0.jpg"
+ },
+ {
+  "id": "22f71247-6070-4141-81a4-bdba9a445e79",
+  "name": "Тяга к подбородку в Смите (широкий хват)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Upright_Row/0.jpg"
+ },
+ {
+  "id": "2c27eb55-90fd-4279-b5fa-d23d60010090",
+  "name": "Тяга к подбородку одной рукой в тренажере Смита",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_One-Arm_Upright_Row/0.jpg"
+ },
+ {
+  "id": "b5dd0a48-10cc-4e12-8b05-02aa658887e7",
+  "name": "Тяга к подбородку с резинкой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Row_-_With_Bands/0.jpg"
+ },
+ {
+  "id": "b639cd36-53df-46fd-9edf-b3bcef984076",
+  "name": "Тяга каната к лицу (Face Pull)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg"
+ },
+ {
+  "id": "3bba114b-cfdc-4d86-8eeb-e4f88965e985",
+  "name": "Тяга каната к лицу в кроссовере (Face Pull)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Rope_Rear-Delt_Rows/0.jpg"
+ },
+ {
+  "id": "bf5c0236-b992-4fe6-8c46-b56e0565c92e",
+  "name": "Тяга между ног в кроссовере (пул-тру)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pull_Through/0.jpg"
+ },
+ {
+  "id": "2d072094-7f50-4a4f-bae2-a3b0b004d9ee",
+  "name": "Тяга нижнего блока к поясу сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg"
+ },
+ {
+  "id": "bc9a19a9-97ec-4404-a23a-3b71766ce0aa",
+  "name": "Тяга нижнего блока к шее",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Pulley_Row_To_Neck/0.jpg"
+ },
+ {
+  "id": "4f52eb41-e954-479e-b2c2-fdbe7c0e9a0b",
+  "name": "Тяга нижнего блока одной рукой сидя",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_One-arm_Cable_Pulley_Rows/0.jpg"
+ },
+ {
+  "id": "c08327bf-6e19-495f-b6ab-f505762e13e6",
+  "name": "Тяга прямых рук с канатом в кроссовере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Straight-Arm_Pulldown/0.jpg"
+ },
+ {
+  "id": "6b35e098-819a-466a-bcd8-6993816cd0df",
+  "name": "Тяга с плинтов",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Pulls/0.jpg"
+ },
+ {
+  "id": "83ab01d8-3aa4-4ba3-9897-3c733979c170",
+  "name": "Тяга с плинтов с резинками",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Pull_with_Bands/0.jpg"
+ },
+ {
+  "id": "18f9d33f-d249-4cf3-9d30-21fd49d6c21a",
+  "name": "Тяга саней к поясу (Sled Row)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Row/0.jpg"
+ },
+ {
+  "id": "298495f1-7001-4ced-89ab-27490644dda2",
+  "name": "Тяга Т-грифа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/T-Bar_Row_with_Handle/0.jpg"
+ },
+ {
+  "id": "c084677e-ab17-43d8-9a8a-7596306b8b96",
+  "name": "Тяга Т-грифа лежа на тренажере",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_T-Bar_Row/0.jpg"
+ },
+ {
+  "id": "bf559d64-22f2-4cff-8cdc-6a3222f41c1e",
+  "name": "Тяга штанги в наклоне на заднюю дельту",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Rear_Delt_Row/0.jpg"
+ },
+ {
+  "id": "a71d2f90-a459-4bfa-b7a5-6e945da1b265",
+  "name": "Тяга штанги двумя руками в наклоне (олимпийский гриф)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Two-Arm_Long_Bar_Row/0.jpg"
+ },
+ {
+  "id": "940d8e1b-1e01-4c7f-9187-0a91460b9ff7",
+  "name": "Тяга штанги к подбородку узким хватом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Barbell_Row/0.jpg"
+ },
+ {
+  "id": "fc09c2a8-3899-4403-8a1a-6399dea0f526",
+  "name": "Тяга штанги лежа на наклонной скамье",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Bench_Pull/0.jpg"
+ },
+ {
+  "id": "c2456ce6-07fd-4b60-a944-b88f86b46fc6",
+  "name": "Тяга штанги одной рукой в наклоне (в замке)",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Long_Bar_Row/0.jpg"
+ },
+ {
+  "id": "90402bef-b67d-439f-b0ed-b411e84441d2",
+  "name": "Тяговый подъем на бицепс (Drag Curl)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Drag_Curl/0.jpg"
+ },
+ {
+  "id": "74bd27fb-4a45-4e21-8105-9704f8c55f2f",
+  "name": "Удар медболом об пол из-за головы",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Slam/0.jpg"
+ },
+ {
+  "id": "3b45c4e3-6070-4c3c-9986-c73c0b59d7c5",
+  "name": "Удар медболом об пол одной рукой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Medicine_Ball_Slam/0.jpg"
+ },
+ {
+  "id": "2e68973b-dc27-493d-b11a-bc58e57a738b",
+  "name": "Удары кувалдой по покрышке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sledgehammer_Swings/0.jpg"
+ },
+ {
+  "id": "6b08fd7d-7568-4c65-b2f6-552017886526",
+  "name": "Удержание блина щипковым хватом",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plate_Pinch/0.jpg"
+ },
+ {
+  "id": "bbbe3b19-3cdd-4ff7-b027-6cdb1d8c5d2c",
+  "name": "Упражнение для рук на коленях",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kneeling_Arm_Drill/0.jpg"
+ },
+ {
+  "id": "c389953c-2885-42e5-b381-7913da32d5e1",
+  "name": "Ускорение у стены",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Linear_Acceleration_Wall_Drill/0.jpg"
+ },
+ {
+  "id": "c8e7b549-f6b4-4f84-9828-442f3f80cfed",
+  "name": "Учебное упражнение: прием штанги на грудь",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Delivery/0.jpg"
+ },
+ {
+  "id": "72464e46-e44f-4754-ae3e-f7d388182c31",
+  "name": "Французский жим EZ-штанги лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Triceps_Press/0.jpg"
+ },
+ {
+  "id": "cd33294f-73e7-4fab-92f3-7f7bcf79948c",
+  "name": "Французский жим в кроссовере лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Lying_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "d7abb9dd-015d-4283-b09d-efd4d2f310eb",
+  "name": "Французский жим гантелей лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Dumbbell_Tricep_Extension/0.jpg"
+ },
+ {
+  "id": "33fae9e5-7127-4868-a8e2-bd4b44e61150",
+  "name": "Французский жим гантелей на наклонной скамье вниз головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "4ad7cd51-57f8-4433-9c2c-20091fe4929d",
+  "name": "Французский жим гантели сидя из-за головы",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Triceps_Press/0.jpg"
+ },
+ {
+  "id": "1a9becb4-a26e-4a84-b7b0-d0a2a8fbc9e5",
+  "name": "Французский жим лежа",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head/0.jpg"
+ },
+ {
+  "id": "b1f33ef6-dbd3-4750-a69f-86e31a8d7865",
+  "name": "Французский жим с EZ-грифом",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Skullcrusher/0.jpg"
+ },
+ {
+  "id": "3a89800d-72d3-4eb1-8266-676518dbd424",
+  "name": "Французский жим с EZ-штангой на наклонной скамье вниз головой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_EZ_Bar_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "79d2dd7a-4e37-4e4a-b6db-7c5199f1b8e7",
+  "name": "Французский жим с резинкой лежа",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Skull_Crusher/0.jpg"
+ },
+ {
+  "id": "50e11f6b-6c14-42b1-9538-2866fd37dc62",
+  "name": "Французский жим штанги на наклонной скамье",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Barbell_Triceps_Extension/0.jpg"
+ },
+ {
+  "id": "5e5be93b-5511-4c80-afa1-6b1c9b2c535d",
+  "name": "Фронтальные приседания",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squat_Clean_Grip/0.jpg"
+ },
+ {
+  "id": "7bd0fbd9-0a42-4f2e-a368-e98775330855",
+  "name": "Фронтальные приседания без хвата (Frankenstein Squat)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Frankenstein_Squat/0.jpg"
+ },
+ {
+  "id": "8d97f0d8-5178-414d-a80c-d67291045e36",
+  "name": "Фронтальные приседания с двумя гирями",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Squats_With_Two_Kettlebells/0.jpg"
+ },
+ {
+  "id": "df54667a-0d7b-48b5-9a70-f3df74d5b303",
+  "name": "Фронтальные приседания со штангой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat/0.jpg"
+ },
+ {
+  "id": "cb11fef9-c6c7-48d1-856d-048ebe8f4eda",
+  "name": "Фронтальные приседания со штангой до скамьи",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat_To_A_Bench/0.jpg"
+ },
+ {
+  "id": "77b5669a-f996-4715-865f-491b56d2a94e",
+  "name": "Ходьба на беговой дорожке",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Walking_Treadmill/0.jpg"
+ },
+ {
+  "id": "b8466d7b-b34a-487a-98de-1494585fdaa4",
+  "name": "Ходьба назад с санями над головой",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Overhead_Backward_Walk/0.jpg"
+ },
+ {
+  "id": "76855101-551f-4553-bde9-80b676d22bae",
+  "name": "Швунг гири одной рукой (пуш-пресс)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Push_Press/0.jpg"
+ },
+ {
+  "id": "a3b803c7-9ef7-4103-9cc2-70a660499286",
+  "name": "Швунг двух гирь (пуш-пресс)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Double_Kettlebell_Push_Press/0.jpg"
+ },
+ {
+  "id": "e6c1ee3e-09f3-45e0-a66d-725048baea17",
+  "name": "Швунг со штангой (пуш-пресс)",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Press/0.jpg"
+ },
+ {
+  "id": "36e66245-9fd0-426b-aba2-0cf5eecf8c4c",
+  "name": "Швунг со штангой из-за головы",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push_Press_-_Behind_the_Neck/0.jpg"
+ },
+ {
+  "id": "8938f0c8-4648-465a-8b11-fbbf6a0150a7",
+  "name": "Шраги в рычажном тренажере",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Shrug/0.jpg"
+ },
+ {
+  "id": "5e8255e5-d6c6-4080-b3bf-7528ade573c2",
+  "name": "Шраги в тренажере для икр",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf-Machine_Shoulder_Shrug/0.jpg"
+ },
+ {
+  "id": "2483cd14-f1ed-4b36-ae13-89e960c513d7",
+  "name": "Шраги для взятия на грудь",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Clean_Shrug/0.jpg"
+ },
+ {
+  "id": "bf7ee4f9-ecaf-442e-a000-5766a4d3a84b",
+  "name": "Шраги для рывка",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Snatch_Shrug/0.jpg"
+ },
+ {
+  "id": "c5a6c7e9-849d-4ffc-9af7-a9c38483d38c",
+  "name": "Шраги Ли Хейни",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Behind_the_Back_Shrug/0.jpg"
+ },
+ {
+  "id": "f9c89e99-c570-4261-9f75-0018cea43bf7",
+  "name": "Шраги с гантелями",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shrug/0.jpg"
+ },
+ {
+  "id": "b02e8485-3179-47d4-8722-72b8b08becd1",
+  "name": "Шраги со штангой за спиной",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Shrug_Behind_The_Back/0.jpg"
+ },
+ {
+  "id": "9f526d4f-49df-4d55-be7a-22424d16b127",
+  "name": "Шраги со штангой перед собой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Shrug/0.jpg"
+ },
+ {
+  "id": "d31f9c91-3324-444a-89dc-b05170199f13",
+  "name": "Эллиптический тренажер",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/0.jpg"
+ },
+ {
+  "id": "8463c79f-a972-4a8d-9eca-b864a0761af9",
+  "name": "Ягодичный мостик на одной ноге",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Glute_Bridge/0.jpg"
+ },
+ {
+  "id": "6a683d8d-e350-41be-93c3-8c4c16139b39",
+  "name": "Ягодичный мостик на фитболе",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Physioball_Hip_Bridge/0.jpg"
+ },
+ {
+  "id": "b1b12816-5232-4c98-986b-c3359632cc0e",
+  "name": "Ягодичный мостик с резинкой",
+  "status": "needs_review",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hip_Lift_with_Band/0.jpg"
+ },
+ {
+  "id": "5e082615-fb9a-4e5a-9595-ae3f061f5c21",
+  "name": "Ягодичный мостик со штангой на полу",
+  "status": "approved",
+  "media_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg"
+ }
+]
