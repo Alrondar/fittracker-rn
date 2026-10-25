@@ -12,8 +12,11 @@ import { readLocalDoc, removeLocalDoc, writeLocalDoc, type LocalDocMeta } from '
 import type { SnapshotExerciseRow } from '../utils/exerciseSearchLocal';
 
 const DOC_NAME = 'exercise-catalog.json';
-/** Меняй при несовместимой форме строк — старый снимок выбрасывается при чтении. */
-export const SNAPSHOT_VERSION = 1;
+/** Меняй при несовместимой форме строк — старый снимок выбрасывается при чтении.
+ *  Версия 2: кадры переехали в отдельный репозиторий (25.10), а в снимках версии 1
+ *  лежат адреса `…/fittracker-rn/main/data/exercises/…`, которых в ветке `main`
+ *  больше нет — без сброса офлайн показывал бы «Кадр недоступен» до трёх суток. */
+export const SNAPSHOT_VERSION = 2;
 /** Снимок моложе трёх суток не перезагружаем: справочник правится пачками CAT-задач. */
 export const SNAPSHOT_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 /** После неудачной загрузки не стучимся чаще часа (иначе каждый старт офлайн — пачка таймаутов). */
