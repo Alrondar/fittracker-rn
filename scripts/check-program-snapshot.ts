@@ -108,7 +108,7 @@ const cases: [string, () => unknown, unknown][] = [
   ],
 ];
 
-const HOST = 'https://raw.githubusercontent.com/Alrondar/fittracker-rn/main/data/exercises';
+const HOST = 'https://raw.githubusercontent.com/Alrondar/fittracker-exercise-media/main/exercises';
 const CATALOG: SnapshotExerciseRow[] = [
   row({ id: 'bench', name: 'Жим лежа', media_url: `${HOST}/Bench_Press/00f.jpg?v=3` }),
   row({
