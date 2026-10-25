@@ -10,9 +10,11 @@ import { refreshExerciseSnapshot } from './exerciseSnapshotService';
 import {
   PROGRAM_MAX_AGE_MS,
   programSnapshotAgeMs,
+  readProgramSnapshot,
   saveProgramSnapshot,
   type ProgramSnapshotData,
 } from '../lib/programSnapshot';
+import { readOfflineSettings } from '../hooks/useOfflineSettings';
 import { stageFrames } from '../lib/mediaCache';
 import { planProgramFrames } from '../utils/framePlan';
 import type { MediaGender } from '../utils/mediaScheme';
@@ -171,6 +173,8 @@ function exerciseIdsOf(data: ProgramSnapshotData): string[] {
 export type FrameGroup = { planned: number; fetched: number; bytes: number };
 
 export type ProgramDownloadResult = {
+  /** Какая именно программа легла на устройство — плашка сверяет это с активной. */
+  programId: string;
   bytes: number;
   days: number;
   workouts: number;
@@ -208,19 +212,28 @@ async function pullAndSave(userId: string): Promise<{
  * Скачивает активную программу целиком: структура + история + кадры упражнений +
  * кадры их замен. Бросает ошибку, если сеть не ответила, — кнопка должна показать
  * отказ, а не молча оставить пользователя со старым снимком.
+ *
+ * `onProgress` получает долю по кадрам (рамки программы и её замен одним счётом):
+ * данных в программе ~0,2 МБ, а кадров 2–14 МБ, именно загрузка кадров и есть то,
+ * что пользователь видит глазами. Байтовый прогресс одного файла хост не отдаёт.
  */
 export async function downloadActiveProgram(
   userId: string,
-  gender: MediaGender
+  gender: MediaGender,
+  onProgress?: (done: number, planned: number) => void
 ): Promise<ProgramDownloadResult> {
   const pulled = await pullAndSave(userId);
   const plan = planProgramFrames(await readSnapshotRows(), exerciseIdsOf(pulled.data), gender);
+  const total = plan.own.length + plan.alternatives.length;
   // Сначала кадры самой программы: при переполнении потолка вытесняются самые давние,
   // а замены в этом порядке жертвуются первыми.
-  const own = await stageFrames(plan.own);
-  const alternatives = await stageFrames(plan.alternatives);
+  const own = await stageFrames(plan.own, (done) => onProgress?.(done, total));
+  const alternatives = await stageFrames(plan.alternatives, (done) =>
+    onProgress?.(plan.own.length + done, total)
+  );
 
   return {
+    programId: pulled.data.programId,
     bytes: pulled.bytes,
     days: pulled.days,
     workouts: pulled.workouts,
@@ -236,22 +249,71 @@ export async function downloadActiveProgram(
 }
 
 /**
- * Фоновое обновление при старте: только структура и история, кадров не касается —
- * пол пользователя вне React-хука неизвестен, а качать не ту пару кадров означало
- * бы тратить трафик впустую. Молча, если снимок не включали или он свежий: фоновый
+ * Подтянуть только новые кадры уже скачанной программы: список рамок считается заново
+ * по снимку справочника, `stageFrames` пропускает те, что уже лежат, и выбрасывает
+ * прежнюю версию того же пути. Ничего не затирается целиком — пересъёмка одного кадра
+ * не должна приводить к перекачке 12 МБ.
+ */
+export async function refreshProgramFrames(
+  userId: string,
+  gender: MediaGender
+): Promise<{ planned: number; fetched: number; bytes: number } | null> {
+  const data = await readProgramSnapshot(userId);
+  if (!data) return null;
+  const plan = planProgramFrames(await readSnapshotRows(), exerciseIdsOf(data), gender);
+  const staged = await stageFrames([...plan.own, ...plan.alternatives]);
+  return { planned: plan.own.length + plan.alternatives.length, ...staged };
+}
+
+/**
+ * Фоновое обновление при старте: структура и история, плюс докачка новых кадров, если
+ * пол пользователя известен. Молча, если снимок не включали или он свежий: фоновый
  * обновляльщик не имеет права мешать работе.
  */
 export async function refreshProgramSnapshotStructure(
-  userId: string | null
+  userId: string | null,
+  gender?: MediaGender
 ): Promise<{ bytes: number; workouts: number; days: number } | null> {
   if (!userId) return null;
   const age = await programSnapshotAgeMs(userId);
   if (age === Infinity || age < PROGRAM_MAX_AGE_MS) return null;
   try {
     const { bytes, workouts, days } = await pullAndSave(userId);
+    if (gender) {
+      await refreshProgramFrames(userId, gender).catch(() => null);
+    }
     return { bytes, workouts, days };
   } catch (e) {
     console.warn('[programSnapshotService] фоновое обновление не удалось:', e);
+    return null;
+  }
+}
+
+/**
+ * Автоскачивание (настройка «Скачивать программу автоматически»): вариант б из спеки —
+ * при входе и после финиша дня скачать программу целиком, если её ещё нет на устройстве
+ * или снимок протух; если снимок свежий — докачать только новые кадры. Молча и без
+ * повторов: отказ сети не показывается, потому что пользователь в этот момент
+ * тренируется, а не настраивает приложение.
+ */
+export async function maybeAutoDownloadProgram(
+  userId: string | null,
+  gender: MediaGender
+): Promise<ProgramDownloadResult | null> {
+  if (!userId) return null;
+  const { autoDownload } = await readOfflineSettings();
+  if (!autoDownload) return null;
+  const age = await programSnapshotAgeMs(userId);
+  if (age !== Infinity && age < PROGRAM_MAX_AGE_MS) {
+    // Снимок живой: пол здесь известен (в отличие от старта приложения), поэтому
+    // пересъёмку кадра можно догнать именно сейчас, а не ждать ручного «Обновить».
+    await refreshProgramFrames(userId, gender).catch(() => null);
+    return null;
+  }
+  try {
+    return await downloadActiveProgram(userId, gender);
+  } catch (e) {
+    console.warn('[programSnapshotService] автоскачивание не удалось:', e);
     return null;
   }
 }

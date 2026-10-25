@@ -1,212 +1,146 @@
 // src/components/settings/OfflineDataSection.tsx
-// Что приложение держит локально: кадры техники (потолок 25 МБ), снимок справочника
-// (~1,9 МБ) и скачанную активную программу. Без этих строк лимиты и возраст копий
-// на устройстве непроверяемы, а «очистить» — единственный выход, когда место
-// понадобилось.
+// Две вещи, которые пользователь реально хочет контролировать: качать ли программу
+// самим и сколько места под кадры. Скачивание и «очистить программу» живут на экране
+// «Программы» в левом нижнем углу — лезть в настройки, чтобы скачать день заранее,
+// долго.
+//
+// Потолок относится только к кадрам (src/lib/mediaCache.ts): снимок справочника и
+// снимки программ вне лимита и не вытесняются — их потеря стоила бы истории
+// тренировок, а не картинки.
 //
 // Кадры — только на телефоне: в браузере их хранит кэш браузера, а гарантию «без
 // сети» там даёт перехватчик запросов, которого в сборке пока нет. Справочник и
 // программа работают на обеих платформах (src/lib/localStore.ts).
-import React, { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
-import { BookOpen, DownloadCloud, ImageOff } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Platform, Text, View } from 'react-native';
+import { DownloadCloud, HardDrive, ImageOff } from 'lucide-react-native';
 import { feedback } from '../../lib/feedback';
-import { FRAME_CACHE_LIMIT_BYTES, clearMediaCache, mediaCacheStats } from '../../lib/mediaCache';
-import { clearSnapshot, readSnapshotRows, snapshotStats } from '../../lib/exerciseSnapshot';
-import { refreshExerciseSnapshot } from '../../services/exerciseSnapshotService';
-import {
-  clearProgramSnapshot,
-  programSnapshotInfo,
-  type ProgramSnapshotInfo,
-} from '../../lib/programSnapshot';
-import { downloadActiveProgram } from '../../services/programSnapshotService';
-import { useStore } from '../../store/useStore';
+import { FRAME_CAP_OPTIONS_MB, clearMediaCache, mediaCacheStats } from '../../lib/mediaCache';
+import { snapshotStats } from '../../lib/exerciseSnapshot';
+import { downloadedProgramIds, programSnapshotInfo } from '../../lib/programSnapshot';
+import { refreshProgramFrames } from '../../services/programSnapshotService';
+import { useOfflineSettings } from '../../hooks/useOfflineSettings';
 import { useMediaGender } from '../../hooks/useMediaGender';
+import { useTheme } from '../../hooks/useTheme';
+import { useStore } from '../../store/useStore';
+import { SPACING } from '../../constants/theme';
 import { commonStyles } from '../../styles/common';
-import { LinkRow, SectionTitle } from './SettingsRows';
+import { createCardStyles } from '../../styles/components/card';
+import { typography } from '../../styles/typography';
+import { PillToggle } from '../ui/PillToggle';
+import { LinkRow, SectionTitle, ToggleRow } from './SettingsRows';
 
-const formatMb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+const MB = 1024 * 1024;
+const formatMb = (bytes: number) => `${(bytes / MB).toFixed(1)} МБ`;
 const human = (bytes: number) =>
-  bytes >= 1024 * 1024 ? formatMb(bytes) : `${(bytes / 1024).toFixed(0)} КБ`;
-
-const dayLabel = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'нет';
+  bytes >= MB ? formatMb(bytes) : `${(bytes / 1024).toFixed(0)} КБ`;
 
 export function OfflineDataSection() {
+  const { colors } = useTheme();
   const userId = useStore((state) => state.userId);
   const gender = useMediaGender();
+  const { settings, updateSettings } = useOfflineSettings();
+  const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
+
   const [frames, setFrames] = useState(() => mediaCacheStats());
   const [catalog, setCatalog] = useState(() => snapshotStats());
-  const [program, setProgram] = useState<ProgramSnapshotInfo | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [program, setProgram] = useState(() => ({ count: 0, bytes: 0, days: 0 }));
 
-  useEffect(() => {
-    void readSnapshotRows().then(() => setCatalog(snapshotStats()));
-  }, []);
-
-  useEffect(() => {
-    void programSnapshotInfo(userId).then(setProgram);
+  const refresh = useCallback(() => {
+    setFrames(mediaCacheStats());
+    setCatalog(snapshotStats());
+    void (async () => {
+      const ids = await downloadedProgramIds(userId);
+      const info = await programSnapshotInfo(userId);
+      setProgram({ count: ids.length, bytes: info.bytes, days: info.days });
+    })();
   }, [userId]);
 
-  const framesDescription =
-    frames.frames === 0
-      ? `Пока пусто. Кадры дня качаются сами, потолок — ${formatMb(FRAME_CACHE_LIMIT_BYTES)}`
-      : `Занято ${formatMb(frames.bytes)} из ${formatMb(FRAME_CACHE_LIMIT_BYTES)} · кадров: ${frames.frames}`;
+  useEffect(refresh, [refresh]);
 
-  const catalogDescription =
-    catalog.rows === 0
-      ? 'Не загружен. Подтянется сам при первом соединении — 1,9 МБ на весь справочник'
-      : `${catalog.rows} позиций · ${human(catalog.bytes)} · обновлён ${dayLabel(catalog.takenAt)}`;
+  const capDescription =
+    Platform.OS === 'web'
+      ? 'В браузере кадры хранит его собственный кэш: переключатель влияет на телефон.'
+      : frames.frames === 0
+        ? 'Пока пусто. Справочник и данные программ считаются отдельно и в этот объём не входят.'
+        : `Кадры техники: ${formatMb(frames.bytes)} из ${formatMb(frames.limit)} · ${frames.frames} шт. ` +
+          'Справочник и данные программ — вне лимита.';
 
-  const programDescription =
-    !program || !program.takenAt
-      ? 'Не скачана. Данные ~0,2 МБ плюс кадры её упражнений и замен'
-      : `${program.days} дней · ${program.workouts} тренировок · ${program.logs} подходов · ${human(program.bytes)} · обновлена ${dayLabel(program.takenAt)}`;
-
-  const onFramesPress = () => {
-    if (frames.frames === 0) {
-      feedback.alert(
-        'Кадры техники',
-        'Пока ничего не скачано. Кадры дня появятся сами, когда ты откроешь тренировку.'
-      );
-      return;
-    }
-    feedback.alert(
-      'Очистить кадры техники?',
-      `Освободим ${formatMb(frames.bytes)}. Без сети картинка подтянётся при первом же просмотре и начнёт скачиваться заново.`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Очистить',
-          style: 'destructive',
-          onPress: () => {
-            void clearMediaCache().then(() => setFrames(mediaCacheStats()));
-          },
+  const onUsagePress = () => {
+    const summary =
+      `Кадры: ${formatMb(frames.bytes)} из ${formatMb(frames.limit)} (${frames.frames} шт).\n` +
+      `Справочник: ${catalog.rows} позиций, ${human(catalog.bytes)}.\n` +
+      `Программы: ${program.count} шт, ${human(program.bytes)}${program.days ? `, ${program.days} дней` : ''}.\n\n` +
+      `«Обновить кадры» докачает только те, которых нет на устройстве или у которых поднялась версия, — ` +
+      `остальное перекачиваться не будет.`;
+    feedback.alert('Что занимает место', summary, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Обновить кадры',
+        onPress: () => {
+          if (!userId) return;
+          void refreshProgramFrames(userId, gender).then((result) => {
+            refresh();
+            feedback.alert(
+              result ? 'Кадры обновлены' : 'Нечего обновлять',
+              result
+                ? `Докачали ${result.fetched} из ${result.planned} рамок (${human(result.bytes)}).`
+                : 'Программа ещё не скачана — сделаешь это на экране «Программы».'
+            );
+          });
         },
-      ]
-    );
-  };
-
-  const onCatalogPress = () => {
-    feedback.alert(
-      'Справочник упражнений',
-      catalog.rows === 0
-        ? 'Локальной копии справочника нет. Обновить сейчас — нужно соединение.'
-        : `Занято ${human(catalog.bytes)}, обновлён ${dayLabel(catalog.takenAt)}. Без копии карточка упражнения, список и подбор замен офлайн не работают.`,
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Очистить',
-          style: 'destructive',
-          onPress: () => {
-            void clearSnapshot().then(() => setCatalog(snapshotStats()));
-          },
+      },
+      {
+        text: 'Очистить кадры',
+        style: 'destructive',
+        onPress: () => {
+          void clearMediaCache().then(refresh);
         },
-        {
-          text: 'Обновить',
-          onPress: () => {
-            void refreshExerciseSnapshot(true).then((result) => {
-              setCatalog(snapshotStats());
-              if (!result) {
-                feedback.alert(
-                  'Не обновлено',
-                  'Соединения нет или справочник сейчас недоступен. Старая копия осталась на месте.'
-                );
-              }
-            });
-          },
-        },
-      ]
-    );
-  };
-
-  const finishDownload = (result: Awaited<ReturnType<typeof downloadActiveProgram>> | null) => {
-    setBusy(false);
-    void programSnapshotInfo(userId).then(setProgram);
-    if (!result) {
-      feedback.alert(
-        'Не скачано',
-        'Нет соединения, или активная программа не найдена. Старая копия осталась на месте.'
-      );
-      return;
-    }
-    feedback.alert(
-      'Программа скачана',
-      `Данных ${human(result.bytes)} (${result.days} дней, ${result.exercises} строк, ${result.logs} подходов). ` +
-        `Кадры упражнений: ${result.framesOwn.planned} шт, скачано ${human(result.framesOwn.bytes)}. ` +
-        `Кадры замен: ${result.framesAlternatives.planned} шт, скачано ${human(result.framesAlternatives.bytes)}.`
-    );
-  };
-
-  const onProgramPress = () => {
-    if (!userId) {
-      feedback.alert('Программа', 'Сначала нужно войти в аккаунт.');
-      return;
-    }
-    const has = Boolean(program?.takenAt);
-    feedback.alert(
-      'Активная программа',
-      has
-        ? 'Скачанные дни открываются без сети вместе с текстами упражнений, подходами и статусами. Замены и их кадры тоже лежат локально.'
-        : 'Скачает программу целиком: дни, подходы, статусы, тексты упражнений и кадры — её и упражнений, которые могут их заменить. Обычно это ~0,2 МБ данных и 2–14 МБ кадров.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        ...(has
-          ? [
-              {
-                text: 'Очистить',
-                style: 'destructive' as const,
-                onPress: () => {
-                  void clearProgramSnapshot(userId).then(() =>
-                    setProgram({
-                      takenAt: null,
-                      bytes: 0,
-                      days: 0,
-                      workouts: 0,
-                      exercises: 0,
-                      logs: 0,
-                    })
-                  );
-                },
-              },
-            ]
-          : []),
-        {
-          text: has ? 'Обновить' : 'Скачать',
-          onPress: () => {
-            if (busy) return;
-            setBusy(true);
-            void downloadActiveProgram(userId, gender)
-              .then(finishDownload)
-              .catch(() => finishDownload(null));
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <View style={commonStyles.section}>
       <SectionTitle title="Офлайн на устройстве" />
-      {Platform.OS !== 'web' ? (
-        <LinkRow
-          icon={ImageOff}
-          title="Кадры техники"
-          description={framesDescription}
-          onPress={onFramesPress}
-        />
-      ) : null}
-      <LinkRow
-        icon={BookOpen}
-        title="Справочник упражнений"
-        description={catalogDescription}
-        onPress={onCatalogPress}
-      />
-      <LinkRow
+      <ToggleRow
         icon={DownloadCloud}
-        title="Активная программа"
-        description={busy ? 'Скачиваю…' : programDescription}
-        onPress={onProgramPress}
+        title="Скачивать программу автоматически"
+        description="При входе в приложение и после завершённого дня. Данные — ~0,2 МБ, кадры программы и её замен — от 2 до 14 МБ. Без сети откроются дни, их подходы и статусы."
+        value={settings.autoDownload}
+        onToggle={(autoDownload) => updateSettings({ autoDownload })}
+      />
+      <View
+        style={[
+          cardStyles.compact,
+          { borderColor: colors.border, borderWidth: 1, marginBottom: SPACING.sm },
+        ]}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md }}>
+          <HardDrive size={20} color={colors.primary} style={{ marginRight: SPACING.sm }} />
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.labelBold, { color: colors.textPrimary }]}>
+              Место на устройстве
+            </Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>
+              {capDescription}
+            </Text>
+          </View>
+        </View>
+        <PillToggle
+          options={FRAME_CAP_OPTIONS_MB.map((mb) => ({ key: String(mb), label: `${mb} МБ` }))}
+          value={String(settings.frameCapMb)}
+          onChange={(key) => {
+            updateSettings({ frameCapMb: Number(key) });
+            refresh();
+          }}
+        />
+      </View>
+      <LinkRow
+        icon={ImageOff}
+        title="Что занимает место"
+        description="Кадры, справочник и скачанные программы: посмотреть, докачать новые кадры или очистить"
+        onPress={onUsagePress}
       />
     </View>
   );

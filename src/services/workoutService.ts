@@ -339,7 +339,10 @@ export async function fetchWorkoutSession(
         .filter((we) => we.workout_id === workoutId)
         .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
       return { ...(row as unknown as SessionWorkoutRow), workout_exercises: rows };
-    }
+    },
+    // Скачанных программ может лежать несколько — день читается из той, которой
+    // принадлежит эта тренировка, а не из той, что качали последней.
+    { workoutId }
   );
 
   const workoutRow = workout as unknown as SessionWorkoutRow;
@@ -402,7 +405,8 @@ export async function fetchWorkoutSession(
             return snapshot.logs.filter((log) =>
               wanted.has(log.workout_exercise_id)
             ) as unknown as SessionLog[];
-          }
+          },
+          { workoutId }
         )
       : Promise.resolve([] as SessionLog[]);
 
@@ -450,7 +454,8 @@ export async function fetchWorkoutSession(
                   workout_exercises: { exercise_id: we.exercise_id ?? '' },
                 } as unknown as RecentLog;
               });
-          }
+          },
+          { workoutId }
         )
       : Promise.resolve([] as RecentLog[]);
 
@@ -460,7 +465,8 @@ export async function fetchWorkoutSession(
     (snapshot) =>
       snapshot.painEvents.filter(
         (event) => event.workout_id === workoutId
-      ) as unknown as PainEvent[]
+      ) as unknown as PainEvent[],
+    { workoutId }
   );
 
   const [logs, recentLogs, referenceData, painEvents] = await Promise.all([

@@ -2,10 +2,15 @@
 // Локальное хранилище кадров техники: на экране тренировки и в блоке разминки
 // картинка берётся со телефона, а не с хоста, если мы её уже скачали.
 //
-// Потолок — 25 МБ (FRAME_CACHE_LIMIT_BYTES), вытеснение по давности обращения.
-// Рама ~54 КБ, день тренировки — 6–10 упражнений × 2 кадра ≈ до 1,1 МБ, круг
-// программы ≈ 5–8 МБ: потолок выбран с запасом. Справочник целиком на телефон не
-// ездит бы — 1950 рамок это ~103 МБ.
+// Потолок — по умолчанию 25 МБ, пользователь меняет его в настройках (25 / 50 / 100).
+// Вытеснение по давности обращения. Рама ~54 КБ, день тренировки — 6–10 упражнений ×
+// 2 кадра ≈ до 1,1 МБ, круг программы ≈ 5–8 МБ, программа с заменами ≈ 12–17 МБ:
+// 25 МБ держит одну программу с запасом, 50 — уже две. Справочник целиком на телефон
+// не ездит: 1950 рамок это ~103 МБ.
+//
+// Потолок относится ТОЛЬКО к кадрам. Снимок справочника (~1,9 МБ) и снимки программ
+// (~0,1–0,2 МБ на программу) живут вне него и не вытесняются: их размер мал, а
+// потеря означала бы потерю истории тренировок, а не картинки.
 //
 // Почему своя папка, а не штатный кэш загрузки: `expo-image` 3.0.11 не отдаёт
 // настройку объёма дискового кэша, то есть его рост нам не ограничить. Здесь рост
@@ -24,8 +29,25 @@ const DIR_NAME = 'exercise-frames';
 const INDEX_NAME = 'index.json';
 /** Меняй при несовместимой форме индекса — старый снимок выбрасывается целиком. */
 const INDEX_VERSION = 1;
-/** Сколько байт занимаем на телефоне: 25 МБ ≈ 450 рамок. */
-export const FRAME_CACHE_LIMIT_BYTES = 25 * 1024 * 1024;
+/** Варианты потолка, которые предлагает настройка: 25 МБ ≈ 450 рамок. */
+export const FRAME_CAP_OPTIONS_MB = [25, 50, 100] as const;
+export const DEFAULT_FRAME_CAP_MB: number = FRAME_CAP_OPTIONS_MB[0];
+
+/**
+ * Текущий потолок в байтах. Живёт модульной переменной, а не константой, потому что
+ * его меняет пользователь: настройки читают сохранённое значение при старте и зовут
+ * `setFrameCacheLimitBytes` до первого подогрева кадров. Меньше выбранного хранилище
+ * не ужимается силой — вытеснение до нового потолка происходит по мере записи.
+ */
+let limitBytes = DEFAULT_FRAME_CAP_MB * 1024 * 1024;
+
+export function setFrameCacheLimitBytes(bytes: number): void {
+  if (Number.isFinite(bytes) && bytes > 0) limitBytes = Math.round(bytes);
+}
+
+export function frameCacheLimitBytes(): number {
+  return limitBytes;
+}
 /** Параллельных скачиваний: хост — raw.githubusercontent, не надо его злить. */
 const DOWNLOAD_CONCURRENCY = 3;
 /** Отсрочка записи индекса: метку обращения трогаем на каждый показ кадра. */
@@ -192,10 +214,14 @@ export function resolveFrame(uri: string): string {
   return frameUri(entry.name);
 }
 
-/** Занятый объём и число кадров — для строки в настройках. */
-export function mediaCacheStats(): { bytes: number; frames: number } {
+/** Занятый объём, число кадров и текущий потолок — для строки в настройках. */
+export function mediaCacheStats(): { bytes: number; frames: number; limit: number } {
   const list = Object.values(entries ?? {});
-  return { bytes: list.reduce((sum, entry) => sum + entry.bytes, 0), frames: list.length };
+  return {
+    bytes: list.reduce((sum, entry) => sum + entry.bytes, 0),
+    frames: list.length,
+    limit: limitBytes,
+  };
 }
 
 function dropUrl(url: string) {
@@ -226,7 +252,7 @@ function evictFor(incomingBytes: number) {
   let total = Object.values(entries).reduce((sum, entry) => sum + entry.bytes, 0) + incomingBytes;
   const byAge = Object.entries(entries).sort((a, b) => a[1].used - b[1].used);
   for (const [url, entry] of byAge) {
-    if (total <= FRAME_CACHE_LIMIT_BYTES) break;
+    if (total <= limitBytes) break;
     total -= entry.bytes;
     dropUrl(url);
   }
@@ -241,20 +267,28 @@ async function downloadOne(url: string): Promise<string> {
   return url;
 }
 
+/** Что вернул подогрев: сколько рамок докачалось и сколько байт это заняло. */
+export type StageResult = { fetched: number; bytes: number };
+
 /**
- * Скачивает недостающие кадры. Ошибки (нет связи, 404, переполнение диска) глушит:
- * подогрев — улучшение, а не зависимость, интерфейс продолжает ходить в сеть.
+ * Прогресс скачивания: `(готово, план)` — число готовых рамок и весь план, который
+ * передал вызывающий. Считается по плану, а не по «недостающим»: иначе повторное
+ * нажатие «Обновить» показывало бы 0 % вместо «всё уже на месте».
  */
+export type FrameProgress = (done: number, planned: number) => void;
+
 /**
  * Веб: своего файлового хранилища там нет, поэтому подогрев = запрос кадра, ответ
  * которого остаётся в браузерном кэше. Перезагрузку страницы такой кэш переживает,
  * а отсутствие сети — не гарантированно: чтобы кадр открывался без интернета, нужен
  * перехватчик запросов (service worker), и он вне этого модуля.
  */
-async function stageFramesWeb(urls: string[]): Promise<{ fetched: number; bytes: number }> {
+async function stageFramesWeb(urls: string[], onProgress?: FrameProgress): Promise<StageResult> {
   const queue = [...new Set(urls.filter(isRemote))];
+  const planned = queue.length;
   let fetched = 0;
   let bytes = 0;
+  onProgress?.(0, planned);
   for (let i = 0; i < queue.length; i += DOWNLOAD_CONCURRENCY) {
     const batch = queue.slice(i, i + DOWNLOAD_CONCURRENCY);
     const results = await Promise.allSettled(
@@ -269,21 +303,33 @@ async function stageFramesWeb(urls: string[]): Promise<{ fetched: number; bytes:
       fetched += 1;
       bytes += result.value;
     }
+    onProgress?.(fetched, planned);
   }
   return { fetched, bytes };
 }
 
+/**
+ * Скачивает недостающие кадры: уже лежащие в хранилище не перекачиваются, старая
+ * версия того же пути выбрасывается, переполнение потолка решается вытеснением по
+ * давности. Ошибки (нет связи, 404, полный диск) глушит: подогрев — улучшение, а не
+ * зависимость, интерфейс продолжает ходить в сеть.
+ */
 export async function stageFrames(
-  urls: (string | null | undefined)[]
-): Promise<{ fetched: number; bytes: number }> {
+  urls: (string | null | undefined)[],
+  onProgress?: FrameProgress
+): Promise<StageResult> {
   const list = urls.filter((u): u is string => !!u);
-  if (Platform.OS === 'web') return stageFramesWeb(list);
+  if (Platform.OS === 'web') return stageFramesWeb(list, onProgress);
   await initMediaCache();
   if (!entries) return { fetched: 0, bytes: 0 };
-  const queue = [...new Set(list.filter(isRemote))].filter((url) => !entries![url]);
+  const planned = [...new Set(list.filter(isRemote))];
+  const queue = planned.filter((url) => !entries![url]);
+  // Уже скачанное засчитывается в прогресс сразу: «Обновить» без новых кадров
+  // обязано показать 100 %, а не зависнуть на нуле.
+  let fetched = planned.length - queue.length;
+  onProgress?.(fetched, planned.length);
   if (queue.length === 0) return { fetched: 0, bytes: 0 };
   if (!ensureDir()) return { fetched: 0, bytes: 0 };
-  let fetched = 0;
   let bytes = 0;
   for (let i = 0; i < queue.length; i += DOWNLOAD_CONCURRENCY) {
     const batch = queue.slice(i, i + DOWNLOAD_CONCURRENCY);
@@ -297,8 +343,9 @@ export async function stageFrames(
       fetched += 1;
       bytes += entry.bytes;
     });
+    onProgress?.(fetched, planned.length);
   }
-  if (fetched > 0) writeIndex();
+  if (bytes > 0) writeIndex();
   return { fetched, bytes };
 }
 
