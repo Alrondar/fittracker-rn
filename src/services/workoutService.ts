@@ -1,4 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { networkOrSnapshot } from '../lib/exerciseSnapshot';
+import { networkOrProgram } from '../lib/programSnapshot';
+import { toSessionFields } from '../utils/exerciseSearchLocal';
 import { AlternativeExercise } from '../types/workout';
 import { getExerciseReferenceData } from './exerciseReferenceService';
 import { getExerciseContraindications } from './injuriesService';
@@ -309,17 +312,35 @@ export interface WorkoutSessionData {
 /**
  * Загружает все данные для workout session параллельно.
  */
-export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSessionData> {
-  // 1. Загружаем workout и workout_exercises
-  const { data: workout, error } = await supabase
-    .from('workouts')
-    .select(
-      `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
-    )
-    .eq('id', workoutId)
-    .single();
-
-  if (error) throw error;
+export async function fetchWorkoutSession(
+  workoutId: string,
+  userId?: string | null
+): Promise<WorkoutSessionData> {
+  // 1. Загружаем workout и workout_exercises. При отказе сети — из снимка активной
+  // программы: это те же строки тех же таблиц, поэтому день открывается офлайн без
+  // отдельной разметки «что смотреть».
+  const workout = await networkOrProgram(
+    userId ?? null,
+    async () => {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select(
+          `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
+        )
+        .eq('id', workoutId)
+        .single();
+      if (error) throw error;
+      return data as unknown as SessionWorkoutRow;
+    },
+    (snapshot) => {
+      const row = snapshot.workouts.find((item) => item.id === workoutId);
+      if (!row) return null;
+      const rows = snapshot.workoutExercises
+        .filter((we) => we.workout_id === workoutId)
+        .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      return { ...(row as unknown as SessionWorkoutRow), workout_exercises: rows };
+    }
+  );
 
   const workoutRow = workout as unknown as SessionWorkoutRow;
   const workoutExercises = workoutRow.workout_exercises || [];
@@ -328,51 +349,130 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
     .map((we) => we.exercise_id)
     .filter((id): id is string => !!id);
 
-  // 2. Загружаем exercises
-  const { data: exerciseRows, error: exerciseError } = await supabase
-    .from('exercises')
-    .select(
-      `id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url`
-    )
-    .in('id', exerciseIds);
+  // 2. Загружаем exercises — при отказе сети берём строки из снимка справочника
+  // (src/lib/exerciseSnapshot.ts). Полный охват обязателен: если в снимке нет хотя
+  // бы одного упражнения дня, возвращать частичный список нельзя — упражнение
+  // исчезло бы из тренировки молча, ровно как в случае неразрешённого exercise_name.
+  const exerciseRows = await networkOrSnapshot(
+    async () => {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select(
+          `id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url`
+        )
+        .in('id', exerciseIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    (rows) => {
+      const wanted = new Set(exerciseIds);
+      const found = rows.filter((row) => wanted.has(row.id));
+      return found.length === wanted.size ? found.map(toSessionFields) : null;
+    }
+  );
 
-  if (exerciseError) throw exerciseError;
-
-  // 3. ПАРАЛЛЕЛЬНО грузим logs + recentLogs + referenceData + pain events
+  // 3. ПАРАЛЛЕЛЬНО грузим logs + recentLogs + referenceData + pain events.
+  // Строки подходов раньше при отказе сети молча превращались в «пусто» — сейчас
+  // они берутся из снимка программы, иначе день без сети показывал бы сделанное
+  // как несделанное.
   const referenceDataPromise = getExerciseReferenceData(exerciseIds);
-  const painEventsPromise = painService.getPainEventsForWorkout(workoutId);
 
-  const [logsRes, recentLogsRes, referenceData, painEvents] = await Promise.all([
+  // Форма строки подхода: то, что кладётся в группы, плюс id строки упражнения,
+  // по которому эти группы собираются.
+  type SessionLog = WorkoutSessionData['logsByWorkoutExercise'][string][number] & {
+    workout_exercise_id: string;
+  };
+
+  const logsPromise =
     workoutExerciseIds.length > 0
-      ? supabase
-          .from('workout_logs')
-          .select(
-            'workout_exercise_id, set_number, weight_kg, reps, reps_left, reps_right, rpe, rir, difficulty, is_warmup, is_estimated_reps'
-          )
-          .in('workout_exercise_id', workoutExerciseIds)
-      : Promise.resolve({ data: null, error: null }),
+      ? networkOrProgram<SessionLog[]>(
+          userId ?? null,
+          async () => {
+            const { data, error } = await supabase
+              .from('workout_logs')
+              .select(
+                'workout_exercise_id, set_number, weight_kg, reps, reps_left, reps_right, rpe, rir, difficulty, is_warmup, is_estimated_reps'
+              )
+              .in('workout_exercise_id', workoutExerciseIds);
+            if (error) throw error;
+            return (data ?? []) as unknown as SessionLog[];
+          },
+          (snapshot) => {
+            const wanted = new Set(workoutExerciseIds);
+            return snapshot.logs.filter((log) =>
+              wanted.has(log.workout_exercise_id)
+            ) as unknown as SessionLog[];
+          }
+        )
+      : Promise.resolve([] as SessionLog[]);
 
+  const recentLogsPromise =
     exerciseIds.length > 0
-      ? supabase
-          .from('workout_logs')
-          // VF-2: reps_left/reps_right — без них previous для unilateral = null → NO_HISTORY
-          .select(
-            'weight_kg, reps, reps_left, reps_right, rpe, set_number, workout_exercises(exercise_id)'
-          )
-          .in('workout_exercises.exercise_id', exerciseIds)
-          .neq('workout_exercises.workout_id', workoutId)
-          .eq('is_warmup', false) // ENG-13: previous data только из рабочих сетов
-          .order('created_at', { ascending: false })
-          .limit(300)
-      : Promise.resolve({ data: null, error: null }),
+      ? networkOrProgram<RecentLog[]>(
+          userId ?? null,
+          async () => {
+            const { data, error } = await supabase
+              .from('workout_logs')
+              // VF-2: reps_left/reps_right — без них previous для unilateral = null → NO_HISTORY
+              .select(
+                'weight_kg, reps, reps_left, reps_right, rpe, set_number, workout_exercises(exercise_id)'
+              )
+              .in('workout_exercises.exercise_id', exerciseIds)
+              .neq('workout_exercises.workout_id', workoutId)
+              .eq('is_warmup', false) // ENG-13: previous data только из рабочих сетов
+              .order('created_at', { ascending: false })
+              .limit(300);
+            if (error) throw error;
+            return (data ?? []) as unknown as RecentLog[];
+          },
+          (snapshot) => {
+            // workout_id у лога нет — он выводится через строку упражнения, как и в
+            // запросе: чужие тренировки той же программы остаёмся видеть, текущую — нет.
+            const weById = new Map(snapshot.workoutExercises.map((we) => [we.id, we]));
+            const wanted = new Set(exerciseIds);
+            return snapshot.logs
+              .filter((log) => {
+                const we = weById.get(log.workout_exercise_id);
+                if (!we?.exercise_id || !wanted.has(we.exercise_id)) return false;
+                return !log.is_warmup && we.workout_id !== workoutId;
+              })
+              .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+              .slice(0, 300)
+              .map((log) => {
+                const we = weById.get(log.workout_exercise_id)!;
+                return {
+                  weight_kg: log.weight_kg,
+                  reps: log.reps,
+                  reps_left: log.reps_left,
+                  reps_right: log.reps_right,
+                  rpe: log.rpe,
+                  set_number: log.set_number,
+                  workout_exercises: { exercise_id: we.exercise_id ?? '' },
+                } as unknown as RecentLog;
+              });
+          }
+        )
+      : Promise.resolve([] as RecentLog[]);
 
+  const painEventsPromise = networkOrProgram(
+    userId ?? null,
+    () => painService.getPainEventsForWorkout(workoutId),
+    (snapshot) =>
+      snapshot.painEvents.filter(
+        (event) => event.workout_id === workoutId
+      ) as unknown as PainEvent[]
+  );
+
+  const [logs, recentLogs, referenceData, painEvents] = await Promise.all([
+    logsPromise,
+    recentLogsPromise,
     referenceDataPromise,
     painEventsPromise,
   ]);
 
   // 4. Группируем logs по workout_exercise_id
   const logsByWorkoutExercise: WorkoutSessionData['logsByWorkoutExercise'] = {};
-  logsRes.data?.forEach((log) => {
+  logs.forEach((log) => {
     if (!logsByWorkoutExercise[log.workout_exercise_id]) {
       logsByWorkoutExercise[log.workout_exercise_id] = [];
     }
@@ -381,9 +481,9 @@ export async function fetchWorkoutSession(workoutId: string): Promise<WorkoutSes
 
   return {
     workoutRow,
-    exerciseRows: (exerciseRows ?? []) as SessionExerciseRow[],
+    exerciseRows: exerciseRows as unknown as SessionExerciseRow[],
     logsByWorkoutExercise,
-    recentLogs: (recentLogsRes.data ?? []) as RecentLog[],
+    recentLogs,
     referenceData,
     painEvents,
   };
@@ -465,14 +565,30 @@ export async function fetchAlternatives(
 
   // 2. Загружаем данные упражнений + исходное упражнение
   const allIds = [...alternativeIds, exerciseId];
-  const { data: exercisesData, error: exercisesError } = await supabase
-    .from('exercises')
-    .select(
-      'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url, movement_pattern, difficulty'
-    )
-    .in('id', allIds);
-
-  if (exercisesError) throw exercisesError;
+  const exercisesData = await networkOrSnapshot(
+    async () => {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select(
+          'id, name, primary_muscles, secondary_muscles, technique, settings, benefits, risks, media_url, movement_pattern, difficulty'
+        )
+        .in('id', allIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+    (rows) => {
+      const wanted = new Set(allIds);
+      const found = rows.filter((row) => wanted.has(row.id));
+      // Исходное упражнение обязано быть в снимке: без него движку нечем оценить
+      // контекст (паттерн и сложность), а списывать это на «замен нет» нельзя.
+      if (!found.some((row) => row.id === exerciseId)) return null;
+      return found.map((row) => ({
+        ...toSessionFields(row),
+        movement_pattern: row.movement_pattern,
+        difficulty: row.difficulty,
+      }));
+    }
+  );
 
   const referenceData = await getExerciseReferenceData(alternativeIds);
 

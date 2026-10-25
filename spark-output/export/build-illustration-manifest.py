@@ -17,13 +17,14 @@
 import argparse
 import json
 import os
+from media_root import media_root
 import re
 import sys
 import urllib.request
 from collections import Counter
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DATA = os.path.join(ROOT, 'data', 'exercises')
+DATA = media_root()
 OUT = os.path.join(ROOT, 'spark-output', 'export', 'illustrations-manifest.json')
 
 # Ставка и коэффициенты — из замера 08.10 (отчёт illustrations-full-catalog-effort).
@@ -37,7 +38,7 @@ MULT = {
     'olympic weightlifting': 1.80,
 }
 NOREF_MULT = 1.35
-OUR_HOST_MARK = 'Alrondar/fittracker-rn'
+OUR_HOST_MARK = ('Alrondar/fittracker-exercise-media', 'Alrondar/fittracker-rn')
 UPSTREAM_MARK = 'yuhonas/free-exercise-db'
 
 
@@ -96,7 +97,7 @@ def build(rows):
         url = r.get('media_url')
         name_eng = r.get('name_eng') or derive_name_eng(url)
         fid = slug(name_eng) if name_eng else None
-        host = ('ours' if url and OUR_HOST_MARK in url else
+        host = ('ours' if url and any(m in url for m in OUR_HOST_MARK) else
                 'upstream' if url and UPSTREAM_MARK in url else
                 'none' if not url else 'other')
         frames = frames_present(fid) if fid else 0

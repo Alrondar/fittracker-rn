@@ -19,6 +19,11 @@ import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
 import { FeedbackDialog } from '../src/components/ui/FeedbackDialog';
 import { attachQueryPersistence, detachQueryPersistence } from '../src/lib/queryPersistence';
 import { applyWebFixes } from '../src/lib/webFixes';
+import { initMediaCache } from '../src/lib/mediaCache';
+import { readSnapshotRows } from '../src/lib/exerciseSnapshot';
+import { clearLastProgramSnapshot } from '../src/lib/programSnapshot';
+import { refreshExerciseSnapshot } from '../src/services/exerciseSnapshotService';
+import { refreshProgramSnapshotStructure } from '../src/services/programSnapshotService';
 import { Q } from '../src/lib/queryPolicy';
 import { APP_LOADABLE_FONTS } from '../src/constants/fonts';
 
@@ -88,6 +93,16 @@ function RootLayoutContent() {
             console.warn('[queryPersistence] cold-start attach failed:', e);
           }
         }
+        // Индекс локальных кадров техники читаем до снятия гейта: первый же экран
+        // должен грузить уже скачанные файлы, а не начинать скачивание на показе.
+        // Кадры — справочник, а не данные пользователя, поэтому при выходе их не трогаем.
+        await initMediaCache();
+        // Снимок справочника поднимаем и обновляем в фоне: файл (1,9 МБ) не должен
+        // стоять на критическом пути старта, а протухший снимок сам себя не догрузит.
+        void readSnapshotRows().then(() => refreshExerciseSnapshot(false));
+        // Снимок активной программы обновляем в фоне, но только если пользователь
+        // сам его включал (нет снимка — нет трафика) и он протух.
+        void refreshProgramSnapshotStructure(uid);
       })
       .catch((error) => {
         console.error('Session load error:', error);
@@ -112,6 +127,9 @@ function RootLayoutContent() {
       if (event === 'SIGNED_OUT') {
         queryClient.clear();
         void detachQueryPersistence({ erase: true });
+        // Снимок программы — данные пользователя: уходить должен вместе с профилем.
+        // Справочник и кадры остаются: это содержимое каталога, а не личная история.
+        void clearLastProgramSnapshot();
       }
 
       const uid = session?.user?.id ?? null;

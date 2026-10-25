@@ -1,6 +1,8 @@
 // src/services/injuriesService.ts
 
 import { supabase } from '../lib/supabase';
+import { networkOrSnapshot } from '../lib/exerciseSnapshot';
+import { contraindicationRowsLocal } from '../utils/exerciseSearchLocal';
 
 // ============================================================================
 // ТИПЫ
@@ -80,10 +82,7 @@ export async function markInjuryRecovered(id: string): Promise<void> {
 }
 
 export async function deleteInjury(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('user_injuries')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('user_injuries').delete().eq('id', id);
 
   if (error) throw error;
 }
@@ -104,29 +103,39 @@ export async function deleteInjury(id: string): Promise<void> {
  * @returns Record<exercise_id, Array<{ body_part, injury_type, level }>>.
  */
 export async function getExerciseContraindications(
-  exerciseIds: string[],
+  exerciseIds: string[]
 ): Promise<
-  Record<
-    string,
-    { body_part: string; injury_type: string; level: 'avoid' | 'caution' }[]
-  >
+  Record<string, { body_part: string; injury_type: string; level: 'avoid' | 'caution' }[]>
 > {
   if (exerciseIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from('injury_exercise_warnings')
-    .select('exercise_id, body_part, injury_type, level')
-    .in('exercise_id', exerciseIds)
-    .eq('level', 'avoid');
-
-  if (error) throw error;
+  const data = await networkOrSnapshot(
+    async () => {
+      const { data: rows, error } = await supabase
+        .from('injury_exercise_warnings')
+        .select('exercise_id, body_part, injury_type, level')
+        .in('exercise_id', exerciseIds)
+        .eq('level', 'avoid');
+      if (error) throw error;
+      return rows ?? [];
+    },
+    (snapshotRows) => {
+      const wanted = new Set(exerciseIds);
+      const known = snapshotRows.filter((row) => wanted.has(row.id));
+      // Проверка безопасности: неполное покрытие здесь хуже отказа. Неизвестная
+      // позиция не имеет права становиться «противопоказаний нет», поэтому
+      // недосчитанные id просто пробрасывают сетевую ошибку.
+      if (known.length !== wanted.size) return null;
+      return contraindicationRowsLocal(known);
+    }
+  );
 
   const result: Record<
     string,
     { body_part: string; injury_type: string; level: 'avoid' | 'caution' }[]
   > = {};
 
-  (data || []).forEach((row) => {
+  data.forEach((row) => {
     if (!result[row.exercise_id]) result[row.exercise_id] = [];
     result[row.exercise_id].push({
       body_part: row.body_part,

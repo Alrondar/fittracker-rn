@@ -208,7 +208,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     setLoadError(null);
     try {
       perfMark('load:q1-start');
-      const data = await fetchWorkoutSession(workoutId);
+      const data = await fetchWorkoutSession(workoutId, userId);
       perfSince('load:q1-start', 'Q1: workout + exercises + logs (параллельно)');
 
       const {

@@ -1,4 +1,12 @@
 import { supabase } from '../lib/supabase';
+import { networkOrSnapshot } from '../lib/exerciseSnapshot';
+import {
+  relationshipsOf,
+  toWarmupFull,
+  toWarmupHeavy,
+  toWarmupPlanRow,
+  warmupPoolLocal,
+} from '../utils/exerciseSearchLocal';
 import {
   UserInjury,
   targetsInjuredMuscle,
@@ -148,10 +156,22 @@ export const warmupService = {
       const dayIds = mainExercises.map((ex) => ex.id);
       const dayPatterns: Record<string, number> = {};
       if (dayIds.length > 0) {
-        const { data: dayRows } = await supabase
-          .from('exercises')
-          .select('id, movement_pattern')
-          .in('id', dayIds);
+        const dayRows = await networkOrSnapshot(
+          async () => {
+            const { data, error } = await supabase
+              .from('exercises')
+              .select('id, movement_pattern')
+              .in('id', dayIds);
+            if (error) throw error;
+            return data ?? [];
+          },
+          (rows) => {
+            const wanted = new Set(dayIds);
+            const found = rows.filter((row) => wanted.has(row.id));
+            if (found.length !== wanted.size) return null;
+            return found.map((row) => ({ id: row.id, movement_pattern: row.movement_pattern }));
+          }
+        );
         (dayRows ?? []).forEach((row: { movement_pattern?: string | null }) => {
           const pattern = row.movement_pattern?.toLowerCase();
           if (!pattern) return;
@@ -162,12 +182,18 @@ export const warmupService = {
       // 3. Кандидаты: ВЕСЬ пул (WARMUP-3b убрал limit(80) без ORDER BY — раньше
       //    скоринг видел 80 из 178 строк в физическом порядке страниц),
       //    order('name') — чтобы результат не зависел от переупаковки страниц.
-      const { data: rows, error } = await supabase
-        .from('exercises')
-        .select(WARMUP_PLAN_FIELDS)
-        .or(WARMUP_POOL_OR)
-        .order('name');
-      if (error || !rows) return empty;
+      const rows = await networkOrSnapshot(
+        async () => {
+          const { data, error } = await supabase
+            .from('exercises')
+            .select(WARMUP_PLAN_FIELDS)
+            .or(WARMUP_POOL_OR)
+            .order('name');
+          if (error || !data) throw new Error(error?.message ?? 'пул разминки не пришёл');
+          return data;
+        },
+        (snapshotRows) => warmupPoolLocal(snapshotRows).map(toWarmupPlanRow)
+      );
 
       const candidateIds = rows.map((r) => r.id);
       // Оборудование — у канонического владельца (exerciseReferenceService),
@@ -213,14 +239,27 @@ export const warmupService = {
 
       // 5. Тяжёлые поля — ТОЛЬКО финальным упражнениям (PERF-3).
       const finalIds = plan.exercises.map((e) => e.id);
-      const [{ data: heavyRows }, referenceData] = await Promise.all([
-        supabase
-          .from('exercises')
-          .select('id, technique, benefits, risks, media_url')
-          .in('id', finalIds),
+      const [heavyRows, referenceData] = await Promise.all([
+        networkOrSnapshot(
+          async () => {
+            const { data, error } = await supabase
+              .from('exercises')
+              .select('id, technique, benefits, risks, media_url')
+              .in('id', finalIds);
+            if (error) throw error;
+            return data ?? [];
+          },
+          (rows) => {
+            const wanted = new Set(finalIds);
+            const found = rows.filter((row) => wanted.has(row.id)).map((row) => toWarmupHeavy(row));
+            // Частичное покрытие здесь допустимо: список разминки строит движок, а
+            // отсутствие текста у одной позиции не должно ронять весь подбор.
+            return found.length > 0 ? found : null;
+          }
+        ),
         getExerciseReferenceData(finalIds),
       ]);
-      const heavyById = new Map((heavyRows ?? []).map((h) => [h.id, h] as const));
+      const heavyById = new Map(heavyRows.map((h) => [h.id, h] as const));
 
       const exercises: WarmupExercise[] = plan.exercises.map((planned) => {
         const heavy = heavyById.get(planned.id);
@@ -277,15 +316,31 @@ export const warmupService = {
       const ALT_LIMIT = 20;
 
       // 1. Именованные аналоги из графа связей.
-      const { data: relRows } = await supabase
-        .from('exercise_relationships')
-        .select('related_exercise_id, relation_type')
-        .eq('exercise_id', exerciseId)
-        .in('status', ['approved', 'suggested'])
-        .limit(ALT_LIMIT);
+      const relRows = await networkOrSnapshot(
+        async () => {
+          const { data, error } = await supabase
+            .from('exercise_relationships')
+            .select('related_exercise_id, relation_type')
+            .eq('exercise_id', exerciseId)
+            .in('status', ['approved', 'suggested'])
+            .limit(ALT_LIMIT);
+          if (error) throw error;
+          return (data ?? []) as { related_exercise_id: string; relation_type: string | null }[];
+        },
+        (rows) => {
+          const source = rows.find((row) => row.id === exerciseId);
+          if (!source) return null;
+          return relationshipsOf(source)
+            .slice(0, ALT_LIMIT)
+            .map((rel) => ({
+              related_exercise_id: rel.related_exercise_id,
+              relation_type: rel.relation_type,
+            }));
+        }
+      );
 
       const relationById = new Map<string, WarmupRelationType>();
-      for (const r of relRows ?? []) {
+      for (const r of relRows) {
         if (r.related_exercise_id !== exerciseId && !relationById.has(r.related_exercise_id)) {
           relationById.set(
             r.related_exercise_id,
@@ -297,12 +352,21 @@ export const warmupService = {
       const candidateIds = [...relationById.keys()];
       let curated: WarmupAltRow[] = [];
       if (candidateIds.length > 0) {
-        const { data } = await supabase
-          .from('exercises')
-          .select(WARMUP_FULL_FIELDS)
-          .in('id', candidateIds)
-          .or(WARMUP_POOL_OR);
-        curated = data ?? [];
+        curated = await networkOrSnapshot(
+          async () => {
+            const { data, error } = await supabase
+              .from('exercises')
+              .select(WARMUP_FULL_FIELDS)
+              .in('id', candidateIds)
+              .or(WARMUP_POOL_OR);
+            if (error) throw error;
+            return (data ?? []) as WarmupAltRow[];
+          },
+          (rows) => {
+            const wanted = new Set(candidateIds);
+            return warmupPoolLocal(rows.filter((row) => wanted.has(row.id))).map(toWarmupFull);
+          }
+        );
       }
       for (const ex of curated) relationById.set(ex.id, relationById.get(ex.id) ?? 'alternative');
       const curatedIds = new Set(curated.map((ex) => ex.id));
@@ -311,17 +375,33 @@ export const warmupService = {
       let muscleFill: WarmupAltRow[] = [];
       const remaining = ALT_LIMIT - curated.length;
       if (remaining > 0) {
-        let query = supabase
-          .from('exercises')
-          .select(WARMUP_FULL_FIELDS)
-          .neq('id', exerciseId)
-          .or(WARMUP_POOL_OR)
-          .limit(remaining + curated.length);
-        if (sourceMuscles.primary_muscles.length > 0) {
-          query = query.overlaps('primary_muscles', sourceMuscles.primary_muscles);
-        }
-        const { data } = await query;
-        muscleFill = (data ?? []).filter((ex) => !curatedIds.has(ex.id)).slice(0, remaining);
+        const pool = await networkOrSnapshot(
+          async () => {
+            let query = supabase
+              .from('exercises')
+              .select(WARMUP_FULL_FIELDS)
+              .neq('id', exerciseId)
+              .or(WARMUP_POOL_OR)
+              .limit(remaining + curated.length);
+            if (sourceMuscles.primary_muscles.length > 0) {
+              query = query.overlaps('primary_muscles', sourceMuscles.primary_muscles);
+            }
+            const { data, error } = await query;
+            if (error) throw error;
+            return (data ?? []) as WarmupAltRow[];
+          },
+          (rows) => {
+            const wanted = sourceMuscles.primary_muscles;
+            return warmupPoolLocal(rows)
+              .filter((row) => row.id !== exerciseId)
+              .filter(
+                (row) => wanted.length === 0 || row.primary_muscles.some((m) => wanted.includes(m))
+              )
+              .slice(0, remaining + curated.length)
+              .map(toWarmupFull);
+          }
+        );
+        muscleFill = pool.filter((ex) => !curatedIds.has(ex.id)).slice(0, remaining);
       }
 
       const rows = [...curated, ...muscleFill];

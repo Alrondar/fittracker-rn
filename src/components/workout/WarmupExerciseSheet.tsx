@@ -29,6 +29,7 @@ import { SheetShell } from '../ui/SheetShell';
 import { AppButton } from '../ui/AppButton';
 import { TechniqueMediaSlider } from './TechniqueMediaSlider';
 import { parseMediaUrls } from '../../utils/mediaScheme';
+import { resolveFrame } from '../../lib/mediaCache';
 import { useMediaGender } from '../../hooks/useMediaGender';
 import { ExerciseInfoAccordion } from './ExerciseInfoAccordion';
 import { SectionSubheading } from './sections/ExerciseCardTechnique';
@@ -82,7 +83,8 @@ interface AlternativeRowProps {
 function AlternativeRow({ alt, onPress }: AlternativeRowProps) {
   const { colors } = useTheme();
   const mediaGender = useMediaGender();
-  const thumb = parseMediaUrls(alt.media_url, mediaGender)[0];
+  const remoteThumb = parseMediaUrls(alt.media_url, mediaGender)[0];
+  const thumb = remoteThumb ? resolveFrame(remoteThumb) : undefined;
   return (
     <PressableScale
       accessibilityRole="button"

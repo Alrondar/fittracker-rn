@@ -1,5 +1,11 @@
 import { supabase } from '../lib/supabase';
 import { finishWorkoutAndAdvance } from './workoutService';
+import { networkOrProgram, type ProgramSnapshotData } from '../lib/programSnapshot';
+import {
+  buildWorkoutsData,
+  type ActiveProgramLite,
+  type WorkoutListRow,
+} from '../utils/workoutSections';
 
 export interface ActiveProgram {
   programId: string;
@@ -31,7 +37,33 @@ export interface WorkoutsData {
 }
 
 export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
-  // 1. Активная программа + фазы + прогресс
+  const source = await networkOrProgram(userId, () => loadActiveSource(userId), sourceFromSnapshot);
+  return buildWorkoutsData(source.active, source.workouts);
+}
+
+type ActiveSource = { active: ActiveProgramLite | null; workouts: WorkoutListRow[] };
+
+/**
+ * Строки тренировок программы. Порядок (фаза → неделя → день) задаёт не запрос, а
+ * buildWorkoutsData: у пути из снимка того же запроса нет, а список дней обязан
+ * совпадать с сетевым байт в байт.
+ */
+async function pullWorkoutRows(userId: string, programId: string): Promise<WorkoutListRow[]> {
+  const { data, error } = await supabase
+    .from('workouts')
+    .select(
+      'id, name, description, program_id, phase_number, week_number, day_index, created_at, started_at, finished_at, duration_seconds, skipped_at'
+    )
+    .eq('user_id', userId)
+    .eq('program_id', programId)
+    .order('phase_number', { ascending: true })
+    .order('week_number', { ascending: true })
+    .order('day_index', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as WorkoutListRow[];
+}
+
+async function loadActiveSource(userId: string): Promise<ActiveSource> {
   const { data: userProgram, error: progError } = await supabase
     .from('user_programs')
     .select(
@@ -42,75 +74,46 @@ export async function getWorkoutsData(userId: string): Promise<WorkoutsData> {
     .maybeSingle();
 
   if (progError) throw progError;
-
-  if (!userProgram) {
-    return {
-      activeProgram: null,
-      sections: [],
-      progress: { completed: 0, total: 0 },
-    };
-  }
+  if (!userProgram) return { active: null, workouts: [] };
 
   const prog = Array.isArray(userProgram.programs) ? userProgram.programs[0] : userProgram.programs;
-  const phases = prog?.program_phases || [];
-  const curPhase = userProgram.current_phase ?? 1;
-  const curWeek = userProgram.current_week ?? 1;
-  const curDay = userProgram.current_day ?? 1;
-
-  const activeProgram: ActiveProgram = {
+  const active: ActiveProgramLite = {
     programId: userProgram.program_id,
     name: prog?.name || 'Программа',
-    currentPhase: curPhase,
-    currentWeek: curWeek,
-    currentDay: curDay,
-    phases,
+    currentPhase: userProgram.current_phase ?? 1,
+    currentWeek: userProgram.current_week ?? 1,
+    currentDay: userProgram.current_day ?? 1,
+    phases: prog?.program_phases || [],
   };
 
-  // 2. Тренировки программы (со статусами) — UX-5 Feature 2: +skipped_at
-  const { data: workouts, error: workError } = await supabase
-    .from('workouts')
-    .select(
-      'id, name, description, program_id, phase_number, week_number, day_index, created_at, started_at, finished_at, duration_seconds, skipped_at'
-    )
-    .eq('user_id', userId)
-    .eq('program_id', userProgram.program_id)
-    .order('phase_number', { ascending: true })
-    .order('week_number', { ascending: true })
-    .order('day_index', { ascending: true });
+  return { active, workouts: await pullWorkoutRows(userId, active.programId) };
+}
 
-  if (workError) throw workError;
-
-  const list = workouts || [];
-
-  // 3. Прогресс (выполнено / всего) — FIT-7: пропуск (skipped_at) не считается выполненным
-  const completed = list.filter((w) => w.finished_at && !w.skipped_at).length;
-
-  // 4. Секции по (фаза, неделя)
-  const phaseMap = new Map<number, any>(phases.map((p: any) => [p.phase_number, p]));
-  const groups = new Map<string, any[]>();
-  list.forEach((w) => {
-    const key = `${w.phase_number ?? 1}-${w.week_number ?? 1}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(w);
-  });
-
-  const sections: WorkoutSection[] = Array.from(groups.entries()).map(([key, data]) => {
-    const [phaseNum, weekNum] = key.split('-').map(Number);
-    const phase = phaseMap.get(phaseNum);
-    return {
-      key,
-      phaseNumber: phaseNum,
-      phaseName: phase?.name || `Фаза ${phaseNum}`,
-      phaseType: phase?.phase_type || 'custom',
-      weekNumber: weekNum,
-      data,
-    };
-  });
-
+/** Тот же ActiveSource из снимка программы — без сети и без отдельной логики. */
+function sourceFromSnapshot(data: ProgramSnapshotData): ActiveSource | null {
+  if (!data.userProgram) return null;
   return {
-    activeProgram,
-    sections,
-    progress: { completed, total: list.length },
+    active: {
+      programId: data.programId,
+      name: data.program?.name || 'Программа',
+      currentPhase: data.userProgram.current_phase ?? 1,
+      currentWeek: data.userProgram.current_week ?? 1,
+      currentDay: data.userProgram.current_day ?? 1,
+      phases: data.phases.map((phase) => ({
+        phase_number: phase.phase_number,
+        name: phase.name,
+        phase_type: phase.phase_type,
+      })),
+    },
+    workouts: data.workouts.map((workout) => ({
+      id: workout.id,
+      name: workout.name,
+      phase_number: workout.phase_number,
+      week_number: workout.week_number,
+      day_index: workout.day_index,
+      finished_at: workout.finished_at,
+      skipped_at: workout.skipped_at,
+    })),
   };
 }
 

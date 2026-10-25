@@ -3,15 +3,16 @@
 
 Источник имён и мышц — локальный манифест `illustrations-manifest.json` (снимок прода 08.10)
 плюс `EXTRA` ниже для позиций, заведённых после манифеста; статусы и занятость — прод 14.10
-строкой `PROD` (счётчик ссылок на наш хост сверен 21.10: те же 49 строк), файлы кадров — диск
-`data/exercises/`. Легаси-строки (772 ссылки на yuhonas/free-exercise-db) сюда не попадают
+строкой `PROD` (счётчик ссылок на наш хост сверен 21.10: те же 49 строк), файлы кадров — зеркало
+репозитория медиа (`media_root()`, с 25.10 это `../fittracker-exercise-media/exercises`). Легаси-строки (772 ссылки на yuhonas/free-exercise-db) сюда не попадают
 намеренно: они на странице 1, `image-debt.html`.
 """
 import json
 import os
+from media_root import media_root
 
-HOST = "https://raw.githubusercontent.com/Alrondar/fittracker-rn/main/data/exercises/"
-MEDIA = "data/exercises"
+HOST = "https://raw.githubusercontent.com/Alrondar/fittracker-exercise-media/main/exercises/"
+MEDIA = media_root(required=False)
 MANIFEST = "spark-output/export/illustrations-manifest.json"
 OUT = "spark-output/export/qc/our-illustrations.html"
 

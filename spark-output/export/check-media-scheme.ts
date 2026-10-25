@@ -59,9 +59,34 @@ const cases: [string, () => unknown, unknown][] = [
     () => parseMediaUrls('https://x/y/custom.jpeg', 'male'),
     ['https://x/y/custom.jpeg'],
   ],
+  [
+    'версия в хвосте: новая схема, женский',
+    () => parseMediaUrls('https://x/y/Bent_Over_Barbell_Row/00f.jpg?v=3', 'female'),
+    [
+      'https://x/y/Bent_Over_Barbell_Row/00f.jpg?v=3',
+      'https://x/y/Bent_Over_Barbell_Row/01f.jpg?v=3',
+    ],
+  ],
+  [
+    'версия в хвосте: новая схема, мужской — хвост на обоих кадрах',
+    () => parseMediaUrls('https://x/y/Z/00f.jpg?v=7', 'male'),
+    ['https://x/y/Z/00m.jpg?v=7', 'https://x/y/Z/01m.jpg?v=7'],
+  ],
+  [
+    'версия в хвосте: легаси',
+    () => parseMediaUrls('https://x/y/Pullups/0.jpg?v=2', 'female'),
+    ['https://x/y/Pullups/0.jpg?v=2', 'https://x/y/Pullups/1.jpg?v=2'],
+  ],
+  [
+    'версия не ломает проброс произвольного URL',
+    () => parseMediaUrls('https://x/y/custom.jpeg?v=1', 'male'),
+    ['https://x/y/custom.jpeg?v=1'],
+  ],
   ['пусто', () => parseMediaUrls(null), []],
   ['isGenderedMedia 00f', () => isGenderedMedia('https://x/y/Z/00f.jpg'), true],
+  ['isGenderedMedia 00f с версией', () => isGenderedMedia('https://x/y/Z/00f.jpg?v=3'), true],
   ['isGenderedMedia легаси 0', () => isGenderedMedia('https://x/y/Z/0.jpg'), false],
+  ['isGenderedMedia легаси 0 с версией', () => isGenderedMedia('https://x/y/Z/0.jpg?v=3'), false],
   ['isGenderedMedia пусто', () => isGenderedMedia(null), false],
 ];
 

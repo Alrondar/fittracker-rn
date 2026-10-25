@@ -1,5 +1,12 @@
 import { supabase, getString } from '../lib/supabase';
 import { effectiveReps } from '../utils/reps';
+import { networkOrSnapshot } from '../lib/exerciseSnapshot';
+import {
+  filterOptionsLocal,
+  referenceDataLocal,
+  searchExercisesLocal,
+  toDetail,
+} from '../utils/exerciseSearchLocal';
 import { getExerciseReferenceData } from './exerciseReferenceService';
 
 export interface ExerciseListItem {
@@ -37,25 +44,30 @@ const sanitizeSearch = (s: string) =>
     .trim();
 
 export async function getExercises(filters: ExerciseFilters): Promise<ExerciseListItem[]> {
-  const { data, error } = await supabase.rpc('search_exercises', {
-    q: filters.search ? sanitizeSearch(filters.search) : undefined,
-    muscle_filter: filters.muscles?.length ? filters.muscles : undefined,
-    category_filter: filters.categories?.length ? filters.categories : undefined,
-    equipment_filter: filters.equipment?.length ? filters.equipment : undefined,
-    activation_filter: filters.activationOnly ? true : undefined,
-    sort_by: filters.sortBy,
-    page_limit: filters.limit,
-    page_offset: filters.offset,
-  });
-  if (error) throw error;
-  return ((data ?? []) as unknown as SearchExerciseRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    primary_muscles: row.primary_muscles ?? [],
-    equipment: row.equipment ?? [],
-    popularity: Number(row.popularity) || 0,
-    can_be_activation: row.can_be_activation ?? false,
-  }));
+  return networkOrSnapshot(
+    async () => {
+      const { data, error } = await supabase.rpc('search_exercises', {
+        q: filters.search ? sanitizeSearch(filters.search) : undefined,
+        muscle_filter: filters.muscles?.length ? filters.muscles : undefined,
+        category_filter: filters.categories?.length ? filters.categories : undefined,
+        equipment_filter: filters.equipment?.length ? filters.equipment : undefined,
+        activation_filter: filters.activationOnly ? true : undefined,
+        sort_by: filters.sortBy,
+        page_limit: filters.limit,
+        page_offset: filters.offset,
+      });
+      if (error) throw error;
+      return ((data ?? []) as unknown as SearchExerciseRow[]).map((row) => ({
+        id: row.id,
+        name: row.name,
+        primary_muscles: row.primary_muscles ?? [],
+        equipment: row.equipment ?? [],
+        popularity: Number(row.popularity) || 0,
+        can_be_activation: row.can_be_activation ?? false,
+      }));
+    },
+    (rows) => searchExercisesLocal(rows, filters)
+  );
 }
 
 export interface FilterOption {
@@ -67,9 +79,11 @@ export interface ExerciseFilterOptions {
   equipment: FilterOption[];
 }
 export async function getFilterOptions(): Promise<ExerciseFilterOptions> {
-  const { data, error } = await supabase.rpc('get_exercise_filter_counts');
-  if (error) throw error;
-  return { categories: data?.categories ?? [], equipment: data?.equipment ?? [] };
+  return networkOrSnapshot(async () => {
+    const { data, error } = await supabase.rpc('get_exercise_filter_counts');
+    if (error) throw error;
+    return { categories: data?.categories ?? [], equipment: data?.equipment ?? [] };
+  }, filterOptionsLocal);
 }
 
 export interface ExerciseDetail {
@@ -91,49 +105,73 @@ export interface ExerciseDetail {
 const DETAIL_FIELDS =
   'id, name, technique, primary_muscles, secondary_muscles, benefits, risks, settings, category, media_url, can_be_activation';
 export async function getExerciseById(id: string): Promise<ExerciseDetail | null> {
-  const { data, error } = await supabase
-    .from('exercises')
-    .select(DETAIL_FIELDS)
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  const ref = (await getExerciseReferenceData([id]))[id] ?? {
-    equipment: [],
-    injuries: [],
-    alternativeIds: [],
-  };
-  return {
-    id: data.id,
-    name: data.name,
-    technique: getString(data, 'technique'),
-    primary_muscles: data.primary_muscles ?? [],
-    secondary_muscles: data.secondary_muscles ?? [],
-    equipment: ref.equipment,
-    benefits: getString(data, 'benefits'),
-    risks: getString(data, 'risks'),
-    injuries: ref.injuries,
-    alternatives: ref.alternativeIds,
-    can_be_activation: data.can_be_activation ?? false,
-    settings: getString(data, 'settings'),
-    category: data.category ?? null,
-    media_url: data.media_url ?? null,
-  };
+  return networkOrSnapshot(
+    async () => {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select(DETAIL_FIELDS)
+        .eq('id', id)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const ref = (await getExerciseReferenceData([id]))[id] ?? {
+        equipment: [],
+        injuries: [],
+        alternativeIds: [],
+      };
+      return {
+        id: data.id,
+        name: data.name,
+        technique: getString(data, 'technique'),
+        primary_muscles: data.primary_muscles ?? [],
+        secondary_muscles: data.secondary_muscles ?? [],
+        equipment: ref.equipment,
+        benefits: getString(data, 'benefits'),
+        risks: getString(data, 'risks'),
+        injuries: ref.injuries,
+        alternatives: ref.alternativeIds,
+        can_be_activation: data.can_be_activation ?? false,
+        settings: getString(data, 'settings'),
+        category: data.category ?? null,
+        media_url: data.media_url ?? null,
+      };
+    },
+    (rows) => {
+      const row = rows.find((candidate) => candidate.id === id);
+      if (!row) return null;
+      return toDetail(row, referenceDataLocal([row])[id]);
+    }
+  );
 }
 export async function getExercisesByIds(ids: string[]): Promise<ExerciseListItem[]> {
   if (ids.length === 0) return [];
-  const { data, error } = await supabase
-    .from('exercises')
-    .select('id, name, primary_muscles')
-    .in('id', ids);
-  if (error) throw error;
-  const refs = await getExerciseReferenceData(ids);
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    name: row.name,
-    primary_muscles: row.primary_muscles ?? [],
-    equipment: refs[row.id]?.equipment ?? [],
-  }));
+  return networkOrSnapshot(
+    async () => {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select('id, name, primary_muscles')
+        .in('id', ids);
+      if (error) throw error;
+      const refs = await getExerciseReferenceData(ids);
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        primary_muscles: row.primary_muscles ?? [],
+        equipment: refs[row.id]?.equipment ?? [],
+      }));
+    },
+    (rows) => {
+      const byId = referenceDataLocal(rows.filter((row) => ids.includes(row.id)));
+      return rows
+        .filter((row) => ids.includes(row.id))
+        .map((row) => ({
+          id: row.id,
+          name: row.name,
+          primary_muscles: row.primary_muscles ?? [],
+          equipment: byId[row.id]?.equipment ?? [],
+        }));
+    }
+  );
 }
 
 export interface ExerciseRecords {

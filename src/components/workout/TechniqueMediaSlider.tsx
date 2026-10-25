@@ -10,6 +10,7 @@ import { Image as ImageIcon } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useMediaGender } from '../../hooks/useMediaGender';
 import { parseMediaUrls, isGenderedMedia, type MediaGender } from '../../utils/mediaScheme';
+import { resolveFrame } from '../../lib/mediaCache';
 import {
   SPACING,
   BORDER_RADIUS,
@@ -87,6 +88,49 @@ function Dot({ active, onPress }: { active: boolean; onPress: () => void }) {
   );
 }
 
+/** Кадр, который не удалось ни показать, ни скачать: до этого он оставлял пустой серый
+ * бокс (класс дефекта MEDIA-1) — подсказки не было никакой. */
+function MediaSlide({
+  source,
+  width,
+  height,
+}: {
+  source: { uri: string };
+  width: number | '100%';
+  height: number;
+}) {
+  const { colors } = useTheme();
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <View
+        accessibilityLabel="Кадр недоступен"
+        style={{ width, height, alignItems: 'center', justifyContent: 'center', gap: 6 }}
+      >
+        <ImageIcon size={22} color={colors.textTertiary} />
+        <Text
+          style={{
+            fontSize: 12,
+            fontFamily: FONT_FAMILIES.textBold,
+            color: colors.textTertiary,
+          }}
+        >
+          Кадр недоступен
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={source}
+      style={{ width, height }}
+      contentFit="cover"
+      transition={250}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 interface TechniqueMediaSliderProps {
   mediaUrl: string | null;
   height?: number;
@@ -105,7 +149,11 @@ export function TechniqueMediaSlider({
   const gender = genderOverride ?? profileGender;
   // Переключатель нужен только там, где есть вторая пара кадров: у легаси выбирать нечего.
   const gendered = isGenderedMedia(mediaUrl);
-  const urls = useMemo(() => parseMediaUrls(mediaUrl, gender), [mediaUrl, gender]);
+  // Кадры, которые уже скачаны на телефон, берём оттуда — техника не пропадает офлайн.
+  const urls = useMemo(
+    () => parseMediaUrls(mediaUrl, gender).map(resolveFrame),
+    [mediaUrl, gender]
+  );
   // MED-FIT-2 (08.10): объект источника живёт в memo, а не в литерале внутри renderItem.
   // Литерал `{{ uri: item }}` создаётся заново на каждый рендер, а перерисовка случается
   // по трём поводам (onLayout ширины, onLoad пропорций, конец скролла) — на Android
@@ -121,15 +169,19 @@ export function TechniqueMediaSlider({
   // грузились повторно (замер на устройстве: два полных цикла onLoad на одно открытие).
   // Офскриновый второй кадр после такой пересборки не перекрашивался — на экране это
   // серый контейнер через долю секунды после появления кадра.
-  // Поэтому размер кадра теперь замеряется заранее через NativeImage.getSize по первому
-  // URI (рамки одного упражнения пропорциональны — см. замер каталога в mediaFit.ts),
-  // а FlatList монтируется один раз с финальной высотой.
+  // Поэтому размер кадра теперь замеряется заранее: по сетевому адресу — через
+  // NativeImage.getSize, по локальному файлу — через Image.loadAsync (офлайн сети
+  // нет, а высота нужна до монтирования; рамки одного упражнения пропорциональны —
+  // см. замер каталога в mediaFit.ts). FlatList монтируется один раз с финальной высотой.
   const [probed, setProbed] = useState<{ w: number; h: number } | null>(null);
   const [probeDone, setProbeDone] = useState(false);
-  // Ключ папки, для которой размер уже снят. Смена пола меняет только суффикс файла
+  // Ключ позиции, для которой размер уже снят. Смена пола меняет только суффикс файла
   // (`00f` → `00m`), пропорции остаются прежние, а пересъёмка размера на каждый тап
   // схлопнула бы бокс до фиксированной высоты — тот самый серый кадр из MED-FIT-3.
-  const folderKey = urls.length > 0 ? urls[0].slice(0, urls[0].lastIndexOf('/')) : '';
+  // Ключ — исходный адрес из БД (вместе с версией кадра), а не тот, по которому кадр
+  // реально грузится: локальные файлы лежат в одной папке на все упражнения, и по
+  // папке отличить пропорции одного кадра от другого нельзя.
+  const probeKey = mediaUrl ?? '';
   const probedKeyRef = useRef<string | null>(null);
   useEffect(() => {
     const first = urls[0];
@@ -137,27 +189,32 @@ export function TechniqueMediaSlider({
       setProbeDone(true);
       return;
     }
-    if (probedKeyRef.current === folderKey) return;
+    if (probedKeyRef.current === probeKey) return;
     setProbed(null);
     setProbeDone(false);
     let alive = true;
-    NativeImage.getSize(
-      first,
-      (w, h) => {
-        if (!alive) return;
-        setProbed({ w, h });
-        setProbeDone(true);
-        probedKeyRef.current = folderKey;
-      },
-      () => {
-        if (!alive) return;
-        setProbeDone(true); // держим прежнюю фиксированную высоту, список всё равно смонтируется
-      }
-    );
+    const done = (w: number, h: number) => {
+      if (!alive) return;
+      setProbed({ w, h });
+      setProbeDone(true);
+      probedKeyRef.current = probeKey;
+    };
+    const failed = () => {
+      if (!alive) return;
+      setProbeDone(true); // держим прежнюю фиксированную высоту, список всё равно смонтируется
+    };
+    if (first.startsWith('file://')) {
+      // Размер снят с локального файла: офлайн замер не зависит от сети.
+      Image.loadAsync(first)
+        .then((ref) => done(ref.width, ref.height))
+        .catch(failed);
+    } else {
+      NativeImage.getSize(first, done, failed);
+    }
     return () => {
       alive = false;
     };
-  }, [urls, folderKey]);
+  }, [urls, probeKey]);
   const boxH = mediaBoxHeight(width, probed?.w ?? 0, probed?.h ?? 0, height);
   const slideW = width > 0 ? width : '100%';
   const [isTouching, setIsTouching] = useState(false);
@@ -199,12 +256,7 @@ export function TechniqueMediaSlider({
   // Хук обязан быть до раннего return — иначе порядок хуков плывёт на пустом каталоге.
   const renderItem = useCallback(
     ({ index }: { index: number }) => (
-      <Image
-        source={sources[index]}
-        style={{ width: slideW, height: boxH }}
-        contentFit="cover"
-        transition={250}
-      />
+      <MediaSlide source={sources[index]} width={slideW} height={boxH} />
     ),
     [sources, slideW, boxH]
   );

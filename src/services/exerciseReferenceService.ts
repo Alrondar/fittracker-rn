@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { networkOrSnapshot } from '../lib/exerciseSnapshot';
+import { referenceDataLocal, type SnapshotExerciseRow } from '../utils/exerciseSearchLocal';
 
 export interface ExerciseReferenceData {
   equipment: string[];
@@ -30,6 +32,17 @@ const asOne = <T>(value: T | T[] | null): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : value;
 
 /**
+ * Строки снимка по запрошенным id. null — если в снимке есть пробел: снаряжение,
+ * предупреждения и рёбра замен кормят и проверку безопасности, а неполный ответ
+ * выглядел бы как «у этого упражнения ограничений нет».
+ */
+function snapshotRowsFor(ids: string[], rows: SnapshotExerciseRow[]): SnapshotExerciseRow[] | null {
+  const wanted = new Set(ids);
+  const found = rows.filter((row) => wanted.has(row.id));
+  return found.length === wanted.size ? found : null;
+}
+
+/**
  * Equipment only — канонический доступ по exercise_equipment для случаев,
  * когда relationships/warnings по большому списку id тянуть незачем
  * (WARMUP-3b: скоринг разминки идёт по всему пулу, refs нужны только финальным).
@@ -39,27 +52,40 @@ export async function getExerciseEquipment(
 ): Promise<Record<string, string[]>> {
   if (exerciseIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from('exercise_equipment')
-    .select('exercise_id, equipment(name)')
-    .in('exercise_id', exerciseIds);
+  return networkOrSnapshot(
+    async () => {
+      const { data, error } = await supabase
+        .from('exercise_equipment')
+        .select('exercise_id, equipment(name)')
+        .in('exercise_id', exerciseIds);
 
-  if (error) throw error;
+      if (error) throw error;
 
-  const result: Record<string, string[]> = {};
-  for (const id of exerciseIds) result[id] = [];
+      const result: Record<string, string[]> = {};
+      for (const id of exerciseIds) result[id] = [];
 
-  for (const row of (data ?? []) as unknown as EquipmentRow[]) {
-    const equipment = asOne(row.equipment);
-    if (equipment?.name && result[row.exercise_id]) result[row.exercise_id].push(equipment.name);
-  }
-  for (const list of Object.values(result)) {
-    const unique = [...new Set(list)];
-    list.length = 0;
-    list.push(...unique);
-  }
+      for (const row of (data ?? []) as unknown as EquipmentRow[]) {
+        const equipment = asOne(row.equipment);
+        if (equipment?.name && result[row.exercise_id])
+          result[row.exercise_id].push(equipment.name);
+      }
+      for (const list of Object.values(result)) {
+        const unique = [...new Set(list)];
+        list.length = 0;
+        list.push(...unique);
+      }
 
-  return result;
+      return result;
+    },
+    (rows) => {
+      const known = snapshotRowsFor(exerciseIds, rows);
+      if (!known) return null;
+      const local = referenceDataLocal(known);
+      const result: Record<string, string[]> = {};
+      for (const id of exerciseIds) result[id] = local[id]?.equipment ?? [];
+      return result;
+    }
+  );
 }
 
 /**
@@ -73,56 +99,71 @@ export async function getExerciseReferenceData(
 ): Promise<Record<string, ExerciseReferenceData>> {
   if (exerciseIds.length === 0) return {};
 
-  const [equipmentMap, relationshipsRes, warningsRes] = await Promise.all([
-    // WARMUP-3b: тот же запрос вынесен в getExerciseEquipment — один владелец
-    // доступа к exercise_equipment, дубля нет.
-    getExerciseEquipment(exerciseIds),
+  return networkOrSnapshot(
+    async () => {
+      const [equipmentMap, relationshipsRes, warningsRes] = await Promise.all([
+        // WARMUP-3b: тот же запрос вынесен в getExerciseEquipment — один владелец
+        // доступа к exercise_equipment, дубля нет.
+        getExerciseEquipment(exerciseIds),
 
-    supabase
-      .from('exercise_relationships')
-      .select('exercise_id, related_exercise_id, relation_type, status')
-      .in('exercise_id', exerciseIds)
-      .in('status', ['approved', 'suggested']),
+        supabase
+          .from('exercise_relationships')
+          .select('exercise_id, related_exercise_id, relation_type, status')
+          .in('exercise_id', exerciseIds)
+          .in('status', ['approved', 'suggested']),
 
-    supabase
-      .from('injury_exercise_warnings')
-      .select('exercise_id, body_part, injury_type, recommendation, level')
-      .in('exercise_id', exerciseIds),
-  ]);
+        supabase
+          .from('injury_exercise_warnings')
+          .select('exercise_id, body_part, injury_type, recommendation, level')
+          .in('exercise_id', exerciseIds),
+      ]);
 
-  if (relationshipsRes.error) throw relationshipsRes.error;
-  if (warningsRes.error) throw warningsRes.error;
+      if (relationshipsRes.error) throw relationshipsRes.error;
+      if (warningsRes.error) throw warningsRes.error;
 
-  const result: Record<string, ExerciseReferenceData> = {};
-  for (const id of exerciseIds) {
-    result[id] = { equipment: [], injuries: [], alternativeIds: [] };
-  }
+      const result: Record<string, ExerciseReferenceData> = {};
+      for (const id of exerciseIds) {
+        result[id] = { equipment: [], injuries: [], alternativeIds: [] };
+      }
 
-  for (const [id, equipment] of Object.entries(equipmentMap)) {
-    if (result[id]) result[id].equipment = equipment;
-  }
+      for (const [id, equipment] of Object.entries(equipmentMap)) {
+        if (result[id]) result[id].equipment = equipment;
+      }
 
-  for (const row of (relationshipsRes.data ?? []) as unknown as RelationshipRow[]) {
-    // The normalized relationship table is the canonical replacement graph.
-    // relation_type is retained for future ranking; all active relationships
-    // are exposed here because the old UI contract is simply "alternatives".
-    if (result[row.exercise_id] && row.related_exercise_id !== row.exercise_id) {
-      result[row.exercise_id].alternativeIds.push(row.related_exercise_id);
+      for (const row of (relationshipsRes.data ?? []) as unknown as RelationshipRow[]) {
+        // The normalized relationship table is the canonical replacement graph.
+        // relation_type is retained for future ranking; all active relationships
+        // are exposed here because the old UI contract is simply "alternatives".
+        if (result[row.exercise_id] && row.related_exercise_id !== row.exercise_id) {
+          result[row.exercise_id].alternativeIds.push(row.related_exercise_id);
+        }
+      }
+
+      for (const row of (warningsRes.data ?? []) as unknown as WarningRow[]) {
+        if (!row.exercise_id || !result[row.exercise_id]) continue;
+        const text =
+          row.recommendation?.trim() ||
+          [row.body_part, row.injury_type].filter(Boolean).join(' — ');
+        if (text) result[row.exercise_id].injuries.push(text);
+      }
+
+      for (const data of Object.values(result)) {
+        data.equipment = [...new Set(data.equipment)];
+        data.injuries = [...new Set(data.injuries)];
+        data.alternativeIds = [...new Set(data.alternativeIds)];
+      }
+
+      return result;
+    },
+    (rows) => {
+      const known = snapshotRowsFor(exerciseIds, rows);
+      if (!known) return null;
+      const local = referenceDataLocal(known);
+      const result: Record<string, ExerciseReferenceData> = {};
+      for (const id of exerciseIds) {
+        result[id] = local[id] ?? { equipment: [], injuries: [], alternativeIds: [] };
+      }
+      return result;
     }
-  }
-
-  for (const row of (warningsRes.data ?? []) as unknown as WarningRow[]) {
-    if (!row.exercise_id || !result[row.exercise_id]) continue;
-    const text =
-      row.recommendation?.trim() || [row.body_part, row.injury_type].filter(Boolean).join(' — ');
-    if (text) result[row.exercise_id].injuries.push(text);
-  }
-
-  for (const data of Object.values(result)) {
-    data.equipment = [...new Set(data.equipment)];
-    data.injuries = [...new Set(data.injuries)];
-    data.alternativeIds = [...new Set(data.alternativeIds)];
-  }
-
-  return result;
+  );
 }
