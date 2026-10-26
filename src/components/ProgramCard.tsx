@@ -106,8 +106,8 @@ export const ProgramCard = memo(function ProgramCard({
       // UX-1 (audit-6): spring-scale карточки программы вместо activeOpacity.
       scaleTo={0.985}
       accessibilityRole="button"
-      // WEB-3: в футере карточки лежат свои кнопки (редактировать / активировать /
-      // «Подробнее»), поэтому на вебе обёртка не должна становиться <button>.
+      // WEB-3: в футере карточки лежат свои кнопки (скачать офлайн / редактировать /
+      // активировать), поэтому на вебе обёртка не должна становиться <button>.
       wrapActions
       accessibilityLabel={`${item.name}, ${item.level}, ${isActive ? 'Текущая программа' : ''}`}
       style={{
