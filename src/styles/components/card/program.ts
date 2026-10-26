@@ -1,6 +1,5 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { SPACING, BORDER_RADIUS, withAlpha, SHADOWS } from '../../../constants/theme';
-import { typography } from '../../typography';
 
 export const createProgramCardStyles = (colors: any) =>
   StyleSheet.create({
@@ -106,20 +105,6 @@ export const createProgramCardStyles = (colors: any) =>
       borderTopWidth: 1,
       borderTopColor: colors.border,
     } as ViewStyle,
-    programCardFooterPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.sm,
-      borderRadius: BORDER_RADIUS.full,
-      backgroundColor: withAlpha(colors.primary, 0.082),
-    } as ViewStyle,
-    programCardFooterPillText: {
-      ...typography.buttonTiny,
-      color: colors.primary,
-      fontWeight: '600',
-    } as TextStyle,
     programCardLevelStripe: {
       position: 'absolute',
       left: 0,
