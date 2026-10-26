@@ -38,6 +38,7 @@
 
 - Тренировки — **снимки**: правка `program_exercises` не меняет существующие `workout_exercises`. Sync трогает только `started_at IS NULL AND finished_at IS NULL`; история не переписывается (`CLAUDE.md` §5).
 - `sync_program_changes_to_workouts` удаляет `workout_exercises`, чей `exercise_id` отсутствует в `program_exercises` — поэтому перед sync нужно сначала обновить `exercise_id` текущей тренировки (порядок шагов в `programsService.ts:790-930`, `replaceExerciseInProgram`).
+- **Синк не довозит число подходов (проверено телом функции на проде 26.10, запись SYNC-1 в `STATUS.md §13`):** `UPDATE workout_exercises` внутри функции пишет `sets`, `target_reps_range`, `rest_seconds`, `intensity`, `position`, `order_index` — но не `target_sets`, `target_rpe`, `progression_policy`. Клиент читает первым `target_sets` (`workoutService.ts:251`, `useWorkoutSession.mapper.ts:65`), поэтому правка подходов в редакторе в календарь не попадает, хотя синк рапортует `updated_exercises > 0`. Обход: `create_workouts_for_program` («Перезапустить», пересоздаёт все занятия программы) или отдельная миграция-патч по не начатым (`20261026130000_resync_recomp_workout_snapshots.sql` — образец сверки: `md5` снимка против эталонной генерации через `generate_series(1, weeks_count)`).
 - Тело этой функции **отсутствует в репозитории** (миграция `20260731122543` — 0 байт): читать `select pg_get_functiondef('public.sync_program_changes_to_workouts(text)')` на проде.
 
 ## 5. Как проверить, что редактор не потерял твою правку
