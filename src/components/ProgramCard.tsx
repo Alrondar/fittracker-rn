@@ -238,7 +238,7 @@ export const ProgramCard = memo(function ProgramCard({
           </View>
         )}
 
-        {/* Футер: скачивание офлайн + редактирование + активация + «Подробнее» */}
+        {/* Футер: скачивание офлайн + редактирование + активация + шеврон карточки */}
         <View style={cardStyles.programCardFooter}>
           {/* ОФЛАЙН: своя кнопка у каждой карточки (вердикт владельца 25.10 — общая
               плашка в углу говорила только про активную программу). */}
@@ -284,10 +284,10 @@ export const ProgramCard = memo(function ProgramCard({
             </PressableScale>
           )}
 
-          <View style={cardStyles.programCardFooterPill}>
-            <Text style={cardStyles.programCardFooterPillText}>Подробнее</Text>
-            <ChevronRight size={14} color={colors.primary} strokeWidth={2.5} />
-          </View>
+          {/* Подпись «Подробнее» здесь была и ушла: вся карточка нажимаемая, а её
+              подпись стоила 110 px из 292–343 доступных в футере — четвёртому контролу
+              места не оставалось. Остался шеврон как указатель, что карточка открывается. */}
+          <ChevronRight size={18} color={colors.primary} strokeWidth={2.5} />
         </View>
       </View>
     </PressableScale>
