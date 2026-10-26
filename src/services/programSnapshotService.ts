@@ -50,21 +50,44 @@ async function collectInPages<T>(
   return out;
 }
 
-async function pullActiveProgram(userId: string): Promise<ProgramSnapshotData> {
-  const { data: userProgram, error: userProgramError } = await supabase
-    .from('user_programs')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (userProgramError) throw userProgramError;
-  if (!userProgram) throw new Error('Активной программы нет — скачивать нечего');
+/**
+ * Структура и история одной программы. `programId === null` — та, что под указателем
+ * `is_active`: автоскачивание качает именно её, а карточка в списке называет свой id.
+ * Программа, которую пользователь не запускал, тоже отдаётся: её строки в `user_programs`
+ * просто нет (`userProgram: null`), а тренировок и подходов ноль — это не отказ, а честное
+ * «качаем то, чего ещё не было».
+ */
+async function pullProgram(userId: string, programId: string | null): Promise<ProgramSnapshotData> {
+  let wanted = programId;
+  let userProgram: Row<'user_programs'> | null = null;
 
-  const programId = userProgram.program_id;
+  if (wanted) {
+    const { data, error } = await supabase
+      .from('user_programs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('program_id', wanted)
+      .maybeSingle();
+    if (error) throw error;
+    userProgram = data as Row<'user_programs'> | null;
+  } else {
+    const { data, error } = await supabase
+      .from('user_programs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error('Активной программы нет — скачивать нечего');
+    userProgram = data as Row<'user_programs'>;
+    wanted = data.program_id;
+  }
+
+  const programIdKey = wanted as string;
   const { data: program, error: programError } = await supabase
     .from('programs')
     .select('*')
-    .eq('id', programId)
+    .eq('id', programIdKey)
     .maybeSingle();
   if (programError) throw programError;
 
@@ -73,7 +96,7 @@ async function pullActiveProgram(userId: string): Promise<ProgramSnapshotData> {
       supabase
         .from('program_phases')
         .select('*')
-        .eq('program_id', programId)
+        .eq('program_id', programIdKey)
         .order('phase_number')
         .range(from, to),
     'program_phases'
@@ -83,7 +106,7 @@ async function pullActiveProgram(userId: string): Promise<ProgramSnapshotData> {
       supabase
         .from('program_days')
         .select('*')
-        .eq('program_id', programId)
+        .eq('program_id', programIdKey)
         .order('id')
         .range(from, to),
     'program_days'
@@ -109,7 +132,7 @@ async function pullActiveProgram(userId: string): Promise<ProgramSnapshotData> {
         .from('workouts')
         .select('*')
         .eq('user_id', userId)
-        .eq('program_id', programId)
+        .eq('program_id', programIdKey)
         .order('id')
         .range(from, to),
     'workouts'
@@ -149,7 +172,7 @@ async function pullActiveProgram(userId: string): Promise<ProgramSnapshotData> {
   );
 
   return {
-    programId,
+    programId: programIdKey,
     userProgram,
     program: program ?? null,
     phases,
@@ -173,7 +196,7 @@ function exerciseIdsOf(data: ProgramSnapshotData): string[] {
 export type FrameGroup = { planned: number; fetched: number; bytes: number };
 
 export type ProgramDownloadResult = {
-  /** Какая именно программа легла на устройство — плашка сверяет это с активной. */
+  /** Какая именно программа легла на устройство — карточка сверяет это со своей. */
   programId: string;
   bytes: number;
   days: number;
@@ -186,7 +209,10 @@ export type ProgramDownloadResult = {
 
 /** Тянет структуру и историю и пишет снимок. Справочник обязателен: без него
  * программе нечем показать технику, пользу и риски. */
-async function pullAndSave(userId: string): Promise<{
+async function pullAndSave(
+  userId: string,
+  programId: string | null
+): Promise<{
   data: ProgramSnapshotData;
   bytes: number;
   days: number;
@@ -196,7 +222,7 @@ async function pullAndSave(userId: string): Promise<{
 }> {
   if (snapshotStats().rows === 0) await refreshExerciseSnapshot(true);
   await readSnapshotRows();
-  const data = await pullActiveProgram(userId);
+  const data = await pullProgram(userId, programId);
   const saved = await saveProgramSnapshot(userId, data);
   return {
     data,
@@ -209,20 +235,22 @@ async function pullAndSave(userId: string): Promise<{
 }
 
 /**
- * Скачивает активную программу целиком: структура + история + кадры упражнений +
- * кадры их замен. Бросает ошибку, если сеть не ответила, — кнопка должна показать
- * отказ, а не молча оставить пользователя со старым снимком.
+ * Скачивает программу целиком: структура + история + кадры упражнений + кадры их
+ * замен. `programId === null` — активная (так качает автоскачивание), карточка в
+ * списке передаёт свой id. Бросает ошибку, если сеть не ответила, — кнопка должна
+ * показать отказ, а не молча оставить пользователя со старым снимком.
  *
  * `onProgress` получает долю по кадрам (рамки программы и её замен одним счётом):
  * данных в программе ~0,2 МБ, а кадров 2–14 МБ, именно загрузка кадров и есть то,
  * что пользователь видит глазами. Байтовый прогресс одного файла хост не отдаёт.
  */
-export async function downloadActiveProgram(
+export async function downloadProgram(
   userId: string,
+  programId: string | null,
   gender: MediaGender,
   onProgress?: (done: number, planned: number) => void
 ): Promise<ProgramDownloadResult> {
-  const pulled = await pullAndSave(userId);
+  const pulled = await pullAndSave(userId, programId);
   const plan = planProgramFrames(await readSnapshotRows(), exerciseIdsOf(pulled.data), gender);
   const total = plan.own.length + plan.alternatives.length;
   // Сначала кадры самой программы: при переполнении потолка вытесняются самые давние,
@@ -252,13 +280,14 @@ export async function downloadActiveProgram(
  * Подтянуть только новые кадры уже скачанной программы: список рамок считается заново
  * по снимку справочника, `stageFrames` пропускает те, что уже лежат, и выбрасывает
  * прежнюю версию того же пути. Ничего не затирается целиком — пересъёмка одного кадра
- * не должна приводить к перекачке 12 МБ.
+ * не должна приводить к перекачке 12 МБ. Без `programId` — программа под указателем.
  */
 export async function refreshProgramFrames(
   userId: string,
-  gender: MediaGender
+  gender: MediaGender,
+  programId?: string | null
 ): Promise<{ planned: number; fetched: number; bytes: number } | null> {
-  const data = await readProgramSnapshot(userId);
+  const data = await readProgramSnapshot(userId, programId);
   if (!data) return null;
   const plan = planProgramFrames(await readSnapshotRows(), exerciseIdsOf(data), gender);
   const staged = await stageFrames([...plan.own, ...plan.alternatives]);
@@ -278,7 +307,7 @@ export async function refreshProgramSnapshotStructure(
   const age = await programSnapshotAgeMs(userId);
   if (age === Infinity || age < PROGRAM_MAX_AGE_MS) return null;
   try {
-    const { bytes, workouts, days } = await pullAndSave(userId);
+    const { bytes, workouts, days } = await pullAndSave(userId, null);
     if (gender) {
       await refreshProgramFrames(userId, gender).catch(() => null);
     }
@@ -311,7 +340,7 @@ export async function maybeAutoDownloadProgram(
     return null;
   }
   try {
-    return await downloadActiveProgram(userId, gender);
+    return await downloadProgram(userId, null, gender);
   } catch (e) {
     console.warn('[programSnapshotService] автоскачивание не удалось:', e);
     return null;

@@ -18,7 +18,6 @@ import { usePrograms } from '../../src/hooks/usePrograms';
 import { ProgramCard } from '../../src/components/ProgramCard';
 import { LEVEL_COLORS } from '../../src/constants/semanticColors';
 import { ProgramFormSheet } from '../../src/components/ProgramFormSheet';
-import { OfflineProgramBadge } from '../../src/components/program/OfflineProgramBadge';
 import { ImportProgramSheet } from '../../src/components/program/sheets/ImportProgramSheet';
 import { SheetShell } from '../../src/components/ui/SheetShell';
 import { PillToggle } from '../../src/components/ui/PillToggle';
@@ -493,9 +492,6 @@ export default function ProgramsScreen() {
           <Plus size={24} color={colors.textInverse} strokeWidth={2.5} />
         </PressableScale>
       )}
-
-      {/* Плашка скачивания активной программы — зеркально FAB слева (ОФЛАЙН-UI) */}
-      <OfflineProgramBadge programId={activeProgramId} />
 
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onHide={hideToast} />
 

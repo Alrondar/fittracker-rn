@@ -1,4 +1,4 @@
-// Офлайн-проверка двух чистых частей механизма «скачать активную программу»:
+// Офлайн-проверка чистых частей механизма «скачать программу»:
 //   npx tsx scripts/check-program-snapshot.ts
 // 1) построение списка дней (src/utils/workoutSections.ts) — секции, порядок, прогресс;
 // 2) план кадров программы (src/utils/framePlan.ts) — свои против замен, дедупликация,
@@ -8,6 +8,7 @@
 import { buildWorkoutsData, type WorkoutListRow } from '../src/utils/workoutSections';
 import { planProgramFrames } from '../src/utils/framePlan';
 import {
+  mergeIntoCache,
   pickFromCache,
   type ProgramCacheDoc,
   type ProgramSnapshotData,
@@ -184,9 +185,16 @@ const frameCases: [string, () => unknown, unknown][] = [
 
 // Выбор снимка, когда на устройстве лежит несколько программ (src/lib/programSnapshot.ts,
 // pickFromCache): правило «свой экран — свой снимок» и есть смысл карты программ.
-const snap = (programId: string, workoutIds: string[]): ProgramSnapshotData =>
+const snap = (
+  programId: string,
+  workoutIds: string[],
+  isActive?: boolean | null
+): ProgramSnapshotData =>
   ({
     programId,
+    // null — программы нет у пользователя вовсе (готовая из каталога), false — есть,
+    // но не активна. Для правила указателя это разные случаи, но одинаковый исход.
+    userProgram: isActive === null ? null : { is_active: Boolean(isActive) },
     workouts: workoutIds.map((id) => ({ id })),
   }) as unknown as ProgramSnapshotData;
 
@@ -226,7 +234,41 @@ const pickCases: [string, () => unknown, unknown][] = [
   ],
 ];
 
+// Что делает скачивание с записью (mergeIntoCache → src/lib/programSnapshot.ts):
+// кнопка на карточке чужой программы не имеет права перетянуть указатель офлайна.
+const mergeCases: [string, () => unknown, unknown][] = [
+  [
+    'скачали активную программу — указатель переезжает на неё',
+    () => mergeIntoCache(two, snap('C', ['wc1'], true)).activeProgramId,
+    'C',
+  ],
+  [
+    'скачали неактивную — указатель остаётся на прежней',
+    () => mergeIntoCache(two, snap('C', ['wc1'], false)).activeProgramId,
+    'B',
+  ],
+  [
+    'готовая программа из каталога (строки пользователя нет) — указатель на месте',
+    () => mergeIntoCache(two, snap('C', ['wc1'], null)).activeProgramId,
+    'B',
+  ],
+  [
+    'прежние скачанные программы не вылетают',
+    () => Object.keys(mergeIntoCache(two, snap('C', ['wc1'], false)).programs),
+    ['A', 'B', 'C'],
+  ],
+  [
+    'первая скачанная неактивная в пустое хранилище — указателя нет, программа лежит',
+    () => {
+      const doc = mergeIntoCache(null, snap('C', ['wc1'], false));
+      return { pointer: doc.activeProgramId, programs: Object.keys(doc.programs) };
+    },
+    { pointer: null, programs: ['C'] },
+  ],
+];
+
 let failed = 0;
+
 const run = (set: [string, () => unknown, unknown][]) => {
   for (const [name, get, want] of set) {
     const got = get();
@@ -242,9 +284,10 @@ const run = (set: [string, () => unknown, unknown][]) => {
 run(cases);
 run(frameCases);
 run(pickCases);
+run(mergeCases);
 console.log(
   failed === 0
-    ? `\nВСЕ ${cases.length + frameCases.length + pickCases.length} СЛУЧАЯ ЗЕЛЁНЫЕ`
+    ? `\nВСЕ ${cases.length + frameCases.length + pickCases.length + mergeCases.length} СЛУЧАЯ ЗЕЛЁНЫЕ`
     : `\nПРОВАЛОВ: ${failed}`
 );
 process.exit(failed === 0 ? 0 : 1);
