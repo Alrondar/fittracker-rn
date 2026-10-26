@@ -60,6 +60,23 @@ export function pickFromCache(
   return doc.activeProgramId ? (doc.programs[doc.activeProgramId] ?? null) : null;
 }
 
+/**
+ * Что станет записью после скачивания одной программы. Указатель переезжает только
+ * на ДЕЙСТВИТЕЛЬНО активную программу: кнопка на карточке готовой программы из
+ * каталога (её строки в `user_programs` нет) не имеет права перетащить
+ * офлайн-экраны на её дни — иначе список тренировок стал бы про другую программу.
+ */
+export function mergeIntoCache(
+  doc: ProgramCacheDoc | null,
+  data: ProgramSnapshotData
+): ProgramCacheDoc {
+  const base = doc ?? { activeProgramId: null, programs: {} };
+  return {
+    activeProgramId: data.userProgram?.is_active ? data.programId : base.activeProgramId,
+    programs: { ...base.programs, [data.programId]: data },
+  };
+}
+
 /** Пустая сводка — «этой программы на устройстве нет». */
 export const NO_PROGRAM_INFO = {
   takenAt: null,

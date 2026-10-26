@@ -10,8 +10,8 @@
 // скачанная программа остаётся на устройстве и после того, как пользователь
 // переключится на другую, — место под данные не ограничено потолком кадров, а
 // размер одной программы 0,1–0,2 МБ (замер 25.10). Какой снимок считать «своим»,
-// решает указатель `activeProgramId`: он пишется при каждом скачивании и задаёт
-// поведение офлайна по умолчанию.
+// решает указатель `activeProgramId`: он задаёт поведение офлайна по умолчанию и
+// переезжает только вместе с действительно активной программой.
 //
 // Тексты упражнений здесь не дублируются — они в снимке справочника
 // (src/lib/exerciseSnapshot.ts), кадры — в хранилище кадров
@@ -21,6 +21,7 @@ import { readLocalDoc, removeLocalDoc, writeLocalDoc, type LocalDocMeta } from '
 import {
   NO_PROGRAM_INFO,
   infoOf,
+  mergeIntoCache,
   pickFromCache,
   type ProgramCacheDoc,
   type ProgramSnapshotData,
@@ -110,7 +111,7 @@ export async function programSnapshotInfo(
   return infoOf(data, share, wanted ? cache.meta.takenAt : null);
 }
 
-/** Что скачано: id всех программ на устройстве — для плашки и строки настроек. */
+/** Что скачано: id всех программ на устройстве — для кнопки на карточке и строки настроек. */
 export async function downloadedProgramIds(userId: string | null): Promise<string[]> {
   const doc = await readCacheDoc(userId);
   return doc ? Object.keys(doc.programs) : [];
@@ -130,22 +131,17 @@ export async function programSnapshotAgeMs(
 }
 
 /**
- * Добавляет программу в запись пользователя и делает её активной. Другие скачанные
- * программы остаются на месте: переключение программы не должно вышвыривать прошлую.
+ * Добавляет программу в запись пользователя. Другие скачанные программы остаются на
+ * месте: переключение программы не должно вышвыривать прошлую. Указатель `activeProgramId`
+ * переезжает только когда скачали ДЕЙСТВИТЕЛЬНО активную программу — иначе кнопка на
+ * карточке готовой программы перетащила бы офлайн-экраны на чужие дни.
  */
 export async function saveProgramSnapshot(
   userId: string,
   data: ProgramSnapshotData
 ): Promise<{ bytes: number; workouts: number; days: number }> {
   const stamp = new Date().toISOString();
-  const doc: ProgramCacheDoc = (await readCacheDoc(userId)) ?? {
-    activeProgramId: null,
-    programs: {},
-  };
-  const next: ProgramCacheDoc = {
-    activeProgramId: data.programId,
-    programs: { ...doc.programs, [data.programId]: data },
-  };
+  const next = mergeIntoCache(await readCacheDoc(userId), data);
   const bytes = await writeLocalDoc(docName(userId), next, {
     v: PROGRAM_SNAPSHOT_VERSION,
     takenAt: stamp,

@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { PressableScale } from './ui/PressableScale';
 import { Program } from '../services/programsService';
+import { ProgramOfflineChip } from './program/ProgramOfflineChip';
 import {
   Sprout,
   Dumbbell,
@@ -234,8 +235,12 @@ export const ProgramCard = memo(function ProgramCard({
           </View>
         )}
 
-        {/* Футер: редактирование + активация + «Подробнее» */}
+        {/* Футер: скачивание офлайн + редактирование + активация + «Подробнее» */}
         <View style={cardStyles.programCardFooter}>
+          {/* ОФЛАЙН: своя кнопка у каждой карточки (вердикт владельца 25.10 — общая
+              плашка в углу говорила только про активную программу). */}
+          <ProgramOfflineChip programId={item.id} programName={item.name} />
+
           {isMyProgram && (
             <PressableScale
               onPress={handleEdit}

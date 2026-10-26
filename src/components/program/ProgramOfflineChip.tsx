@@ -1,18 +1,17 @@
-// src/components/program/OfflineProgramBadge.tsx
-// Плашка скачивания активной программы — в левом нижнем углу экрана «Программы»,
-// зеркально кнопке создания (она справа: `cardStyles.fab`, bottom 24, right 16).
+// src/components/program/ProgramOfflineChip.tsx
+// Кнопка скачивания СВОЕЙ программы — в футере каждой карточки экрана «Программы».
 //
-// Зачем она тут, а не в настройках: решение «скачать день заранее» принимается там же,
-// где выбирается программа, и путь к нему — один тап вместо трёх (настройки → раздел →
-// строка → шторка). Скачивание и очистка — здесь, объём и автоматическое скачивание —
-// в настройках (src/components/settings/OfflineDataSection.tsx).
+// Почему на карточке, а не одна общая плашка: скачивать заранее хотят разное —
+// активную программу, программу на завтра, готовую из каталога, которую присматривают.
+// Одна плашка в углу умела говорить только про активную, и решение «скачать»
+// принималось не там, где лежит сама программа.
 //
 // Процент считается по кадрам, а не по байтам: данных в программе ~0,2 МБ, кадров
 // 2–14 МБ, и именно докачка рамок — то, что пользователь видит глазами. Хост не
 // отдаёт байтовый прогресс одного файла, поэтому счётчик — число готовых рамок из
 // плана (src/lib/mediaCache.ts → stageFrames).
 import React, { useState } from 'react';
-import { Text } from 'react-native';
+import { GestureResponderEvent, Text } from 'react-native';
 import { Check, DownloadCloud } from 'lucide-react-native';
 import { PressableScale } from '../ui/PressableScale';
 import { feedback } from '../../lib/feedback';
@@ -21,7 +20,7 @@ import { useOfflineProgram } from '../../hooks/useOfflineProgram';
 import { useTheme } from '../../hooks/useTheme';
 import { useStore } from '../../store/useStore';
 import { clearProgramSnapshot } from '../../lib/programSnapshot';
-import { downloadActiveProgram, refreshProgramFrames } from '../../services/programSnapshotService';
+import { downloadProgram, refreshProgramFrames } from '../../services/programSnapshotService';
 import { BORDER_RADIUS, SPACING, withAlpha } from '../../constants/theme';
 import { typography } from '../../styles/typography';
 
@@ -30,11 +29,16 @@ const human = (bytes: number) =>
   bytes >= MB ? `${(bytes / MB).toFixed(1)} МБ` : `${(bytes / 1024).toFixed(0)} КБ`;
 
 /**
- * `programId` — активная программа экрана. Если её нет (пользователь ничего не
- * выбрал), плашка не показывается: предлагать скачивание нечего — это было бы
- * пустой кнопкой.
+ * `programId` — программа этой карточки (не активная и не указатель снимка): состояние
+ * «скачана ли» читается по ней же, и чужая галочка тут появиться не может.
  */
-export function OfflineProgramBadge({ programId }: { programId: string | null }) {
+export function ProgramOfflineChip({
+  programId,
+  programName,
+}: {
+  programId: string;
+  programName: string;
+}) {
   const { colors } = useTheme();
   const userId = useStore((state) => state.userId);
   const gender = useMediaGender();
@@ -44,7 +48,7 @@ export function OfflineProgramBadge({ programId }: { programId: string | null })
   const download = () => {
     if (!userId || pct !== null) return;
     setPct(0);
-    void downloadActiveProgram(userId, gender, (done, planned) =>
+    void downloadProgram(userId, programId, gender, (done, planned) =>
       setPct(planned > 0 ? Math.min(99, Math.round((done / planned) * 100)) : 0)
     )
       .then(() => {
@@ -62,7 +66,7 @@ export function OfflineProgramBadge({ programId }: { programId: string | null })
 
   const openActions = () => {
     feedback.alert(
-      'Программа на устройстве',
+      `«${programName}» на устройстве`,
       `${info.days} дней · ${info.workouts} тренировок · ${human(info.bytes)} данных и её кадры. ` +
         'Дни открываются без сети вместе с подходами, статусами и текстами упражнений.\n\n' +
         '«Обновить» докачает только новые кадры и свежие версии тех, что пересняли; ничего уже скачанное перекачиваться не будет.',
@@ -72,7 +76,7 @@ export function OfflineProgramBadge({ programId }: { programId: string | null })
           text: 'Очистить',
           style: 'destructive',
           onPress: () => {
-            void clearProgramSnapshot(userId, programId ?? undefined).then(() => {
+            void clearProgramSnapshot(userId, programId).then(() => {
               refresh();
             });
           },
@@ -81,7 +85,7 @@ export function OfflineProgramBadge({ programId }: { programId: string | null })
           text: 'Обновить',
           onPress: () => {
             if (!userId) return;
-            void refreshProgramFrames(userId, gender).then((result) =>
+            void refreshProgramFrames(userId, gender, programId).then((result) =>
               feedback.alert(
                 result ? 'Кадры обновлены' : 'Нечего обновлять',
                 result
@@ -95,54 +99,50 @@ export function OfflineProgramBadge({ programId }: { programId: string | null })
     );
   };
 
-  if (!programId || !userId) return null;
+  // Тап по кнопке не должен открывать карточку: так же, как «Активировать» рядом.
+  const press = (action: () => void) => (event: GestureResponderEvent) => {
+    event?.stopPropagation?.();
+    action();
+  };
+
+  if (!userId) return null;
 
   const busy = pct !== null;
-  const label = busy
-    ? `Скачиваю ${pct}%`
-    : downloaded
-      ? `Офлайн · ${human(info.bytes)}`
-      : 'Скачать офлайн';
+  const label = busy ? `${pct}%` : downloaded ? 'Офлайн' : 'Скачать';
   const Icon = busy || !downloaded ? DownloadCloud : Check;
   const tone = downloaded && !busy ? colors.success : colors.primary;
 
   return (
     <PressableScale
+      onPress={press(busy ? () => undefined : downloaded ? openActions : download)}
       accessibilityRole="button"
       accessibilityLabel={
         busy
-          ? 'Идёт скачивание программы'
+          ? `Идёт скачивание программы ${programName}`
           : downloaded
-            ? 'Программа скачана'
-            : 'Скачать программу офлайн'
+            ? `Программа ${programName} скачана`
+            : `Скачать программу ${programName} офлайн`
       }
-      onPress={busy ? undefined : downloaded ? openActions : download}
+      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       style={{
-        position: 'absolute',
-        left: SPACING.lg,
-        bottom: SPACING.xl,
-        maxHeight: 44,
-        minHeight: 44,
-        maxWidth: 220,
+        // Крайний слева в футере: свободное место справа занято «Активировать» и
+        // «Подробнее», а две кнопки в одном ряду не должны толкаться.
+        marginRight: 'auto',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: SPACING.xs,
-        paddingHorizontal: SPACING.md,
-        borderRadius: BORDER_RADIUS.lg,
+        gap: 4,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.sm,
+        borderRadius: BORDER_RADIUS.full,
         borderWidth: 1,
-        borderColor: withAlpha(tone, 0.35),
-        backgroundColor: withAlpha(tone, 0.1),
+        borderColor: withAlpha(tone, 0.251),
+        backgroundColor: withAlpha(tone, 0.082),
       }}
     >
-      <Icon size={16} color={tone} strokeWidth={2.2} />
-      <Text numberOfLines={1} style={[typography.captionSmall, { color: tone, fontWeight: '700' }]}>
+      <Icon size={12} color={tone} strokeWidth={2.5} />
+      <Text numberOfLines={1} style={[typography.buttonTiny, { color: tone, fontWeight: '700' }]}>
         {label}
       </Text>
-      {downloaded && !busy ? (
-        <Text style={[typography.captionSmall, { color: colors.textSecondary }]} numberOfLines={1}>
-          {info.days} дн.
-        </Text>
-      ) : null}
     </PressableScale>
   );
 }
