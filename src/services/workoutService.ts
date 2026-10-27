@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { networkOrSnapshot } from '../lib/exerciseSnapshot';
 import { networkOrProgram } from '../lib/programSnapshot';
 import { toSessionFields } from '../utils/exerciseSearchLocal';
+import { workoutTypeFromPhaseType } from '../utils/workoutType';
 import { AlternativeExercise } from '../types/workout';
 import { getExerciseReferenceData } from './exerciseReferenceService';
 import { getExerciseContraindications } from './injuriesService';
@@ -77,7 +78,7 @@ export async function startProgramWorkout(userId: string, programId: string): Pr
 
   const { data: phase, error: phaseError } = await supabase
     .from('program_phases')
-    .select('id, name')
+    .select('id, name, phase_type')
     .eq('program_id', programId)
     .eq('phase_number', phaseNumber)
     .limit(1)
@@ -167,6 +168,7 @@ export async function startProgramWorkout(userId: string, programId: string): Pr
       user_id: userId,
       program_id: programId,
       name: workoutName,
+      workout_type: workoutTypeFromPhaseType(phase?.phase_type),
       phase_number: phaseNumber,
       week_number: weekNumber,
       day_index: dayNumber,
@@ -220,7 +222,7 @@ export async function repeatWorkout(userId: string, sourceWorkoutId: string): Pr
   const { data: sourceWorkout, error: sourceWorkoutError } = await supabase
     .from('workouts')
     .select(
-      `id, name, description, program_id, phase_number, week_number, day_index,
+      `id, name, description, program_id, phase_number, week_number, day_index, workout_type,
        workout_exercises ( exercise_id, order_index, position, target_sets, sets, target_reps, target_reps_range, rest_seconds, intensity, target_rpe, progression_policy )`
     )
     .eq('id', sourceWorkoutId)
@@ -234,6 +236,9 @@ export async function repeatWorkout(userId: string, sourceWorkoutId: string): Pr
       user_id: userId,
       name: sourceWorkout.name,
       description: sourceWorkout.description,
+      // Повтор не меняет содержание занятия, поэтому тип берём за источником.
+      // У исторических строк типа нет — они становятся смешанными.
+      workout_type: sourceWorkout.workout_type ?? 'mixed',
       program_id: null,
       phase_number: null,
       week_number: null,
