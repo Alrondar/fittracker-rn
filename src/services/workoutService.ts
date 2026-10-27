@@ -299,6 +299,12 @@ export interface WorkoutSessionData {
       is_warmup?: boolean;
       /** ENG-13: оценка повторов для незавершённого сета */
       is_estimated_reps?: boolean;
+      /**
+       * CONN-1 (27.10): метка записи. Нужна правилу журнала: серверная строка
+       * свежее копии на устройстве — копия выбрасывается, иначе досланный
+       * подход перезаписал бы то, что уже сохранено.
+       */
+      completed_at?: string | null;
     }[]
   >;
   recentLogs: RecentLog[];
@@ -394,7 +400,7 @@ export async function fetchWorkoutSession(
             const { data, error } = await supabase
               .from('workout_logs')
               .select(
-                'workout_exercise_id, set_number, weight_kg, reps, reps_left, reps_right, rpe, rir, difficulty, is_warmup, is_estimated_reps'
+                'workout_exercise_id, set_number, weight_kg, reps, reps_left, reps_right, rpe, rir, difficulty, is_warmup, is_estimated_reps, completed_at'
               )
               .in('workout_exercise_id', workoutExerciseIds);
             if (error) throw error;

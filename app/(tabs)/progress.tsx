@@ -27,7 +27,8 @@ import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { StateBlock } from '../../src/components/ui/StateBlock';
-import { StaleBanner } from '../../src/components/ui/StaleBanner';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { ProgressHero } from '../../src/components/progress/ProgressHero';
 import { ProgressStats } from '../../src/components/progress/ProgressStats';
 import { WeeklyReviewSection } from '../../src/components/progress/WeeklyReviewSection';
@@ -50,6 +51,9 @@ export default function ProgressScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+  // CONN-1: при осечке фонового обновления экран обязан назвать причину: без
+  // сети повтор тапа ничего не даст, и подпись должна быть про сеть.
+  const online = useOnline();
   const { unitLabel, kgToUnit } = useWeightDisplay();
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
 
@@ -333,7 +337,15 @@ export default function ProgressScreen() {
         }
       >
         {/* EDGE-10: рефетч не дошёл, но кэш живые — данные остаются на экране. */}
-        {isStale && <StaleBanner onRetry={onRefresh} style={{ marginBottom: SPACING.md }} />}
+        {isStale && (
+          <StaleBanner
+            tone={online ? 'stale' : 'offline'}
+            label={online ? undefined : OFFLINE_DATA_LABEL}
+            actionable={online}
+            onRetry={onRefresh}
+            style={{ marginBottom: SPACING.md }}
+          />
+        )}
 
         {/* Зона 1: Обзор (L1) */}
         <View style={{ marginBottom: SPACING.lg, gap: SPACING.md }}>
