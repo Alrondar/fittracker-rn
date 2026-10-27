@@ -15,7 +15,8 @@ import type { WorkoutSection } from '../../src/services/workoutsService';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { StateBlock } from '../../src/components/ui/StateBlock';
-import { StaleBanner } from '../../src/components/ui/StaleBanner';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { mapError } from '../../src/utils/errorMapper';
 import { FadeIn } from '../../src/components/FadeIn';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -38,6 +39,9 @@ import { useAutoProgramDownload, useOfflineProgram } from '../../src/hooks/useOf
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme();
+  // CONN-1: «нет сети» и «сервер не ответил» — разные подписи и разная полезность
+  // тапа повторить.
+  const online = useOnline();
   const { userId } = useStore();
   const router = useRouter();
   const { data, isPending, isFetching, isError, refetch, skip } = useWorkouts(userId);
@@ -334,6 +338,9 @@ export default function WorkoutsScreen() {
           {/* EDGE-10: повтор не дошёл, но кэш живые — данные остаются на экране. */}
           {isError && (
             <StaleBanner
+              tone={online ? 'stale' : 'offline'}
+              label={online ? undefined : OFFLINE_DATA_LABEL}
+              actionable={online}
               onRetry={onRefresh}
               style={{ marginHorizontal: SPACING.lg, marginBottom: SPACING.md }}
             />

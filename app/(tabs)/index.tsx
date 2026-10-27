@@ -31,7 +31,8 @@ import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { useDeferredTabContent } from '../../src/hooks/useDeferredTabContent';
 import { useTabPrefetch } from '../../src/hooks/useTabPrefetch';
 import { StateBlock } from '../../src/components/ui/StateBlock';
-import { StaleBanner } from '../../src/components/ui/StaleBanner';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { HeroOut } from '../../src/components/ui/HeroMorph';
 import { FadeIn } from '../../src/components/FadeIn';
 import { NutritionAddModal } from '../../src/components/dashboard/NutritionAddModal';
@@ -50,6 +51,9 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
+  // CONN-1: плашка об осечке обновления должна называть причину — «нет сети»
+  // отличается от «сервер не ответил», и в первом повтор тапа бессмыслен.
+  const online = useOnline();
 
   // PERF-8 baseline: фиксируем момент первого рендера таба (однократно, паттерн
   // как TTI в workout/[id]). Завершение замера — когда данные пришли И тяжёлое
@@ -232,6 +236,9 @@ export default function DashboardScreen() {
         {/* EDGE-10: данные в кэше живые, а повтор не дошёл — экран остаётся рабочим. */}
         {isError && (
           <StaleBanner
+            tone={online ? 'stale' : 'offline'}
+            label={online ? undefined : OFFLINE_DATA_LABEL}
+            actionable={online}
             onRetry={onRefresh}
             style={{ marginHorizontal: SPACING.lg, marginBottom: SPACING.md }}
           />

@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStore } from '../src/store/useStore';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { LAYOUT_ANCHOR } from '../src/constants/theme';
+import { OnlineProvider } from '../src/hooks/useOnline';
 import { getSession, onAuthStateChange } from '../src/services/authService';
 import { BrandLoader } from '../src/components/ui/BrandLoader';
 import { ThemeCrossFade } from '../src/components/ui/ThemeCrossFade';
@@ -241,16 +242,20 @@ export default function RootLayout() {
     <GestureHandlerRootView
       style={Platform.OS === 'web' ? [styles.container, styles.webShell] : styles.container}
     >
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <RootLayoutContent />
-          {/* WEB-1: хост диалогов feedback.*. Монтируется рядом с контентом, а не
-              внутри него: диалог может быть запрошен и в период splash-гейта.
-              На нативных платформах компонент рендерит null — там feedback
-              делегирует в системный Alert.alert, поведение не меняется. */}
-          <FeedbackDialog />
-        </ThemeProvider>
-      </QueryClientProvider>
+      {/* CONN-1: состояние сети — один слушатель на дерево. Ниже QueryClientProvider,
+          чтобы экраны читали связь без зависимости от кэша запросов. */}
+      <OnlineProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <RootLayoutContent />
+            {/* WEB-1: хост диалогов feedback.*. Монтируется рядом с контентом, а не
+                внутри него: диалог может быть запрошен и в период splash-гейта.
+                На нативных платформах компонент рендерит null — там feedback
+                делегирует в системный Alert.alert, поведение не меняется. */}
+            <FeedbackDialog />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </OnlineProvider>
     </GestureHandlerRootView>
   );
 }

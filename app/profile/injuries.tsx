@@ -31,7 +31,8 @@ import { AppBadge } from '../../src/components/ui/AppBadge';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { StateBlock } from '../../src/components/ui/StateBlock';
-import { StaleBanner } from '../../src/components/ui/StaleBanner';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { InjuryFormSheet } from '../../src/components/profile/InjuryFormSheet';
 import { InjuryBodyMap } from '../../src/components/profile/InjuryBodyMap';
 import {
@@ -158,6 +159,9 @@ const InjuryCard = memo(function InjuryCard({
 export default function InjuriesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  // CONN-1: без сети повтор запроса бессмысленен — плашка говорит про сеть и
+  // не зовёт тапать «Обновить».
+  const online = useOnline();
   const { userId } = useStore();
   const {
     injuries,
@@ -340,7 +344,15 @@ export default function InjuriesScreen() {
 
       <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
         {/* EDGE-10: список в кэше живые, а повтор не дошёл — данные не прячем. */}
-        {isError && <StaleBanner onRetry={() => refetch()} style={{ marginBottom: SPACING.md }} />}
+        {isError && (
+          <StaleBanner
+            tone={online ? 'stale' : 'offline'}
+            label={online ? undefined : OFFLINE_DATA_LABEL}
+            actionable={online}
+            onRetry={() => refetch()}
+            style={{ marginBottom: SPACING.md }}
+          />
+        )}
 
         <InjuryBodyMap
           injuries={injuries}

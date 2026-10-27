@@ -42,6 +42,8 @@ import { WorkoutInjuryBanner } from '../../src/components/workout/WorkoutInjuryB
 import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
 import { WorkoutSkeleton } from '../../src/components/ui/skeletons';
 import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner } from '../../src/components/ui/StaleBanner';
+import { pluralWord } from '../../src/utils/plural';
 import { HeroIn } from '../../src/components/ui/HeroMorph';
 import { createCardStyles } from '../../src/styles/components/card';
 import { useWorkoutDisplayMode } from '../../src/hooks/useWorkoutDisplayMode';
@@ -106,6 +108,10 @@ export default function WorkoutSessionScreen() {
     addSet,
     addWarmupRampSets,
     saveWorkout,
+    unsavedSets,
+    saveState,
+    retryUnsaved,
+    online,
   } = useWorkoutSession(id as string, userId);
 
   const { data: workoutProgramInfo } = useQuery({
@@ -623,6 +629,26 @@ export default function WorkoutSessionScreen() {
             />
           </WorkoutTimerProvider>
         </HeroIn>
+
+        {/* CONN-1 (27.10): пока есть неподтверждённое (или только что доехало) —
+            плашка под шапкой. Офлайн она без кнопки: тапать «Записать» без сети
+            бессмысленно, досылка случится сама при возврате связи. */}
+        {unsavedSets > 0 || saveState === 'saved' ? (
+          <StaleBanner
+            tone={!online ? 'offline' : saveState === 'saved' ? 'saved' : 'unsaved'}
+            label={
+              !online
+                ? `Нет сети · не записано ${pluralWord(unsavedSets, ['подход', 'подхода', 'подходов'])}`
+                : saveState === 'saved'
+                  ? 'Записано'
+                  : `Не записано ${pluralWord(unsavedSets, ['подход', 'подхода', 'подходов'])}`
+            }
+            actionLabel="Записать"
+            actionable={online}
+            onRetry={retryUnsaved}
+            style={{ marginBottom: SPACING.sm }}
+          />
+        ) : null}
 
         {hasWarmup && (
           <WorkoutTabs

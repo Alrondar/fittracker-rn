@@ -6,7 +6,7 @@
 // (useWorkoutSession.rest.ts удалён 28.09, FZ-1: таймер отдыха живёт в
 //  RestTimerProvider, src/components/workout/RestTimerContext.tsx)
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import { feedback } from '../lib/feedback';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -29,6 +29,20 @@ import { getActiveInjuries, profileService } from '../services/profileService';
 import { painService, PainType } from '../services/painService';
 import { mapError } from '../utils/errorMapper';
 import { perfMark, perfSince } from '../utils/perf';
+import {
+  saveOutboxEntries,
+  dropOutboxEntries,
+  clearWorkoutOutbox,
+  readWorkoutOutbox,
+} from '../lib/logsOutbox';
+import {
+  buildOutboxEntries,
+  overlayOutboxSets,
+  countFilledSets,
+  countUnsentSets,
+  type ServerLogStamp,
+} from '../utils/outboxMerge';
+import { useOnline } from './useOnline';
 import { UserInjury } from '../constants/injuries';
 import { AlternativeSourceInput } from '../engine/alternatives';
 import { getRestActions } from '../components/workout/RestTimerContext';
@@ -65,6 +79,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // тонул в Alert, а экран оставался с пустым списком «Нет упражнений».
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // CONN-1 (27.10): «есть что дослать» и «только что доехало». Публикуются только
+  // на границах отправки (начало и конец flush), а не на каждом символе: иначе
+  // каждый ввод перерисовывал бы весь экран тренировки.
+  const [unsavedSets, setUnsavedSets] = useState(0);
+  const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const online = useOnline();
+  const onlineRef = useRef(online);
   const [isWorkoutActive, setIsWorkoutActive] = useState(false);
   const [initialTime, setInitialTime] = useState(0);
   const [isFinishing, setIsFinishing] = useState(false);
@@ -83,6 +105,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const exercisesRef = useRef<ExerciseData[]>([]);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLogsRef = useRef<Map<string, SetData[]>>(new Map());
+  // CONN-1 (27.10): копия очереди отправки на устройстве. pendingLogsRef умирает
+  // вместе с процессом, поэтому всё, что ещё не подтверждено сервером, дублируется
+  // в документ localStore: убийство приложения офлайн больше не стоит подходов.
+  const outboxBufferRef = useRef<Map<string, SetData[]>>(new Map());
+  const outboxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Rest timer — FZ-1 (аудит 28.09): весь таймер живёт в RestTimerProvider
   // (src/components/workout/RestTimerContext.tsx); здесь только стабильный
@@ -113,6 +140,80 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     []
   );
 
+  // ============================================================================
+  // CONN-1 (27.10): ЖУРНАЛ НЕЗАПИСАННЫХ ПОДХОДОВ
+  // ============================================================================
+  // Очередь отправки (pendingLogsRef) живёт в памяти экрана: при неудачной
+  // отправке сеты возвращаются в неё и умирают вместе с процессом. Копия той же
+  // очереди ложится в документ localStore, чтобы вбитое пережило убийство
+  // приложения без сети.
+  //
+  // Дебаунс здесь тот же, что у сетевой отправки (сброс таймера на каждом
+  // вводе), и окно 400 мс заведомо короче сетевых 500 мс (:410-417): журнал
+  // успевает записаться до запроса, а не после. Плюс принудительная запись на
+  // уходе в фон, на unmount и на pagehide — см. forceOutboxWrite.
+  const writeOutboxNow = useCallback(() => {
+    if (!userId) return;
+    if (outboxTimerRef.current) {
+      clearTimeout(outboxTimerRef.current);
+      outboxTimerRef.current = null;
+    }
+    const entries = buildOutboxEntries(workoutId, outboxBufferRef.current, Date.now());
+    if (entries.length === 0) return;
+    // Ожидать запись нельзя: она вызывается в том числе из обработчика смерти
+    // процесса. Ошибка хранилища не имеет права влиять на ввод.
+    saveOutboxEntries(userId, entries).catch((error) =>
+      console.warn('[useWorkoutSession] журнал не записан:', error)
+    );
+  }, [userId, workoutId]);
+
+  const queueOutboxWrite = useCallback(
+    (workoutExerciseId: string, sets: SetData[]) => {
+      if (!userId) return;
+      outboxBufferRef.current.set(workoutExerciseId, sets);
+      if (outboxTimerRef.current) clearTimeout(outboxTimerRef.current);
+      outboxTimerRef.current = setTimeout(writeOutboxNow, 400);
+    },
+    [userId, writeOutboxNow]
+  );
+
+  /**
+   * Принудительная запись журнала: используется там, где процесс может умереть
+   * (уход в фон, размонтирование экрана, закрытие вкладки на вебе). Вызывается
+   * ДО отправки, пока буфер ещё полон: flush очищает память, а при падении
+   * запроса данные возвращаются только в память — на диске они уже лежат.
+   */
+  const forceOutboxWrite = useCallback(() => {
+    writeOutboxNow();
+  }, [writeOutboxNow]);
+
+  // Сервер подтвердил группу — ключ уходит и из памяти, и из журнала. Без второго
+  // следующая пачка по другому упражнению перезаписала бы файл целиком и
+  // «воскресила» уже сохранённый подход с более свежей меткой.
+  const settleOutboxKeys = useCallback(
+    (workoutExerciseIds: string[]) => {
+      if (!userId || workoutExerciseIds.length === 0) return;
+      for (const id of workoutExerciseIds) outboxBufferRef.current.delete(id);
+      dropOutboxEntries(userId, workoutExerciseIds).catch((error) =>
+        console.warn('[useWorkoutSession] журнал не вычищен:', error)
+      );
+    },
+    [userId]
+  );
+
+  // Сколько подходов сейчас не подтверждено сервером. Считается по памяти очереди —
+  // тот же источник, что у отправки, поэтому плашка не может разойтись с фактом.
+  const publishUnsaved = useCallback(() => {
+    setUnsavedSets(countUnsentSets(pendingLogsRef.current.entries()));
+  }, []);
+
+  /** Миг «записано»: плашка показывает подтверждение и гаснет сама. */
+  const markSaved = useCallback(() => {
+    setSaveState('saved');
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaveState('idle'), 1500);
+  }, []);
+
   useEffect(() => {
     isWorkoutActiveRef.current = isWorkoutActive;
   }, [isWorkoutActive]);
@@ -130,9 +231,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const flushPendingLogs = useCallback(async (): Promise<number> => {
     const entries = Array.from(pendingLogsRef.current.entries());
     if (entries.length === 0) return 0;
+    // CONN-1: с этого момента есть что дослать — плашка обязана появиться ещё до
+    // ответа сервера, иначе при офлайне пользователь видел бы пустой экран.
+    publishUnsaved();
     pendingLogsRef.current.clear();
     const now = new Date();
     let failures = 0;
+    const sentKeys: string[] = [];
     const promises = entries.map(async ([workoutExerciseId, exerciseLogs]) => {
       // Сначала маппим с сохранением оригинального индекса (set_number), затем фильтруем пустые
       const formattedLogs = exerciseLogs
@@ -170,6 +275,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       try {
         // F5: длина массива экрана = верхняя граница заменяемого диапазона.
         await upsertWorkoutLogs(workoutExerciseId, formattedLogs, exerciseLogs.length);
+        // CONN-1: сервер подтвердил группу — она уходит и из буфера журнала, и из
+        // файла. Без этого следующий ввод по другому упражнению перезаписал бы
+        // документ целиком и вернул уже сохранённый подход с новой меткой.
+        sentKeys.push(workoutExerciseId);
       } catch (error) {
         console.error('[flushPendingLogs] error:', error);
         failures++;
@@ -183,8 +292,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     });
 
     await Promise.all(promises);
+    settleOutboxKeys(sentKeys);
+    // Осталось ноль и ни одна группа не упала — показываем подтверждение.
+    publishUnsaved();
+    if (failures === 0 && sentKeys.length > 0) markSaved();
     return failures;
-  }, []);
+  }, [settleOutboxKeys, publishUnsaved, markSaved]);
 
   // BUG-7 (аудит 28.09): single-flight обёртка flush — «Завершить» подхватывает
   // уже идущий debounce-flush вместо параллельного второго прогона (тот
@@ -199,6 +312,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     flushPromiseRef.current = p;
     return p;
   }, [flushPendingLogs]);
+
+  /** Тап «Записать» на плашке: принудительная попытка отправить очередь. */
+  const retryUnsaved = useCallback(() => {
+    void joinFlush();
+  }, [joinFlush]);
 
   // ============================================================================
   // LOAD WORKOUT — использует loader + mapper
@@ -264,7 +382,48 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       );
 
       const prevLogsByExerciseId = buildPrevLogsByExerciseId(recentLogs);
-      const finalExercisesData = injectPreviousData(exercisesData, prevLogsByExerciseId);
+      let finalExercisesData = injectPreviousData(exercisesData, prevLogsByExerciseId);
+
+      // CONN-1 (27.10): журнал незаписанных подходов. Экран мог открыться после
+      // того, как приложение убили без сети: всё, что сервер не подтвердил,
+      // лежит в хранилище и накладывается на серверные строки по правилу метки
+      // (src/utils/outboxMerge.ts). Ранний выход здесь недопустим — без журнала
+      // экран обязан отрисоваться ровно как раньше.
+      const outbox = await readWorkoutOutbox(userId, workoutId);
+      if (userId && outbox.length > 0) {
+        const staleKeys: string[] = [];
+        let restoredSets = 0;
+        const withOutbox = finalExercisesData.map((exercise) => {
+          const entry = outbox.find(
+            (candidate) => candidate.workout_exercise_id === exercise.workout_exercise_id
+          );
+          if (!entry) return exercise;
+          const serverLogs = (logsByWorkoutExercise[exercise.workout_exercise_id] ??
+            []) as unknown as ServerLogStamp[];
+          const merged = overlayOutboxSets(exercise.sets, serverLogs, entry);
+          if (!merged.keep) {
+            // Сервер уже свежее (или значения совпали): держим копию нет смысла.
+            staleKeys.push(entry.workout_exercise_id);
+            return exercise;
+          }
+          restoredSets += countFilledSets(merged.sets);
+          pendingLogsRef.current.set(exercise.workout_exercise_id, merged.sets);
+          outboxBufferRef.current.set(exercise.workout_exercise_id, merged.sets);
+          return { ...exercise, sets: merged.sets };
+        });
+        if (staleKeys.length > 0) {
+          dropOutboxEntries(userId, staleKeys).catch((error) =>
+            console.warn('[useWorkoutSession] устаревший журнал не вычищен:', error)
+          );
+        }
+        if (restoredSets > 0) {
+          finalExercisesData = withOutbox;
+          // Досылаем сразу: при входе пользователь ещё ничего не набирает, а
+          // дебаунса ждать не от чего. Ошибку покажет плашка (unsavedSets).
+          void joinFlush();
+        }
+      }
+
       setExercises(finalExercisesData);
 
       // UX-3a (I-5): all-time bests по упражнениям сессии — async, не блокирует
@@ -292,7 +451,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [workoutId, userId]);
+  }, [workoutId, userId, joinFlush]);
 
   useEffect(() => {
     loadWorkout();
@@ -316,6 +475,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
+      // CONN-1: сначала на диск, потом в сеть. Если запрос упадёт или процесс
+      // умрёт в полёте, values уже лежат в журнале и вернутся при следующем входе.
+      forceOutboxWrite();
       void joinFlush();
 
       if (isWorkoutActiveRef.current && !isFinishingRef.current && currentTimeRef.current > 0) {
@@ -326,7 +488,29 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     });
 
     return () => subscription.remove();
-  }, [joinFlush, workoutId]);
+  }, [joinFlush, workoutId, forceOutboxWrite]);
+
+  // CONN-1 (27.10): на вебе закрытие вкладки не генерирует ни AppState, ни
+  // размонтирования React-дерева — только pagehide. Асинхронную запись
+  // дождаться нельзя, но она и не нужна целиком: журнал пишется в хранилище, а
+  // отправка догонит при следующем входе.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onHide = () => forceOutboxWrite();
+    window.addEventListener('pagehide', onHide);
+    return () => window.removeEventListener('pagehide', onHide);
+  }, [forceOutboxWrite]);
+
+  // CONN-1: связь вернулась — очередь уходит сама, без ожидания «Завершить».
+  // Реагируем только на переход «не было → есть»: первый рендер с online=true
+  // не должен порождать запрос.
+  useEffect(() => {
+    const wasOnline = onlineRef.current;
+    onlineRef.current = online;
+    if (wasOnline || !online) return;
+    if (pendingLogsRef.current.size === 0) return;
+    void joinFlush();
+  }, [online, joinFlush]);
 
   // Cleanup при unmount
   useEffect(() => {
@@ -335,6 +519,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
+      // CONN-1: журнал — до отправки (см. комментарий в AppState-обработчике).
+      forceOutboxWrite();
       flushPendingLogs();
 
       if (isWorkoutActiveRef.current && !isFinishingRef.current && currentTimeRef.current > 0) {
@@ -431,11 +621,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         exercise.sets = sets;
         updated[exerciseIndex] = exercise;
         pendingLogsRef.current.set(exercise.workout_exercise_id, sets);
+        queueOutboxWrite(exercise.workout_exercise_id, sets);
         scheduleFlush();
         return updated;
       });
     },
-    [scheduleFlush]
+    [scheduleFlush, queueOutboxWrite]
   );
 
   // ENG-13: снятие флага «Разминка» убирает и слот, который auto-add доборал при
@@ -495,6 +686,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         newExercise.sets = newSets;
         updated[exerciseIndex] = newExercise;
         pendingLogsRef.current.set(exercise.workout_exercise_id, newSets);
+        queueOutboxWrite(exercise.workout_exercise_id, newSets);
         scheduleFlush();
         return updated;
       });
@@ -503,7 +695,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         persistExerciseSettings(snapshot.workout_exercise_id, { target_sets: shrinkTo });
       }
     },
-    [scheduleFlush, persistExerciseSettings]
+    [scheduleFlush, persistExerciseSettings, queueOutboxWrite]
   );
 
   /**
@@ -544,12 +736,13 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       // Снаружи апдейтера (§9): предзаполненный вес — уже данные, их надо
       // отфlushить, иначе после перезахода строки вернутся пустыми.
       pendingLogsRef.current.set(exercise.workout_exercise_id, nextSets);
+      queueOutboxWrite(exercise.workout_exercise_id, nextSets);
       scheduleFlush();
       persistExerciseSettings(exercise.workout_exercise_id, {
         target_sets: Math.max(exercise.target_sets, exercise.sets.length) + steps.length,
       });
     },
-    [persistExerciseSettings, scheduleFlush]
+    [persistExerciseSettings, scheduleFlush, queueOutboxWrite]
   );
 
   const applyProgression = useCallback(
@@ -564,11 +757,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         exercise.sets = sets;
         updated[exerciseIndex] = exercise;
         pendingLogsRef.current.set(exercise.workout_exercise_id, sets);
+        queueOutboxWrite(exercise.workout_exercise_id, sets);
         scheduleFlush();
         return updated;
       });
     },
-    [scheduleFlush]
+    [scheduleFlush, queueOutboxWrite]
   );
 
   const isSetCompleted = useCallback((set: SetData): boolean => {
@@ -622,10 +816,14 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       const before = exercisesRef.current[exerciseIndex]?.sets ?? [];
       if (weId && before.length > newSetsCount) {
         pendingLogsRef.current.set(weId, before.slice(0, newSetsCount));
+        queueOutboxWrite(
+          weId,
+          before.slice(0, newSetsCount).map((s) => ({ ...s }))
+        );
         scheduleFlush();
       }
     },
-    [persistExerciseSettings, scheduleFlush]
+    [persistExerciseSettings, scheduleFlush, queueOutboxWrite]
   );
 
   // ENG-13: добавить N сетов (для warmup toggle auto-add). Раньше экран вызывал
@@ -706,6 +904,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
+      if (outboxTimerRef.current) {
+        clearTimeout(outboxTimerRef.current);
+        outboxTimerRef.current = null;
+      }
+      outboxBufferRef.current.clear();
 
       if (clearLogs) {
         const workoutExerciseIds = exercisesRef.current
@@ -713,6 +916,11 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
           .filter(Boolean);
         pendingLogsRef.current.clear();
         await clearWorkoutLogs(workoutExerciseIds);
+        // CONN-1: журнал занятия гасится вместе с подходами, иначе при следующем
+        // входе сброшенные значения вернулись бы из хранилища на сетку.
+        await clearWorkoutOutbox(userId, workoutId).catch((error) =>
+          console.warn('[useWorkoutSession] журнал не стёрт после сброса:', error)
+        );
         // Значения в состоянии гасим обязательно: в БД их нет, а сетки остались
         // бы заполненными и при следующем флэше вернули бы удалённое.
         setExercises((prev) =>
@@ -1402,6 +1610,12 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
               new Date().toISOString(),
               durationSeconds
             );
+            // CONN-1: занятие закрыто и подтверждено сервером — журнал этого
+            // занятия больше не нужен. Здесь, а не до вызова: ветка «Повторить»
+            // обязана очистить его так же, как и первый удачный финиш.
+            await clearWorkoutOutbox(userId, workoutId).catch((error) =>
+              console.warn('[useWorkoutSession] журнал не стёрт после финиша:', error)
+            );
             reportFinish(result);
           };
 
@@ -1480,5 +1694,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     saveWorkout,
     resetSession,
     timerResetToken,
+    // CONN-1: состояние незаписанного для плашки под шапкой экрана тренировки.
+    unsavedSets,
+    saveState,
+    retryUnsaved,
+    online,
   };
 }
