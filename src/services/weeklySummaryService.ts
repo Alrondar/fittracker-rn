@@ -59,6 +59,7 @@ interface WorkoutWeekRow {
   started_at: string | null;
   finished_at: string | null;
   duration_seconds: number | null;
+  workout_type: string | null;
   workout_exercises:
     | {
         id: string;
@@ -205,6 +206,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
         started_at,
         finished_at,
         duration_seconds,
+        workout_type,
         workout_exercises(
           id,
           exercise_id,
@@ -244,6 +246,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
   const workoutDaysSet = new Set<string>();
   let totalVolume = 0;
   let totalSets = 0;
+  const volumeByTypeAcc: Record<string, number> = {};
   const muscleVolume: Record<string, number> = {};
   let rpeSum = 0;
   let rpeCount = 0;
@@ -270,6 +273,9 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
   for (const w of workoutsRows) {
     const wDate = new Date(workoutEffectiveDate(w));
     workoutDaysSet.add(toDateKey(wDate));
+    // Тип занятия может быть пустым (строки, закрытые до 27.10) — тогда объём
+    // не попадает ни в одну корзину, и пороги по типу просто не сработают.
+    const wType = w.workout_type;
     for (const we of w.workout_exercises ?? []) {
       exercisedIds.add(we.exercise_id);
       const ex = asOne(we.exercises) as {
@@ -316,6 +322,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
         const weight = toNumber(log.weight_kg);
         const reps = effectiveReps(log);
         totalVolume += weight * reps;
+        if (wType) volumeByTypeAcc[wType] = (volumeByTypeAcc[wType] ?? 0) + weight * reps;
 
         // CI-4: Muscle volume aggregation (primary = 1.0, secondary = 0.5)
         for (const m of primary) {
@@ -433,15 +440,15 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
       min: rMin,
       max: rMax,
     },
-    // FD11-3: типы тренировок (workout_type) ещё нет в данных (миграция ENG-10 не
-    // сделана). Раньше strength = totalVolume — ratio === 1 и инсайт TYPE_IMBALANCE
-    // («80%+ объёма — силовых») ложно срабатывал на любой объёме. До появления
-    // реальных типов держим нули: engine-гейты (<0.8) сами глушат инсайт и пороги.
+    // Тип занятия пишет приложение при старте (из фазы программы), а исторические
+    // строки до 27.10 остались без типа — их объём остаётся только в totalVolume.
+    // «Смешанная» корзина нигде не участвует в порогах: движок читает strength,
+    // hypertrophy и cardio, поэтому неотнесённый объём просто размывает долю.
     volumeByType: {
-      strength: 0,
-      hypertrophy: 0,
-      cardio: 0,
-      mixed: 0,
+      strength: volumeByTypeAcc.strength ?? 0,
+      hypertrophy: volumeByTypeAcc.hypertrophy ?? 0,
+      cardio: volumeByTypeAcc.cardio ?? 0,
+      mixed: volumeByTypeAcc.mixed ?? 0,
     },
     muscleVolume,
     muscleFatigue: {},
