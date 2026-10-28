@@ -2,6 +2,7 @@
 // FEAT-1.8: daily readiness check-in. UI не ходит в supabase напрямую.
 // P0 Вариант B: добавлена авто-калькуляция readiness и getRecoveryTrend.
 import { supabase } from '../lib/supabase';
+import type { Database } from '../types/database.types';
 import { calculateReadinessFromDetails } from '../utils/readiness';
 import { todayKey, toDateKey } from '../utils/dateKey';
 
@@ -110,7 +111,10 @@ export const readinessService = {
     if (existing) {
       // Quick-set из StatusCard присылает details=null — update только ненулевых полей,
       // иначе он затирает sleep/fatigue/soreness/stress из полного чек-ина
-      const patch = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== null));
+      const patch: Database['public']['Tables']['daily_readiness']['Update'] = {};
+      for (const [column, value] of Object.entries(payload)) {
+        if (value !== null) patch[column as keyof typeof payload] = value;
+      }
       if (Object.keys(patch).length === 0) return;
       const { error } = await supabase.from('daily_readiness').update(patch).eq('id', existing.id);
       if (error) throw error;

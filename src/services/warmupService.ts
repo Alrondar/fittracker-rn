@@ -7,6 +7,7 @@ import {
   toWarmupPlanRow,
   warmupPoolLocal,
 } from '../utils/exerciseSearchLocal';
+import type { WarmupPlanFields } from '../utils/exerciseSearchLocal';
 import {
   UserInjury,
   targetsInjuredMuscle,
@@ -190,7 +191,9 @@ export const warmupService = {
             .or(WARMUP_POOL_OR)
             .order('name');
           if (error || !data) throw new Error(error?.message ?? 'пул разминки не пришёл');
-          return data;
+          // Общий тип веток = WarmupPlanFields: у строки из снимка status может
+          // отсутствовать (снимки старше колонки), у прод-строки он всегда заполнен.
+          return data as WarmupPlanFields[];
         },
         (snapshotRows) => warmupPoolLocal(snapshotRows).map(toWarmupPlanRow)
       );

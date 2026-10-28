@@ -3,6 +3,9 @@
 import { supabase } from '../lib/supabase';
 import type { CycleEvent, CycleSettings, CycleEventType } from '../types/cycle';
 
+// Тип строки шире домена: created_at/updated_at допустимо пустые, event_type —
+// текст без ограничения. Приведение на границе сервиса: пустых значений в этих
+// столбцах в проде на 28.10 нет, event_type только четырьмя значениями из союза.
 export const cycleService = {
   /** Получить все события цикла пользователя */
   async getCycleEvents(userId: string): Promise<CycleEvent[]> {
@@ -11,9 +14,9 @@ export const cycleService = {
       .select('*')
       .eq('user_id', userId)
       .order('event_date', { ascending: false });
-    
+
     if (error) throw error;
-    return data || [];
+    return (data ?? []) as unknown as CycleEvent[];
   },
 
   /** Получить настройки цикла пользователя */
@@ -23,7 +26,7 @@ export const cycleService = {
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data || { user_id: userId, luteal_length_days: 14 };
   },
@@ -48,26 +51,20 @@ export const cycleService = {
       )
       .select()
       .single();
-    
+
     if (error) throw error;
-    return data;
+    return data as unknown as CycleEvent;
   },
 
   /** Удалить событие цикла */
   async deleteCycleEvent(eventId: string): Promise<void> {
-    const { error } = await supabase
-      .from('cycle_events')
-      .delete()
-      .eq('id', eventId);
-    
+    const { error } = await supabase.from('cycle_events').delete().eq('id', eventId);
+
     if (error) throw error;
   },
 
   /** Обновить настройки цикла */
-  async updateCycleSettings(
-    userId: string,
-    lutealLengthDays: number
-  ): Promise<CycleSettings> {
+  async updateCycleSettings(userId: string, lutealLengthDays: number): Promise<CycleSettings> {
     const { data, error } = await supabase
       .from('cycle_settings')
       .upsert(
@@ -81,7 +78,7 @@ export const cycleService = {
       )
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   },

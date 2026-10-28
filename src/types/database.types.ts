@@ -236,6 +236,30 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_edges_archive: {
+        Row: {
+          merged_into: string | null
+          payload: Json
+          removed_at: string | null
+          src_id: string
+          src_table: string
+        }
+        Insert: {
+          merged_into?: string | null
+          payload: Json
+          removed_at?: string | null
+          src_id: string
+          src_table: string
+        }
+        Update: {
+          merged_into?: string | null
+          payload?: Json
+          removed_at?: string | null
+          src_id?: string
+          src_table?: string
+        }
+        Relationships: []
+      }
       exercise_equipment: {
         Row: {
           equipment_id: string
@@ -414,6 +438,87 @@ export type Database = {
           name?: string
           name_eng?: string | null
           primary_muscles?: string[]
+          reps_range?: string | null
+          risks?: string | null
+          search_text?: string | null
+          secondary_muscles?: string[] | null
+          settings?: string | null
+          short_name?: string | null
+          status?: string
+          tags?: string[]
+          technique?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      exercises_removed_archive: {
+        Row: {
+          aliases: string[]
+          benefits: string | null
+          can_be_activation: boolean
+          category: string | null
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          media_url: string | null
+          merged_into: string | null
+          movement_pattern: string | null
+          name: string
+          name_eng: string | null
+          primary_muscles: string[]
+          removed_at: string | null
+          reps_range: string | null
+          risks: string | null
+          search_text: string | null
+          secondary_muscles: string[] | null
+          settings: string | null
+          short_name: string | null
+          status: string
+          tags: string[]
+          technique: string | null
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[]
+          benefits?: string | null
+          can_be_activation?: boolean
+          category?: string | null
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          media_url?: string | null
+          merged_into?: string | null
+          movement_pattern?: string | null
+          name: string
+          name_eng?: string | null
+          primary_muscles: string[]
+          removed_at?: string | null
+          reps_range?: string | null
+          risks?: string | null
+          search_text?: string | null
+          secondary_muscles?: string[] | null
+          settings?: string | null
+          short_name?: string | null
+          status?: string
+          tags?: string[]
+          technique?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[]
+          benefits?: string | null
+          can_be_activation?: boolean
+          category?: string | null
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          media_url?: string | null
+          merged_into?: string | null
+          movement_pattern?: string | null
+          name?: string
+          name_eng?: string | null
+          primary_muscles?: string[]
+          removed_at?: string | null
           reps_range?: string | null
           risks?: string | null
           search_text?: string | null
@@ -996,9 +1101,6 @@ export type Database = {
           },
         ]
       }
-      // WARMUP-2 (миграция 20260925103000). Внимание: запись добавлена вручную
-      // по формату генератора (CLI-линковки проекта нет) — при первой же
-      // полной регенерации типов сверить с генератором.
       warmup_preferences: {
         Row: {
           created_at: string
@@ -1033,7 +1135,6 @@ export type Database = {
           intensity: string | null
           order_index: number
           position: number | null
-          // hand-added (миграция 20260925161000, FD-4) — CLI-генерации нет, см. MEMORY reference-supabase-mcp
           progression_policy: string | null
           reps: string | null
           rest_seconds: number | null
@@ -1109,6 +1210,7 @@ export type Database = {
           set_number: number
           weight_kg: number | null
           workout_exercise_id: string
+          workout_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -1125,6 +1227,7 @@ export type Database = {
           set_number: number
           weight_kg?: number | null
           workout_exercise_id: string
+          workout_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -1141,6 +1244,7 @@ export type Database = {
           set_number?: number
           weight_kg?: number | null
           workout_exercise_id?: string
+          workout_id?: string | null
         }
         Relationships: [
           {
@@ -1148,6 +1252,13 @@ export type Database = {
             columns: ["workout_exercise_id"]
             isOneToOne: false
             referencedRelation: "workout_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_logs_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
             referencedColumns: ["id"]
           },
         ]
@@ -1222,9 +1333,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      // BUG-6 (миграция 20261018090000). Внимание: запись добавлена вручную по
-      // формату генератора (CLI-линковки проекта нет) — при первой же полной
-      // регенерации сверить с генератором.
+      advance_pointer_from_triple: {
+        Args: {
+          p_day: number
+          p_phase: number
+          p_program_id: string
+          p_user_id: string
+          p_week: number
+        }
+        Returns: Json
+      }
       advance_program_progress: {
         Args: { p_program_id: string; p_user_id: string; p_workout_id: string }
         Returns: Json
@@ -1237,11 +1355,9 @@ export type Database = {
         Args: { p_program_id: string; p_user_id: string }
         Returns: number
       }
-      // ADV-atomic (миграция 20261018150000). Запись добавлена вручную по
-      // формату генератора (CLI-линковки проекта нет).
       finish_workout_and_advance: {
         Args: {
-          p_duration_seconds?: number | null
+          p_duration_seconds: number
           p_finished_at: string
           p_skipped?: boolean
           p_user_id: string
@@ -1260,6 +1376,16 @@ export type Database = {
         Returns: string
       }
       normalize_equipment_name: { Args: { item: string }; Returns: string }
+      program_effective_days: {
+        Args: { p_program_id: string; p_user_id: string }
+        Returns: {
+          day_name: string
+          day_number: number
+          phase_number: number
+          program_day_id: string
+          week_number: number
+        }[]
+      }
       replace_in_array: {
         Args: { arr: string[]; new_val: string; old_val: string }
         Returns: string[]
@@ -1296,8 +1422,6 @@ export type Database = {
           primary_muscles: string[]
         }[]
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       split_equipment: { Args: { item: string }; Returns: string[] }
       split_equipment_final: { Args: { item: string }; Returns: string[] }
       sync_program_changes_to_workouts: {
@@ -1313,10 +1437,16 @@ export type Database = {
         Returns: undefined
       }
       upsert_workout_logs: {
-        // hand-added (миграция 20261017143000, F5) — CLI-генерации в репо нет,
-        // см. MEMORY reference-supabase-mcp
-        Args: { p_logs: Json[]; p_workout_exercise_id: string; p_total_sets?: number | null }
+        Args: {
+          p_logs: Json[]
+          p_total_sets?: number
+          p_workout_exercise_id: string
+        }
         Returns: undefined
+      }
+      workout_type_from_phase_type: {
+        Args: { p_phase_type: string }
+        Returns: string
       }
     }
     Enums: {

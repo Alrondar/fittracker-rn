@@ -185,7 +185,10 @@ export async function startProgramWorkout(userId: string, programId: string): Pr
     const targetSets = exercise.sets ?? 3;
     return {
       workout_id: newWorkout.id,
-      exercise_id: exercise.exercise_id,
+      // В шаблоне программы exercise_id допустимо пустой, в снимке занятия — нет.
+      // Пустых строк в program_exercises на 28.10 нет (0 из 2066); если появится —
+      // запись отвалится на сервере, а не молча создаст пустой слот.
+      exercise_id: exercise.exercise_id as string,
       order_index: exercise.position ?? index,
       position: exercise.position ?? index,
       target_sets: targetSets,
@@ -736,7 +739,9 @@ export async function finishWorkoutAndAdvance(
     p_user_id: userId,
     p_workout_id: workoutId,
     p_finished_at: finishedAt,
-    p_duration_seconds: durationSeconds,
+    // Генератор типов не знает, что параметр plpgsql принимает пустое значение:
+    // без таймера на экране тренировки длительность остаётся пустой.
+    p_duration_seconds: durationSeconds as number,
     p_skipped: skipped,
   });
   if (error) throw error;
@@ -781,7 +786,7 @@ export async function upsertWorkoutLogs(
   const { error } = await supabase.rpc('upsert_workout_logs', {
     p_workout_exercise_id: workoutExerciseId,
     p_logs: logs,
-    p_total_sets: totalSets ?? null,
+    p_total_sets: (totalSets ?? null) as number,
   });
 
   if (error) throw error;
