@@ -42,8 +42,10 @@ interface NextWorkoutRow {
 interface WorkoutExerciseRow {
   id: string;
   exercise_id: string | null;
-  // Supabase embed `.select('exercises(name)')` возвращает массив, а не одиночный объект.
-  exercises: { name: string | null }[] | null;
+  // Вложение «много к одному» (`.select('exercises(name)')`) приходит объектом,
+  // а не массивом — сверено с `useWorkoutSession.mapper.ts:149`, где тот же
+  // разворот работает на устройстве.
+  exercises: { name: string | null } | null;
 }
 
 interface LogRow {
@@ -52,8 +54,8 @@ interface LogRow {
   reps: number | null;
   reps_left?: number | null;
   reps_right?: number | null;
-  // Supabase join `.select('workout_exercises!inner(exercise_id)')` возвращает массив.
-  workout_exercises: { exercise_id: string | null }[] | null;
+  // Тот же разворот: `workout_exercises!inner(exercise_id)` — объект.
+  workout_exercises: { exercise_id: string | null } | null;
 }
 
 interface RecentWorkoutVolumeRow {
@@ -121,7 +123,7 @@ export async function getWorkoutForecast(userId: string): Promise<WorkoutForecas
 
   const exerciseNames: Record<string, string> = {};
   exercises.forEach((e) => {
-    const name = e.exercises?.[0]?.name;
+    const name = e.exercises?.name;
     if (e.exercise_id && name) {
       exerciseNames[e.exercise_id] = name;
     }
@@ -171,7 +173,7 @@ export async function getWorkoutForecast(userId: string): Promise<WorkoutForecas
   const exerciseIdSessions = new Map<string, number[]>(); // exercise_id → [volumePerTraining, ...]
 
   for (const log of logs) {
-    const we = log.workout_exercises?.[0];
+    const we = log.workout_exercises;
     if (!we || !we.exercise_id) continue;
     const exerciseId = we.exercise_id;
     weIdToExerciseId.set(log.workout_exercise_id, exerciseId);
