@@ -308,7 +308,7 @@ Important components:
 | useInjuries|injuries + StatusCard (AUDIT-6: чипы активных травм)|
 | useProfile|profile/settings|
 | useBodyMetrics|metrics|
-| useRecommendationFeedback|SetsGrid (COACH-3: fire-and-forget запись accepted/rejected + причина).  userId  автоматически берётся из  useStore , чтобы не передавать его через цепочку пропсов.|
+| useRecommendationFeedback|SetsGrid (COACH-3: fire-and-forget запись принятого / отклонённого / изменённого; причину отказа с 27.10 не спрашиваем — см. `STATUS.md §15.16`). Правило «изменено» — `src/utils/recommendationOutcome.ts`, покрыто `scripts/check-recommendation-outcome.ts`; точка коммита ячейки — `commitSetField` в `SetsGrid.tsx`.  userId  автоматически берётся из  useStore , чтобы не передавать его через цепочку пропсов.|
 | useTimerSettings|RestTimer/settings|
 | useUnitPreferences|UnitToggle, ExerciseCard, SetsGrid|
 | useBarbellSettings|PlateMathRow, settings (локальное хранение веса грифа, AsyncStorage)|
@@ -393,7 +393,7 @@ legacy columns `exercises.equipment`, `exercises.injuries`, `exercises.alternati
 `search_exercises` and `get_exercise_filter_counts` now use `exercise_equipment` + `equipment` tables;
 `exerciseReferenceService` is the single source of truth for equipment/injuries/alternatives in runtime;
 `injury_exercise_warnings`  is the hard-constraint source for safety layer (ARCH-8).
--`20260819075346_backfill_movement_pattern (ENG-5 prep)` : 15 idempotent UPDATE rules заполняют 143/149 strength/olympic упражнений 14 новыми значенияmovement_pattern (TEXT, без ENUM); 6 честных NULL в strength (баланс, баттл-ропы, ги бриды), 80 stretching/cardio NULL намеренно не тронуты;
+-`20260819075346_backfill_movement_pattern (ENG-5 prep)` : 15 idempotent UPDATE rules заполняют 143/149 strength/olympic упражнений 14 новыми значения movement_pattern (TEXT, без ENUM); 6 честных NULL в strength (баланс, баттл-ропы, ги бриды), 80 stretching/cardio NULL намеренно не тронуты;
 -`20260820073612_recommendation_feedback (COACH-3)` : таблица recommendation_feedback для записи acceptance/rejection feedback; upsert по UNIQUE(user_id, workout_id, exercise_id, set_number); RLS auth.uid() = user_id;
 -`20260820115108_drop_unused_session_tables (ARCH-10)` : удаление экспериментальных таблиц  `workout_sessions`  и  `session_sets`  (0 строк данных, 0 упоминаний в коде).  `workout_logs`  зафиксирован как единственный source of truth для подходов;
 - `20260827180609_workout_logs_is_warmup.sql` (ENG-13): добавляет в workout_logs колонки `is_warmup` (boolean NOT NULL DEFAULT false — исторические данные считаются рабочими, бэкфилл не нужен) и `is_estimated_reps`; обновляет RPC `upsert_workout_logs` для приёма обоих полей; индекс по (workout_exercise_id, is_warmup). Аналитика, читающая workout_logs (volume/e1RM/PR), должна фильтровать `is_warmup=false` (ENG-13 remainder). После применения миграции регенерировать `database.types.ts` (CLAUDE.md §11).

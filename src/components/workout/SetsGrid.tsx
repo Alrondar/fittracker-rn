@@ -39,13 +39,13 @@ import { createCardStyles } from '../../styles/components/card';
 import {
   SetData,
   SetFeedbackPatch,
-  UserRejectionReason,
   ProgressionPolicy,
   ExercisePainState,
 } from '../../types/workout';
 import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings } from '../../hooks/useRpeSettings';
 import { useRecommendationFeedback } from '../../hooks/useRecommendationFeedback';
+import { detectManualWeightChange } from '../../utils/recommendationOutcome';
 import { useBarbellSettings } from '../../hooks/useBarbellSettings';
 
 import {
@@ -76,21 +76,6 @@ import type { ProgressionContext } from '../../engine/progression';
 import { planRampUp } from '../../engine/warmupRamp';
 import { RecommendationCard } from './RecommendationCard';
 import { perfMark, perfPaint } from '../../utils/perf';
-
-// COACH-3: фиксированный набор причин отклонения (ROADMAP C2).
-// Коды — machine-readable (для аналитики), лейблы — user-facing.
-const REJECTION_REASONS: { code: UserRejectionReason; label: string }[] = [
-  { code: 'tired', label: 'устал' },
-  { code: 'too_heavy', label: 'слишком тяжело' },
-  { code: 'pain', label: 'боль' },
-  { code: 'want_easier', label: 'хочу легче' },
-  { code: 'other', label: 'другое' },
-];
-
-// COACH-3: состояние prompt-а причины отклонения.
-// 'idle' — ничего не спрашиваем; 'reasonPrompt' — показываем чипы причин;
-// 'resolved' — ответ записан, prompt скрыт.
-type FeedbackState = { status: 'idle' } | { status: 'reasonPrompt' } | { status: 'resolved' };
 
 // ENG-13: подписью «Р» помечается разминочный слот — он не входит в нумерацию
 // рабочих подходов, но остаётся в workout_logs под своим позиционным set_number.
@@ -600,6 +585,47 @@ export const SetsGrid = memo(function SetsGrid({
   const equipmentKey = Array.isArray(equipment) ? equipment.join('|') : String(equipment ?? '');
   // COACH-3: fire-and-forget запись feedback (ошибки глотаются тихо).
   const { submitFeedback } = useRecommendationFeedback();
+  // COACH-3 (27.10): «изменено» — пользователь поставил свой вес вместо
+  // предложенного. Целевой подход и предложение читаются из ref, а не из замыкания:
+  // рекомендация считается ниже по телу, а колбэк коммита должен оставаться
+  // стабильным, иначе мемо(SetRow) разваливается на каждый ввод (FZ-2).
+  const outcomeRef = useRef<{
+    targetSetIndex: number | null;
+    suggestion: {
+      action: string;
+      reasonCode: string;
+      suggestedWeight: number | null;
+      suggestedReps: number | null;
+    } | null;
+  }>({ targetSetIndex: null, suggestion: null });
+  const noteWeightCommit = useCallback(
+    (setIndex: number, committedValue: string) => {
+      const payload = detectManualWeightChange({
+        field: 'weight',
+        editedSetIndex: setIndex,
+        targetSetIndex: outcomeRef.current.targetSetIndex,
+        committedValue,
+        suggestion: outcomeRef.current.suggestion,
+      });
+      if (!payload) return;
+      submitFeedback({
+        workoutId,
+        exerciseId,
+        setNumber: setIndex + 1,
+        userReasonCode: null,
+        ...payload,
+      });
+    },
+    [submitFeedback, workoutId, exerciseId]
+  );
+  // Единая точка коммита ячейки: обычное обновление подходов + запись несогласия.
+  const commitSetField = useCallback<SetsGridProps['updateSet']>(
+    (exIndex, setIndex, field, value) => {
+      updateSet(exIndex, setIndex, field, value);
+      if (field === 'weight') noteWeightCommit(setIndex, value);
+    },
+    [updateSet, noteWeightCommit]
+  );
   // UX-7: настройка частоты запроса RPE
   const { settings: rpeSettings } = useRpeSettings();
 
@@ -895,9 +921,11 @@ export const SetsGrid = memo(function SetsGrid({
       const stepKg = parseFloat(fromDisplay(String(step))); // шаг в текущих единицах → кг
       const newKg = Math.round((prevWeight + stepKg) * 100) / 100;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      updateSet(exerciseIndex, progressionSetIndex, 'weight', String(newKg));
+      // Шаг от прошлого веса — тоже отклонение от предложения, поэтому идёт
+      // через общую точку коммита.
+      commitSetField(exerciseIndex, progressionSetIndex, 'weight', String(newKg));
     },
-    [progressionSetIndex, prevWeight, fromDisplay, updateSet, exerciseIndex]
+    [progressionSetIndex, prevWeight, fromDisplay, commitSetField, exerciseIndex]
   );
 
   // ============================================================================
@@ -972,6 +1000,20 @@ export const SetsGrid = memo(function SetsGrid({
     barWeight,
   ]);
 
+  // COACH-3: зеркало для noteWeightCommit — присваивается на каждом рендере,
+  // читается только при коммите ячейки (после завершения рендера).
+  outcomeRef.current = {
+    targetSetIndex: progressionSetIndex,
+    suggestion: recommendation
+      ? {
+          action: recommendation.action,
+          reasonCode: recommendation.reason.code,
+          suggestedWeight: recommendation.suggestedWeight ?? null,
+          suggestedReps: recommendation.suggestedReps ?? null,
+        }
+      : null,
+  };
+
   // Подсветка smallest chip (+2.5 кг / +5 lb) при action=increase,
   // но НЕ при safety override (ENG-4: не предлагаем +2.5 при боли/травме)
   const highlightedChip: number | null =
@@ -998,7 +1040,6 @@ export const SetsGrid = memo(function SetsGrid({
 
   // ============================================================================
   // ENG-2 + COACH-1: recommendation UX — expand / dismiss / chips-open state
-  // COACH-3: feedbackState для inline-запроса причины отклонения
   // ============================================================================
   const [expanded, setExpanded] = useState(false);
   // UX-16 D5: collapsed state for RecommendationCard (controlled by 💡 button)
@@ -1008,16 +1049,12 @@ export const SetsGrid = memo(function SetsGrid({
   // COACH-1: chips are hidden by default and revealed by the "Изменить" button
   // inside the RecommendationCard. Reduces L1 noise (PRODUCT.md §3.3).
   const [chipsOpen, setChipsOpen] = useState(false);
-  // COACH-3: состояние prompt-а причины отклонения.
-  // 'reasonPrompt' показывается после «Скрыть» — inline-чипы причин + пропустить.
-  const [feedbackState, setFeedbackState] = useState<FeedbackState>({ status: 'idle' });
 
-  // Reset expand/dismiss/chipsOpen/feedbackState state when exercise changes
+  // Reset expand/dismiss/chipsOpen state when exercise changes
   useEffect(() => {
     setExpanded(false);
     setDismissed(false);
     setChipsOpen(false);
-    setFeedbackState({ status: 'idle' });
   }, [exerciseIndex]);
 
   const explanationItems = useMemo<ExplanationItem[]>(() => {
@@ -1036,20 +1073,29 @@ export const SetsGrid = memo(function SetsGrid({
     setRecommendationCollapsed((v) => !v);
   }, []);
 
-  // COACH-3: «Скрыть» → показываем inline-чипы причин (reasonPrompt).
-  // Сам feedback запишется позже — при выборе причины или пропуске.
+  // COACH-3 (27.10): «Скрыть» = отказ. Причина больше не спрашивается: за два месяца
+  // на вопрос не ответили ни разу, а сам вопрос появлялся только после отказа,
+  // которого почти не бывает. Записываем факт отказа сразу и тихо.
   const handleDismiss = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setDismissed(true);
     setExpanded(false);
     setChipsOpen(false);
-    // Только при наличии активного сета и валидной рекомендации показываем prompt
     if (progressionSetIndex !== null && recommendation && recommendation.action !== 'no_data') {
-      setFeedbackState({ status: 'reasonPrompt' });
-    } else {
-      setFeedbackState({ status: 'resolved' });
+      submitFeedback({
+        workoutId,
+        exerciseId,
+        setNumber: progressionSetIndex + 1,
+        decision: 'rejected',
+        userReasonCode: null,
+        engineAction: recommendation.action,
+        engineReasonCode: recommendation.reason.code,
+        suggestedWeight: recommendation.suggestedWeight ?? null,
+        suggestedReps: recommendation.suggestedReps ?? null,
+        appliedWeight: null,
+      });
     }
-  }, [progressionSetIndex, recommendation]);
+  }, [progressionSetIndex, recommendation, submitFeedback, workoutId, exerciseId]);
 
   // COACH-1: «Изменить» toggles visibility of progression chips (they are the
   // manual weight-adjustment tool). Chips hidden by default — lower L1 noise.
@@ -1110,53 +1156,6 @@ export const SetsGrid = memo(function SetsGrid({
     exerciseId,
     submitFeedback,
   ]);
-
-  // COACH-3: выбор причины отклонения → запись rejected + userReasonCode.
-  const handleReasonSelect = useCallback(
-    (reasonCode: UserRejectionReason) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (progressionSetIndex === null || !recommendation || recommendation.action === 'no_data') {
-        setFeedbackState({ status: 'resolved' });
-        return;
-      }
-      submitFeedback({
-        workoutId,
-        exerciseId,
-        setNumber: progressionSetIndex + 1,
-        decision: 'rejected',
-        userReasonCode: reasonCode,
-        engineAction: recommendation.action,
-        engineReasonCode: recommendation.reason.code,
-        suggestedWeight: recommendation.suggestedWeight ?? null,
-        suggestedReps: recommendation.suggestedReps ?? null,
-        appliedWeight: null,
-      });
-      setFeedbackState({ status: 'resolved' });
-    },
-    [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback]
-  );
-
-  // COACH-3: пропустить причину → запись rejected без userReasonCode.
-  const handleSkipReason = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (progressionSetIndex === null || !recommendation || recommendation.action === 'no_data') {
-      setFeedbackState({ status: 'resolved' });
-      return;
-    }
-    submitFeedback({
-      workoutId,
-      exerciseId,
-      setNumber: progressionSetIndex + 1,
-      decision: 'rejected',
-      userReasonCode: null,
-      engineAction: recommendation.action,
-      engineReasonCode: recommendation.reason.code,
-      suggestedWeight: recommendation.suggestedWeight ?? null,
-      suggestedReps: recommendation.suggestedReps ?? null,
-      appliedWeight: null,
-    });
-    setFeedbackState({ status: 'resolved' });
-  }, [progressionSetIndex, recommendation, workoutId, exerciseId, submitFeedback]);
 
   // UX-RPE-1: тап по чипу открывает инлайн-редактор (гейт как раньше — только
   // завершённый сет; незавершённым RPE не заводим).
@@ -1230,7 +1229,6 @@ export const SetsGrid = memo(function SetsGrid({
       recommendation.action !== 'no_data' &&
       !recommendationCollapsed &&
       !dismissed) ||
-    (dismissed && feedbackState.status === 'reasonPrompt') ||
     (chipsOpen && prevWeight !== null) ||
     plateMathVisible(plateWeight, equipment, barWeight, unit);
 
@@ -1473,72 +1471,6 @@ export const SetsGrid = memo(function SetsGrid({
                     />
                   </Reveal>
                 )}
-              {/* COACH-3: Reason prompt — inline-чипы причин после «Скрыть».
-                PRODUCT.md §3.2: L2 по запросу, не sheet и не modal.
-                «×» справа = пропустить причину (записать rejected без userReasonCode). */}
-              {dismissed && feedbackState.status === 'reasonPrompt' && (
-                <View
-                  style={{
-                    marginTop: SPACING.sm,
-                    paddingTop: SPACING.sm,
-                    borderTopWidth: 1,
-                    borderTopColor: withAlpha(colors.primary, 0.125),
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: SPACING.xs,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        typography.captionSmall,
-                        { color: colors.textSecondary, fontWeight: '500' },
-                      ]}
-                    >
-                      Почему? (не обязательно)
-                    </Text>
-                    {REJECTION_REASONS.map((reason) => (
-                      <PressableScale
-                        key={reason.code}
-                        onPress={() => handleReasonSelect(reason.code)}
-                        style={{
-                          paddingHorizontal: SPACING.sm,
-                          paddingVertical: 4,
-                          borderRadius: BORDER_RADIUS.sm,
-                          backgroundColor: colors.surfaceSecondary,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                        }}
-                        haptic="none"
-                      >
-                        <Text
-                          style={[
-                            typography.captionSmall,
-                            { color: colors.textPrimary, fontWeight: '600' },
-                          ]}
-                        >
-                          {reason.label}
-                        </Text>
-                      </PressableScale>
-                    ))}
-                    <PressableScale
-                      onPress={handleSkipReason}
-                      style={{
-                        paddingHorizontal: 6,
-                        paddingVertical: 4,
-                        borderRadius: BORDER_RADIUS.sm,
-                      }}
-                      haptic="none"
-                    >
-                      <X size={14} color={colors.textTertiary} strokeWidth={2} />
-                    </PressableScale>
-                  </View>
-                </View>
-              )}
               {/* COACH-1: Progression chips — hidden by default, revealed by "Изменить".
                 Only shown when there's previous weight to add steps to. */}
               {chipsOpen && prevWeight !== null && (
@@ -1664,7 +1596,7 @@ export const SetsGrid = memo(function SetsGrid({
                 rowIndex={rowIndex}
                 labels={setLabels}
                 exerciseIndex={exerciseIndex}
-                updateSet={updateSet}
+                updateSet={commitSetField}
                 unit={unit}
                 toDisplay={toDisplay}
                 fromDisplay={fromDisplay}
