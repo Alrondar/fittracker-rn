@@ -51,5 +51,10 @@ export interface RecentLog {
   reps_right?: number | null;
   rpe: number | null;
   set_number: number | null;
-  workout_exercises: { exercise_id: string } | { exercise_id: string }[] | null;
+  /** Позиция 5: время подхода нужно, чтобы восстановить порядок занятий в серии. */
+  created_at?: string | null;
+  workout_exercises:
+    | { exercise_id: string; workout_id?: string | null }
+    | { exercise_id: string; workout_id?: string | null }[]
+    | null;
 }

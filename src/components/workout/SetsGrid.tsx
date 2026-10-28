@@ -73,6 +73,8 @@ import {
   ReadinessOverride,
 } from '../../engine/progression';
 import type { ProgressionContext } from '../../engine/progression';
+import type { RecentLog } from '../../hooks/workout/useWorkoutSession.types';
+import { countConsecutiveHolds } from '../../utils/plateauStreak';
 import { planRampUp } from '../../engine/warmupRamp';
 import { RecommendationCard } from './RecommendationCard';
 import { perfMark, perfPaint } from '../../utils/perf';
@@ -478,6 +480,10 @@ interface SetsGridProps {
   readinessContext?: ReadinessContext | null;
   /** FD-1: контекст прогрессии (фаза программы / восстановление / цикл). */
   progressionContext?: ProgressionContext | null;
+  /** Позиция 5: история рабочих подходов прошлых занятий — из неё считается серия
+   * удержаний для ветки разгрузки после плато. Приходит в том же ответе, что и
+   * данные занятия, отдельного запроса нет. */
+  recentLogs?: RecentLog[];
   unit: WeightUnit;
   /** FEAT-1.5: тип оборудования для расчёта блинов */
   equipment?: string | string[];
@@ -545,6 +551,7 @@ export const SetsGrid = memo(function SetsGrid({
   safetyContext,
   readinessContext,
   progressionContext,
+  recentLogs = [],
   unit,
   equipment,
   isUnilateral,
@@ -910,6 +917,19 @@ export const SetsGrid = memo(function SetsGrid({
   const prevReps = progressionSet?.previousReps ?? null;
   const prevRpe = progressionSet?.previousRpe ?? null;
 
+  // Позиция 5: верхний рабочий вес СЕГОДНЯ (из уже вбитых рабочих подходов). Пока
+  // ничего не вбито — null, и серия удержаний считается только по прошлым занятиям.
+  const todayTopWeight = useMemo<number | null>(() => {
+    let top: number | null = null;
+    for (const s of sets) {
+      if (s.isWarmup) continue;
+      const kg = Number.parseFloat(s.weight);
+      if (!Number.isFinite(kg) || kg <= 0) continue;
+      top = top === null ? kg : Math.max(top, kg);
+    }
+    return top;
+  }, [sets]);
+
   // FEAT-1.1 v2: шаги в текущих единицах — в lb показываем реальные lb-номиналы
   // (конверсия кг-шагов, округлённая до стандартных блинов: 5/10/25/35/45)
   const PROGRESSION_STEPS = unit === 'kg' ? [2.5, 5, 10, 15, 20] : [5, 10, 25, 35, 45];
@@ -953,6 +973,14 @@ export const SetsGrid = memo(function SetsGrid({
       equipment: equipmentKey ? equipmentKey.split('|') : undefined,
       barWeightKg: unit === 'kg' ? barWeight : lbToKg(barWeight),
       ...(progressionContext ?? {}),
+      // Позиция 5 (28.10): движок умеет предлагать разгрузку −10 % после трёх
+      // удержаний подряд, но до сих пор этот вход не передавал никто — ветка была
+      // физически недостижима. Считается по истории, которая уже пришла с занятием.
+      consecutiveHolds: countConsecutiveHolds({
+        logs: recentLogs,
+        exerciseId,
+        currentWeightKg: todayTopWeight,
+      }),
     });
     const afterSafety = applySafetyPrecedence(base, safetyContext ?? null);
     // ENG-3: readiness — после safety (PRODUCT.md §8: боль > усталость)
@@ -972,6 +1000,9 @@ export const SetsGrid = memo(function SetsGrid({
     equipmentKey,
     unit,
     barWeight,
+    recentLogs,
+    exerciseId,
+    todayTopWeight,
   ]);
 
   // WARMUP-3d (ENG-12): разминочная лесенка к первому упражнению дня.

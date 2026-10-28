@@ -67,6 +67,7 @@ import {
   injectPreviousData,
   buildPainStateMap,
 } from './workout/useWorkoutSession.mapper';
+import type { RecentLog } from './workout/useWorkoutSession.types';
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
@@ -84,6 +85,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // каждый ввод перерисовывал бы весь экран тренировки.
   const [unsavedSets, setUnsavedSets] = useState(0);
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
+  // Позиция 5 (28.10): история рабочих подходов прошлых занятий. Она приходит в том
+  // же ответе, что и данные занятия, раньше использовалась один раз при маппинге и
+  // терялась — без неё не из чего считать серию удержаний для движка.
+  const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const online = useOnline();
   const onlineRef = useRef(online);
@@ -340,6 +345,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
 
       setWorkoutName(workoutRow.name ?? 'Тренировка');
       setProgramId(workoutRow.program_id);
+      setRecentLogs(recentLogs ?? []);
 
       // Восстановление активной тренировки.
       // F1 (17.10): базой времени служит накопленный duration_seconds (пишется при
@@ -1699,5 +1705,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     saveState,
     retryUnsaved,
     online,
+    // Позиция 5: история прошлых занятий для счётчика удержаний (sets-grid → движок).
+    recentLogs,
   };
 }

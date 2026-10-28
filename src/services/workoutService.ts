@@ -429,8 +429,10 @@ export async function fetchWorkoutSession(
             const { data, error } = await supabase
               .from('workout_logs')
               // VF-2: reps_left/reps_right — без них previous для unilateral = null → NO_HISTORY
+              // Позиция 5: created_at + workout_id нужны, чтобы собрать серию занятий
+              // (верхний рабочий вес по каждому прошлому занятию).
               .select(
-                'weight_kg, reps, reps_left, reps_right, rpe, set_number, workout_exercises(exercise_id)'
+                'weight_kg, reps, reps_left, reps_right, rpe, set_number, created_at, workout_exercises(exercise_id, workout_id)'
               )
               .in('workout_exercises.exercise_id', exerciseIds)
               .neq('workout_exercises.workout_id', workoutId)
@@ -462,7 +464,11 @@ export async function fetchWorkoutSession(
                   reps_right: log.reps_right,
                   rpe: log.rpe,
                   set_number: log.set_number,
-                  workout_exercises: { exercise_id: we.exercise_id ?? '' },
+                  created_at: log.created_at,
+                  workout_exercises: {
+                    exercise_id: we.exercise_id ?? '',
+                    workout_id: we.workout_id ?? null,
+                  },
                 } as unknown as RecentLog;
               });
           },
