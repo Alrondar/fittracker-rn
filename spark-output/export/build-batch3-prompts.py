@@ -206,23 +206,38 @@ SISSY_FORB = ("FORBIDDEN: a plate or dumbbell held against the chest; a barbell 
 
 # ── 3. Пуловер в Смите (Smith Machine Pullover) ──────────────────────────────
 PULL_ONE = ("THE ONE RULE THAT DECIDES IF THIS IMAGE IS CORRECT: she lies on her back on a FLAT "
-            "bench with BOTH arms extended straight up, and the ONLY thing that changes between "
-            "the two frames is the bar sliding along the rails toward and past her HEAD on straight "
-            "arms. This is a PULLOVER — an arc overhead with the elbows nearly locked. If the "
+            "bench under a guided bar, holding it with BOTH arms straight above her chest, and the "
+            "ONLY thing that changes between the two frames is her arms swinging back so the bar "
+            "ends up LOW BEHIND HER HEAD, beyond the end of the bench, still on straight arms. "
+            "This is a PULLOVER — the shoulders hinge, the elbows stay nearly locked. If the "
             "elbows bend to bring the bar down onto her chest (a bench press), if the bench is "
             "inclined, or if the bar sits behind her neck with bent elbows (a skullcrusher), the "
             "image is wrong.")
 
-PULL_CAM = ("CAMERA: three-quarter view from the SIDE of the bench and slightly toward her head "
-            "end, about 55 degrees off the line of her body, camera at 1.4 m height, 3.2 m away. "
+PULL_CAM = ("CAMERA: three-quarter view from the SIDE of the bench and toward her FOOT end, about "
+            "40 degrees off the line of her body, camera at 1.5 m height, 3.4 m away. "
             "We see her face turned up to the ceiling, both arms stretched toward the bar, the "
             "side contour of her torso from armpit to waist, the flat bench under her and both "
             "vertical guide columns of the machine.")
 
 PULL_ORIENT = ("ORIENTATION LOCK: her head is at the FAR-TOP-LEFT of the frame, her shoes are at "
-               "the NEAR-BOTTOM-RIGHT, her body lies along the axis of the bar, the bar hangs "
-               "above her chest between the two columns. Never mirrored, never a head-on view down "
-               "the bench.")
+               "the NEAR-BOTTOM-RIGHT, so her body lies along one diagonal of the picture. The bar "
+               "is a crossbar ACROSS her chest, so it lies along the OTHER diagonal: the body and "
+               "the bar form an X in the frame and never run parallel. Never mirrored, never a "
+               "head-on view down the bench.")
+
+PULL_XBAR = ("BAR PERSPECTIVE LOCK (this decides whether the rig is in the same 3/4 space as the "
+             "body): the bar is seen strongly foreshortened, as a short thick shaft crossing her "
+             "chest from the lower-LEFT of the frame up to the upper-RIGHT, its two ends "
+             "disappearing into the two carriages. Three signs it is drawn right: (a) one plate "
+             "stack sits LOW and LARGE at the left, the other sits HIGH and SMALLER at the right, "
+             "behind her far shoulder; (b) the round faces of the plates read as ellipses, not as "
+             "flat full circles; (c) her two hands are at the same height above her chest, one on "
+             "each side of her sternum, and the line between them is clearly tilted relative to "
+             "her body, not along it. WRONG — and this is the mistake the model always makes: the "
+             "bar drawn as a long flat horizontal line running left-to-right across the frame, "
+             "parallel to the bench and to her body, with two equal plate stacks at the same "
+             "height. That puts the bar beside her, not across her chest, and it is not a pullover.")
 
 PULL_FRAMING = ("FRAMING LOCK: the whole bench, the whole body, the bar and both guide columns "
                 "inside the frame with air; her head at about 14 percent of the frame height, the "
@@ -233,21 +248,29 @@ PULL_ID = ("EXERCISE IDENTITY: SMITH MACHINE PULLOVER — lying on a flat bench 
            "barbell, arms extended, the bar lowered on an arc behind the head and drawn back over "
            "the chest, the lats doing the work. Not a press and not a skullcrusher.")
 
-PULL_APPR = ("APPARATUS, node by node from the near end to the far end: (1) a FLAT weight bench, "
+PULL_APPR = ("APPARATUS, node by node: (1) a FLAT weight bench, "
              "pad perfectly horizontal (no incline, no decline, no adjustable backrest), matte "
              "dark-grey upholstery, square steel legs with flat feet; (2) a Smith machine — TWO "
-             "vertical dark-grey guide columns, one at the head end and one at the foot end of the "
-             "bench, with a row of hook cams on each column; (3) a loaded barbell whose ends are "
-             "clamped INTO both carriages, so it can only travel along the rails and slide along "
+             "vertical dark-grey guide columns, one at each END of the bar, so the bar runs "
+             "between them across her chest and the columns stand one to the near side of her "
+             "body and one to the far side; the column nearer the camera is drawn thicker and "
+             "taller, with its base plate visible on the floor in front of the bench, the far "
+             "column is thinner and its base is hidden behind the bench; each column has a row of "
+             "hook cams; (3) a loaded "
+             "barbell whose ends are clamped INTO both carriages, so it can only travel up and "
+             "down the rails and slide along "
              "its own axis — it never leaves the columns and never swings free; (4) TWO black "
              "weight plates on each end of the bar, both ends visible OUTSIDE her hands, the same "
              "number of plates in both frames. BAR AXIS LOCK (settled from a real pullover photo): "
-             "the long axis of the bar is PARALLEL to the long axis of her body and of the bench — "
-             "her head sits BETWEEN her two hands, one plate stack is beyond her hands toward her "
-             "feet and the other beyond her hands toward her head. If the bar lies sideways across "
-             "her chest the way a bench-press bar does, the image is wrong. HER GRIP LOCK: both "
-             "hands grip the shaft about shoulder-width apart with an overhand grip, arms extended "
-             "toward the bar, elbows SOFT and only slightly bent in both frames. BAR CONTINUITY "
+             "the bar lies TRANSVERSE to her body, exactly the way a bench-press bar does — "
+             "perpendicular to the long axis of her body and of the bench, one hand on each side "
+             "of her chest, and the two plate stacks hang out to the two SIDES of her body, never "
+             "toward her head and never toward her feet. The bar keeps this same transverse "
+             "direction in both frames; only the arms rotate. If the bar runs along the length of "
+             "her body, with her head between her hands or a plate stack beyond her feet, the "
+             "image is wrong. HER GRIP LOCK: both hands grip the shaft about shoulder-width apart "
+             "with an overhand grip, arms extended toward the bar, elbows SOFT and only slightly "
+             "bent in both frames. BAR CONTINUITY "
              "LOCK: one rigid uninterrupted shaft, never two stubs, never hidden inside her body. "
              "DEPTH ORDER from the camera back: the near guide column, her near arm, the bar, her "
              "torso, the bench pad, the far guide column, the wall. Nothing else in the room: no "
@@ -260,9 +283,12 @@ PULL_HIGH = ("HIGHLIGHT: a soft semi-transparent warm-red X-ray glow through the
              "chest. The chest muscles, the abdominals, the biceps, the arms and the legs stay "
              "completely unlit and dark.")
 
-PULL_FORB = ("FORBIDDEN: an inclined or decline bench; a bench press with the bar descending to "
+PULL_FORB = ("FORBIDDEN: the bar parallel to her body and to the bench, both running left-to-right "
+             "in the frame; two equal plate stacks at the same height; an inclined or decline bench; a bench press with the bar descending to "
              "the chest and the elbows bent; a skullcrusher with the bar behind the head and the "
-             "elbows bent; a narrow grip or a wide grip with the hands out over the shoulders; the "
+             "elbows bent; the bar running ALONG the length of her body, with her head between her "
+             "hands or a plate stack beyond her feet; a narrow grip or a wide grip with the hands "
+             "out over the shoulders; the "
              "bar off the rails or swinging free; a free barbell in a rack instead of a Smith "
              "machine; a dumbbell pullover; her hips twisted off the pad; a head arched back off "
              "the bench; a spotter; a photograph; a different body type. 3:2 landscape composition.")
@@ -271,42 +297,79 @@ PULL_FORB = ("FORBIDDEN: an inclined or decline bench; a bench press with the ba
 FRENCH_ONE = ("THE ONE RULE THAT DECIDES IF THIS IMAGE IS CORRECT: she lies on her back on a FLAT "
               "bench and the ONLY joint that moves is the ELBOWS. The upper arms stay vertical, "
               "pointing at the ceiling, fixed above her chest in both frames; the forearms lower "
-              "the bar toward her forehead and press it back up. This is a LYING TRICEPS EXTENSION "
+              "the bar down and behind her head and press it back up. This is a LYING TRICEPS EXTENSION "
               "— not a bench press (the bar never descends to her chest), not a cable pushdown (no "
               "cable, no column). If the upper arms tilt toward her head or the elbows flare wide, "
-              "the image is wrong.")
+              "the image is wrong. PLUMB-LINE LOCK: drop a vertical line from the tip of each "
+              "elbow and it lands on the middle of her chest, in BOTH frames — the shoulder-to-"
+              "elbow segment stands upright in the picture and only the forearm swings. WRONG, and "
+              "this is the mistake the model always makes: the whole arm tilted back toward the "
+              "head end so the hands sit above her face or behind her head — that is shoulder "
+              "extension, a different exercise.")
 
-FRENCH_CAM = ("CAMERA: three-quarter view from the SIDE of the bench and slightly toward her head "
-              "end, about 45 degrees off the line of her body, camera at 1.3 m height, 3.0 m away. "
+FRENCH_CAM = ("CAMERA: three-quarter view from the HEAD end of the bench and slightly to her LEFT "
+              "side, about 30 degrees off the line of her body, camera at 1.3 m height, 3.0 m away, "
+              "looking down the bench toward her feet. "
               "We see her face turned up, both arms working above her chest, the angled grips of "
-              "the EZ-bar, the side of the flat bench and both ends of the bar.")
+              "the EZ-bar, the near end of the flat bench and both ends of the bar.")
 
-FRENCH_ORIENT = ("ORIENTATION LOCK: her head is at the FAR-TOP-LEFT of the frame, her shoes are at "
-                 "the NEAR-BOTTOM-RIGHT, the bench runs along that diagonal, her arms point up "
-                 "toward the ceiling above her chest. Never mirrored, never a view straight down "
-                 "the bench.")
+FRENCH_ORIENT = ("ORIENTATION LOCK: her head and shoulders are at the NEAR side of the frame, at the "
+                 "lower-left, and her hips, knees and shoes recede away from the camera toward the "
+                 "upper-right — the line of her body and of the bench RISES to the right at about 30 "
+                 "degrees above the horizontal of the frame. The bar is across her, so it runs the "
+                 "OTHER way: its NEAR end (her left hand, the bigger plate) is LOW at the RIGHT of "
+                 "the frame, its FAR end (smaller plate) is HIGH at the LEFT, and the bar SLOPES "
+                 "DOWN to the right by about 12 degrees below the horizontal. The two lines therefore "
+                 "cross at roughly 40 degrees. Never mirrored, never a view from directly above, "
+                 "never a side view of the bench.")
 
 FRENCH_FRAMING = ("FRAMING LOCK: the whole bench, the whole body and the whole bar inside the frame "
-                  "with air; her head at about 14 percent of the frame height, the soles of her "
-                  "shoes at about 90 percent, both elbows, both hands and both plate stacks fully "
+                  "with air; because the camera looks along the bench, her head sits LOW in the "
+                  "picture at about 62 percent of the frame height and her shoes are HIGH and small "
+                  "at about 38 percent, both elbows, both hands and both plate stacks fully "
                   "visible, nothing cropped.")
 
 FRENCH_ID = ("EXERCISE IDENTITY: LYING REVERSE-GRIP TRICEPS EXTENSION WITH AN EZ-CURL BAR — supine "
-             "on a flat bench, supinated (reverse) grip on the angled sections, elbows fixed at "
-             "90 degrees, the bar lowered to the forehead and pressed back up.")
+             "on a flat bench, supinated (reverse) grip on the angled sections, the elbows folding "
+             "to a sharp angle at the bottom, the bar carried down behind the head and pressed "
+             "back up.")
 
 FRENCH_APPR = ("APPARATUS, node by node: (1) a FLAT weight bench, pad perfectly horizontal, matte "
                "dark-grey upholstery, square steel legs with flat feet on the floor; (2) an EZ-curl "
                "barbell — ONE rigid chrome shaft with TWO angled grip sections between the outer "
                "straight ends; (3) her hands grip the ANGLED sections, shoulder-width apart, in a "
-               "SUPINATED (reverse) grip: the palms face UP toward her face and the thumbs are on "
-               "the far side of the bar from her, so from this camera the undersides of both hands "
-               "read toward the lens; (4) TWO black weight plates on each end of the bar, both ends "
-               "clear and fully visible, the same number in both frames. TWO-HAND LOCK: BOTH hands "
-               "are on the bar and both forearms are fully visible, one on each side of her head. "
+               "SUPINATED (reverse) grip. WRIST LOCK: the hand is welded to the forearm — there is "
+               "no twist and no bend at the wrist, the knuckles stay in line with the elbow — so "
+               "the whole hand swings when the elbow folds. What the camera therefore sees at the "
+               "hands is set by the PHASE paragraph below, not by this one. FINGER LOCK: each hand "
+               "has exactly four fingers and one thumb, cleanly separated and wrapped around the "
+               "shaft — no extra digits, no fused or stubby "
+               "fingers, no hand melting into the bar; (4) TWO black weight plates on each end of "
+               "the bar, both ends clear and fully visible, the same number in both frames. "
+               "TWO-HAND LOCK: BOTH hands are on the bar and both forearms are fully visible, one "
+               "on each side of her head. "
                "BAR CONTINUITY LOCK: one uninterrupted shaft, never two stubs, never a bar that "
                "disappears behind her arms. PROPS LOCK: NO cable, NO pulley column, NO rack, NO "
                "dumbbells, NO bench with uprights. Nothing else in the room and no spotter.")
+
+# Урок пуловера 23.10: стойка/снаряд обязан лежать в той же три-четверти, что и тело.
+FRENCH_XBAR = ("BAR PERSPECTIVE LOCK (this decides whether the bar is in the same 3/4 space as the "
+               "body): BOTH the body and the bar lie flat in the horizontal plane of the room — her "
+               "body along the bench, the bar at right angles to it. Seen from a camera 30 degrees "
+               "off her body line, that plane TILTS in the picture, so the two lines cannot both be "
+               "level. Draw it exactly like this: the line of her body and of the bench rises to the "
+               "right at about 30 degrees; the bar goes the OTHER way, sloping DOWN to the right by "
+               "about 12 degrees, with its NEAR end low at the RIGHT of the frame (her left hand, "
+               "the LARGER plate stack, closer and lower) and its FAR end high at the LEFT (smaller "
+               "plate stack, further away, partly behind her right arm). Three checks: (a) the two "
+               "plate stacks are DIFFERENT sizes — the right one is about a quarter bigger and sits "
+               "lower in the frame than the left one; (b) her two arms are not mirror images — the "
+               "near (left) arm is drawn thicker and longer, its elbow lower; (c) the round faces of "
+               "the plates read as ellipses tilted by the same 12 degrees, not as flat full circles. "
+               "WRONG, and this is the exact mistake being corrected: the bar drawn level, parallel "
+               "to the top edge of the frame, with two identical plate stacks at the same height, "
+               "while the body still recedes up to the right — then the bar is not across her body, "
+               "it is lying beside it.")
 
 FRENCH_HIGH = ("HIGHLIGHT: a soft semi-transparent warm-red X-ray glow through the skin over the "
                "TRICEPS BRACHII of BOTH upper arms — the muscle on the BACK of the upper arm "
@@ -316,10 +379,12 @@ FRENCH_HIGH = ("HIGHLIGHT: a soft semi-transparent warm-red X-ray glow through t
                "and tapering at both ends. The chest, the shoulders, the forearms, the abdominals "
                "and the legs stay completely unlit and dark.")
 
-FRENCH_FORB = ("FORBIDDEN: a cable pushdown at a station or any cable in the frame; a bench press "
+FRENCH_FORB = ("FORBIDDEN: the bar drawn level, parallel to the top edge of the frame, with two "
+               "identical plate stacks at the same height; a cable pushdown at a station or any "
+               "cable in the frame; a bench press "
                "with the bar descending between her armpits or onto her chest; a decline or "
-               "inclined bench; dumbbells instead of the bar; an overhand (pronated) grip — the "
-               "palms must face up; a close-grip press; the upper arms angled toward her head or "
+               "inclined bench; dumbbells instead of the bar; a wrist bent or twisted out of line "
+               "with the forearm; a close-grip press; the upper arms angled toward her head or "
                "the elbows flared wide; the bar resting on her chest or behind her neck; one hand "
                "off the bar; a bar split into two disconnected pieces; a spotter; a photograph; a "
                "different body type. 3:2 landscape composition.")
@@ -457,41 +522,65 @@ FRAMES = [
           "the floor and the back is not arched separately from the thigh.")),
  dict(folder="Smith_Machine_Pullover", phase="start",
    one=PULL_ONE, camera=PULL_CAM, orient=PULL_ORIENT, framing=PULL_FRAMING, ident=PULL_ID,
-   appr=PULL_APPR, high=PULL_HIGH, forb=PULL_FORB,
+   appr=PULL_APPR + " " + PULL_XBAR, high=PULL_HIGH, forb=PULL_FORB,
    phase_text=("PHASE — START of the rep: her arms are extended STRAIGHT UP over the middle of her "
           "chest, both hands gripping the shaft shoulder-width apart with an overhand grip, the "
           "bar directly above her sternum between the two columns. Her shoulder blades rest on the "
           "pad, the head lies on the bench, the lower back stays on the pad, knees bent and both "
-          "feet flat on the floor at the foot end of the bench. The bar is high, the elbows are "
-          "locked out, the arms and the torso make a narrow V.")),
+          "feet flat on the floor at the foot end of the bench. The bar is at its HIGHEST point of "
+          "the rails, directly above the MIDDLE of her chest — not above her face and not behind "
+          "her head in this frame — the elbows are locked out, and the arms stand almost "
+          "perpendicular to her torso.")),
  dict(folder="Smith_Machine_Pullover", phase="finish",
    one=PULL_ONE, camera=PULL_CAM, orient=PULL_ORIENT, framing=PULL_FRAMING, ident=PULL_ID,
-   appr=PULL_APPR, high=PULL_HIGH, forb=PULL_FORB,
-   phase_text=("PHASE — FINISH of the rep: the bar has travelled along the SAME straight line of "
-          "the rails and along its own axis down BEHIND HER HEAD, low over the floor beyond the "
-          "head end of the bench, and her arms are still EXTENDED AND STRAIGHT — the angle between "
-          "her upper arm and her torso has opened, the bar is now behind the head rather than "
-          "above the chest, and the elbows are only slightly bent, never folded. Shoulder blades, "
-          "head, hips and both feet have NOT moved, the bench and the plates are unchanged. The "
-          "ribcage stays down on the pad; only the arms and the bar moved along the arc.")),
+   appr=PULL_APPR + " " + PULL_XBAR, high=PULL_HIGH, forb=PULL_FORB,
+   phase_text=("PHASE — FINISH of the rep: her arms have swung BACK over her head, so the bar — "
+          "still clamped in the same two carriages — has come DOWN the vertical line of the rails "
+          "to just BEHIND HER HEAD, low above the floor beyond the head end of the bench. Her arms "
+          "are still EXTENDED AND STRAIGHT, only slightly bent at the elbows, never folded; the "
+          "bar keeps the same transverse direction it had at the start, and the hands stay on the "
+          "same two points of the shaft. Shoulder blades, head, hips and both feet have NOT moved, "
+          "the bench and the plates are unchanged. The ribcage stays down on the pad; only the "
+          "arms and the bar moved.")),
  dict(folder="Reverse-Grip_Barbell_Lying_Triceps_Extension", phase="start",
    one=FRENCH_ONE, camera=FRENCH_CAM, orient=FRENCH_ORIENT, framing=FRENCH_FRAMING,
-   ident=FRENCH_ID, appr=FRENCH_APPR, high=FRENCH_HIGH, forb=FRENCH_FORB,
-   phase_text=("PHASE — START of the rep: the EZ-bar is held at full arm's length ABOVE her chest, "
-          "the arms nearly straight, the UPPER ARMS VERTICAL and pointing at the ceiling, elbows "
-          "tucked at shoulder width and fixed, the palms turned UP toward her face in the reverse "
-          "grip. Shoulder blades and head rest on the pad, knees bent, both feet flat on the floor "
+   ident=FRENCH_ID, appr=FRENCH_APPR + " " + FRENCH_XBAR, high=FRENCH_HIGH, forb=FRENCH_FORB,
+   phase_text=("PHASE — START of the rep: the EZ-bar is held at full arm's length ABOVE the middle "
+          "of her chest — over the nipple line, not over her face — the arms nearly straight, the "
+          "UPPER ARMS VERTICAL and pointing at the ceiling, elbows "
+          "tucked at shoulder width and fixed. AT THE HANDS IN THIS FRAME: the arms point straight "
+          "up, so the camera sees the BACK of both hands and the knuckles, the fingernails are "
+          "visible and the fingers curl over the shaft toward the lens, while the palms are turned "
+          "down toward her own face and are not visible. Shoulder blades and head rest on the pad, "
+          "knees bent, both feet flat on the floor "
           "at the foot end of the bench.")),
  dict(folder="Reverse-Grip_Barbell_Lying_Triceps_Extension", phase="finish",
    one=FRENCH_ONE, camera=FRENCH_CAM, orient=FRENCH_ORIENT, framing=FRENCH_FRAMING,
-   ident=FRENCH_ID, appr=FRENCH_APPR, high=FRENCH_HIGH, forb=FRENCH_FORB,
-   phase_text=("PHASE — FINISH of the rep: the forearms have folded the bar DOWN AND BACK to just "
-          "above her FOREHEAD, a hand's width clear of her face, the elbows bent to about 90 "
-          "degrees. The UPPER ARMS HAVE NOT MOVED — still vertical, still pointing at the ceiling, "
-          "the same distance apart as in the start frame; only the forearms and the bar changed "
-          "position. Both elbows are bent to the SAME angle and sit at the same height (ELBOW "
-          "SYMMETRY LOCK), the palms are still turned up toward her face. The head stays on the "
-          "pad, the shoulders and hips do not rise, the feet stay flat.")),
+   ident=FRENCH_ID, appr=FRENCH_APPR + " " + FRENCH_XBAR, high=FRENCH_HIGH, forb=FRENCH_FORB,
+   phase_text=("PHASE — FINISH of the rep, the BOTTOM of the movement: the elbows are folded into "
+          "a SHARP, ACUTE angle. Measure the angle between the line of the upper arm and the line "
+          "of the forearm: it is about 50 degrees — clearly acute, less than half of a straight "
+          "line. An L-shape (90 degrees) is still a shallow bend and is WRONG, and so is anything "
+          "wider than 90 degrees; the previous attempts all stopped at a right angle. Visually: the "
+          "forearm crosses back over the upper arm at a narrow angle, the elbows stay high above "
+          "her chest, and the bar is carried DOWN and BEHIND her head, below the level of the top "
+          "of her skull, hovering over the end of the bench pad behind her head, a hand's width "
+          "clear of her hair. THE ELBOWS DO NOT TRAVEL: in the picture each elbow sits exactly "
+          "where it sits in the start frame — directly above the middle of her chest, over the "
+          "nipple line, the same distance apart as at the start — only the forearms and the bar "
+          "changed position. BAR END LOCK: the bar does NOT turn around or swap ends between the "
+          "frames — its NEAR end with the LARGER plate stays LOW at the RIGHT of the picture and "
+          "its FAR end with the smaller plate stays HIGH at the LEFT, exactly as in the start "
+          "frame; only the height of the whole bar changed. THE HANDS SWING ROUND WITH THE "
+          "FOREARM: the wrist does not twist, the hand is welded to the forearm, so when the elbow "
+          "folds through about 130 degrees the back of the hand that faced the camera in the start "
+          "frame now faces AWAY from it, and the camera sees the open PALM of both hands turned up "
+          "toward the lens, the fingers wrapped around the shaft on the far side of the bar and the "
+          "thumb along the near side. Keeping the backs of the hands toward the camera in this "
+          "frame is WRONG — it freezes the wrist and breaks the anatomy. Both elbows are folded to "
+          "the SAME acute angle and sit at the same "
+          "height (ELBOW SYMMETRY LOCK). The head stays on the pad, the shoulders and hips do not rise, the "
+          "feet stay flat.")),
  dict(folder="Dead_Bug", phase="start",
    one=BUG_ONE, camera=BUG_CAM, orient=BUG_ORIENT, framing=BUG_FRAMING, ident=BUG_ID,
    appr=BUG_APPR + " " + BUG_ARMS + " " + BUG_SPINE, high=BUG_HIGH, forb=BUG_FORB,
