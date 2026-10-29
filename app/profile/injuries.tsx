@@ -152,6 +152,14 @@ const InjuryCard = memo(function InjuryCard({
           </PressableScale>
         </View>
       </View>
+      {/* Заметки пользователь вписывает в форме с появления экрана, но на карточке
+          показывалось только описание — вторая половина текста пропадала из вида. */}
+      {!!injury.notes && (
+        <View style={{ marginTop: SPACING.sm }}>
+          <Text style={[typography.captionSmall, { color: colors.textTertiary }]}>Заметки</Text>
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>{injury.notes}</Text>
+        </View>
+      )}
     </AppCard>
   );
 });
