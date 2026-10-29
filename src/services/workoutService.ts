@@ -3,6 +3,7 @@ import { networkOrSnapshot } from '../lib/exerciseSnapshot';
 import { networkOrProgram } from '../lib/programSnapshot';
 import { toSessionFields } from '../utils/exerciseSearchLocal';
 import { workoutTypeFromPhaseType } from '../utils/workoutType';
+import { alternativeReasonLines } from '../utils/alternativeReasons';
 import { AlternativeExercise } from '../types/workout';
 import { getExerciseReferenceData } from './exerciseReferenceService';
 import { getExerciseContraindications } from './injuriesService';
@@ -671,6 +672,7 @@ export async function fetchAlternatives(
         injuries: refs.injuries,
         media_url: ex.media_url ?? null,
         relation_type: relationTypeMap.get(ex.id) ?? null,
+        reasons: alternativeReasonLines(ranked.factors),
       };
     })
     .filter((exercise): exercise is AlternativeExercise => exercise !== null);

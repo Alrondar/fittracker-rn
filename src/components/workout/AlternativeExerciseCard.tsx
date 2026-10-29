@@ -118,6 +118,19 @@ export const AlternativeExerciseCard = memo(function AlternativeExerciseCard({
         {exercise.name}
       </Text>
 
+      {/* Позиция 9-2: почему эта замена — до трёх коротких причин из факторов
+          ранжирования движка (пусто, если объяснять нечего). */}
+      {!!exercise.reasons?.length && (
+        <Text
+          style={[
+            typography.captionSmall,
+            { color: colors.textSecondary, marginBottom: SPACING.xs },
+          ]}
+        >
+          {exercise.reasons.join(' · ')}
+        </Text>
+      )}
+
       {/* SEARCH-ALT: семантика источника связи — L1, как у бейджа типа замены */}
       {fromSearch && (
         <View

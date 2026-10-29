@@ -58,17 +58,17 @@ Code search — первичный источник фактов; этот фа�
 | app/(tabs)/programs.tsx|каталог программ|usePrograms , ProgramCard, import|
 | app/(tabs)/workouts.tsx|список/план тренировок|useWorkouts, phases/weeks, SheetShell (фильтр), компактный ListHeader (прогресс). Первая карточка списка = якорь «Следующая» (UX-15).|
 | app/(tabs)/progress.tsx|Progress hub («Как я меняюсь?»)|useHistory ,  useProgress ,  useWeeklySummary ; единый экран: Hero → Stats → Insights → Activity → Strength → Weight → PR → RecentWorkouts|
-| app/progress/[id].tsx|Workout Report (детали тренировки)|historyService.getWorkoutDetail , мышцы, сводка, подходы|
+| app/progress/[id].tsx|Workout Report (детали тренировки)|historyService.getWorkoutDetail , мышцы, сводка, подходы; «Повторить тренировку» → `workoutService.repeatWorkout` и переход на новое занятие (позиция 7, 29.10)|
 | app/(tabs)/exercises.tsx|exercise library|useExercises , filters, pagination|
 | app/exercise/[id].tsx|exercise detail|useExerciseDetail|
-| app/program/[id]/index.tsx|Program Detail (просмотр)|useProgramEditor  (read-only), phases, days,  ProgramDetailModals|
+| app/program/[id]/index.tsx|Program Detail (просмотр)|useProgramEditor  (read-only, кроме расписания), phases, days,  ProgramDetailModals; карандаш «Расписание:» и запись колонки — только своей программе (`canEdit`, позиция 7)|
 | app/program/[id]/edit.tsx|Program Editor (редактирование)|useProgramEditor  (mutations),  ProgramEditorModals , breadcrumb, save/cancel flow|
 | app/workout/[id].tsx|active workout|useWorkoutSession , ExerciseCard, SetsGrid, RestTimer, Warmup, Pain|
 | app/workout/create.tsx|create/repeat workout|workoutService|
 | app/(tabs)/profile.tsx|profile|useProfile|
 | app/profile/goals.tsx|goals / macros|goalsService, macroCalculator|
 | app/profile/injuries.tsx|injuries|useInjuries , injury warnings|
-| app/profile/metrics.tsx|body metrics|useBodyMetrics , trend charts|
+| app/profile/metrics.tsx|body metrics|useBodyMetrics , trend charts; отказ загрузки отличается от «замеров нет» (позиция 7, закрыт отложенный EDGE-4)|
 | app/profile/settings.tsx|settings|timer/theme/unit/profile settings|
 | app/profile/progress.tsx|УДАЛЁН : функциональность перенесена в  app/(tabs)/progress.tsx||
 | app/(tabs)/history.tsx|УДАЛЁН (history.tsx.deleted); Calendar/List (UX-9/UX-10) — см. раздел 2||
@@ -132,7 +132,7 @@ Main components:
 `WorkoutScreenHeader.tsx` — nav header workout screen: back, program context, name, UnitToggle; WT-2: единый pill-таймер (idle=«Начать»/tap старт, running=время+панель, paused=тап продолжить) + кнопка «Завершить» (confirm-лист), отдельной кнопки «Начать» больше нет
 `WorkoutInjuryBanner.tsx` — injury warnings: compact chip + expanded banner, state инкапсулирован (PR8)
 Main hooks/services:
-`useWorkoutSession.ts` — 1399 строк, НЕ тонкий wrapper: в нём ещё живут flush, persist-мутации, финиш, замена и pain-состояния; наруу торчат 3 ключа, которые никто не читает (`setIsWorkoutActive`, `currentTimeRef`, `alternativesCache`). Нарезка — очередь CTR-3, волна 3
+`useWorkoutSession.ts` — 1723 строки (замер 29.10; правка позиции 7-6 добавила 14), НЕ тонкий wrapper: в нём ещё живут flush, persist-мутации, финиш, замена и pain-состояния; наружу торчат 3 ключа, которые никто не читает (`setIsWorkoutActive`, `currentTimeRef`, `alternativesCache` — упоминания вне хука только в комментариях `src/store/useStore.ts`). Нарезка — очередь CTR-3, волна 3; `SetsGrid.tsx` — 1694
 `workout/useWorkoutSession.types.ts` — внутренние типы join-структур
 `workout/useWorkoutSession.mapper.ts` — чистые функции маппинга
 `workout/useWorkoutSession.loader.ts` — загрузка workout + alternatives
@@ -334,7 +334,7 @@ Important components:
 | programSharingService|ShareProgramSheet, ImportProgramSheet|
 | workoutService|workout/create + workout session (useWorkoutSession): fetchWorkoutSession / fetchAlternatives / updateWorkout / upsertWorkoutLogs — единственная supabase-граница сессии (CLAUDE.md §2)|
 | workoutsService|workouts/useWorkouts|
-| dashboardService|Dashboard/useDashboard|
+| dashboardService|Dashboard/useDashboard — с 29.10 (позиция 9-3) отдаёт только имя, активную программу, счётчик занятий и серию; пять нечитаемых блоков и три запроса ради них вырезаны|
 | historyService|app/(tabs)/progress.tsx  (RecentWorkouts: duration, program_name, avg_rpe),  app/progress/[id].tsx  (Workout Report)|
 | profileService|profile/settings/injuries + nutrition-хуки Dashboard (useDailyNutrition, useWeeklyNutrition, useBurnedCalories)|
 | authService|root auth flow + auth screens|
@@ -377,7 +377,7 @@ Important components:
 | utils/macroCalculator.ts|macro calculations|
 | utils/muscleStats.ts|Чистые производные секции «Мышцы» (H-MUSCLE-2): filterRowsByPeriod, rowsToMuscleLoad, computeFatigue/fatigueBucket, computeStrength, topExercisesInPeriod, labelFor. Без React и темы — вынесено из MuscleStatsSection (CTR-3)|
 | engine/progression/|calculateProgression (ENG-1, core.ts); explainProgression (ENG-2, explanations.ts); applySafetyPrecedence (ENG-4) и applyReadinessContext (ENG-3: readiness 1–2 + increase → hold, null = no-op; применяется после safety) в overrides.ts; политики — policies.ts; округление под снаряд — snap.ts; импорт идёт через barrel `engine/progression`. Чистые функции|
-| engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция. **WARMUP-3a: переиспользуется вариантами разминки** (тип `injury_type` расширен до `string | null` под канон `contraindicationMatchesInjury`)|
+| engine/alternatives.ts|rankAlternatives (ENG-5): hard exclusion (avoid + severity high) + scoring (мышцы/pattern/оборудование/уровень/боль/injury load) + relation-type bonuses. Чистая функция. **WARMUP-3a: переиспользуется вариантами разминки** (тип `injury_type` расширен до `string | null` под канон `contraindicationMatchesInjury`). **Позиция 9-2 (29.10):** факторы порядка переводятся в короткие причины в `src/utils/alternativeReasons.ts` (покрыт `scripts/check-alternative-reasons.ts`); сервис отдаёт их полем `reasons`, карточка замены показывает до трёх|
 | engine/warmupPlan.ts|planWarmup (WARMUP-3b): скоринг по всему пулу, правило покрытия (top-3 мышцы + top-4 паттерна дня), бакеты general/activation/mobility/static с потолками состава, карта групп мышц, политика длительности `warmupDurationSeconds`, размер 5–8, взвешенная выборка по сиду (FNV-1a+mulberry32). Чистая функция, без React/Supabase — гоняется офлайн (`.ai/workspace/warmup-plan-check.ts`)|
 | engine/weeklySummary/|buildWeeklyInsights (ENG-6) + CI-5 goal-aware + calculateTrainingLoadContext (CI-2) + calculateDeloadContext (CI-6, 4 сигнала, threshold ≥3 или highLoad+(plateau/readinessDecline)). **P2**: добавлены `muscleFatigue` и `muscleStrength` в `WeeklySummaryData` для 3D Muscle Map. Чистые функции |
 | engine/warmupRamp.ts|planRampUp (WARMUP-3d / ENG-12): лесенка разминочных весов — протокол по `intensity` (high\|medium → compound 50×5/70×3/85×1, low → blood-flow 40×12/60×6), верх = рекомендация движка с фолбэком на previousWeight, округление через `snapToLoadable`, отсекание дублей и ступеней ≥ верха; null, если строить не из чего. Офлайн: `scripts/check-warmup-ramp.ts` |

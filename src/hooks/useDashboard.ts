@@ -5,19 +5,10 @@ import { Q } from '../lib/queryPolicy';
 import {
   getDashboardData,
   type DashboardData,
-  type DashboardExerciseProgress,
-  type DashboardPersonalRecord,
   type DashboardActiveProgram,
-  type DashboardLastWorkout,
 } from '../services/dashboardService';
 
-export type {
-  DashboardData,
-  DashboardExerciseProgress,
-  DashboardPersonalRecord,
-  DashboardActiveProgram,
-  DashboardLastWorkout,
-};
+export type { DashboardData, DashboardActiveProgram };
 
 export function useDashboard(userId: string | null) {
   return useQuery<DashboardData>({

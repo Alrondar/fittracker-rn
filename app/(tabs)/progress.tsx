@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Award, TrendingUp } from 'lucide-react-native';
+import { Award, ChevronRight, TrendingUp } from 'lucide-react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useWeightDisplay } from '../../src/hooks/useUnitPreferences';
 import { useStore } from '../../src/store/useStore';
@@ -552,8 +552,16 @@ export default function ProgressScreen() {
                   Личные рекорды
                 </Text>
                 {topRecords.map((record) => (
-                  <View
+                  <PressableScale
                     key={record.name}
+                    // Позиция 9-1: рекорд ведёт в отчёт тренировки, где он
+                    // поставлен — workoutId лежит в данных с появления блока.
+                    onPress={() => openWorkout(record.workoutId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${record.name}, рекорд ${kgToUnit(
+                      record.maxWeight
+                    )} ${unitLabel}, открыть тренировку`}
+                    accessibilityHint="Открывает отчёт тренировки, где установлен рекорд"
                     style={{
                       backgroundColor: withAlpha(colors.warning, 0.08),
                       borderRadius: BORDER_RADIUS.lg,
@@ -604,7 +612,8 @@ export default function ProgressScreen() {
                         {unitLabel} × {record.reps}
                       </Text>
                     </View>
-                  </View>
+                    <ChevronRight size={18} color={colors.textTertiary} strokeWidth={2} />
+                  </PressableScale>
                 ))}
               </View>
             )}
