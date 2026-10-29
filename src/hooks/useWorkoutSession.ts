@@ -43,6 +43,7 @@ import {
   type ServerLogStamp,
 } from '../utils/outboxMerge';
 import { useOnline } from './useOnline';
+import { rescheduleRemindersForUser } from './useReminderScheduler';
 import { UserInjury } from '../constants/injuries';
 import { AlternativeSourceInput } from '../engine/alternatives';
 import { getRestActions } from '../components/workout/RestTimerContext';
@@ -1634,6 +1635,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             await clearWorkoutOutbox(userId, workoutId).catch((error) =>
               console.warn('[useWorkoutSession] журнал не стёрт после финиша:', error)
             );
+            // Позиция 8: день закрыт — единственный сигнал переставляется сразу.
+            // Без этого вечернее напоминание пришло бы завтра с текстом
+            // «Тренировка сегодня» о уже пройденном дне.
+            void rescheduleRemindersForUser(userId);
             reportFinish(result);
           };
 
