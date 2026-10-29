@@ -158,7 +158,7 @@ async function calculateChronicVolume(
     )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
-    .is('skipped_at', 'null')
+    .is('skipped_at', null)
     .gte('finished_at', startDateISO)
     .lt('finished_at', endDateISO);
 
@@ -218,7 +218,7 @@ async function aggregateWeek(userId: string, range: WeekRange): Promise<WeeklySu
       )
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
-      .is('skipped_at', 'null')
+      .is('skipped_at', null)
       .gte('finished_at', range.startISO)
       .lt('finished_at', range.nextStartISO),
     supabase
@@ -483,7 +483,7 @@ async function aggregateMuscleData(userId: string, now: Date) {
     )
     .eq('user_id', userId)
     .not('finished_at', 'is', null)
-    .is('skipped_at', 'null')
+    .is('skipped_at', null)
     .gte('finished_at', fourteenDaysAgoISO);
 
   if (error || !data) return { muscleFatigue: {}, muscleStrength: {} };

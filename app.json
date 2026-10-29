@@ -22,7 +22,10 @@
       },
       "package": "com.fittracker.app",
       "softwareKeyboardLayoutMode": "resize",
-      "permissions": []
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -47,7 +50,8 @@
       "expo-router",
       "expo-audio",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "owner": "alrondar"
   }

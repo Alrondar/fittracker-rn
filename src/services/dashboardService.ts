@@ -1,9 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { profileService } from './profileService';
 import { computeStreaks, StreakStats } from '../utils/streak';
-import { toDateKeyFromIso } from '../utils/dateKey';
-import { effectiveReps } from '../utils/reps';
-import { roundE1rm } from '../utils/e1rm';
 
 export interface DashboardActiveProgram {
   programId: string;
@@ -18,160 +14,16 @@ export interface DashboardActiveProgram {
   totalDays: number;
 }
 
-export interface DashboardLastWorkout {
-  id: string;
-  name: string;
-  date: string;
-  durationSeconds: number;
-  exercisesCount: number;
-  totalVolume: number;
-}
-
-export interface DashboardExerciseProgressHistoryItem {
-  date: string;
-  maxWeight: number;
-  volume: number;
-}
-
-export interface DashboardExerciseProgress {
-  exerciseId: string;
-  exerciseName: string;
-  history: DashboardExerciseProgressHistoryItem[];
-  currentMaxWeight: number;
-  currentVolume: number;
-  trend: 'up' | 'down' | 'stable';
-}
-
-export interface DashboardPersonalRecord {
-  exerciseName: string;
-  maxWeight: number;
-  maxReps: number;
-  /** FEAT-1.4: оценочный 1ПМ (Epley) от рекордного сета */
-  e1rm: number;
-  recordDate: string;
-}
-
 export interface DashboardData {
   userName: string;
   activeProgram: DashboardActiveProgram | null;
-  workoutDates: string[];
-  weeklyStats: {
-    workoutsCount: number;
-    totalVolume: number;
-    burnedCalories: number;
-  };
-  exerciseProgress: DashboardExerciseProgress[];
-  personalRecords: DashboardPersonalRecord[];
-  lastWorkout: DashboardLastWorkout | null;
   totalWorkouts: number;
   /** FEAT-1.3: недельный стрик */
   streak: StreakStats;
 }
 
-function parseVolumeFromWorkouts(workouts: any[]): number {
-  let volume = 0;
-
-  workouts?.forEach((workout: any) => {
-    workout.workout_exercises?.forEach((exercise: any) => {
-      exercise.workout_logs?.forEach((log: any) => {
-        // ENG-13: разминка не учитывается в недельном объёме
-        if (log.is_warmup) return;
-        const weight = parseFloat(log.weight_kg) || 0;
-        const reps = effectiveReps(log);
-        volume += weight * reps;
-      });
-    });
-  });
-
-  return volume;
-}
-
-function parseExerciseProgress(recentWorkouts: any[]): DashboardExerciseProgress[] {
-  const exerciseMap: Record<string, any> = {};
-
-  recentWorkouts?.forEach((workout: any) => {
-    // Effective date: finished_at ?? started_at ?? created_at.
-    const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
-    workout.workout_exercises?.forEach((exercise: any) => {
-      exercise.workout_logs?.forEach((log: any) => {
-        // ENG-13: разминочные сеты не влияют на тренды упражнений
-        if (log.is_warmup) return;
-        const exerciseId = exercise.exercise_id;
-
-        if (!exerciseId) return;
-
-        const exerciseName = exercise.exercises?.name || 'Упражнение';
-        const weight = parseFloat(log.weight_kg) || 0;
-        const reps = effectiveReps(log);
-        const volume = weight * reps;
-
-        if (!exerciseMap[exerciseId]) {
-          exerciseMap[exerciseId] = {
-            exerciseId,
-            exerciseName,
-            history: [],
-            maxWeight: 0,
-            volume: 0,
-          };
-        }
-
-        exerciseMap[exerciseId].history.push({
-          date: effectiveDate,
-          maxWeight: weight,
-          volume,
-        });
-
-        if (weight > exerciseMap[exerciseId].maxWeight) {
-          exerciseMap[exerciseId].maxWeight = weight;
-        }
-
-        exerciseMap[exerciseId].volume += volume;
-      });
-    });
-  });
-
-  return Object.values(exerciseMap)
-    .map((exercise: any) => {
-      // recentWorkouts приходят в порядке убывания даты.
-      // history разворачиваем в хронологический порядок: старые → новые.
-      const history: DashboardExerciseProgressHistoryItem[] = exercise.history.slice().reverse();
-
-      const current = history[history.length - 1];
-      const previous = history[history.length - 2];
-
-      const currentMaxWeight = current?.maxWeight || 0;
-      const previousMaxWeight = previous?.maxWeight || 0;
-      const currentVolume = current?.volume || 0;
-
-      const trend: DashboardExerciseProgress['trend'] =
-        currentMaxWeight > previousMaxWeight
-          ? 'up'
-          : currentMaxWeight < previousMaxWeight
-            ? 'down'
-            : 'stable';
-
-      return {
-        exerciseId: exercise.exerciseId,
-        exerciseName: exercise.exerciseName,
-        history,
-        currentMaxWeight,
-        currentVolume,
-        trend,
-      };
-    })
-    .slice(0, 3);
-}
-
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const [
-    profileResult,
-    activeProgramResult,
-    workoutDatesResult,
-    weeklyStatsResult,
-    lastWorkoutResult,
-    totalWorkoutsResult,
-    recentWorkoutsResult,
-  ] = await Promise.allSettled([
+  const [profileResult, activeProgramResult, totalWorkoutsResult] = await Promise.allSettled([
     supabase
       .from('profiles')
       .select('full_name, username, current_weight_kg')
@@ -211,86 +63,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
     supabase
       .from('workouts')
-      .select('created_at, started_at, finished_at')
-      .eq('user_id', userId)
-      .not('finished_at', 'is', null)
-      .is('skipped_at', null) // FIT-7: пропуски не считаются активностью
-      .gte('finished_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()),
-
-    supabase
-      .from('workouts')
-      .select(
-        'workout_exercises (workout_logs (weight_kg, reps, reps_left, reps_right, is_warmup))'
-      )
-      .eq('user_id', userId)
-      .not('finished_at', 'is', null)
-      .is('skipped_at', null) // FIT-7: недельный объём не считает пропуски
-      .gte('finished_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-
-    supabase
-      .from('workouts')
-      .select(
-        `
-        id,
-        name,
-        created_at,
-        started_at,
-        finished_at,
-        duration_seconds,
-        workout_exercises (
-          id,
-          workout_logs (
-            weight_kg,
-            reps,
-            reps_left,
-            reps_right,
-            is_warmup
-          )
-        )
-      `
-      )
-      .eq('user_id', userId)
-      .not('finished_at', 'is', null)
-      .is('skipped_at', null) // FIT-7: «последняя тренировка» — реальная, не пропуск
-      .order('finished_at', { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle(),
-
-    supabase
-      .from('workouts')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .not('finished_at', 'is', null)
       .is('skipped_at', null), // FIT-7: пропуски не входят в счётчик тренировок
-
-    supabase
-      .from('workouts')
-      .select(
-        `
-        id,
-        created_at,
-        started_at,
-        finished_at,
-        workout_exercises (
-          exercise_id,
-          exercises (
-            name
-          ),
-          workout_logs (
-            weight_kg,
-            reps,
-            reps_left,
-            reps_right,
-            is_warmup
-          )
-        )
-      `
-      )
-      .eq('user_id', userId)
-      .not('finished_at', 'is', null)
-      .is('skipped_at', null) // FIT-7: прогресс упражнений ignores пропуски
-      .order('finished_at', { ascending: false, nullsFirst: false })
-      .limit(20),
   ]);
 
   if (__DEV__) {
@@ -307,11 +83,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
     warnIfError('profile', profileResult);
     warnIfError('activeProgram', activeProgramResult);
-    warnIfError('workoutDates', workoutDatesResult);
-    warnIfError('weeklyStats', weeklyStatsResult);
-    warnIfError('lastWorkout', lastWorkoutResult);
     warnIfError('totalWorkouts', totalWorkoutsResult);
-    warnIfError('recentWorkouts', recentWorkoutsResult);
   }
 
   let userName = 'Пользователь';
@@ -374,106 +146,13 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     };
   }
 
-  let workoutDates: string[] = [];
-
-  if (workoutDatesResult.status === 'fulfilled' && workoutDatesResult.value.data) {
-    workoutDates = workoutDatesResult.value.data
-      .map((workout: any) => {
-        // Effective date: finished_at ?? started_at ?? created_at → ЛОКАЛЬный ключ дня
-        const effectiveDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
-        return toDateKeyFromIso(effectiveDate);
-      })
-      .filter((d): d is string => d !== null);
-  }
-
-  let weeklyStats = {
-    workoutsCount: 0,
-    totalVolume: 0,
-    burnedCalories: 0,
-  };
-  if (weeklyStatsResult.status === 'fulfilled' && weeklyStatsResult.value.data) {
-    const workouts = weeklyStatsResult.value.data;
-    const workoutsCount = workouts?.length || 0;
-    const totalVolume = parseVolumeFromWorkouts(workouts);
-
-    let burnedCalories = 0;
-    try {
-      burnedCalories = (await profileService.getBurnedCalories(userId, 7)) ?? 0;
-    } catch {
-      burnedCalories = workoutsCount * 300; // graceful fallback
-    }
-
-    weeklyStats = {
-      workoutsCount,
-      totalVolume,
-      burnedCalories,
-    };
-  }
-
-  let lastWorkout: DashboardLastWorkout | null = null;
-
-  if (lastWorkoutResult.status === 'fulfilled' && lastWorkoutResult.value.data) {
-    const workout = lastWorkoutResult.value.data;
-
-    let totalVolume = 0;
-    let exercisesCount = 0;
-
-    workout.workout_exercises?.forEach((exercise: any) => {
-      // ENG-13: упражнение считается «выполненным», если в нём есть хотя бы 1 рабочий сет
-      const hasWorkingSet = exercise.workout_logs?.some((l: any) => !l.is_warmup);
-      if (hasWorkingSet) {
-        exercisesCount += 1;
-
-        exercise.workout_logs.forEach((log: any) => {
-          // ENG-13: разминка не считается в объёме последней тренировки
-          if (log.is_warmup) return;
-          const weight = parseFloat(log.weight_kg) || 0;
-          const reps = effectiveReps(log);
-          totalVolume += weight * reps;
-        });
-      }
-    });
-
-    // Effective date: finished_at ?? started_at ?? created_at
-    const lastWorkoutDate = workout.finished_at ?? workout.started_at ?? workout.created_at;
-    lastWorkout = {
-      id: workout.id,
-      name: workout.name,
-      date: lastWorkoutDate,
-      durationSeconds: workout.duration_seconds || 0,
-      exercisesCount,
-      totalVolume,
-    };
-  }
-
   let totalWorkouts = 0;
 
   if (totalWorkoutsResult.status === 'fulfilled' && totalWorkoutsResult.value.count !== undefined) {
     totalWorkouts = totalWorkoutsResult.value.count || 0;
   }
 
-  let exerciseProgress: DashboardExerciseProgress[] = [];
-
-  if (recentWorkoutsResult.status === 'fulfilled' && recentWorkoutsResult.value.data) {
-    exerciseProgress = parseExerciseProgress(recentWorkoutsResult.value.data);
-  }
-
-  // PR без bias: переиспользуем корректную группировку из profileService
-  let personalRecords: DashboardPersonalRecord[] = [];
-  try {
-    const records = await profileService.getPersonalRecords(userId);
-    personalRecords = records.map((record) => ({
-      exerciseName: record.name,
-      maxWeight: record.maxWeight,
-      maxReps: record.reps,
-      e1rm: roundE1rm(record.e1rm),
-      recordDate: '',
-    }));
-  } catch {
-    personalRecords = [];
-  }
-
-  // FEAT-1.3: стрик по ВСЕЙ истории (workoutDates ограничен 14 днями для календаря)
+  // FEAT-1.3: стрик по ВСЕЙ истории занятий
   let streak: StreakStats = { current: 0, best: 0, activeThisWeek: false };
   try {
     const { data: streakDates } = await supabase
@@ -503,11 +182,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   return {
     userName,
     activeProgram,
-    workoutDates,
-    weeklyStats,
-    exerciseProgress,
-    personalRecords,
-    lastWorkout,
     totalWorkouts,
     streak,
   };

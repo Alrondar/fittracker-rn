@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useStore } from '../src/store/useStore';
+import { useReminderScheduler } from '../src/hooks/useReminderScheduler';
 import { ThemeProvider, useTheme } from '../src/hooks/useTheme';
 import { LAYOUT_ANCHOR } from '../src/constants/theme';
 import { OnlineProvider } from '../src/hooks/useOnline';
@@ -66,10 +67,13 @@ function ThemedStatusBar() {
 }
 
 function RootLayoutContent() {
-  const { setAuth, isAuthenticated, justRegistered } = useStore();
+  const { userId, setAuth, isAuthenticated, justRegistered } = useStore();
   const router = useRouter();
   const segments = useSegments() as string[];
   const { colors } = useTheme();
+
+  // Позиция 8: напоминания пересчитываются на каждом возврате в приложение.
+  useReminderScheduler(userId);
 
   const [isLoading, setIsLoading] = useState(true);
   // UX-3: пара Space Grotesk + Inter — шрифты должны быть готовы до релиза

@@ -553,7 +553,7 @@ Detail / Editor mental models (PROG-1…PROG-7).
 
 - supersets/drop sets;
 - cardio;
-- notifications;
+- notifications; — взято в работу 29.10.2026 по решению владельца, вне гейта «после H/I»: локальные напоминания на устройстве, `STATUS.md §15.22`
 - HealthKit/Google Fit;
 - social;
 - i18n;

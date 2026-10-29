@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Лист приёмки пары «Подтягивания широким хватом» с горизонтальной сеткой 10 %,
-чтобы масштаб между кадрами мерился, а не угадывался."""
+"""Лист приёмки текущей пары кадров с горизонтальной сеткой 10 %,
+чтобы масштаб между кадрами мерился, а не угадывался.
+ITEMS меняется вместе с позицией партии (09.10 — подтягивания, 23.10 — мостик, пуловер, французский жим)."""
 import os
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 VIBE = os.path.join(ROOT, 'vibe_images')
-OUT = os.path.join(ROOT, 'spark-output', 'export', 'qc', 'pullup-pair-grid.jpg')
+OUT = os.path.join(ROOT, 'spark-output', 'export', 'qc', 'wrist-pair-grid.jpg')
 CELL = (620, 413)
 PAD, LABEL = 10, 30
 
@@ -26,10 +27,10 @@ def newest(prefix):
 
 
 ITEMS = [
-    (newest('Plank_start_1'), 'ПЛАНКА старт — ладони на коврике'),
-    (newest('Plank_finish_1'), 'ПЛАНКА финиш v1 — ПРИНЯТ 23.10 с кулаками'),
-    (newest('Plank_start_m_1'), 'муж старт'),
-    (newest('Plank_finish_m_1'), 'муж финиш'),
+    (newest('Barbell_Wrist_Extension_start_v2'), 'ЗАПЯСТЬЯ жен кадр 1'),
+    (newest('Barbell_Wrist_Extension_finish_v2'), 'ЗАПЯСТЬЯ жен кадр 2'),
+    (newest('Barbell_Wrist_Extension_start_m_v1'), 'ЗАПЯСТЬЯ муж кадр 1'),
+    (newest('Barbell_Wrist_Extension_finish_m_v1'), 'ЗАПЯСТЬЯ муж кадр 2'),
 ]
 
 W = len(ITEMS) * CELL[0] + (len(ITEMS) + 1) * PAD

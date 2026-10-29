@@ -36,16 +36,15 @@ export async function importProgramByCode(code: string, userId: string): Promise
   if (!data) throw new Error('Программа по этому коду не найдена');
 
   // 2. Копирование себе (RPC SECURITY DEFINER, ставит created_by = userId)
-  const { data: copyData, error: copyError } = await supabase.rpc(
-    'copy_program_for_user',
-    { p_program_id: data.id, p_user_id: userId }
-  );
+  const { data: copyData, error: copyError } = await supabase.rpc('copy_program_for_user', {
+    p_program_id: data.id,
+    p_user_id: userId,
+  });
   if (copyError) throw new Error(copyError.message);
 
-  // Парсинг ID (копирует логику useProgramEditor.copyProgramToUser)
-  const newId = Array.isArray(copyData)
-    ? (copyData[0]?.id || copyData[0])
-    : (copyData?.id || copyData);
+  // RPC возвращает скалярный текст — идентификатор новой программы, поэтому
+  // защитные ветки «массив» и «объект с id» из старой копии убраны.
+  const newId = copyData;
   if (!newId) throw new Error('Не удалось импортировать программу');
-  return typeof newId === 'string' ? newId : newId.id;
+  return newId;
 }

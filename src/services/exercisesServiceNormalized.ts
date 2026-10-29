@@ -82,7 +82,8 @@ export async function getFilterOptions(): Promise<ExerciseFilterOptions> {
   return networkOrSnapshot(async () => {
     const { data, error } = await supabase.rpc('get_exercise_filter_counts');
     if (error) throw error;
-    return { categories: data?.categories ?? [], equipment: data?.equipment ?? [] };
+    const counts = data as unknown as ExerciseFilterOptions | null;
+    return { categories: counts?.categories ?? [], equipment: counts?.equipment ?? [] };
   }, filterOptionsLocal);
 }
 

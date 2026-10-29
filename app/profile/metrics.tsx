@@ -18,6 +18,9 @@ import { commonStyles } from '../../src/styles/common';
 import { typography } from '../../src/styles/typography';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { AppCard } from '../../src/components/ui/AppCard';
+import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { WeightTrendChart } from '../../src/components/profile/WeightTrendChart';
 import { CurrentWeightCard } from '../../src/components/profile/metrics/CurrentWeightCard';
 import { MetricChartsSection } from '../../src/components/profile/metrics/MetricChartsSection';
@@ -29,8 +32,19 @@ export default function MetricsScreen() {
   const router = useRouter();
   const { userId } = useStore();
   const { colors } = useTheme();
-  const { metrics, latestMetric, weightChange, isLoading, createMetric, deleteMetric, isCreating } =
-    useBodyMetrics(userId);
+  const {
+    metrics,
+    latestMetric,
+    weightChange,
+    isLoading,
+    isError,
+    loaded,
+    refetch,
+    createMetric,
+    deleteMetric,
+    isCreating,
+  } = useBodyMetrics(userId);
+  const online = useOnline();
 
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -48,6 +62,40 @@ export default function MetricsScreen() {
       <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
         <View style={commonStyles.center}>
           <Text style={[typography.body, { color: colors.textSecondary }]}>Загрузка...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // EDGE-4: отказа у экрана не было вовсе — сбой выглядел как «замеров нет».
+  if (isError && !loaded) {
+    return (
+      <SafeAreaView style={[commonStyles.container, { backgroundColor: colors.background }]}>
+        <View
+          style={[
+            commonStyles.navHeader,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+          ]}
+        >
+          <PressableScale
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Назад"
+            style={commonStyles.backButton}
+          >
+            <ChevronLeft size={24} color={colors.primary} strokeWidth={2} />
+          </PressableScale>
+          <Text style={[typography.h4, { color: colors.textPrimary }]}>Замеры тела</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <StateBlock
+            tone="error"
+            title="Не удалось загрузить замеры"
+            description="Соединение с сервером не прошло — список замеров не показан. Твои замеры никуда не делись, обычно помогает повтор."
+            actionLabel="Повторить"
+            onAction={() => refetch()}
+          />
         </View>
       </SafeAreaView>
     );
@@ -76,6 +124,17 @@ export default function MetricsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ padding: SPACING.lg, paddingBottom: 100 }}>
+          {/* Список из кэша живые, а повтор не дошёл — данные не прячем, но и не молчим. */}
+          {isError && (
+            <StaleBanner
+              tone={online ? 'stale' : 'offline'}
+              label={online ? undefined : OFFLINE_DATA_LABEL}
+              actionable={online}
+              onRetry={() => refetch()}
+              style={{ marginBottom: SPACING.md }}
+            />
+          )}
+
           <CurrentWeightCard latestMetric={latestMetric} weightChange={weightChange} />
 
           {/* FEAT-2.2: тренд веса (лёгкий SVG, без chart-библиотек) */}

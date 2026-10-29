@@ -81,7 +81,6 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
       onLongPress={handleLongPress}
       delayLongPress={500}
       scaleTo={0.985}
-      disabled={status === 'skipped'}
       accessibilityRole="button"
       // WEB-3: внутри строки есть своё действие (см. вложенный PressableScale ниже),
       // поэтому на вебе обёртка не должна становиться <button>.

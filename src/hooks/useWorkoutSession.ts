@@ -43,6 +43,7 @@ import {
   type ServerLogStamp,
 } from '../utils/outboxMerge';
 import { useOnline } from './useOnline';
+import { rescheduleRemindersForUser } from './useReminderScheduler';
 import { UserInjury } from '../constants/injuries';
 import { AlternativeSourceInput } from '../engine/alternatives';
 import { getRestActions } from '../components/workout/RestTimerContext';
@@ -67,11 +68,13 @@ import {
   injectPreviousData,
   buildPainStateMap,
 } from './workout/useWorkoutSession.mapper';
+import type { RecentLog } from './workout/useWorkoutSession.types';
 
 export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [workoutName, setWorkoutName] = useState('');
+  const [skippedAt, setSkippedAt] = useState<string | null>(null);
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +87,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   // каждый ввод перерисовывал бы весь экран тренировки.
   const [unsavedSets, setUnsavedSets] = useState(0);
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
+  // Позиция 5 (28.10): история рабочих подходов прошлых занятий. Она приходит в том
+  // же ответе, что и данные занятия, раньше использовалась один раз при маппинге и
+  // терялась — без неё не из чего считать серию удержаний для движка.
+  const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const online = useOnline();
   const onlineRef = useRef(online);
@@ -296,8 +303,18 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     // Осталось ноль и ни одна группа не упала — показываем подтверждение.
     publishUnsaved();
     if (failures === 0 && sentKeys.length > 0) markSaved();
+    // Позиция 7-6: пропущенное занятие открыли и начали писать подходы — отметка
+    // пропуска снимается одним запросом, как только сервер подтвердил группу.
+    if (sentKeys.length > 0 && skippedAt) {
+      try {
+        await updateWorkout(workoutId, { skipped_at: null });
+        setSkippedAt(null);
+      } catch (error) {
+        console.error('[useWorkoutSession] отметка пропуска не снята:', error);
+      }
+    }
     return failures;
-  }, [settleOutboxKeys, publishUnsaved, markSaved]);
+  }, [settleOutboxKeys, publishUnsaved, markSaved, skippedAt, workoutId]);
 
   // BUG-7 (аудит 28.09): single-flight обёртка flush — «Завершить» подхватывает
   // уже идущий debounce-flush вместо параллельного второго прогона (тот
@@ -339,7 +356,9 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       } = data;
 
       setWorkoutName(workoutRow.name ?? 'Тренировка');
+      setSkippedAt(workoutRow.skipped_at ?? null);
       setProgramId(workoutRow.program_id);
+      setRecentLogs(recentLogs ?? []);
 
       // Восстановление активной тренировки.
       // F1 (17.10): базой времени служит накопленный duration_seconds (пишется при
@@ -1616,6 +1635,10 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
             await clearWorkoutOutbox(userId, workoutId).catch((error) =>
               console.warn('[useWorkoutSession] журнал не стёрт после финиша:', error)
             );
+            // Позиция 8: день закрыт — единственный сигнал переставляется сразу.
+            // Без этого вечернее напоминание пришло бы завтра с текстом
+            // «Тренировка сегодня» о уже пройденном дне.
+            void rescheduleRemindersForUser(userId);
             reportFinish(result);
           };
 
@@ -1699,5 +1722,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     saveState,
     retryUnsaved,
     online,
+    // Позиция 5: история прошлых занятий для счётчика удержаний (sets-grid → движок).
+    recentLogs,
   };
 }

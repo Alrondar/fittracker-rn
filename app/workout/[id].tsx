@@ -112,6 +112,7 @@ export default function WorkoutSessionScreen() {
     saveState,
     retryUnsaved,
     online,
+    recentLogs,
   } = useWorkoutSession(id as string, userId);
 
   const { data: workoutProgramInfo } = useQuery({
@@ -495,6 +496,7 @@ export default function WorkoutSessionScreen() {
         warning={exerciseWarnings[item.id] || null}
         readinessContext={readinessContext}
         progressionContext={progressionContext}
+        recentLogs={recentLogs}
         workoutId={id as string}
         addSet={addSet}
         // WARMUP-3d: лесенка разминки — перед каждым тяжёлым движением
@@ -535,6 +537,7 @@ export default function WorkoutSessionScreen() {
       exerciseWarnings,
       readinessContext,
       progressionContext,
+      recentLogs,
       addSet,
       addWarmupRampSets,
     ]

@@ -28,6 +28,7 @@ import {
 } from '../../types/workout';
 import { WeightUnit } from '../../hooks/useUnitPreferences';
 import type { ProgressionContext, ReadinessContext } from '../../engine/progression';
+import type { RecentLog } from '../../hooks/workout/useWorkoutSession.types';
 import { isUnilateralExercise } from '../../utils/exerciseHelpers';
 import { BODY_PARTS, targetsInjuredMuscle, type BodyPart } from '../../constants/injuries';
 
@@ -86,6 +87,8 @@ interface ExerciseCardProps {
   readinessContext?: ReadinessContext | null;
   /** FD-1: контекст прогрессии (фаза/восстановление/цикл). */
   progressionContext?: ProgressionContext | null;
+  /** Позиция 5: история рабочих подходов прошлых занятий (для счётчика удержаний). */
+  recentLogs?: RecentLog[];
   // COACH-3: идентификаторы для записи feedback (пробрасываются в SetsGrid).
   workoutId: string;
 }
@@ -120,6 +123,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   warning = null,
   readinessContext = null,
   progressionContext = null,
+  recentLogs = [],
   workoutId,
 }: ExerciseCardProps) {
   const hasSets = 'sets' in exercise;
@@ -290,6 +294,7 @@ export const ExerciseCard = memo(function ExerciseCard({
             safetyContext={safetyContext}
             readinessContext={readinessContext}
             progressionContext={progressionContext}
+            recentLogs={recentLogs}
             unit={unit}
             equipment={equipment}
             isUnilateral={isUnilateral}

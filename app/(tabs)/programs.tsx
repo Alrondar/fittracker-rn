@@ -13,6 +13,8 @@ import { ShimmerWrap, useMinPending } from '../../src/components/Skeleton';
 import { ProgramListSkeleton } from '../../src/components/ui/skeletons';
 import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { useToast } from '../../src/hooks/useToast';
 import { usePrograms } from '../../src/hooks/usePrograms';
 import { ProgramCard } from '../../src/components/ProgramCard';
@@ -64,6 +66,7 @@ const LEVEL_OPTIONS = [
 
 export default function ProgramsScreen() {
   const { colors } = useTheme();
+  const online = useOnline();
   const { userId } = useStore();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -456,7 +459,22 @@ export default function ProgramsScreen() {
         // FZ-3 (аудит 28.09): функция-компонент пересоздаётся каждый рендер →
         // VirtualizedList делал полный remount шапки (с autoFocus-полем поиска)
         // на каждое нажатие клавиши. Элемент вместо функции = обычный reconcile.
-        ListHeaderComponent={renderHeader()}
+        ListHeaderComponent={
+          <>
+            {renderHeader()}
+            {/* Список из кэша живые, а повтор не дошёл — карточки не прячем, но
+                и не делаем вид, что это актуальные данные. */}
+            {!!error && sortedPrograms.length > 0 && (
+              <StaleBanner
+                tone={online ? 'stale' : 'offline'}
+                label={online ? undefined : OFFLINE_DATA_LABEL}
+                actionable={online}
+                onRetry={retry}
+                style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.md }}
+              />
+            )}
+          </>
+        }
         ListFooterComponent={renderFooter()}
         ListEmptyComponent={
           // UX-2 (L-1): макетный skeleton карточек программ под shimmer.

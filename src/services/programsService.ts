@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { Database, Json } from '../types/database.types';
 import { ProgressionPolicy } from '../types/workout';
 
 // ============================================================================
@@ -291,7 +292,7 @@ export async function createProgram(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return data as unknown as Program;
 }
 
 export async function updateProgram(
@@ -307,7 +308,7 @@ export async function updateProgram(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return data as unknown as Program;
 }
 
 export async function deleteProgram(programId: string, userId: string): Promise<void> {
@@ -425,7 +426,7 @@ export async function getActiveUserProgram(): Promise<UserProgram | null> {
     .eq('is_active', true)
     .single();
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data as unknown as UserProgram | null;
 }
 
 export async function completeProgram(userProgramId: string): Promise<void> {
@@ -506,11 +507,11 @@ export interface ProgramSnapshot {
 export async function saveProgramSnapshot(snapshot: ProgramSnapshot): Promise<void> {
   const { error } = await supabase.rpc('save_program_snapshot', {
     p_program_id: snapshot.program_id,
-    p_schedule: snapshot.schedule,
+    p_schedule: snapshot.schedule as Json[],
     p_deleted_phase_ids: snapshot.deleted_phase_ids,
     p_deleted_day_ids: snapshot.deleted_day_ids,
     p_deleted_exercise_ids: snapshot.deleted_exercise_ids,
-    p_phases: snapshot.phases,
+    p_phases: snapshot.phases as Json[],
   });
   if (error) throw error;
 }
@@ -556,7 +557,7 @@ export async function activateProgram(
     .eq('program_id', programId)
     .maybeSingle();
   if (existing) {
-    const update: Record<string, unknown> = { is_active: true };
+    const update: Database['public']['Tables']['user_programs']['Update'] = { is_active: true };
     if (reset) {
       update.current_phase = 1;
       update.current_week = 1;
@@ -662,7 +663,7 @@ export async function syncProgramChanges(programId: string): Promise<SyncProgram
     console.error('[syncProgramChanges] RPC error:', error);
     throw error;
   }
-  return data as SyncProgramChangesResult;
+  return data as unknown as SyncProgramChangesResult;
 }
 
 // ============================================================================

@@ -3,6 +3,7 @@ import { networkOrSnapshot } from '../lib/exerciseSnapshot';
 import { networkOrProgram } from '../lib/programSnapshot';
 import { toSessionFields } from '../utils/exerciseSearchLocal';
 import { workoutTypeFromPhaseType } from '../utils/workoutType';
+import { alternativeReasonLines } from '../utils/alternativeReasons';
 import { AlternativeExercise } from '../types/workout';
 import { getExerciseReferenceData } from './exerciseReferenceService';
 import { getExerciseContraindications } from './injuriesService';
@@ -185,7 +186,10 @@ export async function startProgramWorkout(userId: string, programId: string): Pr
     const targetSets = exercise.sets ?? 3;
     return {
       workout_id: newWorkout.id,
-      exercise_id: exercise.exercise_id,
+      // В шаблоне программы exercise_id допустимо пустой, в снимке занятия — нет.
+      // Пустых строк в program_exercises на 28.10 нет (0 из 2066); если появится —
+      // запись отвалится на сервере, а не молча создаст пустой слот.
+      exercise_id: exercise.exercise_id as string,
       order_index: exercise.position ?? index,
       position: exercise.position ?? index,
       target_sets: targetSets,
@@ -336,7 +340,7 @@ export async function fetchWorkoutSession(
       const { data, error } = await supabase
         .from('workouts')
         .select(
-          `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
+          `name, program_id, started_at, finished_at, skipped_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
         )
         .eq('id', workoutId)
         .single();
@@ -429,8 +433,10 @@ export async function fetchWorkoutSession(
             const { data, error } = await supabase
               .from('workout_logs')
               // VF-2: reps_left/reps_right — без них previous для unilateral = null → NO_HISTORY
+              // Позиция 5: created_at + workout_id нужны, чтобы собрать серию занятий
+              // (верхний рабочий вес по каждому прошлому занятию).
               .select(
-                'weight_kg, reps, reps_left, reps_right, rpe, set_number, workout_exercises(exercise_id)'
+                'weight_kg, reps, reps_left, reps_right, rpe, set_number, created_at, workout_exercises(exercise_id, workout_id)'
               )
               .in('workout_exercises.exercise_id', exerciseIds)
               .neq('workout_exercises.workout_id', workoutId)
@@ -462,7 +468,11 @@ export async function fetchWorkoutSession(
                   reps_right: log.reps_right,
                   rpe: log.rpe,
                   set_number: log.set_number,
-                  workout_exercises: { exercise_id: we.exercise_id ?? '' },
+                  created_at: log.created_at,
+                  workout_exercises: {
+                    exercise_id: we.exercise_id ?? '',
+                    workout_id: we.workout_id ?? null,
+                  },
                 } as unknown as RecentLog;
               });
           },
@@ -662,6 +672,7 @@ export async function fetchAlternatives(
         injuries: refs.injuries,
         media_url: ex.media_url ?? null,
         relation_type: relationTypeMap.get(ex.id) ?? null,
+        reasons: alternativeReasonLines(ranked.factors),
       };
     })
     .filter((exercise): exercise is AlternativeExercise => exercise !== null);
@@ -674,7 +685,7 @@ export async function fetchAlternatives(
 // ============================================================================
 
 /**
- * Обновляет поля тренировки (started_at, finished_at, duration_seconds).
+ * Обновляет поля тренировки (started_at, finished_at, duration_seconds, skipped_at).
  */
 export async function updateWorkout(
   workoutId: string,
@@ -686,6 +697,9 @@ export async function updateWorkout(
     started_at?: string | null;
     finished_at?: string | null;
     duration_seconds?: number | null;
+    /** Позиция 7-6: `null` снимает отметку пропуска — так пропущенное занятие
+     *  становится пройденным после первого сохранённого подхода. */
+    skipped_at?: string | null;
   }
 ): Promise<void> {
   const { error } = await supabase.from('workouts').update(updates).eq('id', workoutId);
@@ -730,7 +744,9 @@ export async function finishWorkoutAndAdvance(
     p_user_id: userId,
     p_workout_id: workoutId,
     p_finished_at: finishedAt,
-    p_duration_seconds: durationSeconds,
+    // Генератор типов не знает, что параметр plpgsql принимает пустое значение:
+    // без таймера на экране тренировки длительность остаётся пустой.
+    p_duration_seconds: durationSeconds as number,
     p_skipped: skipped,
   });
   if (error) throw error;
@@ -775,7 +791,7 @@ export async function upsertWorkoutLogs(
   const { error } = await supabase.rpc('upsert_workout_logs', {
     p_workout_exercise_id: workoutExerciseId,
     p_logs: logs,
-    p_total_sets: totalSets ?? null,
+    p_total_sets: (totalSets ?? null) as number,
   });
 
   if (error) throw error;

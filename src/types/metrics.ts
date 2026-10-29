@@ -29,7 +29,7 @@ export interface BodyMetric {
   arm_cm: number | null;
   photo_url: string | null;
   notes: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface MetricFormData {

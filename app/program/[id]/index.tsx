@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { View, Text, ScrollView, ActivityIndicator, Share, Platform } from 'react-native';
 import { PressableScale } from '../../../src/components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,6 +26,7 @@ import { ProgramFabs } from '../../../src/components/program/ProgramFabs';
 import { ProgramDetailModals } from '../../../src/components/program/ProgramDetailModals';
 import { ProgramMuscleMap } from '../../../src/components/program/ProgramMuscleMap';
 import { generateShareCode, formatShareCode } from '../../../src/services/programSharingService';
+import { updateProgram } from '../../../src/services/programsService';
 
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -34,6 +36,7 @@ export default function ProgramDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
+  const queryClient = useQueryClient();
 
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
   const badgeStyles = useMemo(() => createBadgeStyles(colors), [colors]);
@@ -47,6 +50,7 @@ export default function ProgramDetailScreen() {
     retryLoad,
     starting,
     handleStartProgram,
+    updateSchedule,
     showScheduleEditor,
     setShowScheduleEditor,
   } = useProgramEditor(id as string, userId);
@@ -139,6 +143,21 @@ export default function ProgramDetailScreen() {
   const phases = program.phases || [];
   const canEdit = !!program.created_by && program.created_by === userId;
 
+  // Позиция 7-1: расписание своей программы правится прямо здесь. Пишем только
+  // колонку расписания (сервис вырезает из записи фазы и дни), поэтому ни одно
+  // занятие и ни один блок программы не переписываются.
+  const saveSchedule = async (days: string[]) => {
+    try {
+      await updateProgram(program.id, { schedule: days });
+      updateSchedule(days);
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      setShowScheduleEditor(false);
+      showToast('Расписание сохранено', 'success');
+    } catch (e: any) {
+      showToast(mapError(e) || 'Не удалось сохранить расписание', 'error');
+    }
+  };
+
   // ===== Действия шаринга =====
   const openShare = async () => {
     setShowShareModal(true);
@@ -196,7 +215,7 @@ export default function ProgramDetailScreen() {
           duration={program.duration}
           schedule={program.schedule}
           levelInfo={levelInfo}
-          editMode={false}
+          editMode={canEdit}
           onOpenScheduleEditor={() => setShowScheduleEditor(true)}
           colors={colors}
           cardStyles={cardStyles}
@@ -268,7 +287,7 @@ export default function ProgramDetailScreen() {
         showScheduleEditor={showScheduleEditor}
         setShowScheduleEditor={setShowScheduleEditor}
         schedule={program.schedule || []}
-        onSaveSchedule={() => {}}
+        onSaveSchedule={saveSchedule}
         showShareModal={showShareModal}
         setShowShareModal={setShowShareModal}
         shareCode={shareCode}

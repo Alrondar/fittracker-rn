@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../types/database.types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { config } from './config';
 
@@ -8,7 +9,7 @@ import { config } from './config';
 const supabaseUrl = config.supabaseUrl;
 const supabaseAnonKey = config.supabaseAnonKey;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage, // ← Сохраняет сессию локально
     autoRefreshToken: true, // ← Автоматически обновляет токен

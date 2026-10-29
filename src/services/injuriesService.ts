@@ -136,6 +136,7 @@ export async function getExerciseContraindications(
   > = {};
 
   data.forEach((row) => {
+    if (!row.exercise_id) return;
     if (!result[row.exercise_id]) result[row.exercise_id] = [];
     result[row.exercise_id].push({
       body_part: row.body_part,

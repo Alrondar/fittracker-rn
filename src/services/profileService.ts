@@ -90,8 +90,8 @@ export const profileService = {
       username: profileData?.username || user?.email?.split('@')[0] || 'Пользователь',
       fullName: profileData?.full_name || null,
       avatarUrl: profileData?.avatar_url || null,
-      weight: profileData?.current_weight_kg ? parseFloat(profileData.current_weight_kg) : null,
-      gender: profileData?.gender || null,
+      weight: profileData?.current_weight_kg || null,
+      gender: (profileData?.gender || null) as ProfileData['gender'],
     };
   },
 
@@ -193,7 +193,7 @@ export const profileService = {
       };
     }
 
-    return data.reduce(
+    return data.reduce<DailyNutrition>(
       (acc, log) => ({
         calories: acc.calories + (log.calories || 0),
         proteins: acc.proteins + (log.proteins || 0),
@@ -271,7 +271,7 @@ export const profileService = {
       .eq('id', userId)
       .maybeSingle();
 
-    const userWeight = profile?.current_weight_kg ? parseFloat(profile.current_weight_kg) : null;
+    const userWeight = profile?.current_weight_kg || null;
 
     if (!userWeight) return null;
 

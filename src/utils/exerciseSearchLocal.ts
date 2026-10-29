@@ -352,7 +352,7 @@ export type WarmupPlanFields = {
   primary_muscles: string[];
   secondary_muscles: string[];
   category: string | null;
-  can_be_activation: boolean | null;
+  can_be_activation: boolean;
   movement_pattern: string | null;
   difficulty: string | null;
   status: string | null;
