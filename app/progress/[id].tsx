@@ -15,6 +15,9 @@ import { typography } from '../../src/styles/typography';
 import { commonStyles } from '../../src/styles/common';
 import { AppButton } from '../../src/components/ui/AppButton';
 import { getWorkoutDetail } from '../../src/services/historyService';
+import { repeatWorkout } from '../../src/services/workoutService';
+import { feedback } from '../../src/lib/feedback';
+import { mapError } from '../../src/utils/errorMapper';
 import { profileService } from '../../src/services/profileService';
 import type { WorkoutDetailExercise, WorkoutDetailLog } from '../../src/services/historyService';
 import { useQuery } from '@tanstack/react-query';
@@ -67,6 +70,21 @@ export default function WorkoutReportScreen() {
 
   // Состояние режима отображения нагрузки
   const [loadMode, setLoadMode] = useState<MuscleLoadMode>('total');
+
+  // Позиция 7-5: повторить состав этой тренировки новым занятием.
+  const [repeating, setRepeating] = useState(false);
+  const handleRepeat = useCallback(async () => {
+    if (!userId || repeating) return;
+    setRepeating(true);
+    try {
+      const newWorkoutId = await repeatWorkout(userId, id);
+      router.push(`/workout/${newWorkoutId}`);
+    } catch (e: any) {
+      feedback.alert('Не удалось повторить тренировку', mapError(e));
+    } finally {
+      setRepeating(false);
+    }
+  }, [userId, id, repeating, router]);
 
   const { stats, muscleLoad } = useMemo(() => {
     if (!data) return { stats: null, muscleLoad: [] };
@@ -265,6 +283,15 @@ export default function WorkoutReportScreen() {
             </>
           )}
         </View>
+
+        <AppButton
+          title="Повторить тренировку"
+          variant="secondary"
+          size="large"
+          loading={repeating}
+          onPress={handleRepeat}
+          style={{ marginBottom: SPACING.xl }}
+        />
 
         {/* Мышцы — анатомическая карта + нагрузка по группам мышц */}
         <View style={{ marginBottom: SPACING.xl }}>

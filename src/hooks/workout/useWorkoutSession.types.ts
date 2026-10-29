@@ -38,6 +38,9 @@ export interface SessionWorkoutRow {
   program_id: string | null;
   started_at: string | null;
   finished_at: string | null;
+  /** Позиция 7-6: пропущенное занятие можно открыть и пройти; отметка снимается
+   *  с первым сохранённым подходом. В офлайн-снимке колонки может не быть. */
+  skipped_at?: string | null;
   duration_seconds: number | null;
   workout_exercises: SessionWERow[] | null;
 }

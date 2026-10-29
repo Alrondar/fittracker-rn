@@ -20,6 +20,8 @@ import { AppBadge } from '../../src/components/ui/AppBadge';
 import { ListSkeleton } from '../../src/components/Skeleton';
 import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { StateBlock } from '../../src/components/ui/StateBlock';
+import { StaleBanner, OFFLINE_DATA_LABEL } from '../../src/components/ui/StaleBanner';
+import { useOnline } from '../../src/hooks/useOnline';
 import { FadeIn } from '../../src/components/FadeIn';
 import { CategoryStrip } from '../../src/components/exercises/CategoryStrip';
 import { EquipmentSheet } from '../../src/components/exercises/EquipmentSheet';
@@ -34,6 +36,7 @@ import { WebRefreshButton } from '../../src/components/ui/WebRefreshButton';
 
 export default function ExercisesScreen() {
   const { colors } = useTheme();
+  const online = useOnline();
   const router = useRouter();
   // PERF-8 baseline (dev-only): логирует блокировки JS-потока >100 мс во время
   // скролла FlashList — это метрика «Scroll списка упражнений: no dropped frames» §12.
@@ -294,6 +297,19 @@ export default function ExercisesScreen() {
           data={exercises}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          // Список из кэша живые, а повтор не дошёл: карточки остаются, сверху —
+          // честная плашка о том, откуда данные и что можно попробовать ещё раз.
+          ListHeaderComponent={
+            isError && exercises.length > 0 ? (
+              <StaleBanner
+                tone={online ? 'stale' : 'offline'}
+                label={online ? undefined : OFFLINE_DATA_LABEL}
+                actionable={online}
+                onRetry={onRefresh}
+                style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.sm }}
+              />
+            ) : null
+          }
           drawDistance={1000}
           contentContainerStyle={{ paddingVertical: SPACING.md, paddingBottom: 100 }}
           ListEmptyComponent={renderEmpty()}

@@ -339,7 +339,7 @@ export async function fetchWorkoutSession(
       const { data, error } = await supabase
         .from('workouts')
         .select(
-          `name, program_id, started_at, finished_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
+          `name, program_id, started_at, finished_at, skipped_at, duration_seconds, workout_exercises ( id, exercise_id, order_index, position, target_sets, rest_seconds, intensity, target_reps_range, target_rpe, progression_policy )`
         )
         .eq('id', workoutId)
         .single();
@@ -683,7 +683,7 @@ export async function fetchAlternatives(
 // ============================================================================
 
 /**
- * Обновляет поля тренировки (started_at, finished_at, duration_seconds).
+ * Обновляет поля тренировки (started_at, finished_at, duration_seconds, skipped_at).
  */
 export async function updateWorkout(
   workoutId: string,
@@ -695,6 +695,9 @@ export async function updateWorkout(
     started_at?: string | null;
     finished_at?: string | null;
     duration_seconds?: number | null;
+    /** Позиция 7-6: `null` снимает отметку пропуска — так пропущенное занятие
+     *  становится пройденным после первого сохранённого подхода. */
+    skipped_at?: string | null;
   }
 ): Promise<void> {
   const { error } = await supabase.from('workouts').update(updates).eq('id', workoutId);

@@ -18,9 +18,7 @@ import { ListSkeleton } from '../../src/components/Skeleton';
 import { LoadingChip } from '../../src/components/ui/LoadingChip';
 import { useDeferredTabContent } from '../../src/hooks/useDeferredTabContent';
 import { AppCard } from '../../src/components/ui/AppCard';
-import { AppInput } from '../../src/components/ui/AppInput';
 import { SectionHeader } from '../../src/components/SectionHeader';
-import { SheetShell } from '../../src/components/ui/SheetShell';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 // P1: Цикл
@@ -49,18 +47,10 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const { userId } = useStore();
   const router = useRouter();
-  const { userData, stats, personalRecords, loading, error, refresh, saveNutrition } =
-    useProfile(userId);
+  const { userData, stats, personalRecords, loading, error, refresh } = useProfile(userId);
   // PERF-11: отложенный монтаж тяжёлого дерева профиля до конца таб-анимации.
   const tabReady = useDeferredTabContent();
   const { fmt } = useWeightDisplay();
-
-  const [showNutritionSheet, setShowNutritionSheet] = useState(false);
-  const [inputCalories, setInputCalories] = useState('');
-  const [inputProteins, setInputProteins] = useState('');
-  const [inputFats, setInputFats] = useState('');
-  const [inputCarbs, setInputCarbs] = useState('');
-  const [inputWater, setInputWater] = useState('');
 
   // P1: Цикл
   const queryClient = useQueryClient();
@@ -113,31 +103,6 @@ export default function ProfileScreen() {
         },
       },
     ]);
-  };
-
-  // BUG-5 (аудит 28.09): чистый insert в nutrition_logs — без pending-флага
-  // двойной тап «Сохранить» задваивал приём пищи и калории.
-  const [nutritionSaving, setNutritionSaving] = useState(false);
-  const handleSaveNutrition = async () => {
-    if (nutritionSaving) return;
-    setNutritionSaving(true);
-    try {
-      await saveNutrition({
-        calories: inputCalories,
-        proteins: inputProteins,
-        fats: inputFats,
-        carbs: inputCarbs,
-        water_ml: inputWater,
-      });
-      setShowNutritionSheet(false);
-      setInputCalories('');
-      setInputProteins('');
-      setInputFats('');
-      setInputCarbs('');
-      setInputWater('');
-    } finally {
-      setNutritionSaving(false);
-    }
   };
 
   if (error && !userData) {
@@ -576,57 +541,6 @@ export default function ProfileScreen() {
         </View>
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Sheet питания (INVENTORY §6: SheetShell паттерн) */}
-      <SheetShell
-        visible={showNutritionSheet}
-        title="Добавить приём пищи"
-        onClose={() => setShowNutritionSheet(false)}
-      >
-        <AppInput
-          label="Калории (ккал)"
-          placeholder="0"
-          value={inputCalories}
-          onChangeText={setInputCalories}
-          keyboardType="numeric"
-        />
-        <AppInput
-          label="Белки (г)"
-          placeholder="0"
-          value={inputProteins}
-          onChangeText={setInputProteins}
-          keyboardType="numeric"
-        />
-        <AppInput
-          label="Жиры (г)"
-          placeholder="0"
-          value={inputFats}
-          onChangeText={setInputFats}
-          keyboardType="numeric"
-        />
-        <AppInput
-          label="Углеводы (г)"
-          placeholder="0"
-          value={inputCarbs}
-          onChangeText={setInputCarbs}
-          keyboardType="numeric"
-        />
-        <AppInput
-          label="Вода (мл)"
-          placeholder="0"
-          value={inputWater}
-          onChangeText={setInputWater}
-          keyboardType="numeric"
-        />
-        <AppButton
-          title="Сохранить"
-          variant="primary"
-          size="large"
-          onPress={handleSaveNutrition}
-          loading={nutritionSaving}
-          style={{ marginTop: SPACING.md }}
-        />
-      </SheetShell>
 
       {/* P1: Настройки цикла */}
       <CycleSettingsSheet

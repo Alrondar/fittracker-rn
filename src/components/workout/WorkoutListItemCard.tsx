@@ -81,7 +81,6 @@ export const WorkoutListItemCard = React.memo(function WorkoutListItemCard({
       onLongPress={handleLongPress}
       delayLongPress={500}
       scaleTo={0.985}
-      disabled={status === 'skipped'}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${status === 'completed' ? 'выполнена' : isNext ? 'следующая' : status === 'in_progress' ? 'в процессе' : status === 'skipped' ? 'пропущена' : 'предстоит'}`}
       style={{ marginHorizontal: SPACING.lg }}

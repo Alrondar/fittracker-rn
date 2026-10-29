@@ -1,7 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { feedback } from '../lib/feedback';
-import { mapError } from '../utils/errorMapper';
-import { useQueryClient } from '@tanstack/react-query';
 
 import {
   profileService,
@@ -11,11 +8,8 @@ import {
   DailyNutrition,
   PersonalRecord,
 } from '../services/profileService';
-import * as Haptics from 'expo-haptics';
-import { invalidateNutritionCaches } from '../lib/queryInvalidation';
 
 export function useProfile(userId: string | null) {
-  const queryClient = useQueryClient();
   const [userData, setUserData] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<ProfileStats>({
     totalWorkouts: 0,
@@ -76,34 +70,6 @@ export function useProfile(userId: string | null) {
     if (userId) loadAllData();
   }, [userId, loadAllData]);
 
-  const saveNutrition = async (data: {
-    calories: string;
-    proteins: string;
-    fats: string;
-    carbs: string;
-    water_ml: string;
-  }) => {
-    if (!userId) return;
-    try {
-      await profileService.saveNutritionLog(userId, {
-        calories: parseInt(data.calories) || 0,
-        proteins: parseInt(data.proteins) || 0,
-        fats: parseInt(data.fats) || 0,
-        carbs: parseInt(data.carbs) || 0,
-        water_ml: parseInt(data.water_ml) || 0,
-        meal_type: 'meal', // общий ввод из профиля без выбора приёма пищи
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const updated = await profileService.getDailyNutrition(userId);
-      setTodayNutrition(updated);
-      // BUG-10 (аудит 28.09): карточки питания на Главной читают RQ-кэши —
-      // без инвалидации они врали после добавления приёма из профиля.
-      invalidateNutritionCaches(queryClient, userId);
-    } catch (e: any) {
-      feedback.alert('Не удалось сохранить питание', mapError(e));
-    }
-  };
-
   return {
     userData,
     stats,
@@ -113,6 +79,5 @@ export function useProfile(userId: string | null) {
     loading,
     error,
     refresh: loadAllData,
-    saveNutrition,
   };
 }

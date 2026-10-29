@@ -9,14 +9,16 @@ export function useBodyMetrics(userId: string | null) {
 
   // Загрузка всех замеров
   const {
-    data: metrics = [],
+    data: metricsData,
     isLoading,
+    isError,
     refetch,
   } = useQuery({
     queryKey: ['body_metrics', userId],
     queryFn: () => metricsService.getUserMetrics(userId!),
     enabled: !!userId,
   });
+  const metrics = metricsData ?? [];
 
   // Последний замер (для КБЖУ и отображения)
   const latestMetric = metrics.length > 0 ? metrics[0] : null;
@@ -79,6 +81,11 @@ export function useBodyMetrics(userId: string | null) {
     previousMetric,
     weightChange,
     isLoading,
+    // EDGE-4 (из аудита 06.10, отложен тогда): без этих двух полей экран отказа
+    // неотличим от «замеров ещё нет». Пустой список из кэша — это «нет данных»,
+    // а не сбой; сбой только когда ответа базы не было вовсе (!loaded).
+    isError,
+    loaded: metricsData !== undefined,
     refetch,
     createMetric: createMutation.mutate,
     deleteMetric: deleteMutation.mutate,

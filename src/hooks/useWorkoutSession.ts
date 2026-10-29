@@ -73,6 +73,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [workoutName, setWorkoutName] = useState('');
+  const [skippedAt, setSkippedAt] = useState<string | null>(null);
   const [programId, setProgramId] = useState<string | null>(null);
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -301,8 +302,18 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
     // Осталось ноль и ни одна группа не упала — показываем подтверждение.
     publishUnsaved();
     if (failures === 0 && sentKeys.length > 0) markSaved();
+    // Позиция 7-6: пропущенное занятие открыли и начали писать подходы — отметка
+    // пропуска снимается одним запросом, как только сервер подтвердил группу.
+    if (sentKeys.length > 0 && skippedAt) {
+      try {
+        await updateWorkout(workoutId, { skipped_at: null });
+        setSkippedAt(null);
+      } catch (error) {
+        console.error('[useWorkoutSession] отметка пропуска не снята:', error);
+      }
+    }
     return failures;
-  }, [settleOutboxKeys, publishUnsaved, markSaved]);
+  }, [settleOutboxKeys, publishUnsaved, markSaved, skippedAt, workoutId]);
 
   // BUG-7 (аудит 28.09): single-flight обёртка flush — «Завершить» подхватывает
   // уже идущий debounce-flush вместо параллельного второго прогона (тот
@@ -344,6 +355,7 @@ export function useWorkoutSession(workoutId: string, userId: string | null) {
       } = data;
 
       setWorkoutName(workoutRow.name ?? 'Тренировка');
+      setSkippedAt(workoutRow.skipped_at ?? null);
       setProgramId(workoutRow.program_id);
       setRecentLogs(recentLogs ?? []);
 
