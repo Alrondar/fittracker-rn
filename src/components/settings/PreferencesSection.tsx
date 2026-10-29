@@ -1,6 +1,6 @@
 // src/components/settings/PreferencesSection.tsx
 // DA-P2-8: секция «Предпочтения» (единицы, гриф, режим карточки, RPE, напоминания, таймер).
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Clock, LayoutGrid, Bell, Ruler, Vibrate, Flame } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
@@ -8,6 +8,16 @@ import { useTimerSettings } from '../../hooks/useTimerSettings';
 import { useRpeSettings, RPE_PROMPT_DESCRIPTIONS } from '../../hooks/useRpeSettings';
 import { useBarbellSettings } from '../../hooks/useBarbellSettings';
 import { useUnitPreferences } from '../../hooks/useUnitPreferences';
+import { useReminderSettings } from '../../hooks/useReminderSettings';
+import { getReminderSourceData } from '../../services/reminderService';
+import {
+  clearReminders,
+  requestReminderPermission,
+  rescheduleReminder,
+} from '../../lib/reminderScheduler';
+import { feedback } from '../../lib/feedback';
+import { useStore } from '../../store/useStore';
+import type { ReminderSettings } from '../../utils/reminders';
 import { BARBELL_EQUIPMENT_NAMES } from '../../constants/barbellDefaults';
 import { SPACING } from '../../constants/theme';
 import { commonStyles } from '../../styles/common';
@@ -24,6 +34,12 @@ const WARMUP_ORDER_DESCRIPTIONS: Record<string, string> = {
   stretch_first: 'Сначала растяжка и мобилити, затем активация',
 };
 
+/** Варианты времени напоминания: пять коротких чипов помещаются в один ряд. */
+const REMINDER_TIME_OPTIONS = [7, 12, 17, 19, 21].map((hour) => ({
+  key: String(hour),
+  label: `${hour}:00`,
+}));
+
 export function PreferencesSection() {
   const { colors } = useTheme();
   const cardStyles = useMemo(() => createCardStyles(colors), [colors]);
@@ -36,7 +52,41 @@ export function PreferencesSection() {
   // «Фунты/дюймы» = lb, «Килограммы/сантиметры» = kg — тот же выбор ест GoalsStep1.
   const { unit, setUnit } = useUnitPreferences();
   const useImperial = unit === 'lb';
-  const [workoutReminders, setWorkoutReminders] = useState(true);
+  // Позиция 8: раньше этот переключатель жил на локальном useState(true) и ни на
+  // что не влиял. Теперь он включает настоящие локальные напоминания.
+  const { userId } = useStore();
+  const { settings: reminders, updateSettings: updateReminders } = useReminderSettings();
+
+  /** Сохранить настройку и сразу переставить сигнал на новых значениях. */
+  const applyReminders = async (patch: Partial<ReminderSettings>) => {
+    const next = { ...reminders, ...patch };
+    updateReminders(patch);
+    if (!userId) return;
+    if (!next.enabled) {
+      await clearReminders();
+      return;
+    }
+    try {
+      await rescheduleReminder(next, await getReminderSourceData(userId));
+    } catch (error) {
+      console.warn('[reminders] перестановка не удалась:', error);
+    }
+  };
+
+  const toggleReminders = async (value: boolean) => {
+    if (!value) {
+      await applyReminders({ enabled: false });
+      return;
+    }
+    if (!(await requestReminderPermission())) {
+      feedback.alert(
+        'Уведомления запрещены',
+        'Разреши их в настройках телефона — без разрешения напоминание не придёт.'
+      );
+      return;
+    }
+    await applyReminders({ enabled: true });
+  };
 
   return (
     <View style={commonStyles.section}>
@@ -191,10 +241,24 @@ export function PreferencesSection() {
       <ToggleRow
         icon={Bell}
         title="Напоминания о тренировках"
-        description="Уведомления о запланированных тренировках"
-        value={workoutReminders}
-        onToggle={setWorkoutReminders}
+        description={
+          reminders.enabled
+            ? 'Раз в день: если сегодня день тренировки — напомним про неё; если три дня ничего не завершено — напомним в любой день'
+            : 'Выключены'
+        }
+        value={reminders.enabled}
+        onToggle={toggleReminders}
       />
+
+      {reminders.enabled && (
+        <View style={{ marginBottom: SPACING.md }}>
+          <PillToggle
+            options={REMINDER_TIME_OPTIONS}
+            value={String(reminders.hour)}
+            onChange={(key) => void applyReminders({ hour: Number(key) })}
+          />
+        </View>
+      )}
 
       <ToggleRow
         icon={Clock}

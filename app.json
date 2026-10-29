@@ -22,7 +22,10 @@
       },
       "package": "com.fittracker.app",
       "softwareKeyboardLayoutMode": "resize",
-      "permissions": []
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE"
+      ]
     },
     "extra": {
       "supabaseUrl": "https://trgiihqqcovidwcqwdkl.supabase.co",
@@ -36,7 +39,8 @@
       "expo-router",
       "expo-audio",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "owner": "alrondar"
   }
