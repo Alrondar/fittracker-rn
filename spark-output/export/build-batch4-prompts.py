@@ -211,6 +211,25 @@ def male(text):
     text = text.replace("the SAME woman", "the SAME man")
     text = text.replace("dark-blonde hair in a ponytail",
                         "short dark-brown hair cropped at the sides")
+    # Падежи: дословная замена her->his ломает объектные позиции («behind his»,
+    # «away from his») и не трогает верхний регистр в блоках-замках.
+    for bad, good in (("BEHIND HER AND TO HER", "BEHIND HIM AND TO HIS"),
+                      ("HER OWN FACE", "HIS OWN FACE"),
+                      ("TOP OF HER HEAD", "TOP OF HIS HEAD"),
+                      ("behind his and to his", "behind him and to his"),
+                      ("bent behind his with", "bent behind him with"),
+                      ("degrees behind his", "degrees behind him"),
+                      ("AWAY from his", "AWAY from him"),
+                      ("Behind his stands", "Behind him stands"),
+                      ("behind his stands", "behind him stands"),
+                      ("at his at", "at him at")):
+        text = text.replace(bad, good)
+    # Объектная позиция после предлога: «his» на месте «her» допустимо, только если
+    # дальше существительное («to his right», «from his two arms»). Если дальше
+    # служебное слово — это местоимение, а не притяжательное («in front of his and …»).
+    text = re.sub(r"\b(behind|from|to|with|under|above|against|beside|before|after|around|through"
+                  r"|in front of) his\b(?=\s+(?:and|at|fully|is|was|not|no|in|on|of|the|a|an|while)"
+                  r"|\s*[,.;:])", r"\1 him", text)
     return text
 
 

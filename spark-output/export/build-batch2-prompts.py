@@ -488,21 +488,27 @@ FRAMES = [
         "hips, and her upper back and head rest directly on the FLOOR, not on a bench. If a "
         "loaded bar sits across her pelvis, or her shoulders are up on a bench, the image shows "
         "a hip thrust and it is wrong."),
-   camera=("CAMERA: low three-quarter view from the foot end of the body, about 40° off the plane "
-           "she lies in and toward her right side, camera near the floor at 0.35 m height, 2.8 m "
-           "away. We see the soles and shins in the foreground, the hips beyond them and the "
-           "outer upper edge of her right buttock."),
-   orient=("ORIENTATION LOCK: her head and shoulders are at the FAR-TOP of the frame, her knees "
-           "and feet are at the NEAR-BOTTOM, her feet point up toward the camera. Never mirrored, "
-           "never a side-on profile, never head toward the camera."),
-   framing=("FRAMING LOCK: the whole body inside the frame with air; her head at about 12 percent "
-            "of the frame height from the top, the soles of her shoes at about 90 percent, both "
-            "elbows and both feet fully visible, nothing cropped."),
+   camera=("CAMERA: three-quarter side view of the body lying on the floor, about 30° rotated from "
+           "the side toward the foot end, camera low but not on the floor (0.7 m height), 3.4 m "
+           "away. The body reads ACROSS the frame: head and shoulders at the LEFT, hips in the "
+           "middle, knees and feet at the RIGHT; we see her right side and the outer upper edge of "
+           "her right buttock."),
+   orient=("ORIENTATION LOCK: her head is on the LEFT of the frame and her feet on the RIGHT, her "
+           "back faces the camera — exactly the same in both frames of this pair. Never mirrored, "
+           "never looked down the length of the body from the foot end, never head toward the "
+           "camera."),
+   framing=("FRAMING LOCK: the whole body inside the frame with air; her head at about 15 percent of "
+            "the frame width from the left edge, the soles of her shoes at about 85 percent, both "
+            "elbows, both knees and both feet fully visible, nothing cropped; the body occupies the "
+            "same pixel length in both frames of the pair."),
    ident=("EXERCISE IDENTITY: BUTT LIFT / GLUTE BRIDGE — lying on the back on an open floor, "
           "knees bent, feet flat, the hips lifted and lowered with bodyweight only."),
    appr=("APPARATUS: NONE. An empty studio floor only — no bench, no box, no pillow, no mat edge, "
          "no barbell, no bands, no machine. PROPS LOCK: exactly zero pieces of equipment in the "
          "scene; the floor is a single seamless surface."),
+   bg=("BACKGROUND: seamless desaturated cool blue-grey studio backdrop with a soft gradient and a "
+       "gentle vignette, soft floor shadow under the athlete, no equipment anywhere, no logos, no "
+       "text, no numbers, no watermark, no mirrors."),
    phase_text=("PHASE — START, the resting position: she lies on her back, knees bent, both feet flat "
           "on the floor about hip-width apart with the heels just behind the knees, arms straight "
           "along the body with the palms pressed down on the floor, head and shoulder blades on "
@@ -524,21 +530,27 @@ FRAMES = [
         "hips, and her upper back and head rest directly on the FLOOR, not on a bench. If a "
         "loaded bar sits across her pelvis, or her shoulders are up on a bench, the image shows "
         "a hip thrust and it is wrong."),
-   camera=("CAMERA: low three-quarter view from the foot end of the body, about 40° off the plane "
-           "she lies in and toward her right side, camera near the floor at 0.35 m height, 2.8 m "
-           "away. We see the soles and shins in the foreground, the hips beyond them and the "
-           "outer upper edge of her right buttock."),
-   orient=("ORIENTATION LOCK: her head and shoulders are at the FAR-TOP of the frame, her knees "
-           "and feet are at the NEAR-BOTTOM, her feet point up toward the camera. Never mirrored, "
-           "never a side-on profile, never head toward the camera."),
-   framing=("FRAMING LOCK: the whole body inside the frame with air; her head at about 12 percent "
-            "of the frame height from the top, the soles of her shoes at about 90 percent, both "
-            "elbows and both feet fully visible, nothing cropped."),
+   camera=("CAMERA: three-quarter side view of the body lying on the floor, about 30° rotated from "
+           "the side toward the foot end, camera low but not on the floor (0.7 m height), 3.4 m "
+           "away. The body reads ACROSS the frame: head and shoulders at the LEFT, hips in the "
+           "middle, knees and feet at the RIGHT; we see her right side and the outer upper edge of "
+           "her right buttock."),
+   orient=("ORIENTATION LOCK: her head is on the LEFT of the frame and her feet on the RIGHT, her "
+           "back faces the camera — exactly the same in both frames of this pair. Never mirrored, "
+           "never looked down the length of the body from the foot end, never head toward the "
+           "camera."),
+   framing=("FRAMING LOCK: the whole body inside the frame with air; her head at about 15 percent of "
+            "the frame width from the left edge, the soles of her shoes at about 85 percent, both "
+            "elbows, both knees and both feet fully visible, nothing cropped; the body occupies the "
+            "same pixel length in both frames of the pair."),
    ident=("EXERCISE IDENTITY: BUTT LIFT / GLUTE BRIDGE — lying on the back on an open floor, "
           "knees bent, feet flat, the hips lifted and lowered with bodyweight only."),
    appr=("APPARATUS: NONE. An empty studio floor only — no bench, no box, no pillow, no mat edge, "
          "no barbell, no bands, no machine. PROPS LOCK: exactly zero pieces of equipment in the "
          "scene; the floor is a single seamless surface."),
+   bg=("BACKGROUND: seamless desaturated cool blue-grey studio backdrop with a soft gradient and a "
+       "gentle vignette, soft floor shadow under the athlete, no equipment anywhere, no logos, no "
+       "text, no numbers, no watermark, no mirrors."),
    phase_text=("PHASE — FINISH, the top position: the hips are lifted so that the knees, the hips and "
           "the shoulders form ONE STRAIGHT LINE, the buttocks squeezed, the feet still flat on "
           "the floor in the same place, the heels behind the knees, the arms still straight with "
@@ -588,7 +600,7 @@ for f in FRAMES:
         f["phase_text"],
         CHAR_F,
         f["high"],
-        BACKGROUND,
+        f.get("bg", BACKGROUND),
         f["forb"],
     ])
     for suffix, text in (("", body), ("_m", to_male(body))):

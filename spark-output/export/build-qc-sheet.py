@@ -14,8 +14,12 @@ import os
 
 from PIL import Image, ImageDraw
 
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from media_root import media_root
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DS = os.path.join(ROOT, 'data', 'exercises')
+DS = media_root(required=False)  # кадры с 25.10 живут в соседнем репозитории медиа
 OUT_DIR = os.path.join(os.path.dirname(__file__), 'qc')
 
 CELL_W, CELL_H = 640, 427   # 850x567 -> масштаб 0.75, пропорции те же

@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 VIBE = os.path.join(ROOT, 'vibe_images')
-OUT = os.path.join(ROOT, 'spark-output', 'export', 'qc', 'wrist-pair-grid.jpg')
+OUT = os.path.join(ROOT, 'spark-output', 'export', 'qc', 'upgrip-pair-grid-v2.jpg')
 CELL = (620, 413)
 PAD, LABEL = 10, 30
 
@@ -27,10 +27,8 @@ def newest(prefix):
 
 
 ITEMS = [
-    (newest('Barbell_Wrist_Extension_start_v2'), 'ЗАПЯСТЬЯ жен кадр 1'),
-    (newest('Barbell_Wrist_Extension_finish_v2'), 'ЗАПЯСТЬЯ жен кадр 2'),
-    (newest('Barbell_Wrist_Extension_start_m_v1'), 'ЗАПЯСТЬЯ муж кадр 1'),
-    (newest('Barbell_Wrist_Extension_finish_m_v1'), 'ЗАПЯСТЬЯ муж кадр 2'),
+    ('vibe_images/Underhand-Grip_Dumbbell_Bench_Press_start_v2_1793347649598_a51e2863.png', 'Жим обратным — кадр 1'),
+    ('vibe_images/Underhand-Grip_Dumbbell_Bench_Press_finish_1793347520929_b91e1d23.png', 'Жим обратным — кадр 2'),
 ]
 
 W = len(ITEMS) * CELL[0] + (len(ITEMS) + 1) * PAD
