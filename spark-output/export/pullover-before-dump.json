@@ -1,0 +1,40 @@
+{
+  "note": "Дамп строки a4e1a02f «Пуловер со штангой на спину» до применения миграции supabase/migrations/20261101110000_give_pullover_row_its_own_frames.sql. Снят 01.11 из прода запросом select jsonb_agg(to_jsonb(x)) from public.exercises x where id = 'a4e1a02f-a7df-436c-8653-16d379ba0cf9'. Нужен для реверса: миграция меняет name_eng, media_url, technique, settings и пересобирает search_text.",
+  "row": {
+    "id": "a4e1a02f-a7df-436c-8653-16d379ba0cf9",
+    "name": "Пуловер со штангой на спину",
+    "short_name": "пуловер на спину",
+    "aliases": ["Пуловер со штангой на спину"],
+    "name_eng": "Barbell Pullover",
+    "status": "needs_review",
+    "category": "strength",
+    "difficulty": "intermediate",
+    "reps_range": null,
+    "movement_pattern": "pull_vertical",
+    "can_be_activation": false,
+    "primary_muscles": ["широчайшие"],
+    "secondary_muscles": ["большая круглая", "зубчатые"],
+    "tags": ["isolation"],
+    "equipment": ["Скамья", "Штанга"],
+    "technique": "Лягте на скамью и удерживайте штангу над грудью прямыми или слегка согнутыми руками. Стабилизируйте лопатки и медленно опустите штангу за голову по дуге. Потяните штангу обратно над грудь за счет движения плеч и широчайших. Дышите плавно и сохраняйте контроль грифа на всей амплитуде.",
+    "settings": "Скамья горизонтальная. Штанга удерживается над грудью, амплитуда ограничивается индивидуально контролируемым диапазоном.",
+    "risks": "Переразгибание плеча может привести к перегрузке капсульно-связочного аппарата. Не используйте амплитуду, которую невозможно контролировать.",
+    "benefits": "Основная нагрузка направлена на широчайшие мышцы и мышцы, участвующие в движении плеча. Фиксированная скамья помогает стабилизировать корпус.",
+    "media_url": "https://raw.githubusercontent.com/Alrondar/fittracker-exercise-media/main/exercises/Bent-Arm_Barbell_Pullover/0.jpg",
+    "search_text": "пуловер со штангой на спину barbell pullover пуловер на спину пуловер со штангой на спину широчайшие большая круглая зубчатые скамья штанга isolation strength",
+    "created_at": "2026-07-03T07:11:49.019226+00:00",
+    "updated_at": "2026-10-25T09:45:41.867851+00:00"
+  },
+  "occupancy": {
+    "program_exercises_slots": 0,
+    "workout_exercises_rows": 0,
+    "exercise_relationships": 11
+  },
+  "counters_before": {
+    "catalog": 820,
+    "on_our_host": 820,
+    "no_frame": 0,
+    "approved": 451,
+    "rows_on_Bent-Arm_Barbell_Pullover": 2
+  }
+}

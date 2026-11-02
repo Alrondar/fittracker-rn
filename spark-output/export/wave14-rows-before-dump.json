@@ -1,0 +1,87 @@
+{
+  "note": "Дампы двух строк до применения миграций 20261101120000_sit_the_incline_front_raise_down.sql и 20261101130000_name_the_floor_fly_row_by_its_frames.sql. Сняты 01.11 из прода запросом select jsonb_agg(to_jsonb(x)) from public.exercises x where id in (...). Нужны для реверса.",
+  "rows": [
+    {
+      "migration": "20261101120000_sit_the_incline_front_raise_down.sql",
+      "changes": ["name", "aliases", "media_url", "technique", "settings", "search_text"],
+      "row": {
+        "id": "813c576c-b688-4699-8c1a-e24d5a76d6e7",
+        "name": "Подъем гантелей перед собой лежа на наклонной скамье",
+        "short_name": "подъемы на наклонной",
+        "aliases": ["Подъем гантелей перед собой лежа на наклонной скамье"],
+        "name_eng": "Front Incline Dumbbell Raise",
+        "status": "needs_review",
+        "category": "strength",
+        "difficulty": "intermediate",
+        "reps_range": null,
+        "movement_pattern": "push_vertical",
+        "can_be_activation": false,
+        "primary_muscles": ["передняя дельта"],
+        "secondary_muscles": [],
+        "tags": ["isolation"],
+        "equipment": ["Гантели", "Наклонная Скамья"],
+        "technique": "Лягте грудью на наклонную скамью и удерживайте гантели в опущенных руках. Поднимайте гантели перед собой до уровня плеч, сохраняя грудь и корпус стабильными. Медленно опустите гантели в исходное положение. Дышите равномерно и не отрывайте корпус от скамьи.",
+        "settings": "Наклонная скамья. Грудь опирается на подушку, руки свободно свисают вниз.",
+        "risks": "Слишком большой вес может увеличить нагрузку на плечевые суставы. Не поднимайте вес рывком.",
+        "benefits": "Изолирует переднюю дельту и уменьшает возможность раскачивания корпусом.",
+        "media_url": "https://raw.githubusercontent.com/Alrondar/fittracker-exercise-media/main/exercises/Front_Incline_Dumbbell_Raise/0.jpg",
+        "search_text": "подъем гантелей перед собой лежа на наклонной скамье front incline dumbbell raise подъемы на наклонной подъем гантелей перед собой лежа на наклонной скамье передняя дельта  гантели наклонная скамья isolation strength",
+        "updated_at": "2026-10-25T09:45:41.867851+00:00"
+      },
+      "occupancy": {
+        "program_exercises_slots": 0,
+        "workout_exercises_rows": 0,
+        "exercise_relationships": 11,
+        "injury_warnings": 0,
+        "injury_restrictions": 0
+      }
+    },
+    {
+      "migration": "20261101130000_name_the_floor_fly_row_by_its_frames.sql",
+      "changes": ["name_eng", "media_url", "search_text"],
+      "row": {
+        "id": "726e06e3-4b97-43fa-a9a4-4f0dab18575c",
+        "name": "Разводка гантелей лежа на полу",
+        "short_name": "разводка на полу",
+        "aliases": ["Разводка гантелей лежа на полу"],
+        "name_eng": "Dumbbell Flyes",
+        "status": "needs_review",
+        "category": "strength",
+        "difficulty": "beginner",
+        "reps_range": null,
+        "movement_pattern": "push_horizontal",
+        "can_be_activation": false,
+        "primary_muscles": ["большая грудная"],
+        "secondary_muscles": [],
+        "tags": ["isolation"],
+        "equipment": ["Гантели"],
+        "technique": "Лягте на пол и удерживайте гантели над грудью, слегка согнув локти. Разведите руки в стороны до момента, когда плечи мягко коснутся пола или достигнут доступной амплитуды. Сведите гантели обратно над грудью, сохраняя угол локтей. Дышите спокойно и выполняйте движение без рывков.",
+        "settings": "Ровная поверхность пола. Локти слегка согнуты и фиксированы относительно выбранной траектории.",
+        "risks": "Чрезмерное давление плечами о пол или неконтролируемая амплитуда могут вызвать дискомфорт. Не используйте вес, который мешает контролировать гантели.",
+        "benefits": "Тренирует большую грудную с ограниченной нижней амплитудой из-за контакта плеч с полом. Может быть вариантом разводки без скамьи.",
+        "media_url": "https://raw.githubusercontent.com/Alrondar/fittracker-exercise-media/main/exercises/Dumbbell_Flyes/0.jpg",
+        "search_text": "разводка гантелей лежа на полу dumbbell flyes разводка на полу разводка гантелей лежа на полу большая грудная  гантели isolation strength",
+        "updated_at": "2026-10-25T09:45:41.867851+00:00"
+      },
+      "occupancy": {
+        "program_exercises_slots": 0,
+        "workout_exercises_rows": 0,
+        "exercise_relationships": 8,
+        "injury_warnings": 0,
+        "injury_restrictions": 0
+      }
+    }
+  ],
+  "counters_before": {
+    "catalog": 820,
+    "on_our_host": 820,
+    "no_frame": 0,
+    "approved": 451,
+    "needs_review": 369,
+    "rows_on_Front_Incline_Dumbbell_Raise": 1,
+    "rows_on_Dumbbell_Flyes": 1,
+    "rows_on_Low_Cable_Crossover": 2,
+    "rows_on_Bent_Arm_Barbell_Pullover": 2,
+    "rows_on_Bicycling": 0
+  }
+}
