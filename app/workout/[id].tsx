@@ -54,6 +54,13 @@ import { useCycle } from '../../src/hooks/useCycle';
 import type { ProgressionContext } from '../../src/engine/progression';
 import { rampProtocolForIntensity } from '../../src/engine/warmupRamp';
 
+/**
+ * Высота слота под плашку состояния записи: паддинги `StaleBanner` (md сверху и
+ * снизу), одна строка `bodySmall` (18) и рамка с двух сторон. Плюс нижний отступ,
+ * который плашка раньше несла сама.
+ */
+const STALE_BANNER_SLOT = SPACING.md * 2 + 18 + 2 + SPACING.sm;
+
 export default function WorkoutSessionScreen() {
   useFreezeDetector(); // логирует блокировки JS > 100 мс
   const { id, hero } = useLocalSearchParams();
@@ -635,23 +642,29 @@ export default function WorkoutSessionScreen() {
 
         {/* CONN-1 (27.10): пока есть неподтверждённое (или только что доехало) —
             плашка под шапкой. Офлайн она без кнопки: тапать «Записать» без сети
-            бессмысленно, досылка случится сама при возврате связи. */}
-        {unsavedSets > 0 || saveState === 'saved' ? (
-          <StaleBanner
-            tone={!online ? 'offline' : saveState === 'saved' ? 'saved' : 'unsaved'}
-            label={
-              !online
-                ? `Нет сети · не записано ${pluralWord(unsavedSets, ['подход', 'подхода', 'подходов'])}`
-                : saveState === 'saved'
-                  ? 'Записано'
-                  : `Не записано ${pluralWord(unsavedSets, ['подход', 'подхода', 'подходов'])}`
-            }
-            actionLabel="Записать"
-            actionable={online}
-            onRetry={retryUnsaved}
-            style={{ marginBottom: SPACING.sm }}
-          />
-        ) : null}
+            бессмысленно, досылка случится сама при возврате связи.
+            Слот фиксированный (10.11): раньше плашка монтировалась в потоке, и
+            каждый ввод веса сдвигал вкладки и весь список на свою высоту —
+            «Записано» прыгало вместе с данными. Место под неё занято всегда,
+            меняется только содержимое. `minHeight`, чтобы длинный офлайн-текст в
+            две строки не налезал на вкладки. */}
+        <View style={{ minHeight: STALE_BANNER_SLOT }} pointerEvents="box-none">
+          {unsavedSets > 0 || saveState === 'saved' ? (
+            <StaleBanner
+              tone={!online ? 'offline' : saveState === 'saved' ? 'saved' : 'unsaved'}
+              label={
+                !online
+                  ? `Нет сети · не записано ${pluralWord(unsavedSets, ['подход', 'подхода', 'подходов'])}`
+                  : saveState === 'saved'
+                    ? 'Записано'
+                    : `Не записано ${pluralWord(unsavedSets, ['подход', 'подхода', 'подходов'])}`
+              }
+              actionLabel="Записать"
+              actionable={online}
+              onRetry={retryUnsaved}
+            />
+          ) : null}
+        </View>
 
         {hasWarmup && (
           <WorkoutTabs

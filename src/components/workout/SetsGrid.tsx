@@ -685,9 +685,20 @@ export const SetsGrid = memo(function SetsGrid({
   // морфинг (закрытие отменялось на полпути).
   const [editorSetIndex, setEditorSetIndex] = useState(0);
   const editingActive = feedbackSetIndex !== null;
+  // Зеркало «редактор логически открыт» — нужно worklet-колбэку ниже. Смонтирован
+  // редактор только на время собственного раскрытия/закрытия, а не «пока анимация
+  // закрытия честно дошла до конца»: отменённая анимация оставляла контейнеру
+  // явную высоту и overflow hidden, и последние подходы уезжали за обрезку.
+  const editorOpenSV = useSharedValue(false);
+  useEffect(() => {
+    editorOpenSV.value = editingActive || !!painMorphOpen;
+  }, [editingActive, painMorphOpen, editorOpenSV]);
 
   useEffect(() => {
-    if (editorMounted && editorReady) {
+    // editorOpenSV обязана быть в условии: layout-замер редактора может придти
+    // уже во время анимации закрытия (подтверждение дорисовывает строку сброса),
+    // и без неё морф снова развернулся бы открытым при закрытом редакторе.
+    if (editorMounted && editorReady && editorOpenSV.value) {
       morph.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -695,12 +706,12 @@ export const SetsGrid = memo(function SetsGrid({
 
   const closeRpeEditor = useCallback(() => {
     setFeedbackSetIndex(null);
-    morph.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.cubic) }, (finished) => {
+    morph.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.cubic) }, () => {
       'worklet';
-      if (finished) runOnJS(setEditorMounted)(false);
+      runOnJS(setEditorMounted)(editorOpenSV.value);
     });
-    // morph/setEditorMounted — стабильные ref (Reanimated/useState), .value
-    // намеренно не депенденси (паттерн SheetShell).
+    // morph/setEditorMounted/editorOpenSV — стабильные ref (Reanimated/useState),
+    // .value намеренно не депенденси (паттерн SheetShell).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -722,17 +733,21 @@ export const SetsGrid = memo(function SetsGrid({
     []
   );
 
-  const morphStyle = useAnimatedStyle(() => ({
+  const morphStyle = useAnimatedStyle(() => {
     // tableHSV — высота табличного блока БЕЗ паддингов setsContent (padding
     // md сверху/снизу добавляем); editorHSV — высота самого редактора (его
     // wrapper несёт собственный padding md, absolute-координаты в RN не
     // учитывают padding родителя).
-    height: interpolate(
-      morph.value,
-      [0, 1],
-      [tableHSV.value + SPACING.md * 2, editorHSV.value || tableHSV.value + SPACING.md * 2]
-    ),
-  }));
+    // Ниже высоты таблички контейнер не опускается никогда: шкала RPE короче
+    // списка подходов, и укороченная ячейка (1) пересчитывает прокрутку списка —
+    // карточка уезжает ровно в момент тапа, (2) вместе с overflow hidden режет
+    // нижние подходы. Редактор выше таблички (ступени, боль) — разворот вниз,
+    // он ничего не прячет.
+    const tableBox = tableHSV.value + SPACING.md * 2;
+    return {
+      height: interpolate(morph.value, [0, 1], [tableBox, Math.max(editorHSV.value, tableBox)]),
+    };
+  });
 
   const tableFadeStyle = useAnimatedStyle(() => ({
     opacity: 1 - morph.value,
@@ -750,7 +765,16 @@ export const SetsGrid = memo(function SetsGrid({
       const originX = ((editingIdxSV.value + 0.5) / totalSetsSV.value - 0.5) * widthHSV.value;
       tx = originX * (1 - s);
     }
-    return { opacity: morph.value, transform: [{ translateX: tx }, { scale: s }] };
+    // morphStyle держит контейнер на высоте таблички, поэтому редактор, который
+    // короче списка подходов, висял бы у самого верха, а под ним — пустая полоса.
+    // Ставим его по центру этих же границ; когда редактор выше (ступени, боль)
+    // отступ нуляевой, и ничего не уезжает за обрезку.
+    const tableBox = tableHSV.value + SPACING.md * 2;
+    const centered = editorHSV.value > 0 ? Math.max(0, (tableBox - editorHSV.value) / 2) : 0;
+    return {
+      opacity: morph.value,
+      transform: [{ translateX: tx }, { translateY: centered * morph.value }, { scale: s }],
+    };
   });
 
   // MORF-PAIN: тот же morph-слот, второй редактор. kind решает, что
