@@ -1,6 +1,6 @@
 // app/(tabs)/workout/[id].tsx
 // Сессия тренировки + шапка программы (FIT-6).
-// 05.08.2026 (PERF): FlatList — removeClippedSubviews + батчинг рендера.
+// 05.08.2026 (PERF): FlatList — батчинг рендера; обрезка дочерних вью выключена явно.
 // PR8: split на WorkoutScreenHeader / WorkoutInjuryBanner / WorkoutScreenFooter + utils/intensityInfo.
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, ScrollView, InteractionManager } from 'react-native';
@@ -727,10 +727,15 @@ export default function WorkoutSessionScreen() {
 
         {(!hasWarmup || activeTab === 'workout') && (
           <>
-            {/* PERF: батчинг + windowSize. removeClippedSubviews УБРАН: он
-              отцепляет нативные вью у карточек с TextInput — после детача
+            {/* PERF: батчинг + windowSize. Обрезка дочерних вью выключена ЯВНО:
+              она отцепляет нативные вью у карточек с TextInput — после детача
               ячейки SetsGrid теряли responder (некликабельны) и blur
-              не доставлялся (залипший focus). Не возвращать. */}
+              не доставлялся (залипший focus). Не возвращать.
+              Важно: просто не передать проп НЕДОСТАТОЧНО — FlatList на Android
+              ставит removeClippedSubviews=true по умолчанию (RN 0.81,
+              removeClippedSubviewsOrDefault). Отсюда «съеденная» вторая строка
+              подходов после добавления подхода: контент ячейки обрезался по
+              прежним границам и возвращался только после перезахода в день. */}
             <FlatList
               data={exercises}
               keyExtractor={(item) => item.workout_exercise_id}
@@ -739,6 +744,7 @@ export default function WorkoutSessionScreen() {
               ListEmptyComponent={renderEmpty}
               contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
               showsVerticalScrollIndicator={false}
+              removeClippedSubviews={false}
               windowSize={5}
               initialNumToRender={3}
               maxToRenderPerBatch={2}
