@@ -187,6 +187,10 @@ export function ExercisePickerSheet({
     <View>
       {/* Лента групп мышц + раскрытие отдельных мышц (как в справочнике) */}
       <FlatList
+        // Android: без явного false FlatList включает обрезку дочерних вью сам
+        // (RN 0.81) — разбор в app/workout/[id].tsx. У ленты выдачи ниже флаг
+        // стоит true намеренно: там нет полей ввода, только строки подбора.
+        removeClippedSubviews={false}
         horizontal
         data={groupNames}
         keyExtractor={(item) => item}

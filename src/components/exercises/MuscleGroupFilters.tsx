@@ -34,6 +34,9 @@ export function MuscleGroupFilters({ selectedMuscles, onToggleMuscle }: Props) {
   return (
     <View style={{ backgroundColor: colors.background }}>
       <FlatList
+        // Android: без явного false FlatList включает обрезку дочерних вью сам
+        // (RN 0.81) — разбор в app/workout/[id].tsx.
+        removeClippedSubviews={false}
         horizontal
         data={groupNames}
         keyExtractor={(item) => item}

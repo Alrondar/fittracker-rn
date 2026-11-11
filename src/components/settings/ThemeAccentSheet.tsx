@@ -184,6 +184,9 @@ export function ThemeAccentSheet({ visible, onClose }: { visible: boolean; onClo
         </View>
       </View>
       <FlatList
+        // Android: без явного false FlatList включает обрезку дочерних вью сам
+        // (RN 0.81) — разбор в app/workout/[id].tsx.
+        removeClippedSubviews={false}
         data={availableAccents}
         renderItem={renderOption}
         keyExtractor={(item) => item.key}

@@ -84,6 +84,9 @@ export function CategoryStrip({
 
   return (
     <FlatList
+      // Android: без явного false FlatList включает обрезку дочерних вью сам
+      // (RN 0.81) — разбор в app/workout/[id].tsx.
+      removeClippedSubviews={false}
       horizontal
       data={EXERCISE_CATEGORIES}
       keyExtractor={(item) => item.value}
